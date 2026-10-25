@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<title>vibebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: oklch(0.975 0.008 240); --panel: oklch(1 0 0); --line: oklch(0.91 0.01 245); --ink: oklch(0.2 0.02 250); --mute: oklch(0.45 0.02 250);
+    --accent: oklch(0.5 0.17 248); --accent-ink: #fff; --ai: oklch(0.5 0.17 248); --ai-bg: oklch(0.95 0.03 245); --ok: oklch(0.6 0.14 155); --sun: oklch(0.9 0.16 98);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); color-scheme: light;
+    font: 15px/1.45 "Schibsted Grotesk", system-ui, sans-serif; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 12px; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.ghost { border-color: transparent; background: transparent; }
+  input, textarea { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 8px 10px; outline: none; }
+  input:focus, textarea:focus { border-color: var(--ink); }
+  h1, h2, .brand { font-family: Caprasimo, Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+  .muted { color: var(--mute); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; font-weight: 700;
+    color: #fff; flex: none; position: relative; }
+  .avatar.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid var(--panel); }
+  .avatar.ai { background: var(--ai); }
+
+  /* home */
+  .home { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .top .brand { font-size: 28px; margin: 0; flex: 1; }
+  .grid { display: grid; grid-template-columns: 1fr 300px; gap: 32px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .folder { margin-bottom: 24px; }
+  .folder h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 0 0 8px; display: flex; gap: 6px; align-items: center; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 8px; min-height: 120px; transition: transform .12s, box-shadow .12s; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #0000000f; }
+  .card b { font-size: 16px; }
+  .card .sum { font-size: 13px; color: var(--mute); flex: 1; }
+  .stack { display: flex; }
+  .stack .avatar { width: 22px; height: 22px; font-size: 10px; margin-right: -6px; border: 2px solid var(--panel); }
+  .friends { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; align-self: start; }
+  .friends h2 { margin: 0 0 12px; font-size: 20px; }
+  .friend { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .friend small { display: block; color: var(--mute); font-size: 12px; }
+  .row { display: flex; gap: 8px; }
+  .row input, .row textarea { flex: 1; min-width: 0; }
+  .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
+
+  /* book */
+  .book { display: grid; grid-template-columns: 260px 1fr 380px; height: 100dvh; }
+  .book.nodoc { grid-template-columns: 260px 1fr; }
+  .book.nodoc .doc { display: none; }
+  .side { border-right: 1px solid var(--line); padding: 14px; overflow: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
+  .side .title { font-family: Caprasimo, serif; font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
+  .side .folderTag { font-size: 12px; color: var(--mute); }
+  .sec h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 8px; border-radius: 8px; }
+  .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
+  .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); }
+  .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
+  .bar i { display: block; height: 100%; background: var(--ok); }
+  .sug { background: var(--ai-bg); border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-bottom: 6px; }
+  .sug b { display: block; }
+  .sug .row { margin-top: 6px; }
+  .sug button { padding: 3px 8px; font-size: 12px; }
+  .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
+
+  .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
+  .chathead { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .chathead h2 { margin: 0; font-size: 18px; flex: 1; }
+  .tasks { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
+  .task { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
+  .task.done span { text-decoration: line-through; color: var(--mute); }
+  .msgs { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; gap: 10px; max-width: 760px; }
+  .msg .body { min-width: 0; }
+  .msg .who { font-size: 12px; color: var(--mute); }
+  .msg .txt { white-space: pre-wrap; word-wrap: break-word; }
+  .msg.ai .txt { background: var(--ai-bg); padding: 8px 12px; border-radius: 4px 12px 12px 12px; white-space: normal; }
+  .msg.ai .txt p { margin: 0 0 6px; } .msg.ai .txt p:last-child { margin: 0; }
+  .msg.ai .txt ul { margin: 4px 0; padding-left: 18px; }
+  .typing { color: var(--ai); font-size: 13px; }
+  .composer { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
+  .modes { display: none; gap: 6px; align-items: center; font-size: 13px; }
+  .modes.show { display: flex; }
+  .modes button { padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+  .modes button.sel { background: var(--ai); color: #fff; border-color: var(--ai); }
+
+  .doc { border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); }
+  .doc header { padding: 12px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+  .doc header h2 { margin: 0; font-size: 18px; flex: 1; }
+  .doc textarea { flex: 1; border: none; border-radius: 0; background: transparent; padding: 16px; resize: none; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+
+  .tabs { display: none; }
+  @media (max-width: 900px) {
+    .book, .book.nodoc { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
+    .tabs button.sel { background: var(--ink); color: var(--bg); }
+    .book > .side, .book > .chat, .book > .doc { display: none; }
+    .book[data-tab="side"] > .side, .book[data-tab="chat"] > .chat, .book[data-tab="doc"] > .doc { display: flex; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const COLORS = ["#ff5a36", "#1f9d8a", "#3b6cf6", "#c2410c", "#9333ea", "#0f766e", "#be185d", "#4d7c0f"];
+const color = (s) => COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
+const name = (email) => email === "ai" ? "AI" : email.split("@")[0];
+const avatar = (email, on) => email === "ai"
+  ? `<span class="avatar ai">✦</span>`
+  : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(email)}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
+const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
+// Tiny markdown for AI messages: escape first, then bold/italics/lists/paragraphs.
+const md = (s) => esc(s)
+  .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)_(.+?)_(\W|$)/g, "$1<i>$2</i>$3")
+  .split(/\n{2,}/).map((p) => /^\s*[-*] /m.test(p)
+    ? `<ul>${p.split("\n").map((l) => l.replace(/^\s*[-*] /, "")).filter(Boolean).map((l) => `<li>${l}</li>`).join("")}</ul>`
+    : `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+const api = async (path, body) => {
+  const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
+  if (r.status === 401) { $app.innerHTML = `<div class="home"><p>Sessão expirada. <a href="/app">Entrar de novo</a></p></div>`; throw new Error("unauthenticated"); }
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
+  return r.json();
+};
+
+function route() {
+  const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  m ? openBook(m[1]) : home();
+}
+window.addEventListener("popstate", route);
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[data-nav]");
+  if (a) { e.preventDefault(); history.pushState(null, "", a.getAttribute("href")); route(); }
+});
+
+// ---------------- home ----------------
+async function home() {
+  document.title = "vibebook";
+  const me = await api("/api/me");
+  const byFolder = {};
+  for (const b of me.books) (byFolder[b.folder || "Sem pasta"] ??= []).push(b);
+  const folders = Object.keys(byFolder).sort((a, b) => (a === "Sem pasta") - (b === "Sem pasta") || a.localeCompare(b));
+  $app.innerHTML = `
+  <div class="home">
+    <div class="top">
+      <h1 class="brand"><a href="/" style="text-decoration:none">vibebook</a></h1>
+      <span class="muted">${esc(me.email)}</span>
+      <button class="primary" id="new">+ Novo vibebook</button>
+    </div>
+    <div class="grid">
+      <section>
+        ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame os amigos e escreva <b>@ai</b> no chat.</div>`}
+        ${folders.map((f) => `
+          <div class="folder">
+            <h3>📁 ${esc(f)} <span>· ${byFolder[f].length}</span></h3>
+            <div class="cards">${byFolder[f].map((b) => `
+              <a class="card" data-nav href="/b/${b.id}">
+                <b>${esc(b.title)}</b>
+                <div class="sum">${esc(b.summary || "")}</div>
+                <div class="row" style="align-items:center">
+                  <div class="stack" style="flex:1">${(b.members || "").split(",").slice(0, 6).map((e) => avatar(e)).join("")}</div>
+                  <small class="muted">${ago(b.updated_at)}</small>
+                </div>
+              </a>`).join("")}
+            </div>
+          </div>`).join("")}
+        <p class="muted" style="font-size:13px">✦ As pastas se organizam sozinhas: a AI lê cada vibebook e escolhe onde ele fica.</p>
+      </section>
+      <aside class="friends">
+        <h2>Amigos</h2>
+        ${me.friends.length ? me.friends.map((f) => `
+          <div class="friend">${avatar(f.email)}<div>${esc(name(f.email))}
+            <small>${f.shared ? `${f.shared} vibebook${f.shared > 1 ? "s" : ""} juntos` : f.joined ? "na plataforma" : "convidado"}</small></div></div>`).join("")
+          : `<p class="muted" style="font-size:13px">Quem você convida para um vibebook vira amigo aqui.</p>`}
+        <form class="row" id="addFriend" style="margin-top:12px">
+          <input type="email" required placeholder="email do amigo" />
+          <button>Convidar</button>
+        </form>
+      </aside>
+    </div>
+  </div>`;
+  document.getElementById("new").onclick = async () => {
+    const { id } = await api("/api/books", {});
+    history.pushState(null, "", `/b/${id}`); route();
+  };
+  document.getElementById("addFriend").onsubmit = async (e) => {
+    e.preventDefault();
+    await api("/api/friends", { email: e.target[0].value }).catch((err) => alert(err.message));
+    home();
+  };
+}
+
+// ---------------- book ----------------
+let ws = null;
+let S = null; // book state
+let thread = "main";
+let mode = "fast";
+
+function openBook(id) {
+  thread = "main";
+  S = null;
+  $app.innerHTML = `<div class="home muted">Abrindo…</div>`;
+  const connect = () => {
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
+    ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
+    ws.onclose = (e) => { if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>Sem acesso a este vibebook. Peça para alguém de dentro te convidar.</p><a data-nav href="/app">← voltar</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+  };
+  connect();
+}
+
+const send = (m) => ws?.readyState === 1 && ws.send(JSON.stringify(m));
+
+function onEvent(ev, id) {
+  switch (ev.t) {
+    case "state": {
+      const firstLoad = !S;
+      S = { ...ev, id, typing: {} };
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
+      return;
+    }
+    case "msg": S.messages.push(ev.m); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); return;
+    case "delta": {
+      const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
+      delete S.typing[ev.id];
+      const el = document.getElementById(`m${ev.id}`); if (el) el.querySelector(".txt").innerHTML = md(ev.text);
+      scrollDown(); return;
+    }
+    case "typing": { S.typing[ev.id] = ev.mode; const el = document.getElementById(`m${ev.id}`); if (el) el.querySelector(".txt").innerHTML = `<span class="typing">pensando (${modeLabel[ev.mode]})…</span>`; return; }
+    case "epics": S.epics = ev.epics; if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); return;
+    case "doc": S.doc = ev.text; renderDoc(); return;
+    case "meta":
+      if (ev.title) S.book.title = ev.title;
+      if (ev.folder) S.book.folder = ev.folder;
+      if (ev.summary) S.book.summary = ev.summary;
+      renderSide(); return;
+    case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
+    case "members": S.members = ev.members; renderSide(); return;
+    case "online": S.online = ev.online; renderSide(); return;
+  }
+}
+
+const modeLabel = { fast: "⚡ rápido", medium: "◐ médio", heavy: "● pesado" };
+
+function renderBook() {
+  document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
+  $app.innerHTML = `
+  <div class="book" data-tab="chat">
+    <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
+    <aside class="side" id="side"></aside>
+    <main class="chat">
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 Doc</button></div>
+      <div class="tasks" id="tasks"></div>
+      <div class="msgs" id="msgs"></div>
+      <form class="composer" id="composer">
+        <div class="modes" id="modes"><span class="muted">✦ AI:</span>
+          ${Object.entries(modeLabel).map(([k, v]) => `<button type="button" data-mode="${k}" class="${k === mode ? "sel" : ""}">${v}</button>`).join("")}
+        </div>
+        <div class="row"><textarea id="input" rows="1" placeholder="Mensagem… @ai chama a AI"></textarea><button class="primary">Enviar</button></div>
+      </form>
+    </main>
+    <section class="doc">
+      <header><h2>Documento</h2><small class="muted" id="docBy"></small></header>
+      <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; a AI mantém atualizado com as decisões."></textarea>
+    </section>
+  </div>`;
+  const book = $app.querySelector(".book");
+  $app.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+    book.dataset.tab = b.dataset.tab;
+    $app.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("sel", x === b));
+  });
+  document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
+  const input = document.getElementById("input");
+  const modes = document.getElementById("modes");
+  input.oninput = () => {
+    modes.classList.toggle("show", /(^|\s)@ai\b/i.test(input.value) || /@a?i?$/i.test(input.value));
+    input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
+  };
+  input.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); document.getElementById("composer").requestSubmit(); } };
+  modes.onclick = (e) => {
+    const b = e.target.closest("[data-mode]"); if (!b) return;
+    mode = b.dataset.mode; modes.querySelectorAll("[data-mode]").forEach((x) => x.classList.toggle("sel", x === b)); input.focus();
+  };
+  document.getElementById("composer").onsubmit = (e) => {
+    e.preventDefault();
+    const text = input.value.trim(); if (!text) return;
+    send({ t: "msg", thread, text, mode });
+    input.value = ""; input.oninput();
+  };
+  const doc = document.getElementById("doc");
+  let timer;
+  doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { S.doc = doc.value; send({ t: "doc", text: doc.value }); }, 400); };
+  doc.onblur = () => renderDoc();
+  renderSide(); renderChat(); renderDoc(true);
+}
+
+function renderSide() {
+  const el = document.getElementById("side"); if (!el || !S) return;
+  const count = (t) => S.messages.filter((m) => m.thread === t).length;
+  el.innerHTML = `
+    <div>
+      <a data-nav href="/app" class="muted" style="font-size:13px;text-decoration:none">← vibebooks</a>
+      <input class="title" id="title" value="${esc(S.book?.title)}" />
+      <div class="folderTag">${S.book?.folder ? `📁 ${esc(S.book.folder)}` : ""}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}</div>
+    </div>
+    <div class="sec">
+      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main"># geral <span class="n">${count("main")}</span></button>
+    </div>
+    <div class="sec">
+      <h4>Épicos</h4>
+      ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length; return `
+        <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}">◆ ${esc(e.title)} <span class="n">${d}/${e.tasks.length}</span></button>
+        ${e.tasks.length ? `<div class="bar"><i style="width:${(100 * d) / e.tasks.length}%"></i></div>` : ""}`; }).join("")}
+      <form class="row" id="newEpic" style="margin-top:6px"><input placeholder="novo épico" /><button>+</button></form>
+    </div>
+    ${S.suggestions.length ? `<div class="sec"><h4>✦ AI sugere</h4>${S.suggestions.map((s, i) => `
+      <div class="sug"><b>${esc(s.title)}</b>${s.tasks.length ? `<span class="muted">${s.tasks.map(esc).join(" · ")}</span>` : ""}
+        <div class="row"><button data-sug="${i}" data-accept="1">Criar épico</button><button class="ghost" data-sug="${i}">Ignorar</button></div></div>`).join("")}</div>` : ""}
+    <div class="sec">
+      <h4>Pessoas</h4>
+      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${esc(m)}</div>`).join("")}
+      <form class="row" id="invite" style="margin-top:6px"><input type="email" required placeholder="convidar por email" /><button>+</button></form>
+    </div>`;
+  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
+    thread = b.dataset.thread; renderSide(); renderChat();
+    const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
+  });
+  el.querySelectorAll("[data-sug]").forEach((b) => b.onclick = () => send({ t: "suggestion", i: Number(b.dataset.sug), accept: !!b.dataset.accept }));
+  const title = document.getElementById("title");
+  title.onchange = () => send({ t: "title", title: title.value });
+  document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
+  document.getElementById("invite").onsubmit = async (e) => {
+    e.preventDefault();
+    await api(`/api/books/${S.id}/members`, { email: e.target[0].value }).catch((err) => alert(err.message));
+    e.target.reset();
+  };
+  document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
+}
+
+function renderTasks() {
+  const el = document.getElementById("tasks"); if (!el) return;
+  const epic = S.epics.find((e) => e.id === thread);
+  document.getElementById("threadTitle").textContent = epic ? `◆ ${epic.title}` : "# geral";
+  el.style.display = epic ? "" : "none";
+  if (!epic) return;
+  el.innerHTML = `${epic.tasks.map((t) => `<label class="task ${t.done ? "done" : ""}" data-task="${t.id}"><input type="checkbox" ${t.done ? "checked" : ""}/><span>${esc(t.title)}</span></label>`).join("")}
+    <form class="row" id="newTask" style="margin-top:6px"><input placeholder="nova task" /><button>+</button></form>`;
+  el.querySelectorAll("[data-task] input").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
+  document.getElementById("newTask").onsubmit = (e) => { e.preventDefault(); send({ t: "task.add", epic: thread, title: e.target[0].value }); e.target.reset(); };
+}
+
+const msgHtml = (m) => `
+  <div class="msg ${m.author === "ai" ? "ai" : ""}" id="m${m.id}">
+    ${avatar(m.author)}
+    <div class="body"><div class="who">${esc(name(m.author))} · ${ago(m.ts)}</div>
+      <div class="txt">${m.author === "ai" ? (m.text ? md(m.text) : `<span class="typing">pensando…</span>`) : esc(m.text)}</div></div>
+  </div>`;
+
+function renderChat() {
+  renderTasks();
+  const el = document.getElementById("msgs");
+  const list = S.messages.filter((m) => m.thread === thread);
+  el.innerHTML = list.length ? list.map(msgHtml).join("")
+    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@ai</b> vamos planejar uma viagem pra Lisboa em março, 6 pessoas" : "Discussão deste épico. A AI enxerga as tasks e o chat geral."}</div>`;
+  scrollDown(true);
+}
+function appendMsg(m) {
+  const el = document.getElementById("msgs");
+  el.querySelector(".empty")?.remove();
+  el.insertAdjacentHTML("beforeend", msgHtml(m));
+  scrollDown(true);
+}
+function scrollDown(force) {
+  const el = document.getElementById("msgs"); if (!el) return;
+  if (force || el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
+}
+function renderDoc(force) {
+  const doc = document.getElementById("doc"); if (!doc) return;
+  // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
+  if (force || document.activeElement !== doc) doc.value = S.doc;
+}
+
+route();
+</script>
+</body>
+</html>

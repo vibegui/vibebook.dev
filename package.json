@@ -1,0 +1,25 @@
+{
+  "name": "vibebook",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261025.1",
+    "@types/bun": "latest",
+    "wrangler": "^4.152.0"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "^3.1.0",
+    "ai": "^7.0.153",
+    "hono": "^4.13.14",
+    "jose": "^6.2.13",
+    "zod": "^4.6.7"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit"
+  }
+}

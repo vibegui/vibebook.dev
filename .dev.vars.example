@@ -1,0 +1,3 @@
+OPENROUTER_API_KEY=
+# Local only: skip Cloudflare Access; identity comes from the dev_as cookie (or this default).
+DEV_EMAIL=you@example.com

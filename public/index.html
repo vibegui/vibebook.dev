@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>vibebook — pensa junto, a AI organiza</title>
+<meta name="description" content="Um documento vivo com chat em grupo, épicos e tasks. Manda o link pros amigos, todo mundo conversa, e quando alguém chama @ai ela organiza tudo." />
+<link rel="canonical" href="https://vibebook.dev/" />
+<meta name="theme-color" content="#1d5fc4" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="vibebook" />
+<meta property="og:url" content="https://vibebook.dev/" />
+<meta property="og:title" content="vibebook — pensa junto, a AI organiza" />
+<meta property="og:description" content="Chat em grupo + documento + épicos e tasks. Manda o link, chama @ai, e a viagem (ou a obra, ou o casamento) se organiza." />
+<meta property="og:image" content="https://vibebook.dev/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="vibebook: um chat em grupo onde a AI cria épicos e tasks para a viagem a Lisboa" />
+<meta property="og:locale" content="pt_BR" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="vibebook — pensa junto, a AI organiza" />
+<meta name="twitter:description" content="Chat em grupo + documento + épicos e tasks. Manda o link, chama @ai." />
+<meta name="twitter:image" content="https://vibebook.dev/og.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cobalt: oklch(0.5 0.17 248);
+    --cobalt-deep: oklch(0.3 0.11 250);
+    --cobalt-ink: oklch(0.2 0.06 250);
+    --sky: oklch(0.88 0.06 235);
+    --sun: oklch(0.9 0.16 98);
+    --coral: oklch(0.68 0.18 35);
+    --ink: oklch(0.2 0.02 250);
+    --mute: oklch(0.45 0.02 250);
+    --line: oklch(0.91 0.01 245);
+    --surface: oklch(0.975 0.008 240);
+    --white: oklch(1 0 0);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --display: Caprasimo, "Cooper Black", Georgia, serif;
+    --sans: "Schibsted Grotesk", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--cobalt); color: var(--ink); color-scheme: light; }
+  body { font: 17px/1.55 var(--sans); }
+  main { background: var(--white); }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.02; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+  p { text-wrap: pretty; }
+  .wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; font-weight: 700; text-decoration: none;
+    transition: transform .25s var(--ease), box-shadow .25s var(--ease); }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+  .btn-sun { background: var(--sun); color: var(--cobalt-ink); box-shadow: 0 6px 0 oklch(0.72 0.14 90); }
+  .btn-sun:hover { box-shadow: 0 8px 0 oklch(0.72 0.14 90); }
+  .btn-line { color: var(--white); box-shadow: inset 0 0 0 2px oklch(1 0 0 / .45); }
+
+  /* ---------- hero ---------- */
+  .hero { background: var(--cobalt); color: var(--white); overflow: hidden; padding-bottom: clamp(56px, 8vw, 110px); }
+  nav { display: flex; align-items: center; gap: 16px; padding: 22px 0; }
+  .logo { font-family: var(--display); font-size: 28px; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+  .logo svg { width: 30px; height: 30px; }
+  nav .sp { flex: 1; }
+  nav a.plain { text-decoration: none; font-weight: 600; opacity: .9; }
+  nav a.plain:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+  .hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 5vw, 72px); align-items: center; padding-top: clamp(24px, 5vw, 64px); }
+  .hero h1 { font-size: clamp(3rem, 6.4vw, 5.4rem); }
+  .hero h1 em { font-style: normal; color: var(--sun); }
+  .lede { font-size: clamp(1.1rem, 1.6vw, 1.3rem); max-width: 34ch; margin: 26px 0 34px; color: oklch(0.96 0.02 240); }
+  .lede b { color: var(--white); }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .fine { margin-top: 18px; font-size: 14px; color: oklch(0.9 0.04 240); }
+
+  /* product scene */
+  .scene { position: relative; background: var(--white); color: var(--ink); border-radius: 22px; display: grid; grid-template-columns: 172px 1fr;
+    min-height: 430px; box-shadow: 0 40px 80px -30px oklch(0.15 0.1 250 / .7), 0 0 0 1px oklch(1 0 0 / .1); transform: rotate(1.2deg); }
+  .scene aside { background: var(--surface); border-radius: 22px 0 0 22px; padding: 16px 12px; border-right: 1px solid var(--line); font-size: 13px; }
+  .scene aside .t { font-family: var(--display); font-size: 17px; line-height: 1.1; margin-bottom: 4px; }
+  .scene aside .f { font-size: 11px; color: var(--mute); margin-bottom: 14px; }
+  .scene .th { padding: 6px 8px; border-radius: 8px; display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+  .scene .th.sel { background: var(--white); font-weight: 600; box-shadow: inset 0 0 0 1px var(--line); }
+  .scene .th small { color: var(--mute); }
+  .scene .lab { font-size: 11px; font-weight: 700; color: var(--mute); margin: 14px 8px 4px; }
+  .scene .chat { padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+  .bub { display: flex; gap: 9px; align-items: flex-start; }
+  .av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--white); }
+  .bub .n { font-size: 11px; color: var(--mute); }
+  .bub .x { line-height: 1.4; }
+  .bub.ai .x { background: oklch(0.95 0.03 245); border-radius: 4px 14px 14px 14px; padding: 8px 11px; }
+  .mention { background: var(--sun); color: var(--cobalt-ink); border-radius: 5px; padding: 0 4px; font-weight: 700; }
+  .chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--cobalt); color: var(--white); margin-left: 6px; vertical-align: 1px; }
+  .sticker { position: absolute; right: -18px; bottom: -22px; background: var(--sun); color: var(--cobalt-ink); font-family: var(--display); font-size: 18px;
+    padding: 10px 16px; border-radius: 14px; transform: rotate(-5deg); box-shadow: 0 10px 24px -10px oklch(0.2 0.1 250 / .6); }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.98); filter: blur(4px); } }
+  .scene .chat > *, .scene .ep, .sticker { animation: pop .6s var(--ease) backwards; }
+  .scene .chat > :nth-child(1) { animation-delay: .3s; }
+  .scene .chat > :nth-child(2) { animation-delay: .9s; }
+  .scene .chat > :nth-child(3) { animation-delay: 1.6s; }
+  .scene .chat > :nth-child(4) { animation-delay: 2.5s; }
+  .scene .ep:nth-of-type(1) { animation-delay: 2.8s; } .scene .ep:nth-of-type(2) { animation-delay: 2.95s; } .scene .ep:nth-of-type(3) { animation-delay: 3.1s; }
+  .sticker { animation-delay: 3.5s; }
+
+  /* ---------- sections ---------- */
+  section { padding: clamp(72px, 10vw, 140px) 0; }
+  .h2 { font-size: clamp(2.3rem, 4.8vw, 4rem); }
+  .epic-grid .h2, .modes-wrap .h2, .oss-grid .h2 { font-size: clamp(2.3rem, 3.6vw, 3.3rem); }
+  .sub { font-size: 1.15rem; color: var(--mute); max-width: 56ch; margin: 18px 0 0; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(24px, 4vw, 56px); margin-top: 64px; counter-reset: s; }
+  .step { counter-increment: s; }
+  .step::before { content: counter(s); font-family: var(--display); font-size: 5rem; line-height: .9; color: var(--cobalt); display: block; margin-bottom: 14px; }
+  .step h3 { font-size: 1.7rem; margin-bottom: 10px; }
+  .step p { margin: 0; color: var(--mute); }
+
+  .epics { background: var(--surface); }
+  .epic-grid { display: grid; grid-template-columns: 1fr 1.25fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .branch { position: relative; display: grid; gap: 14px; }
+  .geral { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; }
+  .geral .lbl, .ep-card .lbl { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .geral p { margin: 8px 0 0; font-size: 15px; color: var(--mute); }
+  .forks { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+  .ep-card { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; }
+  .ep-card.big { grid-row: span 2; }
+  .ep-card .bar { height: 5px; background: var(--line); border-radius: 3px; margin: 10px 0; overflow: hidden; }
+  .ep-card .bar i { display: block; height: 100%; background: var(--cobalt); border-radius: 3px; }
+  .ep-card ul { list-style: none; margin: 0; padding: 0; font-size: 14px; display: grid; gap: 5px; }
+  .ep-card li::before { content: "○"; margin-right: 8px; color: var(--mute); }
+  .ep-card li.d { color: var(--mute); text-decoration: line-through; }
+  .ep-card li.d::before { content: "●"; color: var(--cobalt); }
+  .ep-card .talk { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 14px; display: grid; gap: 8px; }
+  .ep-card .talk b { font-weight: 600; }
+  .dia { color: var(--cobalt); font-size: 12px; }
+
+  .modes-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .composer { border: 2px solid var(--ink); border-radius: 20px; padding: 18px; box-shadow: 8px 8px 0 var(--cobalt); background: var(--white); }
+  .composer .in { font-size: 1.1rem; padding: 6px 2px 14px; }
+  .mode-list { display: grid; gap: 10px; }
+  .mode { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; align-items: baseline; padding: 12px 14px; border-radius: 14px; }
+  .mode.on { background: var(--cobalt); color: var(--white); }
+  .mode .k { font-weight: 700; font-size: 1.05rem; }
+  .mode .d { font-size: 15px; opacity: .85; }
+  .mode .m { grid-column: 2; font-size: 13px; opacity: .7; }
+
+  .org { display: grid; grid-template-columns: 1fr 300px; gap: 18px; margin-top: 56px; background: var(--surface); border-radius: 26px; padding: clamp(18px, 3vw, 32px); }
+  .folder h3 { font-family: var(--sans); font-weight: 700; font-size: 14px; color: var(--mute); margin: 0 0 10px; }
+  .folder + .folder { margin-top: 22px; }
+  .books { display: flex; flex-wrap: wrap; gap: 10px; }
+  .book { background: var(--white); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; min-width: 190px; flex: 1 1 190px; }
+  .book b { display: block; }
+  .book span { font-size: 13px; color: var(--mute); }
+  .friends { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+  .friends h3 { font-size: 1.5rem; margin-bottom: 12px; }
+  .fr { display: flex; gap: 10px; align-items: center; padding: 6px 0; font-weight: 600; }
+  .fr small { display: block; font-weight: 400; color: var(--mute); font-size: 13px; }
+  .ai-note { margin-top: 18px; font-size: 15px; color: var(--mute); }
+  .ai-note b { color: var(--ink); }
+
+  .oss { background: var(--cobalt-deep); color: var(--white); }
+  .oss-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .oss .sub { color: oklch(0.88 0.03 245); }
+  .oss ul { margin: 26px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .oss li { display: flex; gap: 12px; }
+  .oss li::before { content: "✦"; color: var(--sun); }
+  pre { margin: 0; background: oklch(0.2 0.07 250); border-radius: 18px; padding: 22px; overflow: auto; font: 14px/1.7 ui-monospace, "SF Mono", Menlo, monospace; color: oklch(0.92 0.03 240); }
+  pre .c { color: oklch(0.7 0.05 245); }
+
+  .final { background: var(--cobalt); color: var(--white); text-align: center; }
+  .final h2 { font-size: clamp(2.6rem, 6vw, 5rem); }
+  .final h2 em { font-style: normal; color: var(--sun); }
+  .final .cta-row { justify-content: center; margin-top: 34px; }
+  footer { background: var(--cobalt); color: oklch(0.9 0.04 240); font-size: 14px; padding: 0 0 40px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid oklch(1 0 0 / .2); padding-top: 22px; }
+
+  .hero-grid > *, .epic-grid > *, .modes-wrap > *, .oss-grid > *, .org > *, .steps > * { min-width: 0; }
+  @media (max-width: 920px) {
+    .hero-grid, .epic-grid, .modes-wrap, .oss-grid, .org { grid-template-columns: 1fr; }
+    .steps { grid-template-columns: 1fr; gap: 36px; }
+    .scene { transform: none; }
+  }
+  @media (max-width: 520px) {
+    .scene { grid-template-columns: 1fr; }
+    .scene aside { display: none; }
+    .forks { grid-template-columns: 1fr; }
+    .sticker { right: 8px; }
+    nav a.plain { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <nav aria-label="principal">
+      <a class="logo" href="/" aria-label="vibebook, início">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>
+        vibebook
+      </a>
+      <span class="sp"></span>
+      <a class="plain" href="#como">Como funciona</a>
+      <a class="btn btn-line" href="/app">Entrar</a>
+    </nav>
+    <div class="hero-grid">
+      <div>
+        <h1>Pensa junto.<br /><em>A AI organiza.</em></h1>
+        <p class="lede">Um vibebook é um documento vivo com <b>chat em grupo, épicos e tasks</b>. Manda o link pros amigos, todo mundo conversa, e quando alguém chama <b>@ai</b> ela põe ordem na bagunça.</p>
+        <div class="cta-row">
+          <a class="btn btn-sun" href="/app">Criar meu vibebook →</a>
+        </div>
+        <p class="fine">Entra com seu email. Sem senha, sem instalar nada.</p>
+      </div>
+
+      <div class="scene" role="img" aria-label="Exemplo: amigos planejam uma viagem a Lisboa no chat; alguém chama @ai e ela cria os épicos Hospedagem, Voos e Roteiro">
+        <aside aria-hidden="true">
+          <div class="t">Lisboa em março</div>
+          <div class="f">📁 Viagens</div>
+          <div class="th sel"># geral <small>14</small></div>
+          <div class="lab">ÉPICOS</div>
+          <div class="th ep">◆ Hospedagem <small>0/3</small></div>
+          <div class="th ep">◆ Voos <small>1/2</small></div>
+          <div class="th ep">◆ Roteiro <small>0/4</small></div>
+        </aside>
+        <div class="chat" aria-hidden="true">
+          <div class="bub"><span class="av" style="background:var(--coral)">AN</span><div><div class="n">ana</div><div class="x">gente, lisboa em março? somos 6</div></div></div>
+          <div class="bub"><span class="av" style="background:oklch(0.55 0.12 160)">PE</span><div><div class="n">pedro</div><div class="x">bora!! mas quem vê casa? e voo sai de onde?</div></div></div>
+          <div class="bub"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span><div><div class="n">você</div><div class="x"><span class="mention">@ai</span> organiza isso pra gente <span class="chip">⚡ rápido</span></div></div></div>
+          <div class="bub ai"><span class="av" style="background:var(--cobalt)">✦</span><div><div class="n">AI</div><div class="x">Criei 3 épicos: <b>Hospedagem</b>, <b>Voos</b> e <b>Roteiro</b>, cada um com suas tasks. Pedro, puxa a casa? Já pus no doc: 14–21/mar, 6 pessoas.</div></div></div>
+        </div>
+        <div class="sticker" aria-hidden="true">3 épicos criados ✦</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="como">
+    <div class="wrap">
+      <h2 class="h2">Do grupo do zap<br />pro plano pronto.</h2>
+      <div class="steps">
+        <div class="step"><h3>Cria um vibebook</h3><p>Uma viagem, uma reforma, o casamento da prima. Cada assunto ganha seu próprio documento com chat.</p></div>
+        <div class="step"><h3>Manda o link</h3><p>Coloca o email dos amigos. Eles entram com um código no email e já leem tudo que foi dito.</p></div>
+        <div class="step"><h3>Chama a @ai</h3><p>Ela participa da conversa, abre épicos, distribui tasks e mantém o documento com o que foi decidido.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="epics">
+    <div class="wrap epic-grid">
+      <div>
+        <h2 class="h2">Um chat geral.<br />Quantos épicos precisar.</h2>
+        <p class="sub">Assunto grande ganha canal próprio. A discussão sobre hospedagem não atropela a do roteiro, e cada épico tem tasks com dono e progresso.</p>
+        <p class="sub">A AI enxerga tudo: dentro de um épico ela sabe o que rolou no geral, e lá no geral ela sabe o que falta em cada épico.</p>
+      </div>
+      <div class="branch">
+        <div class="geral">
+          <div class="lbl"># geral</div>
+          <p>“fechado então, 14 a 21. agora é achar casa perto do metrô”</p>
+        </div>
+        <div class="forks">
+          <div class="ep-card big">
+            <div class="lbl">◆ Hospedagem <span class="dia">1/3</span></div>
+            <div class="bar"><i style="width:33%"></i></div>
+            <ul>
+              <li class="d">Definir bairro</li>
+              <li>Separar 3 opções de casa</li>
+              <li>Votar e reservar</li>
+            </ul>
+            <div class="talk">
+              <div><b>pedro:</b> achei uma em Alfama, 4 quartos</div>
+              <div><b>bia:</b> muito morro, prefiro Príncipe Real</div>
+              <div><b>✦ AI:</b> as duas cabem no orçamento. Criei a task “votar até sexta”.</div>
+            </div>
+          </div>
+          <div class="ep-card">
+            <div class="lbl">◆ Voos <span class="dia">1/2</span></div>
+            <div class="bar"><i style="width:50%"></i></div>
+            <ul><li class="d">GRU ou GIG?</li><li>Comprar até 1/12</li></ul>
+          </div>
+          <div class="ep-card">
+            <div class="lbl">◆ Roteiro <span class="dia">0/4</span></div>
+            <div class="bar"><i style="width:0"></i></div>
+            <ul><li>Sintra num dia</li><li>Fado na quinta</li></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap modes-wrap">
+      <div>
+        <h2 class="h2">Rápida quando dá.<br />Pesada quando precisa.</h2>
+        <p class="sub">Toda @ai começa no modo rápido. Pergunta difícil, como comparar dez casas ou montar o roteiro com todo mundo feliz, sobe pro médio ou pro pesado com um toque.</p>
+      </div>
+      <div class="composer" aria-label="Exemplo do campo de mensagem com os três modos de AI">
+        <div class="in"><span class="mention">@ai</span> compara as casas e monta um roteiro de 7 dias</div>
+        <div class="mode-list">
+          <div class="mode"><span class="k">⚡ rápido</span><span class="d">Responde na hora. O padrão.</span><span class="m">Claude Sonnet</span></div>
+          <div class="mode on"><span class="k">◐ médio</span><span class="d">Pensa com mais calma.</span><span class="m">Claude Opus</span></div>
+          <div class="mode"><span class="k">● pesado</span><span class="d">Para os nós difíceis.</span><span class="m">Claude Fable</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <h2 class="h2">Suas pastas se arrumam sozinhas.</h2>
+      <p class="sub">A AI lê cada vibebook, dá um nome que faz sentido e coloca na pasta certa. Na sua home ficam os vibebooks e os amigos com quem você já dividiu algum.</p>
+      <div class="org" aria-label="Exemplo da home do vibebook">
+        <div>
+          <div class="folder">
+            <h3>📁 Viagens · 2</h3>
+            <div class="books">
+              <div class="book"><b>Lisboa em março</b><span>Casa quase fechada; voos até 1/12.</span></div>
+              <div class="book"><b>Réveillon em Trancoso</b><span>Falta decidir quem leva o carro.</span></div>
+            </div>
+          </div>
+          <div class="folder">
+            <h3>📁 Casa · 1</h3>
+            <div class="books">
+              <div class="book"><b>Reforma da cozinha</b><span>Orçamento do marceneiro chegou.</span></div>
+            </div>
+          </div>
+          <p class="ai-note"><b>✦ Sugestão da AI:</b> criar o épico “Seguro viagem” no vibebook Lisboa.</p>
+        </div>
+        <div class="friends">
+          <h3>Amigos</h3>
+          <div class="fr"><span class="av" style="background:var(--coral)">AN</span><div>ana<small>3 vibebooks juntos</small></div></div>
+          <div class="fr"><span class="av" style="background:oklch(0.55 0.12 160)">PE</span><div>pedro<small>2 vibebooks juntos</small></div></div>
+          <div class="fr"><span class="av" style="background:oklch(0.58 0.14 70)">BI</span><div>bia<small>convidada</small></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="oss">
+    <div class="wrap oss-grid">
+      <div>
+        <h2 class="h2">Código aberto.<br />Roda no seu Cloudflare.</h2>
+        <p class="sub">Um Worker, um Durable Object por vibebook, D1 para o índice. Você traz sua chave da OpenRouter e escolhe os modelos.</p>
+        <ul>
+          <li>Tempo real com WebSocket, sem servidor pra manter</li>
+          <li>Login por email com Cloudflare Access</li>
+          <li>Cada vibebook guarda seus dados no próprio SQLite</li>
+        </ul>
+      </div>
+      <pre><code><span class="c"># clone, configure e suba</span>
+bun install
+bunx wrangler d1 create vibebook
+bunx wrangler secret put OPENROUTER_API_KEY
+bunx wrangler deploy</code></pre>
+    </div>
+  </section>
+</main>
+
+<section class="final">
+  <div class="wrap">
+    <h2>Manda o link.<br /><em>O resto a AI organiza.</em></h2>
+    <div class="cta-row"><a class="btn btn-sun" href="/app">Criar meu vibebook →</a></div>
+  </div>
+</section>
+<footer>
+  <div class="wrap"><span>vibebook.dev</span><span>feito com ✦ em São Paulo</span></div>
+</footer>
+</body>
+</html>

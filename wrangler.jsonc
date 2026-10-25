@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vibebook",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+        "run_worker_first": ["/api/*", "/ws/*", "/app", "/b/*"]
+  },
+  "d1_databases": [{ "binding": "DB", "database_name": "vibebook", "database_id": "8b1e10e7-ff7d-4d40-94b1-e3d9b88c4a23" }],
+  "durable_objects": { "bindings": [{ "name": "BOOK", "class_name": "Book" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Book"] }],
+  "ratelimits": [{ "name": "AI_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
+  "vars": {
+    "MODEL_FAST": "anthropic/claude-sonnet-5.5",
+    "MODEL_MEDIUM": "anthropic/claude-opus-5.5",
+    "MODEL_HEAVY": "anthropic/claude-fable-5.1",
+    "MODEL_CLASSIFY": "anthropic/claude-haiku-5.5",
+    // Cloudflare Access: team domain (xxx.cloudflareaccess.com) + application AUD tag
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
+  "observability": { "enabled": true }
+}
