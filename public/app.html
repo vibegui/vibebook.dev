@@ -54,7 +54,7 @@
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
 
   /* book */
-  .book { display: grid; grid-template-columns: 260px 1fr 380px; height: 100dvh; }
+  .book { display: grid; grid-template-columns: 260px minmax(0, 1fr) var(--doc-w, 380px); height: 100dvh; }
   .book.nodoc { grid-template-columns: 260px 1fr; }
   .book.nodoc .doc { display: none; }
   .side { border-right: 1px solid var(--line); padding: 14px; overflow: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
@@ -78,7 +78,7 @@
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
 
   .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
-  .chathead { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .chathead, .doc header { height: 56px; flex: none; padding: 0 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
   .chathead h2 { margin: 0; font-size: 18px; flex: 1; }
   .tasks { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
   .task { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
@@ -99,14 +99,19 @@
   .modes button { padding: 3px 10px; border-radius: 999px; font-size: 12px; }
   .modes button.sel { background: var(--ai); color: #fff; border-color: var(--ai); }
 
-  .doc { border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); }
-  .doc header { padding: 12px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+  .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+  .resizer { position: absolute; left: -5px; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 1; touch-action: none; }
+  .resizer::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: transparent; transition: background .15s; }
+  .resizer:hover::after, .resizer:focus-visible::after, .resizer.drag::after { background: var(--accent); width: 2px; left: 3px; }
+  .resizer:focus-visible { outline: none; }
+  body.resizing { cursor: col-resize; user-select: none; }
   .doc header h2 { margin: 0; font-size: 18px; flex: 1; }
   .doc textarea { flex: 1; border: none; border-radius: 0; background: transparent; padding: 16px; resize: none; font: 14px/1.6 ui-monospace, Menlo, monospace; }
 
   .tabs { display: none; }
   @media (max-width: 900px) {
     .book, .book.nodoc { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .resizer { display: none; }
     .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
     .tabs button.sel { background: var(--ink); color: var(--bg); }
     .book > .side, .book > .chat, .book > .doc { display: none; }
@@ -345,6 +350,7 @@ function renderBook() {
       </form>
     </main>
     <section class="doc">
+      <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
       <header><h2>Documento</h2><small class="muted" id="docBy"></small></header>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; a AI mantém atualizado com as decisões."></textarea>
     </section>
@@ -355,6 +361,26 @@ function renderBook() {
     $app.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("sel", x === b));
   });
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
+  // Resizable doc panel; width remembered per browser.
+  const setDocW = (w) => {
+    w = Math.round(Math.min(Math.max(w, 260), window.innerWidth - 260 - 320));
+    book.style.setProperty("--doc-w", `${w}px`);
+    try { localStorage.setItem("vb.docW", w); } catch {}
+  };
+  try { const saved = Number(localStorage.getItem("vb.docW")); if (saved) setDocW(saved); } catch {}
+  const resizer = document.getElementById("resizer");
+  resizer.onpointerdown = (e) => {
+    e.preventDefault();
+    resizer.setPointerCapture(e.pointerId);
+    resizer.classList.add("drag"); document.body.classList.add("resizing");
+    resizer.onpointermove = (ev) => setDocW(window.innerWidth - ev.clientX);
+    resizer.onpointerup = () => { resizer.onpointermove = null; resizer.classList.remove("drag"); document.body.classList.remove("resizing"); };
+  };
+  resizer.ondblclick = () => setDocW(380);
+  resizer.onkeydown = (e) => {
+    const cur = document.querySelector(".doc").getBoundingClientRect().width;
+    if (e.key === "ArrowLeft") setDocW(cur + 24); else if (e.key === "ArrowRight") setDocW(cur - 24);
+  };
   const input = document.getElementById("input");
   const modes = document.getElementById("modes");
   input.oninput = () => {
