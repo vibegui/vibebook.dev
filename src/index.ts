@@ -63,6 +63,8 @@ app.get("/app", shell);
 app.get("/b/*", shell);
 
 app.use("*", async (c, next) => {
+  if (!c.env.DEV_EMAIL && (!c.env.ACCESS_TEAM_DOMAIN || !c.env.ACCESS_AUD))
+    return c.json({ error: "auth_not_configured" }, 503);
   const email = await identify(c);
   if (!email) return c.json({ error: "unauthenticated" }, 401);
   await ensureSchema(c.env.DB);

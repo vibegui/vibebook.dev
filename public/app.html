@@ -129,7 +129,8 @@ const md = (s) => esc(s)
     : `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
-  if (r.status === 401) { $app.innerHTML = `<div class="home"><p>Sessão expirada. <a href="/app">Entrar de novo</a></p></div>`; throw new Error("unauthenticated"); }
+  if (r.status === 503) { $app.innerHTML = `<div class="home"><h1 class="brand">Quase lá</h1><p>O login ainda não foi configurado neste servidor (Cloudflare Access). Volte em alguns minutos.</p><p><a href="/">← vibebook</a></p></div>`; throw new Error("auth_not_configured"); }
+  if (r.status === 401) { $app.innerHTML = `<div class="home"><p>Você precisa entrar para ver isso. <a href="/app">Entrar</a></p></div>`; throw new Error("unauthenticated"); }
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
   return r.json();
 };
