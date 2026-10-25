@@ -866,7 +866,7 @@ function renderChat() {
   const el = document.getElementById("msgs");
   const list = S.messages.filter((m) => m.thread === thread);
   el.innerHTML = list.length ? list.map(msgHtml).join("")
-    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@ai</b> vamos planejar uma viagem pra Lisboa em março, 6 pessoas" : "Discussão deste épico. A AI enxerga as tasks e o chat geral."}</div>`;
+    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@ai</b> vamos planejar uma viagem pra Lisboa em março, 6 pessoas" : "Discussão deste épico. A AI enxerga as tasks e a sala principal."}</div>`;
   scrollDown(true); pinOnLoad(el);
 }
 function appendMsg(m) {
