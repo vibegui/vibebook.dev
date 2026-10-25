@@ -76,7 +76,7 @@
   .fine { margin-top: 18px; font-size: 14px; color: oklch(0.9 0.04 240); }
 
   /* product scene */
-  .scene { position: relative; background: var(--white); color: var(--ink); border-radius: 22px; display: grid; grid-template-columns: 172px 1fr;
+  .scene { position: relative; background: var(--white); color: var(--ink); border-radius: 22px; display: grid; grid-template-columns: 196px 1fr;
     min-height: 430px; box-shadow: 0 40px 80px -30px oklch(0.15 0.1 250 / .7), 0 0 0 1px oklch(1 0 0 / .1); transform: rotate(1.2deg); }
   .scene aside { background: var(--surface); border-radius: 22px 0 0 22px; padding: 16px 12px; border-right: 1px solid var(--line); font-size: 13px; }
   .scene aside .t { font-family: var(--display); font-size: 17px; line-height: 1.1; margin-bottom: 4px; }
@@ -84,6 +84,13 @@
   .scene .th { padding: 6px 8px; border-radius: 8px; display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
   .scene .th.sel { background: var(--white); font-weight: 600; box-shadow: inset 0 0 0 1px var(--line); }
   .scene .th small { color: var(--mute); }
+  .scene .th { justify-content: flex-start; align-items: center; gap: 8px; }
+  .scene .th .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .scene .ri { width: 20px; height: 20px; border-radius: 6px; flex: none; display: grid; place-items: center; font: 700 9px/1 var(--sans); color: var(--white); background: oklch(0.62 0.03 250); }
+  .scene .fr { display: flex; align-items: center; gap: 8px; padding: 4px 8px; white-space: nowrap; }
+  .scene .fr small { color: var(--mute); font-size: 10px; }
+  .scene .fr .av { width: 22px; height: 22px; font-size: 9px; position: relative; }
+  .scene .fr .av.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 7px; height: 7px; border-radius: 50%; background: oklch(0.7 0.17 150); box-shadow: 0 0 0 2px var(--surface); }
   .scene .lab { font-size: 11px; font-weight: 700; color: var(--mute); margin: 14px 8px 4px; }
   .scene .chat { padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
   .bub { display: flex; gap: 9px; align-items: flex-start; }
@@ -102,7 +109,7 @@
   .scene .chat > :nth-child(2) { animation-delay: .9s; }
   .scene .chat > :nth-child(3) { animation-delay: 1.6s; }
   .scene .chat > :nth-child(4) { animation-delay: 2.5s; }
-  .scene .ep:nth-of-type(1) { animation-delay: 2.8s; } .scene .ep:nth-of-type(2) { animation-delay: 2.95s; } .scene .ep:nth-of-type(3) { animation-delay: 3.1s; }
+  .scene .ep:nth-child(4) { animation-delay: 2.8s; } .scene .ep:nth-child(5) { animation-delay: 2.95s; } .scene .ep:nth-child(6) { animation-delay: 3.1s; }
   .sticker { animation-delay: 3.5s; }
 
   /* ---------- sections ---------- */
@@ -220,11 +227,15 @@
         <aside aria-hidden="true">
           <div class="t">Lisboa em março</div>
           <div class="f">📁 Viagens</div>
-          <div class="th sel"># geral <small>14</small></div>
-          <div class="lab">ÉPICOS</div>
-          <div class="th ep">◆ Hospedagem <small>0/3</small></div>
-          <div class="th ep">◆ Voos <small>1/2</small></div>
-          <div class="th ep">◆ Roteiro <small>0/4</small></div>
+          <div class="th sel"><span class="ri" style="background:oklch(0.55 0.15 30)">LM</span><span class="rt">Lisboa em março</span><small>14</small></div>
+          <div class="th ep"><span class="ri">H</span><span class="rt">Hospedagem</span><small>0/3</small></div>
+          <div class="th ep"><span class="ri">V</span><span class="rt">Voos</span><small>1/2</small></div>
+          <div class="th ep"><span class="ri">R</span><span class="rt">Roteiro</span><small>0/4</small></div>
+          <div class="lab">AMIGOS</div>
+          <div class="fr"><span class="av on" style="background:var(--coral)">AN</span>ana</div>
+          <div class="fr"><span class="av on" style="background:oklch(0.55 0.12 160)">PE</span>pedro</div>
+          <div class="fr"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span>você</div>
+          <div class="fr"><span class="av" style="background:oklch(0.6 0.13 80)">JU</span>ju <small>convidada</small></div>
         </aside>
         <div class="chat" aria-hidden="true">
           <div class="bub"><span class="av" style="background:var(--coral)">AN</span><div><div class="n">ana</div><div class="x">gente, lisboa em março? somos 6</div></div></div>
