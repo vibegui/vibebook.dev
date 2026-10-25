@@ -20,8 +20,8 @@
     "MODEL_HEAVY": "anthropic/claude-fable-5.1",
     "MODEL_CLASSIFY": "anthropic/claude-haiku-5.5",
     // Cloudflare Access: team domain (xxx.cloudflareaccess.com) + application AUD tag
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM_DOMAIN": "late-salad-7df3.cloudflareaccess.com",
+    "ACCESS_AUD": "71f860b83e75d7d8083d280b2693f0820c1b4f5615861d972808ae0b7bc42d4a"
   },
   "observability": { "enabled": true }
 }
