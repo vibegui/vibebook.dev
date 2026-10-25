@@ -519,7 +519,7 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
             },
           }),
           update_doc: tool({
-            description: "Reescreve o documento compartilhado (markdown) inteiro. Preserve o que já existe e incorpore as decisões novas.",
+            description: "Reescreve o documento compartilhado (markdown) inteiro. Preserve o que já existe e incorpore as decisões novas. Diagramas: use blocos ```mermaid (flowchart, sequence, gantt, timeline, mindmap...) quando ajudarem, ex. roteiro de viagem em gantt/timeline.",
             inputSchema: z.object({ markdown: z.string() }),
             execute: async ({ markdown }) => (this.setDoc(markdown, "ai"), { ok: true }),
           }),
