@@ -18,6 +18,8 @@ export type Env = {
   MODEL_MEDIUM: string;
   MODEL_HEAVY: string;
   MODEL_CLASSIFY: string;
+  FIRECRAWL_API_KEY?: string;
+  READ_LIMIT: RateLimit;
   DEV_EMAIL?: string;
 };
 

@@ -6,6 +6,8 @@
 <meta name="theme-color" content="#ffffff" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <title>vibebook</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
@@ -15,7 +17,7 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); color-scheme: light;
-    font: 15px/1.45 "Schibsted Grotesk", system-ui, sans-serif; }
+    font: 16px/1.55 "Schibsted Grotesk", system-ui, sans-serif; }
   button, input, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 12px; }
   button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
@@ -57,11 +59,11 @@
   .book { display: grid; grid-template-columns: 260px minmax(0, 1fr) var(--doc-w, 380px); height: 100dvh; }
   .book.nodoc { grid-template-columns: 260px 1fr; }
   .book.nodoc .doc { display: none; }
-  .side { border-right: 1px solid var(--line); padding: 14px; overflow: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
+  .side { border-right: 1px solid var(--line); padding: 20px 16px; overflow: auto; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
   .side .title { font-family: Caprasimo, serif; font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
   .side .folderTag { font-size: 12px; color: var(--mute); }
-  .sec h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
-  .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 7px 8px; border-radius: 8px; }
+  .sec h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
   .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
   .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
@@ -83,21 +85,22 @@
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
 
   .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
-  .chathead, .doc header { height: 56px; flex: none; padding: 0 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+  .chathead, .doc header { height: 64px; flex: none; padding: 0 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
   .chathead h2 { margin: 0; font-size: 18px; flex: 1; }
-  .tasks { padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
+  .tasks { padding: 14px 28px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
   .task { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
   .task.done span { text-decoration: line-through; color: var(--mute); }
-  .msgs { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-  .msg { display: flex; gap: 10px; max-width: 760px; }
+  .msgs { flex: 1; overflow: auto; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 24px; }
+  .msg { display: flex; gap: 14px; max-width: 720px; }
   .msg .body { min-width: 0; }
-  .msg .who { font-size: 12px; color: var(--mute); }
+  .msg .who { font-size: 13px; color: var(--mute); margin-bottom: 3px; }
   .msg .txt { white-space: pre-wrap; word-wrap: break-word; }
-  .msg.ai .txt { background: var(--ai-bg); padding: 8px 12px; border-radius: 4px 12px 12px 12px; white-space: normal; }
-  .msg.ai .txt p { margin: 0 0 6px; } .msg.ai .txt p:last-child { margin: 0; }
-  .msg.ai .txt ul { margin: 4px 0; padding-left: 18px; }
-  .typing { color: var(--ai); font-size: 13px; }
-  .composer { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .msg.ai .txt { background: var(--ai-bg); padding: 14px 18px; border-radius: 4px 16px 16px 16px; white-space: normal; }
+  .msg.ai .txt p { margin: 0 0 10px; } .msg.ai .txt p:last-child { margin: 0; }
+  .msg.ai .txt ul { margin: 6px 0 10px; padding-left: 20px; } .msg.ai .txt li + li { margin-top: 4px; }
+  .typing { color: var(--ai); font-size: 13px; overflow-wrap: anywhere; }
+  .msg .txt a { color: var(--accent); overflow-wrap: anywhere; }
+  .composer { border-top: 1px solid var(--line); padding: 16px 24px 20px; display: flex; flex-direction: column; gap: 6px; }
   .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
   .modes { display: none; gap: 6px; align-items: center; font-size: 13px; }
   .modes.show { display: flex; }
@@ -105,13 +108,32 @@
   .modes button.sel { background: var(--ai); color: #fff; border-color: var(--ai); }
 
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--panel); }
+  .seg button { border: none; background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--mute); }
+  .seg button.sel { background: var(--ink); color: var(--panel); }
+  .preview { flex: 1; overflow: auto; padding: 24px 28px 40px; line-height: 1.6; overflow-wrap: anywhere; }
+  .preview > :first-child { margin-top: 0; }
+  .preview h1 { font-size: 26px; line-height: 1.15; margin: 0 0 16px; }
+  .preview h2 { font: 700 18px/1.3 "Schibsted Grotesk", sans-serif; margin: 28px 0 8px; }
+  .preview h3 { font: 700 16px/1.3 "Schibsted Grotesk", sans-serif; margin: 20px 0 6px; }
+  .preview p { margin: 0 0 12px; }
+  .preview ul, .preview ol { margin: 0 0 12px; padding-left: 22px; }
+  .preview li + li { margin-top: 4px; }
+  .preview li > ul, .preview li > ol { margin: 4px 0 0; }
+  .preview a { color: var(--accent); }
+  .preview code { background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; font-size: 13px; }
+  .preview blockquote { margin: 0 0 12px; padding: 4px 14px; background: var(--panel); border-radius: 10px; color: var(--mute); }
+  .preview table { border-collapse: collapse; margin: 0 0 12px; font-size: 14px; }
+  .preview th, .preview td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  .preview .empty { margin: 0; }
+  .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
   .resizer { position: absolute; left: -5px; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 1; touch-action: none; }
   .resizer::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: transparent; transition: background .15s; }
   .resizer:hover::after, .resizer:focus-visible::after, .resizer.drag::after { background: var(--accent); width: 2px; left: 3px; }
   .resizer:focus-visible { outline: none; }
   body.resizing { cursor: col-resize; user-select: none; }
   .doc header h2 { margin: 0; font-size: 18px; flex: 1; }
-  .doc textarea { flex: 1; border: none; border-radius: 0; background: transparent; padding: 16px; resize: none; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+  .doc textarea { flex: 1; border: none; border-radius: 0; background: transparent; padding: 24px; resize: none; font: 14px/1.6 ui-monospace, Menlo, monospace; }
 
   .tabs { display: none; }
   @media (max-width: 900px) {
@@ -151,8 +173,10 @@ const avatar = (email, on) => email === "ai"
   ? `<span class="avatar ai">✦</span>`
   : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(email)}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
+// Escaped text → clickable http(s) links (opened safely in a new tab).
+const linkify = (h) => h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`);
 // Tiny markdown for AI messages: escape first, then bold/italics/lists/paragraphs.
-const md = (s) => esc(s)
+const md = (s) => linkify(esc(s))
   .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)_(.+?)_(\W|$)/g, "$1<i>$2</i>$3")
   .split(/\n{2,}/).map((p) => /^\s*[-*] /m.test(p)
     ? `<ul>${p.split("\n").map((l) => l.replace(/^\s*[-*] /, "")).filter(Boolean).map((l) => `<li>${l}</li>`).join("")}</ul>`
@@ -327,7 +351,7 @@ function onEvent(ev, id) {
       const el = document.getElementById(`m${ev.id}`); if (el) el.querySelector(".txt").innerHTML = md(ev.text);
       scrollDown(); return;
     }
-    case "typing": { S.typing[ev.id] = ev.mode; const el = document.getElementById(`m${ev.id}`); if (el) el.querySelector(".txt").innerHTML = `<span class="typing">pensando (${modeLabel[ev.mode]})…</span>`; return; }
+    case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
     case "epics": S.epics = ev.epics; if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); return;
     case "doc": S.doc = ev.text; renderDoc(); return;
     case "meta":
@@ -362,7 +386,8 @@ function renderBook() {
     </main>
     <section class="doc">
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
-      <header><h2>Documento</h2><small class="muted" id="docBy"></small></header>
+      <header><h2>Documento</h2><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; a AI mantém atualizado com as decisões."></textarea>
     </section>
   </div>`;
@@ -413,6 +438,17 @@ function renderBook() {
   let timer;
   doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { S.doc = doc.value; send({ t: "doc", text: doc.value }); }, 400); };
   doc.onblur = () => renderDoc();
+  const docPanel = $app.querySelector(".doc");
+  const setView = (v) => {
+    docPanel.dataset.view = v;
+    docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === v));
+    try { localStorage.setItem("vb.docView", v); } catch {}
+    if (v === "edit") doc.focus(); else renderDoc();
+  };
+  docPanel.querySelectorAll(".seg button").forEach((b) => b.onclick = () => setView(b.dataset.view));
+  let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
+  docPanel.dataset.view = savedView;
+  docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
   renderSide(); renderChat(); renderDoc(true);
 }
 
@@ -497,7 +533,7 @@ const msgHtml = (m) => `
   <div class="msg ${m.author === "ai" ? "ai" : ""}" id="m${m.id}">
     ${avatar(m.author)}
     <div class="body"><div class="who">${esc(name(m.author))} · ${ago(m.ts)}</div>
-      <div class="txt">${m.author === "ai" ? (m.text ? md(m.text) : `<span class="typing">pensando…</span>`) : esc(m.text)}</div></div>
+      <div class="txt">${m.author === "ai" ? (m.text ? md(m.text) : `<span class="typing">pensando…</span>`) : linkify(esc(m.text))}</div></div>
   </div>`;
 
 function renderChat() {
@@ -520,6 +556,12 @@ function scrollDown(force) {
 }
 function renderDoc(force) {
   const doc = document.getElementById("doc"); if (!doc) return;
+  // Doc is written by people and the AI: render markdown, then sanitize.
+  const pv = document.getElementById("preview");
+  pv.innerHTML = S.doc.trim()
+    ? DOMPurify.sanitize(marked.parse(S.doc, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
+    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pra <b>@ai</b> resumir as decisões aqui.</div>`;
+  pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
   if (force || document.activeElement !== doc) doc.value = S.doc;
 }
