@@ -33,27 +33,50 @@
   .avatar.ai { background: var(--ai); }
 
   /* home */
-  .home { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
-  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
-  .top .brand { font-size: 28px; margin: 0; flex: 1; }
-  .top { flex-wrap: wrap; }
-  #myName { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .grid { display: grid; grid-template-columns: 1fr 300px; gap: 32px; }
-  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
-  .folder { margin-bottom: 24px; }
-  .folder h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 0 0 8px; display: flex; gap: 6px; align-items: center; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-decoration: none; color: inherit;
-    display: flex; flex-direction: column; gap: 8px; min-height: 120px; transition: transform .12s, box-shadow .12s; }
-  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #0000000f; }
-  .card b { font-size: 16px; }
-  .card .sum { font-size: 13px; color: var(--mute); flex: 1; }
-  .stack { display: flex; }
-  .stack .avatar { width: 22px; height: 22px; font-size: 10px; margin-right: -6px; border: 2px solid var(--panel); }
-  .friends { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; align-self: start; }
-  .friends h2 { margin: 0 0 12px; font-size: 20px; }
-  .friend { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-  .friend small { display: block; color: var(--mute); font-size: 12px; }
+  .home { max-width: 1120px; margin: 0 auto; padding: 22px 24px 80px; }
+  .top { display: flex; align-items: center; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+  .top .brand { font-size: 26px; margin: 0; flex: 1; }
+  .top .brand a { color: var(--accent); text-decoration: none; }
+  .me { display: inline-flex; align-items: center; gap: 8px; border: none; background: transparent; padding: 4px 10px 4px 4px; border-radius: 999px; max-width: 60vw; }
+  .me:hover { background: var(--panel); }
+  @media (max-width: 520px) { .hello .primary { width: 100%; } .me span { max-width: 120px; } }
+  .me span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .hello { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 36px; }
+  .hello h1 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0; line-height: 1.05; }
+  .helloText { flex: 1 1 320px; min-width: 0; }
+  .hello p { margin: 10px 0 0; color: var(--mute); }
+  .hello .primary { padding: 12px 18px; border-radius: 999px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 48px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; gap: 40px; } }
+  .folder + .folder { margin-top: 40px; }
+  .folder h2 { font-size: 22px; margin: 0 0 16px; display: flex; align-items: baseline; gap: 8px; }
+  .folder h2 small { font: 600 13px "Schibsted Grotesk", sans-serif; color: var(--mute); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px oklch(0.25 0.08 250 / .45); }
+  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .cover { height: 76px; position: relative; display: flex; align-items: flex-end; padding: 12px 16px 12px 22px; color: #fff;
+    background-image: radial-gradient(circle at 88% 12%, oklch(1 0 0 / .22), transparent 48%); box-shadow: inset 7px 0 0 oklch(0 0 0 / .14); }
+  .cover span { font: 400 30px/1 Caprasimo, serif; letter-spacing: .02em; }
+  .card .info { padding: 14px 16px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .card b { font-size: 16px; line-height: 1.3; }
+  .card .sum { font-size: 14px; color: var(--mute); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .meta { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; font-size: 13px; color: var(--mute); }
+  .stack { display: flex; padding-left: 4px; }
+  .stack .avatar { width: 26px; height: 26px; font-size: 11px; margin-left: -6px; box-shadow: 0 0 0 2px var(--panel); }
+  .friends { position: sticky; top: 24px; }
+  .friends h2 { margin: 0 0 14px; font-size: 22px; display: flex; align-items: baseline; gap: 8px; }
+  .friends h2 small { font: 600 13px "Schibsted Grotesk", sans-serif; color: var(--mute); }
+  .friend { display: flex; align-items: center; gap: 12px; padding: 8px 10px; margin: 0 -10px; border-radius: 12px; }
+  .friend:hover { background: var(--panel); }
+  .friend .fn { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .friend small { display: block; color: var(--mute); font-size: 13px; font-weight: 400; }
+  .friend .x { opacity: 0; }
+  .friend:hover .x, .friend .x:focus-visible { opacity: 1; }
+  @media (hover: none) { .friend .x { opacity: .6; } }
+  .invite { margin-top: 14px; display: flex; gap: 8px; }
+  .invite input { flex: 1; min-width: 0; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
   .nameAsk { display: grid; gap: 6px; background: var(--ai-bg); border-radius: 16px; padding: 18px 20px; margin-bottom: 28px; max-width: 520px; }
@@ -241,7 +264,6 @@
     .resizer { display: none; }
     /* iOS zooms into inputs under 16px and the page then pans sideways. */
     input, textarea, select { font-size: 16px !important; }
-    .top .brand { flex-basis: 100%; }
     .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
     .tabs button.sel { background: var(--ink); color: var(--bg); }
     .book > .side, .book > .chat, .book > .doc { display: none; }
@@ -275,7 +297,7 @@ let knownNames = {}; // email → display name (from /api/me friends + book stat
 const name = (email) => email === "ai" ? "AI" : S?.names?.[email] || knownNames[email] || email.split("@")[0];
 const avatar = (email, on) => email === "ai"
   ? `<span class="avatar ai">✦</span>`
-  : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(email)}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
+  : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
 const linkify = (h) => h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`);
@@ -358,49 +380,52 @@ async function home() {
   document.title = "vibebook";
   const me = await api("/api/me");
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
+  const OTHER = "Outros";
   const byFolder = {};
-  for (const b of me.books) (byFolder[b.folder || "Sem pasta"] ??= []).push(b);
-  const folders = Object.keys(byFolder).sort((a, b) => (a === "Sem pasta") - (b === "Sem pasta") || a.localeCompare(b));
+  for (const b of me.books) (byFolder[b.folder || OTHER] ??= []).push(b);
+  const folders = Object.keys(byFolder).sort((a, b) => (a === OTHER) - (b === OTHER) || a.localeCompare(b));
+  const first = (me.name || "").split(" ")[0];
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   $app.innerHTML = `
   <div class="home">
-    <div class="top">
-      <h1 class="brand"><a href="/" style="text-decoration:none">vibebook</a></h1>
-      <button class="ghost" id="myName" title="Mudar seu nome">${esc(me.name || me.email)} ✎</button>
+    <header class="top">
+      <div class="brand"><a href="/">vibebook</a></div>
+      <button class="me" id="myName" title="Mudar seu nome">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
       <button class="ghost" id="logout">Sair</button>
-      <button class="primary" id="new">+ Novo vibebook</button>
-    </div>
+    </header>
     ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">A AI e o pessoal vão te chamar assim.</span>
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
+    <div class="hello">
+      <div class="helloText"><h1>${first ? `Oi, ${esc(first)}` : "Seus vibebooks"}</h1>
+        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · as pastas a AI organiza sozinha</p></div>
+      <button class="primary" id="new">+ Novo vibebook</button>
+    </div>
     <div class="grid">
-      <section>
+      <main>
         ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame os amigos e escreva <b>@ai</b> no chat.</div>`}
         ${folders.map((f) => `
-          <div class="folder">
-            <h3>📁 ${esc(f)} <span>· ${byFolder[f].length}</span></h3>
-            <div class="cards">${byFolder[f].map((b) => `
+          <section class="folder">
+            <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
+            <div class="cards">${byFolder[f].map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
               <a class="card" data-nav href="/b/${b.id}">
-                <b>${esc(b.title)}</b>
-                <div class="sum">${esc(b.summary || "")}</div>
-                <div class="row" style="align-items:center">
-                  <div class="stack" style="flex:1">${(b.members || "").split(",").slice(0, 6).map((e) => avatar(e)).join("")}</div>
-                  <small class="muted">${ago(b.updated_at)}</small>
+                <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
+                <div class="info">
+                  <b>${esc(b.title)}</b>
+                  <div class="sum">${esc(b.summary || "Ainda sem resumo. A AI escreve um quando a conversa andar.")}</div>
+                  <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span>${ago(b.updated_at)}</span></div>
                 </div>
-              </a>`).join("")}
+              </a>`; }).join("")}
             </div>
-          </div>`).join("")}
-        <p class="muted" style="font-size:13px">✦ As pastas se organizam sozinhas: a AI lê cada vibebook e escolhe onde ele fica.</p>
-      </section>
+          </section>`).join("")}
+      </main>
       <aside class="friends">
-        <h2>Amigos</h2>
+        <h2>Amigos <small>${me.friends.length || ""}</small></h2>
         ${me.friends.length ? me.friends.map((f) => `
           <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(f.name || name(f.email))}
-            <small>${f.shared ? `${f.shared} vibebook${f.shared > 1 ? "s" : ""} juntos` : f.joined ? "na plataforma" : "convidado"}</small></div>
+            <small>${f.shared ? `${plural(f.shared, "vibebook junto", "vibebooks juntos")}` : f.joined ? "na plataforma" : "convidado"}</small></div>
             <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos" title="Remover dos amigos">×</button></div>`).join("")
-          : `<p class="muted" style="font-size:13px">Quem você convida para um vibebook vira amigo aqui.</p>`}
-        <form class="row" id="addFriend" style="margin-top:12px">
-          <input type="email" required placeholder="email do amigo" />
-          <button>Convidar</button>
-        </form>
+          : `<p class="muted" style="font-size:14px">Quem você convida para um vibebook vira amigo aqui.</p>`}
+        <form class="invite" id="addFriend"><input type="email" required placeholder="email do amigo" aria-label="Email do amigo" /><button>Convidar</button></form>
       </aside>
     </div>
   </div>`;
@@ -658,6 +683,8 @@ function renderBook() {
 
 const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
 const bookTitle = () => S?.book?.title || "vibebook";
+const COVERS = ["oklch(0.5 0.17 248)", "oklch(0.58 0.17 35)", "oklch(0.52 0.11 175)", "oklch(0.47 0.15 315)", "oklch(0.6 0.13 75)", "oklch(0.45 0.1 145)", "oklch(0.36 0.06 255)", "oklch(0.55 0.16 10)"];
+const coverColor = (t) => COVERS[[...String(t)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % COVERS.length];
 const STOP = new Set(["e", "de", "do", "da", "dos", "das", "o", "a", "os", "as", "em", "no", "na", "para", "pra", "com", "por", "the", "and", "of"]);
 const initials = (t) => {
   const words = t.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean);
@@ -680,7 +707,7 @@ function renderRail(el) {
     <a data-nav href="/app" class="iconBtn" title="Seus vibebooks" aria-label="Seus vibebooks" style="text-decoration:none;font-size:18px">←</a>
     <div class="railSep"></div>
     <div class="railList">
-      <button class="rb geral ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${esc(initials(bookTitle()))}</button>
+      <button class="rb geral ${thread === "main" ? "sel" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${esc(initials(bookTitle()))}</button>
       ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
@@ -701,7 +728,7 @@ function renderSide() {
       <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
-      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}"><span class="ri book">${esc(initials(bookTitle()))}</span><span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}"><span class="ri book" style="background:${coverColor(bookTitle())}">${esc(initials(bookTitle()))}</span><span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
       ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length; return `
         <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
