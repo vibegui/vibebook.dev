@@ -171,6 +171,30 @@ auth.get("/google/callback", async (c) => {
   return c.redirect(safeNext(next));
 });
 
+// Magic link in invite emails: signed, 24h, logs in as the invited email only.
+const INVITE_TTL_MS = 24 * 60 * 60 * 1000;
+
+export async function inviteLink(env: Env, origin: string, email: string, bookId: string) {
+  const payload = b64url(enc.encode(JSON.stringify({ e: email, b: bookId, x: Date.now() + INVITE_TTL_MS })));
+  return `${origin}/auth/invite?t=${payload}.${await hmac(env.SESSION_SECRET, `invite:${payload}`)}`;
+}
+
+auth.get("/invite", async (c) => {
+  const [payload, sig] = (c.req.query("t") ?? "").split(".");
+  if (!payload || !sig || !safeEqual(sig, await hmac(c.env.SESSION_SECRET, `invite:${payload}`))) return c.redirect("/login");
+  let t: { e?: string; b?: string; x?: number };
+  try {
+    t = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return c.redirect("/login");
+  }
+  const next = `/b/${t.b}`;
+  // Expired link: still useful, just log in normally and come back to the book.
+  if (!t.e || !t.b || !t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
+  await startSession(c, t.e);
+  return c.redirect(safeNext(next));
+});
+
 auth.post("/logout", (c) => {
   deleteCookie(c, COOKIE, { path: "/" });
   return c.json({ ok: true });

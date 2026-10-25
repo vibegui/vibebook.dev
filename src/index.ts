@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { auth, EMAIL_RE, emailHtml, escapeHtml, sessionEmail } from "./auth";
+import { auth, EMAIL_RE, emailHtml, escapeHtml, inviteLink, sessionEmail } from "./auth";
 export { Book } from "./book";
 
 export type Env = {
@@ -135,7 +135,7 @@ app.post("/api/books/:id/members", async (c) => {
   await befriend(c.env.DB, email, who);
   if (!c.env.DEV_EMAIL && (await c.env.LOGIN_LIMIT.limit({ key: `invite:${email}` })).success) {
     const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>();
-    const url = `${new URL(c.req.url).origin}/b/${id}`;
+    const url = await inviteLink(c.env, new URL(c.req.url).origin, who, id);
     const title = book?.title ?? "um vibebook";
     const inviter = email.split("@")[0];
     c.executionCtx.waitUntil(
@@ -147,7 +147,7 @@ app.post("/api/books/:id/members", async (c) => {
         text: `${email} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}`,
         html: emailHtml(
           `${escapeHtml(inviter)} te chamou pro vibebook`,
-          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(email)} quer planejar isso com você. Tem chat, épicos, tasks e uma AI que organiza tudo.</p><p style="margin-top:24px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir o vibebook</a></p>`,
+          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(email)} quer planejar isso com você. Tem chat, épicos, tasks e uma AI que organiza tudo.</p><p style="font-size:13px;color:#6b7383">O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email.</p><p style="margin-top:24px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir o vibebook</a></p>`,
         ),
       }).catch((e) => console.error("invite email failed", { who, error: String(e) })),
     );
