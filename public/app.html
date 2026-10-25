@@ -70,6 +70,11 @@
   .sug b { display: block; }
   .sug .row { margin-top: 6px; }
   .sug button { padding: 3px 8px; font-size: 12px; }
+  .friendAdd { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px dashed var(--line); background: transparent; padding: 5px 8px; margin-top: 6px; font-size: 13px; text-align: left; }
+  .friendAdd:hover { border-style: solid; background: var(--panel); }
+  .friendAdd .avatar { width: 22px; height: 22px; font-size: 10px; }
+  .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .friendAdd b { color: var(--accent); font-size: 16px; }
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
 
   .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
@@ -274,10 +279,12 @@ let ws = null;
 let S = null; // book state
 let thread = "main";
 let mode = "fast";
+let friends = []; // emails of people you already share something with
 
 function openBook(id) {
   thread = "main";
   S = null;
+  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); renderSide(); }).catch(() => {});
   $app.innerHTML = `<div class="home muted">Abrindo…</div>`;
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
@@ -397,7 +404,11 @@ function renderSide() {
     <div class="sec">
       <h4>Pessoas</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${esc(m)}</div>`).join("")}
-      <form class="row" id="invite" style="margin-top:6px"><input type="email" required placeholder="convidar por email" /><button>+</button></form>
+      ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
+        <div style="margin-top:10px;font-size:12px" class="muted">Seus amigos</div>
+        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="Adicionar ${esc(f)}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
+      <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="convidar por email" list="friendList" autocomplete="off" /><button>+</button></form>
+      <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     thread = b.dataset.thread; renderSide(); renderChat();
@@ -407,6 +418,10 @@ function renderSide() {
   const title = document.getElementById("title");
   title.onchange = () => send({ t: "title", title: title.value });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
+  el.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
+    b.disabled = true;
+    await api(`/api/books/${S.id}/members`, { email: b.dataset.add }).catch((err) => { alert(err.message); b.disabled = false; });
+  });
   document.getElementById("invite").onsubmit = async (e) => {
     e.preventDefault();
     await api(`/api/books/${S.id}/members`, { email: e.target[0].value }).catch((err) => alert(err.message));
