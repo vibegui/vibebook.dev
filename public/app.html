@@ -56,10 +56,11 @@
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
 
   /* book */
-  .book { display: grid; grid-template-columns: 260px minmax(0, 1fr) var(--doc-w, 380px); height: 100dvh; }
+  .book { display: grid; grid-template-columns: var(--side-w, 272px) minmax(0, 1fr) var(--doc-w, 380px); height: 100dvh; }
+  .book.rail { --side-w: 68px; }
   .book > * { min-height: 0; }
   .book { overflow: hidden; }
-  .book.nodoc { grid-template-columns: 260px 1fr; }
+  .book.nodoc { grid-template-columns: var(--side-w, 272px) 1fr; }
   .book.nodoc .doc { display: none; }
   .side { border-right: 1px solid var(--line); padding: 20px 16px; overflow: auto; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
   .side .title { font-family: Caprasimo, serif; font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
@@ -67,7 +68,14 @@
   .sec h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
   .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
-  .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); }
+  .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); flex: none; font-variant-numeric: tabular-nums; }
+  .sec .thread + .thread, .sec .thread + .newRoom { margin-top: 2px; }
+  .ri { width: 26px; height: 26px; border-radius: 8px; flex: none; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
+  .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .newRoom { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; }
+  .newRoom .ri { background: transparent; color: var(--mute); font-size: 16px; font-weight: 400; box-shadow: inset 0 0 0 1.5px var(--line); }
+  .newRoom input { flex: 1; min-width: 0; border: none; background: transparent; padding: 4px 0; }
+  .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
   .sug { background: var(--ai-bg); border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-bottom: 6px; }
@@ -110,6 +118,22 @@
   .modes button.sel { background: var(--ai); color: #fff; border-color: var(--ai); }
 
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
+  /* collapsible sidebar */
+  .sideTop { display: flex; align-items: center; gap: 8px; }
+  .sideTop a { flex: 1; font-size: 13px; text-decoration: none; }
+  .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
+  .iconBtn:hover { background: var(--panel); color: var(--ink); }
+  .iconBtn svg { width: 20px; height: 20px; }
+  .book.rail .side { padding: 14px 0; align-items: center; gap: 10px; }
+  .railList { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .railSep { width: 28px; height: 1px; background: var(--line); margin: 4px 0; }
+  .rb { position: relative; width: 40px; height: 40px; padding: 0; border-radius: 12px; border: none; display: grid; place-items: center; font-weight: 700; font-size: 15px; color: #fff; }
+  .rb.geral { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); font-size: 18px; }
+  .rb.sel { outline: 2.5px solid var(--accent); outline-offset: 2px; }
+  .rb .ring { position: absolute; inset: -5px; border-radius: 15px; background: conic-gradient(var(--ok) var(--p), transparent 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 0); pointer-events: none; }
+  .rb.add { background: transparent; color: var(--mute); box-shadow: inset 0 0 0 1.5px var(--line); font-size: 20px; font-weight: 400; }
+  .railPeople { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  @media (max-width: 900px) { .book.rail { --side-w: 1fr; } }
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--panel); }
   .seg button { border: none; background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--mute); }
   .seg button.sel { background: var(--ink); color: var(--panel); }
@@ -435,7 +459,7 @@ const modeLabel = { fast: "⚡ rápido", medium: "◐ médio", heavy: "● pesad
 function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
-  <div class="book" data-tab="chat">
+  <div class="book ${railMode ? "rail" : ""}" data-tab="chat">
     <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
@@ -603,24 +627,53 @@ function renderBook() {
   renderSide(); renderChat(); renderDoc(true); renderFiles();
 }
 
+const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
+const initials = (t) => (t.replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
+let railMode = false;
+try { railMode = localStorage.getItem("vb.rail") === "1"; } catch {}
+
+function toggleRail() {
+  railMode = !railMode;
+  try { localStorage.setItem("vb.rail", railMode ? "1" : "0"); } catch {}
+  $app.querySelector(".book")?.classList.toggle("rail", railMode);
+  renderSide();
+}
+
+function renderRail(el) {
+  el.innerHTML = `
+    <button class="iconBtn" id="railToggle" title="Abrir menu" aria-label="Abrir menu" aria-expanded="false">${SIDEBAR_ICON}</button>
+    <a data-nav href="/app" class="iconBtn" title="Seus vibebooks" aria-label="Seus vibebooks" style="text-decoration:none;font-size:18px">←</a>
+    <div class="railSep"></div>
+    <div class="railList">
+      <button class="rb geral ${thread === "main" ? "sel" : ""}" data-thread="main" title="# geral" aria-label="geral">#</button>
+      ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
+        <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
+          ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
+      <button class="rb add" id="railAdd" title="Novo épico" aria-label="Novo épico">+</button>
+    </div>
+    <div class="railPeople">${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
+  el.querySelector("#railToggle").onclick = toggleRail;
+  el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
+  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; renderSide(); renderChat(); });
+}
+
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
+  if (railMode && window.innerWidth > 900) return renderRail(el);
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `
     <div>
-      <a data-nav href="/app" class="muted" style="font-size:13px;text-decoration:none">← vibebooks</a>
+      <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
       <input class="title" id="title" value="${esc(S.book?.title)}" />
       <div class="folderTag">${S.book?.folder ? `📁 ${esc(S.book.folder)}` : ""}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}</div>
     </div>
     <div class="sec">
-      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main"># geral <span class="n">${count("main")}</span></button>
-    </div>
-    <div class="sec">
-      <h4>Épicos</h4>
+      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="geral"><span class="ri">#</span><span class="rt">geral</span><span class="n">${count("main")}</span></button>
       ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length; return `
-        <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}">◆ ${esc(e.title)} <span class="n">${d}/${e.tasks.length}</span></button>
-        ${e.tasks.length ? `<div class="bar"><i style="width:${(100 * d) / e.tasks.length}%"></i></div>` : ""}`; }).join("")}
-      <form class="row" id="newEpic" style="margin-top:6px"><input placeholder="novo épico" /><button>+</button></form>
+        <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks">
+          <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
+          <span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; }).join("")}
+      <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ AI sugere</h4>${S.suggestions.map((s, i) => `
       <div class="sug"><b>${esc(s.title)}</b>${s.tasks.length ? `<span class="muted">${s.tasks.map(esc).join(" · ")}</span>` : ""}
@@ -637,6 +690,7 @@ function renderSide() {
       <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="convidar por email" list="friendList" autocomplete="off" /><button>+</button></form>
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
+  el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     thread = b.dataset.thread; renderSide(); renderChat();
     const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
