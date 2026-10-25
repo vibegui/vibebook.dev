@@ -36,7 +36,10 @@ const SCHEMA = [
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
-  (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))));
+  (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
+    // Columns added after launch; ALTER fails harmlessly once they exist.
+    db.prepare(`ALTER TABLE users ADD COLUMN name TEXT`).run().catch(() => {}),
+  ));
 
 async function identify(c: Parameters<typeof sessionEmail>[0]): Promise<string | null> {
   const email = await sessionEmail(c);
@@ -103,7 +106,7 @@ app.get("/api/me", async (c) => {
     .all();
   const friends = await db
     .prepare(
-      `SELECT f.b AS email, u.email IS NOT NULL AS joined,
+      `SELECT f.b AS email, u.name, u.email IS NOT NULL AS joined,
          (SELECT count(*) FROM members x JOIN members y ON x.book_id = y.book_id
            WHERE x.email = f.a AND y.email = f.b) AS shared
        FROM friends f LEFT JOIN users u ON u.email = f.b
@@ -111,7 +114,16 @@ app.get("/api/me", async (c) => {
     )
     .bind(email)
     .all();
-  return c.json({ email, books: books.results, friends: friends.results });
+  const me = await db.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>();
+  return c.json({ email, name: me?.name ?? null, books: books.results, friends: friends.results });
+});
+
+app.post("/api/me", async (c) => {
+  const { name } = await c.req.json<{ name?: string }>().catch(() => ({ name: "" }));
+  const clean = (name ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
+  if (!clean) return c.json({ error: "Nome vazio." }, 400);
+  await c.env.DB.prepare(`UPDATE users SET name = ? WHERE email = ?`).bind(clean, c.get("email")).run();
+  return c.json({ ok: true, name: clean });
 });
 
 app.post("/api/books", async (c) => {

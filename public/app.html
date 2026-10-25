@@ -16,6 +16,7 @@
     --accent: oklch(0.5 0.17 248); --accent-ink: #fff; --ai: oklch(0.5 0.17 248); --ai-bg: oklch(0.95 0.03 245); --ok: oklch(0.6 0.14 155); --sun: oklch(0.9 0.16 98);
   }
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); color-scheme: light;
     font: 16px/1.55 "Schibsted Grotesk", system-ui, sans-serif; }
   button, input, textarea { font: inherit; color: inherit; }
@@ -35,6 +36,8 @@
   .home { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
   .top { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
   .top .brand { font-size: 28px; margin: 0; flex: 1; }
+  .top { flex-wrap: wrap; }
+  #myName { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .grid { display: grid; grid-template-columns: 1fr 300px; gap: 32px; }
   @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
   .folder { margin-bottom: 24px; }
@@ -53,6 +56,8 @@
   .friend small { display: block; color: var(--mute); font-size: 12px; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
+  .nameAsk { display: grid; gap: 6px; background: var(--ai-bg); border-radius: 16px; padding: 18px 20px; margin-bottom: 28px; max-width: 520px; }
+  .nameAsk .row { margin-top: 6px; }
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
 
   /* book */
@@ -70,6 +75,11 @@
   .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
   .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); flex: none; font-variant-numeric: tabular-nums; }
   .sec .thread + .thread, .sec .thread + .newRoom { margin-top: 2px; }
+  /* Rows keep their hover/selected padding but their content lines up with the sidebar edge. */
+  .side .sec .thread, .side .newRoom, .side .friendAdd { margin-left: -10px; margin-right: -10px; width: calc(100% + 20px); }
+  .ri.book, .rb.geral { background: var(--accent); color: #fff; box-shadow: none; }
+  .folderChip { font: 500 12px "Schibsted Grotesk", sans-serif; color: var(--mute); background: var(--bg); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  #roomName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ri { width: 26px; height: 26px; border-radius: 8px; flex: none; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
   .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .newRoom { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; }
@@ -82,9 +92,8 @@
   .sug b { display: block; }
   .sug .row { margin-top: 6px; }
   .sug button { padding: 3px 8px; font-size: 12px; }
-  .friendAdd { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px dashed var(--line); background: transparent; padding: 5px 8px; margin-top: 6px; font-size: 13px; text-align: left; }
-  .friendAdd:hover { border-style: solid; background: var(--panel); }
-  .friendAdd .avatar { width: 22px; height: 22px; font-size: 10px; }
+  .friendAdd { display: flex; align-items: center; gap: 8px; border: none; background: transparent; padding: 4px 10px; margin-top: 2px; font-size: 13px; text-align: left; border-radius: 10px; color: var(--mute); }
+  .friendAdd:hover { background: var(--panel); color: var(--ink); }
   .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
   .friendAdd b { color: var(--accent); font-size: 16px; }
   .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -98,7 +107,17 @@
   .chathead, .doc header { height: 64px; flex: none; padding: 0 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
   .chathead h2 { margin: 0; font-size: 18px; flex: 1; }
   .tasks { padding: 14px 28px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
-  .task { display: flex; gap: 8px; align-items: flex-start; padding: 3px 0; cursor: pointer; }
+  .task { display: flex; gap: 10px; align-items: center; padding: 3px 0; }
+  .task .tt { flex: 1; cursor: text; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; }
+  .task .tt:hover { background: var(--panel); }
+  .task .x { opacity: 0; }
+  .task:hover .x, .task .x:focus-visible { opacity: 1; }
+  .tedit { flex: 1; padding: 3px 6px; }
+  .epicName { cursor: text; border-radius: 6px; }
+  .epicName:hover { background: var(--bg); }
+  #threadTitle { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  #threadTitle .x { font-size: 14px; opacity: .5; }
+  #threadTitle .x:hover { opacity: 1; }
   .task.done span { text-decoration: line-through; color: var(--mute); }
   .msgs { flex: 1; overflow: auto; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 24px; }
   .msg { display: flex; gap: 14px; max-width: 720px; }
@@ -220,6 +239,9 @@
   @media (max-width: 900px) {
     .book, .book.nodoc { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
     .resizer { display: none; }
+    /* iOS zooms into inputs under 16px and the page then pans sideways. */
+    input, textarea, select { font-size: 16px !important; }
+    .top .brand { flex-basis: 100%; }
     .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
     .tabs button.sel { background: var(--ink); color: var(--bg); }
     .book > .side, .book > .chat, .book > .doc { display: none; }
@@ -249,7 +271,8 @@ const $app = document.getElementById("app");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const COLORS = ["#ff5a36", "#1f9d8a", "#3b6cf6", "#c2410c", "#9333ea", "#0f766e", "#be185d", "#4d7c0f"];
 const color = (s) => COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
-const name = (email) => email === "ai" ? "AI" : email.split("@")[0];
+let knownNames = {}; // email → display name (from /api/me friends + book state)
+const name = (email) => email === "ai" ? "AI" : S?.names?.[email] || knownNames[email] || email.split("@")[0];
 const avatar = (email, on) => email === "ai"
   ? `<span class="avatar ai">✦</span>`
   : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(email)}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
@@ -334,6 +357,7 @@ document.addEventListener("click", (e) => {
 async function home() {
   document.title = "vibebook";
   const me = await api("/api/me");
+  knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   const byFolder = {};
   for (const b of me.books) (byFolder[b.folder || "Sem pasta"] ??= []).push(b);
   const folders = Object.keys(byFolder).sort((a, b) => (a === "Sem pasta") - (b === "Sem pasta") || a.localeCompare(b));
@@ -341,10 +365,12 @@ async function home() {
   <div class="home">
     <div class="top">
       <h1 class="brand"><a href="/" style="text-decoration:none">vibebook</a></h1>
-      <span class="muted">${esc(me.email)}</span>
+      <button class="ghost" id="myName" title="Mudar seu nome">${esc(me.name || me.email)} ✎</button>
       <button class="ghost" id="logout">Sair</button>
       <button class="primary" id="new">+ Novo vibebook</button>
     </div>
+    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">A AI e o pessoal vão te chamar assim.</span>
+      <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
     <div class="grid">
       <section>
         ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame os amigos e escreva <b>@ai</b> no chat.</div>`}
@@ -367,7 +393,7 @@ async function home() {
       <aside class="friends">
         <h2>Amigos</h2>
         ${me.friends.length ? me.friends.map((f) => `
-          <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(name(f.email))}
+          <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(f.name || name(f.email))}
             <small>${f.shared ? `${f.shared} vibebook${f.shared > 1 ? "s" : ""} juntos` : f.joined ? "na plataforma" : "convidado"}</small></div>
             <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos" title="Remover dos amigos">×</button></div>`).join("")
           : `<p class="muted" style="font-size:13px">Quem você convida para um vibebook vira amigo aqui.</p>`}
@@ -378,6 +404,9 @@ async function home() {
       </aside>
     </div>
   </div>`;
+  const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
+  document.getElementById("myName").onclick = () => saveName(prompt("Seu nome:", me.name || ""));
+  document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
   document.getElementById("new").onclick = async () => {
     const { id } = await api("/api/books", {});
@@ -442,9 +471,9 @@ function onEvent(ev, id) {
       if (ev.title) S.book.title = ev.title;
       if (ev.folder) S.book.folder = ev.folder;
       if (ev.summary) S.book.summary = ev.summary;
-      renderSide(); return;
+      renderSide(); renderTasks(); return;
     case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
-    case "members": S.members = ev.members; S.pending = ev.pending; renderSide(); return;
+    case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
@@ -628,7 +657,13 @@ function renderBook() {
 }
 
 const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
-const initials = (t) => (t.replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
+const bookTitle = () => S?.book?.title || "vibebook";
+const STOP = new Set(["e", "de", "do", "da", "dos", "das", "o", "a", "os", "as", "em", "no", "na", "para", "pra", "com", "por", "the", "and", "of"]);
+const initials = (t) => {
+  const words = t.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean);
+  const main = words.filter((w) => !STOP.has(w.toLowerCase()));
+  return ((main.length ? main : words).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
+};
 let railMode = false;
 try { railMode = localStorage.getItem("vb.rail") === "1"; } catch {}
 
@@ -645,7 +680,7 @@ function renderRail(el) {
     <a data-nav href="/app" class="iconBtn" title="Seus vibebooks" aria-label="Seus vibebooks" style="text-decoration:none;font-size:18px">←</a>
     <div class="railSep"></div>
     <div class="railList">
-      <button class="rb geral ${thread === "main" ? "sel" : ""}" data-thread="main" title="# geral" aria-label="geral">#</button>
+      <button class="rb geral ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${esc(initials(bookTitle()))}</button>
       ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
@@ -664,11 +699,9 @@ function renderSide() {
   el.innerHTML = `
     <div>
       <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
-      <input class="title" id="title" value="${esc(S.book?.title)}" />
-      <div class="folderTag">${S.book?.folder ? `📁 ${esc(S.book.folder)}` : ""}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}</div>
     </div>
     <div class="sec">
-      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="geral"><span class="ri">#</span><span class="rt">geral</span><span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}"><span class="ri book">${esc(initials(bookTitle()))}</span><span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
       ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length; return `
         <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
@@ -680,7 +713,7 @@ function renderSide() {
         <div class="row"><button data-sug="${i}" data-accept="1">Criar épico</button><button class="ghost" data-sug="${i}">Ignorar</button></div></div>`).join("")}</div>` : ""}
     <div class="sec">
       <h4>Pessoas</h4>
-      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn">${esc(m)}</span>${(S.pending || []).includes(m)
+      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
         ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
         ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>`).join("")}
@@ -696,8 +729,6 @@ function renderSide() {
     const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
   });
   el.querySelectorAll("[data-sug]").forEach((b) => b.onclick = () => send({ t: "suggestion", i: Number(b.dataset.sug), accept: !!b.dataset.accept }));
-  const title = document.getElementById("title");
-  title.onchange = () => send({ t: "title", title: title.value });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
@@ -725,12 +756,33 @@ function renderSide() {
 function renderTasks() {
   const el = document.getElementById("tasks"); if (!el) return;
   const epic = S.epics.find((e) => e.id === thread);
-  document.getElementById("threadTitle").textContent = epic ? `◆ ${epic.title}` : "# geral";
+  const head = document.getElementById("threadTitle");
+  head.innerHTML = epic
+    ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
+    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || "Clique para renomear")}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
+  document.getElementById("roomName").onclick = () => {
+    const cur = epic ? epic.title : bookTitle();
+    const t = prompt(epic ? "Nome do épico:" : "Nome do vibebook:", cur);
+    if (!t?.trim() || t === cur) return;
+    send(epic ? { t: "epic.rename", id: epic.id, title: t } : { t: "title", title: t });
+  };
   el.style.display = epic ? "" : "none";
   if (!epic) return;
-  el.innerHTML = `${epic.tasks.map((t) => `<label class="task ${t.done ? "done" : ""}" data-task="${t.id}"><input type="checkbox" ${t.done ? "checked" : ""}/><span>${esc(t.title)}</span></label>`).join("")}
+  document.getElementById("epicDel").onclick = () => { if (confirm(`Apagar o épico "${epic.title}", as tasks e a discussão dele? Não dá pra desfazer.`)) send({ t: "epic.del", id: epic.id }); };
+  el.innerHTML = `${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}" data-task="${t.id}">
+      <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}</span>
+      <button class="ghost x" data-tdel="${t.id}" aria-label="Apagar task" title="Apagar task">×</button></div>`).join("")}
     <form class="row" id="newTask" style="margin-top:6px"><input placeholder="nova task" /><button>+</button></form>`;
-  el.querySelectorAll("[data-task] input").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
+  el.querySelectorAll("[data-task] input[type=checkbox]").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
+  el.querySelectorAll("[data-task] .tt").forEach((sp) => sp.onclick = () => {
+    const id = sp.closest("[data-task]").dataset.task;
+    const inp = document.createElement("input"); inp.value = sp.textContent; inp.className = "tedit";
+    sp.replaceWith(inp); inp.focus(); inp.select();
+    const done = (save) => { if (save && inp.value.trim() && inp.value !== sp.textContent) send({ t: "task.rename", id, title: inp.value }); else inp.replaceWith(sp); };
+    inp.onkeydown = (e) => { if (e.key === "Enter") done(true); if (e.key === "Escape") done(false); };
+    inp.onblur = () => done(true);
+  });
+  el.querySelectorAll("[data-tdel]").forEach((b) => b.onclick = () => send({ t: "task.del", id: b.dataset.tdel }));
   document.getElementById("newTask").onsubmit = (e) => { e.preventDefault(); send({ t: "task.add", epic: thread, title: e.target[0].value }); e.target.reset(); };
 }
 

@@ -165,9 +165,15 @@ auth.get("/google/callback", async (c) => {
   if (!tok.access_token) return c.redirect("/login?error=google");
   const info = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
     headers: { authorization: `Bearer ${tok.access_token}` },
-  }).then((r) => r.json<{ email?: string; email_verified?: boolean }>());
+  }).then((r) => r.json<{ email?: string; email_verified?: boolean; given_name?: string; name?: string }>());
   if (!info.email || !info.email_verified) return c.redirect("/login?error=google");
   await startSession(c, info.email);
+  const gname = (info.given_name || info.name || "").trim().slice(0, 60);
+  if (gname)
+    await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
+      .bind(info.email.toLowerCase(), Date.now(), gname)
+      .run()
+      .catch(() => {});
   return c.redirect(safeNext(next));
 });
 
