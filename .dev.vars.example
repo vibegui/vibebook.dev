@@ -1,3 +1,8 @@
 OPENROUTER_API_KEY=
-# Local only: skip Cloudflare Access; identity comes from the dev_as cookie (or this default).
+# Long random string: openssl rand -hex 32
+SESSION_SECRET=
+# Optional: Google sign-in (OAuth client, redirect URI <origin>/auth/google/callback)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Local only: skips login; identity from the dev_as cookie (or this default).
 DEV_EMAIL=you@example.com

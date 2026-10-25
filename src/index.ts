@@ -1,20 +1,23 @@
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { auth, EMAIL_RE, emailHtml, escapeHtml, sessionEmail } from "./auth";
 export { Book } from "./book";
 
 export type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
   BOOK: DurableObjectNamespace;
+  EMAIL: SendEmail;
   AI_LIMIT: RateLimit;
+  LOGIN_LIMIT: RateLimit;
   OPENROUTER_API_KEY: string;
+  SESSION_SECRET: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   MODEL_FAST: string;
   MODEL_MEDIUM: string;
   MODEL_HEAVY: string;
   MODEL_CLASSIFY: string;
-  ACCESS_TEAM_DOMAIN: string;
-  ACCESS_AUD: string;
   DEV_EMAIL?: string;
 };
 
@@ -25,49 +28,40 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS books (id TEXT PRIMARY KEY, title TEXT, folder TEXT, summary TEXT, owner TEXT, created_at INTEGER, updated_at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS members (book_id TEXT, email TEXT, PRIMARY KEY (book_id, email))`,
   `CREATE TABLE IF NOT EXISTS friends (a TEXT, b TEXT, created_at INTEGER, PRIMARY KEY (a, b))`,
+  `CREATE TABLE IF NOT EXISTS login_codes (email TEXT PRIMARY KEY, hash TEXT, expires_at INTEGER, attempts INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))));
 
-let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-async function identify(c: { req: { raw: Request }; env: Env }): Promise<string | null> {
-  const { env } = c;
-  const req = c.req.raw;
-  if (env.DEV_EMAIL) {
-    // Local dev only: pick identity via cookie so two browsers can be two people.
-    const as = getCookie(c as never, "dev_as");
-    return (as && EMAIL_RE.test(as) ? as : env.DEV_EMAIL).toLowerCase();
-  }
-  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return null;
-  const token =
-    req.headers.get("cf-access-jwt-assertion") ?? getCookie(c as never, "CF_Authorization");
-  if (!token) return null;
-  const issuer = `https://${env.ACCESS_TEAM_DOMAIN}`;
-  jwks ??= createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
-  try {
-    const { payload } = await jwtVerify(token, jwks, { issuer, audience: env.ACCESS_AUD });
-    return typeof payload.email === "string" ? payload.email.toLowerCase() : null;
-  } catch {
-    return null;
-  }
+async function identify(c: Parameters<typeof sessionEmail>[0]): Promise<string | null> {
+  const email = await sessionEmail(c);
+  if (email || !(c.env as Env).DEV_EMAIL) return email;
+  // Local dev only: pick identity via cookie so two browsers can be two people.
+  const as = getCookie(c, "dev_as");
+  return (as && EMAIL_RE.test(as) ? as : (c.env as Env).DEV_EMAIL!).toLowerCase();
 }
 
 const app = new Hono<Ctx>();
 
-// App shell (Cloudflare Access sits in front of these paths in production).
+app.use("*", async (c, next) => {
+  await ensureSchema(c.env.DB);
+  await next();
+});
+
+app.route("/auth", auth);
+
+// App shell: /login is public; /app and /b/* bounce to /login without a session.
 const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new URL("/app", c.req.url));
-app.get("/app", shell);
-app.get("/b/*", shell);
+app.get("/login", shell);
+app.get("/app", async (c) => ((await identify(c)) ? shell(c) : c.redirect("/login")));
+app.get("/b/*", async (c) =>
+  (await identify(c)) ? shell(c) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`),
+);
 
 app.use("*", async (c, next) => {
-  if (!c.env.DEV_EMAIL && (!c.env.ACCESS_TEAM_DOMAIN || !c.env.ACCESS_AUD))
-    return c.json({ error: "auth_not_configured" }, 503);
   const email = await identify(c);
   if (!email) return c.json({ error: "unauthenticated" }, 401);
-  await ensureSchema(c.env.DB);
   await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
     .bind(email, Date.now())
     .run();
@@ -139,6 +133,25 @@ app.post("/api/books/:id/members", async (c) => {
   if (!EMAIL_RE.test(who)) return c.json({ error: "invalid email" }, 400);
   await c.env.DB.prepare(`INSERT OR IGNORE INTO members (book_id, email) VALUES (?, ?)`).bind(id, who).run();
   await befriend(c.env.DB, email, who);
+  if (!c.env.DEV_EMAIL && (await c.env.LOGIN_LIMIT.limit({ key: `invite:${email}` })).success) {
+    const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>();
+    const url = `${new URL(c.req.url).origin}/b/${id}`;
+    const title = book?.title ?? "um vibebook";
+    const inviter = email.split("@")[0];
+    c.executionCtx.waitUntil(
+      c.env.EMAIL.send({
+        to: who,
+        from: { email: "convite@vibebook.dev", name: "vibebook" },
+        replyTo: email,
+        subject: `${inviter} te chamou pro vibebook "${title}"`,
+        text: `${email} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}`,
+        html: emailHtml(
+          `${escapeHtml(inviter)} te chamou pro vibebook`,
+          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(email)} quer planejar isso com você. Tem chat, épicos, tasks e uma AI que organiza tudo.</p><p style="margin-top:24px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir o vibebook</a></p>`,
+        ),
+      }).catch((e) => console.error("invite email failed", { who, error: String(e) })),
+    );
+  }
   await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch("https://book/members-changed", { method: "POST" });
   return c.json({ ok: true });
 });
