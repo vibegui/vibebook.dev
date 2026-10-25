@@ -1,12 +1,14 @@
 import { DurableObject } from "cloudflare:workers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, Output, stepCountIs, streamText, tool } from "ai";
+import { generateText, type ModelMessage, Output, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 import type { Env } from "./index";
 import { checkUrl, type ReadResult, readUrl } from "./reader";
 
 type Mode = "fast" | "medium" | "heavy";
-type Msg = { id: number; thread: string; author: string; text: string; ts: number };
+export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
+type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null };
+type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 type Suggestion = { title: string; tasks: string[] };
 
 const DEFAULT_TITLE = "Novo vibebook";
@@ -16,6 +18,9 @@ const CLASSIFY_MIN_NEW_MSGS = 3;
 const READS_PER_RUN = 4;
 const READ_CACHE_OK_MS = 6 * 60 * 60 * 1000;
 const READ_CACHE_FAIL_MS = 10 * 60 * 1000;
+
+const AI_IMAGES_PER_RUN = 4;
+const AI_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
 const rid = () => crypto.randomUUID().slice(0, 8);
 
@@ -31,7 +36,16 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS epics (id TEXT PRIMARY KEY, title TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, epic_id TEXT, title TEXT, done INTEGER DEFAULT 0, ts INTEGER);
       CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+      CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT, type TEXT, size INTEGER, author TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS polls (id TEXT PRIMARY KEY, question TEXT, options TEXT, multi INTEGER, closed INTEGER DEFAULT 0, author TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
     `);
+    // Columns added after launch; ALTER fails harmlessly once they exist.
+    for (const col of ["files TEXT", "poll TEXT"]) {
+      try {
+        this.sql.exec(`ALTER TABLE messages ADD COLUMN ${col}`);
+      } catch {}
+    }
   }
 
   // ---- storage helpers ----
@@ -54,7 +68,32 @@ export class Book extends DurableObject<Env> {
     const rows = thread
       ? this.sql.exec(`SELECT * FROM messages WHERE thread = ? ORDER BY id DESC LIMIT ?`, thread, limit)
       : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT ?`, limit);
-    return (rows.toArray() as Msg[]).reverse();
+    return rows
+      .toArray()
+      .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null }) as Msg)
+      .reverse();
+  }
+  files(): FileMeta[] {
+    return this.sql.exec<FileMeta>(`SELECT * FROM files ORDER BY ts DESC`).toArray();
+  }
+  polls(ids?: string[]): Record<string, Poll> {
+    const rows = this.sql.exec(`SELECT * FROM polls`).toArray();
+    const votes = this.sql.exec<{ poll_id: string; email: string; opt: number }>(`SELECT * FROM votes`).toArray();
+    const out: Record<string, Poll> = {};
+    for (const r of rows) {
+      if (ids && !ids.includes(r.id as string)) continue;
+      const options = JSON.parse(r.options as string) as string[];
+      out[r.id as string] = {
+        id: r.id as string,
+        question: r.question as string,
+        options,
+        multi: !!r.multi,
+        closed: !!r.closed,
+        author: r.author as string,
+        votes: options.map((_, i) => votes.filter((v) => v.poll_id === r.id && v.opt === i).map((v) => v.email)),
+      };
+    }
+    return out;
   }
   suggestions(): Suggestion[] {
     return JSON.parse(this.get("suggestions") ?? "[]");
@@ -88,12 +127,21 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string } = {}): Msg {
     const ts = Date.now();
+    const files = extra.files ?? [];
     const id = this.sql
-      .exec(`INSERT INTO messages (thread, author, text, ts) VALUES (?, ?, ?, ?) RETURNING id`, thread, author, text, ts)
+      .exec(
+        `INSERT INTO messages (thread, author, text, ts, files, poll) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+        thread,
+        author,
+        text,
+        ts,
+        files.length ? JSON.stringify(files) : null,
+        extra.poll ?? null,
+      )
       .one().id as number;
-    const m = { id, thread, author, text, ts };
+    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null };
     this.broadcast({ t: "msg", m });
     return m;
   }
@@ -117,6 +165,39 @@ export class Book extends DurableObject<Env> {
     else this.sql.exec(`UPDATE tasks SET done = ? WHERE id = ?`, done ? 1 : 0, id);
     this.broadcast({ t: "epics", epics: this.epics() });
   }
+  createPoll(thread: string, author: string, question: string, options: string[], multi: boolean) {
+    const opts = options.map((o) => o.trim().slice(0, 200)).filter(Boolean).slice(0, 10);
+    if (!question.trim() || opts.length < 2) return null;
+    const id = rid();
+    this.sql.exec(
+      `INSERT INTO polls (id, question, options, multi, author, ts) VALUES (?, ?, ?, ?, ?, ?)`,
+      id,
+      question.trim().slice(0, 300),
+      JSON.stringify(opts),
+      multi ? 1 : 0,
+      author,
+      Date.now(),
+    );
+    this.broadcast({ t: "poll", poll: this.polls([id])[id] });
+    this.addMessage(thread, author, "", { poll: id });
+    return id;
+  }
+  vote(pollId: string, email: string, opt: number) {
+    const p = this.polls([pollId])[pollId];
+    if (!p || p.closed || !Number.isInteger(opt) || opt < 0 || opt >= p.options.length) return;
+    const had = p.votes[opt].includes(email);
+    if (!p.multi) this.sql.exec(`DELETE FROM votes WHERE poll_id = ? AND email = ?`, pollId, email);
+    if (had) this.sql.exec(`DELETE FROM votes WHERE poll_id = ? AND email = ? AND opt = ?`, pollId, email, opt);
+    else this.sql.exec(`INSERT OR IGNORE INTO votes (poll_id, email, opt) VALUES (?, ?, ?)`, pollId, email, opt);
+    this.broadcast({ t: "poll", poll: this.polls([pollId])[pollId] });
+  }
+  closePoll(pollId: string, email: string) {
+    const p = this.polls([pollId])[pollId];
+    // Whoever created it closes it; AI-created polls can be closed by anyone.
+    if (!p || (p.author !== email && p.author !== "ai")) return;
+    this.sql.exec(`UPDATE polls SET closed = 1 WHERE id = ?`, pollId);
+    this.broadcast({ t: "poll", poll: this.polls([pollId])[pollId] });
+  }
   setDoc(text: string, by: string, except?: WebSocket) {
     this.set("doc", text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get("doc"), by }, except);
@@ -134,6 +215,13 @@ export class Book extends DurableObject<Env> {
   // ---- transport ----
   async fetch(req: Request) {
     const url = new URL(req.url);
+    if (url.pathname === "/file") {
+      const f = (await req.json()) as FileMeta;
+      if (!this.get("book_id")) this.set("book_id", url.searchParams.get("book") ?? "");
+      this.sql.exec(`INSERT INTO files (id, name, type, size, author, ts) VALUES (?, ?, ?, ?, ?, ?)`, f.id, f.name, f.type, f.size, f.author, f.ts);
+      this.broadcast({ t: "files", files: this.files() });
+      return new Response("ok");
+    }
     if (url.pathname === "/members-changed") {
       const members = await this.members();
       // Kick sockets of anyone no longer a member.
@@ -158,6 +246,8 @@ export class Book extends DurableObject<Env> {
         doc: this.get("doc") ?? "",
         epics: this.epics(),
         messages: this.messages(),
+        files: this.files(),
+        polls: this.polls(),
         suggestions: this.suggestions(),
         members: await this.members(),
         pending: await this.pending(),
@@ -180,8 +270,10 @@ export class Book extends DurableObject<Env> {
       case "msg": {
         const text = String(m.text ?? "").trim().slice(0, 4000);
         const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
-        if (!text || !thread) return;
-        this.addMessage(thread, email, text);
+        const ids = Array.isArray(m.files) ? m.files.map(String).slice(0, 10) : [];
+        const files = ids.length ? this.files().filter((f) => ids.includes(f.id)) : [];
+        if ((!text && !files.length) || !thread) return;
+        this.addMessage(thread, email, text, { files });
         this.ctx.waitUntil(this.touch());
         if (/(^|\s)@ai\b/i.test(text)) {
           const mode: Mode = ["fast", "medium", "heavy"].includes(m.mode) ? m.mode : "fast";
@@ -207,6 +299,15 @@ export class Book extends DurableObject<Env> {
         return;
       case "task.toggle":
         return this.setTask(String(m.id));
+      case "poll.create": {
+        const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
+        if (thread && Array.isArray(m.options)) this.createPoll(thread, email, String(m.question ?? ""), m.options.map(String), !!m.multi);
+        return;
+      }
+      case "vote":
+        return this.vote(String(m.id), email, Number(m.opt));
+      case "poll.close":
+        return this.closePoll(String(m.id), email);
       case "suggestion": {
         const s = this.suggestions();
         const [picked] = s.splice(Number(m.i), 1);
@@ -249,7 +350,14 @@ ${this.get("doc") || "(vazio)"}
 """
 
 Épicos e tasks:
-${board || "(nenhum)"}${mainDigest}`;
+${board || "(nenhum)"}
+
+Votações:
+${Object.values(this.polls())
+  .map((p) => `- "${p.question}" (id ${p.id}${p.closed ? ", encerrada" : ""}${p.multi ? ", múltipla escolha" : ""}): ${p.options.map((o, i) => `${o} = ${p.votes[i].length}${p.votes[i].length ? ` (${p.votes[i].join(", ")})` : ""}`).join("; ")}`)
+  .join("\n") || "(nenhuma)"}${mainDigest}
+
+Quando o grupo precisar decidir entre opções, proponha uma votação com create_poll (ela aparece como um card para votar). Você vê imagens enviadas no chat.`;
   }
 
   async runAI(thread: string, mode: Mode, email: string) {
@@ -264,16 +372,39 @@ ${board || "(nenhum)"}${mainDigest}`;
     this.broadcast({ t: "typing", id: msg.id, mode });
 
     // Merge consecutive same-role turns; humans are all "user", prefixed by email.
-    const history: { role: "user" | "assistant"; content: string }[] = [];
-    for (const m of this.messages(thread, 40)) {
-      if (m.id === msg.id || (m.author === "ai" && !m.text)) continue;
+    // The newest few images ride along as image parts so the model can see them.
+    const recent = this.messages(thread, 40).filter((m) => m.id !== msg.id && !(m.author === "ai" && !m.text && !m.poll));
+    const seeIds = new Set(
+      recent
+        .flatMap((m) => m.files)
+        .filter((f) => f.type.startsWith("image/") && f.size <= AI_IMAGE_MAX_BYTES)
+        .slice(-AI_IMAGES_PER_RUN)
+        .map((f) => f.id),
+    );
+    const bookId = this.get("book_id");
+    type Part = { type: "text"; text: string } | { type: "image"; image: Uint8Array; mediaType: string };
+    const turns: { role: "user" | "assistant"; parts: Part[] }[] = [];
+    for (const m of recent) {
       const role = m.author === "ai" ? "assistant" : "user";
-      const content = role === "user" ? `${m.author}: ${m.text}` : m.text;
-      const last = history.at(-1);
-      if (last?.role === role) last.content += `\n${content}`;
-      else history.push({ role, content });
+      const parts: Part[] = [];
+      const pollNote = m.poll ? ` [votação ${m.poll}]` : "";
+      const fileNote = m.files.length ? ` [anexos: ${m.files.map((f) => f.name).join(", ")}]` : "";
+      parts.push({ type: "text", text: role === "user" ? `${m.author}: ${m.text}${fileNote}${pollNote}` : `${m.text}${pollNote}` });
+      if (role === "user" && bookId)
+        for (const f of m.files.filter((f) => seeIds.has(f.id))) {
+          const obj = await this.env.FILES.get(`${bookId}/${f.id}`);
+          if (obj) parts.push({ type: "image", image: new Uint8Array(await obj.arrayBuffer()), mediaType: f.type });
+        }
+      const last = turns.at(-1);
+      if (last?.role === role) last.parts.push(...parts);
+      else turns.push({ role, parts });
     }
-    if (history[0]?.role === "assistant") history.shift();
+    if (turns[0]?.role === "assistant") turns.shift();
+    const history = turns.map((t) =>
+      t.role === "assistant"
+        ? { role: "assistant" as const, content: t.parts.map((p) => (p.type === "text" ? p.text : "")).join("\n") }
+        : { role: "user" as const, content: t.parts },
+    ) as ModelMessage[];
 
     let text = "";
     let lastSent = 0;
@@ -308,6 +439,15 @@ ${board || "(nenhum)"}${mainDigest}`;
             description: "Marca ou desmarca uma task como feita.",
             inputSchema: z.object({ task_id: z.string(), done: z.boolean() }),
             execute: async ({ task_id, done }) => (this.setTask(task_id, done), { ok: true }),
+          }),
+          create_poll: tool({
+            description: "Cria uma votação no chat (card interativo onde cada pessoa vota). Use para decisões do grupo.",
+            inputSchema: z.object({
+              question: z.string(),
+              options: z.array(z.string()).min(2).max(10),
+              multi: z.boolean().describe("true = cada pessoa pode escolher várias opções"),
+            }),
+            execute: async ({ question, options, multi }) => ({ id: this.createPoll(thread, "ai", question, options, multi) ?? "inválida" }),
           }),
           read_url: tool({
             description: "Lê o conteúdo de uma página web pública (renderiza sites em JavaScript). Retorna texto da página como dado não confiável.",

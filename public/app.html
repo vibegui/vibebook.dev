@@ -57,6 +57,8 @@
 
   /* book */
   .book { display: grid; grid-template-columns: 260px minmax(0, 1fr) var(--doc-w, 380px); height: 100dvh; }
+  .book > * { min-height: 0; }
+  .book { overflow: hidden; }
   .book.nodoc { grid-template-columns: 260px 1fr; }
   .book.nodoc .doc { display: none; }
   .side { border-right: 1px solid var(--line); padding: 20px 16px; overflow: auto; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
@@ -127,6 +129,61 @@
   .preview th, .preview td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
   .preview .empty { margin: 0; }
   .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
+  /* doc panel tabs + files library */
+  .ptabs { display: flex; gap: 14px; flex: 1; align-items: baseline; min-width: 0; }
+  .ptabs button { border: none; background: none; padding: 0; font: 400 17px/1 Caprasimo, serif; color: var(--mute); white-space: nowrap; }
+  .ptabs button.sel { color: var(--ink); }
+  .ptabs small { font: 600 12px "Schibsted Grotesk", sans-serif; color: var(--mute); margin-left: 4px; }
+  .doc[data-pane="files"] .preview, .doc[data-pane="files"] textarea, .doc[data-pane="files"] .seg { display: none; }
+  .doc[data-pane="doc"] .filesPane { display: none; }
+  .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
+  .ftile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
+  .ftile .thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; font-size: 30px; }
+  .ftile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s cubic-bezier(.22,1,.36,1); }
+  .ftile:hover img { transform: scale(1.04); }
+  .ftile b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ftile small { font-size: 12px; color: var(--mute); margin-top: -4px; }
+
+  /* attachments */
+  .tray { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tray:empty { display: none; }
+  .pend { position: relative; width: 76px; height: 76px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--bg); display: grid; place-items: center; font-size: 11px; text-align: center; padding: 4px; }
+  .pend img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .pend.up::after { content: ""; position: absolute; inset: 0; background: oklch(1 0 0 / .55); }
+  .pend.up::before { content: ""; position: absolute; z-index: 1; width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  .pend.err { border-color: oklch(0.6 0.2 25); color: oklch(0.5 0.2 25); }
+  .pend .rm { position: absolute; z-index: 2; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: none; background: oklch(0.2 0.02 250 / .75); color: #fff; font-size: 14px; line-height: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .icon { padding: 6px 9px; font-size: 18px; line-height: 1; flex: none; align-self: center; }
+  .chat.drop { box-shadow: inset 0 0 0 3px var(--accent); }
+  .atts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .atts img { display: block; max-width: min(320px, 100%); max-height: 260px; border-radius: 12px; border: 1px solid var(--line); }
+  .fileChip { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: inherit; background: var(--panel); }
+  .fileChip small { color: var(--mute); }
+
+  /* polls */
+  .poll { margin-top: 6px; width: min(460px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: 0 8px 24px -16px oklch(0.3 0.08 250 / .5); }
+  .pq { font-weight: 700; font-size: 17px; margin-bottom: 12px; }
+  .opt { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 14px; margin-top: 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; transition: border-color .2s; }
+  .opt:hover:not(:disabled) { border-color: var(--accent); }
+  .opt:disabled { cursor: default; }
+  .opt .fill { position: absolute; inset: 0 auto 0 0; background: oklch(0.93 0.04 245); transition: width .5s cubic-bezier(.22,1,.36,1); z-index: 0; }
+  .opt.mine { border-color: var(--accent); }
+  .opt.mine .fill { background: oklch(0.88 0.07 245); }
+  .opt.win .fill { background: oklch(0.92 0.12 98); }
+  .opt > :not(.fill) { position: relative; z-index: 1; }
+  .opt .ol { flex: 1; font-weight: 600; }
+  .opt .pc { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3ch; text-align: right; }
+  .opt .stack .avatar { width: 20px; height: 20px; font-size: 9px; margin-right: -6px; border: 2px solid var(--panel); }
+  .pf { margin-top: 12px; font-size: 13px; color: var(--mute); }
+  .link { background: none; border: none; color: var(--accent); padding: 0; font-size: inherit; text-decoration: underline; }
+  dialog { border: none; border-radius: 20px; padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
+  dialog::backdrop { background: oklch(0.2 0.05 250 / .35); }
+  dialog h3 { margin: 0 0 14px; font: 400 22px Caprasimo, serif; }
+  dialog form { display: grid; gap: 10px; }
+  dialog .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  @media (prefers-reduced-motion: reduce) { .opt .fill, .ftile img { transition: none; } .pend.up::before { animation: none; } }
   .resizer { position: absolute; left: -5px; top: 0; bottom: 0; width: 9px; cursor: col-resize; z-index: 1; touch-action: none; }
   .resizer::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: transparent; transition: background .15s; }
   .resizer:hover::after, .resizer:focus-visible::after, .resizer.drag::after { background: var(--accent); width: 2px; left: 3px; }
@@ -320,10 +377,13 @@ let S = null; // book state
 let thread = "main";
 let mode = "fast";
 let friends = []; // emails of people you already share something with
+let attached = []; // composer attachments: { file, url, meta?, error? }
+const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
 
 function openBook(id) {
   thread = "main";
   S = null;
+  attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); renderSide(); }).catch(() => {});
   $app.innerHTML = `<div class="home muted">Abrindo…</div>`;
   const connect = () => {
@@ -348,7 +408,7 @@ function onEvent(ev, id) {
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
-      const el = document.getElementById(`m${ev.id}`); if (el) el.querySelector(".txt").innerHTML = md(ev.text);
+      const el = document.getElementById(`m${ev.id}`); if (el) { const t = el.querySelector(".txt"); t.hidden = false; t.innerHTML = md(ev.text); }
       scrollDown(); return;
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
@@ -361,6 +421,11 @@ function onEvent(ev, id) {
       renderSide(); return;
     case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; renderSide(); return;
+    case "files": S.files = ev.files; renderFiles(); return;
+    case "poll":
+      S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
+      document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
+      return;
     case "online": S.online = ev.online; renderSide(); return;
   }
 }
@@ -381,16 +446,33 @@ function renderBook() {
         <div class="modes" id="modes"><span class="muted">✦ AI:</span>
           ${Object.entries(modeLabel).map(([k, v]) => `<button type="button" data-mode="${k}" class="${k === mode ? "sel" : ""}">${v}</button>`).join("")}
         </div>
-        <div class="row"><textarea id="input" rows="1" placeholder="Mensagem… @ai chama a AI"></textarea><button class="primary">Enviar</button></div>
+        <div class="tray" id="tray"></div>
+        <div class="row">
+          <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo">📎</button>
+          <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação">📊</button>
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple hidden />
+          <textarea id="input" rows="1" placeholder="Mensagem… @ai chama a AI"></textarea><button class="primary" id="sendBtn">Enviar</button>
+        </div>
       </form>
     </main>
     <section class="doc">
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
-      <header><h2>Documento</h2><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Documento</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; a AI mantém atualizado com as decisões."></textarea>
+      <div class="filesPane" id="filesPane"></div>
     </section>
-  </div>`;
+  </div>
+  <dialog id="pollDlg">
+    <h3>Nova votação</h3>
+    <form id="pollForm">
+      <input name="q" required maxlength="300" placeholder="Pergunta (ex.: Qual cruzeiro?)" />
+      <div id="pollOpts" style="display:grid;gap:8px"></div>
+      <button type="button" class="link" id="addOpt" style="justify-self:start">+ opção</button>
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="multi" /> cada pessoa pode escolher várias</label>
+      <div class="acts"><button type="button" id="pollCancel">Cancelar</button><button class="primary">Criar votação</button></div>
+    </form>
+  </dialog>`;
   const book = $app.querySelector(".book");
   $app.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
     book.dataset.tab = b.dataset.tab;
@@ -428,12 +510,81 @@ function renderBook() {
     const b = e.target.closest("[data-mode]"); if (!b) return;
     mode = b.dataset.mode; modes.querySelectorAll("[data-mode]").forEach((x) => x.classList.toggle("sel", x === b)); input.focus();
   };
+  // Attachments: paste, drop or 📎. Upload right away; send once all are done.
+  const tray = document.getElementById("tray");
+  const sendBtn = document.getElementById("sendBtn");
+  const renderTray = () => {
+    tray.innerHTML = attached.map((p, i) => `<div class="pend ${!p.meta && !p.error ? "up" : ""} ${p.error ? "err" : ""}" title="${esc(p.error || p.file.name)}">
+      ${p.url ? `<img src="${p.url}" alt="">` : `📄<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
+      <button type="button" class="rm" data-rm="${i}" aria-label="Remover anexo">×</button></div>`).join("");
+    tray.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { const [p] = attached.splice(Number(b.dataset.rm), 1); if (p?.url) URL.revokeObjectURL(p.url); renderTray(); });
+    const uploading = attached.some((p) => !p.meta && !p.error);
+    sendBtn.disabled = uploading; sendBtn.textContent = uploading ? "Enviando…" : "Enviar";
+  };
+  const addFiles = (list) => {
+    for (let file of list) {
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: só imagens (png, jpg, webp, gif) e PDF.`); continue; }
+      if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: maior que 10MB.`); continue; }
+      if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
+      const p = { file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null };
+      attached.push(p);
+      fetch(`/api/books/${S.id}/files`, { method: "POST", headers: { "content-type": file.type, "x-filename": encodeURIComponent(file.name) }, body: file })
+        .then(async (r) => { const j = await r.json().catch(() => ({})); if (r.ok) p.meta = j; else p.error = j.error || "falhou"; })
+        .catch(() => { p.error = "sem conexão"; })
+        .finally(renderTray);
+    }
+    renderTray();
+  };
+  const fileInput = document.getElementById("fileInput");
+  document.getElementById("attach").onclick = () => fileInput.click();
+  fileInput.onchange = () => { addFiles([...fileInput.files]); fileInput.value = ""; };
+  input.addEventListener("paste", (e) => { const files = [...(e.clipboardData?.files ?? [])]; if (files.length) { e.preventDefault(); addFiles(files); } });
+  const chatEl = $app.querySelector(".chat");
+  chatEl.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); chatEl.classList.add("drop"); } });
+  chatEl.addEventListener("dragleave", (e) => { if (!chatEl.contains(e.relatedTarget)) chatEl.classList.remove("drop"); });
+  chatEl.addEventListener("drop", (e) => { e.preventDefault(); chatEl.classList.remove("drop"); addFiles([...e.dataTransfer.files]); });
+
   document.getElementById("composer").onsubmit = (e) => {
     e.preventDefault();
-    const text = input.value.trim(); if (!text) return;
-    send({ t: "msg", thread, text, mode });
-    input.value = ""; input.oninput();
+    if (attached.some((p) => !p.meta && !p.error)) return;
+    const text = input.value.trim();
+    const files = attached.filter((p) => p.meta).map((p) => p.meta.id);
+    if (!text && !files.length) return;
+    send({ t: "msg", thread, text, mode, files });
+    attached.forEach((p) => p.url && URL.revokeObjectURL(p.url)); attached = [];
+    input.value = ""; input.oninput(); renderTray();
   };
+
+  // Polls: create via dialog, vote/close via delegation on the message list.
+  const dlg = document.getElementById("pollDlg");
+  const opts = document.getElementById("pollOpts");
+  const addOpt = (v = "") => { opts.insertAdjacentHTML("beforeend", `<input name="opt" maxlength="200" placeholder="Opção ${opts.children.length + 1}" value="${esc(v)}" />`); };
+  document.getElementById("pollBtn").onclick = () => { document.getElementById("pollForm").reset(); opts.innerHTML = ""; addOpt(); addOpt(); addOpt(); dlg.showModal(); };
+  document.getElementById("addOpt").onclick = () => { if (opts.children.length < 10) addOpt(); opts.lastElementChild.focus(); };
+  document.getElementById("pollCancel").onclick = () => dlg.close();
+  document.getElementById("pollForm").onsubmit = (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const options = [...f.querySelectorAll('[name="opt"]')].map((i) => i.value.trim()).filter(Boolean);
+    if (options.length < 2) return alert("Coloque pelo menos 2 opções.");
+    send({ t: "poll.create", thread, question: f.q.value, options, multi: f.multi.checked });
+    dlg.close();
+  };
+  document.getElementById("msgs").addEventListener("click", (e) => {
+    const v = e.target.closest("[data-vote]");
+    if (v) return send({ t: "vote", id: v.closest("[data-poll]").dataset.poll, opt: Number(v.dataset.vote) });
+    const c = e.target.closest("[data-close]");
+    if (c && confirm("Encerrar a votação?")) send({ t: "poll.close", id: c.dataset.close });
+  });
+
+  // Right panel: Documento / Arquivos
+  const setPane = (pane) => {
+    $app.querySelector(".doc").dataset.pane = pane;
+    $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
+    if (pane === "files") renderFiles();
+  };
+  $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
+  setPane("doc");
   const doc = document.getElementById("doc");
   let timer;
   doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { S.doc = doc.value; send({ t: "doc", text: doc.value }); }, 400); };
@@ -449,7 +600,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true);
+  renderSide(); renderChat(); renderDoc(true); renderFiles();
 }
 
 function renderSide() {
@@ -529,12 +680,49 @@ function renderTasks() {
   document.getElementById("newTask").onsubmit = (e) => { e.preventDefault(); send({ t: "task.add", epic: thread, title: e.target[0].value }); e.target.reset(); };
 }
 
-const msgHtml = (m) => `
+const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
+const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
+const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.type.startsWith("image/")
+  ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener"><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
+  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener">📄 ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
+
+function pollHtml(id) {
+  const p = S.polls?.[id]; if (!p) return "";
+  const counts = p.votes.map((v) => v.length);
+  const sum = counts.reduce((a, b) => a + b, 0);
+  const max = Math.max(...counts);
+  const voters = new Set(p.votes.flat()).size;
+  return `<div class="poll" data-poll="${id}">
+    <div class="pq">📊 ${esc(p.question)}</div>
+    ${p.options.map((o, i) => {
+      const n = counts[i], pct = sum ? Math.round((100 * n) / sum) : 0, mine = p.votes[i].includes(S.me), win = p.closed && n > 0 && n === max;
+      return `<button type="button" class="opt ${mine ? "mine" : ""} ${win ? "win" : ""}" data-vote="${i}" ${p.closed ? "disabled" : ""} aria-pressed="${mine}">
+        <span class="fill" style="width:${pct}%"></span><span class="ol">${win ? "🏆 " : mine ? "✓ " : ""}${esc(o)}</span>
+        <span class="stack">${p.votes[i].slice(0, 4).map((e) => avatar(e)).join("")}</span><span class="pc">${n ? `${pct}%` : ""}</span></button>`;
+    }).join("")}
+    <div class="pf">${voters} ${voters === 1 ? "pessoa votou" : "pessoas votaram"} · ${p.multi ? "pode escolher várias" : "escolha uma"}${p.closed ? " · encerrada" : p.author === S.me || p.author === "ai" ? ` · <button type="button" class="link" data-close="${id}">encerrar</button>` : ""}</div>
+  </div>`;
+}
+
+const msgHtml = (m) => {
+  const txt = m.author === "ai" ? (m.text ? md(m.text) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? linkify(esc(m.text)) : "";
+  return `
   <div class="msg ${m.author === "ai" ? "ai" : ""}" id="m${m.id}">
     ${avatar(m.author)}
     <div class="body"><div class="who">${esc(name(m.author))} · ${ago(m.ts)}</div>
-      <div class="txt">${m.author === "ai" ? (m.text ? md(m.text) : `<span class="typing">pensando…</span>`) : linkify(esc(m.text))}</div></div>
+      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
   </div>`;
+};
+
+function renderFiles() {
+  const el = document.getElementById("filesPane"); if (!el) return;
+  document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
+  el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
+    <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}">
+      <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : "📄"}</div>
+      <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
+    : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o 📎. Tudo que for enviado neste vibebook fica aqui.</div>`;
+}
 
 function renderChat() {
   renderTasks();
@@ -542,16 +730,31 @@ function renderChat() {
   const list = S.messages.filter((m) => m.thread === thread);
   el.innerHTML = list.length ? list.map(msgHtml).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@ai</b> vamos planejar uma viagem pra Lisboa em março, 6 pessoas" : "Discussão deste épico. A AI enxerga as tasks e o chat geral."}</div>`;
-  scrollDown(true);
+  scrollDown(true); pinOnLoad(el);
 }
 function appendMsg(m) {
   const el = document.getElementById("msgs");
   el.querySelector(".empty")?.remove();
   el.insertAdjacentHTML("beforeend", msgHtml(m));
-  scrollDown(true);
+  scrollDown(true); pinOnLoad(el.lastElementChild);
+}
+// Images change height after they load; keep pinned to the bottom when we were there.
+let stick = true; // was the reader at the bottom of the chat?
+// Messages grow after render (images, fonts, polls); stay pinned to the bottom if the reader was there.
+const pinRO = new ResizeObserver(() => { const el = document.getElementById("msgs"); if (el && stick) el.scrollTop = el.scrollHeight; });
+function pinOnLoad(root) {
+  if (!root) return;
+  (root.classList?.contains("msg") ? [root] : root.querySelectorAll(".msg")).forEach((m) => pinRO.observe(m));
 }
 function scrollDown(force) {
   const el = document.getElementById("msgs"); if (!el) return;
+  // Only an upward scroll unpins; content growing below must not.
+  el.onscroll ??= () => {
+    const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (near) stick = true; else if (el.scrollTop < (el._lastTop ?? 0) - 2) stick = false;
+    el._lastTop = el.scrollTop;
+  };
+  if (force) stick = true;
   if (force || el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
 }
 function renderDoc(force) {
