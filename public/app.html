@@ -75,6 +75,8 @@
   .friendAdd .avatar { width: 22px; height: 22px; font-size: 10px; }
   .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
   .friendAdd b { color: var(--accent); font-size: 16px; }
+  .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .resend { font-size: 12px; padding: 2px 6px; color: var(--accent); flex: none; }
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
 
   .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
@@ -325,7 +327,7 @@ function onEvent(ev, id) {
       if (ev.summary) S.book.summary = ev.summary;
       renderSide(); return;
     case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
-    case "members": S.members = ev.members; renderSide(); return;
+    case "members": S.members = ev.members; S.pending = ev.pending; renderSide(); return;
     case "online": S.online = ev.online; renderSide(); return;
   }
 }
@@ -429,7 +431,8 @@ function renderSide() {
         <div class="row"><button data-sug="${i}" data-accept="1">Criar épico</button><button class="ghost" data-sug="${i}">Ignorar</button></div></div>`).join("")}</div>` : ""}
     <div class="sec">
       <h4>Pessoas</h4>
-      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${esc(m)}</div>`).join("")}
+      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn">${esc(m)}</span>${(S.pending || []).includes(m)
+        ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}</div>`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
         <div style="margin-top:10px;font-size:12px" class="muted">Seus amigos</div>
         ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="Adicionar ${esc(f)}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
@@ -444,6 +447,11 @@ function renderSide() {
   const title = document.getElementById("title");
   title.onchange = () => send({ t: "title", title: title.value });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
+  el.querySelectorAll("[data-resend]").forEach((b) => b.onclick = async () => {
+    b.disabled = true; b.textContent = "…";
+    try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = "enviado ✓"; }
+    catch (err) { b.textContent = "reenviar"; b.disabled = false; alert(err.message); }
+  });
   el.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
     b.disabled = true;
     await api(`/api/books/${S.id}/members`, { email: b.dataset.add }).catch((err) => { alert(err.message); b.disabled = false; });

@@ -54,6 +54,17 @@ export class Book extends DurableObject<Env> {
   suggestions(): Suggestion[] {
     return JSON.parse(this.get("suggestions") ?? "[]");
   }
+  // Invited but never signed in.
+  async pending(): Promise<string[]> {
+    const id = this.get("book_id");
+    if (!id) return [];
+    const r = await this.env.DB.prepare(
+      `SELECT m.email FROM members m LEFT JOIN users u ON u.email = m.email WHERE m.book_id = ? AND u.email IS NULL`,
+    )
+      .bind(id)
+      .all();
+    return r.results.map((m) => m.email as string);
+  }
   async members(): Promise<string[]> {
     const id = this.get("book_id");
     if (!id) return [];
@@ -119,7 +130,7 @@ export class Book extends DurableObject<Env> {
   async fetch(req: Request) {
     const url = new URL(req.url);
     if (url.pathname === "/members-changed") {
-      this.broadcast({ t: "members", members: await this.members() });
+      this.broadcast({ t: "members", members: await this.members(), pending: await this.pending() });
       return new Response("ok");
     }
     const email = req.headers.get("x-email");
@@ -140,6 +151,7 @@ export class Book extends DurableObject<Env> {
         messages: this.messages(),
         suggestions: this.suggestions(),
         members: await this.members(),
+        pending: await this.pending(),
         online: this.online(),
       }),
     );
