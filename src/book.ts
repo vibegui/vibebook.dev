@@ -130,7 +130,11 @@ export class Book extends DurableObject<Env> {
   async fetch(req: Request) {
     const url = new URL(req.url);
     if (url.pathname === "/members-changed") {
-      this.broadcast({ t: "members", members: await this.members(), pending: await this.pending() });
+      const members = await this.members();
+      // Kick sockets of anyone no longer a member.
+      for (const ws of this.sockets()) if (!members.includes(this.ctx.getTags(ws)[0])) ws.close(4003, "removed");
+      this.broadcast({ t: "members", members, pending: await this.pending() });
+      this.broadcast({ t: "online", online: this.online() });
       return new Response("ok");
     }
     const email = req.headers.get("x-email");
@@ -140,7 +144,7 @@ export class Book extends DurableObject<Env> {
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [email]);
-    const book = await this.env.DB.prepare(`SELECT title, folder, summary FROM books WHERE id = ?`).bind(bookId).first();
+    const book = await this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first();
     server.send(
       JSON.stringify({
         t: "state",

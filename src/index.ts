@@ -164,6 +164,30 @@ app.post("/api/friends", async (c) => {
   return c.json({ ok: true });
 });
 
+// Unfriend: removes both directions (shared vibebooks are untouched).
+app.delete("/api/friends/:email", async (c) => {
+  const me = c.get("email");
+  const who = decodeURIComponent(c.req.param("email")).toLowerCase();
+  await c.env.DB.prepare(`DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)`).bind(me, who, who, me).run();
+  return c.json({ ok: true });
+});
+
+// Cancel a pending invite (any member) or remove someone (owner only).
+app.delete("/api/books/:id/members/:email", async (c) => {
+  const me = c.get("email");
+  const id = c.req.param("id");
+  const who = decodeURIComponent(c.req.param("email")).toLowerCase();
+  const db = c.env.DB;
+  if (!(await isMember(db, id, me))) return c.json({ error: "forbidden" }, 403);
+  const book = await db.prepare(`SELECT owner FROM books WHERE id = ?`).bind(id).first<{ owner: string }>();
+  if (who === book?.owner) return c.json({ error: "O dono não pode ser removido." }, 400);
+  const joined = !!(await db.prepare(`SELECT 1 FROM users WHERE email = ?`).bind(who).first());
+  if (joined && me !== book?.owner) return c.json({ error: "Só quem criou o vibebook remove quem já entrou." }, 403);
+  await db.prepare(`DELETE FROM members WHERE book_id = ? AND email = ?`).bind(id, who).run();
+  await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch("https://book/members-changed", { method: "POST" });
+  return c.json({ ok: true });
+});
+
 app.get("/ws/:id", async (c) => {
   const id = c.req.param("id");
   if (c.req.header("upgrade") !== "websocket") return c.text("expected websocket", 426);

@@ -76,6 +76,9 @@
   .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
   .friendAdd b { color: var(--accent); font-size: 16px; }
   .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .x { font-size: 18px; line-height: 1; padding: 2px 7px; color: var(--mute); flex: none; }
+  .x:hover { color: oklch(0.5 0.2 25); background: oklch(0.95 0.03 25); }
+  .friend .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .resend { font-size: 12px; padding: 2px 6px; color: var(--accent); flex: none; }
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
 
@@ -259,8 +262,9 @@ async function home() {
       <aside class="friends">
         <h2>Amigos</h2>
         ${me.friends.length ? me.friends.map((f) => `
-          <div class="friend">${avatar(f.email)}<div>${esc(name(f.email))}
-            <small>${f.shared ? `${f.shared} vibebook${f.shared > 1 ? "s" : ""} juntos` : f.joined ? "na plataforma" : "convidado"}</small></div></div>`).join("")
+          <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(name(f.email))}
+            <small>${f.shared ? `${f.shared} vibebook${f.shared > 1 ? "s" : ""} juntos` : f.joined ? "na plataforma" : "convidado"}</small></div>
+            <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos" title="Remover dos amigos">×</button></div>`).join("")
           : `<p class="muted" style="font-size:13px">Quem você convida para um vibebook vira amigo aqui.</p>`}
         <form class="row" id="addFriend" style="margin-top:12px">
           <input type="email" required placeholder="email do amigo" />
@@ -274,6 +278,11 @@ async function home() {
     const { id } = await api("/api/books", {});
     history.pushState(null, "", `/b/${id}`); route();
   };
+  document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
+    if (!confirm(`Remover ${b.dataset.unfriend} dos seus amigos? Os vibebooks em comum continuam.`)) return;
+    await fetch(`/api/friends/${encodeURIComponent(b.dataset.unfriend)}`, { method: "DELETE" });
+    home();
+  });
   document.getElementById("addFriend").onsubmit = async (e) => {
     e.preventDefault();
     await api("/api/friends", { email: e.target[0].value }).catch((err) => alert(err.message));
@@ -296,7 +305,7 @@ function openBook(id) {
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
-    ws.onclose = (e) => { if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>Sem acesso a este vibebook. Peça para alguém de dentro te convidar.</p><a data-nav href="/app">← voltar</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>Você foi removido deste vibebook.</p><a data-nav href="/app">← seus vibebooks</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>Sem acesso a este vibebook. Peça para alguém de dentro te convidar.</p><a data-nav href="/app">← voltar</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
   };
   connect();
 }
@@ -432,7 +441,9 @@ function renderSide() {
     <div class="sec">
       <h4>Pessoas</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn">${esc(m)}</span>${(S.pending || []).includes(m)
-        ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}</div>`).join("")}
+        ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
+        m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
+        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
         <div style="margin-top:10px;font-size:12px" class="muted">Seus amigos</div>
         ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="Adicionar ${esc(f)}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
@@ -447,6 +458,12 @@ function renderSide() {
   const title = document.getElementById("title");
   title.onchange = () => send({ t: "title", title: title.value });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
+  el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
+    const who = b.dataset.remove;
+    if (!confirm((S.pending || []).includes(who) ? `Cancelar o convite de ${who}?` : `Remover ${who} deste vibebook?`)) return;
+    const r = await fetch(`/api/books/${S.id}/members/${encodeURIComponent(who)}`, { method: "DELETE" });
+    if (!r.ok) alert((await r.json().catch(() => ({}))).error || "Não deu para remover.");
+  });
   el.querySelectorAll("[data-resend]").forEach((b) => b.onclick = async () => {
     b.disabled = true; b.textContent = "…";
     try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = "enviado ✓"; }
