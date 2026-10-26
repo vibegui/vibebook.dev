@@ -76,9 +76,9 @@
   .fine { margin-top: 18px; font-size: 14px; color: oklch(0.9 0.04 240); }
 
   /* product scene */
-  .scene { position: relative; background: var(--white); color: var(--ink); border-radius: 22px; display: grid; grid-template-columns: 196px 1fr;
-    min-height: 430px; box-shadow: 0 40px 80px -30px oklch(0.15 0.1 250 / .7), 0 0 0 1px oklch(1 0 0 / .1); transform: rotate(1.2deg); }
-  .scene aside { background: var(--surface); border-radius: 22px 0 0 22px; padding: 16px 12px; border-right: 1px solid var(--line); font-size: 13px; }
+  .scene { position: relative; background: var(--white); color: var(--ink); border-radius: 22px; display: grid; grid-template-columns: 58px 1fr 196px;
+    min-height: 460px; box-shadow: 0 40px 80px -30px oklch(0.15 0.1 250 / .7), 0 0 0 1px oklch(1 0 0 / .1); transform: rotate(1.2deg); }
+  .scene aside { min-width: 0; overflow: hidden; white-space: nowrap; background: var(--surface); border-radius: 22px 0 0 22px; padding: 16px 9px; border-right: 1px solid var(--line); font-size: 13px; }
   .scene aside .t { font-family: var(--display); font-size: 17px; line-height: 1.1; margin-bottom: 4px; }
   .scene aside .f { font-size: 11px; color: var(--mute); margin-bottom: 14px; }
   .scene .th { padding: 6px 8px; border-radius: 8px; display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
@@ -88,7 +88,7 @@
   .scene .th .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .ri, .scene .ri { width: 20px; height: 20px; border-radius: 6px; flex: none; display: grid; place-items: center; font: 700 9px/1 var(--sans); color: var(--white); background: oklch(0.62 0.03 250); }
   .scene .fr { display: flex; align-items: center; gap: 8px; padding: 4px 8px; white-space: nowrap; }
-  .scene .fr small { color: var(--mute); font-size: 10px; }
+  .scene .fr small { display: inline; color: var(--mute); font-size: 10px; }
   .scene .fr .av { width: 22px; height: 22px; font-size: 9px; position: relative; }
   .scene .fr .av.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 7px; height: 7px; border-radius: 50%; background: oklch(0.7 0.17 150); box-shadow: 0 0 0 2px var(--surface); }
   .scene .lab { font-size: 11px; font-weight: 700; color: var(--mute); margin: 14px 8px 4px; }
@@ -111,6 +111,23 @@
   .scene .chat > :nth-child(4) { animation-delay: 2.5s; }
   .scene .ep:nth-child(4) { animation-delay: 2.8s; } .scene .ep:nth-child(5) { animation-delay: 2.95s; } .scene .ep:nth-child(6) { animation-delay: 3.1s; }
   .sticker { animation-delay: 3.5s; }
+  /* end of the story: the rail collapses to icons and the doc grows on the right, like the app */
+  .scene { animation: open 1s var(--ease) 4.3s backwards; }
+  @keyframes open { from { grid-template-columns: 196px 1fr 0px; } }
+  .scene aside .t, .scene aside .f, .scene .lab, .scene .rt, .scene .th small, .scene .fr .nm { opacity: 0; animation: gone .35s ease 4.3s backwards; }
+  @keyframes gone { from { opacity: 1; } }
+  .sdoc { min-width: 0; overflow: hidden; background: oklch(0.985 0.006 240); border-left: 1px solid var(--line); border-radius: 0 22px 22px 0; font-size: 12.5px; }
+  .sdoc .in { width: 196px; padding: 16px 14px; }
+  .sdoc .dh { font-size: 11px; color: var(--mute); margin-bottom: 10px; }
+  .sdoc h5 { font: 400 16px/1.15 var(--display); margin: 0 0 10px; }
+  .sdoc h6 { font: 700 10px/1 var(--sans); letter-spacing: .06em; color: var(--mute); text-transform: uppercase; margin: 14px 0 6px; }
+  .sdoc .dl { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .sdoc .dl b { font-weight: 600; }
+  .sdoc .dl span { color: var(--mute); }
+  .sdoc mark { background: oklch(0.93 0.12 95); border-radius: 4px; padding: 0 3px; color: inherit; }
+  .sdoc .in > * { animation: pop .5s var(--ease) backwards; }
+  .sdoc .in > :nth-child(n+2) { animation-delay: 4.9s; } .sdoc .in > :nth-child(n+3) { animation-delay: 5.05s; } .sdoc .in > :nth-child(n+4) { animation-delay: 5.2s; } .sdoc .in > :nth-child(n+6) { animation-delay: 5.4s; }
+  .sdoc .in > :first-child { animation-delay: 4.7s; }
 
   /* ---------- sections ---------- */
   section { padding: clamp(72px, 10vw, 140px) 0; }
@@ -204,6 +221,7 @@
   @media (max-width: 520px) {
     .scene { grid-template-columns: 1fr; }
     .scene aside { display: none; }
+    .scene { animation: none; } .sdoc { border-left: 0; border-top: 1px solid var(--line); border-radius: 0 0 22px 22px; } .sdoc .in { width: auto; }
     .forks, .shape { grid-template-columns: 1fr; }
     .sticker { right: 8px; }
     nav a.plain { display: none; }
@@ -244,10 +262,10 @@
           <div class="th ep"><span class="ri">V</span><span class="rt">Voos</span><small>1/2</small></div>
           <div class="th ep"><span class="ri">R</span><span class="rt">Roteiro</span><small>0/4</small></div>
           <div class="lab">AMIGOS</div>
-          <div class="fr"><span class="av on" style="background:var(--coral)">AN</span>ana</div>
-          <div class="fr"><span class="av on" style="background:oklch(0.55 0.12 160)">PE</span>pedro</div>
-          <div class="fr"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span>você</div>
-          <div class="fr"><span class="av" style="background:oklch(0.6 0.13 80)">JU</span>ju <small>convidada</small></div>
+          <div class="fr"><span class="av on" style="background:var(--coral)">AN</span><span class="nm">ana</span></div>
+          <div class="fr"><span class="av on" style="background:oklch(0.55 0.12 160)">PE</span><span class="nm">pedro</span></div>
+          <div class="fr"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span><span class="nm">você</span></div>
+          <div class="fr"><span class="av" style="background:oklch(0.6 0.13 80)">JU</span><span class="nm">ju <small>convidada</small></span></div>
         </aside>
         <div class="chat" aria-hidden="true">
           <div class="bub"><span class="av" style="background:var(--coral)">AN</span><div><div class="n">ana</div><div class="x">gente, lisboa em março? somos 6</div></div></div>
@@ -255,6 +273,17 @@
           <div class="bub"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span><div><div class="n">você</div><div class="x"><span class="mention">@ai</span> organiza isso pra gente <span class="chip">⚡ rápido</span></div></div></div>
           <div class="bub ai"><span class="av" style="background:var(--cobalt)">✦</span><div><div class="n">AI</div><div class="x">Criei 3 épicos: <b>Hospedagem</b>, <b>Voos</b> e <b>Roteiro</b>, cada um com suas tasks. Pedro, puxa a casa? Já pus no doc: 14–21/mar, 6 pessoas.</div></div></div>
         </div>
+        <div class="sdoc" aria-hidden="true"><div class="in">
+          <div class="dh">📄 Documento</div>
+          <h5>Lisboa em março</h5>
+          <div class="dl"><b>Quando</b><mark>14–21/mar</mark></div>
+          <div class="dl"><b>Quem</b><mark>6 pessoas</mark></div>
+          <div class="dl"><b>Casa</b>pedro puxa</div>
+          <h6>Épicos</h6>
+          <div class="dl">Hospedagem<span>0/3</span></div>
+          <div class="dl">Voos<span>1/2</span></div>
+          <div class="dl">Roteiro<span>0/4</span></div>
+        </div></div>
         <div class="sticker" aria-hidden="true">3 épicos criados ✦</div>
       </div>
     </div>
