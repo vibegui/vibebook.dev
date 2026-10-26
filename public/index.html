@@ -4,14 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>vibebook — pensa junto, a AI organiza</title>
-<meta name="description" content="Um documento vivo com chat em grupo, épicos e tasks. Manda o link pros amigos, todo mundo conversa, e quando alguém chama @ai ela organiza tudo." />
+<meta name="description" content="Chat + documento compartilhado. Vocês conversam, a @ai escreve no doc o que foi decidido, e cada assunto grande vira um sub-chat com tarefas." />
 <link rel="canonical" href="https://vibebook.dev/" />
 <meta name="theme-color" content="#1d5fc4" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="vibebook" />
 <meta property="og:url" content="https://vibebook.dev/" />
 <meta property="og:title" content="vibebook — pensa junto, a AI organiza" />
-<meta property="og:description" content="Chat em grupo + documento + épicos e tasks. Manda o link, chama @ai, e a viagem (ou a obra, ou o casamento) se organiza." />
+<meta property="og:description" content="Chat + documento compartilhado. Vocês conversam, a @ai escreve no doc o que foi decidido, e cada assunto grande vira um sub-chat com tarefas." />
 <meta property="og:image" content="https://vibebook.dev/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
@@ -19,7 +19,7 @@
 <meta property="og:locale" content="pt_BR" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="vibebook — pensa junto, a AI organiza" />
-<meta name="twitter:description" content="Chat em grupo + documento + épicos e tasks. Manda o link, chama @ai." />
+<meta name="twitter:description" content="Chat + doc compartilhado. A conversa vira documento; assunto grande vira sub-chat com tarefas." />
 <meta name="twitter:image" content="https://vibebook.dev/og.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -143,6 +143,18 @@
   .ep-card .talk b { font-weight: 600; }
   .dia { color: var(--cobalt); font-size: 12px; }
 
+  .shape { display: grid; grid-template-columns: 1fr 1.1fr; gap: 14px; align-items: center; }
+  .mini { background: var(--surface); border-radius: 18px; padding: 16px; display: grid; gap: 12px; font-size: 14px; }
+  .paper { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; font-size: 14px;
+    box-shadow: 0 30px 60px -30px oklch(0.25 0.08 250 / .45); transform: rotate(-1deg); }
+  .paper .ph { font-size: 12px; color: var(--mute); margin-bottom: 10px; }
+  .paper h4 { font: 400 1.15rem/1.1 var(--display); margin: 12px 0 6px; }
+  .paper ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+  .paper table { border-collapse: collapse; width: 100%; }
+  .paper td { border-bottom: 1px solid var(--line); padding: 5px 4px; }
+  .paper td + td { color: var(--mute); text-align: right; }
+  .paper mark { background: oklch(0.93 0.12 95); border-radius: 4px; padding: 0 3px; color: inherit; }
+
   .modes-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
   .composer { border: 2px solid var(--ink); border-radius: 20px; padding: 18px; box-shadow: 8px 8px 0 var(--cobalt); background: var(--white); }
   .composer .in { font-size: 1.1rem; padding: 6px 2px 14px; }
@@ -192,7 +204,7 @@
   @media (max-width: 520px) {
     .scene { grid-template-columns: 1fr; }
     .scene aside { display: none; }
-    .forks { grid-template-columns: 1fr; }
+    .forks, .shape { grid-template-columns: 1fr; }
     .sticker { right: 8px; }
     nav a.plain { display: none; }
   }
@@ -216,7 +228,7 @@
     <div class="hero-grid">
       <div>
         <h1>Pensa junto.<br /><em>A AI organiza.</em></h1>
-        <p class="lede">Um vibebook é um documento vivo com <b>chat em grupo, épicos e tasks</b>. Manda o link pros amigos, todo mundo conversa, e quando alguém chama <b>@ai</b> ela põe ordem na bagunça.</p>
+        <p class="lede">Um vibebook é um <b>chat com um documento do lado</b>. Vocês conversam, a <b>@ai</b> escreve no doc o que foi decidido, e assunto grande vira <b>sub-chat com tarefas</b>.</p>
         <div class="cta-row">
           <a class="btn btn-sun" href="/app">Criar meu vibebook →</a>
         </div>
@@ -261,12 +273,37 @@
     </div>
   </section>
 
+  <section class="shape-sec">
+    <div class="wrap epic-grid">
+      <div>
+        <h2 class="h2">A conversa vira documento.</h2>
+        <p class="sub">Todo vibebook é um chat com um doc do lado. Vocês discutem do jeito de sempre, e a <b>@ai</b> vai escrevendo no doc o que foi decidido: datas, orçamento, quem faz o quê, links, tabelas, diagramas.</p>
+        <p class="sub">O chat é onde se pensa. O doc é o que fica. Qualquer um edita, e ninguém precisa rolar 400 mensagens pra saber o que ficou combinado.</p>
+      </div>
+      <div class="shape" aria-hidden="true">
+        <div class="mini">
+          <div class="bub"><span class="av" style="background:oklch(0.6 0.13 80)">BI</span><div><div class="n">bia</div><div class="x">14 a 21 fecha pra todo mundo?</div></div></div>
+          <div class="bub"><span class="av" style="background:oklch(0.55 0.12 160)">PE</span><div><div class="n">pedro</div><div class="x">fecha. teto de 2 mil por pessoa</div></div></div>
+          <div class="bub"><span class="av" style="background:var(--coral)">AN</span><div><div class="n">ana</div><div class="x">eu vejo o carro 🚗</div></div></div>
+          <div class="bub"><span class="av" style="background:oklch(0.5 0.15 300)">VC</span><div><div class="n">você</div><div class="x"><span class="mention">@ai</span> atualiza o doc</div></div></div>
+        </div>
+        <div class="paper">
+          <div class="ph">📄 Lisboa em março</div>
+          <h4>Decidido</h4>
+          <ul><li><mark>Datas: 14 a 21/mar</mark></li><li><mark>Orçamento: até R$ 2.000 por pessoa</mark></li><li>6 pessoas, saindo de GRU</li></ul>
+          <h4>Quem faz o quê</h4>
+          <table><tr><td>Casa</td><td>pedro</td></tr><tr><td>Carro</td><td><mark>ana</mark></td></tr><tr><td>Voos</td><td>você</td></tr></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="epics">
     <div class="wrap epic-grid">
       <div>
-        <h2 class="h2">Uma sala principal.<br />Quantos épicos precisar.</h2>
-        <p class="sub">Assunto grande ganha sala própria. A discussão sobre hospedagem não atropela a do roteiro, e cada épico tem tasks com dono e progresso.</p>
-        <p class="sub">A AI enxerga tudo: dentro de um épico ela sabe o que rolou na sala principal, e na principal ela sabe o que falta em cada épico.</p>
+        <h2 class="h2">Assunto grande vira sub-chat.</h2>
+        <p class="sub">Hospedagem, voos, roteiro: cada um ganha sua própria conversa (a gente chama de épico), com tarefas, dono e progresso. A discussão da casa não atropela a do roteiro.</p>
+        <p class="sub">A AI enxerga tudo: dentro de um sub-chat ela sabe o que rolou na sala principal, e na principal ela sabe o que falta em cada um.</p>
       </div>
       <div class="branch">
         <div class="geral">
