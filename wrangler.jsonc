@@ -3,12 +3,13 @@
   "name": "vibebook",
   "account_id": "55dd6d847f366735ef6e0f860c7bdc51",
   "main": "src/index.ts",
+  "rules": [{ "type": "Text", "globs": ["dist-mcp/*.html"], "fallthrough": true }],
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
-        "run_worker_first": ["/api/*", "/ws/*", "/auth/*", "/app", "/login", "/b/*"]
+        "run_worker_first": ["/", "/mcp", "/api/*", "/ws/*", "/auth/*", "/app", "/login", "/b/*"]
   },
   "d1_databases": [{ "binding": "DB", "database_name": "vibebook", "database_id": "8b1e10e7-ff7d-4d40-94b1-e3d9b88c4a23" }],
   "durable_objects": { "bindings": [{ "name": "BOOK", "class_name": "Book" }] },

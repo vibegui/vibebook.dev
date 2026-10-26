@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./index";
+import { track } from "./track";
 
 const COOKIE = "vb_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -88,6 +89,7 @@ auth.post("/email/start", async (c) => {
     .bind(email, await codeHash(c.env, email, code), Date.now() + CODE_TTL_MS)
     .run();
 
+  c.executionCtx.waitUntil(track(c.env, "login_code_sent", { user: email }));
   if (c.env.DEV_EMAIL) {
     console.log(`[dev] login code for ${email}: ${code}`);
     return c.json({ ok: true });
@@ -128,6 +130,7 @@ auth.post("/email/verify", async (c) => {
   }
   await c.env.DB.prepare(`DELETE FROM login_codes WHERE email = ?`).bind(email).run();
   await startSession(c, email);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: email, dims: { method: "email" } }));
   return c.json({ ok: true, next: safeNext(body.next) });
 });
 
@@ -168,6 +171,7 @@ auth.get("/google/callback", async (c) => {
   }).then((r) => r.json<{ email?: string; email_verified?: boolean; given_name?: string; name?: string }>());
   if (!info.email || !info.email_verified) return c.redirect("/login?error=google");
   await startSession(c, info.email);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: info.email.toLowerCase(), dims: { method: "google" } }));
   const gname = (info.given_name || info.name || "").trim().slice(0, 60);
   if (gname)
     await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
@@ -198,6 +202,7 @@ auth.get("/invite", async (c) => {
   // Expired link: still useful, just log in normally and come back to the book.
   if (!t.e || !t.b || !t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   await startSession(c, t.e);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: t.e, dims: { method: "invite" } }));
   return c.redirect(safeNext(next));
 });
 

@@ -1,6 +1,8 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { auth, EMAIL_RE, emailHtml, escapeHtml, inviteLink, sessionEmail } from "./auth";
+import { handleMcp } from "./mcp";
+import { requestContext, track } from "./track";
 export { Book } from "./book";
 
 export type Env = {
@@ -23,6 +25,7 @@ export type Env = {
   FIRECRAWL_API_KEY?: string;
   READ_LIMIT: RateLimit;
   DEV_EMAIL?: string;
+  MCP_AUTH_TOKEN?: string;
 };
 
 type Ctx = { Bindings: Env; Variables: { email: string } };
@@ -33,6 +36,10 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS members (book_id TEXT, email TEXT, PRIMARY KEY (book_id, email))`,
   `CREATE TABLE IF NOT EXISTS friends (a TEXT, b TEXT, created_at INTEGER, PRIMARY KEY (a, b))`,
   `CREATE TABLE IF NOT EXISTS login_codes (email TEXT PRIMARY KEY, hash TEXT, expires_at INTEGER, attempts INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, name TEXT NOT NULL, path TEXT, visitor TEXT, country TEXT, user TEXT, dims TEXT, ts INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS events_ts ON events (ts)`,
+  `CREATE INDEX IF NOT EXISTS events_name_ts ON events (name, ts)`,
+  `CREATE INDEX IF NOT EXISTS events_user_ts ON events (user, ts)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
@@ -57,21 +64,35 @@ app.use("*", async (c, next) => {
 });
 
 app.route("/auth", auth);
+app.all("/mcp", (c) => handleMcp(c.req.raw, c.env));
+
+// Page views are counted server-side (no client script, no cookie), off the response path.
+const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) => {
+  if (c.req.raw.method === "GET")
+    c.executionCtx.waitUntil(requestContext(c.env, c.req.raw, res).then((ctx) => track(c.env, "pageview", { ...ctx, user })));
+  return res;
+};
 
 // App shell: /login is public; /app and /b/* bounce to /login without a session.
 const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new URL("/app", c.req.url));
-app.get("/login", shell);
-app.get("/app", async (c) => ((await identify(c)) ? shell(c) : c.redirect("/login")));
-app.get("/b/*", async (c) =>
-  (await identify(c)) ? shell(c) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`),
-);
+app.get("/", async (c) => pageview(c, await c.env.ASSETS.fetch(c.req.raw)));
+app.get("/login", async (c) => pageview(c, await shell(c)));
+app.get("/app", async (c) => {
+  const email = await identify(c);
+  return email ? pageview(c, await shell(c), email) : c.redirect("/login");
+});
+app.get("/b/*", async (c) => {
+  const email = await identify(c);
+  return email ? pageview(c, await shell(c), email) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`);
+});
 
 app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) return c.json({ error: "unauthenticated" }, 401);
-  await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
+  const created = await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
     .bind(email, Date.now())
     .run();
+  if (created.meta.changes) c.executionCtx.waitUntil(track(c.env, "signup", { user: email }));
   c.set("email", email);
   await next();
 });
@@ -137,6 +158,7 @@ app.post("/api/books", async (c) => {
     ).bind(id, (title || "Novo vibebook").slice(0, 120), email, now, now),
     c.env.DB.prepare(`INSERT INTO members (book_id, email) VALUES (?, ?)`).bind(id, email),
   ]);
+  c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: id } }));
   return c.json({ id });
 });
 
@@ -149,6 +171,7 @@ app.post("/api/books/:id/members", async (c) => {
   if (!EMAIL_RE.test(who)) return c.json({ error: "invalid email" }, 400);
   await c.env.DB.prepare(`INSERT OR IGNORE INTO members (book_id, email) VALUES (?, ?)`).bind(id, who).run();
   await befriend(c.env.DB, email, who);
+  c.executionCtx.waitUntil(track(c.env, "invite_sent", { user: email, dims: { book: id } }));
   if (!c.env.DEV_EMAIL && (await c.env.LOGIN_LIMIT.limit({ key: `invite:${email}` })).success) {
     const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>();
     const url = await inviteLink(c.env, new URL(c.req.url).origin, who, id);
@@ -223,6 +246,7 @@ app.post("/api/books/:id/files", async (c) => {
   const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
   await c.env.FILES.put(`${id}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
   await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch(`https://book/file?book=${id}`, { method: "POST", body: JSON.stringify(meta) });
+  c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
   return c.json(meta);
 });
 

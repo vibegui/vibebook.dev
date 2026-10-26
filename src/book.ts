@@ -4,6 +4,7 @@ import { generateText, type ModelMessage, Output, stepCountIs, streamText, tool 
 import { z } from "zod";
 import type { Env } from "./index";
 import { checkUrl, type ReadResult, readUrl } from "./reader";
+import { track } from "./track";
 
 type Mode = "fast" | "medium" | "heavy";
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
@@ -308,6 +309,9 @@ export class Book extends DurableObject<Env> {
         if ((!text && !files.length) || !thread) return;
         this.addMessage(thread, email, text, { files });
         this.ctx.waitUntil(this.touch());
+        this.ctx.waitUntil(
+          track(this.env, "message", { user: email, dims: { book: this.get("book_id") ?? undefined, thread: thread === "main" ? "main" : "epic", files: files.length || undefined } }),
+        );
         if (/(^|\s)@ai\b/i.test(text)) {
           const mode: Mode = ["fast", "medium", "heavy"].includes(m.mode) ? m.mode : "fast";
           this.ctx.waitUntil(this.runAI(thread, mode, email));
@@ -411,6 +415,9 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
     }
     const modelName = { fast: this.env.MODEL_FAST, medium: this.env.MODEL_MEDIUM, heavy: this.env.MODEL_HEAVY }[mode];
     const msg = this.addMessage(thread, "ai", "");
+    const started = Date.now();
+    let ok = true;
+    let tools = 0;
     let reads = 0;
     this.broadcast({ t: "typing", id: msg.id, mode });
 
@@ -462,6 +469,9 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
         // textStream swallows provider errors; capture them so a failure never reads as "done".
         onError: ({ error }) => {
           failed = error;
+        },
+        onStepFinish: ({ toolCalls }) => {
+          tools += toolCalls.length;
         },
         model: this.model(modelName),
         system: this.context(thread, await this.names(), await this.members()),
@@ -532,11 +542,13 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
       if (failed) throw failed;
       if (!text.trim()) text = "✅ feito.";
     } catch (e) {
+      ok = false;
       console.error("ai failed", { mode, modelName, error: String(e) });
       text = `${text}\n\n⚠️ A AI falhou (${modelName}). Não é que não tenha resposta, foi erro do provedor. Tenta de novo.`.trim();
     }
     this.sql.exec(`UPDATE messages SET text = ? WHERE id = ?`, text, msg.id);
     flush(true);
+    await track(this.env, "ai_run", { user: email, dims: { book: this.get("book_id") ?? undefined, mode, ok, ms: Date.now() - started, tools, reads } });
   }
 
   // Cached, rate-limited link read. Failures are cached briefly so a broken site isn't hammered.

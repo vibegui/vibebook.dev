@@ -7,3 +7,4 @@ GOOGLE_CLIENT_SECRET=
 # Local only: skips login; identity from the dev_as cookie (or this default).
 DEV_EMAIL=you@example.com
 FIRECRAWL_API_KEY=
+MCP_AUTH_TOKEN=
