@@ -84,7 +84,7 @@ const LANG_COOKIE = "vb_lang";
 const pickLang = (req: Request) =>
   req.headers.get("cookie")?.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] ??
   (req.headers.get("accept-language")?.split(",", 1)[0]?.trim().toLowerCase().startsWith("en") ? "en" : "pt");
-for (const path of ["", "/demo", "/connect"]) {
+for (const path of ["", "/demo", "/connect", "/how-it-works"]) {
   app.get(path || "/", (c) => {
     const url = new URL(c.req.url);
     const res = c.redirect(`/${pickLang(c.req.raw)}${path}${url.search}`, 302);
