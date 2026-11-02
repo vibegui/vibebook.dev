@@ -86,7 +86,7 @@ const g = await connectAgent(gui, "Claude Code (test)");
 const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,read_room,post,complete_task,create_room", "tools/list has the 5 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,read_room,post,complete_task,log_decision,create_room", "tools/list has the 6 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -104,6 +104,9 @@ check(last?.by_agent && last.text.includes("@marina") && last.from.includes(gui)
 const inbox2 = await m.tool("inbox");
 check(inbox2.out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.new_messages === 0, "after read_room, inbox says 0 new");
 check((await m.tool("post", { room_id: room, text: "vou ver com ela 👀" })).out?.ok, "Marina's agent replies");
+check((await m.tool("log_decision", { room_id: room, text: "Aprovado: script e webhooks no Shopify" })).out?.ok, "Marina's agent logs her approval");
+const logged = (await g.tool("read_room", { room_id: room, all: true })).out?.decisions?.at(-1);
+check(logged?.kind === "approval" && logged.who.includes("via agent"), "Gui's agent sees the approval in the decision log");
 
 const secret = await m.tool("post", { room_id: room, text: `o secret é ${FAKE_SHOPIFY}` });
 check(secret.out?.ok === false && /secret/.test(secret.out?.error), "a post with a Shopify secret is refused");

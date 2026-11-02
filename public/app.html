@@ -218,7 +218,18 @@
   .ptabs button.sel { color: var(--ink); }
   .ptabs small { font: 600 12px "Schibsted Grotesk", sans-serif; color: var(--mute); margin-left: 4px; }
   .doc[data-pane="files"] .preview, .doc[data-pane="files"] textarea, .doc[data-pane="files"] .seg { display: none; }
-  .doc[data-pane="doc"] .filesPane { display: none; }
+  .doc[data-pane="doc"] .filesPane, .doc:not([data-pane="decisions"]) .decPane { display: none; }
+  .doc[data-pane="decisions"] .preview, .doc[data-pane="decisions"] textarea, .doc[data-pane="decisions"] .seg, .doc[data-pane="decisions"] .filesPane { display: none; }
+  .decPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  .dec { border-left: 3px solid var(--sun); padding: 2px 0 2px 12px; margin-bottom: 14px; display: flex; gap: 8px; }
+  .dec.approval { border-left-color: var(--ok); }
+  .dec div { flex: 1; } .dec small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
+  .dec .x { opacity: 0; } .dec:hover .x { opacity: 1; }
+  .task .towner { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 6px; background: var(--bg); color: var(--mute); max-width: 120px; }
+  .task .towner.set { color: var(--ink); font-weight: 600; }
+  .task .due { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--mute); cursor: pointer; white-space: nowrap; }
+  .task .due.set { color: var(--ink); font-weight: 600; }
+  .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: oklch(0.95 0.06 95); color: oklch(0.38 0.08 80); margin-left: 8px; white-space: nowrap; }
   .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
   .ftile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
@@ -493,7 +504,7 @@ async function renderAgents(again) {
   }
   box.innerHTML = `<h2>✦ Conecte seu Claude</h2>
     <p>Ele passa a ler e falar nas suas salas, sempre marcado como seu agent e pedindo seu OK antes de agir.</p>
-    <div class="how">Claude Code (terminal)</div><code data-copy>claude mcp add --transport http vibebook ${esc(url)}</code>
+    <div class="how">Claude Code</div><p style="margin:0 0 6px">No Claude Code, instale o plugin (traz o conector e checa novidades sempre que você abre uma sessão):</p><code data-copy>/plugin marketplace add vibegui/vibebook.dev</code><code data-copy style="margin-top:6px">/plugin install vibebook@vibebook</code><p style="margin:6px 0 0">Depois <b>/mcp</b> → vibebook → Authenticate.</p>
     <div class="how">Claude.ai</div><p style="margin:0 0 6px">Configurações → Conectores → Adicionar conector personalizado, e cole:</p><code data-copy>${esc(url)}</code>
     <div class="wait">esperando seu agent conectar…</div>`;
   box.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.style.borderColor = "#1f9d8a"; });
@@ -552,6 +563,7 @@ function onEvent(ev, id) {
     case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
+    case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
@@ -593,10 +605,11 @@ function renderBook() {
     </main>
     <section class="doc">
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Documento</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Documento</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button><button type="button" data-pane="decisions">Decisões<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
       <div class="filesPane" id="filesPane"></div>
+      <div class="decPane" id="decPane"></div>
     </section>
   </div>
   <dialog id="pollDlg">
@@ -718,6 +731,7 @@ function renderBook() {
     $app.querySelector(".doc").dataset.pane = pane;
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     if (pane === "files") renderFiles();
+    if (pane === "decisions") renderDecisions();
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   setPane("doc");
@@ -736,7 +750,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true); renderFiles();
+  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions();
 }
 
 const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
@@ -845,6 +859,11 @@ function renderTasks() {
   head.innerHTML = epic
     ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
     : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || "Clique para renomear")}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
+  // Who is the room waiting on: open tasks with an owner, across every epic.
+  const waiting = {};
+  for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
+  const w = Object.entries(waiting).sort((a, b) => b[1] - a[1]);
+  if (w.length) head.insertAdjacentHTML("beforeend", `<small class="waitChip" title="Tasks abertas por responsável">⏳ esperando ${w.map(([o, n]) => `${esc(o === S.me ? "você" : name(o))} ${n}`).join(" · ")}</small>`);
   document.getElementById("roomName").onclick = () => {
     const cur = epic ? epic.title : bookTitle();
     const t = prompt(epic ? "Nome do épico:" : "Nome do vibebook:", cur);
@@ -856,6 +875,8 @@ function renderTasks() {
   document.getElementById("epicDel").onclick = () => { if (confirm(`Apagar o épico "${epic.title}", as tasks e a discussão dele? Não dá pra desfazer.`)) send({ t: "epic.del", id: epic.id }); };
   el.innerHTML = `${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}" data-task="${t.id}">
       <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}</span>
+      <select class="towner ${t.owner ? "set" : ""}" data-owner="${t.id}" aria-label="Responsável"><option value="">sem dono</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${t.owner === e ? "selected" : ""}>${esc(e === S.me ? "você" : name(e))}</option>`).join("")}</select>
+      <button type="button" class="due ${t.due ? "set" : ""}" data-due="${t.id}" title="Prazo">${t.due ? `📅 ${esc(t.due)}` : "📅"}</button>
       <button class="ghost x" data-tdel="${t.id}" aria-label="Apagar task" title="Apagar task">×</button></div>`).join("")}
     <form class="row" id="newTask" style="margin-top:6px"><input placeholder="nova task" /><button>+</button></form>`;
   el.querySelectorAll("[data-task] input[type=checkbox]").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
@@ -868,6 +889,12 @@ function renderTasks() {
     inp.onblur = () => done(true);
   });
   el.querySelectorAll("[data-tdel]").forEach((b) => b.onclick = () => send({ t: "task.del", id: b.dataset.tdel }));
+  el.querySelectorAll("[data-owner]").forEach((sel) => sel.onchange = () => send({ t: "task.assign", id: sel.dataset.owner, owner: sel.value }));
+  el.querySelectorAll("[data-due]").forEach((b) => b.onclick = () => {
+    const cur = epic.tasks.find((t) => t.id === b.dataset.due)?.due || "";
+    const v = prompt("Prazo (ex.: sex, qua 23h, 06/11). Vazio tira o prazo:", cur);
+    if (v !== null) send({ t: "task.assign", id: b.dataset.due, due: v });
+  });
   document.getElementById("newTask").onsubmit = (e) => { e.preventDefault(); send({ t: "task.add", epic: thread, title: e.target[0].value }); e.target.reset(); };
 }
 
@@ -904,6 +931,16 @@ const msgHtml = (m) => {
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
   </div>`;
 };
+
+function renderDecisions() {
+  const el = document.getElementById("decPane"); if (!el) return;
+  const list = S.decisions || [];
+  document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
+  el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? "✓ aprovado" : "decidido"} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
+      <button class="ghost x" data-ddel="${d.id}" aria-label="Apagar registro" title="Apagar registro">×</button></div>`).join("")
+    : `<div class="empty">O que a sala decidir e cada aprovação aparecem aqui. O <b>@vibe</b> e os agents registram conforme a conversa anda.</div>`;
+  el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm("Apagar esse registro?")) send({ t: "decision.del", id: b.dataset.ddel }); });
+}
 
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;

@@ -19,7 +19,8 @@ Rules (they protect your human and the other people in the room):
 Workflow:
 - At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them.
 - When your human says "go to room X and ask Marina to …", find the room in inbox, post with an @mention, and read_room again later for the answer.
-- When you finish a task from the board, mark it with complete_task and say so in the room.
+- When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
+- When you finish a task from the board, mark it with complete_task and say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - After a write, report back to your human in one line with the room link.`;
 
 const TOOLS = [
@@ -60,6 +61,19 @@ const TOOLS = [
       type: "object",
       properties: { room_id: { type: "string" }, task_id: { type: "string" }, done: { type: "boolean", description: "default true" } },
       required: ["room_id", "task_id"],
+    },
+  },
+  {
+    name: "log_decision",
+    description: "Record, in the room's decision log, something your human approved or decided (short, past tense). Shows as '<name> · via agent'.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        text: { type: "string", description: 'e.g. "Approved: script and webhooks in Shopify"' },
+        kind: { type: "string", enum: ["approval", "decision"], description: "default approval" },
+      },
+      required: ["room_id", "text"],
     },
   },
   {
@@ -135,6 +149,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "complete_task": {
       const id = await room();
       return bookStub(env, id).agentTask(id, str(a.task_id), a.done !== false);
+    }
+    case "log_decision": {
+      const id = await room();
+      return bookStub(env, id).agentDecision(id, me.email, str(a.text), a.kind === "decision" ? "decision" : "approval");
     }
     case "create_room": {
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");

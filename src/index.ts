@@ -99,7 +99,8 @@ for (const path of ["", "/demo"]) {
       return pageview(c, res);
     });
 }
-app.get("/login", async (c) => pageview(c, await shell(c)));
+// Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
+app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
 app.get("/app", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect("/login");

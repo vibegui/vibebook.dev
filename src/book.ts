@@ -47,11 +47,12 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT, type TEXT, size INTEGER, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS polls (id TEXT PRIMARY KEY, question TEXT, options TEXT, multi INTEGER, closed INTEGER DEFAULT 0, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
+      CREATE TABLE IF NOT EXISTS decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, who TEXT, kind TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const col of ["files TEXT", "poll TEXT", "kind TEXT"]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"]]) {
       try {
-        this.sql.exec(`ALTER TABLE messages ADD COLUMN ${col}`);
+        this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
     }
   }
@@ -65,7 +66,7 @@ export class Book extends DurableObject<Env> {
   }
   epics() {
     const tasks = this.sql
-      .exec<{ id: string; epic_id: string; title: string; done: number }>(`SELECT id, epic_id, title, done FROM tasks ORDER BY ts`)
+      .exec<{ id: string; epic_id: string; title: string; done: number; owner: string | null; due: string | null }>(`SELECT id, epic_id, title, done, owner, due FROM tasks ORDER BY ts`)
       .toArray();
     return this.sql
       .exec<{ id: string; title: string }>(`SELECT id, title FROM epics ORDER BY ts`)
@@ -80,6 +81,30 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg)
       .reverse();
+  }
+  /** Decisions and approvals, oldest first: what the room agreed and who said yes. */
+  decisions() {
+    return this.sql
+      .exec<{ id: number; text: string; who: string; kind: string; ts: number }>(`SELECT * FROM (SELECT * FROM decisions ORDER BY id DESC LIMIT 100) ORDER BY id`)
+      .toArray();
+  }
+  logDecision(text: string, who: string, kind: "decision" | "approval" = "decision") {
+    const t = text.trim().slice(0, 400);
+    if (!t) return null;
+    const id = this.sql.exec(`INSERT INTO decisions (text, who, kind, ts) VALUES (?, ?, ?, ?) RETURNING id`, t, who.slice(0, 200), kind, Date.now()).one().id as number;
+    this.broadcast({ t: "decisions", decisions: this.decisions() });
+    return id;
+  }
+  /** owner: a member email or "" to clear; due: free text ("qua 23h", "2026-11-06") or "" to clear. */
+  async assignTask(id: string, owner?: string, due?: string) {
+    if (owner !== undefined) {
+      const o = owner.trim().toLowerCase();
+      if (o && !(await this.members()).includes(o)) return { ok: false, error: `owner must be a member email: ${(await this.members()).join(", ")}` };
+      this.sql.exec(`UPDATE tasks SET owner = ? WHERE id = ?`, o || null, id);
+    }
+    if (due !== undefined) this.sql.exec(`UPDATE tasks SET due = ? WHERE id = ?`, due.trim().slice(0, 40) || null, id);
+    this.broadcast({ t: "epics", epics: this.epics() });
+    return { ok: true };
   }
   files(): FileMeta[] {
     return this.sql.exec<FileMeta>(`SELECT * FROM files ORDER BY ts DESC`).toArray();
@@ -167,11 +192,23 @@ export class Book extends DurableObject<Env> {
     this.ctx.waitUntil(this.touch({ lastId: id }));
     return m;
   }
-  createEpic(title: string, tasks: string[] = []) {
+  createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = []) {
     const id = rid();
     const ts = Date.now();
     this.sql.exec(`INSERT INTO epics (id, title, ts) VALUES (?, ?, ?)`, id, title.slice(0, 200), ts);
-    tasks.forEach((t, i) => this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts) VALUES (?, ?, ?, ?)`, rid(), id, t.slice(0, 300), ts + i));
+    tasks.forEach((t, i) => {
+      const x = typeof t === "string" ? { title: t } : t;
+      const owner = x.owner?.trim().toLowerCase();
+      this.sql.exec(
+        `INSERT INTO tasks (id, epic_id, title, ts, owner, due) VALUES (?, ?, ?, ?, ?, ?)`,
+        rid(),
+        id,
+        x.title.slice(0, 300),
+        ts + i,
+        owner && members.includes(owner) ? owner : null,
+        x.due?.trim().slice(0, 40) || null,
+      );
+    });
     this.broadcast({ t: "epics", epics: this.epics() });
     return id;
   }
@@ -286,7 +323,12 @@ export class Book extends DurableObject<Env> {
       title: book?.title ?? "",
       members: (await this.members()).map(who),
       doc: (this.get("doc") ?? "").slice(0, 20_000),
-      epics: epics.map((e) => ({ id: e.id, title: e.title, tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, done: !!t.done })) })),
+      epics: epics.map((e) => ({
+        id: e.id,
+        title: e.title,
+        tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due })),
+      })),
+      decisions: this.decisions().map((d) => ({ text: d.text, who: d.who, kind: d.kind, at: new Date(d.ts).toISOString() })),
       messages,
       last_id: lastId,
       paused: this.agentStreak("main") >= AGENT_STREAK_MAX,
@@ -317,6 +359,15 @@ export class Book extends DurableObject<Env> {
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, "fast", email));
     if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id };
+  }
+
+  async agentDecision(bookId: string, email: string, text: string, kind: "decision" | "approval") {
+    this.bind(bookId);
+    const names = await this.names();
+    const secret = findSecret(text);
+    if (secret) return { ok: false, error: `blocked: looks like a secret (${secret})` };
+    const id = this.logDecision(text, `${names[email] ?? email.split("@")[0]} · via agent`, kind);
+    return id ? { ok: true, id } : { ok: false, error: "empty" };
   }
 
   agentTask(bookId: string, taskId: string, done: boolean) {
@@ -362,6 +413,7 @@ export class Book extends DurableObject<Env> {
         messages: this.messages(),
         files: this.files(),
         polls: this.polls(),
+        decisions: this.decisions(),
         suggestions: this.suggestions(),
         members: await this.members(),
         pending: await this.pending(),
@@ -422,6 +474,11 @@ export class Book extends DurableObject<Env> {
         return this.updateTask(String(m.id), String(m.title ?? ""));
       case "task.del":
         return this.deleteTask(String(m.id));
+      case "task.assign":
+        return void (await this.assignTask(String(m.id), m.owner === undefined ? undefined : String(m.owner), m.due === undefined ? undefined : String(m.due)));
+      case "decision.del":
+        this.sql.exec(`DELETE FROM decisions WHERE id = ?`, Number(m.id));
+        return this.broadcast({ t: "decisions", decisions: this.decisions() });
       case "epic.rename":
         return this.renameEpic(String(m.id), String(m.title ?? ""));
       case "epic.del":
@@ -459,7 +516,7 @@ export class Book extends DurableObject<Env> {
     const epics = this.epics();
     const epic = epics.find((e) => e.id === thread);
     const board = epics
-      .map((e) => `- épico "${e.title}" (id ${e.id})\n${e.tasks.map((t) => `   - [${t.done ? "x" : " "}] ${t.title} (id ${t.id})`).join("\n")}`)
+      .map((e) => `- épico "${e.title}" (id ${e.id})\n${e.tasks.map((t) => `   - [${t.done ? "x" : " "}] ${t.title} (id ${t.id}${t.owner ? `, dono ${t.owner}` : ""}${t.due ? `, prazo ${t.due}` : ""})`).join("\n")}`)
       .join("\n");
     const mainDigest = epic
       ? `\n\nÚltimas mensagens da sala principal (com o nome do vibebook):\n${this.messages("main", 15).map((m) => `${m.author}: ${m.text}`).join("\n")}`
@@ -482,11 +539,15 @@ ${this.get("doc") || "(vazio)"}
 Épicos e tasks:
 ${board || "(nenhum)"}
 
+Decisões e aprovações registradas:
+${this.decisions().map((d) => `- ${d.text} (${d.who})`).join("\n") || "(nenhuma)"}
+
 Votações:
 ${Object.values(this.polls())
   .map((p) => `- "${p.question}" (id ${p.id}${p.closed ? ", encerrada" : ""}${p.multi ? ", múltipla escolha" : ""}): ${p.options.map((o, i) => `${o} = ${p.votes[i].length}${p.votes[i].length ? ` (${p.votes[i].join(", ")})` : ""}`).join("; ")}`)
   .join("\n") || "(nenhuma)"}${mainDigest}
 
+Toda task que tiver responsável ou prazo combinado na conversa: use assign_task (dono = email de um membro). Quando a sala decidir algo ou alguém aprovar um pedido, registre com log_decision, curto ("Cowlendar só desliga depois do import"). Não repita decisões já registradas.
 Quando o grupo precisar decidir entre opções, proponha uma votação com create_poll (ela aparece como um card para votar). Você vê imagens enviadas no chat.`;
   }
 
@@ -562,14 +623,21 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
         stopWhen: stepCountIs(4),
         tools: {
           create_epic: tool({
-            description: "Cria um épico (tema longo com discussão própria) com tasks iniciais.",
-            inputSchema: z.object({ title: z.string(), tasks: z.array(z.string()).max(12) }),
-            execute: async ({ title, tasks }) => ({ id: this.createEpic(title, tasks) }),
+            description: "Cria um épico (tema longo com discussão própria) com tasks iniciais, cada uma com responsável (email de membro) e prazo quando combinados.",
+            inputSchema: z.object({
+              title: z.string(),
+              tasks: z.array(z.object({ title: z.string(), owner: z.string().optional().describe("email de um membro"), due: z.string().optional() })).max(12),
+            }),
+            execute: async ({ title, tasks }) => ({ id: this.createEpic(title, tasks, await this.members()) }),
           }),
           add_task: tool({
-            description: "Adiciona uma task a um épico existente.",
-            inputSchema: z.object({ epic_id: z.string(), title: z.string() }),
-            execute: async ({ epic_id, title }) => ({ id: this.addTask(epic_id, title) ?? "epic not found" }),
+            description: "Adiciona uma task a um épico existente, opcionalmente com responsável (email de membro) e prazo.",
+            inputSchema: z.object({ epic_id: z.string(), title: z.string(), owner: z.string().optional(), due: z.string().optional() }),
+            execute: async ({ epic_id, title, owner, due }) => {
+              const id = this.addTask(epic_id, title);
+              if (id && (owner || due)) await this.assignTask(id, owner, due);
+              return { id: id ?? "epic not found" };
+            },
           }),
           update_task: tool({
             description: "Renomeia uma task e/ou marca/desmarca como feita.",
@@ -584,6 +652,16 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
             description: "Apaga uma task (use quando ficou duplicada, errada ou o grupo pediu).",
             inputSchema: z.object({ task_id: z.string() }),
             execute: async ({ task_id }) => (this.deleteTask(task_id), { ok: true }),
+          }),
+          assign_task: tool({
+            description: "Define o responsável (email de um membro) e/ou o prazo (texto curto, ex. 'qua 23h') de uma task. String vazia limpa.",
+            inputSchema: z.object({ task_id: z.string(), owner: z.string().optional(), due: z.string().optional() }),
+            execute: async ({ task_id, owner, due }) => this.assignTask(task_id, owner, due),
+          }),
+          log_decision: tool({
+            description: "Registra uma decisão da sala ou uma aprovação de alguém, com quem decidiu/aprovou.",
+            inputSchema: z.object({ text: z.string(), who: z.string().describe("nome de quem decidiu ou aprovou"), kind: z.enum(["decision", "approval"]) }),
+            execute: async ({ text, who, kind }) => ({ id: this.logDecision(text, who, kind) }),
           }),
           rename_epic: tool({
             description: "Renomeia um épico.",
