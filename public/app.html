@@ -170,7 +170,15 @@
   .msg.ai .txt ul { margin: 6px 0 10px; padding-left: 20px; } .msg.ai .txt li + li { margin-top: 4px; }
   .typing { color: var(--ai); font-size: 13px; overflow-wrap: anywhere; }
   .msg .txt a { color: var(--accent); overflow-wrap: anywhere; }
-  .composer { border-top: 1px solid var(--line); padding: 16px 24px 20px; display: flex; flex-direction: column; gap: 6px; }
+  .composer { border-top: 1px solid var(--line); padding: 16px 24px 20px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .mention { background: oklch(0.92 0.06 245); color: #14305e; border-radius: 5px; padding: 0 4px; font-weight: 600; }
+  .mention.me { background: var(--sun, #f2dc4a); color: #14305e; }
+  .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
+  .mentionPop[hidden] { display: none; }
+  .mentionPop button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 7px 10px; border-radius: 10px; text-align: left; font: inherit; cursor: pointer; }
+  .mentionPop button.sel, .mentionPop button:hover { background: var(--panel); }
+  .mentionPop small { color: var(--mute); margin-left: auto; font-size: 12px; }
+  .mentionPop .avatar { width: 24px; height: 24px; font-size: 10px; }
   .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
   .modes { display: none; gap: 6px; align-items: center; font-size: 13px; }
   .modes.show { display: flex; }
@@ -333,6 +341,20 @@ const avatar = (email, on) => email === "ai"
   : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
+// @mentions: a member's handle is their first name (accents stripped), else the first part of their email.
+const fold = (x) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, "");
+// Accepted handles: first name, the email's local part, and its first token ("leca" for leca.schatz@).
+const handlesOf = (email) => { const local = email.split("@")[0]; return [fold(S?.names?.[email]?.split(/\s+/)[0] || knownNames[email]?.split(/\s+/)[0] || ""), fold(local.split(/[._+-]/)[0]), fold(local)].filter(Boolean); };
+const handleOf = (email) => handlesOf(email)[0];
+const mentionTarget = (h) => {
+  const k = fold(h);
+  if (k === "vibe" || k === "ai") return "ai";
+  return (S?.members || []).find((e) => handlesOf(e).includes(k)) || null;
+};
+const mentions = (h) => h.replace(/(^|[\s(>])@([\p{L}\p{N}._-]+)/gu, (all, pre, tag) => {
+  const who = mentionTarget(tag);
+  return who ? `${pre}<span class="mention${who === S?.me ? " me" : ""}" title="${esc(who === "ai" ? "@vibe" : who)}">@${tag}</span>` : all;
+});
 const linkify = (h) => h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`);
 // Tiny markdown for AI messages: escape first, then bold/italics/lists/paragraphs.
 const md = (s) => linkify(esc(s))
@@ -555,7 +577,7 @@ function onEvent(ev, id) {
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
-      const el = document.getElementById(`m${ev.id}`); if (el) { const t = el.querySelector(".txt"); t.hidden = false; t.innerHTML = md(ev.text); }
+      const el = document.getElementById(`m${ev.id}`); if (el) { const t = el.querySelector(".txt"); t.hidden = false; t.innerHTML = mentions(md(ev.text)); }
       scrollDown(); return;
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
@@ -615,6 +637,7 @@ function renderBook() {
           ${Object.entries(modeLabel).map(([k, v]) => `<button type="button" data-mode="${k}" class="${k === mode ? "sel" : ""}">${v}</button>`).join("")}
         </div>
         <div class="tray" id="tray"></div>
+        <div class="mentionPop" id="mentionPop" role="listbox" aria-label="Mencionar" hidden></div>
         <div class="row">
           <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo">📎</button>
           <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação">📊</button>
@@ -670,11 +693,46 @@ function renderBook() {
   };
   const input = document.getElementById("input");
   const modes = document.getElementById("modes");
+  // @ autocomplete: people in the room (you excluded) + @vibe, filtered by what follows the @.
+  const pop = document.getElementById("mentionPop");
+  let picks = [], pickAt = 0, atStart = -1;
+  const closePop = () => { pop.hidden = true; picks = []; atStart = -1; };
+  const choose = (i) => {
+    const p = picks[i]; if (!p) return;
+    const caret = input.selectionStart;
+    input.value = `${input.value.slice(0, atStart)}@${p.handle} ${input.value.slice(caret)}`;
+    const at = atStart + p.handle.length + 2;
+    input.setSelectionRange(at, at); closePop(); input.focus(); input.oninput();
+  };
+  const renderPop = () => {
+    pop.innerHTML = picks.map((p, i) => `<button type="button" role="option" class="${i === pickAt ? "sel" : ""}" data-i="${i}">${avatar(p.email)}<b>@${esc(p.handle)}</b><small>${esc(p.label)}</small></button>`).join("");
+    pop.hidden = !picks.length;
+  };
+  pop.onmousedown = (e) => { const b = e.target.closest("[data-i]"); if (b) { e.preventDefault(); choose(Number(b.dataset.i)); } };
+  const updatePop = () => {
+    const before = input.value.slice(0, input.selectionStart);
+    const m = before.match(/(^|\s)@([\p{L}\p{N}._-]*)$/u);
+    if (!m) return closePop();
+    atStart = before.length - m[2].length - 1;
+    const q = fold(m[2]);
+    const people = [{ email: "ai", handle: "vibe", label: "organiza a sala" }, ...(S.members || []).filter((e) => e !== S.me).map((e) => ({ email: e, handle: handleOf(e), label: name(e) === handleOf(e) ? e : name(e) }))];
+    picks = people.filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q)).slice(0, 8);
+    pickAt = 0; renderPop();
+  };
   input.oninput = () => {
     modes.classList.toggle("show", /(^|\s)@(ai|vibe)\b/i.test(input.value) || /@(a?i?|v(i(b(e)?)?)?)$/i.test(input.value));
     input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
+    updatePop();
   };
-  input.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); document.getElementById("composer").requestSubmit(); } };
+  input.onblur = () => setTimeout(closePop, 100);
+  input.onkeydown = (e) => {
+    if (!pop.hidden && picks.length) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); pickAt = (pickAt + (e.key === "ArrowDown" ? 1 : picks.length - 1)) % picks.length; return renderPop(); }
+      if ((e.key === "Enter" || e.key === "Tab") && !e.isComposing) { e.preventDefault(); return choose(pickAt); }
+      if (e.key === "Escape") { e.preventDefault(); return closePop(); }
+    }
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); document.getElementById("composer").requestSubmit(); }
+  };
   modes.onclick = (e) => {
     const b = e.target.closest("[data-mode]"); if (!b) return;
     mode = b.dataset.mode; modes.querySelectorAll("[data-mode]").forEach((x) => x.classList.toggle("sel", x === b)); input.focus();
@@ -943,7 +1001,7 @@ function pollHtml(id) {
 }
 
 const msgHtml = (m) => {
-  const txt = m.author === "ai" ? (m.text ? md(m.text) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? linkify(esc(m.text)) : "";
+  const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}" id="m${m.id}">
     ${avatar(m.author)}

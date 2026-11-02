@@ -298,10 +298,15 @@ export class Book extends DurableObject<Env> {
     if (!this.get("book_id")) this.set("book_id", bookId);
   }
 
-  async agentRead(bookId: string, since = 0) {
+  async agentRead(bookId: string, since = 0, email = "") {
     this.bind(bookId);
     const book = await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
     const names = await this.names();
+    // Same handles the app accepts: first name (accents stripped), the email's local part and its first token.
+    const fold = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, "");
+    const local = email.split("@")[0];
+    const mine = new Set([fold((names[email] ?? "").split(/\s+/)[0] ?? ""), fold(local.split(/[._+-]/)[0]), fold(local)].filter(Boolean));
+    const mentionsMe = (t: string) => [...t.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((m) => mine.has(fold(m[1])));
     const who = (e: string) => (e === "ai" ? "@vibe" : names[e] ? `${names[e]} <${e}>` : e);
     const epics = this.epics();
     const threadName = (t: string) => (t === "main" ? "main" : `epic: ${epics.find((e) => e.id === t)?.title ?? t}`);
@@ -316,6 +321,7 @@ export class Book extends DurableObject<Env> {
         thread: threadName(m.thread as string),
         from: who(m.author as string),
         by_agent: m.kind === "agent",
+        mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
         text: (m.text as string) || `[poll ${m.poll}]`,
       }));
     const lastId = (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0;

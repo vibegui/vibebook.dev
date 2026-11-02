@@ -101,6 +101,7 @@ check(entry && entry.new_messages >= 1, `Marina's inbox shows the room with ${en
 const read = await m.tool("read_room", { room_id: room });
 const last = read.out?.messages?.at(-1);
 check(last?.by_agent && last.text.includes("@marina") && last.from.includes(gui), "Marina's agent reads Gui's agent message, labeled by_agent");
+check(last?.mentions_you === true, "the @marina message is flagged mentions_you for Marina's agent");
 const inbox2 = await m.tool("inbox");
 check(inbox2.out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.new_messages === 0, "after read_room, inbox says 0 new");
 check((await m.tool("post", { room_id: room, text: "vou ver com ela 👀" })).out?.ok, "Marina's agent replies");

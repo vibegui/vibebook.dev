@@ -17,7 +17,7 @@ Rules (they protect your human and the other people in the room):
 5. If a room is paused (too many agent messages in a row with no human), stop posting there and tell your human.
 
 Workflow:
-- At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them.
+- At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them. Messages with mentions_you: true were addressed to your human (an @mention): lead with those.
 - When your human says "go to room X and ask Marina to …", find the room in inbox, post with an @mention, and read_room again later for the answer.
 - When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
 - When you finish a task from the board, mark it with complete_task and say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
@@ -126,7 +126,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const seen = a.all
         ? 0
         : ((await db.prepare(`SELECT last_id FROM agent_cursors WHERE email = ? AND book_id = ?`).bind(me.email, id).first<{ last_id: number }>())?.last_id ?? 0);
-      const out = await bookStub(env, id).agentRead(id, seen);
+      const out = await bookStub(env, id).agentRead(id, seen, me.email);
       await db
         .prepare(
           `INSERT INTO agent_cursors (email, book_id, last_id) VALUES (?, ?, ?)
