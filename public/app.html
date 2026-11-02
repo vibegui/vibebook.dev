@@ -55,6 +55,13 @@
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
     display: flex; min-height: 112px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
   .card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px oklch(0.25 0.08 250 / .45); }
+  .card { position: relative; }
+  .card .arch { position: absolute; top: 10px; right: 10px; opacity: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 5px 8px; font-size: 14px; line-height: 1; cursor: pointer; }
+  .card:hover .arch, .card .arch:focus-visible { opacity: 1; }
+  .card .arch:hover { border-color: #c2410c; }
+  @media (hover: none) { .card .arch { opacity: .7; } }
+  .archLink { font-size: 14px; color: var(--mute); }
+  .archLink:hover { color: var(--ink); }
   .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .cover { flex: 0 0 120px; position: relative; display: flex; align-items: flex-end; padding: 14px 14px 14px 22px; color: #fff;
     background-image: radial-gradient(circle at 88% 12%, oklch(1 0 0 / .22), transparent 48%); box-shadow: inset 7px 0 0 oklch(0 0 0 / .14); }
@@ -410,6 +417,7 @@ function route() {
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
   if (ws) { ws.onclose = null; ws.close(); ws = null; }
   if (location.pathname === "/login") return login();
+  if (location.pathname === "/archived") return archivedPage();
   m ? openBook(m[1]) : home();
 }
 
@@ -490,7 +498,7 @@ async function home() {
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
     <div class="hello">
       <div class="helloText"><h1>${first ? `Oi, ${esc(first)}` : "Seus vibebooks"}</h1>
-        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · o @vibe organiza as pastas sozinho</p></div>
+        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · <a class="archLink" data-nav href="/archived">Arquivo</a></p></div>
       <button class="primary" id="new">+ Novo vibebook</button>
     </div>
     <div class="grid">
@@ -501,6 +509,7 @@ async function home() {
             <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
             <div class="cards">${byFolder[f].map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
               <a class="card" data-nav href="/b/${b.id}">
+                <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="Arquivar" aria-label="Arquivar ${esc(b.title)}">🗑</button>
                 <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
                 <div class="info">
                   <b>${esc(b.title)}</b>
@@ -543,6 +552,41 @@ async function home() {
   };
   renderAgents();
   renderBells();
+  document.querySelectorAll("[data-archive]").forEach((b) => b.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    confirmArchive(b.dataset.archive, b.dataset.title);
+  });
+}
+
+function confirmArchive(id, title) {
+  const d = document.createElement("dialog");
+  d.innerHTML = `<h3>Arquivar “${esc(title)}”?</h3>
+    <p class="muted" style="margin:0 0 6px">Sai da sua lista e do inbox do seu agent e vai pro <b>Arquivo</b>. Nada é apagado: quem mais está na sala continua vendo, e você restaura quando quiser.</p>
+    <div class="acts"><button type="button" class="ghost" value="no">Cancelar</button><button type="button" class="primary" value="yes">Arquivar</button></div>`;
+  document.body.appendChild(d);
+  d.addEventListener("close", () => d.remove());
+  d.querySelector('[value="no"]').onclick = () => d.close();
+  d.querySelector('[value="yes"]').onclick = async () => { await api(`/api/books/${id}/archive`, { archived: true }).catch((err) => alert(err.message)); d.close(); home(); };
+  d.showModal();
+  d.querySelector('[value="yes"]').focus();
+}
+
+async function archivedPage() {
+  document.title = "Arquivo · vibebook";
+  const { books } = await api("/api/archived");
+  $app.innerHTML = `
+  <div class="home">
+    <header class="top"><div class="brand"><a href="/app" data-nav>vibebook</a></div></header>
+    <div class="hello"><div class="helloText"><h1>Arquivo</h1><p>Salas que você arquivou. Elas continuam existindo pra quem está nelas.</p></div>
+      <a class="ghost" data-nav href="/app" style="text-decoration:none">← Voltar</a></div>
+    <main>${books.length ? `<div class="cards">${books.map((b) => `
+      <div class="card" style="cursor:default">
+        <div class="cover" style="background-color:${coverColor(b.title)};filter:grayscale(.6)"><span>${esc(initials(b.title))}</span></div>
+        <div class="info"><b>${esc(b.title)}</b><div class="sum">${esc(b.summary || "")}</div>
+          <div class="meta"><span>arquivada ${ago(b.archived_at)}</span><span><a data-nav href="/b/${b.id}">abrir</a> · <button type="button" class="link" data-restore="${b.id}">Restaurar</button></span></div></div>
+      </div>`).join("")}</div>` : `<div class="empty">Nada arquivado.</div>`}</main>
+  </div>`;
+  document.querySelectorAll("[data-restore]").forEach((b) => b.onclick = async () => { await api(`/api/books/${b.dataset.restore}/archive`, { archived: false }); archivedPage(); });
 }
 
 // "Seu agent": connect instructions while none is connected (polled, so it flips to ✓ the moment the
@@ -768,11 +812,10 @@ function renderBook() {
     book.classList.toggle("boardview", on);
     book.classList.toggle("nodoc", on); // the board wants the width
     document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
-    try { localStorage.setItem("vb.board", on ? "1" : ""); } catch {}
     if (on) renderKanban();
   };
   document.getElementById("toggleBoard").onclick = () => setBoard(!book.classList.contains("boardview"));
-  try { if (localStorage.getItem("vb.board")) setBoard(true); } catch {}
+  // Entering a room always opens chat + doc; the board is one click away.
   // Resizable doc panel; width remembered per browser.
   const setDocW = (w) => {
     w = Math.round(Math.min(Math.max(w, 260), window.innerWidth - 260 - 320));

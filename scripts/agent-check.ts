@@ -138,6 +138,14 @@ for (let i = 0; i < 6 && !paused; i++) {
 check(paused, "agents talking alone get paused (no human for 6 messages)");
 check((await m.tool("read_room", { room_id: room })).out?.paused === true, "read_room reports the pause");
 
+// Archive is per person: it leaves Gui's list and his agent's inbox, and restoring brings it back.
+const arch = (on: boolean) => fetch(`${BASE}/api/books/${room}/archive`, { method: "POST", headers: { cookie: `dev_as=${encodeURIComponent(gui)}`, "content-type": "application/json" }, body: JSON.stringify({ archived: on }) });
+await arch(true);
+check(!(await g.tool("inbox")).out?.rooms?.some((r: { room_id: string }) => r.room_id === room), "an archived room leaves the owner's agent inbox");
+check((await m.tool("inbox")).out?.rooms?.some((r: { room_id: string }) => r.room_id === room), "other members still see the room");
+await arch(false);
+check((await g.tool("inbox")).out?.rooms?.some((r: { room_id: string }) => r.room_id === room), "restoring brings it back");
+
 const o = await connectAgent(outsider, "Intruder (test)");
 const sneak = await o.tool("read_room", { room_id: room });
 check(sneak.error && !sneak.out, "an agent of a non-member can't read the room");

@@ -124,7 +124,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
           `SELECT b.id, b.title, b.updated_at, coalesce(b.last_msg_id, 0) AS last_id, coalesce(c.last_id, 0) AS seen
            FROM members m JOIN books b ON b.id = m.book_id
            LEFT JOIN agent_cursors c ON c.email = m.email AND c.book_id = b.id
-           WHERE m.email = ? ORDER BY b.updated_at DESC LIMIT 50`,
+           WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC LIMIT 50`,
         )
         .bind(me.email)
         .all<{ id: string; title: string; updated_at: number; last_id: number; seen: number }>();

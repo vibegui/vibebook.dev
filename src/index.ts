@@ -54,7 +54,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -105,6 +105,10 @@ app.get("/app", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect("/login");
 });
+app.get("/archived", async (c) => {
+  const email = await identify(c);
+  return email ? pageview(c, await shell(c), email) : c.redirect("/login?next=%2Farchived");
+});
 app.get("/b/*", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`);
@@ -137,7 +141,7 @@ app.get("/api/me", async (c) => {
       `SELECT b.id, b.title, b.folder, b.summary, b.updated_at,
          (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
        FROM books b JOIN members m ON m.book_id = b.id
-       WHERE m.email = ? ORDER BY b.updated_at DESC`,
+       WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC`,
     )
     .bind(email)
     .all();
@@ -153,6 +157,30 @@ app.get("/api/me", async (c) => {
     .all();
   const me = await db.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>();
   return c.json({ email, name: me?.name ?? null, books: books.results, friends: friends.results });
+});
+
+// Archive is per person: the room leaves your list (and your agent's inbox) and lands in /archived.
+// Everyone else keeps it; restoring brings it back. Nothing is deleted.
+app.get("/api/archived", async (c) => {
+  const r = await c.env.DB.prepare(
+    `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, m.archived_at,
+       (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
+     FROM books b JOIN members m ON m.book_id = b.id
+     WHERE m.email = ? AND m.archived_at IS NOT NULL ORDER BY m.archived_at DESC`,
+  )
+    .bind(c.get("email"))
+    .all();
+  return c.json({ books: r.results });
+});
+
+app.post("/api/books/:id/archive", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
+  const { archived } = await c.req.json<{ archived?: boolean }>().catch(() => ({ archived: true }));
+  await c.env.DB.prepare(`UPDATE members SET archived_at = ? WHERE book_id = ? AND email = ?`).bind(archived === false ? null : Date.now(), id, email).run();
+  c.executionCtx.waitUntil(track(c.env, archived === false ? "book_restored" : "book_archived", { user: email, dims: { book: id } }));
+  return c.json({ ok: true });
 });
 
 app.post("/api/me", async (c) => {
