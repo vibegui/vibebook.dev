@@ -198,7 +198,7 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
     ),
     // distinct people per step; pre-login steps count daily visitor ids, later ones emails
     funnel: [
-      { step: "Visitou a landing", n: people((e) => e.name === "pageview" && e.path === "/") },
+      { step: "Visitou a landing", n: people((e) => e.name === "pageview" && ["/", "/pt", "/en"].includes(e.path)) },
       { step: "Abriu o login", n: people((e) => e.name === "pageview" && e.path === "/login") },
       { step: "Pediu código", n: people((e) => e.name === "login_code_sent") },
       { step: "Entrou", n: people((e) => e.name === "login") },

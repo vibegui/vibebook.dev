@@ -75,7 +75,27 @@ const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) =>
 
 // App shell: /login is public; /app and /b/* bounce to /login without a session.
 const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new URL("/app", c.req.url));
-app.get("/", async (c) => pageview(c, await c.env.ASSETS.fetch(c.req.raw)));
+// Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
+// language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
+const LANG_COOKIE = "vb_lang";
+const pickLang = (req: Request) =>
+  req.headers.get("cookie")?.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] ??
+  (req.headers.get("accept-language")?.split(",", 1)[0]?.trim().toLowerCase().startsWith("en") ? "en" : "pt");
+for (const path of ["", "/demo"]) {
+  app.get(path || "/", (c) => {
+    const url = new URL(c.req.url);
+    const res = c.redirect(`/${pickLang(c.req.raw)}${path}${url.search}`, 302);
+    res.headers.set("vary", "Accept-Language, Cookie");
+    return res;
+  });
+  for (const lang of ["pt", "en"])
+    app.get(`/${lang}${path}`, async (c) => {
+      const asset = await c.env.ASSETS.fetch(c.req.raw);
+      const res = new Response(asset.body, asset);
+      res.headers.append("set-cookie", `${LANG_COOKIE}=${lang}; Max-Age=31536000; Path=/; SameSite=Lax`);
+      return pageview(c, res);
+    });
+}
 app.get("/login", async (c) => pageview(c, await shell(c)));
 app.get("/app", async (c) => {
   const email = await identify(c);
