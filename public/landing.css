@@ -208,7 +208,22 @@
   @media (max-width: 720px) { .connect { grid-template-columns: 1fr; } }
   .lang { font: 700 13px/1 var(--sans); color: var(--white); text-decoration: none; padding: 8px 11px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px oklch(1 0 0 / .35); }
   .lang:hover { box-shadow: inset 0 0 0 1.5px oklch(1 0 0 / .8); }
-  .trust { background: var(--surface); }
+  .rules-sec { background: var(--surface); }
   .connect-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: clamp(40px, 6vw, 64px); }
   .connect-cta .btn { color: var(--cobalt-ink); }
   .connect-cta span { color: var(--mute); }
+  .access .chips { list-style: none; margin: 26px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .access .chips li { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: 14px; }
+  .amap { display: grid; grid-template-columns: 1fr 1.6fr 1fr; gap: 12px; align-items: center; }
+  .amap > * { min-width: 0; }
+  .amap .side-a { background: oklch(0.2 0.03 250); color: oklch(0.92 0.02 240); border-radius: 18px; padding: 14px; display: grid; gap: 8px; }
+  .amap .who { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--white); margin-bottom: 2px; }
+  .amap .key { font: 12.5px/1.3 ui-monospace, "SF Mono", Menlo, monospace; background: oklch(1 0 0 / .07); border-radius: 8px; padding: 6px 8px; }
+  .amap .mid { background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; box-shadow: 0 30px 60px -30px oklch(0.25 0.08 250 / .45); font-size: 13.5px; }
+  .amap .mh { font-size: 12px; color: var(--mute); font-weight: 700; margin-bottom: 8px; }
+  .amap .lg { display: grid; grid-template-columns: 42px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .amap .lg time { color: var(--mute); font: 12px/1.6 ui-monospace, Menlo, monospace; }
+  .amap .mf { margin-top: 10px; font-weight: 700; color: oklch(0.4 0.1 150); }
+  @media (max-width: 720px) { .amap { grid-template-columns: 1fr; } }
+  .term .no { color: oklch(0.75 0.15 30); font-size: 12.5px; }
+  .term .warn { color: var(--sun); font-size: 12.5px; }
