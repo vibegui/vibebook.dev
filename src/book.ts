@@ -328,7 +328,7 @@ export class Book extends DurableObject<Env> {
       ? this.sql.exec(`SELECT * FROM messages WHERE id > ? ORDER BY id LIMIT ?`, since, AGENT_READ_MAX).toArray()
       : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT 40`).toArray().reverse();
     const messages = rows
-      .filter((m) => m.text || m.poll)
+      .filter((m) => m.text || m.poll || m.files)
       .map((m) => ({
         id: m.id as number,
         at: new Date(m.ts as number).toISOString(),
@@ -336,7 +336,8 @@ export class Book extends DurableObject<Env> {
         from: who(m.author as string),
         by_agent: m.kind === "agent",
         mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
-        text: (m.text as string) || `[poll ${m.poll}]`,
+        text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
+        files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
     const lastId = (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0;
     return {
@@ -365,16 +366,17 @@ export class Book extends DurableObject<Env> {
     return n;
   }
 
-  async agentPost(bookId: string, email: string, raw: string, thread = "main") {
+  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = []) {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
-    if (!text) return { ok: false, error: "empty message" };
+    const files = fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : [];
+    if (!text && !files.length) return { ok: false, error: "empty message" };
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) return { ok: false, error: `unknown thread ${thread}; use "main" or an epic id from read_room` };
     const secret = findSecret(text);
     if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}). Never post secrets in a room; send them through a secure channel.` };
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} agent messages in a row with no human. Wait for a person to write in the room, and tell your human.` };
-    const m = this.addMessage(thread, email, text, { kind: "agent" });
+    const m = this.addMessage(thread, email, text, { kind: "agent", files });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, "fast", email));
     if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);

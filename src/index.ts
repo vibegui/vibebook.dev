@@ -4,7 +4,7 @@ import { auth, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
-import { befriend, bookStub, createBook, inviteMember, isMember } from "./rooms";
+import { befriend, bookStub, createBook, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 
@@ -214,27 +214,21 @@ app.delete("/api/books/:id/members/:email", async (c) => {
   return c.json({ ok: true });
 });
 
-// Files: images + PDF only (no SVG/HTML: they can carry script). Stored in R2 under <book>/<file>.
-const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
-
+// Files: stored in R2 under <book>/<file>; types, limits and serving headers live in rooms.ts.
 app.post("/api/books/:id/files", async (c) => {
   const email = c.get("email");
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
   const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!FILE_TYPES.includes(type)) return c.json({ error: "Tipo de arquivo não suportado (imagens e PDF)." }, 415);
+  if (!FILE_TYPES.includes(type)) return c.json({ error: "Tipo de arquivo não suportado (imagens, PDF e HTML)." }, 415);
   if (Number(c.req.header("content-length") ?? 0) > MAX_FILE_BYTES) return c.json({ error: "Arquivo maior que 10MB." }, 413);
-  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
-  const body = await c.req.arrayBuffer();
-  if (!body.byteLength || body.byteLength > MAX_FILE_BYTES) return c.json({ error: "Arquivo vazio ou maior que 10MB." }, 413);
-  const raw = decodeURIComponent(c.req.header("x-filename") ?? "") || `arquivo.${type.split("/")[1]}`;
-  const name = raw.replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
-  const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
-  await c.env.FILES.put(`${id}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
-  await bookStub(c.env, id).fetch(`https://book/file?book=${id}`, { method: "POST", body: JSON.stringify(meta) });
-  c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
-  return c.json(meta);
+  try {
+    const meta = await storeFile(c.env, id, email, type, await c.req.arrayBuffer(), decodeURIComponent(c.req.header("x-filename") ?? ""));
+    c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
+    return c.json(meta);
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+  }
 });
 
 app.get("/api/books/:id/files/:fid", async (c) => {
@@ -242,16 +236,7 @@ app.get("/api/books/:id/files/:fid", async (c) => {
   if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
   if (!obj) return c.notFound();
-  const type = obj.httpMetadata?.contentType ?? "application/octet-stream";
-  return new Response(obj.body, {
-    headers: {
-      "content-type": FILE_TYPES.includes(type) ? type : "application/octet-stream",
-      "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(obj.customMetadata?.name ?? "arquivo")}`,
-      "x-content-type-options": "nosniff",
-      "content-security-policy": "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'",
-      "cache-control": "private, max-age=86400",
-    },
-  });
+  return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
 });
 
 app.get("/ws/:id", async (c) => {

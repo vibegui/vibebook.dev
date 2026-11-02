@@ -3,7 +3,7 @@
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
-import { bookStub, createBook, inviteMember, isMember } from "./rooms";
+import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 
@@ -53,6 +53,23 @@ const TOOLS = [
         thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
       },
       required: ["room_id", "text"],
+    },
+  },
+  {
+    name: "upload_file",
+    description: "Attach a file to a room (images, PDF or HTML, up to 10MB), optionally with a message. Pass HTML as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        filename: { type: "string", description: 'e.g. "linkedin-report.html"' },
+        content_type: { type: "string", enum: FILE_TYPES },
+        text: { type: "string", description: "file content for text/html" },
+        base64: { type: "string", description: "file content for images and PDF" },
+        message: { type: "string", description: "optional message posted with the file" },
+        thread: { type: "string", description: '"main" (default) or an epic id' },
+      },
+      required: ["room_id", "filename", "content_type"],
     },
   },
   {
@@ -146,6 +163,23 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
       return bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main");
+    }
+    case "upload_file": {
+      const id = await room();
+      const type = str(a.content_type).toLowerCase();
+      let body: ArrayBuffer;
+      if (typeof a.text === "string" && a.text) body = new TextEncoder().encode(a.text).buffer as ArrayBuffer;
+      else if (typeof a.base64 === "string" && a.base64) {
+        if (a.base64.length > (MAX_FILE_BYTES * 4) / 3 + 4) throw new Error("file larger than 10MB");
+        const bin = atob(a.base64.replace(/\s+/g, ""));
+        body = Uint8Array.from(bin, (ch) => ch.charCodeAt(0)).buffer as ArrayBuffer;
+      } else throw new Error("pass the file as text (HTML) or base64 (images, PDF)");
+      const meta = await storeFile(env, id, me.email, type, body, str(a.filename));
+      ctx.waitUntil(track(env, "file_uploaded", { user: me.email, dims: { book: id, type, size: meta.size, agent: true } }));
+      // Always posted, so the file shows up in the chat where people (and agents) will look for it.
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.message), str(a.thread) || "main", [meta.id]);
+      const file = { name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
+      return posted.ok ? { ok: true, file, message_id: posted.id } : { ...posted, file, note: "the file is stored in the room's files, but the message was not posted" };
     }
     case "set_task_status": {
       const id = await room();

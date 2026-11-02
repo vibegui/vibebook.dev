@@ -1,6 +1,7 @@
 // Room (vibebook) operations shared by the app API and the agent MCP.
 import { emailHtml, escapeHtml, inviteLink } from "./auth";
 import type { Env } from "./index";
+import { findSecret } from "./secrets";
 import { track } from "./track";
 
 export const isMember = async (db: D1Database, bookId: string, email: string) =>
@@ -57,3 +58,43 @@ export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown
   }
   await bookStub(env, bookId).fetch("https://book/members-changed", { method: "POST" });
 }
+
+// Files: images, PDF and HTML (no SVG: it can carry script without our sandbox applying to <img>).
+// HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
+export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
+export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export type StoredFile = { id: string; name: string; type: string; size: number; author: string; ts: number };
+
+/** Validates and stores one file in R2 + the room's index. Throws an Error whose message is user-facing. */
+export async function storeFile(env: Env, bookId: string, email: string, type: string, body: ArrayBuffer, rawName: string): Promise<StoredFile> {
+  if (!FILE_TYPES.includes(type)) throw new Error("Tipo de arquivo não suportado (imagens, PDF e HTML).");
+  if (!body.byteLength || body.byteLength > MAX_FILE_BYTES) throw new Error("Arquivo vazio ou maior que 10MB.");
+  if (type === "text/html") {
+    const secret = findSecret(new TextDecoder().decode(body));
+    if (secret) throw new Error(`Não subi: o HTML parece ter ${secret}. Segredo não entra na sala.`);
+  }
+  if (!(await env.UPLOAD_LIMIT.limit({ key: email })).success) throw new Error("Muitos uploads. Espera um minuto.");
+  const name = (rawName || `arquivo.${type === "text/html" ? "html" : type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
+  const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
+  await env.FILES.put(`${bookId}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
+  await bookStub(env, bookId).fetch(`https://book/file?book=${bookId}`, { method: "POST", body: JSON.stringify(meta) });
+  return meta;
+}
+
+// Uploaded HTML runs in an opaque origin: scripts may run (reports draw charts) but can't reach vibebook.dev's
+// cookies or storage, can't fetch anything, submit forms, open popups or navigate the top page. Images only from
+// here or data: (no tracking pixels); fonts from Google Fonts.
+const HTML_CSP =
+  "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; " +
+  "font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'";
+const FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
+
+export const fileHeaders = (type: string, name: string) => ({
+  "content-type": FILE_TYPES.includes(type) ? (type === "text/html" ? "text/html; charset=utf-8" : type) : "application/octet-stream",
+  "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(name)}`,
+  "x-content-type-options": "nosniff",
+  "content-security-policy": type === "text/html" ? HTML_CSP : FILE_CSP,
+  "referrer-policy": "no-referrer",
+  "cross-origin-opener-policy": "same-origin",
+  "cache-control": "private, max-age=86400",
+});

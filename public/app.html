@@ -586,7 +586,8 @@ let thread = "main";
 let mode = "fast";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
-const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf"];
+const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
+const fileIcon = (f) => (f.type === "text/html" ? "🌐" : "📄");
 
 function openBook(id) {
   thread = "main";
@@ -733,7 +734,7 @@ function renderBook() {
         <div class="row">
           <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo">📎</button>
           <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação">📊</button>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple hidden />
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
           <textarea id="input" rows="1" placeholder="Mensagem… @vibe organiza a sala"></textarea><button class="primary" id="sendBtn">Enviar</button>
         </div>
       </form>
@@ -851,7 +852,8 @@ function renderBook() {
   };
   const addFiles = (list) => {
     for (let file of list) {
-      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: só imagens (png, jpg, webp, gif) e PDF.`); continue; }
+      if (!file.type && /\.html?$/i.test(file.name)) file = new File([file], file.name, { type: "text/html" });
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: só imagens (png, jpg, webp, gif), PDF e HTML.`); continue; }
       if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: maior que 10MB.`); continue; }
       if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
       const p = { file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null };
@@ -967,7 +969,8 @@ function renderRail(el) {
     <div class="railPeople">${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
-  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; renderSide(); renderChat(); });
+  // The board follows the thread: an epic filters it to that epic, the main room shows every epic.
+  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban(); });
 }
 
 function renderSide() {
@@ -1003,7 +1006,7 @@ function renderSide() {
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
-    thread = b.dataset.thread; renderSide(); renderChat();
+    thread = b.dataset.thread; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban();
     const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
   });
   el.querySelectorAll("[data-sug]").forEach((b) => b.onclick = () => send({ t: "suggestion", i: Number(b.dataset.sug), accept: !!b.dataset.accept }));
@@ -1127,7 +1130,7 @@ const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.type.startsWith("image/")
   ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener"><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
-  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener">📄 ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
+  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener">${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
 
 function pollHtml(id) {
   const p = S.polls?.[id]; if (!p) return "";
@@ -1176,7 +1179,7 @@ function renderFiles() {
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}">
-      <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : "📄"}</div>
+      <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
     : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o 📎. Tudo que for enviado neste vibebook fica aqui.</div>`;
 }
