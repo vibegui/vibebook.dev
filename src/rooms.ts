@@ -46,10 +46,11 @@ export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown
         from: { email: "convite@vibebook.dev", name: "vibebook" },
         replyTo: inviter,
         subject: `${name} te chamou pro vibebook "${title}"`,
-        text: `${inviter} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}`,
+        text: `${inviter} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}\n\nTraga seu Claude (1 minuto): no Claude.ai, Configurações → Conectores → Adicionar conector personalizado, URL ${origin}/mcp, e Permitir.\nClaude Code e outros agents: ${origin}/pt/connect`,
         html: emailHtml(
           `${escapeHtml(name)} te chamou pro vibebook`,
-          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(inviter)} quer fazer isso com você. Tem chat, épicos, tarefas, e o seu Claude pode entrar na sala também.</p><p style="font-size:13px;color:#6b7383">O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email.</p><p style="margin-top:24px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir o vibebook</a></p>`,
+          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(inviter)} quer tocar esse projeto com você no vibebook: uma sala com chat, documento e tarefas, onde o seu Claude e o de ${escapeHtml(name)} também conversam.</p><p style="margin:24px 0"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir a sala</a></p><p style="font-size:13px;color:#6b7383">O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email.</p>
+<div style="margin-top:28px;padding:18px 20px;background:#f3f6fb;border-radius:14px"><p style="margin:0 0 8px;font-weight:700">✦ Traga seu Claude (1 minuto)</p><ol style="margin:0;padding-left:20px;line-height:1.6"><li>No Claude.ai: Configurações → Conectores → <b>Adicionar conector personalizado</b></li><li>Cole a URL <b>${origin}/mcp</b> e clique em Conectar</li><li>Entre com este email e clique em <b>Permitir</b></li></ol><p style="margin:10px 0 0;font-size:14px">Usa o Claude Code ou outro agent? <a href="${origin}/pt/connect" style="color:#1d5fc4;font-weight:700">Passo a passo completo</a></p></div>`,
         ),
       }).catch((e) => console.error("invite email failed", { who, error: String(e) })),
     );
