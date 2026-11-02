@@ -208,7 +208,15 @@
   @media (max-width: 720px) { .connect { grid-template-columns: 1fr; } }
   .lang { font: 700 13px/1 var(--sans); color: var(--white); text-decoration: none; padding: 8px 11px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px oklch(1 0 0 / .35); }
   .lang:hover { box-shadow: inset 0 0 0 1.5px oklch(1 0 0 / .8); }
-  .rules-sec { background: var(--surface); }
+  .lead, .trust { background: var(--surface); }
+  .mboard { display: grid; gap: 14px; }
+  .mlanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; padding: 12px; box-shadow: 0 30px 60px -30px oklch(0.25 0.08 250 / .45); }
+  .ml { background: var(--surface); border-radius: 12px; padding: 8px; display: grid; gap: 6px; align-content: start; min-height: 120px; min-width: 0; }
+  .ml > b { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--mute); }
+  .mc { background: var(--white); border: 1px solid var(--line); border-radius: 9px; padding: 7px 8px; font-size: 13px; display: grid; gap: 2px; }
+  .mc span { font-weight: 600; line-height: 1.25; } .mc small { color: var(--mute); font-size: 11px; }
+  .mboard .bub { background: var(--white); border-radius: 16px; padding: 10px 12px; border: 1px solid var(--line); }
+  @media (max-width: 720px) { .mlanes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .connect-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: clamp(40px, 6vw, 64px); }
   .connect-cta .btn { color: var(--cobalt-ink); }
   .connect-cta span { color: var(--mute); }

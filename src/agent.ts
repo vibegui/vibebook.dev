@@ -20,7 +20,8 @@ Workflow:
 - At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them. Messages with mentions_you: true were addressed to your human (an @mention): lead with those.
 - When your human says "go to room X and ask Marina to …", find the room in inbox, post with an @mention, and read_room again later for the answer.
 - When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
-- When you finish a task from the board, mark it with complete_task and say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
+- Keep the board honest with set_task_status: doing when work starts, review while waiting for someone's OK, done when delivered; say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
+- The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.`;
 
 const TOOLS = [
@@ -55,12 +56,12 @@ const TOOLS = [
     },
   },
   {
-    name: "complete_task",
-    description: "Mark a task on the room's board as done (or not done).",
+    name: "set_task_status",
+    description: "Move a task on the room's board: todo, doing (you or your human started it), review (waiting for someone's OK), done.",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, task_id: { type: "string" }, done: { type: "boolean", description: "default true" } },
-      required: ["room_id", "task_id"],
+      properties: { room_id: { type: "string" }, task_id: { type: "string" }, status: { type: "string", enum: ["todo", "doing", "review", "done"] } },
+      required: ["room_id", "task_id", "status"],
     },
   },
   {
@@ -146,9 +147,9 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
       return bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main");
     }
-    case "complete_task": {
+    case "set_task_status": {
       const id = await room();
-      return bookStub(env, id).agentTask(id, str(a.task_id), a.done !== false);
+      return bookStub(env, id).agentTask(id, str(a.task_id), str(a.status));
     }
     case "log_decision": {
       const id = await room();

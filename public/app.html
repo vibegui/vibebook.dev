@@ -92,6 +92,11 @@
   .agentNudge[hidden] { display: none; }
   .agentNudge div { flex: 1; min-width: 0; } .agentNudge b { display: block; font-size: 15px; }
   .agentNudge a.primary { text-decoration: none; padding: 8px 14px; border-radius: 999px; white-space: nowrap; font-weight: 700; background: var(--accent); color: #fff; }
+  .bell { position: relative; padding: 6px 8px; line-height: 0; }
+  .bell svg { width: 20px; height: 20px; }
+  .bell.default::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; }
+  .bell.denied { color: #c2410c; }
+  .bell.muted { opacity: .55; }
   .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f2dc4a; color: #14305e; margin-left: 4px; }
   .msg.agent .avatar { border-radius: 9px; }
   .invite input { flex: 1; min-width: 0; }
@@ -161,7 +166,39 @@
   #threadTitle .x:hover { opacity: 1; }
   .task.done span { text-decoration: line-through; color: var(--mute); }
   .msgs { flex: 1; overflow: auto; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 24px; }
-  .msg { display: flex; gap: 14px; max-width: 720px; }
+  .kanban { display: none; }
+  .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
+  .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
+  #toggleBoard[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+  .kfilter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .kfilter button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .kfilter button.sel { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .lanes { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; overflow-x: auto; }
+  .lane { background: color-mix(in oklch, var(--line) 45%, var(--bg)); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; border: 2px solid transparent; }
+  .lane.over { border-color: var(--accent); }
+  .lane > h3 { margin: 0; padding: 12px 14px 8px; font: 700 13px/1 "Schibsted Grotesk", sans-serif; display: flex; justify-content: space-between; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; }
+  .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
+  .kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kcard.dragging { opacity: .5; }
+  .kcard .kt { font-weight: 600; line-height: 1.35; }
+  .kcard.done .kt { text-decoration: line-through; color: var(--mute); }
+  .kcard .km { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
+  .kcard .kep { color: #fff; border-radius: 6px; padding: 1px 6px; font-weight: 700; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kcard .avatar { width: 20px; height: 20px; font-size: 9px; }
+  .kadd { display: flex; gap: 6px; padding: 0 10px 10px; flex-wrap: wrap; }
+  .kadd input { flex: 1 1 120px; min-width: 0; } .kadd select { flex: 1 1 100%; font-size: 13px; }
+  .kempty { color: var(--mute); font-size: 13px; padding: 4px 4px 10px; }
+  @media (max-width: 900px) { .lanes { grid-template-columns: repeat(4, 78vw); scroll-snap-type: x mandatory; } .lane { scroll-snap-align: start; } }
+  .msg { display: flex; gap: 14px; max-width: 760px; position: relative; margin: 0 -10px; padding: 6px 10px; border-radius: 12px; }
+  .msg:hover { background: color-mix(in oklch, var(--line) 30%, transparent); }
+  .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
+  .msg:hover .hhmm { opacity: 1; }
+  .msg.cont { margin-top: -20px; }
+  .msg.cont > .avatar { visibility: hidden; }
+  .msg.cont .who { display: none; }
+  .msg.cont .gut { position: absolute; left: 10px; top: 9px; width: 34px; text-align: center; font-size: 11px; color: var(--mute); opacity: 0; }
+  .msg.cont:hover .gut { opacity: 1; }
   .msg .body { min-width: 0; }
   .msg .who { font-size: 13px; color: var(--mute); margin-bottom: 3px; }
   .msg .txt { white-space: pre-wrap; word-wrap: break-word; }
@@ -446,6 +483,7 @@ async function home() {
     <header class="top">
       <div class="brand"><a href="/">vibebook</a></div>
       <button class="me" id="myName" title="Mudar seu nome">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
+      <button class="ghost bell" data-bell></button>
       <button class="ghost" id="logout">Sair</button>
     </header>
     ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
@@ -504,6 +542,7 @@ async function home() {
     home();
   };
   renderAgents();
+  renderBells();
 }
 
 // "Seu agent": connect instructions while none is connected (polled, so it flips to ✓ the moment the
@@ -573,7 +612,7 @@ function onEvent(ev, id) {
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
-    case "msg": S.messages.push(ev.m); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); return;
+    case "msg": S.messages.push(ev.m); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
@@ -581,7 +620,7 @@ function onEvent(ev, id) {
       scrollDown(); return;
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
-    case "epics": S.epics = ev.epics; if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); return;
+    case "epics": S.epics = ev.epics; if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); return;
     case "doc": S.doc = ev.text; renderDoc(); return;
     case "meta":
       if (ev.title) S.book.title = ev.title;
@@ -608,6 +647,58 @@ function onEvent(ev, id) {
 
 const modeLabel = { fast: "⚡ rápido", medium: "◐ médio", heavy: "● pesado" };
 
+// 🔔 Browser notifications + a chime when a message arrives while this tab is in the background
+// (or in another thread). Needs the app open in a tab; push with the tab closed would need Web Push.
+// ponytail: tab-open only; add a service worker + VAPID push when people ask for closed-tab alerts.
+const BELL = {
+  on: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  off: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg>',
+};
+const notifyPerm = () => ("Notification" in window ? Notification.permission : "unsupported");
+const notifyMuted = () => { try { return localStorage.getItem("vb.mute") === "1"; } catch { return false; } };
+function renderBells() {
+  const p = notifyPerm(), muted = notifyMuted();
+  const state = p === "granted" ? (muted ? "muted" : "on") : p;
+  const title = { on: "Notificações ligadas: clique pra silenciar", muted: "Notificações silenciadas: clique pra ligar", default: "Ativar notificações de mensagem", denied: "Notificações bloqueadas no navegador", unsupported: "Este navegador não tem notificações" }[state];
+  document.querySelectorAll("[data-bell]").forEach((b) => {
+    b.className = `ghost bell ${state}`;
+    b.innerHTML = state === "on" ? BELL.on : BELL.off;
+    b.title = title; b.setAttribute("aria-label", title);
+    b.onclick = async () => {
+      unlockChime();
+      if (state === "default") { await Notification.requestPermission(); if (notifyPerm() === "granted") { try { localStorage.removeItem("vb.mute"); } catch {} chime(); } }
+      else if (state === "denied") alert("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.");
+      else if (state === "on" || state === "muted") { try { localStorage.setItem("vb.mute", state === "on" ? "1" : ""); } catch {} if (state === "muted") chime(); }
+      renderBells();
+    };
+  });
+}
+let audioCtx = null;
+const unlockChime = () => { try { audioCtx ??= new AudioContext(); audioCtx.resume(); } catch {} };
+document.addEventListener("pointerdown", unlockChime, { once: true });
+function chime() {
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime;
+  [[880, 0], [1318.5, 0.12]].forEach(([f, d]) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0 + d); g.gain.linearRampToValueAtTime(0.18, t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + d + 0.5);
+    o.connect(g).connect(audioCtx.destination); o.start(t0 + d); o.stop(t0 + d + 0.55);
+  });
+}
+function notifyMsg(m) {
+  if (m.author === S.me || notifyMuted()) return;
+  const mentioned = m.text && [...m.text.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((x) => mentionTarget(x[1]) === S.me);
+  const away = document.hidden || m.thread !== thread;
+  if (!away && !mentioned) return;
+  chime();
+  if (notifyPerm() === "granted" && document.hidden) {
+    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? `agent de ${name(m.author)}` : name(m.author);
+    const n = new Notification(`${mentioned ? "Te mencionaram · " : ""}${who} · ${S.book?.title ?? "vibebook"}`, { body: (m.text || (m.author === "ai" ? "respondendo…" : "📎 anexo")).slice(0, 180), tag: `vb-${S.id}`, icon: "/apple-touch-icon.png" });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+}
+
 // In a room without your agent connected: say how, once per room until dismissed.
 async function nudgeAgent() {
   const el = document.getElementById("agentNudge");
@@ -628,10 +719,11 @@ function renderBook() {
     <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 Doc</button></div>
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ Quadro</button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 Doc</button></div>
       <div class="tasks" id="tasks"></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
+      <div class="kanban" id="kanban"></div>
       <form class="composer" id="composer">
         <div class="modes" id="modes"><span class="muted">✦ @vibe:</span>
           ${Object.entries(modeLabel).map(([k, v]) => `<button type="button" data-mode="${k}" class="${k === mode ? "sel" : ""}">${v}</button>`).join("")}
@@ -671,6 +763,15 @@ function renderBook() {
     $app.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("sel", x === b));
   });
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
+  const setBoard = (on) => {
+    book.classList.toggle("boardview", on);
+    book.classList.toggle("nodoc", on); // the board wants the width
+    document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
+    try { localStorage.setItem("vb.board", on ? "1" : ""); } catch {}
+    if (on) renderKanban();
+  };
+  document.getElementById("toggleBoard").onclick = () => setBoard(!book.classList.contains("boardview"));
+  try { if (localStorage.getItem("vb.board")) setBoard(true); } catch {}
   // Resizable doc panel; width remembered per browser.
   const setDocW = (w) => {
     w = Math.round(Math.min(Math.max(w, 260), window.innerWidth - 260 - 320));
@@ -828,7 +929,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); nudgeAgent();
+  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); nudgeAgent(); renderBells();
 }
 
 const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
@@ -930,6 +1031,52 @@ function renderSide() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
 }
 
+// Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
+const LANES = [["todo", "A fazer"], ["doing", "Fazendo"], ["review", "Esperando OK"], ["done", "Feito"]];
+let boardEpic = null;
+function renderKanban() {
+  const el = document.getElementById("kanban");
+  if (!el || !$app.querySelector(".book.boardview")) return;
+  if (boardEpic && !S.epics.some((e) => e.id === boardEpic)) boardEpic = null;
+  const epics = S.epics.filter((e) => !boardEpic || e.id === boardEpic);
+  const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
+  const card = (t) => `<div class="kcard ${t.status === "done" ? "done" : ""}" draggable="true" tabindex="0" data-k="${t.id}" data-status="${t.status}" data-epic="${t.epic.id}" title="Arraste, ou use ← →. Clique pra abrir o épico.">
+      <div class="kt">${mentions(esc(t.title))}</div>
+      <div class="km"><span class="kep" style="background:${color(t.epic.title)}">${esc(t.epic.title)}</span>${t.owner ? `${avatar(t.owner)}<span>${esc(t.owner === S.me ? "você" : name(t.owner))}</span>` : ""}${t.due ? `<span>📅 ${esc(t.due)}</span>` : ""}</div></div>`;
+  el.innerHTML = S.epics.length ? `
+    <div class="kfilter"><button type="button" data-kf="" class="${boardEpic ? "" : "sel"}">Todos os épicos</button>${S.epics.map((e) => `<button type="button" data-kf="${e.id}" class="${boardEpic === e.id ? "sel" : ""}">${esc(e.title)}</button>`).join("")}</div>
+    <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
+      <section class="lane" data-lane="${k}"><h3>${label}<span>${list.length}</span></h3>
+        <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? "Nada a fazer." : "Arraste um card pra cá."}</div>`}</div>
+        ${k === "todo" ? `<form class="kadd"><input placeholder="nova tarefa" aria-label="Nova tarefa" /><button>+</button><select aria-label="Épico">${S.epics.map((e) => `<option value="${e.id}" ${(boardEpic || thread) === e.id ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select></form>` : ""}
+      </section>`; }).join("")}</div>`
+    : `<div class="empty">Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça: <b>@vibe</b> organiza o projeto em épicos e tarefas.</div>`;
+  const move = (id, status) => send({ t: "task.status", id, status });
+  el.querySelectorAll("[data-kf]").forEach((b) => b.onclick = () => { boardEpic = b.dataset.kf || null; renderKanban(); });
+  el.querySelectorAll(".kcard").forEach((c) => {
+    c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
+    c.ondragend = () => c.classList.remove("dragging");
+    c.onclick = () => { thread = c.dataset.epic; document.getElementById("toggleBoard").click(); renderSide(); renderChat(); };
+    c.onkeydown = (e) => {
+      const i = LANES.findIndex(([k]) => k === c.dataset.status);
+      if (e.key === "ArrowRight" && i < LANES.length - 1) move(c.dataset.k, LANES[i + 1][0]);
+      if (e.key === "ArrowLeft" && i > 0) move(c.dataset.k, LANES[i - 1][0]);
+      if (e.key === "Enter") c.click();
+    };
+  });
+  el.querySelectorAll(".lane").forEach((l) => {
+    l.ondragover = (e) => { e.preventDefault(); l.classList.add("over"); };
+    l.ondragleave = () => l.classList.remove("over");
+    l.ondrop = (e) => { e.preventDefault(); l.classList.remove("over"); const id = e.dataTransfer.getData("text/plain"); if (id) move(id, l.dataset.lane); };
+  });
+  el.querySelector(".kadd")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = e.target.querySelector("input").value.trim();
+    if (title) send({ t: "task.add", epic: e.target.querySelector("select").value, title });
+    e.target.reset();
+  });
+}
+
 function renderTasks() {
   const el = document.getElementById("tasks"); if (!el) return;
   const epic = S.epics.find((e) => e.id === thread);
@@ -1000,12 +1147,16 @@ function pollHtml(id) {
   </div>`;
 }
 
-const msgHtml = (m) => {
+const hhmm = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+// Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
+const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
+const msgHtml = (m, prev) => {
+  const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
   return `
-  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}" id="m${m.id}">
-    ${avatar(m.author)}
-    <div class="body"><div class="who">${m.kind === "agent" ? `agent de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}</div>
+  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${cont ? " cont" : ""}" id="m${m.id}">
+    ${avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
+    <div class="body"><div class="who">${m.kind === "agent" ? `agent de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
   </div>`;
 };
@@ -1034,14 +1185,15 @@ function renderChat() {
   renderTasks();
   const el = document.getElementById("msgs");
   const list = S.messages.filter((m) => m.thread === thread);
-  el.innerHTML = list.length ? list.map(msgHtml).join("")
+  el.innerHTML = list.length ? list.map((m, i) => msgHtml(m, list[i - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
   scrollDown(true); pinOnLoad(el);
 }
 function appendMsg(m) {
   const el = document.getElementById("msgs");
   el.querySelector(".empty")?.remove();
-  el.insertAdjacentHTML("beforeend", msgHtml(m));
+  const list = S.messages.filter((x) => x.thread === m.thread);
+  el.insertAdjacentHTML("beforeend", msgHtml(m, list[list.indexOf(m) - 1]));
   scrollDown(true); pinOnLoad(el.lastElementChild);
 }
 // Images change height after they load; keep pinned to the bottom when we were there.

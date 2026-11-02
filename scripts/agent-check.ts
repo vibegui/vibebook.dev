@@ -86,7 +86,7 @@ const g = await connectAgent(gui, "Claude Code (test)");
 const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,read_room,post,complete_task,log_decision,create_room", "tools/list has the 6 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,read_room,post,set_task_status,log_decision,create_room", "tools/list has the 6 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
