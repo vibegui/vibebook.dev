@@ -50,6 +50,12 @@ const safeEqual = (a: string, b: string) => {
   return out === 0;
 };
 
+/** The admin MCP shares /mcp with the agents' OAuth MCP; its static bearer token tells them apart. */
+export const isAdminMcp = (request: Request, env: Env) => {
+  const auth = request.headers.get("authorization") ?? "";
+  return !!env.MCP_AUTH_TOKEN && auth.startsWith("Bearer ") && safeEqual(auth.slice(7).trim(), env.MCP_AUTH_TOKEN);
+};
+
 const rpcError = (id: unknown, code: number, message: string, status = 200) =>
   Response.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
 

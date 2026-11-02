@@ -1,14 +1,20 @@
 import { type Context, Hono } from "hono";
-import { getCookie } from "hono/cookie";
-import { auth, EMAIL_RE, emailHtml, escapeHtml, inviteLink, sessionEmail } from "./auth";
-import { handleMcp } from "./mcp";
+import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
+import { auth, EMAIL_RE, identify } from "./auth";
+import type { Book } from "./book";
+import { connect, providerFor } from "./connect";
+import { handleMcp, isAdminMcp } from "./mcp";
+import { befriend, bookStub, createBook, inviteMember, isMember } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 
 export type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
-  BOOK: DurableObjectNamespace;
+  BOOK: DurableObjectNamespace<Book>;
+  OAUTH_KV: KVNamespace;
+  OAUTH_PROVIDER: OAuthHelpers;
+  AGENT_LIMIT: RateLimit;
   EMAIL: SendEmail;
   AI_LIMIT: RateLimit;
   UPLOAD_LIMIT: RateLimit;
@@ -40,21 +46,18 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS events_ts ON events (ts)`,
   `CREATE INDEX IF NOT EXISTS events_name_ts ON events (name, ts)`,
   `CREATE INDEX IF NOT EXISTS events_user_ts ON events (user, ts)`,
+  // What each person's agent already read in each room (the agent inbox counts from here).
+  `CREATE TABLE IF NOT EXISTS agent_cursors (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    db.prepare(`ALTER TABLE users ADD COLUMN name TEXT`).run().catch(() => {}),
+    Promise.all(
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+    ),
   ));
 
-async function identify(c: Parameters<typeof sessionEmail>[0]): Promise<string | null> {
-  const email = await sessionEmail(c);
-  if (email || !(c.env as Env).DEV_EMAIL) return email;
-  // Local dev only: pick identity via cookie so two browsers can be two people.
-  const as = getCookie(c, "dev_as");
-  return (as && EMAIL_RE.test(as) ? as : (c.env as Env).DEV_EMAIL!).toLowerCase();
-}
 
 const app = new Hono<Ctx>();
 
@@ -64,7 +67,7 @@ app.use("*", async (c, next) => {
 });
 
 app.route("/auth", auth);
-app.all("/mcp", (c) => handleMcp(c.req.raw, c.env));
+app.route("/", connect);
 
 // Page views are counted server-side (no client script, no cookie), off the response path.
 const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) => {
@@ -117,14 +120,6 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-const isMember = async (db: D1Database, bookId: string, email: string) =>
-  !!(await db.prepare(`SELECT 1 FROM members WHERE book_id = ? AND email = ?`).bind(bookId, email).first());
-
-const befriend = (db: D1Database, a: string, b: string) => {
-  const now = Date.now();
-  const q = `INSERT OR IGNORE INTO friends (a, b, created_at) VALUES (?, ?, ?)`;
-  return db.batch([db.prepare(q).bind(a, b, now), db.prepare(q).bind(b, a, now)]);
-};
 
 app.get("/api/dev/as", (c) => {
   if (!c.env.DEV_EMAIL) return c.notFound();
@@ -170,14 +165,7 @@ app.post("/api/me", async (c) => {
 app.post("/api/books", async (c) => {
   const email = c.get("email");
   const { title } = await c.req.json<{ title?: string }>().catch(() => ({ title: undefined }));
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  const now = Date.now();
-  await c.env.DB.batch([
-    c.env.DB.prepare(
-      `INSERT INTO books (id, title, folder, summary, owner, created_at, updated_at) VALUES (?, ?, NULL, '', ?, ?, ?)`,
-    ).bind(id, (title || "Novo vibebook").slice(0, 120), email, now, now),
-    c.env.DB.prepare(`INSERT INTO members (book_id, email) VALUES (?, ?)`).bind(id, email),
-  ]);
+  const id = await createBook(c.env, email, title);
   c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: id } }));
   return c.json({ id });
 });
@@ -189,29 +177,7 @@ app.post("/api/books/:id/members", async (c) => {
   const { email: invitee } = await c.req.json<{ email: string }>();
   const who = (invitee ?? "").trim().toLowerCase();
   if (!EMAIL_RE.test(who)) return c.json({ error: "invalid email" }, 400);
-  await c.env.DB.prepare(`INSERT OR IGNORE INTO members (book_id, email) VALUES (?, ?)`).bind(id, who).run();
-  await befriend(c.env.DB, email, who);
-  c.executionCtx.waitUntil(track(c.env, "invite_sent", { user: email, dims: { book: id } }));
-  if (!c.env.DEV_EMAIL && (await c.env.LOGIN_LIMIT.limit({ key: `invite:${email}` })).success) {
-    const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>();
-    const url = await inviteLink(c.env, new URL(c.req.url).origin, who, id);
-    const title = book?.title ?? "um vibebook";
-    const inviter = email.split("@")[0];
-    c.executionCtx.waitUntil(
-      c.env.EMAIL.send({
-        to: who,
-        from: { email: "convite@vibebook.dev", name: "vibebook" },
-        replyTo: email,
-        subject: `${inviter} te chamou pro vibebook "${title}"`,
-        text: `${email} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}`,
-        html: emailHtml(
-          `${escapeHtml(inviter)} te chamou pro vibebook`,
-          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(email)} quer planejar isso com você. Tem chat, épicos, tasks e uma AI que organiza tudo.</p><p style="font-size:13px;color:#6b7383">O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email.</p><p style="margin-top:24px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir o vibebook</a></p>`,
-        ),
-      }).catch((e) => console.error("invite email failed", { who, error: String(e) })),
-    );
-  }
-  await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch("https://book/members-changed", { method: "POST" });
+  await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, who);
   return c.json({ ok: true });
 });
 
@@ -243,7 +209,7 @@ app.delete("/api/books/:id/members/:email", async (c) => {
   const joined = !!(await db.prepare(`SELECT 1 FROM users WHERE email = ?`).bind(who).first());
   if (joined && me !== book?.owner) return c.json({ error: "Só quem criou o vibebook remove quem já entrou." }, 403);
   await db.prepare(`DELETE FROM members WHERE book_id = ? AND email = ?`).bind(id, who).run();
-  await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch("https://book/members-changed", { method: "POST" });
+  await bookStub(c.env, id).fetch("https://book/members-changed", { method: "POST" });
   return c.json({ ok: true });
 });
 
@@ -265,7 +231,7 @@ app.post("/api/books/:id/files", async (c) => {
   const name = raw.replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
   const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
   await c.env.FILES.put(`${id}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
-  await c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch(`https://book/file?book=${id}`, { method: "POST", body: JSON.stringify(meta) });
+  await bookStub(c.env, id).fetch(`https://book/file?book=${id}`, { method: "POST", body: JSON.stringify(meta) });
   c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
   return c.json(meta);
 });
@@ -293,7 +259,15 @@ app.get("/ws/:id", async (c) => {
   if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
   const req = new Request(`https://book/ws?book=${id}`, c.req.raw);
   req.headers.set("x-email", c.get("email"));
-  return c.env.BOOK.get(c.env.BOOK.idFromName(id)).fetch(req);
+  return bookStub(c.env, id).fetch(req);
 });
 
-export default app;
+// /mcp serves two things: the admin MCP (static bearer MCP_AUTH_TOKEN) and the agents' MCP behind OAuth.
+// Everything else (app, /authorize, /oauth/*, discovery) goes through the OAuth provider to the Hono app.
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(request.url);
+    if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
+    return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
+  },
+} satisfies ExportedHandler<Env>;

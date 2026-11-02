@@ -55,7 +55,8 @@ async function startSession(c: Context<{ Bindings: Env }>, email: string) {
 }
 
 // Only follow same-site relative paths after login.
-const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+)/.test(next) ? next : "/app");
+// /authorize?… is the agent-connect consent page (OAuth), reached through login.
+const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+|authorize\?)/.test(next) ? next : "/app");
 
 const codeHash = (env: Env, email: string, code: string) => hmac(env.SESSION_SECRET, `code:${email}:${code}`);
 
@@ -64,6 +65,15 @@ const sameOrigin = (c: Context) => {
   const origin = c.req.header("origin");
   return !origin || origin === new URL(c.req.url).origin;
 };
+
+/** Signed-in email; in local dev (DEV_EMAIL) the dev_as cookie picks the identity so two browsers can be two people. */
+export async function identify(c: Context<any>): Promise<string | null> {
+  const email = await sessionEmail(c);
+  const env = c.env as Env;
+  if (email || !env.DEV_EMAIL) return email;
+  const as = getCookie(c, "dev_as");
+  return (as && EMAIL_RE.test(as) ? as : env.DEV_EMAIL).toLowerCase();
+}
 
 export const auth = new Hono<{ Bindings: Env }>();
 

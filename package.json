@@ -11,6 +11,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.4",
     "@modelcontextprotocol/ext-apps": "1.7.4",
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.153",

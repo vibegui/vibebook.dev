@@ -5,23 +5,25 @@
   "main": "src/index.ts",
   "rules": [{ "type": "Text", "globs": ["dist-mcp/*.html"], "fallthrough": true }],
   "compatibility_date": "2026-10-01",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
-        "run_worker_first": ["/", "/demo", "/pt", "/en", "/pt/demo", "/en/demo", "/mcp", "/api/*", "/ws/*", "/auth/*", "/app", "/login", "/b/*"]
+        "run_worker_first": ["/", "/demo", "/pt", "/en", "/pt/demo", "/en/demo", "/mcp", "/authorize", "/oauth/*", "/.well-known/*", "/api/*", "/ws/*", "/auth/*", "/app", "/login", "/b/*"]
   },
   "d1_databases": [{ "binding": "DB", "database_name": "vibebook", "database_id": "8b1e10e7-ff7d-4d40-94b1-e3d9b88c4a23" }],
   "durable_objects": { "bindings": [{ "name": "BOOK", "class_name": "Book" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Book"] }],
   "routes": [{ "pattern": "vibebook.dev", "custom_domain": true }],
   "send_email": [{ "name": "EMAIL" }],
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "dfed86f52e7740d3bf9311b26b03ac16" }],
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "vibebook-files" }],
   "ratelimits": [
     { "name": "AI_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "LOGIN_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
     { "name": "READ_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } },
-    { "name": "UPLOAD_LIMIT", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } }
+    { "name": "UPLOAD_LIMIT", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } },
+    { "name": "AGENT_LIMIT", "namespace_id": "1005", "simple": { "limit": 30, "period": 60 } }
   ],
   "vars": {
     "MODEL_FAST": "anthropic/claude-sonnet-5.5",
@@ -29,5 +31,7 @@
     "MODEL_HEAVY": "anthropic/claude-fable-5.1",
     "MODEL_CLASSIFY": "anthropic/claude-haiku-5.5"
   },
+  // Local dev serves as http://127.0.0.1:8797 (OAuth accepts http only on a loopback IP; :8787 is taken here).
+  "dev": { "port": 8797, "host": "127.0.0.1:8797", "upstream_protocol": "http" },
   "observability": { "enabled": true }
 }

@@ -77,6 +77,19 @@
   .friend:hover .x, .friend .x:focus-visible { opacity: 1; }
   @media (hover: none) { .friend .x { opacity: .6; } }
   .invite { margin-top: 14px; display: flex; gap: 8px; }
+  .agentBox { background: var(--panel); border-radius: 16px; padding: 16px; margin-bottom: 26px; }
+  .agentBox h2 { margin: 0 0 6px; font-size: 20px; }
+  .agentBox p { margin: 0 0 10px; font-size: 14px; color: var(--mute); }
+  .agentBox .how { font-size: 13px; font-weight: 700; margin: 12px 0 6px; }
+  .agentBox code { display: block; font: 12px/1.5 ui-monospace, Menlo, monospace; background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; overflow-wrap: anywhere; cursor: copy; }
+  .agentBox .wait { font-size: 13px; color: var(--mute); margin-top: 12px; display: flex; gap: 8px; align-items: center; }
+  .agentBox .wait::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; animation: agentBlink 1.4s infinite; }
+  @keyframes agentBlink { 50% { opacity: .3; } }
+  .agentBox .conn { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
+  .agentBox .conn b { flex: 1; min-width: 0; } .agentBox .conn small { display: block; color: var(--mute); font-weight: 400; }
+  .agentBox .ok { color: #1f9d8a; font-weight: 700; }
+  .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f2dc4a; color: #14305e; margin-left: 4px; }
+  .msg.agent .avatar { border-radius: 9px; }
   .invite input { flex: 1; min-width: 0; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
@@ -298,7 +311,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const COLORS = ["#ff5a36", "#1f9d8a", "#3b6cf6", "#c2410c", "#9333ea", "#0f766e", "#be185d", "#4d7c0f"];
 const color = (s) => COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
 let knownNames = {}; // email → display name (from /api/me friends + book state)
-const name = (email) => email === "ai" ? "AI" : S?.names?.[email] || knownNames[email] || email.split("@")[0];
+const name = (email) => email === "ai" ? "@vibe" : S?.names?.[email] || knownNames[email] || email.split("@")[0];
 const avatar = (email, on) => email === "ai"
   ? `<span class="avatar ai">✦</span>`
   : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
@@ -397,16 +410,16 @@ async function home() {
       <button class="me" id="myName" title="Mudar seu nome">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
       <button class="ghost" id="logout">Sair</button>
     </header>
-    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">A AI e o pessoal vão te chamar assim.</span>
+    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
     <div class="hello">
       <div class="helloText"><h1>${first ? `Oi, ${esc(first)}` : "Seus vibebooks"}</h1>
-        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · as pastas a AI organiza sozinha</p></div>
+        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · o @vibe organiza as pastas sozinho</p></div>
       <button class="primary" id="new">+ Novo vibebook</button>
     </div>
     <div class="grid">
       <main>
-        ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame os amigos e escreva <b>@ai</b> no chat.</div>`}
+        ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu Claude ao lado.</div>`}
         ${folders.map((f) => `
           <section class="folder">
             <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
@@ -415,7 +428,7 @@ async function home() {
                 <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
                 <div class="info">
                   <b>${esc(b.title)}</b>
-                  <div class="sum">${esc(b.summary || "Ainda sem resumo. A AI escreve um quando a conversa andar.")}</div>
+                  <div class="sum">${esc(b.summary || "Ainda sem resumo. O @vibe escreve um quando a conversa andar.")}</div>
                   <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span>${ago(b.updated_at)}</span></div>
                 </div>
               </a>`; }).join("")}
@@ -423,6 +436,7 @@ async function home() {
           </section>`).join("")}
       </main>
       <aside class="friends">
+        <section class="agentBox" id="agentBox" aria-live="polite"></section>
         <h2>Amigos <small>${me.friends.length || ""}</small></h2>
         ${me.friends.length ? me.friends.map((f) => `
           <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(f.name || name(f.email))}
@@ -451,6 +465,40 @@ async function home() {
     await api("/api/friends", { email: e.target[0].value }).catch((err) => alert(err.message));
     home();
   };
+  renderAgents();
+}
+
+// "Seu agent": connect instructions while none is connected (polled, so it flips to ✓ the moment the
+// first MCP call lands), then the list of connections with a disconnect button.
+let agentPoll = 0, agentPolls = 0;
+async function renderAgents(again) {
+  clearTimeout(agentPoll);
+  agentPolls = again ? agentPolls + 1 : 0;
+  const box = document.getElementById("agentBox");
+  if (!box) return;
+  const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
+  if (!r || !document.body.contains(box)) return;
+  const url = `${location.origin}/mcp`;
+  if (r.agents.length) {
+    box.innerHTML = `<h2>✦ Seu agent</h2>
+      ${r.agents.map((a) => `<div class="conn"><span class="ok">✓</span><b>${esc(a.client)}<small>conectado ${ago(a.connected_at)}${r.last_used ? ` · último uso ${ago(r.last_used)}` : ""}</small></b>
+        <button class="ghost" data-revoke="${esc(a.id)}">Desconectar</button></div>`).join("")}
+      <p style="margin-top:8px">Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i></p>`;
+    box.querySelectorAll("[data-revoke]").forEach((b) => b.onclick = async () => {
+      if (!confirm("Desconectar esse agent? Ele perde o acesso a todas as salas na hora.")) return;
+      await fetch(`/api/agents/${encodeURIComponent(b.dataset.revoke)}`, { method: "DELETE" });
+      renderAgents();
+    });
+    return;
+  }
+  box.innerHTML = `<h2>✦ Conecte seu Claude</h2>
+    <p>Ele passa a ler e falar nas suas salas, sempre marcado como seu agent e pedindo seu OK antes de agir.</p>
+    <div class="how">Claude Code (terminal)</div><code data-copy>claude mcp add --transport http vibebook ${esc(url)}</code>
+    <div class="how">Claude.ai</div><p style="margin:0 0 6px">Configurações → Conectores → Adicionar conector personalizado, e cole:</p><code data-copy>${esc(url)}</code>
+    <div class="wait">esperando seu agent conectar…</div>`;
+  box.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.style.borderColor = "#1f9d8a"; });
+  // ponytail: polls every 4s for up to 10 min while the home is open; a push from the DO would be the upgrade.
+  if (agentPolls < 150) agentPoll = setTimeout(() => renderAgents(true), 4000);
 }
 
 // ---------------- book ----------------
@@ -509,6 +557,12 @@ function onEvent(ev, id) {
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
       return;
     case "online": S.online = ev.online; renderSide(); return;
+    case "blocked": {
+      const input = document.getElementById("input");
+      if (input && !input.value) input.value = ev.text;
+      alert(`Não enviei: parece ${ev.reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.`);
+      return;
+    }
   }
 }
 
@@ -533,7 +587,7 @@ function renderBook() {
           <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo">📎</button>
           <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação">📊</button>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple hidden />
-          <textarea id="input" rows="1" placeholder="Mensagem… @ai chama a AI"></textarea><button class="primary" id="sendBtn">Enviar</button>
+          <textarea id="input" rows="1" placeholder="Mensagem… @vibe organiza a sala"></textarea><button class="primary" id="sendBtn">Enviar</button>
         </div>
       </form>
     </main>
@@ -541,7 +595,7 @@ function renderBook() {
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
       <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Documento</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
       <div class="preview" id="preview"></div>
-      <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; a AI mantém atualizado com as decisões."></textarea>
+      <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
       <div class="filesPane" id="filesPane"></div>
     </section>
   </div>
@@ -584,7 +638,7 @@ function renderBook() {
   const input = document.getElementById("input");
   const modes = document.getElementById("modes");
   input.oninput = () => {
-    modes.classList.toggle("show", /(^|\s)@ai\b/i.test(input.value) || /@a?i?$/i.test(input.value));
+    modes.classList.toggle("show", /(^|\s)@(ai|vibe)\b/i.test(input.value) || /@(a?i?|v(i(b(e)?)?)?)$/i.test(input.value));
     input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
   };
   input.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); document.getElementById("composer").requestSubmit(); } };
@@ -739,7 +793,7 @@ function renderSide() {
           <span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; }).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
     </div>
-    ${S.suggestions.length ? `<div class="sec"><h4>✦ AI sugere</h4>${S.suggestions.map((s, i) => `
+    ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
       <div class="sug"><b>${esc(s.title)}</b>${s.tasks.length ? `<span class="muted">${s.tasks.map(esc).join(" · ")}</span>` : ""}
         <div class="row"><button data-sug="${i}" data-accept="1">Criar épico</button><button class="ghost" data-sug="${i}">Ignorar</button></div></div>`).join("")}</div>` : ""}
     <div class="sec">
@@ -844,9 +898,9 @@ function pollHtml(id) {
 const msgHtml = (m) => {
   const txt = m.author === "ai" ? (m.text ? md(m.text) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? linkify(esc(m.text)) : "";
   return `
-  <div class="msg ${m.author === "ai" ? "ai" : ""}" id="m${m.id}">
+  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}" id="m${m.id}">
     ${avatar(m.author)}
-    <div class="body"><div class="who">${esc(name(m.author))} · ${ago(m.ts)}</div>
+    <div class="body"><div class="who">${m.kind === "agent" ? `agent de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}</div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
   </div>`;
 };
@@ -866,7 +920,7 @@ function renderChat() {
   const el = document.getElementById("msgs");
   const list = S.messages.filter((m) => m.thread === thread);
   el.innerHTML = list.length ? list.map(msgHtml).join("")
-    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@ai</b> vamos planejar uma viagem pra Lisboa em março, 6 pessoas" : "Discussão deste épico. A AI enxerga as tasks e a sala principal."}</div>`;
+    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
   scrollDown(true); pinOnLoad(el);
 }
 function appendMsg(m) {
@@ -926,7 +980,7 @@ function renderDoc(force) {
   const pv = document.getElementById("preview");
   pv.innerHTML = S.doc.trim()
     ? DOMPurify.sanitize(marked.parse(S.doc, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
-    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pra <b>@ai</b> resumir as decisões aqui.</div>`;
+    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> resumir as decisões aqui.</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   renderMermaid(pv);
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
