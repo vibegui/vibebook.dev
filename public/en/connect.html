@@ -58,14 +58,14 @@
       <h2>Claude Code</h2>
       <p class="for">In the terminal. It checks your rooms every time you start a session.</p>
       <ol>
-        <li>Inside Claude Code, add the plugin:
-          <pre><code>/plugin marketplace add vibegui/vibebook.dev</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copy</button></li>
-        <li>Install it:
-          <pre><code>/plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copy</button></li>
-        <li>Run <code>/mcp</code>, pick <b>vibebook</b> and <b>Authenticate</b>. In the browser, sign in and click <b>Allow</b>.</li>
-        <li>Done. Start a new session: if there’s news in your rooms, it tells you.</li>
+        <li><b>Connect vibebook.</b> Already did it on Claude.ai? Done: Claude Code signed in to the same account already uses that connector. Otherwise, in the terminal:
+          <pre><code>claude mcp add --transport http vibebook https://vibebook.dev/mcp</code></pre><button type="button" class="mini copy" data-copy="claude mcp add --transport http vibebook https://vibebook.dev/mcp">copy</button>
+          then <code>/mcp</code> → <b>vibebook</b> → <b>Authenticate</b> → <b>Allow</b>.</li>
+        <li><b>To get notified on its own</b>, install the plugin. Every new session it checks your rooms and only speaks up when there’s news:
+          <pre><code>/plugin marketplace add vibegui/vibebook.dev
+/plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copy 1</button> <button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copy 2</button></li>
       </ol>
-      <p class="note">Rather skip the plugin? <code>claude mcp add --transport http vibebook https://vibebook.dev/mcp</code> connects the same, it just won’t check on its own at startup.</p>
+      <p class="note">The plugin uses the connector you already have (Claude.ai or <code>claude mcp add</code>); it doesn’t add another.</p>
     </section>
 
     <section class="way" id="other">

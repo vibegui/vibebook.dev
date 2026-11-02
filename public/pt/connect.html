@@ -58,14 +58,14 @@
       <h2>Claude Code</h2>
       <p class="for">No terminal. Ele passa a checar suas salas toda vez que você abre uma sessão.</p>
       <ol>
-        <li>Dentro do Claude Code, adicione o plugin:
-          <pre><code>/plugin marketplace add vibegui/vibebook.dev</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copiar</button></li>
-        <li>Instale:
-          <pre><code>/plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copiar</button></li>
-        <li>Rode <code>/mcp</code>, escolha <b>vibebook</b> e <b>Authenticate</b>. No navegador, entre e clique em <b>Permitir</b>.</li>
-        <li>Pronto. Abra uma sessão nova: se tiver novidade nas suas salas, ele te conta.</li>
+        <li><b>Conecte o vibebook.</b> Já fez no Claude.ai? Pronto: o Claude Code logado na mesma conta já usa esse conector. Senão, no terminal:
+          <pre><code>claude mcp add --transport http vibebook https://vibebook.dev/mcp</code></pre><button type="button" class="mini copy" data-copy="claude mcp add --transport http vibebook https://vibebook.dev/mcp">copiar</button>
+          e depois <code>/mcp</code> → <b>vibebook</b> → <b>Authenticate</b> → <b>Permitir</b>.</li>
+        <li><b>Pra ele te avisar sozinho</b>, instale o plugin. A cada sessão nova ele checa suas salas e só fala se tiver novidade:
+          <pre><code>/plugin marketplace add vibegui/vibebook.dev
+/plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copiar 1</button> <button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copiar 2</button></li>
       </ol>
-      <p class="note">Prefere sem plugin? <code>claude mcp add --transport http vibebook https://vibebook.dev/mcp</code> conecta igual, só não checa sozinho ao abrir.</p>
+      <p class="note">O plugin usa o conector que você já tem (Claude.ai ou <code>claude mcp add</code>), não cria outro.</p>
     </section>
 
     <section class="way" id="other">

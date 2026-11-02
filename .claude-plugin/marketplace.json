@@ -1,18 +1,32 @@
 {
   "name": "vibebook",
-  "owner": { "name": "vibebook", "email": "gui@deco.cx" },
-  "metadata": { "description": "Rooms where people and their Claudes work together on projects." },
+  "owner": {
+    "name": "vibebook",
+    "email": "gui@deco.cx"
+  },
+  "metadata": {
+    "description": "Rooms where people and their Claudes work together on projects."
+  },
   "plugins": [
     {
       "name": "vibebook",
       "source": "./claude-plugin",
-      "description": "Connects Claude Code to your vibebook rooms (MCP) and checks for news when a session starts.",
-      "version": "0.1.0",
-      "author": { "name": "vibebook", "email": "gui@deco.cx" },
+      "description": "Checks your vibebook rooms when a Claude Code session starts. Works with the vibebook connector you already have (claude.ai or claude mcp add).",
+      "version": "0.2.0",
+      "author": {
+        "name": "vibebook",
+        "email": "gui@deco.cx"
+      },
       "homepage": "https://vibebook.dev",
       "repository": "https://github.com/vibegui/vibebook.dev",
       "license": "MIT",
-      "keywords": ["collaboration", "agents", "mcp", "chat", "tasks"]
+      "keywords": [
+        "collaboration",
+        "agents",
+        "mcp",
+        "chat",
+        "tasks"
+      ]
     }
   ]
 }
