@@ -16,7 +16,7 @@ export type FileMeta = { id: string; name: string; type: string; size: number; a
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
-type Suggestion = { title: string; tasks: string[] };
+type Suggestion = { title: string; tasks: string[]; why?: string };
 
 const DEFAULT_TITLE = "Novo vibebook";
 const CLASSIFY_DELAY_MS = 30_000;
@@ -903,7 +903,7 @@ Answer SIMPLE or COMPLEX:`,
             folder: z.string().describe("pasta para organizar; reutilize uma pasta existente se fizer sentido"),
             summary: z.string().describe("uma frase curta (máx 20 palavras) dizendo do que se trata e em que pé está; sem emails, sem 'o usuário'"),
             suggested_epics: z
-              .array(z.object({ title: z.string(), tasks: z.array(z.string()).max(8) }))
+              .array(z.object({ title: z.string(), why: z.string().describe("uma frase: por que vale um épico, a partir do que a conversa disse; sem emails"), tasks: z.array(z.string()).max(8) }))
               .max(3)
               .describe("épicos que ainda NÃO existem e valeria criar; vazio se nada novo"),
           }),

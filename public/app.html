@@ -159,6 +159,16 @@
   .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
+  .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
+  .thread.pre .ri { background: none; border: 1.5px dashed currentColor; color: var(--mute); }
+  .thread.pre:hover, .thread.pre.sel { border-color: var(--accent); color: var(--ink); }
+  .book.pre .composer, .book.pre .tasks, .book.pre .agentNudge { display: none; }
+  .preCard { max-width: 560px; margin: 32px auto; border: 1.5px dashed var(--accent); border-radius: 16px; padding: 24px 26px; }
+  .preCard .kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--accent); }
+  .preCard h3 { margin: 0 0 10px; font-size: 22px; }
+  .preCard h4 { margin: 18px 0 6px; font-size: 13px; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; }
+  .preCard ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+  .preCard .row { margin-top: 20px; gap: 8px; }
   .sug { background: var(--ai-bg); border-radius: 10px; padding: 8px 10px; font-size: 13px; margin-bottom: 6px; }
   .sug b { display: block; }
   .sug .row { margin-top: 6px; }
@@ -858,14 +868,20 @@ function onEvent(ev, id) {
       scrollDown(); return;
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
-    case "epics": S.epics = ev.epics; if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); return;
+    case "epics": S.epics = ev.epics;
+      if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
+      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); return;
     case "doc": S.doc = ev.text; renderDoc(); return;
     case "meta":
       if (ev.title) { S.book.title = ev.title; const mine = myBooks?.find((b) => b.id === id); if (mine) { mine.title = ev.title; renderSwitcher(); } }
       if (ev.folder) S.book.folder = ev.folder;
       if (ev.summary) S.book.summary = ev.summary;
       renderSide(); renderTasks(); return;
-    case "suggestions": S.suggestions = ev.suggestions; renderSide(); return;
+    case "suggestions": {
+      const was = preOf()?.title; S.suggestions = ev.suggestions;
+      if (isPre() && preOf()?.title !== was) { const j = S.suggestions.findIndex((x) => x.title === was); thread = j >= 0 ? `pre:${j}` : "main"; renderChat(); }
+      renderSide(); return;
+    }
     case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
@@ -1240,7 +1256,25 @@ function renderRail(el) {
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
   // The board follows the thread: an epic filters it to that epic, the main room shows every epic.
-  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban(); });
+  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); });
+}
+
+// A pre-epic: one of @vibe's suggestions, opened in the main panel like an epic, to create or discard.
+const isPre = () => thread.startsWith("pre:");
+const preOf = () => (isPre() ? S.suggestions[Number(thread.slice(4))] : null);
+let pendingEpic = null; // title of a suggestion just accepted: open it once the epic exists
+function renderPre(el) {
+  const s = preOf(); if (!s) { thread = "main"; return renderChat(); }
+  el.innerHTML = `<div class="preCard">
+    <p class="kicker">✦ O @vibe sugere um épico</p>
+    <h3>${esc(s.title)}</h3>
+    <p class="${s.why ? "" : "muted"}">${esc(s.why || "Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo.")}</p>
+    ${s.tasks.length ? `<h4>Tarefas propostas</h4><ul>${s.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+    <div class="row"><button class="primary" id="preAccept">Criar épico</button><button class="ghost" id="preSkip">Descartar</button></div>
+  </div>`;
+  const i = Number(thread.slice(4));
+  el.querySelector("#preAccept").onclick = () => { pendingEpic = s.title; send({ t: "suggestion", i, accept: true }); };
+  el.querySelector("#preSkip").onclick = () => { send({ t: "suggestion", i }); thread = "main"; renderSide(); renderChat(); };
 }
 
 function renderSide() {
@@ -1260,8 +1294,7 @@ function renderSide() {
       <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
-      <div class="sug"><b>${esc(s.title)}</b>${s.tasks.length ? `<span class="muted">${s.tasks.map(esc).join(" · ")}</span>` : ""}
-        <div class="row"><button data-sug="${i}" data-accept="1">Criar épico</button><button class="ghost" data-sug="${i}">Ignorar</button></div></div>`).join("")}</div>` : ""}
+      <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · sugestão do @vibe, clique para ver"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
       <h4>Pessoas</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
@@ -1279,7 +1312,6 @@ function renderSide() {
     thread = b.dataset.thread; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban();
     const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
   });
-  el.querySelectorAll("[data-sug]").forEach((b) => b.onclick = () => send({ t: "suggestion", i: Number(b.dataset.sug), accept: !!b.dataset.accept }));
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
@@ -1353,6 +1385,7 @@ function renderTasks() {
   const el = document.getElementById("tasks"); if (!el) return;
   const epic = S.epics.find((e) => e.id === thread);
   const head = document.getElementById("threadTitle");
+  if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ sugestão do @vibe</small>`; el.innerHTML = ""; return; }
   head.innerHTML = epic
     ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
     : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || "Clique para renomear")}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
@@ -1456,6 +1489,8 @@ function renderFiles() {
 function renderChat() {
   renderTasks();
   const el = document.getElementById("msgs");
+  $app.querySelector(".book")?.classList.toggle("pre", isPre());
+  if (isPre()) return renderPre(el);
   const list = S.messages.filter((m) => m.thread === thread);
   el.innerHTML = list.length ? list.map((m, i) => msgHtml(m, list[i - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
