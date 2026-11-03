@@ -51,6 +51,8 @@
   .askOut .why { color: var(--mute); font-size: 14px; }
   .askOut .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .askOut .acts .ghost { font-size: 14px; }
+  .askOut .acts .primary.vibe { background: #14305e; color: #f2dc4a; }
+  .askOut .alts { border-top: 1px solid var(--line); padding-top: 10px; }
   @media (max-width: 720px) {
     .ask { margin: 0 -4px 24px; padding: 14px; border-radius: 18px; }
     .ask label { font-size: 20px; }
@@ -507,7 +509,7 @@ async function home() {
     </header>
     <form class="ask" id="ask">
       <label for="askText">O que você quer resolver?</label>
-      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… o @vibe acha a sala e o épico certos."></textarea><button class="primary" id="askBtn">Enviar</button></div>
+      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… o @vibe acha a sala e o épico certos."></textarea><button class="primary" id="askBtn">Achar a sala →</button></div>
       <div class="askOut" id="askOut" aria-live="polite" hidden></div>
     </form>
     ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
@@ -582,11 +584,15 @@ function wireAsk() {
   ta.oninput = () => { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; };
   ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } };
   const where = (p) => `<b>${esc(p.book_title)}</b>${p.epic_title ? ` → <b>${esc(p.epic_title)}</b>` : ""}`;
-  const go = async (bookId, epicId) => {
+  // Destination first (picked, alternative or a new room), then how: as a chat message, or as a request to @vibe.
+  const go = async (dest, toVibe) => {
+    const raw = ta.value.trim();
+    const text = toVibe && !/(^|\s)@(vibe|ai)\b/i.test(raw) ? `@vibe ${raw}` : raw;
     out.innerHTML = `<div class="why">Enviando…</div>`;
     try {
-      await api(`/api/books/${bookId}/post`, { text: ta.value.trim(), thread: epicId || "main" });
-      pendingThread = epicId || null;
+      const bookId = dest.book_id ?? (await api("/api/books", { title: dest.new_title })).id;
+      await api(`/api/books/${bookId}/post`, { text, thread: dest.epic_id || "main" });
+      pendingThread = dest.epic_id || null;
       history.pushState(null, "", `/b/${bookId}`); route();
     } catch (err) { out.innerHTML = `<div class="why bad">${esc(err.message)}</div>`; }
   };
@@ -597,18 +603,26 @@ function wireAsk() {
     let r;
     try { r = await api("/api/route", { text }); } catch (err) { out.innerHTML = `<div class="why">${esc(err.message)}</div>`; btn.disabled = false; return; }
     btn.disabled = false;
-    const picks = [r.pick, ...r.alternatives].filter(Boolean);
-    out.innerHTML = `${r.pick ? `<div class="where">Mandar em ${where(r.pick)}?</div>${r.reason ? `<div class="why">${esc(r.reason)}</div>` : ""}` : `<div class="where">Nenhuma sala parece a certa.</div>`}
-      <div class="acts">
-        ${r.pick ? `<button type="button" class="primary" data-go="0">Enviar lá</button>` : ""}
-        ${picks.slice(1).map((p, i) => `<button type="button" class="ghost" data-go="${i + 1}">ou ${where(p)}</button>`).join("")}
-        <button type="button" class="ghost" data-new>+ Sala nova “${esc(r.new_room_title.length > 40 ? `${r.new_room_title.slice(0, 38)}…` : r.new_room_title)}”</button>
-        <button type="button" class="ghost" data-cancel>Cancelar</button>
-      </div>`;
-    out.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => { const p = picks[Number(b.dataset.go)]; go(p.book_id, p.epic_id); });
-    out.querySelector("[data-new]").onclick = async () => { const { id } = await api("/api/books", { title: r.new_room_title }); go(id, null); };
-    out.querySelector("[data-cancel]").onclick = () => { out.hidden = true; ta.focus(); };
-    out.querySelector("[data-go]")?.focus();
+    const short = (t) => (t.length > 40 ? `${t.slice(0, 38)}…` : t);
+    const dests = [...[r.pick, ...r.alternatives].filter(Boolean), { book_id: null, epic_id: null, new_title: r.new_room_title }];
+    let sel = 0;
+    const label = (d) => (d.book_id ? where(d) : `sala nova <b>“${esc(short(d.new_title))}”</b>`);
+    const render = () => {
+      const d = dests[sel];
+      out.innerHTML = `<div class="where">${d.book_id ? `Mandar em ${label(d)}?` : r.pick ? `Criar ${label(d)}?` : `Nenhuma sala parece a certa. Criar ${label(d)}?`}</div>
+        ${sel === 0 && r.pick && r.reason ? `<div class="why">${esc(r.reason)}</div>` : ""}
+        <div class="acts">
+          <button type="button" class="primary" data-send="chat">Enviar no chat</button>
+          <button type="button" class="primary vibe" data-send="vibe" title="Posta com @vibe: ele responde e já organiza (tarefas, doc, decisões)">✦ Pedir pro @vibe</button>
+          <button type="button" class="ghost" data-cancel>Cancelar</button>
+        </div>
+        ${dests.length > 1 ? `<div class="acts alts"><span class="why">Outro lugar:</span>${dests.map((x, i) => (i === sel ? "" : `<button type="button" class="ghost" data-sel="${i}">${label(x)}</button>`)).join("")}</div>` : ""}`;
+      out.querySelectorAll("[data-send]").forEach((b) => b.onclick = () => go(dests[sel], b.dataset.send === "vibe"));
+      out.querySelectorAll("[data-sel]").forEach((b) => b.onclick = () => { sel = Number(b.dataset.sel); render(); out.querySelector("[data-send]")?.focus(); });
+      out.querySelector("[data-cancel]").onclick = () => { out.hidden = true; ta.focus(); };
+    };
+    render();
+    out.querySelector("[data-send]")?.focus();
   };
 }
 
