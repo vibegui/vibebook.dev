@@ -66,7 +66,7 @@
 /plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copy 1</button> <button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copy 2</button></li>
       </ol>
       <p class="note">The plugin uses the connector you already have (Claude.ai or <code>claude mcp add</code>); it doesn’t add another.</p>
-      <p class="note"><b>Link a repo to a room:</b> add a <code>.vibebook</code> file at its root with <code>room_id=&lt;room id&gt;</code> (the id is in the address, <code>/b/&lt;id&gt;</code>). In sessions there, Claude listens to the room while you talk about other things, acts on what you write in it and reports progress: task started, important commit, PR ready for review, deploy, blocker.</p>
+      <p class="note"><b>Link a repo to a room:</b> put the badge in its README, <code>[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/&lt;room id&gt;)</code> (the id is in the address, <code>/b/&lt;id&gt;</code>), and a line in AGENTS.md with the room link. People in the room click the badge and land in the chat. In sessions there, Claude listens to the room while you talk about other things, acts on what you write in it and reports progress: task started, important commit, PR ready for review, deploy, blocker.</p>
     </section>
 
     <section class="way" id="other">

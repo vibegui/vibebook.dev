@@ -9,8 +9,13 @@ The room is where the people on the project (and their Claudes) follow the work.
 
 ## Which room
 
-- The repo root has `.vibebook` with `room_id=<id>`: that's the room.
-- No file, but the user says this work belongs to a room: find it with `inbox`, and offer to write `.vibebook` (`room_id=<id>`) at the repo root so next sessions know.
+The repo says it, in this order:
+- `.vibebook` at the root with `room_id=<id>`.
+- A room link `https://vibebook.dev/b/<id>` in README.md, AGENTS.md or CLAUDE.md (usually the badge).
+
+No link, but the user says this work belongs to a room (find it with `inbox`)? Offer to link the repo, which takes two lines:
+- README, under the title: `[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/<id>)`. People in the room click it to open the chat. Others get "no access, ask for an invite", so it's safe in a public README (the room title isn't shown).
+- AGENTS.md (or CLAUDE.md), near the top: `Project room: https://vibebook.dev/b/<id> (report progress there).` Agents without the plugin read that too.
 
 ## The channel goes both ways
 
