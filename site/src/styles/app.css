@@ -238,3 +238,51 @@
   @media (max-width: 720px) { .amap { grid-template-columns: 1fr; } }
   .term .no { color: oklch(0.75 0.15 30); font-size: 12.5px; }
   .term .warn { color: var(--sun); font-size: 12.5px; }
+
+  /* ---------- plugin: repo ↔ room loop ---------- */
+  .plug { background: var(--cobalt-deep); color: var(--white); position: relative; overflow: hidden; }
+  .plug::before { content: ""; position: absolute; inset: auto -10% -40% 40%; height: 70%; background: radial-gradient(closest-side, oklch(0.5 0.17 248 / .55), transparent); pointer-events: none; }
+  .plug-grid { position: relative; display: grid; grid-template-columns: 1fr 1.08fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .plug-grid > * { min-width: 0; }
+  .plug-kicker { display: inline-block; margin: 0 0 18px; font: 700 12px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--cobalt-ink); background: var(--sun); padding: 7px 11px; border-radius: 999px; }
+  .plug .h2 em { font-style: normal; color: var(--sun); }
+  .plug .sub { color: oklch(0.88 0.03 240); }
+  .plug .sub b { color: var(--white); }
+  .plug-steps { list-style: none; margin: 34px 0 0; padding: 0; display: grid; gap: 14px; counter-reset: ps; }
+  .plug-steps li { counter-increment: ps; display: grid; grid-template-columns: 36px 1fr; gap: 2px 14px; align-items: start; }
+  .plug-steps li::before { content: counter(ps); grid-row: span 3; width: 36px; height: 36px; border-radius: 11px; background: oklch(1 0 0 / .1); box-shadow: inset 0 0 0 1px oklch(1 0 0 / .18); display: grid; place-items: center; font: 400 18px/1 var(--display); color: var(--sun); }
+  .plug-steps b { font-size: 1.05rem; }
+  .plug-steps span { color: oklch(0.85 0.03 240); }
+  .plug-steps code { justify-self: start; margin-top: 6px; font: 13px/1.4 ui-monospace, SF Mono, Menlo, monospace; color: var(--white); background: oklch(0.15 0.05 250); border: 1px solid oklch(1 0 0 / .12); border-radius: 8px; padding: 5px 9px; }
+  .plug-cta { margin: 30px 0 0; }
+  .plug-cta .btn { color: var(--cobalt-ink); }
+
+  .plug-art { display: grid; gap: 14px; }
+  .plug-term { background: #0b1723; border-radius: 18px; box-shadow: 0 40px 80px -30px oklch(0.1 0.08 250 / .8), 0 0 0 1px oklch(1 0 0 / .08); overflow: hidden; transform: rotate(-1deg); }
+  .plug-bar { display: flex; align-items: center; gap: 6px; padding: 11px 14px; background: oklch(0.22 0.04 250); font: 12px/1 ui-monospace, SF Mono, Menlo, monospace; color: oklch(0.75 0.03 240); }
+  .plug-bar i { width: 10px; height: 10px; border-radius: 50%; background: oklch(0.45 0.03 250); }
+  .plug-bar i:nth-child(1) { background: #ff5f57; } .plug-bar i:nth-child(2) { background: #febc2e; } .plug-bar i:nth-child(3) { background: #28c840; }
+  .plug-bar span { margin-left: 8px; }
+  .plug-lines { padding: 16px 18px 26px; display: grid; gap: 7px; font: 13.5px/1.5 ui-monospace, SF Mono, Menlo, monospace; color: #d9e7f1; }
+  .pl.me { color: var(--white); }
+  .pl.me::before { content: "› "; color: var(--sun); font-weight: 700; }
+  .pl.ok { color: #7cd591; font-size: 12.5px; }
+  .pl.sep { color: oklch(0.6 0.03 240); font-size: 11.5px; text-align: center; margin: 4px 0; letter-spacing: .04em; }
+  .pl.bell { color: var(--cobalt-ink); background: var(--sun); border-radius: 8px; padding: 6px 10px; font-weight: 600; }
+  .pl.ai { padding-left: 12px; border-left: 2px solid var(--coral); }
+
+  .plug-room { background: var(--white); color: var(--ink); border-radius: 18px; padding: 14px 16px; display: grid; gap: 11px; font-size: 14px; box-shadow: 0 30px 60px -30px oklch(0.1 0.08 250 / .7); transform: rotate(1deg); margin: -10px 0 0 clamp(16px, 8%, 64px); position: relative; }
+  .plug-room-h { display: flex; align-items: center; gap: 8px; font: 400 15px/1.1 var(--display); }
+  .plug-msg { display: flex; gap: 9px; align-items: flex-start; }
+  .plug-msg .n { font-size: 11px; color: var(--mute); }
+  .plug-msg .x { line-height: 1.4; }
+  .plug-seen { font-size: 11.5px; color: var(--mute); padding-left: 35px; }
+
+  /* Lines and messages arrive in order as the section scrolls in (where scroll-driven animation exists). */
+  @supports (animation-timeline: view()) {
+    /* Everything has arrived by the time the art is fully on screen (each element's own entry). */
+    .plug-lines .pl, .plug-msg, .plug-seen { animation: plugIn linear both; animation-timeline: view(); animation-range: entry 20% entry 90%; }
+  }
+  @keyframes plugIn { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .plug-lines .pl, .plug-msg, .plug-seen { animation: none; } }
+  @media (max-width: 920px) { .plug-grid { grid-template-columns: 1fr; } .plug-term, .plug-room { transform: none; } .plug-room { margin: 0; } }
