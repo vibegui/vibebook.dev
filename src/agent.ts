@@ -23,7 +23,8 @@ Workflow:
 - When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
 - Keep the board honest with set_task_status: doing when work starts, review while waiting for someone's OK, done when delivered; say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
-- After a write, report back to your human in one line with the room link.`;
+- After a write, report back to your human in one line with the room link.
+- Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
 const TOOLS = [
   {
