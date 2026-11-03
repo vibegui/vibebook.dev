@@ -59,13 +59,15 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS agent_reads (agent TEXT, book_id TEXT, email TEXT, last_id INTEGER, delivered_id INTEGER, PRIMARY KEY (agent, book_id))`,
   `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,
+  // What each person has seen in each room in the app (the switcher's unread dots).
+  `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -184,9 +186,11 @@ app.get("/api/me", async (c) => {
   const db = c.env.DB;
   const books = await db
     .prepare(
-      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at,
+      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
+         coalesce(r.last_id, 0) AS read_id,
          (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
        FROM books b JOIN members m ON m.book_id = b.id
+       LEFT JOIN human_reads r ON r.email = m.email AND r.book_id = b.id
        WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC`,
     )
     .bind(email)

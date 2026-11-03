@@ -215,8 +215,10 @@ export class Book extends DurableObject<Env> {
       .one().id as number;
     const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null };
     this.broadcast({ t: "msg", m });
-    // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room.
-    this.ctx.waitUntil(this.touch({ lastId: id }));
+    // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
+    // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
+    const byPerson = !extra.kind && author !== "ai";
+    this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
     return m;
   }
   createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = []) {
@@ -316,15 +318,28 @@ export class Book extends DurableObject<Env> {
     this.set("doc", text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get("doc"), by }, except);
   }
-  async touch(fields: { title?: string; folder?: string; summary?: string; lastId?: number } = {}) {
+  async touch(fields: { title?: string; folder?: string; summary?: string; lastId?: number; human?: number; agent?: number } = {}) {
     const id = this.get("book_id");
     if (!id) return;
     await this.env.DB.prepare(
       `UPDATE books SET updated_at = ?, title = COALESCE(?, title), folder = COALESCE(?, folder), summary = COALESCE(?, summary),
-         last_msg_id = max(coalesce(last_msg_id, 0), coalesce(?, 0)) WHERE id = ?`,
+         last_msg_id = max(coalesce(last_msg_id, 0), coalesce(?, 0)),
+         last_human_id = max(coalesce(last_human_id, 0), coalesce(?, 0)), last_agent_id = max(coalesce(last_agent_id, 0), coalesce(?, 0)) WHERE id = ?`,
     )
-      .bind(Date.now(), fields.title ?? null, fields.folder ?? null, fields.summary ?? null, fields.lastId ?? null, id)
+      .bind(Date.now(), fields.title ?? null, fields.folder ?? null, fields.summary ?? null, fields.lastId ?? null, fields.human ?? null, fields.agent ?? null, id)
       .run();
+  }
+  /** What each person has seen in this room (the app's unread dots): everyone with the room open, up to `upto`. */
+  async markRead(emails: string[], upto: number) {
+    const id = this.get("book_id");
+    if (!id || !emails.length || !upto) return;
+    await this.env.DB.batch(
+      emails.map((e) =>
+        this.env.DB.prepare(
+          `INSERT INTO human_reads (email, book_id, last_id) VALUES (?, ?, ?) ON CONFLICT(email, book_id) DO UPDATE SET last_id = max(last_id, excluded.last_id)`,
+        ).bind(e, id, upto),
+      ),
+    );
   }
 
   // ---- agents (MCP, called over RPC by the Worker after it checked membership) ----
@@ -486,6 +501,7 @@ export class Book extends DurableObject<Env> {
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [email]);
+    this.ctx.waitUntil(this.markRead([email], (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0));
     const book = await this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first();
     server.send(
       JSON.stringify({
