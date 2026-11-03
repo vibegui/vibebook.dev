@@ -20,7 +20,8 @@ type Suggestion = { title: string; tasks: string[] };
 
 const DEFAULT_TITLE = "Novo vibebook";
 const CLASSIFY_DELAY_MS = 30_000;
-const CLASSIFY_MIN_NEW_MSGS = 3;
+const CLASSIFY_MIN_NEW_MSGS = 3; // after the first classification
+const CLASSIFY_FIRST_MSGS = 1; // a new room gets its title/summary after its first message
 
 const READS_PER_RUN = 4;
 const READ_CACHE_OK_MS = 6 * 60 * 60 * 1000;
@@ -456,6 +457,9 @@ export class Book extends DurableObject<Env> {
       this.set("epics_indexed", "1");
       this.epicsChanged();
     }
+    // A room that has messages but was never classified (older rule needed 3) gets classified now.
+    if (!this.get("classified_at_id") && !(await this.ctx.storage.getAlarm()) && this.sql.exec(`SELECT 1 FROM messages WHERE author != 'ai' LIMIT 1`).toArray().length)
+      await this.ctx.storage.setAlarm(Date.now() + 5_000);
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [email]);
@@ -836,7 +840,7 @@ Answer SIMPLE or COMPLEX:`,
   async alarm() {
     const since = Number(this.get("classified_at_id") ?? 0);
     const fresh = this.sql.exec(`SELECT count(*) AS n FROM messages WHERE id > ? AND author != 'ai'`, since).one().n as number;
-    if (fresh < CLASSIFY_MIN_NEW_MSGS) return;
+    if (fresh < (since ? CLASSIFY_MIN_NEW_MSGS : CLASSIFY_FIRST_MSGS)) return;
     const bookId = this.get("book_id");
     if (!bookId) return;
     const folders = await this.env.DB.prepare(
@@ -856,7 +860,7 @@ Answer SIMPLE or COMPLEX:`,
           schema: z.object({
             title: z.string().describe("título curto e específico do vibebook, máx 6 palavras"),
             folder: z.string().describe("pasta para organizar; reutilize uma pasta existente se fizer sentido"),
-            summary: z.string().describe("uma frase resumindo do que se trata e o estado atual"),
+            summary: z.string().describe("uma frase curta (máx 20 palavras) dizendo do que se trata e em que pé está; sem emails, sem 'o usuário'"),
             suggested_epics: z
               .array(z.object({ title: z.string(), tasks: z.array(z.string()).max(8) }))
               .max(3)
@@ -875,11 +879,12 @@ ${transcript}`,
       this.set("classified_at_id", String(lastId));
       this.ctx.waitUntil(track(this.env, "classify", { dims: { book: bookId, model: this.env.MODEL_CLASSIFY, ok: true, cost: +costOf(usage).toFixed(6) } }));
       const title = this.get("title_locked") ? undefined : output.title;
-      await this.touch({ title, folder: output.folder, summary: output.summary });
+      const summary = output.summary.replace(/\s+/g, " ").trim().slice(0, 180);
+      await this.touch({ title, folder: output.folder, summary });
       const existing = new Set([...this.epics().map((e) => e.title.toLowerCase()), ...this.suggestions().map((s) => s.title.toLowerCase())]);
       const suggestions = [...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(s.title.toLowerCase()))].slice(-5);
       this.set("suggestions", JSON.stringify(suggestions));
-      this.broadcast({ t: "meta", title, folder: output.folder, summary: output.summary });
+      this.broadcast({ t: "meta", title, folder: output.folder, summary });
       this.broadcast({ t: "suggestions", suggestions });
     } catch (e) {
       // Negative cache: mark as classified anyway so a failing provider isn't retried every alarm.
