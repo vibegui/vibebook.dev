@@ -140,7 +140,17 @@ export async function trafficOverview(env: Pick<Env, "DB">, query: TrafficQuery 
   };
 }
 
-const ACTIVITY = ["message", "ai_run", "book_created", "signup", "invite_sent"] as const;
+const ACTIVITY = ["message", "ai_run", "agent_call", "book_created", "signup", "invite_sent"] as const;
+
+// ai_run rows before per-model tracking only had a mode; these were the models behind each mode then.
+const LEGACY_MODEL: Record<string, string> = {
+  fast: "anthropic/claude-sonnet-5.5",
+  medium: "anthropic/claude-opus-5.5",
+  heavy: "anthropic/claude-fable-5.1",
+  smart: "anthropic/claude-sonnet-5.5",
+};
+const modelOf = (e: { dims: Record<string, unknown> }) => str(e.dims.model) || LEGACY_MODEL[str(e.dims.mode) || "fast"] || "?";
+const num = (v: unknown) => Number(v) || 0;
 
 /** Product back office: KPIs, activity per day, funnel, AI usage, people and books. */
 export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
@@ -148,7 +158,7 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
   const since = Date.now() - days * DAY_MS;
   const events = await load(env, days);
   const db = env.DB;
-  const [users, books, newUsers, newBooks, activeBooks, recentUsers, topBooks] = await Promise.all([
+  const [users, books, newUsers, newBooks, activeBooks, recentUsers, topBooks, latestBooks] = await Promise.all([
     db.prepare(`SELECT count(*) AS n FROM users`).first<{ n: number }>(),
     db.prepare(`SELECT count(*) AS n FROM books`).first<{ n: number }>(),
     db.prepare(`SELECT count(*) AS n FROM users WHERE created_at >= ?`).bind(since).first<{ n: number }>(),
@@ -157,7 +167,8 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
     db
       .prepare(
         `SELECT u.email, u.name, u.created_at, (SELECT count(*) FROM members m WHERE m.email = u.email) AS books,
-           (SELECT max(ts) FROM events e WHERE e.user = u.email) AS last_seen
+           (SELECT max(ts) FROM events e WHERE e.user = u.email) AS last_seen,
+           (SELECT max(ts) FROM events e WHERE e.user = u.email AND e.name = 'agent_connected') AS agent_at
          FROM users u ORDER BY u.created_at DESC LIMIT 20`,
       )
       .all(),
@@ -168,11 +179,20 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
          FROM books b ORDER BY b.updated_at DESC LIMIT 20`,
       )
       .all<Record<string, unknown>>(),
+    db
+      .prepare(
+        `SELECT b.id, b.title, b.owner, b.created_at, (SELECT count(*) FROM members m WHERE m.book_id = b.id) AS members
+         FROM books b ORDER BY b.created_at DESC LIMIT 10`,
+      )
+      .all<Record<string, unknown>>(),
   ]);
 
   const count = (name: string) => events.filter((e) => e.name === name).length;
   const people = (pred: (e: Raw) => boolean) => new Set(events.filter(pred).map((e) => e.user || e.visitor)).size;
   const runs = events.filter((e) => e.name === "ai_run");
+  const classify = events.filter((e) => e.name === "classify");
+  const agentCalls = events.filter((e) => e.name === "agent_call");
+  const aiCost = [...runs, ...classify].reduce((a, e) => a + num(e.dims.cost), 0);
   const msgsByBook = new Map<string, number>();
   for (const e of events) if (e.name === "message") msgsByBook.set(str(e.dims.book), (msgsByBook.get(str(e.dims.book)) ?? 0) + 1);
 
@@ -188,6 +208,10 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
       messages: count("message"),
       aiRuns: runs.length,
       aiFailures: runs.filter((e) => e.dims.ok === false).length,
+      aiCost: +aiCost.toFixed(4),
+      aiCostPerRun: runs.length ? +(runs.reduce((a, e) => a + num(e.dims.cost), 0) / runs.length).toFixed(5) : 0,
+      agentPeople: people((e) => e.name === "agent_call"),
+      agentCalls: agentCalls.length,
       visitors: people((e) => e.name === "pageview"),
     },
     activityOrder: [...ACTIVITY],
@@ -204,19 +228,38 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
       { step: "Entrou", n: people((e) => e.name === "login") },
       { step: "Criou vibebook", n: people((e) => e.name === "book_created") },
       { step: "Convidou alguém", n: people((e) => e.name === "invite_sent") },
-      { step: "Chamou a @ai", n: people((e) => e.name === "ai_run") },
+      { step: "Conectou agent", n: people((e) => e.name === "agent_connected") },
+      { step: "Agent agiu na sala", n: people((e) => e.name === "agent_call" && e.dims.tool !== "inbox") },
+      { step: "Chamou o @vibe", n: people((e) => e.name === "ai_run") },
     ],
-    ai: ["fast", "medium", "heavy"].map((mode) => {
-      const r = runs.filter((e) => (e.dims.mode ?? "fast") === mode);
-      const ms = r.map((e) => Number(e.dims.ms) || 0).filter(Boolean);
-      return {
-        mode,
-        runs: r.length,
-        failures: r.filter((e) => e.dims.ok === false).length,
-        avgMs: ms.length ? Math.round(ms.reduce((a, b) => a + b, 0) / ms.length) : null,
-        tools: r.reduce((a, e) => a + (Number(e.dims.tools) || 0), 0),
-      };
-    }),
+    // Per model, named. Costs exist only for runs tracked after per-model tracking (null before).
+    ai: [...new Set([...runs, ...classify].map(modelOf))]
+      .map((model) => {
+        const r = [...runs, ...classify].filter((e) => modelOf(e) === model);
+        const ms = r.map((e) => num(e.dims.ms)).filter(Boolean);
+        const priced = r.filter((e) => e.dims.cost !== undefined);
+        return {
+          model,
+          role: [...new Set(r.map((e) => (e.name === "classify" ? "classificar" : e.dims.mode === "smart" ? "complexo" : e.dims.model ? "simples" : "antes do roteador")))].join(" + "),
+          runs: r.length,
+          failures: r.filter((e) => e.dims.ok === false).length,
+          avgMs: ms.length ? Math.round(ms.reduce((a, b) => a + b, 0) / ms.length) : null,
+          tools: r.reduce((a, e) => a + num(e.dims.tools), 0),
+          cost: priced.length ? +priced.reduce((a, e) => a + num(e.dims.cost), 0).toFixed(4) : null,
+        };
+      })
+      .sort((a, b) => b.runs - a.runs),
+    routing: { smart: runs.filter((e) => e.dims.mode === "smart").length, routed: runs.filter((e) => e.dims.model).length, routeCost: +runs.reduce((a, e) => a + num(e.dims.route_cost), 0).toFixed(5) },
+    agents: {
+      tools: rank(agentCalls, (e) => str(e.dims.tool) || "(?)", (e) => e.user, 8),
+      clients: rank(events.filter((e) => e.name === "agent_call" || e.name === "agent_connected"), (e) => str(e.dims.client) || "(?)", (e) => e.user, 5),
+      failures: agentCalls.filter((e) => e.dims.ok === false).length,
+      connections: events
+        .filter((e) => e.name === "agent_connected") // events come newest first
+        .slice(0, 8)
+        .map((e) => ({ user: e.user, client: str(e.dims.client), day: e.day })),
+    },
+    latestBooks: latestBooks.results.map((b) => ({ ...b, messages: msgsByBook.get(String(b.id)) ?? 0 })),
     logins: rank(events.filter((e) => e.name === "login"), (e) => str(e.dims.method) || "(?)", (e) => e.user, 5),
     users: recentUsers.results,
     books: topBooks.results.map((b) => ({ ...b, messages: msgsByBook.get(String(b.id)) ?? 0 })),

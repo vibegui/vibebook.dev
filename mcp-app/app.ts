@@ -11,9 +11,12 @@ type Admin = {
   activityOrder: string[];
   activity: Series;
   funnel: Array<{ step: string; n: number }>;
-  ai: Array<{ mode: string; runs: number; failures: number; avgMs: number | null; tools: number }>;
+  ai: Array<{ model: string; role: string; runs: number; failures: number; avgMs: number | null; tools: number; cost: number | null }>;
+  routing: { smart: number; routed: number; routeCost: number };
+  agents: { tools: Row[]; clients: Row[]; failures: number; connections: Array<{ user: string; client: string; day: string }> };
+  latestBooks: Array<{ id: string; title: string; owner: string; members: number; messages: number; created_at: number }>;
   logins: Row[];
-  users: Array<{ email: string; name: string | null; created_at: number; books: number; last_seen: number | null }>;
+  users: Array<{ email: string; name: string | null; created_at: number; books: number; last_seen: number | null; agent_at: number | null }>;
   books: Array<{ id: string; title: string; folder: string | null; owner: string; members: number; messages: number; updated_at: number }>;
 };
 type Traffic = {
@@ -135,12 +138,24 @@ function stacked(series: Series, order: string[], metric: "events" | "visitors")
 
 const ACT_LABEL: Record<string, string> = {
   message: "Mensagens",
-  ai_run: "Chamadas @ai",
+  ai_run: "Chamadas @vibe",
+  agent_call: "Chamadas de agents",
   book_created: "Vibebooks criados",
   signup: "Cadastros",
   invite_sent: "Convites",
 };
-const MODE_LABEL: Record<string, string> = { fast: "rápido", medium: "médio", heavy: "pesado" };
+// "anthropic/claude-haiku-5.5" → "Claude Haiku 5.5"; "deepseek/deepseek-v4.1-flash" → "DeepSeek V4.1 Flash"
+const modelName = (id: string) => {
+  const name = id.split("/").pop() ?? id;
+  return name
+    .replace(/^claude-/, "Claude ")
+    .replace(/^deepseek-/, "DeepSeek ")
+    .split(/[-\s]/)
+    .map((w) => (/^v?\d/.test(w) ? w.toUpperCase() : w[0]?.toUpperCase() + w.slice(1)))
+    .join(" ")
+    .replace(/Claude (\w)/, (_, c) => `Claude ${c.toUpperCase()}`);
+};
+const usd = (n: number | null) => (n === null ? "—" : n < 0.01 ? `US$ ${n.toFixed(4)}` : `US$ ${n.toFixed(2)}`);
 
 function renderAdmin(d: Admin) {
   const k = d.kpis;
@@ -151,7 +166,9 @@ function renderAdmin(d: Admin) {
     ${kpi("Pessoas", k.users, `+${fmt(k.newUsers)} em ${d.days}d · ${fmt(k.activeUsers)} ativas`)}
     ${kpi("Vibebooks", k.books, `+${fmt(k.newBooks)} novos · ${fmt(k.activeBooks)} com movimento`)}
     ${kpi("Mensagens", k.messages, `${k.activeUsers ? (k.messages / k.activeUsers).toFixed(1) : "—"} por pessoa ativa`)}
-    ${kpi("Chamadas @ai", k.aiRuns, k.aiFailures ? `<span class="bad">${fmt(k.aiFailures)} falharam</span>` : "nenhuma falha")}
+    ${kpi("Chamadas @vibe", k.aiRuns, k.aiFailures ? `<span class="bad">${fmt(k.aiFailures)} falharam</span>` : "nenhuma falha")}
+    <div class="kpi"><div class="l">Custo de AI</div><div class="v num">${usd(k.aiCost)}</div><div class="d">${k.aiCostPerRun ? `${usd(k.aiCostPerRun)} por @vibe` : "desde o rastreio de custo"}</div></div>
+    ${kpi("Agents", k.agentPeople, `${fmt(k.agentCalls)} chamadas MCP em ${d.days}d`)}
     ${kpi("Visitantes", k.visitors, `no site em ${d.days}d`)}
   </div>
   <div class="stack"><div class="card"><h3>Atividade por dia <small>cada gráfico na sua própria escala</small></h3>
@@ -169,17 +186,29 @@ function renderAdmin(d: Admin) {
         return `<div class="fstep" data-tip="${esc(`${s.step}: ${fmt(s.n)} (${Math.round((s.n / top) * 100)}% do topo)`)}"><span>${esc(s.step)}</span><div class="ftrack"><div class="fbar" style="width:${(s.n / top) * 100}%"></div></div><span class="n num"><b>${fmt(s.n)}</b>${conv}</span></div>`;
       })
       .join("")}</div></div>
-    <div class="card"><h3>AI por modo</h3>
-      <table><thead><tr><th>Modo</th><th class="r">Chamadas</th><th class="r">Falhas</th><th class="r">Tempo médio</th><th class="r">Ferramentas</th></tr></thead><tbody>${d.ai
-        .map((a) => `<tr><td>${MODE_LABEL[a.mode] ?? a.mode}</td><td class="r num">${fmt(a.runs)}</td><td class="r num">${a.failures ? `<span class="bad">${fmt(a.failures)}</span>` : "0"}</td><td class="r num">${a.avgMs ? `${(a.avgMs / 1000).toFixed(1)} s` : "—"}</td><td class="r num">${fmt(a.tools)}</td></tr>`)
-        .join("")}</tbody></table>
+    <div class="card"><h3>AI por modelo <small>${d.routing.routed ? `roteador mandou ${fmt(d.routing.smart)} de ${fmt(d.routing.routed)} pro modelo forte · roteamento custou ${usd(d.routing.routeCost)}` : ""}</small></h3>
+      <div class="tablewrap"><table><thead><tr><th>Modelo</th><th class="r">Chamadas</th><th class="r">Falhas</th><th class="r">Tempo médio</th><th class="r">Custo</th></tr></thead><tbody>${d.ai
+        .map((a) => `<tr><td>${esc(modelName(a.model))}<div class="sub">${esc(a.role)} · ${esc(a.model)}</div></td><td class="r num">${fmt(a.runs)}</td><td class="r num">${a.failures ? `<span class="bad">${fmt(a.failures)}</span>` : "0"}</td><td class="r num">${a.avgMs ? `${(a.avgMs / 1000).toFixed(1)} s` : "—"}</td><td class="r num">${usd(a.cost)}</td></tr>`)
+        .join("") || `<tr><td colspan="5" class="muted">Nenhuma chamada no período.</td></tr>`}</tbody></table></div>
       <h3 style="margin-top:18px">Como entram</h3>
       ${d.logins.length ? `<div class="rank">${d.logins.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.visitors)} pessoas · ${fmt(r.events)} logins</span></div>`).join("")}</div>` : `<div class="muted">Nenhum login no período.</div>`}
     </div>
   </div>
   <div class="grid2">
-    <div class="card"><h3>Pessoas <small>mais recentes</small></h3><div class="tablewrap"><table><thead><tr><th>Quem</th><th class="r">Vibebooks</th><th class="r">Entrou</th><th class="r">Visto</th></tr></thead><tbody>${d.users
-      .map((u) => `<tr><td>${esc(u.name || u.email.split("@")[0])}<div class="sub">${esc(u.email)}</div></td><td class="r num">${u.books}</td><td class="r">${ago(u.created_at)}</td><td class="r">${ago(u.last_seen)}</td></tr>`)
+    <div class="card"><h3>Agents <small>${fmt(k.agentPeople)} pessoas · ${fmt(k.agentCalls)} chamadas${d.agents.failures ? ` · <span class="bad">${fmt(d.agents.failures)} falharam</span>` : ""}</small></h3>
+      ${d.agents.tools.length ? `<div class="rank">${d.agents.tools.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.events)} · ${fmt(r.visitors)} pessoas</span></div>`).join("")}</div>` : `<div class="muted">Nenhum agent chamou o vibebook no período.</div>`}
+      <h3 style="margin-top:18px">Clientes</h3>
+      ${d.agents.clients.length ? `<div class="rank">${d.agents.clients.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.visitors)} pessoas</span></div>`).join("")}</div>` : `<div class="muted">—</div>`}
+      <h3 style="margin-top:18px">Conexões recentes</h3>
+      ${d.agents.connections.length ? `<div class="rank">${d.agents.connections.map((c) => `<div class="row"><span>${esc(c.user)}<div class="sub">${esc(c.client)}</div></span><span class="c">${esc(c.day)}</span></div>`).join("")}</div>` : `<div class="muted">Ninguém conectou agent no período.</div>`}
+    </div>
+    <div class="card"><h3>Salas novas <small>últimas criadas</small></h3><div class="tablewrap"><table><thead><tr><th>Sala</th><th class="r">Pessoas</th><th class="r">Msgs ${d.days}d</th><th class="r">Criada</th></tr></thead><tbody>${d.latestBooks
+      .map((b) => `<tr><td>${esc(b.title)}<div class="sub">${esc(b.owner)}</div></td><td class="r num">${b.members}</td><td class="r num">${fmt(b.messages)}</td><td class="r">${ago(b.created_at)}</td></tr>`)
+      .join("")}</tbody></table></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Pessoas <small>cadastros mais recentes</small></h3><div class="tablewrap"><table><thead><tr><th>Quem</th><th class="r">Vibebooks</th><th class="r">Entrou</th><th class="r">Visto</th></tr></thead><tbody>${d.users
+      .map((u) => `<tr><td>${esc(u.name || u.email.split("@")[0])}${u.agent_at ? ` <span class="sub" title="conectou agent">✦ agent</span>` : ""}<div class="sub">${esc(u.email)}</div></td><td class="r num">${u.books}</td><td class="r">${ago(u.created_at)}</td><td class="r">${ago(u.last_seen)}</td></tr>`)
       .join("")}</tbody></table></div></div>
     <div class="card"><h3>Vibebooks <small>por última atividade</small></h3><div class="tablewrap"><table><thead><tr><th>Vibebook</th><th class="r">Pessoas</th><th class="r">Msgs ${d.days}d</th><th class="r">Atualizado</th></tr></thead><tbody>${d.books
       .map((b) => `<tr><td>${esc(b.title)}<div class="sub">${esc(b.folder || "sem pasta")} · ${esc(b.owner)}</div></td><td class="r num">${b.members}</td><td class="r num">${fmt(b.messages)}</td><td class="r">${ago(b.updated_at)}</td></tr>`)

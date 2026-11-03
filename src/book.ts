@@ -10,6 +10,8 @@ import { track } from "./track";
 // @vibe never picks a big model on its own: a cheap router sends each request to the fast model, or to
 // the smart one only when the request needs it. Model ids are config (wrangler vars), never code.
 type Route = "fast" | "smart";
+// OpenRouter reports each call's USD cost in usage.raw.cost; the admin sums it per model.
+const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null };
@@ -579,7 +581,7 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
   }
 
   // One cheap call (MODEL_ROUTE, a few tokens out) decides fast vs smart. Any failure means fast: cheap by default.
-  async route(thread: string): Promise<Route> {
+  async route(thread: string): Promise<{ route: Route; cost: number }> {
     const recent = this.messages(thread, 8)
       .filter((m) => m.text)
       .map((m) => `${m.author === "ai" ? "@vibe" : m.author}${m.kind === "agent" ? " (agent)" : ""}: ${m.text.slice(0, 600)}`)
@@ -587,7 +589,7 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
       .slice(-4000);
     const images = this.messages(thread, 8).some((m) => m.files.some((f) => f.type.startsWith("image/")));
     try {
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: this.model(this.env.MODEL_ROUTE, true),
         maxOutputTokens: 4,
         temperature: 0,
@@ -601,10 +603,10 @@ ${recent}
 
 Answer SIMPLE or COMPLEX:`,
       });
-      return /COMPLEX/i.test(text) ? "smart" : "fast";
+      return { route: /COMPLEX/i.test(text) ? "smart" : "fast", cost: costOf(usage) };
     } catch (e) {
       console.error("route failed", String(e));
-      return "fast";
+      return { route: "fast", cost: 0 };
     }
   }
 
@@ -616,7 +618,10 @@ Answer SIMPLE or COMPLEX:`,
     }
     const msg = this.addMessage(thread, "ai", "");
     this.broadcast({ t: "typing", id: msg.id, mode: "route" });
-    const mode = await this.route(thread);
+    const { route: mode, cost: routeCost } = await this.route(thread);
+    let cost = routeCost;
+    let tokensIn = 0;
+    let tokensOut = 0;
     const modelName = mode === "smart" ? this.env.MODEL_SMART : this.env.MODEL_FAST;
     const started = Date.now();
     let ok = true;
@@ -673,8 +678,11 @@ Answer SIMPLE or COMPLEX:`,
         onError: ({ error }) => {
           failed = error;
         },
-        onStepFinish: ({ toolCalls }) => {
+        onStepFinish: ({ toolCalls, usage }) => {
           tools += toolCalls.length;
+          cost += costOf(usage);
+          tokensIn += usage.inputTokens ?? 0;
+          tokensOut += usage.outputTokens ?? 0;
         },
         model: this.model(modelName),
         system: this.context(thread, await this.names(), await this.members()),
@@ -768,7 +776,10 @@ Answer SIMPLE or COMPLEX:`,
     }
     this.sql.exec(`UPDATE messages SET text = ? WHERE id = ?`, text, msg.id);
     flush(true);
-    await track(this.env, "ai_run", { user: email, dims: { book: this.get("book_id") ?? undefined, mode, ok, ms: Date.now() - started, tools, reads } });
+    await track(this.env, "ai_run", {
+      user: email,
+      dims: { book: this.get("book_id") ?? undefined, mode, model: modelName, ok, ms: Date.now() - started, tools, reads, cost: +cost.toFixed(6), route_cost: +routeCost.toFixed(6), tin: tokensIn, tout: tokensOut },
+    });
   }
 
   // Cached, rate-limited link read. Failures are cached briefly so a broken site isn't hammered.
@@ -806,7 +817,7 @@ Answer SIMPLE or COMPLEX:`,
       .map((m) => `[${m.thread === "main" ? "principal" : m.thread}] ${m.author}: ${m.text}`)
       .join("\n");
     try {
-      const { output } = await generateText({
+      const { output, usage } = await generateText({
         model: this.model(this.env.MODEL_CLASSIFY, true),
         output: Output.object({
           schema: z.object({
@@ -829,6 +840,7 @@ Conversa:
 ${transcript}`,
       });
       this.set("classified_at_id", String(lastId));
+      this.ctx.waitUntil(track(this.env, "classify", { dims: { book: bookId, model: this.env.MODEL_CLASSIFY, ok: true, cost: +costOf(usage).toFixed(6) } }));
       const title = this.get("title_locked") ? undefined : output.title;
       await this.touch({ title, folder: output.folder, summary: output.summary });
       const existing = new Set([...this.epics().map((e) => e.title.toLowerCase()), ...this.suggestions().map((s) => s.title.toLowerCase())]);
@@ -839,6 +851,7 @@ ${transcript}`,
     } catch (e) {
       // Negative cache: mark as classified anyway so a failing provider isn't retried every alarm.
       console.error("classify failed", String(e));
+      this.ctx.waitUntil(track(this.env, "classify", { dims: { book: bookId, model: this.env.MODEL_CLASSIFY, ok: false } }));
       this.set("classified_at_id", String(lastId));
     }
   }
