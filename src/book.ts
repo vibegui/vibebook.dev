@@ -84,6 +84,19 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((e) => ({ ...e, tasks: tasks.filter((t) => t.epic_id === e.id) }));
   }
+  // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a
+  // room + epic with one query instead of calling every room's DO.
+  epicsChanged() {
+    const epics = this.epics();
+    this.broadcast({ t: "epics", epics });
+    const id = this.get("book_id");
+    if (id)
+      this.ctx.waitUntil(
+        this.env.DB.prepare(`UPDATE books SET epics = ? WHERE id = ?`)
+          .bind(JSON.stringify(epics.map((e) => ({ id: e.id, title: e.title, open: e.tasks.filter((t) => t.status !== "done").length }))), id)
+          .run(),
+      );
+  }
   messages(thread?: string, limit = 500): Msg[] {
     const rows = thread
       ? this.sql.exec(`SELECT * FROM messages WHERE thread = ? ORDER BY id DESC LIMIT ?`, thread, limit)
@@ -114,7 +127,7 @@ export class Book extends DurableObject<Env> {
       this.sql.exec(`UPDATE tasks SET owner = ? WHERE id = ?`, o || null, id);
     }
     if (due !== undefined) this.sql.exec(`UPDATE tasks SET due = ? WHERE id = ?`, due.trim().slice(0, 40) || null, id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
     return { ok: true };
   }
   files(): FileMeta[] {
@@ -220,47 +233,47 @@ export class Book extends DurableObject<Env> {
         x.due?.trim().slice(0, 40) || null,
       );
     });
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
     return id;
   }
   addTask(epicId: string, title: string) {
     if (!this.sql.exec(`SELECT 1 FROM epics WHERE id = ?`, epicId).toArray().length) return null;
     const id = rid();
     this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts) VALUES (?, ?, ?, ?)`, id, epicId, title.slice(0, 300), Date.now());
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
     return id;
   }
   updateTask(id: string, title: string) {
     if (!title.trim()) return;
     this.sql.exec(`UPDATE tasks SET title = ? WHERE id = ?`, title.trim().slice(0, 300), id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
   }
   deleteTask(id: string) {
     this.sql.exec(`DELETE FROM tasks WHERE id = ?`, id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
   }
   renameEpic(id: string, title: string) {
     if (!title.trim()) return;
     this.sql.exec(`UPDATE epics SET title = ? WHERE id = ?`, title.trim().slice(0, 200), id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
   }
   // Humans only: removes the epic, its tasks and its discussion.
   deleteEpic(id: string) {
     this.sql.exec(`DELETE FROM tasks WHERE epic_id = ?`, id);
     this.sql.exec(`DELETE FROM messages WHERE thread = ?`, id);
     this.sql.exec(`DELETE FROM epics WHERE id = ?`, id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
   }
   setTask(id: string, done?: boolean) {
     if (done === undefined) this.sql.exec(`UPDATE tasks SET done = 1 - done, status = CASE WHEN done = 1 THEN 'todo' ELSE 'done' END WHERE id = ?`, id);
     else this.sql.exec(`UPDATE tasks SET done = ?, status = ? WHERE id = ?`, done ? 1 : 0, done ? "done" : "todo", id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
   }
   setStatus(id: string, status: string) {
     if (!(STATUSES as readonly string[]).includes(status)) return { ok: false, error: `status must be one of ${STATUSES.join(", ")}` };
     if (!this.sql.exec(`SELECT 1 FROM tasks WHERE id = ?`, id).toArray().length) return { ok: false, error: "task not found" };
     this.sql.exec(`UPDATE tasks SET status = ?, done = ? WHERE id = ?`, status, status === "done" ? 1 : 0, id);
-    this.broadcast({ t: "epics", epics: this.epics() });
+    this.epicsChanged();
     return { ok: true };
   }
   createPoll(thread: string, author: string, question: string, options: string[], multi: boolean) {
@@ -396,6 +409,21 @@ export class Book extends DurableObject<Env> {
     return id ? { ok: true, id } : { ok: false, error: "empty" };
   }
 
+  /** A person posting from the home router (not over WS): same rules as the chat. */
+  async humanPost(bookId: string, email: string, raw: string, thread = "main") {
+    this.bind(bookId);
+    const text = raw.trim().slice(0, 4000);
+    if (!text) return { ok: false, error: "Mensagem vazia." };
+    if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
+    const secret = findSecret(text);
+    if (secret) return { ok: false, error: `Não enviei: parece ${secret}. Segredo não entra na sala.` };
+    const m = this.addMessage(thread, email, text);
+    this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", via: "home" } }));
+    if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
+    if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
+    return { ok: true, id: m.id, thread };
+  }
+
   agentTask(bookId: string, taskId: string, status: string) {
     this.bind(bookId);
     return this.setStatus(taskId, status);
@@ -423,6 +451,11 @@ export class Book extends DurableObject<Env> {
     const bookId = url.searchParams.get("book");
     if (!email || !bookId) return new Response("bad request", { status: 400 });
     if (!this.get("book_id")) this.set("book_id", bookId);
+    // Rooms from before the D1 epic index fill it the first time someone opens them.
+    if (!this.get("epics_indexed")) {
+      this.set("epics_indexed", "1");
+      this.epicsChanged();
+    }
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [email]);

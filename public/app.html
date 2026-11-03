@@ -42,6 +42,22 @@
   @media (max-width: 520px) { .hello .primary { width: 100%; } .me span { max-width: 120px; } }
   .me span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .hello { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 36px; }
+  .ask { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; margin: 4px 0 32px; box-shadow: 0 18px 40px -28px oklch(0.25 0.08 250 / .5); }
+  .ask label { display: block; font: 400 22px/1.1 Caprasimo, serif; margin-bottom: 10px; }
+  .askRow { display: flex; gap: 10px; align-items: flex-end; }
+  .askRow textarea { flex: 1; min-width: 0; resize: none; min-height: 52px; max-height: 200px; font-size: 16px; }
+  .askOut { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; gap: 10px; }
+  .askOut .where { font-size: 16px; } .askOut .where b { font-weight: 700; }
+  .askOut .why { color: var(--mute); font-size: 14px; }
+  .askOut .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .askOut .acts .ghost { font-size: 14px; }
+  @media (max-width: 720px) {
+    .ask { margin: 0 -4px 24px; padding: 14px; border-radius: 18px; }
+    .ask label { font-size: 20px; }
+    .askRow { flex-direction: column; align-items: stretch; }
+    .askRow textarea { min-height: 120px; }
+    .askRow .primary { padding: 14px; font-size: 16px; }
+  }
   .hello h1 { font-size: clamp(2rem, 4.2vw, 3rem); margin: 0; line-height: 1.05; }
   .helloText { flex: 1 1 320px; min-width: 0; }
   .hello p { margin: 10px 0 0; color: var(--mute); }
@@ -489,6 +505,11 @@ async function home() {
       <button class="ghost bell" data-bell></button>
       <button class="ghost" id="logout">Sair</button>
     </header>
+    <form class="ask" id="ask">
+      <label for="askText">O que você quer resolver?</label>
+      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… o @vibe acha a sala e o épico certos."></textarea><button class="primary" id="askBtn">Enviar</button></div>
+      <div class="askOut" id="askOut" aria-live="polite" hidden></div>
+    </form>
     ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
     <div class="hello">
@@ -547,10 +568,48 @@ async function home() {
   };
   renderAgents();
   renderBells();
+  wireAsk();
   document.querySelectorAll("[data-archive]").forEach((b) => b.onclick = (e) => {
     e.preventDefault(); e.stopPropagation();
     confirmArchive(b.dataset.archive, b.dataset.title);
   });
+}
+
+// Home composer: suggest the room/epic, then post there on one click and open it.
+function wireAsk() {
+  const form = document.getElementById("ask"), ta = document.getElementById("askText"), out = document.getElementById("askOut"), btn = document.getElementById("askBtn");
+  if (!form) return;
+  ta.oninput = () => { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; };
+  ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } };
+  const where = (p) => `<b>${esc(p.book_title)}</b>${p.epic_title ? ` → <b>${esc(p.epic_title)}</b>` : ""}`;
+  const go = async (bookId, epicId) => {
+    out.innerHTML = `<div class="why">Enviando…</div>`;
+    try {
+      await api(`/api/books/${bookId}/post`, { text: ta.value.trim(), thread: epicId || "main" });
+      pendingThread = epicId || null;
+      history.pushState(null, "", `/b/${bookId}`); route();
+    } catch (err) { out.innerHTML = `<div class="why bad">${esc(err.message)}</div>`; }
+  };
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = ta.value.trim(); if (!text) return;
+    btn.disabled = true; out.hidden = false; out.innerHTML = `<div class="why">Procurando a sala certa…</div>`;
+    let r;
+    try { r = await api("/api/route", { text }); } catch (err) { out.innerHTML = `<div class="why">${esc(err.message)}</div>`; btn.disabled = false; return; }
+    btn.disabled = false;
+    const picks = [r.pick, ...r.alternatives].filter(Boolean);
+    out.innerHTML = `${r.pick ? `<div class="where">Mandar em ${where(r.pick)}?</div>${r.reason ? `<div class="why">${esc(r.reason)}</div>` : ""}` : `<div class="where">Nenhuma sala parece a certa.</div>`}
+      <div class="acts">
+        ${r.pick ? `<button type="button" class="primary" data-go="0">Enviar lá</button>` : ""}
+        ${picks.slice(1).map((p, i) => `<button type="button" class="ghost" data-go="${i + 1}">ou ${where(p)}</button>`).join("")}
+        <button type="button" class="ghost" data-new>+ Sala nova “${esc(r.new_room_title.length > 40 ? `${r.new_room_title.slice(0, 38)}…` : r.new_room_title)}”</button>
+        <button type="button" class="ghost" data-cancel>Cancelar</button>
+      </div>`;
+    out.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => { const p = picks[Number(b.dataset.go)]; go(p.book_id, p.epic_id); });
+    out.querySelector("[data-new]").onclick = async () => { const { id } = await api("/api/books", { title: r.new_room_title }); go(id, null); };
+    out.querySelector("[data-cancel]").onclick = () => { out.hidden = true; ta.focus(); };
+    out.querySelector("[data-go]")?.focus();
+  };
 }
 
 function confirmArchive(id, title) {
@@ -628,8 +687,10 @@ let attached = []; // composer attachments: { file, url, meta?, error? }
 const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
 const fileIcon = (f) => (f.type === "text/html" ? "🌐" : "📄");
 
+let pendingThread = null; // set by the home composer so the room opens on the chosen epic
 function openBook(id) {
-  thread = "main";
+  thread = pendingThread || "main";
+  pendingThread = null;
   S = null;
   attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); renderSide(); }).catch(() => {});

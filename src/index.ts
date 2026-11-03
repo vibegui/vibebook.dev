@@ -4,6 +4,7 @@ import { auth, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
+import { routeMessage } from "./route-home";
 import { befriend, bookStub, createBook, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
@@ -54,7 +55,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -171,6 +172,35 @@ app.get("/api/archived", async (c) => {
     .bind(c.get("email"))
     .all();
   return c.json({ books: r.results });
+});
+
+// Home composer: suggest where a message should go, then post it there.
+app.post("/api/route", async (c) => {
+  const email = c.get("email");
+  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
+  const { text } = await c.req.json<{ text?: string }>().catch(() => ({ text: "" }));
+  if (!text?.trim()) return c.json({ error: "Escreva alguma coisa." }, 400);
+  if (!(await c.env.AI_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." }, 429);
+  const started = Date.now();
+  try {
+    const out = await routeMessage(c.env, email, text.trim());
+    c.executionCtx.waitUntil(track(c.env, "home_route", { user: email, dims: { ok: true, picked: !!out.pick, epic: !!out.pick?.epic_id, ms: Date.now() - started, cost: +out.cost.toFixed(6), model: c.env.MODEL_ROUTE } }));
+    return c.json(out);
+  } catch (e) {
+    console.error("home route failed", String(e));
+    c.executionCtx.waitUntil(track(c.env, "home_route", { user: email, dims: { ok: false, ms: Date.now() - started } }));
+    return c.json({ error: "Não consegui sugerir agora. Escolha a sala na lista abaixo." }, 502);
+  }
+});
+
+app.post("/api/books/:id/post", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
+  const { text, thread } = await c.req.json<{ text?: string; thread?: string }>().catch(() => ({}) as { text?: string; thread?: string });
+  const out = await bookStub(c.env, id).humanPost(id, email, text ?? "", thread || "main");
+  if (out.ok) c.executionCtx.waitUntil(track(c.env, "home_route_sent", { user: email, dims: { book: id, epic: out.thread !== "main" } }));
+  return out.ok ? c.json(out) : c.json(out, 400);
 });
 
 app.post("/api/books/:id/archive", async (c) => {
