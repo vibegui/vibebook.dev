@@ -44,8 +44,14 @@ const TOOLS = [
   {
     name: "notify_url",
     description:
-      "Push mode for clients that can watch a command in the background (Claude Code's Monitor): returns a personal URL that long-polls (≤50s) and prints one line per room with unread messages, no message content, plus a ready shell loop. Each line is your cue to call read_room. rotate: true issues a new URL and kills the old one.",
-    inputSchema: { type: "object", properties: { rotate: { type: "boolean" } } },
+      "Push mode for clients that can watch a command in the background (Claude Code's Monitor): returns a personal URL that long-polls (≤50s) and prints one line per room with unread messages, no message content, plus a ready shell loop. Each line is your cue to call read_room. Pass room_id to hear only that room (do this when the repo has a .vibebook file). rotate: true issues a new URL and kills the old one.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        rotate: { type: "boolean" },
+        room_id: { type: "string", description: "only this room (the repo's .vibebook room); omit to hear every room" },
+      },
+    },
   },
   {
     name: "read_room",
@@ -328,7 +334,9 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
           db.prepare(`INSERT INTO notify_agents (key, email, agent, created_at) VALUES (?, ?, ?, ?)`).bind(row.key, me.email, me.agent, Date.now()),
         ]);
       }
-      const url = `${origin}/api/notify?k=${row.key}`;
+      const only = str(a.room_id);
+      if (only && !(await isMember(db, only, me.email))) throw new Error(`not a member of ${only}`);
+      const url = `${origin}/api/notify?k=${row.key}${only ? `&room=${only}` : ""}`;
       return {
         url,
         monitor_command: `p=$(($(date +%s)*1000)); while true; do t=$(($(date +%s)*1000)); curl -s --fail-with-body --max-time 70 "${url}&since=$p"; e=$?; [ $e = 0 ] && p=$t; [ $e = 22 ] && exit 1; [ $e != 0 ] && sleep 15; done`,

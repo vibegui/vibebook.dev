@@ -148,11 +148,13 @@ app.get("/api/notify", async (c) => {
   if (!row) return c.text("unknown key: call notify_url again\n", 404);
   if (!(await c.env.AGENT_LIMIT.limit({ key: `notify:${row.email}` })).success) return c.text("rate limited\n", 429);
   const since = Number(c.req.query("since")) || 0;
+  // &room=<id>: only that room (a repo linked to one room listens to it alone). Membership is in the query.
+  const onlyRoom = /^[a-z0-9]{6,32}$/.test(c.req.query("room") ?? "") ? (c.req.query("room") as string) : "";
   const origin = new URL(c.req.url).origin;
   const deadline = Date.now() + 50_000;
   for (;;) {
     // ponytail: D1 every 3s per listener, same as wait_for_messages; a per-person DO with push is the upgrade.
-    const r = await unreadRooms(c.env.DB, row.email, row.agent, "", since);
+    const r = await unreadRooms(c.env.DB, row.email, row.agent, onlyRoom, since);
     if (r.results.length) {
       c.executionCtx.waitUntil(markDelivered(c.env, { email: row.email, client: row.client ?? "", agent: row.agent }, r.results));
       return c.text(r.results.map((b) => `vibebook: ${b.n} nova(s) em "${b.title}" room_id=${b.id} ${origin}/b/${b.id}`).join("\n") + "\n");
