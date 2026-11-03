@@ -442,6 +442,12 @@
   .sw-sp { flex: 1; }
   .sw-btn { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: none; color: var(--mute); display: grid; place-items: center; cursor: pointer; padding: 0; }
   .sw-btn:hover { background: var(--line); color: var(--ink); }
+  #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: var(--ink); color: #fff; border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
+  #swTip[hidden] { display: none; }
+  #swTip span { color: rgb(255 255 255 / .82); }
+  #swTip small { color: rgb(255 255 255 / .6); font-size: 11.5px; }
+  #swTip .tn.h { color: oklch(0.8 0.15 150); font-size: 12px; }
+  #swTip .tn.a { color: oklch(0.88 0.14 90); font-size: 12px; }
   .swDlg { width: min(440px, calc(100vw - 32px)); padding: 8px; border: 1px solid var(--line); border-radius: 16px; margin-top: 14vh; }
   .swDlg input { width: 100%; box-sizing: border-box; border: 0; outline: 0; font: inherit; font-size: 16px; padding: 10px 12px; background: none; }
   .swDlg #swList { display: grid; gap: 2px; max-height: 50vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
@@ -454,6 +460,7 @@
 </head>
 <body>
 <nav id="switcher" aria-label="Seus vibebooks"></nav>
+<div id="swTip" role="tooltip" hidden></div>
 <dialog id="swDlg" class="swDlg" aria-label="Ir para um vibebook"><input id="swQ" placeholder="Ir para um vibebook…" autocomplete="off" /><div id="swList" role="listbox"></div></dialog>
 <div id="app"></div>
 <script>
@@ -521,7 +528,7 @@ function renderSwitcher() {
   const rest = myBooks.filter((b) => !recent.includes(b));
   // Green: someone wrote since you last looked; yellow: only agents/@vibe did.
   const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
-  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav title="${esc(b.title)}" aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
+  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
   $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     ${recent.length ? `<div class="sw-group">${recent.map((b) => item(b, true)).join("")}</div>` : `<span class="sw-sep"></span>`}
     ${rest.map((b) => item(b, false)).join("")}
@@ -532,6 +539,21 @@ function renderSwitcher() {
   document.getElementById("swSearch").onclick = openSwitch;
   document.getElementById("swNew").onclick = async () => { const { id } = await api("/api/books", {}); history.pushState(null, "", `/b/${id}`); route(); };
 }
+// Hover a room on the rail: its name and what's going on, right away (no native title delay).
+const swTip = document.getElementById("swTip");
+$sw.addEventListener("mouseover", (e) => {
+  const a = e.target.closest(".sw-item[data-id]"); const b = a && myBooks?.find((x) => x.id === a.dataset.id);
+  if (!b) { swTip.hidden = true; return; }
+  const people = (b.members || "").split(",").filter(Boolean).length;
+  const news = b.id === S?.id ? "" : b.last_human_id > b.read_id ? `<span class="tn h">● mensagens novas</span>` : b.last_agent_id > b.read_id ? `<span class="tn a">● agents escreveram</span>` : "";
+  swTip.innerHTML = `<b>${esc(b.title)}</b>${b.summary ? `<span>${esc(b.summary)}</span>` : ""}
+    <small>${b.folder ? `📁 ${esc(b.folder)} · ` : ""}${people} ${people === 1 ? "pessoa" : "pessoas"} · ${ago(b.updated_at) === "agora" ? "ativa agora" : `ativa há ${ago(b.updated_at)}`}</small>${news}`;
+  const r = a.querySelector(".tile").getBoundingClientRect();
+  swTip.style.top = `${r.top + r.height / 2}px`;
+  swTip.hidden = false;
+});
+$sw.addEventListener("mouseleave", () => (swTip.hidden = true));
+$sw.addEventListener("click", () => (swTip.hidden = true));
 // ⌘K / Ctrl+K: type to jump to a room.
 const swDlg = document.getElementById("swDlg"), swQ = document.getElementById("swQ"), swList = document.getElementById("swList");
 let swPick = 0;
@@ -879,7 +901,8 @@ function onEvent(ev, id) {
       renderSide(); renderTasks(); return;
     case "suggestions": {
       const was = preOf()?.title; S.suggestions = ev.suggestions;
-      if (isPre() && preOf()?.title !== was) { const j = S.suggestions.findIndex((x) => x.title === was); thread = j >= 0 ? `pre:${j}` : "main"; renderChat(); }
+      if (skipFrom !== null) { const n = S.suggestions.length; thread = n ? `pre:${Math.min(skipFrom, n - 1)}` : "main"; skipFrom = null; renderChat(); }
+      else if (isPre() && preOf()?.title !== was) { const j = S.suggestions.findIndex((x) => x.title === was); thread = j >= 0 ? `pre:${j}` : "main"; renderChat(); }
       renderSide(); return;
     }
     case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
@@ -1263,6 +1286,7 @@ function renderRail(el) {
 const isPre = () => thread.startsWith("pre:");
 const preOf = () => (isPre() ? S.suggestions[Number(thread.slice(4))] : null);
 let pendingEpic = null; // title of a suggestion just accepted: open it once the epic exists
+let skipFrom = null; // index of a suggestion just discarded: show the next one
 function renderPre(el) {
   const s = preOf(); if (!s) { thread = "main"; return renderChat(); }
   el.innerHTML = `<div class="preCard">
@@ -1274,7 +1298,7 @@ function renderPre(el) {
   </div>`;
   const i = Number(thread.slice(4));
   el.querySelector("#preAccept").onclick = () => { pendingEpic = s.title; send({ t: "suggestion", i, accept: true }); };
-  el.querySelector("#preSkip").onclick = () => { send({ t: "suggestion", i }); thread = "main"; renderSide(); renderChat(); };
+  el.querySelector("#preSkip").onclick = () => { skipFrom = i; send({ t: "suggestion", i }); };
 }
 
 function renderSide() {

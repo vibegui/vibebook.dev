@@ -16,6 +16,8 @@ export type FileMeta = { id: string; name: string; type: string; size: number; a
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
+/** Epic titles compared without numbering, case or accents: "2. Primeira limpeza" = "primeira limpeza". */
+const epicKey = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^[\s\d.)\-–—:#]+/, "").replace(/\s+/g, " ").trim();
 type Suggestion = { title: string; tasks: string[]; why?: string };
 
 const DEFAULT_TITLE = "Novo vibebook";
@@ -154,8 +156,10 @@ export class Book extends DurableObject<Env> {
     }
     return out;
   }
+  // Suggestions that an epic already covers ("Primeira limpeza" vs "2. Primeira limpeza") are dropped.
   suggestions(): Suggestion[] {
-    return JSON.parse(this.get("suggestions") ?? "[]");
+    const have = new Set(this.epics().map((e) => epicKey(e.title)));
+    return (JSON.parse(this.get("suggestions") ?? "[]") as Suggestion[]).filter((x) => !have.has(epicKey(x.title)));
   }
   // Invited but never signed in.
   async pending(): Promise<string[]> {
@@ -924,8 +928,8 @@ ${transcript}`,
       const title = this.get("title_locked") || (current && current.title !== "Novo vibebook") ? undefined : output.title;
       const summary = output.summary.replace(/\s+/g, " ").trim().slice(0, 180);
       await this.touch({ title, folder: output.folder, summary });
-      const existing = new Set([...this.epics().map((e) => e.title.toLowerCase()), ...this.suggestions().map((s) => s.title.toLowerCase())]);
-      const suggestions = [...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(s.title.toLowerCase()))].slice(-5);
+      const existing = new Set([...this.epics().map((e) => epicKey(e.title)), ...this.suggestions().map((s) => epicKey(s.title))]);
+      const suggestions = [...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(epicKey(s.title)))].slice(-5);
       this.set("suggestions", JSON.stringify(suggestions));
       this.broadcast({ t: "meta", title, folder: output.folder, summary });
       this.broadcast({ t: "suggestions", suggestions });
