@@ -1,7 +1,7 @@
 {
   "name": "vibebook",
-  "description": "Checks your vibebook rooms when a Claude Code session starts. Works with the vibebook connector you already have (claude.ai or claude mcp add).",
-  "version": "0.2.0",
+  "description": "Checks your vibebook rooms when a Claude Code session starts, and /vibebook:listen keeps Claude in your rooms acting on what you write there. Works with the vibebook connector you already have.",
+  "version": "0.3.0",
   "author": {
     "name": "vibebook",
     "email": "gui@deco.cx"

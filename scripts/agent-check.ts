@@ -86,7 +86,7 @@ const g = await connectAgent(gui, "Claude Code (test)");
 const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 7 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 8 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -109,6 +109,17 @@ check((await m.tool("log_decision", { room_id: room, text: "Aprovado: script e w
 const logged = (await g.tool("read_room", { room_id: room, all: true })).out?.decisions?.at(-1);
 check(logged?.kind === "approval" && logged.who.includes("via agent"), "Gui's agent sees the approval in the decision log");
 
+// Listen mode: Gui's agent waits; Marina's post wakes it; its own post doesn't.
+await g.tool("read_room", { room_id: room });
+const idle = await g.tool("wait_for_messages", { timeout_seconds: 5, room_id: room });
+check(idle.out?.new?.length === 0, "wait_for_messages times out empty when nothing is new");
+const woke = g.tool("wait_for_messages", { timeout_seconds: 20, room_id: room });
+await new Promise((r) => setTimeout(r, 1500));
+await m.tool("post", { room_id: room, text: "@gui pode mandar o import hoje?" });
+check((await woke).out?.new?.[0]?.room_id === room, "a new message wakes a waiting agent");
+await g.tool("read_room", { room_id: room });
+await g.tool("post", { room_id: room, text: "vou ver com ele" });
+check((await g.tool("wait_for_messages", { timeout_seconds: 5, room_id: room })).out?.new?.length === 0, "an agent's own post doesn't wake it");
 const secret = await m.tool("post", { room_id: room, text: `o secret é ${FAKE_SHOPIFY}` });
 check(secret.out?.ok === false && /secret/.test(secret.out?.error), "a post with a Shopify secret is refused");
 

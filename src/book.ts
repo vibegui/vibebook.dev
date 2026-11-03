@@ -354,6 +354,7 @@ export class Book extends DurableObject<Env> {
         from: who(m.author as string),
         by_agent: m.kind === "agent",
         mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
+        from_your_human: !!email && m.author === email && m.kind !== "agent",
         text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
         files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
