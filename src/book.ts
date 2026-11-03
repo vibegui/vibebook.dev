@@ -277,6 +277,7 @@ export class Book extends DurableObject<Env> {
     this.sql.exec(`DELETE FROM tasks WHERE epic_id = ?`, id);
     this.sql.exec(`DELETE FROM messages WHERE thread = ?`, id);
     this.sql.exec(`DELETE FROM epics WHERE id = ?`, id);
+    this.sql.exec(`DELETE FROM meta WHERE k = ?`, `doc:${id}`);
     this.epicsChanged();
   }
   setTask(id: string, done?: boolean) {
@@ -324,9 +325,14 @@ export class Book extends DurableObject<Env> {
     this.sql.exec(`UPDATE polls SET closed = 1 WHERE id = ?`, pollId);
     this.broadcast({ t: "poll", poll: this.polls([pollId])[pollId] });
   }
-  setDoc(text: string, by: string, except?: WebSocket) {
-    this.set("doc", text.slice(0, 100_000));
-    this.broadcast({ t: "doc", text: this.get("doc"), by }, except);
+  // The room's doc, or an epic's own doc (a child of the room's) when epic is set.
+  setDoc(text: string, by: string, except?: WebSocket, epic?: string) {
+    const key = epic ? `doc:${epic}` : "doc";
+    this.set(key, text.slice(0, 100_000));
+    this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
+  }
+  epicDocs(): Record<string, string> {
+    return Object.fromEntries(this.sql.exec<{ k: string; v: string }>(`SELECT k, v FROM meta WHERE k LIKE 'doc:%'`).toArray().map((r) => [r.k.slice(4), r.v]));
   }
   async touch(fields: { title?: string; folder?: string; summary?: string; lastId?: number; human?: number; agent?: number } = {}) {
     const id = this.get("book_id");
@@ -393,6 +399,8 @@ export class Book extends DurableObject<Env> {
       epics: epics.map((e) => ({
         id: e.id,
         title: e.title,
+        archived: e.archived || undefined,
+        doc: (this.get(`doc:${e.id}`) ?? "").slice(0, 8_000) || undefined,
         tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due })),
       })),
       decisions: this.decisions().map((d) => ({ text: d.text, who: d.who, kind: d.kind, at: new Date(d.ts).toISOString() })),
@@ -520,6 +528,7 @@ export class Book extends DurableObject<Env> {
         me: email,
         book,
         doc: this.get("doc") ?? "",
+        docs: this.epicDocs(),
         epics: this.epics(),
         messages: this.messages(),
         files: this.files(),
@@ -564,8 +573,10 @@ export class Book extends DurableObject<Env> {
         if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
         return;
       }
-      case "doc":
-        return this.setDoc(String(m.text ?? ""), email, ws);
+      case "doc": {
+        const epic = m.epic && this.epics().some((e) => e.id === m.epic) ? String(m.epic) : undefined;
+        return this.setDoc(String(m.text ?? ""), email, ws, epic);
+      }
       case "title": {
         const title = String(m.title ?? "").trim().slice(0, 120);
         if (!title) return;
@@ -648,10 +659,16 @@ Pessoas neste vibebook: ${members.map((e) => (names[e] ? `${names[e]} <${e}>` : 
 Chame cada pessoa pelo nome cadastrado. NUNCA invente ou deduza nomes a partir do email; sem nome cadastrado, use a parte antes do @.
 Você está no ${epic ? `épico "${epic.title}" (id ${epic.id}). "Isso aqui", "aqui", "esse" e afins se referem a ESTE épico e às tasks dele, não ao projeto inteiro. Se disserem que está tudo feito (ou que acabou), chame archive_epic com mark_done: true e confirme em uma linha; não pergunte de outras partes do projeto` : "sala principal"}.
 
-Documento atual:
+Documento da sala:
 """
 ${this.get("doc") || "(vazio)"}
 """
+${epic ? `
+Documento deste épico (filho do doc da sala; detalhes do épico vão aqui, com update_doc + epic_id; o doc da sala fica com a visão geral):
+"""
+${this.get(`doc:${epic.id}`) || "(vazio)"}
+"""
+` : ""}
 
 Épicos e tasks:
 ${board || "(nenhum)"}
@@ -862,9 +879,14 @@ Answer SIMPLE or COMPLEX:`,
             },
           }),
           update_doc: tool({
-            description: "Reescreve o documento compartilhado (markdown) inteiro. Preserve o que já existe e incorpore as decisões novas. Diagramas: use blocos ```mermaid (flowchart, sequence, gantt, timeline, mindmap...) quando ajudarem, ex. roteiro de viagem em gantt/timeline.",
-            inputSchema: z.object({ markdown: z.string() }),
-            execute: async ({ markdown }) => (this.setDoc(markdown, "ai"), { ok: true }),
+            description:
+              "Reescreve um documento (markdown) inteiro: o da sala (sem epic_id: visão geral, decisões, resumo de cada épico) ou o de um épico (epic_id: detalhes, plano, specs daquele épico). Preserve o que já existe e incorpore o novo. Diagramas: blocos ```mermaid (flowchart, sequence, gantt, timeline, mindmap...) quando ajudarem.",
+            inputSchema: z.object({ markdown: z.string(), epic_id: z.string().optional().describe("id do épico para escrever no doc dele") }),
+            execute: async ({ markdown, epic_id }) => {
+              if (epic_id && !this.epics().some((e) => e.id === epic_id)) return { ok: false, error: "épico não encontrado" };
+              this.setDoc(markdown, "ai", undefined, epic_id);
+              return { ok: true };
+            },
           }),
         },
       });

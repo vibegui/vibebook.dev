@@ -159,6 +159,9 @@
   .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
+  .docCrumb { display: flex; align-items: center; gap: 4px; padding: 10px 20px 0; font-size: 12.5px; color: var(--mute); }
+  .docCrumb button { border: 0; background: none; padding: 3px 7px; border-radius: 7px; font: inherit; color: var(--mute); cursor: pointer; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .docCrumb button.sel { background: var(--bg); color: var(--ink); font-weight: 600; }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
   .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
   .thread.archived { opacity: .6; }
@@ -896,7 +899,7 @@ function onEvent(ev, id) {
     case "epics": S.epics = ev.epics;
       if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); return;
-    case "doc": S.doc = ev.text; renderDoc(); return;
+    case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
     case "meta":
       if (ev.title) { S.book.title = ev.title; const mine = myBooks?.find((b) => b.id === id); if (mine) { mine.title = ev.title; renderSwitcher(); } }
       if (ev.folder) S.book.folder = ev.folder;
@@ -1023,6 +1026,7 @@ function renderBook() {
     <section class="doc">
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
       <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button><button type="button" data-pane="decisions">Decisões<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
       <div class="filesPane" id="filesPane"></div>
@@ -1213,7 +1217,7 @@ function renderBook() {
   setPane("doc");
   const doc = document.getElementById("doc");
   let timer;
-  doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { S.doc = doc.value; send({ t: "doc", text: doc.value }); }, 400); };
+  doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { const ep = docEpic(); if (ep) S.docs[ep] = doc.value; else S.doc = doc.value; send({ t: "doc", text: doc.value, epic: ep || undefined }); }, 400); };
   doc.onblur = () => renderDoc();
   const docPanel = $app.querySelector(".doc");
   const setView = (v) => {
@@ -1282,7 +1286,7 @@ function renderRail(el) {
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
   // The board follows the thread: an epic filters it to that epic, the main room shows every epic.
-  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); });
+  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc(); });
 }
 
 // A pre-epic: one of @vibe's suggestions, opened in the main panel like an epic, to create or discard.
@@ -1338,7 +1342,7 @@ function renderSide() {
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
-    thread = b.dataset.thread; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban();
+    thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
     const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
   });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
@@ -1598,17 +1602,31 @@ async function renderMermaid(pv) {
     code.parentElement.replaceWith(fig);
   });
 }
+// The doc panel follows the open epic (its own doc, a child of the room's); "Sala" in the crumb shows the room's.
+let docRoom = false, docShown = null;
+const docEpic = () => (!docRoom && !isPre() && S.epics.some((e) => e.id === thread) ? thread : null);
 function renderDoc(force) {
   const doc = document.getElementById("doc"); if (!doc) return;
+  S.docs ??= {};
+  const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep), text = ep ? S.docs[ep] ?? "" : S.doc;
+  if (docShown !== (ep || "room")) { force = true; docShown = ep || "room"; }
+  const inEpic = !isPre() && S.epics.find((e) => e.id === thread);
+  const crumb = document.getElementById("docCrumb");
+  crumb.hidden = !inEpic;
+  if (inEpic) {
+    crumb.innerHTML = `<button type="button" class="${ep ? "" : "sel"}" data-docroom="1">${esc(bookTitle())}</button><span>›</span><button type="button" class="${ep ? "sel" : ""}" data-docroom="">${esc(inEpic.title)}</button>`;
+    crumb.querySelectorAll("button").forEach((b) => b.onclick = () => { docRoom = !!b.dataset.docroom; renderDoc(true); });
+  }
   // Doc is written by people and the AI: render markdown, then sanitize.
   const pv = document.getElementById("preview");
-  pv.innerHTML = S.doc.trim()
-    ? DOMPurify.sanitize(marked.parse(S.doc, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
+  pv.innerHTML = text.trim()
+    ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
+    : ep ? `<div class="empty">Doc do épico <b>${esc(epic.title)}</b> vazio. Detalhes, plano e specs deste épico ficam aqui. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> escrever.</div>`
     : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> resumir as decisões aqui.</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   renderMermaid(pv);
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
-  if (force || document.activeElement !== doc) doc.value = S.doc;
+  if (force || document.activeElement !== doc) doc.value = text;
 }
 
 route();
