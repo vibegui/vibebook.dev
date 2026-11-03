@@ -128,26 +128,77 @@ const rpcError = (id: unknown, code: number, message: string, status = 200) => R
 type Args = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
-/** Rooms with messages this person's agent hasn't read (agent_cursors vs books.last_msg_id); `since` = only rooms active after it (ms). */
-export const unreadRooms = (db: D1Database, email: string, only = "", since = 0) =>
+/** Rooms with messages this agent hasn't read (agent_reads vs books.last_msg_id); `since` = only rooms active after it (ms). */
+export const unreadRooms = (db: D1Database, email: string, agent: string, only = "", since = 0) =>
   db
     .prepare(
       `SELECT b.id, b.title, coalesce(b.last_msg_id, 0) - coalesce(c.last_id, 0) AS n
        FROM members m JOIN books b ON b.id = m.book_id
-       LEFT JOIN agent_cursors c ON c.email = m.email AND c.book_id = b.id
+       LEFT JOIN agent_reads c ON c.agent = ? AND c.book_id = b.id
        WHERE m.email = ? AND m.archived_at IS NULL AND coalesce(b.last_msg_id, 0) > coalesce(c.last_id, 0) AND b.updated_at > ? ${only ? "AND b.id = ?" : ""} LIMIT 20`,
     )
-    .bind(...(only ? [email, since, only] : [email, since]))
+    .bind(...(only ? [agent, email, since, only] : [agent, email, since]))
     .all<{ id: string; title: string; n: number }>();
 
-async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: AgentProps, origin: string): Promise<unknown> {
+/**
+ * Each connected agent (one MCP session of one person's Claude) has its own read cursor, so two Claudes of the
+ * same person don't take each other's messages. A new agent starts from what that person's agents already read.
+ */
+export async function ensureAgent(db: D1Database, id: string, email: string, client: string) {
+  const made = await db.prepare(`INSERT OR IGNORE INTO agents (id, email, client, created_at, seen_at) VALUES (?, ?, ?, ?, ?)`).bind(id, email, client, Date.now(), Date.now()).run();
+  if (!made.meta.changes) return;
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO agent_reads (agent, book_id, email, last_id, delivered_id)
+       SELECT ?, book_id, ?, max(last_id), max(last_id) FROM (
+         SELECT book_id, last_id FROM agent_reads WHERE email = ? UNION ALL SELECT book_id, last_id FROM agent_cursors WHERE email = ?
+       ) GROUP BY book_id`,
+    )
+    .bind(id, email, email, email)
+    .run();
+}
+
+/** "Delivered to" for rooms a wait/notify just reported; the room shows it next to the messages. */
+export async function markDelivered(env: Env, agent: Me, rooms: { id: string }[]) {
+  if (!rooms.length) return;
+  const ids = rooms.map((b) => b.id);
+  await env.DB.prepare(
+    `INSERT INTO agent_reads (agent, book_id, email, last_id, delivered_id)
+     SELECT ?, b.id, ?, 0, coalesce(b.last_msg_id, 0) FROM books b WHERE b.id IN (${ids.map(() => "?").join(",")})
+     ON CONFLICT(agent, book_id) DO UPDATE SET delivered_id = max(coalesce(delivered_id, 0), excluded.delivered_id)`,
+  )
+    .bind(agent.agent, agent.email, ...ids)
+    .run();
+  await Promise.all(ids.map((id) => receipt(env, agent, id)));
+}
+
+/** Push this agent's read/delivered ids for a room to the room's sockets. */
+export async function receipt(env: Env, me: Me, bookId: string) {
+  const row = await env.DB.prepare(
+    `SELECT r.last_id, r.delivered_id, a.client, a.model FROM agent_reads r LEFT JOIN agents a ON a.id = r.agent WHERE r.agent = ? AND r.book_id = ?`,
+  )
+    .bind(me.agent, bookId)
+    .first<{ last_id: number; delivered_id: number | null; client: string | null; model: string | null }>();
+  if (row)
+    await bookStub(env, bookId).receipt({
+      agent: me.agent,
+      email: me.email,
+      who: row.model || row.client || me.client,
+      read: row.last_id ?? 0,
+      delivered: Math.max(row.delivered_id ?? 0, row.last_id ?? 0),
+    });
+}
+
+export type Me = AgentProps & { agent: string };
+
+async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: Me, origin: string): Promise<unknown> {
   const db = env.DB;
   const room = async () => {
     const id = str(a.room_id);
     if (!id || !(await isMember(db, id, me.email))) throw new Error(`room not found or you're not a member: ${id || "(empty)"}. Call inbox for the list.`);
     return id;
   };
-  const unread = (only = "") => unreadRooms(db, me.email, only);
+  const unread = (only = "") => unreadRooms(db, me.email, me.agent, only);
   switch (name) {
     case "wait_for_messages": {
       // ponytail: polls D1 every 3s for one person (≤17 light reads per call); a per-person DO with push is the upgrade.
@@ -157,8 +208,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const deadline = Date.now() + timeout * 1000;
       for (;;) {
         const r = await unread(only);
-        if (r.results.length)
+        if (r.results.length) {
+          ctx.waitUntil(markDelivered(env, me, r.results));
           return { new: r.results.map((b) => ({ room_id: b.id, title: b.title, new_messages: b.n, url: `${origin}/b/${b.id}` })), next: "call read_room on these rooms" };
+        }
         if (Date.now() + 3000 > deadline) return { new: [], waited_seconds: timeout, next: "nothing new; call wait_for_messages again to keep listening" };
         await new Promise((res) => setTimeout(res, 3000));
       }
@@ -168,10 +221,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         .prepare(
           `SELECT b.id, b.title, b.updated_at, coalesce(b.last_msg_id, 0) AS last_id, coalesce(c.last_id, 0) AS seen
            FROM members m JOIN books b ON b.id = m.book_id
-           LEFT JOIN agent_cursors c ON c.email = m.email AND c.book_id = b.id
+           LEFT JOIN agent_reads c ON c.agent = ? AND c.book_id = b.id
            WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC LIMIT 50`,
         )
-        .bind(me.email)
+        .bind(me.agent, me.email)
         .all<{ id: string; title: string; updated_at: number; last_id: number; seen: number }>();
       return {
         you_act_for: me.email,
@@ -188,15 +241,16 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       const seen = a.all
         ? 0
-        : ((await db.prepare(`SELECT last_id FROM agent_cursors WHERE email = ? AND book_id = ?`).bind(me.email, id).first<{ last_id: number }>())?.last_id ?? 0);
+        : ((await db.prepare(`SELECT last_id FROM agent_reads WHERE agent = ? AND book_id = ?`).bind(me.agent, id).first<{ last_id: number }>())?.last_id ?? 0);
       const out = await bookStub(env, id).agentRead(id, seen, me.email);
       await db
         .prepare(
-          `INSERT INTO agent_cursors (email, book_id, last_id) VALUES (?, ?, ?)
-           ON CONFLICT(email, book_id) DO UPDATE SET last_id = max(last_id, excluded.last_id)`,
+          `INSERT INTO agent_reads (agent, book_id, email, last_id, delivered_id) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(agent, book_id) DO UPDATE SET last_id = max(last_id, excluded.last_id), delivered_id = max(coalesce(delivered_id, 0), excluded.last_id)`,
         )
-        .bind(me.email, id, out.last_id)
+        .bind(me.agent, id, me.email, out.last_id, out.last_id)
         .run();
+      ctx.waitUntil(receipt(env, me, id));
       return {
         room_id: id,
         url: `${origin}/b/${id}`,
@@ -210,7 +264,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", [], str(a.model));
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
-        await db.prepare(`UPDATE agent_cursors SET last_id = ? WHERE email = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.email, id, posted.id - 1).run();
+        await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
+      if (str(a.model)) ctx.waitUntil(db.prepare(`UPDATE agents SET model = ? WHERE id = ?`).bind(str(a.model).slice(0, 40), me.agent).run());
       return posted;
     }
     case "upload_file": {
@@ -239,13 +294,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       return bookStub(env, id).agentDecision(id, me.email, str(a.text), a.kind === "decision" ? "decision" : "approval");
     }
     case "notify_url": {
-      // ponytail: one plain key per person, readable by whoever has the URL; it only reveals "room X has news".
-      let row = a.rotate ? null : await db.prepare(`SELECT key FROM notify_keys WHERE email = ?`).bind(me.email).first<{ key: string }>();
+      // ponytail: one plain key per agent, readable by whoever has the URL; it only reveals "room X has news".
+      let row = a.rotate ? null : await db.prepare(`SELECT key FROM notify_agents WHERE agent = ?`).bind(me.agent).first<{ key: string }>();
       if (!row) {
         row = { key: crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "") };
-        await db.prepare(`INSERT INTO notify_keys (email, key, created_at) VALUES (?, ?, ?) ON CONFLICT (email) DO UPDATE SET key = excluded.key, created_at = excluded.created_at`)
-          .bind(me.email, row.key, Date.now())
-          .run();
+        await db.batch([
+          db.prepare(`DELETE FROM notify_agents WHERE agent = ?`).bind(me.agent),
+          db.prepare(`INSERT INTO notify_agents (key, email, agent, created_at) VALUES (?, ?, ?, ?)`).bind(row.key, me.email, me.agent, Date.now()),
+        ]);
       }
       const url = `${origin}/api/notify?k=${row.key}`;
       return {
@@ -268,13 +324,23 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
   throw new Error(`Unknown tool: ${name}`);
 }
 
-export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, me: AgentProps): Promise<Response> {
+export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });
   const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;
   if (!body || body.jsonrpc !== "2.0" || !body.method) return rpcError(null, -32600, "Invalid Request", 400);
   if (body.id === undefined) return new Response(null, { status: 202 });
   const p = body.params ?? {};
   const origin = new URL(request.url).origin;
+  // The agent = this MCP session (Mcp-Session-Id, issued at initialize and owned by this person); clients that
+  // don't keep sessions fall back to one agent per person and client.
+  let sid = body.method === "initialize" ? `s_${crypto.randomUUID().replace(/-/g, "")}` : (request.headers.get("mcp-session-id") ?? "");
+  if (sid && body.method !== "initialize") {
+    const owner = await env.DB.prepare(`SELECT email FROM agents WHERE id = ?`).bind(sid).first<{ email: string }>();
+    if (owner && owner.email !== props.email) sid = "";
+  }
+  const agentId = /^s_[a-f0-9]{32}$/.test(sid) ? sid : `c_${props.email}|${props.client}`;
+  await ensureAgent(env.DB, agentId, props.email, props.client);
+  const me: Me = { ...props, agent: agentId };
   let result: unknown;
   switch (body.method) {
     case "initialize":
@@ -314,5 +380,5 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
     default:
       return rpcError(body.id, -32601, `Method not found: ${body.method}`);
   }
-  return Response.json({ jsonrpc: "2.0", id: body.id, result });
+  return Response.json({ jsonrpc: "2.0", id: body.id, result }, body.method === "initialize" ? { headers: { "mcp-session-id": agentId } } : undefined);
 }

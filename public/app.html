@@ -216,6 +216,7 @@
   .msg:hover { background: color-mix(in oklch, var(--line) 30%, transparent); }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
+  .rcpt { font-size: 12px; color: var(--mute); margin-top: 4px; }
   .msg.cont { margin-top: -20px; }
   .msg.cont > .avatar { visibility: hidden; }
   .msg.cont .who { display: none; }
@@ -758,6 +759,7 @@ function onEvent(ev, id) {
     case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
+    case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
@@ -1347,14 +1349,34 @@ function renderChat() {
   const list = S.messages.filter((m) => m.thread === thread);
   el.innerHTML = list.length ? list.map((m, i) => msgHtml(m, list[i - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
-  scrollDown(true); pinOnLoad(el);
+  scrollDown(true); pinOnLoad(el); renderReceipts();
+}
+// "✓✓ lido por" / "✓ entregue para": under the newest message each connected agent has read (or been told about)
+// in this thread, skipping its own person's agent posts.
+function renderReceipts() {
+  const el = document.getElementById("msgs"); if (!el) return;
+  el.querySelectorAll(".rcpt").forEach((x) => x.remove());
+  const list = S.messages.filter((m) => m.thread === thread);
+  const at = {};
+  const put = (upto, r, kind) => {
+    const m = list.findLast((x) => x.id <= upto && !(x.kind === "agent" && x.author === r.email));
+    if (!m) return;
+    const label = `${r.who} de ${name(r.email)}`;
+    ((at[m.id] ??= { read: new Set(), delivered: new Set() })[kind]).add(label);
+  };
+  for (const r of S.receipts || []) { put(r.read, r, "read"); if (r.delivered > r.read) put(r.delivered, r, "delivered"); }
+  for (const [id, g] of Object.entries(at)) {
+    const body = document.querySelector(`#m${id} .body`); if (!body) continue;
+    const parts = [g.read.size && `✓✓ lido por ${[...g.read].join(", ")}`, g.delivered.size && `✓ entregue para ${[...g.delivered].filter((l) => !g.read.has(l)).join(", ")}`].filter((x) => x && !x.endsWith("para "));
+    if (parts.length) body.insertAdjacentHTML("beforeend", `<div class="rcpt">${esc(parts.join(" · "))}</div>`);
+  }
 }
 function appendMsg(m) {
   const el = document.getElementById("msgs");
   el.querySelector(".empty")?.remove();
   const list = S.messages.filter((x) => x.thread === m.thread);
   el.insertAdjacentHTML("beforeend", msgHtml(m, list[list.indexOf(m) - 1]));
-  scrollDown(true); pinOnLoad(el.lastElementChild);
+  scrollDown(true); pinOnLoad(el.lastElementChild); renderReceipts();
 }
 // Images change height after they load; keep pinned to the bottom when we were there.
 let stick = true; // was the reader at the bottom of the chat?

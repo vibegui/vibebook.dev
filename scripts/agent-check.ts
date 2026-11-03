@@ -61,20 +61,27 @@ async function connectAgent(email: string, clientName: string) {
     body: new URLSearchParams({ grant_type: "authorization_code", code: code ?? "", redirect_uri: REDIRECT, client_id: reg.client_id, code_verifier: verifier, resource: `${BASE}/mcp` }),
   }).then((r) => r.json() as Promise<{ access_token?: string; refresh_token?: string }>);
   check(tok.access_token && tok.refresh_token, `${email}: token exchange gives access + refresh tokens`);
+  return client(tok.access_token);
+}
+
+// One MCP session (= one agent): keeps the Mcp-Session-Id that initialize hands out.
+function client(token: string) {
   let id = 0;
+  let sid = "";
   const rpc = async (method: string, params: Record<string, unknown> = {}) => {
     const r = await fetch(`${BASE}/mcp`, {
       method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${tok.access_token}` },
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}`, ...(sid ? { "mcp-session-id": sid } : {}) },
       body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }),
     });
+    sid = r.headers.get("mcp-session-id") ?? sid;
     return r.status === 200 ? ((await r.json()) as { result?: any; error?: any }) : { error: { status: r.status } };
   };
   const tool = async (name: string, args: Record<string, unknown> = {}) => {
     const r = await rpc("tools/call", { name, arguments: args });
     return { out: r.result?.structuredContent, error: r.result?.isError ? r.result.content?.[0]?.text : r.error };
   };
-  return { rpc, tool, token: tok.access_token };
+  return { rpc, tool, token, sid: () => sid };
 }
 
 const stamp = Date.now().toString(36);
@@ -85,6 +92,7 @@ const outsider = `outsider-${stamp}@test.vibebook.dev`;
 const g = await connectAgent(gui, "Claude Code (test)");
 const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
+check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
 check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 9 tools");
 
@@ -120,6 +128,20 @@ check((await woke).out?.new?.[0]?.room_id === room, "a new message wakes a waiti
 await g.tool("read_room", { room_id: room });
 await g.tool("post", { room_id: room, text: "vou ver com ele" });
 check((await g.tool("wait_for_messages", { timeout_seconds: 5, room_id: room })).out?.new?.length === 0, "an agent's own post doesn't wake it");
+
+// Two Claudes of the same person each have their own cursor: one reading doesn't hide messages from the other.
+const g2 = client(g.token);
+await g2.rpc("initialize", { protocolVersion: "2025-06-18" });
+check(g2.sid() && g2.sid() !== g.sid(), "a second session of the same person is a different agent");
+await g2.tool("read_room", { room_id: room });
+await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(marina)}` }, body: JSON.stringify({ text: "@gui mais uma coisa" }) });
+await g.tool("read_room", { room_id: room });
+check((await g2.tool("inbox")).out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.new_messages >= 1, "the other session still sees it as new after the first one read it");
+check((await g.tool("inbox")).out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.new_messages === 0, "the session that read it is caught up");
+await g2.tool("read_room", { room_id: room });
+const forged = client(m.token);
+await forged.rpc("initialize", {});
+check((await (async () => { const r = await fetch(`${BASE}/mcp`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${m.token}`, "mcp-session-id": g.sid() }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "inbox", arguments: {} } }) }); return (await r.json()).result?.structuredContent?.you_act_for; })()) === marina, "someone else's session id doesn't make you that agent");
 
 // Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.
 const nu = (await g.tool("notify_url")).out;

@@ -1,6 +1,6 @@
 import { type Context, Hono } from "hono";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
-import { unreadRooms } from "./agent";
+import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { auth, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -52,6 +52,11 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS agent_cursors (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
   // Per-person key for /api/notify (push to the agent's client: "room X has news", no content).
   `CREATE TABLE IF NOT EXISTS notify_keys (email TEXT PRIMARY KEY, key TEXT UNIQUE, created_at INTEGER)`,
+  // One row per connected agent (an MCP session of someone's Claude), with its own cursor per room and notify key.
+  `CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, email TEXT, client TEXT, model TEXT, created_at INTEGER, seen_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS agent_reads (agent TEXT, book_id TEXT, email TEXT, last_id INTEGER, delivered_id INTEGER, PRIMARY KEY (agent, book_id))`,
+  `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
+  `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
@@ -122,7 +127,15 @@ app.get("/b/*", async (c) => {
 // Key-in-URL because a shell loop has no OAuth token; it reveals only room titles and counts.
 app.get("/api/notify", async (c) => {
   const key = c.req.query("k") ?? "";
-  const row = key.length === 64 ? await c.env.DB.prepare(`SELECT email FROM notify_keys WHERE key = ?`).bind(key).first<{ email: string }>() : null;
+  let row = key.length === 64 ? await c.env.DB.prepare(`SELECT n.email, n.agent, a.client FROM notify_agents n LEFT JOIN agents a ON a.id = n.agent WHERE n.key = ?`).bind(key).first<{ email: string; agent: string; client: string | null }>() : null;
+  if (!row && key.length === 64) {
+    // URLs from before per-agent cursors (one per person) keep working as their own agent.
+    const old = await c.env.DB.prepare(`SELECT email FROM notify_keys WHERE key = ?`).bind(key).first<{ email: string }>();
+    if (old) {
+      row = { email: old.email, agent: `n_${key.slice(0, 16)}`, client: "notify" };
+      await ensureAgent(c.env.DB, row.agent, old.email, "notify");
+    }
+  }
   if (!row) return c.text("unknown key: call notify_url again\n", 404);
   if (!(await c.env.AGENT_LIMIT.limit({ key: `notify:${row.email}` })).success) return c.text("rate limited\n", 429);
   const since = Number(c.req.query("since")) || 0;
@@ -130,9 +143,11 @@ app.get("/api/notify", async (c) => {
   const deadline = Date.now() + 50_000;
   for (;;) {
     // ponytail: D1 every 3s per listener, same as wait_for_messages; a per-person DO with push is the upgrade.
-    const r = await unreadRooms(c.env.DB, row.email, "", since);
-    if (r.results.length)
+    const r = await unreadRooms(c.env.DB, row.email, row.agent, "", since);
+    if (r.results.length) {
+      c.executionCtx.waitUntil(markDelivered(c.env, { email: row.email, client: row.client ?? "", agent: row.agent }, r.results));
       return c.text(r.results.map((b) => `vibebook: ${b.n} nova(s) em "${b.title}" room_id=${b.id} ${origin}/b/${b.id}`).join("\n") + "\n");
+    }
     if (Date.now() + 3000 > deadline) return c.body(null, 204);
     await new Promise((res) => setTimeout(res, 3000));
   }

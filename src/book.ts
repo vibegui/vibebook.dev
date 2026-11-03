@@ -57,6 +57,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS polls (id TEXT PRIMARY KEY, question TEXT, options TEXT, multi INTEGER, closed INTEGER DEFAULT 0, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
       CREATE TABLE IF NOT EXISTS decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, who TEXT, kind TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS receipts (agent TEXT PRIMARY KEY, email TEXT, who TEXT, read INTEGER, delivered INTEGER, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
     for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"]]) {
@@ -404,6 +405,19 @@ export class Book extends DurableObject<Env> {
     return { ok: true, id: m.id };
   }
 
+  // "Delivered to / read by": each connected agent's cursor in this room (written by src/agent.ts from D1).
+  receiptsList() {
+    return this.sql.exec(`SELECT agent, email, who, read, delivered, ts FROM receipts WHERE ts > ? ORDER BY ts DESC LIMIT 20`, Date.now() - 14 * 864e5).toArray();
+  }
+  receipt(r: { agent: string; email: string; who: string; read: number; delivered: number }) {
+    this.sql.exec(
+      `INSERT INTO receipts (agent, email, who, read, delivered, ts) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(agent) DO UPDATE SET who = excluded.who, read = max(read, excluded.read), delivered = max(delivered, excluded.delivered), ts = excluded.ts`,
+      r.agent, r.email, r.who.slice(0, 40), r.read, r.delivered, Date.now(),
+    );
+    this.broadcast({ t: "receipts", receipts: this.receiptsList() });
+  }
+
   async agentDecision(bookId: string, email: string, text: string, kind: "decision" | "approval") {
     this.bind(bookId);
     const names = await this.names();
@@ -483,6 +497,7 @@ export class Book extends DurableObject<Env> {
         pending: await this.pending(),
         names: await this.names(),
         online: this.online(),
+        receipts: this.receiptsList(),
       }),
     );
     this.broadcast({ t: "online", online: this.online() });
