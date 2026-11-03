@@ -6,16 +6,8 @@
   "manifest": {
     "blocks": {
       "sections": {
-        "site/sections/Steps.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-          "namespace": "site"
-        },
         "site/sections/Hero.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-          "namespace": "site"
-        },
-        "site/sections/Final.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
           "namespace": "site"
         },
         "site/sections/Footer.tsx": {
@@ -26,8 +18,16 @@
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
           "namespace": "site"
         },
+        "site/sections/Final.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+          "namespace": "site"
+        },
         "site/sections/Split.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+          "namespace": "site"
+        },
+        "site/sections/Steps.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
           "namespace": "site"
         },
         "website/sections/Rendering/Lazy.tsx": {
@@ -1004,16 +1004,8 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -1024,8 +1016,16 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
               }
             ]
           }
@@ -1302,16 +1302,8 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -1322,8 +1314,16 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
                     }
                   ]
                 }
@@ -1361,16 +1361,8 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -1381,8 +1373,16 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1416,16 +1416,8 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -1436,8 +1428,16 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1501,16 +1501,8 @@
                                 "$ref": "#/definitions/Resolvable"
                               },
                               {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-                              },
-                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                              },
-                              {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                               },
                               {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -1521,8 +1513,16 @@
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
                               },
                               {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+                              },
+                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                              },
+                              {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
                               },
                               {
                                 "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1639,66 +1639,6 @@
               "website/flags/multivariate/image.ts"
             ],
             "default": "website/flags/multivariate/image.ts"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true,
-            "title": "Âncora (id)"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título",
-            "format": "rich-text"
-          },
-          "steps": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                }
-              },
-              "required": [
-                "title",
-                "text"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Passos"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=": {
-        "title": "site/sections/Steps.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Steps.tsx"
-            ],
-            "default": "site/sections/Steps.tsx"
           }
         }
       },
@@ -1873,82 +1813,6 @@
           }
         }
       },
-      "c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título (parte branca)"
-          },
-          "titleEm": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título (parte amarela)"
-          },
-          "primary": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão principal"
-          },
-          "secondary": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão secundário"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=": {
-        "title": "site/sections/Final.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Final.tsx"
-            ],
-            "default": "site/sections/Final.tsx"
-          }
-        }
-      },
       "c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props": {
         "type": "object",
         "properties": {
@@ -2055,6 +1919,82 @@
               "site/sections/OpenSource.tsx"
             ],
             "default": "site/sections/OpenSource.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título (parte branca)"
+          },
+          "titleEm": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título (parte amarela)"
+          },
+          "primary": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão principal"
+          },
+          "secondary": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão secundário"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=": {
+        "title": "site/sections/Final.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Final.tsx"
+            ],
+            "default": "site/sections/Final.tsx"
           }
         }
       },
@@ -2183,6 +2123,66 @@
           }
         }
       },
+      "c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "title": "Âncora (id)"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título",
+            "format": "rich-text"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Passos"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=": {
+        "title": "site/sections/Steps.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Steps.tsx"
+            ],
+            "default": "site/sections/Steps.tsx"
+          }
+        }
+      },
       "__SECTION_REF__": {
         "title": "Section",
         "anyOf": [
@@ -2190,16 +2190,8 @@
             "$ref": "#/definitions/Resolvable"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-          },
-          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -2210,8 +2202,16 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -2241,16 +2241,8 @@
             "$ref": "#/definitions/Resolvable"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
-          },
-          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
@@ -2261,8 +2253,16 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
