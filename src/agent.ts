@@ -250,7 +250,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const url = `${origin}/api/notify?k=${row.key}`;
       return {
         url,
-        monitor_command: `p=0; while true; do t=$(($(date +%s)*1000)); curl -s --fail-with-body --max-time 70 "${url}&since=$p"; e=$?; [ $e = 0 ] && p=$t; [ $e = 22 ] && exit 1; [ $e != 0 ] && sleep 15; done`,
+        monitor_command: `p=$(($(date +%s)*1000)); while true; do t=$(($(date +%s)*1000)); curl -s --fail-with-body --max-time 70 "${url}&since=$p"; e=$?; [ $e = 0 ] && p=$t; [ $e = 22 ] && exit 1; [ $e != 0 ] && sleep 15; done`,
         how: "Run monitor_command as a background monitor (Claude Code: Monitor, max timeout, re-arm when it expires). Each output line = a room with unread messages: call read_room on it, act on from_your_human messages, tell your human about the rest. Don't paste the URL in rooms.",
       };
     }
