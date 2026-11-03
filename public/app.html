@@ -426,6 +426,7 @@ const GOOGLE_ICON = `<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden
 
 async function login() {
   document.title = "Entrar · vibebook";
+  setFavicon(null);
   const q = new URLSearchParams(location.search);
   const next = q.get("next") || "/app";
   const providers = await fetch("/auth/providers").then((r) => r.json()).catch(() => ({ google: false }));
@@ -478,6 +479,7 @@ document.addEventListener("click", (e) => {
 // ---------------- home ----------------
 async function home() {
   document.title = "vibebook";
+  setFavicon(null);
   const me = await api("/api/me");
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   const OTHER = "Outros";
@@ -573,6 +575,7 @@ function confirmArchive(id, title) {
 
 async function archivedPage() {
   document.title = "Arquivo · vibebook";
+  setFavicon(null);
   const { books } = await api("/api/archived");
   $app.innerHTML = `
   <div class="home">
@@ -987,6 +990,23 @@ const initials = (t) => {
   const main = words.filter((w) => !STOP.has(w.toLowerCase()));
   return ((main.length ? main : words).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
 };
+// Tab icon = the room's card: its cover color with its initials (canvas, so oklch and Caprasimo just work).
+async function setFavicon(title) {
+  const link = document.querySelector('link[rel="icon"]');
+  if (!title) { link.type = "image/svg+xml"; link.href = "/favicon.svg"; return; }
+  await document.fonts?.load?.('400 40px Caprasimo').catch(() => {});
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d");
+  g.fillStyle = coverColor(title); g.beginPath(); g.roundRect(0, 0, 64, 64, 14); g.fill();
+  const shine = g.createRadialGradient(56, 8, 0, 56, 8, 44); shine.addColorStop(0, "rgba(255,255,255,.28)"); shine.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = shine; g.fill();
+  const txt = initials(title);
+  g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = `400 ${txt.length > 1 ? 30 : 38}px Caprasimo, Georgia, serif`;
+  g.fillText(txt, 32, 35);
+  link.type = "image/png"; link.href = c.toDataURL("image/png");
+}
+
 let railMode = false;
 try { railMode = localStorage.getItem("vb.rail") === "1"; } catch {}
 
@@ -1075,6 +1095,7 @@ function renderSide() {
     e.target.reset();
   };
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
+  setFavicon(bookTitle());
 }
 
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
