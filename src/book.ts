@@ -497,6 +497,17 @@ export class Book extends DurableObject<Env> {
     return { ok: true, id: m.id, thread };
   }
 
+  // A request becomes its own thread: an epic with the request as its first task(s) and a seeded doc, plus one
+  // line in the main thread pointing at it. The discussion and the "done" happen inside the epic.
+  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "") {
+    this.bind(bookId);
+    const t = title.trim().slice(0, 200);
+    if (!t) return { ok: false, error: "title is required" };
+    const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12), [], why);
+    this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
+    const epic = this.epics().find((e) => e.id === id);
+    return { ok: true, epic_id: id, thread: id, tasks: epic?.tasks.map((x) => ({ id: x.id, title: x.title, status: x.status })) ?? [] };
+  }
   agentTask(bookId: string, taskId: string, status: string) {
     this.bind(bookId);
     return this.setStatus(taskId, status);

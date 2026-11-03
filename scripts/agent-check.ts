@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 9 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,start_epic,log_decision,create_room", "tools/list has the 10 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -142,6 +142,19 @@ await g2.tool("read_room", { room_id: room });
 const forged = client(m.token);
 await forged.rpc("initialize", {});
 check((await (async () => { const r = await fetch(`${BASE}/mcp`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${m.token}`, "mcp-session-id": g.sid() }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "inbox", arguments: {} } }) }); return (await r.json()).result?.structuredContent?.you_act_for; })()) === marina, "someone else's session id doesn't make you that agent");
+
+// A request becomes a thread: start_epic makes the epic (seeded doc, one task) and points to it from main;
+// closing its task archives it.
+const ep = (await g.tool("start_epic", { room_id: room, title: "Importar as reservas", why: "Trazer as reservas antigas pro site novo." })).out;
+check(ep?.ok && ep.epic_id && ep.tasks?.length === 1, "start_epic creates an epic with the request as its task");
+let rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+const made = rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id);
+check(made?.doc?.includes("Trazer as reservas antigas"), "the new epic's doc starts with its goal");
+check(rr?.messages?.some((x: { thread: string; text: string }) => x.thread === "main" && x.text.includes("Importar as reservas")), "main thread gets one line pointing to the epic");
+check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei o import" })).out?.ok, "the agent reports inside the epic");
+await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived === true, "closing its last task archives the epic");
 
 // Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.
 const nu = (await g.tool("notify_url")).out;

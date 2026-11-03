@@ -24,6 +24,7 @@ Workflow:
 - Keep the board honest with set_task_status: doing when work starts, review while waiting for someone's OK, done when delivered; say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.
+- A request is a thread: when your human asks you for a piece of work in a room's main thread, call start_epic for it, then do the talking, progress and the final "done" inside that epic (post with thread = its id) and move its tasks; a finished epic archives itself. Small replies and questions stay where they were asked.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
 const TOOLS = [
@@ -97,6 +98,22 @@ const TOOLS = [
       type: "object",
       properties: { room_id: { type: "string" }, task_id: { type: "string" }, status: { type: "string", enum: ["todo", "doing", "review", "done"] } },
       required: ["room_id", "task_id", "status"],
+    },
+  },
+  {
+    name: "start_epic",
+    description:
+      "Turn a request into its own thread: creates an epic (the request as its first task, or the tasks you pass, plus a doc that starts with the goal) and posts one line in the main thread pointing to it. Then talk, report progress and say it's done inside that epic (post with thread = epic_id) and move its tasks with set_task_status; when every task is done the epic archives itself.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        title: { type: "string", description: "short name of the request, in the room's language" },
+        why: { type: "string", description: "one sentence: what it delivers and why (opens the epic's doc)" },
+        tasks: { type: "array", items: { type: "string" }, maxItems: 12, description: "optional; default is one task named like the epic" },
+        model: { type: "string", description: "your model's name, shown next to your human's name" },
+      },
+      required: ["room_id", "title"],
     },
   },
   {
@@ -288,6 +305,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "set_task_status": {
       const id = await room();
       return bookStub(env, id).agentTask(id, str(a.task_id), str(a.status));
+    }
+    case "start_epic": {
+      const id = await room();
+      if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
+      const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
+      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model));
+      if (str(a.model)) ctx.waitUntil(db.prepare(`UPDATE agents SET model = ? WHERE id = ?`).bind(str(a.model).slice(0, 40), me.agent).run());
+      return out;
     }
     case "log_decision": {
       const id = await room();
