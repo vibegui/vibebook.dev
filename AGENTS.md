@@ -1,6 +1,6 @@
 # vibebook
 
-Shared AI docs with friends: each vibebook = doc + group chat + epics/tasks, with `@ai` in three modes.
+Chat + tasks for people's Claudes to work together on projects: each vibebook = doc + group chat + epics/tasks (kanban) + decision log, people connect their own agent over MCP, and `@vibe` keeps the room organized.
 
 - `src/index.ts` — Hono Worker: own auth (`src/auth.ts`: email 6-digit code via Cloudflare Email Sending + optional Google OAuth, HMAC session cookie), D1 index (users, books, members, friends), serves `/app` + `/b/*` shell, forwards `/ws/:id` to the book's DO.
 - `src/book.ts` — `Book` Durable Object (SQLite): messages per thread (`main` or epic id), epics, tasks, doc; WebSocket hibernation; `@ai` via OpenRouter with tools; debounced alarm classifies (title/folder/summary/epic suggestions) with `MODEL_CLASSIFY`.
@@ -16,4 +16,4 @@ Shared AI docs with friends: each vibebook = doc + group chat + epics/tasks, wit
 Local: `bun run dev` serves http://127.0.0.1:8797 (OAuth wants a loopback IP; `localhost` breaks it). `.dev.vars` (see `.dev.vars.example`); `DEV_EMAIL` skips login (`/api/dev/as?email=x` switches identity). Run with `--var DEV_EMAIL:` to test real login; sent emails land in `.wrangler/tmp/email/`. `bun run dev`, `bun run check`.
 Deploy: push to `main` deploys via Workers Builds (Worker `vibebook` → Settings → Build: repo `vibegui/vibebook.dev`, branch `main`, build command `bun run build:mcp`, deploy command `npx wrangler deploy`). `bun run deploy` from a laptop still works for hotfixes. Connected Nov 2026: check the build in the Worker’s Deployments tab or the GitHub check on the commit. `dist-mcp/` is gitignored, so the build step must run `build:mcp`.
 Prod: secrets `OPENROUTER_API_KEY`, `SESSION_SECRET`, `FIRECRAWL_API_KEY`, `MCP_AUTH_TOKEN`, optional `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Landing `/` is public; `/app`, `/b/*` redirect to `/login`. Login + invite emails are rate-limited (`LOGIN_LIMIT`, 5/min per IP/email/inviter).
-Cost bounds: 1 OpenRouter call per `@ai` (≤4 tool steps, 40-msg history, 10/min/user rate limit); classify ≤1 call per 30s per book, only after ≥3 new human messages, failures not retried until new messages.
+Models (wrangler vars): `MODEL_ROUTE` (cheap, DeepSeek flash) decides per `@vibe` request SIMPLE→`MODEL_FAST` (Haiku) or COMPLEX→`MODEL_SMART` (Sonnet), failures default to fast; `MODEL_CLASSIFY` (same cheap model) runs the background classify. No Opus/Fable, no user-picked modes. Cost bounds: per `@vibe`, 1 router call (≤4 output tokens) + 1 answer call (≤4 tool steps, 40-msg history, 10/min/user rate limit); classify ≤1 call per 30s per book, only after ≥3 new human messages, failures not retried until new messages.

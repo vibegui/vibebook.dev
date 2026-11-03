@@ -177,11 +177,8 @@
   .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
-  .kfilter { display: flex; gap: 6px; flex-wrap: wrap; }
-  .kfilter button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
-  .kfilter button.sel { background: var(--ink); color: var(--panel); border-color: var(--ink); }
   .lanes { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; overflow-x: auto; }
-  .lane { background: color-mix(in oklch, var(--line) 45%, var(--bg)); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; border: 2px solid transparent; }
+  .lane { min-width: 0; background: color-mix(in oklch, var(--line) 45%, var(--bg)); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; border: 2px solid transparent; }
   .lane.over { border-color: var(--accent); }
   .lane > h3 { margin: 0; padding: 12px 14px 8px; font: 700 13px/1 "Schibsted Grotesk", sans-serif; display: flex; justify-content: space-between; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; }
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
@@ -194,7 +191,7 @@
   .kcard .kep { color: #fff; border-radius: 6px; padding: 1px 6px; font-weight: 700; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kcard .avatar { width: 20px; height: 20px; font-size: 9px; }
   .kadd { display: flex; gap: 6px; padding: 0 10px 10px; flex-wrap: wrap; }
-  .kadd input { flex: 1 1 120px; min-width: 0; } .kadd select { flex: 1 1 100%; font: 13px "Schibsted Grotesk", sans-serif; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; background: var(--bg); color: var(--ink); }
+  .kadd input { flex: 1 1 120px; min-width: 0; } .kadd select { flex: 1 1 100%; min-width: 0; width: 100%; font: 13px "Schibsted Grotesk", sans-serif; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; background: var(--bg); color: var(--ink); }
   .kempty { color: var(--mute); font-size: 13px; padding: 4px 4px 10px; }
   @media (max-width: 900px) { .lanes { grid-template-columns: repeat(4, 78vw); scroll-snap-type: x mandatory; } .lane { scroll-snap-align: start; } }
   .msg { display: flex; gap: 14px; max-width: 760px; position: relative; margin: 0 -10px; padding: 6px 10px; border-radius: 12px; }
@@ -224,10 +221,6 @@
   .mentionPop small { color: var(--mute); margin-left: auto; font-size: 12px; }
   .mentionPop .avatar { width: 24px; height: 24px; font-size: 10px; }
   .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
-  .modes { display: none; gap: 6px; align-items: center; font-size: 13px; }
-  .modes.show { display: flex; }
-  .modes button { padding: 3px 10px; border-radius: 999px; font-size: 12px; }
-  .modes button.sel { background: var(--ai); color: #fff; border-color: var(--ai); }
 
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
@@ -630,7 +623,6 @@ async function renderAgents(again) {
 let ws = null;
 let S = null; // book state
 let thread = "main";
-let mode = "fast";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
 const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
@@ -693,7 +685,7 @@ function onEvent(ev, id) {
   }
 }
 
-const modeLabel = { fast: "⚡ rápido", medium: "◐ médio", heavy: "● pesado" };
+const modeLabel = { route: "escolhendo o modelo", fast: "rápido", smart: "com calma" };
 
 // 🔔 Browser notifications + a chime when a message arrives while this tab is in the background
 // (or in another thread). Needs the app open in a tab; push with the tab closed would need Web Push.
@@ -773,9 +765,6 @@ function renderBook() {
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
       <form class="composer" id="composer">
-        <div class="modes" id="modes"><span class="muted">✦ @vibe:</span>
-          ${Object.entries(modeLabel).map(([k, v]) => `<button type="button" data-mode="${k}" class="${k === mode ? "sel" : ""}">${v}</button>`).join("")}
-        </div>
         <div class="tray" id="tray"></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="Mencionar" hidden></div>
         <div class="row">
@@ -840,7 +829,6 @@ function renderBook() {
     if (e.key === "ArrowLeft") setDocW(cur + 24); else if (e.key === "ArrowRight") setDocW(cur - 24);
   };
   const input = document.getElementById("input");
-  const modes = document.getElementById("modes");
   // @ autocomplete: people in the room (you excluded) + @vibe, filtered by what follows the @.
   const pop = document.getElementById("mentionPop");
   let picks = [], pickAt = 0, atStart = -1;
@@ -868,7 +856,6 @@ function renderBook() {
     pickAt = 0; renderPop();
   };
   input.oninput = () => {
-    modes.classList.toggle("show", /(^|\s)@(ai|vibe)\b/i.test(input.value) || /@(a?i?|v(i(b(e)?)?)?)$/i.test(input.value));
     input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
     updatePop();
   };
@@ -880,10 +867,6 @@ function renderBook() {
       if (e.key === "Escape") { e.preventDefault(); return closePop(); }
     }
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); document.getElementById("composer").requestSubmit(); }
-  };
-  modes.onclick = (e) => {
-    const b = e.target.closest("[data-mode]"); if (!b) return;
-    mode = b.dataset.mode; modes.querySelectorAll("[data-mode]").forEach((x) => x.classList.toggle("sel", x === b)); input.focus();
   };
   // Attachments: paste, drop or 📎. Upload right away; send once all are done.
   const tray = document.getElementById("tray");
@@ -926,7 +909,7 @@ function renderBook() {
     const text = input.value.trim();
     const files = attached.filter((p) => p.meta).map((p) => p.meta.id);
     if (!text && !files.length) return;
-    send({ t: "msg", thread, text, mode, files });
+    send({ t: "msg", thread, text, files });
     attached.forEach((p) => p.url && URL.revokeObjectURL(p.url)); attached = [];
     input.value = ""; input.oninput(); renderTray();
   };
@@ -1111,15 +1094,13 @@ function renderKanban() {
       <div class="kt">${mentions(esc(t.title))}</div>
       <div class="km"><span class="kep" style="background:${color(t.epic.title)}">${esc(t.epic.title)}</span>${t.owner ? `${avatar(t.owner)}<span>${esc(t.owner === S.me ? "você" : name(t.owner))}</span>` : ""}${t.due ? `<span>📅 ${esc(t.due)}</span>` : ""}</div></div>`;
   el.innerHTML = S.epics.length ? `
-    <div class="kfilter"><button type="button" data-kf="" class="${boardEpic ? "" : "sel"}">Todos os épicos</button>${S.epics.map((e) => `<button type="button" data-kf="${e.id}" class="${boardEpic === e.id ? "sel" : ""}">${esc(e.title)}</button>`).join("")}</div>
     <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
       <section class="lane" data-lane="${k}"><h3>${label}<span>${list.length}</span></h3>
         <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? "Nada a fazer." : "Arraste um card pra cá."}</div>`}</div>
-        ${k === "todo" ? `<form class="kadd"><input placeholder="nova tarefa" aria-label="Nova tarefa" /><button>+</button><select aria-label="Épico">${S.epics.map((e) => `<option value="${e.id}" ${(boardEpic || thread) === e.id ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select></form>` : ""}
+        ${k === "todo" ? `<form class="kadd"><input placeholder="nova tarefa" aria-label="Nova tarefa" /><button>+</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="Épico">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
       </section>`; }).join("")}</div>`
     : `<div class="empty">Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça: <b>@vibe</b> organiza o projeto em épicos e tarefas.</div>`;
   const move = (id, status) => send({ t: "task.status", id, status });
-  el.querySelectorAll("[data-kf]").forEach((b) => b.onclick = () => { boardEpic = b.dataset.kf || null; renderKanban(); });
   el.querySelectorAll(".kcard").forEach((c) => {
     c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
     c.ondragend = () => c.classList.remove("dragging");
@@ -1139,7 +1120,7 @@ function renderKanban() {
   el.querySelector(".kadd")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const title = e.target.querySelector("input").value.trim();
-    if (title) send({ t: "task.add", epic: e.target.querySelector("select").value, title });
+    if (title) send({ t: "task.add", epic: e.target.elements.epic.value, title });
     e.target.reset();
   });
 }

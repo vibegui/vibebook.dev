@@ -24,9 +24,9 @@ export type Env = {
   SESSION_SECRET: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  MODEL_ROUTE: string;
   MODEL_FAST: string;
-  MODEL_MEDIUM: string;
-  MODEL_HEAVY: string;
+  MODEL_SMART: string;
   MODEL_CLASSIFY: string;
   FIRECRAWL_API_KEY?: string;
   READ_LIMIT: RateLimit;

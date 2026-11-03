@@ -7,7 +7,9 @@ import { checkUrl, type ReadResult, readUrl } from "./reader";
 import { findSecret } from "./secrets";
 import { track } from "./track";
 
-type Mode = "fast" | "medium" | "heavy";
+// @vibe never picks a big model on its own: a cheap router sends each request to the fast model, or to
+// the smart one only when the request needs it. Model ids are config (wrangler vars), never code.
+type Route = "fast" | "smart";
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null };
@@ -378,7 +380,7 @@ export class Book extends DurableObject<Env> {
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} agent messages in a row with no human. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
-    if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, "fast", email));
+    if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
     if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id };
   }
@@ -467,8 +469,7 @@ export class Book extends DurableObject<Env> {
           track(this.env, "message", { user: email, dims: { book: this.get("book_id") ?? undefined, thread: thread === "main" ? "main" : "epic", files: files.length || undefined } }),
         );
         if (VIBE_RE.test(text)) {
-          const mode: Mode = ["fast", "medium", "heavy"].includes(m.mode) ? m.mode : "fast";
-          this.ctx.waitUntil(this.runAI(thread, mode, email));
+          this.ctx.waitUntil(this.runAI(thread, email));
         }
         if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
         return;
@@ -530,8 +531,10 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- AI ----
-  model(name: string) {
-    return createOpenRouter({ apiKey: this.env.OPENROUTER_API_KEY })(name);
+  // quick: no reasoning tokens. The cheap router/classifier models think by default and would spend the
+  // whole output budget thinking (empty answer), so routing and classify always run with reasoning off.
+  model(name: string, quick = false) {
+    return createOpenRouter({ apiKey: this.env.OPENROUTER_API_KEY })(name, quick ? { reasoning: { enabled: false, effort: "none" } } : undefined);
   }
 
   context(thread: string, names: Record<string, string> = {}, members: string[] = []) {
@@ -575,14 +578,46 @@ Toda task que tiver responsável ou prazo combinado na conversa: use assign_task
 Quando o grupo precisar decidir entre opções, proponha uma votação com create_poll (ela aparece como um card para votar). Você vê imagens enviadas no chat.`;
   }
 
-  async runAI(thread: string, mode: Mode, email: string) {
+  // One cheap call (MODEL_ROUTE, a few tokens out) decides fast vs smart. Any failure means fast: cheap by default.
+  async route(thread: string): Promise<Route> {
+    const recent = this.messages(thread, 8)
+      .filter((m) => m.text)
+      .map((m) => `${m.author === "ai" ? "@vibe" : m.author}${m.kind === "agent" ? " (agent)" : ""}: ${m.text.slice(0, 600)}`)
+      .join("\n")
+      .slice(-4000);
+    const images = this.messages(thread, 8).some((m) => m.files.some((f) => f.type.startsWith("image/")));
+    try {
+      const { text } = await generateText({
+        model: this.model(this.env.MODEL_ROUTE, true),
+        maxOutputTokens: 4,
+        temperature: 0,
+        prompt: `You route requests to the room organizer of a shared project chat. Reply with exactly one word.
+SIMPLE: short answers, greetings, status questions, creating/assigning/moving a few tasks, logging a decision, a quick doc tweak, a poll, a reply that needs no careful reasoning.
+COMPLEX: planning a whole project or many epics, rewriting or restructuring a long document, comparing options in depth, reading and synthesizing links or files${images ? " or images" : ""}, untangling a disagreement, anything multi-step where a mistake would be costly.
+When unsure, SIMPLE.
+
+Conversation (last line is the request):
+${recent}
+
+Answer SIMPLE or COMPLEX:`,
+      });
+      return /COMPLEX/i.test(text) ? "smart" : "fast";
+    } catch (e) {
+      console.error("route failed", String(e));
+      return "fast";
+    }
+  }
+
+  async runAI(thread: string, email: string) {
     const { success } = await this.env.AI_LIMIT.limit({ key: email });
     if (!success) {
       this.addMessage(thread, "ai", "Calma 😅 muitos @vibe seguidos. Tenta de novo em um minuto.");
       return;
     }
-    const modelName = { fast: this.env.MODEL_FAST, medium: this.env.MODEL_MEDIUM, heavy: this.env.MODEL_HEAVY }[mode];
     const msg = this.addMessage(thread, "ai", "");
+    this.broadcast({ t: "typing", id: msg.id, mode: "route" });
+    const mode = await this.route(thread);
+    const modelName = mode === "smart" ? this.env.MODEL_SMART : this.env.MODEL_FAST;
     const started = Date.now();
     let ok = true;
     let tools = 0;
@@ -772,7 +807,7 @@ Quando o grupo precisar decidir entre opções, proponha uma votação com creat
       .join("\n");
     try {
       const { output } = await generateText({
-        model: this.model(this.env.MODEL_CLASSIFY),
+        model: this.model(this.env.MODEL_CLASSIFY, true),
         output: Output.object({
           schema: z.object({
             title: z.string().describe("título curto e específico do vibebook, máx 6 palavras"),

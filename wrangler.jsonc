@@ -26,10 +26,12 @@
     { "name": "AGENT_LIMIT", "namespace_id": "1005", "simple": { "limit": 30, "period": 60 } }
   ],
   "vars": {
-    "MODEL_FAST": "anthropic/claude-sonnet-5.5",
-    "MODEL_MEDIUM": "anthropic/claude-opus-5.5",
-    "MODEL_HEAVY": "anthropic/claude-fable-5.1",
-    "MODEL_CLASSIFY": "anthropic/claude-haiku-5.5"
+    // Cost first: a cheap model routes every @vibe request and does the background classify; Haiku answers,
+    // Sonnet only when the router says the request is complex. No Opus/Fable.
+    "MODEL_ROUTE": "deepseek/deepseek-v4.1-flash",
+    "MODEL_CLASSIFY": "deepseek/deepseek-v4.1-flash",
+    "MODEL_FAST": "anthropic/claude-haiku-5.5",
+    "MODEL_SMART": "anthropic/claude-sonnet-5.5"
   },
   // Local dev serves as http://127.0.0.1:8797 (OAuth accepts http only on a loopback IP; :8787 is taken here).
   "dev": { "port": 8797, "host": "127.0.0.1:8797", "upstream_protocol": "http" },
