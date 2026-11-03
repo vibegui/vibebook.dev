@@ -65,6 +65,7 @@
           <pre><code>/plugin marketplace add vibegui/vibebook.dev
 /plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copiar 1</button> <button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copiar 2</button></li>
       </ol>
+      <p class="note"><b>Atalho:</b> diga pro seu Claude <i>“lê vibebook.dev/llms.txt e configura o vibebook neste projeto”</i>. Com o plugin, <code>/vibebook:setup</code> escolhe ou cria a sala, liga o repo e começa a escutar.</p>
       <p class="note">O plugin usa o conector que você já tem (Claude.ai ou <code>claude mcp add</code>), não cria outro.</p>
       <p class="note"><b>Ligue um repositório a uma sala:</b> crie na raiz um arquivo <code>.vibebook</code> com <code>room_id=&lt;id da sala&gt;</code> (a marca que qualquer um vê no repo), ponha o selo no README, <code>[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/&lt;id da sala&gt;)</code> (o id está no endereço, <code>/b/&lt;id&gt;</code>), e uma linha no AGENTS.md com o link da sala. Quem está na sala clica no selo e cai no chat. Nas sessões ali, o Claude escuta a sala enquanto vocês conversam sobre outra coisa, age no que você escreve nela e reporta o progresso: tarefa começada, commit importante, PR pronto pra revisão, deploy, bloqueio.</p>
     </section>
