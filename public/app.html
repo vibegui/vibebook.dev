@@ -816,7 +816,7 @@ function notifyMsg(m) {
   if (!away && !mentioned) return;
   chime();
   if (notifyPerm() === "granted" && document.hidden) {
-    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? `agent de ${name(m.author)}` : name(m.author);
+    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? `${m.via || "agent"} de ${name(m.author)}` : name(m.author);
     const n = new Notification(`${mentioned ? "Te mencionaram · " : ""}${who} · ${S.book?.title ?? "vibebook"}`, { body: (m.text || (m.author === "ai" ? "respondendo…" : "📎 anexo")).slice(0, 180), tag: `vb-${S.id}`, icon: "/apple-touch-icon.png" });
     n.onclick = () => { window.focus(); n.close(); };
   }
@@ -980,7 +980,14 @@ function renderBook() {
   const fileInput = document.getElementById("fileInput");
   document.getElementById("attach").onclick = () => fileInput.click();
   fileInput.onchange = () => { addFiles([...fileInput.files]); fileInput.value = ""; };
-  input.addEventListener("paste", (e) => { const files = [...(e.clipboardData?.files ?? [])]; if (files.length) { e.preventDefault(); addFiles(files); } });
+  // Cmd+V of a screenshot: some apps (CleanShot…) only fill clipboardData.items, and focus may be outside the box.
+  document.onpaste = (e) => {
+    const t = e.target, typing = t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName));
+    if (!input.isConnected || (typing && t !== input)) return;
+    let files = [...(e.clipboardData?.files ?? [])];
+    if (!files.length) files = [...(e.clipboardData?.items ?? [])].filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
+    if (files.length) { e.preventDefault(); addFiles(files); input.focus(); }
+  };
   const chatEl = $app.querySelector(".chat");
   chatEl.addEventListener("dragover", (e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); chatEl.classList.add("drop"); } });
   chatEl.addEventListener("dragleave", (e) => { if (!chatEl.contains(e.relatedTarget)) chatEl.classList.remove("drop"); });
@@ -1287,7 +1294,7 @@ const msgHtml = (m, prev) => {
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${cont ? " cont" : ""}" id="m${m.id}">
     ${avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
-    <div class="body"><div class="who">${m.kind === "agent" ? `agent de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
+    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
   </div>`;
 };

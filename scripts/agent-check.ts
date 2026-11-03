@@ -140,7 +140,7 @@ check(secret.out?.ok === false && /secret/.test(secret.out?.error), "a post with
 
 // Files: an agent attaches an HTML report; it's served sandboxed; secrets and SVG are refused.
 const html = "<!doctype html><title>r</title><h1>Relatório</h1><script>document.title='ok'</script>";
-const up = await g.tool("upload_file", { room_id: room, filename: "relatorio.html", content_type: "text/html", text: html, message: "relatório no anexo" });
+const up = await g.tool("upload_file", { room_id: room, filename: "relatorio.html", content_type: "text/html", text: html, message: "relatório no anexo", model: "Claude Opus 5.5" });
 check(up.out?.ok && up.out.file?.url, "Gui's agent uploads an HTML report with a message");
 const fileUrl = up.out?.file?.url ?? "";
 const served = await fetch(fileUrl, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } });
