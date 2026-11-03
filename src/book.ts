@@ -459,7 +459,7 @@ export class Book extends DurableObject<Env> {
       this.epicsChanged();
     }
     // A room that has messages but was never classified (older rule needed 3) gets classified now.
-    if (!this.get("classified_at_id") && !(await this.ctx.storage.getAlarm()) && this.sql.exec(`SELECT 1 FROM messages WHERE author != 'ai' LIMIT 1`).toArray().length)
+    if (!this.get("classified_at_id") && !(await this.ctx.storage.getAlarm()) && this.sql.exec(`SELECT 1 FROM messages WHERE author != 'ai' AND kind IS NULL LIMIT 1`).toArray().length)
       await this.ctx.storage.setAlarm(Date.now() + 5_000);
 
     const { 0: client, 1: server } = new WebSocketPair();
@@ -840,7 +840,8 @@ Answer SIMPLE or COMPLEX:`,
   // Debounced background pass with the cheap model: title, folder, summary, epic suggestions.
   async alarm() {
     const since = Number(this.get("classified_at_id") ?? 0);
-    const fresh = this.sql.exec(`SELECT count(*) AS n FROM messages WHERE id > ? AND author != 'ai'`, since).one().n as number;
+    // Only people's own messages count: @vibe and agent posts don't make a room "talked about".
+    const fresh = this.sql.exec(`SELECT count(*) AS n FROM messages WHERE id > ? AND author != 'ai' AND kind IS NULL`, since).one().n as number;
     if (fresh < (since ? CLASSIFY_MIN_NEW_MSGS : CLASSIFY_FIRST_MSGS)) return;
     const bookId = this.get("book_id");
     if (!bookId) return;
@@ -879,7 +880,9 @@ ${transcript}`,
       });
       this.set("classified_at_id", String(lastId));
       this.ctx.waitUntil(track(this.env, "classify", { dims: { book: bookId, model: this.env.MODEL_CLASSIFY, ok: true, cost: +costOf(usage).toFixed(6) } }));
-      const title = this.get("title_locked") ? undefined : output.title;
+      // Rename only rooms still on the default name: a title someone chose (create_room, the home box, a rename) stays.
+      const current = await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
+      const title = this.get("title_locked") || (current && current.title !== "Novo vibebook") ? undefined : output.title;
       const summary = output.summary.replace(/\s+/g, " ").trim().slice(0, 180);
       await this.touch({ title, folder: output.folder, summary });
       const existing = new Set([...this.epics().map((e) => e.title.toLowerCase()), ...this.suggestions().map((s) => s.title.toLowerCase())]);
