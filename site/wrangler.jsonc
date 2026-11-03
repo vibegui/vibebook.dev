@@ -1,0 +1,16 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// The landing only. vibebook.dev stays on the main Worker, which forwards /pt, /en, /_site/* and /deco/* here
+	// over a service binding. No custom domain of its own.
+	"name": "vibebook-site",
+	"main": "./src/worker-entry.ts",
+	"compatibility_date": "2026-08-01",
+	"compatibility_flags": ["nodejs_compat", "no_handle_cross_request_promise_resolution"],
+	"observability": { "enabled": true },
+	"workers_dev": true,
+	"assets": { "binding": "ASSETS" },
+	"vars": {
+		"DECO_SITE_NAME": "vibebook",
+		"DECO_ENV_NAME": "production"
+	}
+}
