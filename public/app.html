@@ -229,7 +229,7 @@
   .msg.ai .txt ul { margin: 6px 0 10px; padding-left: 20px; } .msg.ai .txt li + li { margin-top: 4px; }
   .typing { color: var(--ai); font-size: 13px; overflow-wrap: anywhere; }
   .msg .txt a { color: var(--accent); overflow-wrap: anywhere; }
-  .composer { border-top: 1px solid var(--line); padding: 16px 24px 20px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .composer { border-top: 1px solid var(--line); padding: 12px 24px 14px; display: flex; flex-direction: column; gap: 6px; position: relative; }
   .mention { background: oklch(0.92 0.06 245); color: #14305e; border-radius: 5px; padding: 0 4px; font-weight: 600; }
   .mention.me { background: var(--sun, #f2dc4a); color: #14305e; }
   .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
@@ -318,6 +318,8 @@
   .pend .rm { position: absolute; z-index: 2; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: none; background: oklch(0.2 0.02 250 / .75); color: #fff; font-size: 14px; line-height: 1; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .icon { padding: 6px 9px; font-size: 18px; line-height: 1; flex: none; align-self: center; }
+  .composer .icon { padding: 5px; color: var(--mute); display: inline-flex; }
+  .composer .icon:hover { color: var(--ink); }
   .chat.drop { box-shadow: inset 0 0 0 3px var(--accent); }
   .atts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .atts img { display: block; max-width: min(320px, 100%); max-height: 260px; border-radius: 12px; border: 1px solid var(--line); }
@@ -851,8 +853,8 @@ function renderBook() {
         <div class="tray" id="tray"></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="Mencionar" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo">📎</button>
-          <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação">📊</button>
+          <button type="button" class="ghost icon" id="attach" title="Anexar imagem ou PDF (ou cole com Cmd+V)" aria-label="Anexar arquivo"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></button>
+          <button type="button" class="ghost icon" id="pollBtn" title="Criar votação" aria-label="Criar votação"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg></button>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
           <textarea id="input" rows="1" placeholder="Mensagem… @vibe organiza a sala"></textarea><button class="primary" id="sendBtn">Enviar</button>
         </div>
@@ -1316,7 +1318,7 @@ function renderFiles() {
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}">
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
-    : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o 📎. Tudo que for enviado neste vibebook fica aqui.</div>`;
+    : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
 }
 
 function renderChat() {
