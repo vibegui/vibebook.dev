@@ -250,6 +250,14 @@
   .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
   .iconBtn:hover { background: var(--panel); color: var(--ink); }
   .iconBtn svg { width: 20px; height: 20px; }
+  .skel { animation: skelIn .2s .2s both; }
+  .skel i { display: block; height: 12px; margin: 0 0 14px; border-radius: 6px; background: var(--line); width: 70%; animation: skelPulse 1.2s ease-in-out infinite alternate; }
+  .skel i.s { width: 45%; }
+  .skel main, .skel section { padding: 28px 24px; }
+  .skel section { border-left: 1px solid var(--line); }
+  @keyframes skelIn { from { opacity: 0; } }
+  @keyframes skelPulse { to { opacity: .45; } }
+  @media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }
   .book.rail .side { padding: 14px 0; align-items: center; gap: 10px; }
   .railList { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   .railSep { width: 28px; height: 1px; background: var(--line); margin: 4px 0; }
@@ -721,7 +729,8 @@ function openBook(id) {
   S = null;
   attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); renderSide(); }).catch(() => {});
-  $app.innerHTML = `<div class="home muted">Abrindo…</div>`;
+  // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
+  $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="Carregando"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
