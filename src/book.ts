@@ -88,11 +88,22 @@ export class Book extends DurableObject<Env> {
     return this.sql
       .exec<{ id: string; title: string; archived: number | null }>(`SELECT id, title, archived FROM epics ORDER BY ts`)
       .toArray()
-      .map((e) => ({ ...e, archived: !!e.archived, tasks: tasks.filter((t) => t.epic_id === e.id) }));
+      .map((e) => ({ ...e, archived: e.archived === 1, kept: e.archived === -1, tasks: tasks.filter((t) => t.epic_id === e.id) }));
   }
   // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a
   // room + epic with one query instead of calling every room's DO.
+  // Curation: an epic whose tasks are all done archives itself and says so in its thread. archived = -1 means
+  // someone reopened it by hand, so it stays open.
+  autoArchive() {
+    const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done"));
+    for (const e of done) {
+      this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
+      this.addMessage(e.id, "ai", `✓ Todas as ${e.tasks.length} tarefas de **${e.title}** estão feitas, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`);
+    }
+    return done.length > 0;
+  }
   epicsChanged() {
+    this.autoArchive();
     const epics = this.epics();
     this.broadcast({ t: "epics", epics });
     const id = this.get("book_id");
@@ -273,7 +284,7 @@ export class Book extends DurableObject<Env> {
   // Done with it: leaves the sidebar list and the board, keeps its tasks and discussion. markDone closes every task.
   archiveEpic(id: string, archived = true, markDone = false) {
     if (markDone) this.sql.exec(`UPDATE tasks SET done = 1, status = 'done' WHERE epic_id = ?`, id);
-    this.sql.exec(`UPDATE epics SET archived = ? WHERE id = ?`, archived ? 1 : 0, id);
+    this.sql.exec(`UPDATE epics SET archived = ? WHERE id = ?`, archived ? 1 : -1, id);
     this.epicsChanged();
   }
   // Humans only: removes the epic, its tasks and its discussion.
@@ -524,6 +535,7 @@ export class Book extends DurableObject<Env> {
 
     const { 0: client, 1: server } = new WebSocketPair();
     this.ctx.acceptWebSocket(server, [email]);
+    if (this.autoArchive()) this.epicsChanged();
     this.ctx.waitUntil(this.markRead([email], (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0));
     const book = await this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first();
     server.send(
