@@ -9,7 +9,7 @@
   "assets": {
     "directory": "public",
     "binding": "ASSETS",
-        "run_worker_first": ["/", "/demo", "/pt", "/en", "/pt/demo", "/en/demo", "/connect", "/pt/connect", "/en/connect", "/how-it-works", "/pt/how-it-works", "/en/how-it-works", "/mcp", "/authorize", "/oauth/*", "/.well-known/*", "/api/*", "/ws/*", "/auth/*", "/app", "/archived", "/login", "/b/*"]
+        "run_worker_first": ["/", "/demo", "/pt", "/en", "/pt/demo", "/en/demo", "/connect", "/pt/connect", "/en/connect", "/how-it-works", "/pt/how-it-works", "/en/how-it-works", "/mcp", "/authorize", "/oauth/*", "/.well-known/*", "/api/*", "/ws/*", "/auth/*", "/app", "/archived", "/login", "/b/*", "/_site/*", "/deco/*", "/_serverFn/*"]
   },
   "d1_databases": [{ "binding": "DB", "database_name": "vibebook", "database_id": "8b1e10e7-ff7d-4d40-94b1-e3d9b88c4a23" }],
   "durable_objects": { "bindings": [{ "name": "BOOK", "class_name": "Book" }] },
@@ -17,6 +17,8 @@
   "routes": [{ "pattern": "vibebook.dev", "custom_domain": true }],
   "send_email": [{ "name": "EMAIL" }],
   "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "dfed86f52e7740d3bf9311b26b03ac16" }],
+  // The landing, editable in deco Studio (site/). Deploy site/ first: cd site && bun run deploy.
+  "services": [{ "binding": "SITE", "service": "vibebook-site" }],
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "vibebook-files" }],
   "ratelimits": [
     { "name": "AI_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },

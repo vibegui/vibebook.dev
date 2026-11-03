@@ -13,6 +13,8 @@ export { Book } from "./book";
 export type Env = {
   DB: D1Database;
   ASSETS: Fetcher;
+  /** The landing as a deco Studio site (site/, Worker vibebook-site). Missing or failing: the static page in public/. */
+  SITE?: Fetcher;
   BOOK: DurableObjectNamespace<Book>;
   OAUTH_KV: KVNamespace;
   OAUTH_PROVIDER: OAuthHelpers;
@@ -102,12 +104,17 @@ for (const path of ["", "/demo", "/connect", "/how-it-works"]) {
   });
   for (const lang of ["pt", "en"])
     app.get(`/${lang}${path}`, async (c) => {
-      const asset = await c.env.ASSETS.fetch(c.req.raw);
+      // The home comes from the Studio-editable site; if it's down, the static copy in public/ answers.
+      const fromSite = !path && c.env.SITE ? await c.env.SITE.fetch(c.req.raw).catch(() => null) : null;
+      const asset = fromSite && fromSite.status < 500 ? fromSite : await c.env.ASSETS.fetch(c.req.raw);
       const res = new Response(asset.body, asset);
       res.headers.append("set-cookie", `${LANG_COOKIE}=${lang}; Max-Age=31536000; Path=/; SameSite=Lax`);
       return pageview(c, res);
     });
 }
+// The site's own files (built JS) and the Studio admin endpoints (/deco/meta, /deco/render, …).
+for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
+  app.all(prefix, (c) => (c.env.SITE ? c.env.SITE.fetch(c.req.raw) : c.notFound()));
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
 app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
 app.get("/app", async (c) => {
