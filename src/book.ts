@@ -16,6 +16,8 @@ export type FileMeta = { id: string; name: string; type: string; size: number; a
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
+export const epicDocSeed = (title: string, why = "") =>
+  `# ${title}\n\n**Objetivo:** ${why.trim() || "o que este épico entrega e por quê (edite ou peça pro @vibe)."}\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`;
 /** Epic titles compared without numbering, case or accents: "2. Primeira limpeza" = "primeira limpeza". */
 const epicKey = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^[\s\d.)\-–—:#]+/, "").replace(/\s+/g, " ").trim();
 type Suggestion = { title: string; tasks: string[]; why?: string };
@@ -225,10 +227,12 @@ export class Book extends DurableObject<Env> {
     this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
     return m;
   }
-  createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = []) {
+  createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = [], why = "") {
     const id = rid();
     const ts = Date.now();
     this.sql.exec(`INSERT INTO epics (id, title, ts) VALUES (?, ?, ?)`, id, title.slice(0, 200), ts);
+    // An epic's doc never starts empty: title, goal and the sections people fill as it moves.
+    this.set(`doc:${id}`, epicDocSeed(title, why));
     tasks.forEach((t, i) => {
       const x = typeof t === "string" ? { title: t } : t;
       const owner = x.owner?.trim().toLowerCase();
@@ -623,7 +627,7 @@ export class Book extends DurableObject<Env> {
         const [picked] = s.splice(Number(m.i), 1);
         if (!picked) return;
         this.set("suggestions", JSON.stringify(s));
-        if (m.accept) this.createEpic(picked.title, picked.tasks);
+        if (m.accept) this.createEpic(picked.title, picked.tasks, [], picked.why ?? "");
         return this.broadcast({ t: "suggestions", suggestions: s });
       }
     }
@@ -803,11 +807,12 @@ Answer SIMPLE or COMPLEX:`,
             description: "Cria um épico (tema longo com discussão própria) com tasks iniciais, cada uma com responsável (email de membro) e prazo quando combinados.",
             inputSchema: z.object({
               title: z.string(),
+              why: z.string().optional().describe("objetivo do épico em uma frase (abre o doc dele)"),
               tasks: z.array(z.object({ title: z.string(), owner: z.string().optional().describe("email de um membro"), due: z.string().optional(), done: z.boolean().optional().describe("true se já foi entregue") })).max(12),
             }),
             // Returns the task ids, so the same run can move or assign them.
-            execute: async ({ title, tasks }) => {
-              const id = this.createEpic(title, tasks, await this.members());
+            execute: async ({ title, tasks, why }) => {
+              const id = this.createEpic(title, tasks, await this.members(), why ?? "");
               const made = this.epics().find((e) => e.id === id)?.tasks ?? [];
               made.forEach((t, i) => tasks[i]?.done && this.setTask(t.id, true));
               return { id, tasks: made.map((t, i) => ({ id: t.id, title: t.title, status: tasks[i]?.done ? "done" : t.status })) };

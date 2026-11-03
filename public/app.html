@@ -1608,7 +1608,9 @@ const docEpic = () => (!docRoom && !isPre() && S.epics.some((e) => e.id === thre
 function renderDoc(force) {
   const doc = document.getElementById("doc"); if (!doc) return;
   S.docs ??= {};
-  const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep), text = ep ? S.docs[ep] ?? "" : S.doc;
+  // Older epics without a doc open with the same start new ones get (epicDocSeed in src/book.ts).
+  const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep);
+  const text = ep ? S.docs[ep] || `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite ou peça pro @vibe).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : S.doc;
   if (docShown !== (ep || "room")) { force = true; docShown = ep || "room"; }
   const inEpic = !isPre() && S.epics.find((e) => e.id === thread);
   const crumb = document.getElementById("docCrumb");
@@ -1621,7 +1623,6 @@ function renderDoc(force) {
   const pv = document.getElementById("preview");
   pv.innerHTML = text.trim()
     ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
-    : ep ? `<div class="empty">Doc do épico <b>${esc(epic.title)}</b> vazio. Detalhes, plano e specs deste épico ficam aqui. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> escrever.</div>`
     : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> resumir as decisões aqui.</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   renderMermaid(pv);
