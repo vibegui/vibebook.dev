@@ -364,6 +364,14 @@
     .tabs button.sel { background: var(--ink); color: var(--bg); }
     .book > .side, .book > .chat, .book > .doc { display: none; }
     .book[data-tab="side"] > .side, .book[data-tab="chat"] > .chat, .book[data-tab="doc"] > .doc { display: flex; }
+    /* Room header on phones: title (ellipsis) + bell + board on one line, "esperando…" under the title.
+       The folder chip and the Doc toggle go: the Doc tab above already does that. */
+    .chathead { height: auto; min-height: 52px; padding: 8px 12px 8px 16px; align-items: flex-start; gap: 4px; }
+    .chathead h2 { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 17px; padding-top: 6px; }
+    .chathead h2 .epicName { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    .chathead h2 .folderChip, #toggleDoc { display: none; }
+    .chathead h2 .waitChip { flex-basis: 100%; width: fit-content; max-width: 100%; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
+    #toggleBoard { white-space: nowrap; }
   }
   /* login */
   .login { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: oklch(0.5 0.17 248); }
