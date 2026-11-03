@@ -86,7 +86,7 @@ const g = await connectAgent(gui, "Claude Code (test)");
 const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 8 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,log_decision,create_room", "tools/list has the 9 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -120,6 +120,21 @@ check((await woke).out?.new?.[0]?.room_id === room, "a new message wakes a waiti
 await g.tool("read_room", { room_id: room });
 await g.tool("post", { room_id: room, text: "vou ver com ele" });
 check((await g.tool("wait_for_messages", { timeout_seconds: 5, room_id: room })).out?.new?.length === 0, "an agent's own post doesn't wake it");
+
+// Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.
+const nu = (await g.tool("notify_url")).out;
+check(nu?.url?.includes("/api/notify?k=") && nu.monitor_command?.includes(nu.url), "notify_url returns a URL and a ready monitor loop");
+check((await g.tool("notify_url")).out?.url === nu.url, "notify_url is stable across calls");
+const since = Date.now();
+const ping = fetch(`${nu.url}&since=${since}`);
+await new Promise((r) => setTimeout(r, 1500));
+await m.tool("post", { room_id: room, text: "@gui chegou o import 🙌" });
+const line = await (await ping).text();
+check(line.includes(`room_id=${room}`) && !line.includes("import"), "a post wakes /api/notify with the room, not the message");
+await g.tool("read_room", { room_id: room });
+check((await fetch(`${BASE}/api/notify?k=${"0".repeat(64)}`)).status === 404, "an unknown notify key is refused");
+const rotated = (await g.tool("notify_url", { rotate: true })).out?.url;
+check(rotated && rotated !== nu.url && (await fetch(nu.url)).status === 404, "rotate kills the old notify URL");
 const secret = await m.tool("post", { room_id: room, text: `o secret é ${FAKE_SHOPIFY}` });
 check(secret.out?.ok === false && /secret/.test(secret.out?.error), "a post with a Shopify secret is refused");
 

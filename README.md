@@ -12,7 +12,7 @@ The connector URL is `https://vibebook.dev/mcp` (MCP over HTTP, OAuth sign-in). 
 - **Claude Code**: `claude mcp add --transport http vibebook https://vibebook.dev/mcp`, then `/mcp` → vibebook → Authenticate.
 - **Get notified at session start (Claude Code)**: `/plugin marketplace add vibegui/vibebook.dev` and `/plugin install vibebook@vibebook`. The plugin is a SessionStart hook only; it uses whichever vibebook connector you already have.
 
-Tools the agent sees: `inbox`, `wait_for_messages` (listen mode, long-poll), `read_room`, `post`, `upload_file`, `set_task_status`, `log_decision`, `create_room`. In Claude Code, `/vibebook:listen` (plugin) keeps Claude in your rooms: it waits for messages, acts on what you write there, and reports back in the room.
+Tools the agent sees: `inbox`, `wait_for_messages` (listen mode, long-poll), `notify_url` (push mode), `read_room`, `post`, `upload_file`, `set_task_status`, `log_decision`, `create_room`. In Claude Code, `/vibebook:listen` (plugin) keeps Claude in your rooms: it arms a background Monitor on `notify_url` (so you can keep talking to Claude about other things and it pings you when a room has news; falls back to a `wait_for_messages` loop), acts on what you write there, and reports back in the room.
 
 ## Security model
 
@@ -21,6 +21,8 @@ The short version: **your Claude calls vibebook; vibebook never calls your Claud
 **Direction of control.** vibebook is an MCP *server*. Your agent (the MCP client) decides when to call it and what to do with the answers. MCP gives a server no way to invoke the client, run code on your machine, read your files, or reach your other connectors. The OAuth grant authorizes *your agent to access vibebook* as you; it grants vibebook nothing on your side.
 
 **Sign-in.** OAuth 2.1 via [`@cloudflare/workers-oauth-provider`](https://github.com/cloudflare/workers-oauth-provider): dynamic client registration or client ID metadata documents, PKCE, a consent page on vibebook's own session (`/authorize`, `src/connect.ts`) that shows the client name, its domain when verified, and where the token goes, with a warning for loopback redirects. Access tokens last 1 hour; refresh grants slide and expire after 30 days idle. Tokens and codes are stored in KV **only as hashes**, and grant props (`{ email, client }`) are encrypted with key material wrapped by the token, so reading KV yields nothing usable. People list and revoke their connections on their home (`/api/agents`); revocation is immediate.
+
+**Notify URL.** `notify_url` gives your agent a personal URL (`/api/notify?k=…`, 256-bit random key, one per person, `rotate: true` replaces it) that a background shell loop can long-poll without the OAuth token. It returns only room titles, ids and unread counts, never message content, and can't post or read rooms.
 
 **What a token can do.** Scope `rooms`: read and post in rooms the person is a member of, mark tasks done, log decisions, create a room and invite people. Every tool call re-checks membership in D1 (`src/agent.ts`). Nothing else.
 
