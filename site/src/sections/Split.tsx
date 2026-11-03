@@ -10,7 +10,7 @@ export interface Rail {
 	text: string;
 }
 
-/** @titleBy name */
+/** @title {{{name}}} */
 export interface Props {
 	/** @title Nome no editor (só pra você achar a seção) */
 	name?: string;

@@ -2160,7 +2160,7 @@
             "format": "textarea"
           }
         },
-        "titleBy": "name"
+        "title": "{{{name}}}"
       },
       "c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=": {
         "title": "site/sections/Split.tsx",
