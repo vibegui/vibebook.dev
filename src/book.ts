@@ -403,8 +403,9 @@ export class Book extends DurableObject<Env> {
   }
 
   // Messages in a row (newest first) written by agents or @vibe, until a human spoke.
-  // Agents talking to each other with no human: the run of agent/@vibe messages in the last 10 minutes, counted
-  // only when at least two of them take part. One agent reporting progress alone never pauses (AGENT_LIMIT caps it).
+  // Agents talking to each other with no human: the run of agent/@vibe messages in the last 10 minutes, counted only
+  // when at least two people's agents take part. One agent alone (even with @vibe answering it) never pauses:
+  // AGENT_LIMIT caps the agent and AI_LIMIT caps @vibe.
   agentStreak(thread: string) {
     const authors = new Set<string>();
     let n = 0;
@@ -412,7 +413,7 @@ export class Book extends DurableObject<Env> {
       .exec(`SELECT author, kind, ts FROM messages WHERE thread = ? AND (text != '' OR poll IS NOT NULL) ORDER BY id DESC LIMIT ?`, thread, AGENT_STREAK_MAX)
       .toArray()) {
       if ((m.kind !== "agent" && m.author !== "ai") || (m.ts as number) < Date.now() - 10 * 60_000) break;
-      authors.add(m.author as string);
+      if (m.kind === "agent") authors.add(m.author as string);
       n++;
     }
     return authors.size >= 2 ? n : 0;
@@ -782,9 +783,15 @@ Answer SIMPLE or COMPLEX:`,
             description: "Cria um épico (tema longo com discussão própria) com tasks iniciais, cada uma com responsável (email de membro) e prazo quando combinados.",
             inputSchema: z.object({
               title: z.string(),
-              tasks: z.array(z.object({ title: z.string(), owner: z.string().optional().describe("email de um membro"), due: z.string().optional() })).max(12),
+              tasks: z.array(z.object({ title: z.string(), owner: z.string().optional().describe("email de um membro"), due: z.string().optional(), done: z.boolean().optional().describe("true se já foi entregue") })).max(12),
             }),
-            execute: async ({ title, tasks }) => ({ id: this.createEpic(title, tasks, await this.members()) }),
+            // Returns the task ids, so the same run can move or assign them.
+            execute: async ({ title, tasks }) => {
+              const id = this.createEpic(title, tasks, await this.members());
+              const made = this.epics().find((e) => e.id === id)?.tasks ?? [];
+              made.forEach((t, i) => tasks[i]?.done && this.setTask(t.id, true));
+              return { id, tasks: made.map((t, i) => ({ id: t.id, title: t.title, status: tasks[i]?.done ? "done" : t.status })) };
+            },
           }),
           add_task: tool({
             description: "Adiciona uma task a um épico existente, opcionalmente com responsável (email de membro) e prazo.",
