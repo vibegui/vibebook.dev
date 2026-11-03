@@ -13,7 +13,12 @@ The repo says it, in this order:
 - `.vibebook` at the root with `room_id=<id>`.
 - A room link `https://vibebook.dev/b/<id>` in README.md, AGENTS.md or CLAUDE.md (usually the badge).
 
-No link, but the user says this work belongs to a room (find it with `inbox`)? Offer to link the repo, which takes two lines:
+No link, but the user says this work belongs to a room (find it with `inbox`)? Offer to link the repo, all three:
+- `.vibebook` at the root, the marker anyone browsing the repo spots:
+  ```
+  # vibebook: this repo has a room. Chat, tasks and decisions: https://vibebook.dev/b/<id>
+  room_id=<id>
+  ```
 - README, under the title: `[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/<id>)`. People in the room click it to open the chat. Others get "no access, ask for an invite", so it's safe in a public README (the room title isn't shown).
 - AGENTS.md (or CLAUDE.md), near the top: `Project room: https://vibebook.dev/b/<id> (report progress there).` Agents without the plugin read that too.
 

@@ -1,7 +1,7 @@
 {
   "name": "vibebook",
   "description": "Two-way channel between Claude Code and your vibebook rooms: in a repo with a .vibebook file it listens to the room (Monitor) and reports progress there (commits, PRs ready for review, deploys); elsewhere it checks your inbox at session start. Works with the vibebook connector you already have.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "author": {
     "name": "vibebook",
     "email": "gui@deco.cx"
