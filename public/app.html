@@ -159,6 +159,9 @@
   .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
+  .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
+  .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
+  .thread.archived { opacity: .6; }
   .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
   .thread.pre .ri { background: none; border: 1.5px dashed currentColor; color: var(--mute); }
   .thread.pre:hover, .thread.pre.sel { border-color: var(--accent); color: var(--ink); }
@@ -1270,7 +1273,7 @@ function renderRail(el) {
     <div class="railSep"></div>
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${esc(initials(bookTitle()))}</button>
-      ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
+      ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="Novo épico" aria-label="Novo épico">+</button>
@@ -1301,6 +1304,10 @@ function renderPre(el) {
   el.querySelector("#preSkip").onclick = () => { skipFrom = i; send({ t: "suggestion", i }); };
 }
 
+const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}">
+          <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
+          <span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   if (railMode && window.innerWidth > 900) return renderRail(el);
@@ -1311,11 +1318,9 @@ function renderSide() {
     </div>
     <div class="sec">
       <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}"><span class="ri book" style="background:${coverColor(bookTitle())}">${esc(initials(bookTitle()))}</span><span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
-      ${S.epics.map((e) => { const d = e.tasks.filter((t) => t.done).length; return `
-        <button class="thread ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks">
-          <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
-          <span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; }).join("")}
+      ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
+      ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>Arquivados (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · sugestão do @vibe, clique para ver"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
@@ -1368,7 +1373,7 @@ function renderKanban() {
   const el = document.getElementById("kanban");
   if (!el || !$app.querySelector(".book.boardview")) return;
   if (boardEpic && !S.epics.some((e) => e.id === boardEpic)) boardEpic = null;
-  const epics = S.epics.filter((e) => !boardEpic || e.id === boardEpic);
+  const epics = S.epics.filter((e) => (boardEpic ? e.id === boardEpic : !e.archived));
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
   const card = (t) => `<div class="kcard ${t.status === "done" ? "done" : ""}" draggable="true" tabindex="0" data-k="${t.id}" data-status="${t.status}" data-epic="${t.epic.id}" title="Arraste, ou use ← →. Clique pra abrir o épico.">
       <div class="kt">${mentions(esc(t.title))}</div>
@@ -1411,7 +1416,7 @@ function renderTasks() {
   const head = document.getElementById("threadTitle");
   if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ sugestão do @vibe</small>`; el.innerHTML = ""; return; }
   head.innerHTML = epic
-    ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
+    ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? "Desarquivar épico" : "Arquivar épico (concluído)"}" aria-label="${epic.archived ? "Desarquivar épico" : "Arquivar épico"}">${epic.archived ? "↩" : "✓"}</button><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
     : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || "Clique para renomear")}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
@@ -1426,6 +1431,7 @@ function renderTasks() {
   };
   el.style.display = epic ? "" : "none";
   if (!epic) return;
+  document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
   document.getElementById("epicDel").onclick = () => { if (confirm(`Apagar o épico "${epic.title}", as tasks e a discussão dele? Não dá pra desfazer.`)) send({ t: "epic.del", id: epic.id }); };
   el.innerHTML = `${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}" data-task="${t.id}">
       <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}</span>

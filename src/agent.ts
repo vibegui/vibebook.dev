@@ -169,7 +169,7 @@ export async function markDelivered(env: Env, agent: Me, rooms: { id: string }[]
   )
     .bind(agent.agent, agent.email, ...ids)
     .run();
-  await Promise.all(ids.map((id) => receipt(env, agent, id)));
+  if (!agent.agent.startsWith("n_")) await Promise.all(ids.map((id) => receipt(env, agent, id)));
 }
 
 /** Push this agent's read/delivered ids for a room to the room's sockets. */
