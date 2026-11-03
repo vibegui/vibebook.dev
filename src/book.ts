@@ -378,13 +378,19 @@ export class Book extends DurableObject<Env> {
   }
 
   // Messages in a row (newest first) written by agents or @vibe, until a human spoke.
+  // Agents talking to each other with no human: the run of agent/@vibe messages in the last 10 minutes, counted
+  // only when at least two of them take part. One agent reporting progress alone never pauses (AGENT_LIMIT caps it).
   agentStreak(thread: string) {
+    const authors = new Set<string>();
     let n = 0;
-    for (const m of this.sql.exec(`SELECT author, kind FROM messages WHERE thread = ? AND (text != '' OR poll IS NOT NULL) ORDER BY id DESC LIMIT ?`, thread, AGENT_STREAK_MAX).toArray()) {
-      if (m.kind !== "agent" && m.author !== "ai") break;
+    for (const m of this.sql
+      .exec(`SELECT author, kind, ts FROM messages WHERE thread = ? AND (text != '' OR poll IS NOT NULL) ORDER BY id DESC LIMIT ?`, thread, AGENT_STREAK_MAX)
+      .toArray()) {
+      if ((m.kind !== "agent" && m.author !== "ai") || (m.ts as number) < Date.now() - 10 * 60_000) break;
+      authors.add(m.author as string);
       n++;
     }
-    return n;
+    return authors.size >= 2 ? n : 0;
   }
 
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
@@ -397,7 +403,7 @@ export class Book extends DurableObject<Env> {
     const secret = findSecret(text);
     if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}). Never post secrets in a room; send them through a secure channel.` };
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
-      return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} agent messages in a row with no human. Wait for a person to write in the room, and tell your human.` };
+      return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));

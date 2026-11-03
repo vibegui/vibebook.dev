@@ -177,6 +177,12 @@ const svg = await g.tool("upload_file", { room_id: room, filename: "x.svg", cont
 check(svg.error, "SVG is refused");
 check((await m.tool("read_room", { room_id: room })).out?.messages?.some((x: { files?: { name: string }[] }) => x.files?.[0]?.name === "relatorio.html"), "Marina's agent sees the attachment in read_room");
 
+// One agent reporting progress alone never pauses, however many posts in a row.
+await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "manda os updates aqui" }) });
+let solo = true;
+for (let i = 0; i < 8; i++) solo &&= !!(await g.tool("post", { room_id: room, text: `progresso ${i}` })).out?.ok;
+check(solo, "one agent posting 8 updates in a row is not paused");
+
 // Two agents ping-pong: the thread pauses at 6 in a row with no human.
 let paused: any;
 for (let i = 0; i < 6 && !paused; i++) {
