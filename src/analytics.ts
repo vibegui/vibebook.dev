@@ -140,7 +140,7 @@ export async function trafficOverview(env: Pick<Env, "DB">, query: TrafficQuery 
   };
 }
 
-const ACTIVITY = ["message", "ai_run", "agent_call", "book_created", "signup", "invite_sent"] as const;
+const ACTIVITY = ["message", "ai_run", "home_route", "agent_call", "book_created", "signup", "invite_sent"] as const;
 
 // ai_run rows before per-model tracking only had a mode; these were the models behind each mode then.
 const LEGACY_MODEL: Record<string, string> = {
@@ -151,6 +151,45 @@ const LEGACY_MODEL: Record<string, string> = {
 };
 const modelOf = (e: { dims: Record<string, unknown> }) => str(e.dims.model) || LEGACY_MODEL[str(e.dims.mode) || "fast"] || "?";
 const num = (v: unknown) => Number(v) || 0;
+
+const WEEK_MS = 7 * DAY_MS;
+
+/** Active = any event of a signed-in person except asking for a login code. One row per person per day (ts index). */
+async function activeDays(env: Pick<Env, "DB">, since: number) {
+  const { results } = await env.DB.prepare(
+    `SELECT user, min(ts) AS ts FROM events WHERE ts >= ? AND user IS NOT NULL AND user != '' AND name != 'login_code_sent'
+     GROUP BY user, date(ts / 1000, 'unixepoch')`,
+  )
+    .bind(since)
+    .all<{ user: string; ts: number }>();
+  return results;
+}
+
+/** Week-over-week return plus signup cohorts (last 6 weeks): % of each cohort active 1–4 weeks after signing up. */
+async function retention(env: Pick<Env, "DB">) {
+  const now = Date.now();
+  const since = now - 10 * WEEK_MS;
+  const [days, signups] = await Promise.all([
+    activeDays(env, since),
+    env.DB.prepare(`SELECT email, created_at FROM users WHERE created_at >= ?`).bind(now - 6 * WEEK_MS).all<{ email: string; created_at: number }>(),
+  ]);
+  const activeIn = (from: number, to: number) => new Set(days.filter((d) => d.ts >= from && d.ts < to).map((d) => d.user));
+  const lastWeek = activeIn(now - 2 * WEEK_MS, now - WEEK_MS);
+  const thisWeek = activeIn(now - WEEK_MS, now);
+  const back = [...lastWeek].filter((u) => thisWeek.has(u)).length;
+  const cohorts = Array.from({ length: 6 }, (_, i) => {
+    const start = now - (6 - i) * WEEK_MS;
+    const members = signups.results.filter((u) => u.created_at >= start && u.created_at < start + WEEK_MS).map((u) => u.email);
+    const weeks = [1, 2, 3, 4].map((w) => {
+      const from = start + w * WEEK_MS;
+      if (from >= now) return null; // that week hasn't happened yet
+      const active = activeIn(from, Math.min(from + WEEK_MS, now));
+      return members.length ? Math.round((members.filter((m) => active.has(m)).length / members.length) * 100) : null;
+    });
+    return { week: new Date(start).toISOString().slice(0, 10), size: members.length, weeks };
+  });
+  return { lastWeek: lastWeek.size, thisWeek: thisWeek.size, back, rate: lastWeek.size ? Math.round((back / lastWeek.size) * 100) : null, cohorts };
+}
 
 /** Product back office: KPIs, activity per day, funnel, AI usage, people and books. */
 export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
@@ -191,10 +230,28 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
   const people = (pred: (e: Raw) => boolean) => new Set(events.filter(pred).map((e) => e.user || e.visitor)).size;
   const runs = events.filter((e) => e.name === "ai_run");
   const classify = events.filter((e) => e.name === "classify");
+  const homeRoutes = events.filter((e) => e.name === "home_route");
+  const llm = [...runs, ...classify, ...homeRoutes]; // every model call we pay for
   const agentCalls = events.filter((e) => e.name === "agent_call");
-  const aiCost = [...runs, ...classify].reduce((a, e) => a + num(e.dims.cost), 0);
+  const aiCost = llm.reduce((a, e) => a + num(e.dims.cost), 0);
   const msgsByBook = new Map<string, number>();
-  for (const e of events) if (e.name === "message") msgsByBook.set(str(e.dims.book), (msgsByBook.get(str(e.dims.book)) ?? 0) + 1);
+  const writersByBook = new Map<string, Set<string>>(); // people writing in a room, directly or through their agent
+  const agentMsgsByBook = new Map<string, number>();
+  for (const e of events)
+    if (e.name === "message" && str(e.dims.book)) {
+      const b = str(e.dims.book);
+      msgsByBook.set(b, (msgsByBook.get(b) ?? 0) + 1);
+      if (e.user) (writersByBook.get(b) ?? writersByBook.set(b, new Set()).get(b)!).add(e.user);
+      if (e.dims.agent) agentMsgsByBook.set(b, (agentMsgsByBook.get(b) ?? 0) + 1);
+    }
+  const together = [...writersByBook].filter(([, w]) => w.size >= 2).sort((a, b) => b[1].size - a[1].size || (msgsByBook.get(b[0]) ?? 0) - (msgsByBook.get(a[0]) ?? 0));
+  const togetherIds = together.slice(0, 10).map(([id]) => id);
+  const [titles, ret] = await Promise.all([
+    togetherIds.length
+      ? db.prepare(`SELECT id, title FROM books WHERE id IN (${togetherIds.map(() => "?").join(",")})`).bind(...togetherIds).all<{ id: string; title: string }>()
+      : Promise.resolve({ results: [] as { id: string; title: string }[] }),
+    retention(env),
+  ]);
 
   return {
     days,
@@ -211,6 +268,7 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
       aiCost: +aiCost.toFixed(4),
       aiCostPerRun: runs.length ? +(runs.reduce((a, e) => a + num(e.dims.cost), 0) / runs.length).toFixed(5) : 0,
       agentPeople: people((e) => e.name === "agent_call"),
+      collaborativeRooms: together.length,
       agentCalls: agentCalls.length,
       visitors: people((e) => e.name === "pageview"),
     },
@@ -233,14 +291,14 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
       { step: "Chamou o @vibe", n: people((e) => e.name === "ai_run") },
     ],
     // Per model, named. Costs exist only for runs tracked after per-model tracking (null before).
-    ai: [...new Set([...runs, ...classify].map(modelOf))]
+    ai: [...new Set(llm.map(modelOf))]
       .map((model) => {
-        const r = [...runs, ...classify].filter((e) => modelOf(e) === model);
+        const r = llm.filter((e) => modelOf(e) === model);
         const ms = r.map((e) => num(e.dims.ms)).filter(Boolean);
         const priced = r.filter((e) => e.dims.cost !== undefined);
         return {
           model,
-          role: [...new Set(r.map((e) => (e.name === "classify" ? "classificar" : e.dims.mode === "smart" ? "complexo" : e.dims.model ? "simples" : "antes do roteador")))].join(" + "),
+          role: [...new Set(r.map((e) => (e.name === "classify" ? "classificar" : e.name === "home_route" ? "sugerir sala (home)" : e.dims.mode === "smart" ? "complexo" : e.dims.model ? "simples" : "antes do roteador")))].join(" + "),
           runs: r.length,
           failures: r.filter((e) => e.dims.ok === false).length,
           avgMs: ms.length ? Math.round(ms.reduce((a, b) => a + b, 0) / ms.length) : null,
@@ -249,6 +307,13 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
         };
       })
       .sort((a, b) => b.runs - a.runs),
+    home: {
+      asks: homeRoutes.length,
+      people: people((e) => e.name === "home_route"),
+      sent: count("home_route_sent"),
+      failures: homeRoutes.filter((e) => e.dims.ok === false).length,
+      noFit: homeRoutes.filter((e) => e.dims.ok !== false && e.dims.picked === false).length,
+    },
     routing: { smart: runs.filter((e) => e.dims.mode === "smart").length, routed: runs.filter((e) => e.dims.model).length, routeCost: +runs.reduce((a, e) => a + num(e.dims.route_cost), 0).toFixed(5) },
     agents: {
       tools: rank(agentCalls, (e) => str(e.dims.tool) || "(?)", (e) => e.user, 8),
@@ -259,6 +324,14 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
         .slice(0, 8)
         .map((e) => ({ user: e.user, client: str(e.dims.client), day: e.day })),
     },
+    retention: ret,
+    together: together.slice(0, 10).map(([id, w]) => ({
+      id,
+      title: titles.results.find((t) => t.id === id)?.title ?? id,
+      people: w.size,
+      messages: msgsByBook.get(id) ?? 0,
+      agentMessages: agentMsgsByBook.get(id) ?? 0,
+    })),
     latestBooks: latestBooks.results.map((b) => ({ ...b, messages: msgsByBook.get(String(b.id)) ?? 0 })),
     logins: rank(events.filter((e) => e.name === "login"), (e) => str(e.dims.method) || "(?)", (e) => e.user, 5),
     users: recentUsers.results,

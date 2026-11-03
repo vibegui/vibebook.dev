@@ -13,6 +13,9 @@ type Admin = {
   funnel: Array<{ step: string; n: number }>;
   ai: Array<{ model: string; role: string; runs: number; failures: number; avgMs: number | null; tools: number; cost: number | null }>;
   routing: { smart: number; routed: number; routeCost: number };
+  home: { asks: number; people: number; sent: number; failures: number; noFit: number };
+  retention: { lastWeek: number; thisWeek: number; back: number; rate: number | null; cohorts: Array<{ week: string; size: number; weeks: Array<number | null> }> };
+  together: Array<{ id: string; title: string; people: number; messages: number; agentMessages: number }>;
   agents: { tools: Row[]; clients: Row[]; failures: number; connections: Array<{ user: string; client: string; day: string }> };
   latestBooks: Array<{ id: string; title: string; owner: string; members: number; messages: number; created_at: number }>;
   logins: Row[];
@@ -140,6 +143,7 @@ const ACT_LABEL: Record<string, string> = {
   message: "Mensagens",
   ai_run: "Chamadas @vibe",
   agent_call: "Chamadas de agents",
+  home_route: "Pedidos na home",
   book_created: "Vibebooks criados",
   signup: "Cadastros",
   invite_sent: "Convites",
@@ -169,6 +173,8 @@ function renderAdmin(d: Admin) {
     ${kpi("Chamadas @vibe", k.aiRuns, k.aiFailures ? `<span class="bad">${fmt(k.aiFailures)} falharam</span>` : "nenhuma falha")}
     <div class="kpi"><div class="l">Custo de AI</div><div class="v num">${usd(k.aiCost)}</div><div class="d">${k.aiCostPerRun ? `${usd(k.aiCostPerRun)} por @vibe` : "desde o rastreio de custo"}</div></div>
     ${kpi("Agents", k.agentPeople, `${fmt(k.agentCalls)} chamadas MCP em ${d.days}d`)}
+    <div class="kpi"><div class="l">Voltaram esta semana</div><div class="v num">${d.retention.rate === null ? "—" : `${d.retention.rate}%`}</div><div class="d">${fmt(d.retention.back)} de ${fmt(d.retention.lastWeek)} ativas na semana passada</div></div>
+    ${kpi("Salas colaborativas", k.collaborativeRooms, `2+ pessoas escrevendo em ${d.days}d`)}
     ${kpi("Visitantes", k.visitors, `no site em ${d.days}d`)}
   </div>
   <div class="stack"><div class="card"><h3>Atividade por dia <small>cada gráfico na sua própria escala</small></h3>
@@ -190,9 +196,19 @@ function renderAdmin(d: Admin) {
       <div class="tablewrap"><table><thead><tr><th>Modelo</th><th class="r">Chamadas</th><th class="r">Falhas</th><th class="r">Tempo médio</th><th class="r">Custo</th></tr></thead><tbody>${d.ai
         .map((a) => `<tr><td>${esc(modelName(a.model))}<div class="sub">${esc(a.role)} · ${esc(a.model)}</div></td><td class="r num">${fmt(a.runs)}</td><td class="r num">${a.failures ? `<span class="bad">${fmt(a.failures)}</span>` : "0"}</td><td class="r num">${a.avgMs ? `${(a.avgMs / 1000).toFixed(1)} s` : "—"}</td><td class="r num">${usd(a.cost)}</td></tr>`)
         .join("") || `<tr><td colspan="5" class="muted">Nenhuma chamada no período.</td></tr>`}</tbody></table></div>
+      <h3 style="margin-top:18px">Caixa da home <small>“O que você quer resolver?”</small></h3>
+      ${d.home.asks ? `<div class="rank"><div class="row"><span>Pedidos</span><span class="c num">${fmt(d.home.asks)} · ${fmt(d.home.people)} pessoas</span></div><div class="row"><span>Enviados pra uma sala</span><span class="c num">${fmt(d.home.sent)} · ${Math.round((d.home.sent / d.home.asks) * 100)}%</span></div><div class="row"><span>Sem sala certa (sugeriu nova)</span><span class="c num">${fmt(d.home.noFit)}</span></div>${d.home.failures ? `<div class="row"><span class="bad">Falhas</span><span class="c num bad">${fmt(d.home.failures)}</span></div>` : ""}</div>` : `<div class="muted">Ninguém usou a caixa no período.</div>`}
       <h3 style="margin-top:18px">Como entram</h3>
       ${d.logins.length ? `<div class="rank">${d.logins.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.visitors)} pessoas · ${fmt(r.events)} logins</span></div>`).join("")}</div>` : `<div class="muted">Nenhum login no período.</div>`}
     </div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Retenção por semana de cadastro <small>% ativas 1–4 semanas depois</small></h3><div class="tablewrap"><table><thead><tr><th>Semana</th><th class="r">Pessoas</th><th class="r">+1</th><th class="r">+2</th><th class="r">+3</th><th class="r">+4</th></tr></thead><tbody>${d.retention.cohorts
+      .map((c) => `<tr><td>${esc(c.week)}</td><td class="r num">${fmt(c.size)}</td>${c.weeks.map((w) => `<td class="r num">${w === null ? "—" : `${w}%`}</td>`).join("")}</tr>`)
+      .join("")}</tbody></table></div><div class="muted" style="margin-top:8px">Ativa = qualquer uso logado (abrir o app, escrever, @vibe, agent).</div></div>
+    <div class="card"><h3>Salas com mais gente <small>pessoas escrevendo em ${d.days}d (direto ou pelo agent)</small></h3>${d.together.length ? `<div class="tablewrap"><table><thead><tr><th>Sala</th><th class="r">Pessoas</th><th class="r">Msgs</th><th class="r">Por agent</th></tr></thead><tbody>${d.together
+      .map((b) => `<tr><td>${esc(b.title)}</td><td class="r num">${b.people}</td><td class="r num">${fmt(b.messages)}</td><td class="r num">${b.messages ? `${Math.round((b.agentMessages / b.messages) * 100)}%` : "—"}</td></tr>`)
+      .join("")}</tbody></table></div>` : `<div class="muted">Nenhuma sala com 2+ pessoas escrevendo no período.</div>`}</div>
   </div>
   <div class="grid2">
     <div class="card"><h3>Agents <small>${fmt(k.agentPeople)} pessoas · ${fmt(k.agentCalls)} chamadas${d.agents.failures ? ` · <span class="bad">${fmt(d.agents.failures)} falharam</span>` : ""}</small></h3>
