@@ -762,6 +762,7 @@ Answer SIMPLE or COMPLEX:`,
       this.broadcast({ t: "delta", id: msg.id, text });
     };
     let failed: unknown;
+    let stepBreak = false;
     try {
       const result = streamText({
         // textStream swallows provider errors; capture them so a failure never reads as "done".
@@ -769,6 +770,8 @@ Answer SIMPLE or COMPLEX:`,
           failed = error;
         },
         onStepFinish: ({ toolCalls, usage }) => {
+          // Text from the next step starts a new paragraph instead of gluing onto this one ("histórico.Documento").
+          stepBreak = !!text.trim();
           tools += toolCalls.length;
           cost += costOf(usage);
           tokensIn += usage.inputTokens ?? 0;
@@ -866,6 +869,7 @@ Answer SIMPLE or COMPLEX:`,
         },
       });
       for await (const d of result.textStream) {
+        if (stepBreak && d.trim()) { text = text.trimEnd() + "\n\n"; stepBreak = false; }
         text += d;
         flush();
       }
