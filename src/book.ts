@@ -14,7 +14,7 @@ type Route = "fast" | "smart";
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
-type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null };
+type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 export const epicDocSeed = (title: string, why = "") =>
   `# ${title}\n\n**Objetivo:** ${why.trim() || "o que este épico entrega e por quê (edite ou peça pro @vibe)."}\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`;
@@ -64,7 +64,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS receipts (agent TEXT PRIMARY KEY, email TEXT, who TEXT, read INTEGER, delivered INTEGER, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -98,7 +98,7 @@ export class Book extends DurableObject<Env> {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done"));
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
-      this.addMessage(e.id, "ai", `✓ ${e.tasks.length === 1 ? "A tarefa" : `Todas as ${e.tasks.length} tarefas`} de **${e.title}** ${e.tasks.length === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`);
+      this.addMessage(e.id, "ai", `✓ ${e.tasks.length === 1 ? "A tarefa" : `Todas as ${e.tasks.length} tarefas`} de **${e.title}** ${e.tasks.length === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done" });
     }
     return done.length > 0;
   }
@@ -214,12 +214,12 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" } = {}): Msg {
     const ts = Date.now();
     const files = extra.files ?? [];
     const id = this.sql
       .exec(
-        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via, tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         thread,
         author,
         text,
@@ -228,9 +228,10 @@ export class Book extends DurableObject<Env> {
         extra.poll ?? null,
         extra.kind ?? null,
         extra.via ?? null,
+        extra.tag ?? null,
       )
       .one().id as number;
-    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null };
+    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null };
     this.broadcast({ t: "msg", m });
     // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
@@ -444,7 +445,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
-  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "") {
+  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false) {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
     const files = fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : [];
@@ -454,7 +455,7 @@ export class Book extends DurableObject<Env> {
     if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}). Never post secrets in a room; send them through a secure channel.` };
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
-    const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined });
+    const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
     if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);

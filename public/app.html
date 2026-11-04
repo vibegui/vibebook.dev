@@ -124,6 +124,8 @@
   .bell.muted { opacity: .55; }
   .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f2dc4a; color: #14305e; margin-left: 4px; }
   .msg.agent .avatar { border-radius: 9px; }
+  .msg.done .txt { background: oklch(0.97 0.03 155); border: 1px solid oklch(0.86 0.07 155); border-left: 4px solid var(--ok); border-radius: 12px; padding: 10px 14px; margin-top: 4px; }
+  .doneTag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--ok); color: #fff; margin-left: 4px; }
   .invite input { flex: 1; min-width: 0; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
@@ -1516,7 +1518,7 @@ function pollHtml(id) {
 
 const hhmm = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
-const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
+const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && (prev.tag || null) === (m.tag || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
 const threadCard = (e) => {
   const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
@@ -1541,9 +1543,9 @@ const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
   return `
-  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${cont ? " cont" : ""}" id="m${m.id}">
+  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}" id="m${m.id}">
     ${avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
-    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
+    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${m.thread === "main" ? threadCards(m.id) : ""}</div>
   </div>`;
 };

@@ -21,7 +21,7 @@ Workflow:
 - At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them. Messages with mentions_you: true were addressed to your human (an @mention): lead with those.
 - When your human says "go to room X and ask Marina to …", find the room in inbox, post with an @mention, and read_room again later for the answer.
 - When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
-- Keep the board honest with set_task_status: doing when you start (an unowned task becomes your human's), done when delivered and checked; review only when it truly needs a person's OK first (taste, money, something you couldn't verify), and say whose. A decision you're waiting on from a person is a task too (in review, in the epic it belongs to, or start_epic for it), never only a chat line or a terminal question. Say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
+- Keep the board honest with set_task_status: doing when you start (an unowned task becomes your human's), done when delivered and checked; review only when it truly needs a person's OK first (taste, money, something you couldn't verify), and say whose. When you report finished, shipped work, post it with done: true (the room shows a delivery card). A decision you're waiting on from a person is a task too (in review, in the epic it belongs to, or start_epic for it), never only a chat line or a terminal question. Say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.
 - Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
@@ -76,6 +76,7 @@ const TOOLS = [
         room_id: { type: "string" },
         text: { type: "string", description: "Short, group-chat style, in the room's language" },
         thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
+        done: { type: "boolean", description: "true when this message reports work that is finished and shipped; the room shows it as a delivery card" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },
       },
       required: ["room_id", "text"],
@@ -310,7 +311,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "post": {
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", [], str(a.model));
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", [], str(a.model), a.done === true);
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
