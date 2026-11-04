@@ -7,7 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "n
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.0.0";
+var VERSION = "1.0.1";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -328,6 +328,11 @@ async function main() {
       return;
     }
     case "update": {
+      if (!import.meta.url.startsWith(`file://${HOME}`)) {
+        process.stdout.write(`Instalado pelo npm: rode npm i -g vibebook.dev@latest (ou bun add -g vibebook.dev@latest).
+`);
+        return;
+      }
       const s = readJson(SESSION, null);
       const origin = (flag("origin") ?? s?.origin ?? DEFAULT_ORIGIN).replace(/\/$/, "");
       const r = await fetch(`${origin}/cli.mjs`);

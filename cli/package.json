@@ -1,0 +1,13 @@
+{
+  "name": "vibebook.dev",
+  "version": "1.0.1",
+  "description": "vibebook CLI: your vibebook rooms from the terminal, for you and your Claude. One login per machine; room tools discovered at run time.",
+  "type": "module",
+  "bin": { "vibebook": "cli.mjs" },
+  "files": ["cli.mjs"],
+  "engines": { "node": ">=18" },
+  "homepage": "https://vibebook.dev",
+  "repository": { "type": "git", "url": "git+https://github.com/vibegui/vibebook.dev.git", "directory": "cli" },
+  "license": "MIT",
+  "keywords": ["vibebook", "claude", "agents", "cli"]
+}

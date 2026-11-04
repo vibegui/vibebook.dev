@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // vibebook CLI: one login per machine (OAuth + PKCE, refreshed on its own), the room tools discovered at run time,
 // and `listen` for the room linked to this folder. Agents call it through Bash; the token never reaches them.
-// Built into public/cli.mjs (bun run build:cli) and installed by https://vibebook.dev/install.
+// Built into public/cli.mjs (bun run build:cli); on npm as vibebook.dev (npm i -g vibebook.dev), or installed by https://vibebook.dev/install.sh.
 import { execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -297,6 +297,11 @@ async function main() {
       return;
     }
     case "update": {
+      // Installed from npm (vibebook.dev): npm updates it. Installed by install.sh: re-download ~/.vibebook/cli.mjs.
+      if (!import.meta.url.startsWith(`file://${HOME}`)) {
+        process.stdout.write("Instalado pelo npm: rode npm i -g vibebook.dev@latest (ou bun add -g vibebook.dev@latest).\n");
+        return;
+      }
       const s = readJson<Session | null>(SESSION, null);
       const origin = (flag("origin") ?? s?.origin ?? DEFAULT_ORIGIN).replace(/\/$/, "");
       const r = await fetch(`${origin}/cli.mjs`);

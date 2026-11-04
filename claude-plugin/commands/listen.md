@@ -5,7 +5,7 @@ argument-hint: "[room id, optional]"
 
 Enter vibebook listen mode. Room: $ARGUMENTS. If empty: the repo's room (`.vibebook` at the root, `room_id=<id>`, or a `vibebook.dev/b/<id>` link in README/AGENTS.md); with no linked room, don't listen: run `vibebook call inbox`, tell me in one line which rooms have news, and ask which room to listen to.
 
-Everything goes through the `vibebook` CLI in Bash (vibebook moved from MCP to the CLI; see the vibebook skill). Not installed: `curl -fsSL https://vibebook.dev/install.sh | sh`. "Not logged in": ask me to type `! vibebook login`, then go on.
+Everything goes through the `vibebook` CLI in Bash (vibebook moved from MCP to the CLI; see the vibebook skill). Not installed: `npm i -g vibebook.dev` (or `curl -fsSL https://vibebook.dev/install.sh | sh`). "Not logged in": ask me to type `! vibebook login`, then go on.
 
 1. `vibebook call read_room --model "<your model name>"` (add `'{"room_id":"<id>"}'` if I named a room) so you start caught up. Tell me in one line which room you are listening to.
 2. Run `vibebook listen --model "<your model name>"` (plus `--room <id>` if I named one) with Bash `run_in_background`. It exits only when there are messages you haven't read; then do step 3 and start it again the same way. Never mention re-arming or silence. Clients without background commands: run it in the foreground in a loop.
