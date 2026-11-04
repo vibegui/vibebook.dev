@@ -62,7 +62,7 @@
     {
       "__resolveType": "site/sections/Plugin.tsx",
       "kicker": "Git + the Claude Code plugin",
-      "title": "Your repo gets a room.<br><em>Your Claude starts listening.</em>",
+      "title": "Your project gets a room.<br><em>Your Claude starts listening.</em>",
       "lede": "Send your Claude one sentence. It installs the plugin, creates the room, links the repo and keeps listening. <b>You just authorize in the browser.</b> From then on, what anyone writes in the room reaches your session and it acts.",
       "steps": [],
       "cta": {

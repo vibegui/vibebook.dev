@@ -62,7 +62,7 @@
     {
       "__resolveType": "site/sections/Plugin.tsx",
       "kicker": "Git + plugin do Claude Code",
-      "title": "Seu repo ganha uma sala.<br><em>Seu Claude passa a ouvir.</em>",
+      "title": "Seu projeto ganha uma sala.<br><em>Seu Claude passa a ouvir.</em>",
       "lede": "Mande uma frase pro seu Claude. Ele instala o plugin, cria a sala, liga o repo e fica ouvindo. <b>Você só autoriza no navegador.</b> Daí em diante, o que alguém escrever na sala chega na sua sessão e ele reage.",
       "steps": [],
       "cta": {
