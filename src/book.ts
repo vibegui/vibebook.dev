@@ -305,7 +305,16 @@ export class Book extends DurableObject<Env> {
     const next = this.sql.exec<{ d: number | null }>(`SELECT min(due) AS d FROM mail_q`).one().d;
     if (next) await this.wakeAt(next);
   }
-  async mentionMail(bookId: string, to: string, toName: string, msgIds: number[]) {
+  /** preview_mention_email: the email for one message, sent now to the asking agent's own human (no delay/read checks). */
+  async previewMentionMail(bookId: string, to: string, msgId?: number) {
+    this.bind(bookId);
+    const id = msgId ?? (this.sql.exec(`SELECT id FROM messages WHERE NOT (author = ? AND kind IS NULL) AND text != '' ORDER BY id DESC LIMIT 1`, to).toArray()[0]?.id as number | undefined);
+    if (!id || !this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, id).toArray().length) return { ok: false, error: "no such message; pass message_id from read_room" };
+    const u = await this.env.DB.prepare(`SELECT name FROM users WHERE email = ?`).bind(to).first<{ name: string | null }>();
+    await this.mentionMail(bookId, to, u?.name ?? to.split("@")[0], [id], true);
+    return { ok: true, sent_to: to, message_id: id };
+  }
+  async mentionMail(bookId: string, to: string, toName: string, msgIds: number[], preview = false) {
     const started = Date.now();
     const names = await this.names();
     const nm = (e: string) => (e === "ai" ? "@vibe" : names[e] ?? e.split("@")[0]);
@@ -358,7 +367,7 @@ export class Book extends DurableObject<Env> {
       text,
       html,
     });
-    this.ctx.waitUntil(track(this.env, "mention_mail", { user: to, dims: { book: bookId, n: rows.length, ai, model: this.env.MODEL_FAST, cost: +cost.toFixed(6), ms: Date.now() - started } }));
+    this.ctx.waitUntil(track(this.env, preview ? "mention_mail_preview" : "mention_mail", { user: to, dims: { book: bookId, n: rows.length, ai, model: this.env.MODEL_FAST, cost: +cost.toFixed(6), ms: Date.now() - started } }));
   }
   createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = [], why = "") {
     const id = rid();

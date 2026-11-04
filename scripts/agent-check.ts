@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,get_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 13 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,preview_mention_email,get_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 14 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -200,6 +200,8 @@ check(rr?.epics?.find((e: { id: string }) => e.id === ep2?.epic_id)?.from_messag
 const inEpic = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "e o certificado?", thread: ep2.epic_id }) })).json();
 const ep3 = (await g.tool("start_epic", { room_id: room, title: "Certificado", why: "https no domínio novo", from_message_id: inEpic.id })).out;
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+const pv = (await g.tool("preview_mention_email", { room_id: room, message_id: inEpic.id })).out;
+check(pv?.ok && pv.sent_to === gui, "preview_mention_email sends the email only to the agent's own human");
 check(inEpic.id && rr?.epics?.find((e: { id: string }) => e.id === ep3?.epic_id)?.from_message_id === inEpic.id, "an epic can branch out of a message in another epic's thread");
 check(!rr?.messages?.some((x: { text: string }) => x.text.includes("Trocar o domínio")), "with a source message there's no pointer line");
 
