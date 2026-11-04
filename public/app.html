@@ -247,9 +247,9 @@
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
   .rcpt .rd { color: var(--accent); }
-  .origin { border-bottom: 1px solid var(--line); margin: 0 0 14px; padding-bottom: 6px; }
-  .origin [data-gomain] { font-size: 12px; color: var(--mute); padding: 2px 6px; margin: 0 0 2px; }
-  .origin .msg { opacity: 0.92; }
+  .origin .replies { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; font-size: 12px; color: var(--mute); }
+  .origin .replies::after { content: ""; flex: 1; height: 1px; background: var(--line); order: 1; }
+  .origin .replies [data-gomain] { order: 2; font-size: 12px; color: var(--mute); padding: 2px 6px; }
   .older { display: flex; justify-content: center; padding: 8px 0 14px; }
   .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
@@ -1686,7 +1686,9 @@ function renderChat(keep) {
   const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && S.messages.find((x) => x.id === src);
   if (srcMsg) {
     el.querySelector(".empty")?.classList.add("afterOrigin");
-    el.insertAdjacentHTML("afterbegin", `<div class="origin"><button type="button" class="ghost" data-gomain="${src}">↩ pedido na sala principal</button>${msgHtml(srcMsg).replace(`id="m${src}"`, "")}</div>`);
+    // Under "Carregar mensagens anteriores" (that button always sits at the very top), above the replies.
+    const n = all.length, older = el.querySelector(".older");
+    (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n} ${n === 1 ? "resposta" : "respostas"}</span><button type="button" class="ghost" data-gomain="${src}">ver na sala principal ↩</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
   if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
