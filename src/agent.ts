@@ -160,7 +160,7 @@ const TOOLS = [
         model: { type: "string", description: "your model's name, shown next to your human's name" },
         from_message_id: { type: "number", description: "the main-thread message this request came from; default: your human's latest message there" },
       },
-      required: ["room_id", "title"],
+      required: ["room_id", "title", "why"],
     },
   },
   {
@@ -186,10 +186,11 @@ const TOOLS = [
     },
   },
 ];
-// Every room tool takes repo: the folder/repo the session works in, so a person's several Claudes can be told apart.
+// Every tool takes model and every room tool takes repo (recorded centrally in tools/call): the folder/repo the session works in, so a person's several Claudes can be told apart.
 for (const t of TOOLS) {
   const props = t.inputSchema.properties as Record<string, unknown>;
   if ("room_id" in props) props.repo = { type: "string", description: "the repo or folder you're working in (e.g. vibebook), shown next to your model in the room" };
+  props.model ??= { type: "string", description: "your model's name, shown next to your human's name" };
 }
 
 const rpcError = (id: unknown, code: number, message: string, status = 200) => Response.json({ jsonrpc: "2.0", id, error: { code, message } }, { status });
@@ -396,6 +397,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "start_epic": {
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
+      if (!str(a.why)) throw new Error("why is required: one sentence on what the epic delivers and why (it opens the epic's doc)");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
       const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent);
       return out;
@@ -479,6 +481,11 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
       let ok = true;
       try {
         const args = (p.arguments && typeof p.arguments === "object" ? p.arguments : {}) as Record<string, unknown>;
+        // Unknown arguments are an error, not silently dropped (a misnamed "goal" left an epic's doc empty).
+        const tool = TOOLS.find((t) => t.name === p.name);
+        const known = Object.keys(tool?.inputSchema.properties ?? {});
+        const bad = tool ? Object.keys(args).filter((k) => !known.includes(k)) : [];
+        if (bad.length) throw new Error(`unknown argument${bad.length > 1 ? "s" : ""} ${bad.join(", ")} for ${tool!.name}; it takes: ${known.join(", ")}`);
         const out = await call(String(p.name), args, env, ctx, me, origin);
         const model = typeof args.model === "string" ? args.model.trim().slice(0, 40) : "";
         const repo = typeof args.repo === "string" ? args.repo.trim().slice(0, 40) : "";

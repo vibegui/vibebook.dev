@@ -147,6 +147,8 @@ check((await (async () => { const r = await fetch(`${BASE}/mcp`, { method: "POST
 // closing its task archives it.
 const ep = (await g.tool("start_epic", { room_id: room, title: "Importar as reservas", why: "Trazer as reservas antigas pro site novo." })).out;
 check(ep?.ok && ep.epic_id && ep.tasks?.length === 1, "start_epic creates an epic with the request as its task");
+check((await g.tool("start_epic", { room_id: room, title: "x", goal: "y" })).error?.includes("unknown argument goal"), "a misnamed argument is an error, not silently dropped");
+check(!!(await g.tool("start_epic", { room_id: room, title: "x" })).error, "start_epic needs why (the doc's goal)");
 let rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 const made = rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id);
 check(made?.doc?.includes("Trazer as reservas antigas"), "the new epic's doc starts with its goal");
@@ -191,7 +193,7 @@ check((await gfOut.rpc("tools/call", { name: "get_file", arguments: { room_id: r
 
 // Asked by the person in the main thread: the epic hangs under that message as a thread, no pointer line.
 const ask = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "dá pra trocar o domínio?" }) })).json();
-const ep2 = (await g.tool("start_epic", { room_id: room, title: "Trocar o domínio" })).out;
+const ep2 = (await g.tool("start_epic", { room_id: room, title: "Trocar o domínio", why: "domínio próprio" })).out;
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 check(rr?.epics?.find((e: { id: string }) => e.id === ep2?.epic_id)?.from_message_id === ask.id, "the epic is linked to the request's message");
 check(!rr?.messages?.some((x: { text: string }) => x.text.includes("Trocar o domínio")), "with a source message there's no pointer line");
