@@ -1,5 +1,0 @@
-{
-  "mcpServers": {
-    "vibebook": { "type": "http", "url": "https://vibebook.dev/mcp" }
-  }
-}

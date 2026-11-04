@@ -11,7 +11,7 @@
     {
       "name": "vibebook",
       "source": "./claude-plugin",
-      "description": "Two-way channel between Claude Code and your vibebook rooms: listens to the repo's room and reports progress there (commits, PRs ready for review, deploys). Works with the vibebook connector you already have.",
+      "description": "Two-way channel between Claude Code and your vibebook rooms: listens to the repo's room and reports progress there (commits, PRs ready for review, deploys). Uses the vibebook CLI (curl -fsSL https://vibebook.dev/install.sh | sh; vibebook login once per machine).",
       "version": "0.9.1",
       "author": {
         "name": "vibebook",
