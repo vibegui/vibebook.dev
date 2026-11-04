@@ -7,7 +7,7 @@ Set up vibebook for the project in the current directory. Room: $ARGUMENTS (empt
 
 1. Tools: use the vibebook connector's tools (this plugin brings one; a claude.ai connector or `claude mcp add` one works too). If they need auth, ask me to run `/mcp` → vibebook → Authenticate and stop until I say it's done (new tools show up after that, no restart).
 2. Already linked? If `.vibebook` exists (or README/AGENTS.md has a `vibebook.dev/b/<id>` link), say which room and skip to step 5.
-3. Pick the room: call `inbox`. If a room clearly matches this project (or the one I named), propose it; otherwise propose creating one with `create_room` (title = the project's name and what it is, from README/package.json; ask me who to invite). Wait for my yes.
+3. Pick the room: if I gave you a room link (`vibebook.dev/b/<id>`), that's the room. Otherwise call `inbox`. If a room clearly matches this project (or the one I named), propose it; otherwise propose creating one with `create_room` (title = the project's name and what it is, from README/package.json; ask me who to invite). Wait for my yes.
 4. Link the repo (show me the diff, then commit with `chore: link the repo to its vibebook room` if I agree):
    - `.vibebook` at the root:
      ```

@@ -250,6 +250,7 @@
   .origin .replies { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; font-size: 12px; color: var(--mute); }
   .origin .replies::after { content: ""; flex: 1; height: 1px; background: var(--line); order: 1; }
   .origin .replies [data-gomain] { order: 2; font-size: 12px; color: var(--mute); padding: 2px 6px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; max-width: min(460px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 12px; background: var(--ink); color: var(--panel); font-size: 13.5px; line-height: 1.45; box-shadow: 0 8px 30px rgb(0 0 0 / 0.18); }
   .older { display: flex; justify-content: center; padding: 8px 0 14px; }
   .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
@@ -1442,7 +1443,7 @@ function renderSide() {
     <div class="sec">
       <h4>Pessoas</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
-        ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
+        ? `<button class="ghost resend" data-copyinv="${esc(m)}" title="Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp">copiar</button><button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
         ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
@@ -1468,17 +1469,39 @@ function renderSide() {
     try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = "enviado ✓"; }
     catch (err) { b.textContent = "reenviar"; b.disabled = false; alert(err.message); }
   });
+  el.querySelectorAll("[data-copyinv]").forEach((b) => b.onclick = () => copyInvite(b.dataset.copyinv, false));
   el.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
     b.disabled = true;
+    copyInvite(b.dataset.add);
     await api(`/api/books/${S.id}/members`, { email: b.dataset.add }).catch((err) => { alert(err.message); b.disabled = false; });
   });
   document.getElementById("invite").onsubmit = async (e) => {
     e.preventDefault();
-    await api(`/api/books/${S.id}/members`, { email: e.target[0].value }).catch((err) => alert(err.message));
+    const email = e.target[0].value.trim();
+    copyInvite(email); // before the await: the clipboard needs the click's user activation
+    await api(`/api/books/${S.id}/members`, { email }).catch((err) => alert(err.message));
     e.target.reset();
   };
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   setFavicon(bookTitle());
+}
+
+// The invite email gets them in; this is the message you send yourself (WhatsApp etc.): the room link and the
+// one sentence that sets up their Claude. Copied on invite, and from "copiar" next to a pending invite.
+function inviteText(email) {
+  const url = `${location.origin}/b/${S.id}`;
+  return `Te convidei pro vibebook "${bookTitle()}": ${url}\n\n1. Entra com ${email} (o convite chegou nesse email).\n2. Manda isto pro seu Claude Code:\n\nRead ${location.origin}/llms.txt and set up vibebook for this project. Room: ${url}`;
+}
+function copyInvite(email, sent = true) {
+  navigator.clipboard?.writeText(inviteText(email)).then(
+    () => toast(`${sent ? `Convite enviado por email para <b>${esc(email)}</b>. ` : ""}Copiei a mensagem com o link da sala e o setup do Claude para ${esc(name(email))}: cola no WhatsApp.`),
+    () => toast(`Não consegui copiar. Use "copiar" ao lado de ${esc(email)} em Pessoas.`),
+  );
+}
+function toast(html) {
+  document.querySelector(".toast")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="toast" role="status">${html}</div>`);
+  const t = document.querySelector(".toast"); setTimeout(() => t.remove(), 7000);
 }
 
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
