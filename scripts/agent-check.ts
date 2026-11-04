@@ -150,6 +150,7 @@ check(ep?.ok && ep.epic_id && ep.tasks?.length === 1, "start_epic creates an epi
 let rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 const made = rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id);
 check(made?.doc?.includes("Trazer as reservas antigas"), "the new epic's doc starts with its goal");
+check(!!made?.tasks?.[0]?.owner, "the agent's human owns the tasks it started (self-assign)");
 check(rr?.messages?.some((x: { thread: string; text: string }) => x.thread === "main" && x.text.includes("Importar as reservas")), "main thread gets one line pointing to the epic");
 check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei o import" })).out?.ok, "the agent reports inside the epic");
 await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });

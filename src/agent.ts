@@ -21,7 +21,7 @@ Workflow:
 - At the start of a session, call inbox. For rooms with new messages, call read_room and give your human a short summary: what's new, what is waiting on them. Messages with mentions_you: true were addressed to your human (an @mention): lead with those.
 - When your human says "go to room X and ask Marina to …", find the room in inbox, post with an @mention, and read_room again later for the answer.
 - When your human approves something asked in the room (or decides something for the project), record it with log_decision ("Marina approved: script and webhooks in Shopify"), then reply in the room.
-- Keep the board honest with set_task_status: doing when work starts, review while waiting for someone's OK, done when delivered; say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
+- Keep the board honest with set_task_status: doing when you start (an unowned task becomes your human's), done when delivered and checked; review only when it truly needs a person's OK first (taste, money, something you couldn't verify), and say whose. Say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.
 - Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
@@ -51,6 +51,7 @@ const TOOLS = [
       properties: {
         rotate: { type: "boolean" },
         room_id: { type: "string", description: "only this room (the repo's .vibebook room); omit to hear every room" },
+        model: { type: "string", description: "your model name, e.g. Claude Opus 5.5, so the room shows who is listening" },
       },
     },
   },
@@ -342,7 +343,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     }
     case "set_task_status": {
       const id = await room();
-      return bookStub(env, id).agentTask(id, str(a.task_id), str(a.status));
+      return bookStub(env, id).agentTask(id, str(a.task_id), str(a.status), me.email);
     }
     case "start_epic": {
       const id = await room();
@@ -357,6 +358,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       return bookStub(env, id).agentDecision(id, me.email, str(a.text), a.kind === "decision" ? "decision" : "approval");
     }
     case "notify_url": {
+      if (str(a.model)) ctx.waitUntil(db.prepare(`UPDATE agents SET model = ? WHERE id = ?`).bind(str(a.model).slice(0, 40), me.agent).run());
       // ponytail: one plain key per agent, readable by whoever has the URL; it only reveals "room X has news".
       let row = a.rotate ? null : await db.prepare(`SELECT key FROM notify_agents WHERE agent = ?`).bind(me.agent).first<{ key: string }>();
       if (!row) {

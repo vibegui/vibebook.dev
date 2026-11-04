@@ -36,6 +36,7 @@ When your user asks for a piece of work in a room's main thread, don't answer it
 - Starting a task from the board: "começando: <task>", and `set_task_status` doing.
 - An important commit: what changed and why it matters, with the short sha or link. Not every commit; the ones a teammate would want to know about.
 - A PR ready for review: title, link, what to look at, who should review (@name). Task to `review`.
+- Board: moving a task to `doing` makes an unowned task your human's. When you shipped and verified it, move it to `done` yourself; use `review` only when it truly needs a person's OK (taste, money, something you couldn't verify) and say whose.
 - Deploy / shipped: what is live and where (URL). Task to `done`.
 - Blocked or waiting on someone: what you need, from whom (@name). Task stays where it is; say it.
 - A decision the user made about the project: `log_decision`.

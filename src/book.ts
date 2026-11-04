@@ -509,7 +509,8 @@ export class Book extends DurableObject<Env> {
     const src =
       (fromMsg && this.sql.exec(`SELECT id FROM messages WHERE id = ? AND thread = 'main'`, fromMsg).toArray()[0]?.id) ??
       this.sql.exec(`SELECT id FROM messages WHERE thread = 'main' AND author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
-    const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12), [], why);
+    // The agent took the work, so its human owns the tasks (self-assign).
+    const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12).map((title) => ({ title, owner: email })), [email.toLowerCase()], why);
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
       this.epicsChanged();
@@ -517,8 +518,10 @@ export class Book extends DurableObject<Env> {
     const epic = this.epics().find((e) => e.id === id);
     return { ok: true, epic_id: id, thread: id, tasks: epic?.tasks.map((x) => ({ id: x.id, title: x.title, status: x.status })) ?? [] };
   }
-  agentTask(bookId: string, taskId: string, status: string) {
+  agentTask(bookId: string, taskId: string, status: string, email: string) {
     this.bind(bookId);
+    // An agent moving an unowned task took it: its human becomes the owner.
+    this.sql.exec(`UPDATE tasks SET owner = ? WHERE id = ? AND owner IS NULL`, email.toLowerCase(), taskId);
     return this.setStatus(taskId, status);
   }
 

@@ -260,9 +260,10 @@ app.get("/api/books/:id/agents", async (c) => {
   const r = await c.env.DB.prepare(
     `SELECT a.id, a.email, coalesce(a.model, a.client) AS who, a.seen_at, a.listening_at, a.listen_room
      FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?
-     WHERE a.seen_at > ? AND substr(a.id, 1, 2) != 'n_' ORDER BY a.seen_at DESC LIMIT 40`,
+     WHERE (a.seen_at > ? OR a.listening_at > ?) AND substr(a.id, 1, 2) != 'n_' ORDER BY a.seen_at DESC LIMIT 40`,
   )
-    .bind(id, now - 7 * 864e5)
+    // Each MCP session is an agent and a /mcp reconnect starts a new one: idle sessions drop off after an hour.
+    .bind(id, now - 3600_000, now - 120_000)
     .all<{ id: string; email: string; who: string; seen_at: number; listening_at: number | null; listen_room: string | null }>();
   return c.json({
     agents: r.results.map((a) => ({
