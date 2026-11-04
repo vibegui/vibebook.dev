@@ -260,11 +260,11 @@ app.get("/api/books/:id/agents", async (c) => {
   if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
   const now = Date.now();
   const r = await c.env.DB.prepare(
-    // Only the sessions connected to this room: listening to it, or that read/posted here in the last hour.
+    // Only the sessions connected to this room: listening to it (or to all their rooms), or that read/posted here in the last hour.
     `SELECT a.id, a.email, coalesce(a.model, a.client) AS who, a.repo, a.seen_at, a.listening_at, a.listen_room
      FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?1
      LEFT JOIN agent_reads r ON r.agent = a.id AND r.book_id = ?1
-     WHERE substr(a.id, 1, 2) != 'n_' AND ((a.listen_room = ?1 AND a.listening_at > ?2) OR r.seen_at > ?3)
+     WHERE substr(a.id, 1, 2) != 'n_' AND (((a.listen_room = ?1 OR a.listen_room IS NULL) AND a.listening_at > ?2) OR r.seen_at > ?3)
      ORDER BY a.seen_at DESC LIMIT 40`,
   )
     .bind(id, now - 120_000, now - 3600_000)
@@ -276,7 +276,8 @@ app.get("/api/books/:id/agents", async (c) => {
       repo: a.repo,
       seen_at: a.seen_at,
       // A listener long-polls every ≤50s; 2 minutes of silence means it stopped.
-      listening: !!a.listening_at && now - a.listening_at < 120_000 && a.listen_room === id,
+      listening: !!a.listening_at && now - a.listening_at < 120_000 && (a.listen_room === id || !a.listen_room),
+      all_rooms: !a.listen_room,
     })),
   });
 });

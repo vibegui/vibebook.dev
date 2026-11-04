@@ -163,6 +163,9 @@ check(ags.agents?.some((x) => x.who === "Claude Teste" && x.repo === "repo-teste
 const other = (await g.tool("create_room", { title: "outra sala (teste)" })).out?.room_id;
 const ags2 = (await fetch(`${BASE}/api/books/${other}/agents`, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } }).then((r) => r.json())) as { agents: unknown[] };
 check(Array.isArray(ags2.agents) && ags2.agents.length === 0, "a room the session never touched doesn't list it");
+await g.tool("wait_for_messages", { timeout_seconds: 5 });
+const ags3 = (await fetch(`${BASE}/api/books/${other}/agents`, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } }).then((r) => r.json())) as { agents: { listening: boolean; all_rooms: boolean }[] };
+check(ags3.agents?.some((x) => x.listening && x.all_rooms), "a session listening to all rooms shows in every room (same as its receipts)");
 check(rr?.messages?.some((x: { thread: string; text: string }) => x.thread === "main" && x.text.includes("Importar as reservas")), "main thread gets one line pointing to the epic");
 check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei o import" })).out?.ok, "the agent reports inside the epic");
 await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });
