@@ -57,7 +57,7 @@ export async function unsubscribeUrl(secret: string, origin: string, email: stri
 }
 export const validUnsub = async (secret: string, email: string, sig: string) => sig === (await hmac(secret, `mail-off:${email}`));
 
-export function mailBody(f: MailFacts, c: MailCopy, url: string, unsub: string) {
+export function mailBody(f: MailFacts, c: MailCopy, url: string, unsub: string, replyable = true) {
   const where = `${escapeHtml(f.room.title)}${f.epic ? ` › ${escapeHtml(f.epic.title)}` : ""}`;
   const who = [...new Set(f.mentions.map((m) => m.from))].join(", ");
   const html = emailHtml(
@@ -66,9 +66,9 @@ export function mailBody(f: MailFacts, c: MailCopy, url: string, unsub: string) 
 ${c.context.length ? `<ul style="margin:0 0 18px;padding-left:20px;line-height:1.55">${c.context.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : ""}
 ${f.mentions.map((m) => `<div style="border-left:3px solid #d0d8e6;padding:6px 0 6px 12px;margin:0 0 10px;color:#3a4356"><b>${escapeHtml(m.from)}</b><br>${escapeHtml(m.text).replace(/\n/g, "<br>")}</div>`).join("")}
 ${f.myTasks.length ? `<p style="margin:18px 0 6px;font-weight:700">Suas tarefas abertas aqui</p><ul style="margin:0;padding-left:20px;line-height:1.55">${f.myTasks.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
-<p style="margin:26px 0 8px"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Responder no vibebook</a></p>
-<p style="font-size:13px;color:#6b7383;margin:16px 0 0">Na conversa: ${escapeHtml(f.people.join(", "))}. Responder este email vai direto para ${escapeHtml(who)}.</p>
-<p style="font-size:12px;color:#8a93a3;margin:18px 0 0">Você recebe isto quando alguém te menciona e você não viu em 5 minutos. <a href="${unsub}" style="color:#8a93a3">Não quero esses emails</a></p>`,
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 4px"><tr><td style="background:#1d5fc4;border-radius:999px"><a href="${url}" style="display:inline-block;padding:13px 24px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px">Responder no vibebook</a></td></tr></table>
+<p style="font-size:13px;color:#6b7383;margin:18px 0 0">Na conversa: ${escapeHtml(f.people.join(", "))}.${replyable ? ` Responder este email vai direto para ${escapeHtml(who)}.` : ""}</p>
+<p style="font-size:12px;color:#8a93a3;margin:20px 0 0;padding-top:16px;border-top:1px solid #eef1f6">Você recebe isto quando alguém te menciona e você não viu em 5 minutos. <a href="${unsub}" style="color:#8a93a3">Não quero esses emails</a></p>`,
   );
   const text = `${c.ask}\n\n${who} te mencionou em ${f.room.title}${f.epic ? ` › ${f.epic.title}` : ""}\n\n${c.context.map((x) => `- ${x}`).join("\n")}\n\n${f.mentions.map((m) => `${m.from}: ${m.text}`).join("\n\n")}\n\nResponder: ${url}\n\nNão quero esses emails: ${unsub}`;
   return { html, text };

@@ -223,10 +223,14 @@ auth.post("/logout", (c) => {
 
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 
-export const emailHtml =(title: string, body: string) => `<!doctype html><html><body style="margin:0;background:#f3f6fb;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1a2130">
-<div style="max-width:480px;margin:0 auto;padding:32px 20px">
-<div style="font-weight:800;font-size:22px;color:#1d5fc4;margin-bottom:20px">vibebook</div>
-<div style="background:#fff;border-radius:16px;padding:28px">
-<h1 style="font-size:20px;margin:0 0 8px">${title}</h1>${body}</div>
-<p style="font-size:12px;color:#6b7383;margin-top:20px">vibebook.dev · pensa junto, a AI organiza</p>
-</div></body></html>`;
+// Every vibebook email: centered table layout (Gmail/Outlook ignore most CSS), the real logo as a PNG (no SVG in
+// mail clients), brand blue, Caprasimo-like title with safe fallbacks, white card on the app's background.
+export const emailHtml = (title: string, body: string) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="color-scheme" content="light"><link href="https://fonts.googleapis.com/css2?family=Caprasimo&display=swap" rel="stylesheet"></head>
+<body style="margin:0;padding:0;background:#eef3fa">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef3fa"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a2130;font-size:15px;line-height:1.55">
+<tr><td style="padding:0 4px 20px"><a href="https://vibebook.dev" style="text-decoration:none"><img src="https://vibebook.dev/email-logo.png" width="128" height="26" alt="vibebook" style="display:block;border:0;width:128px;height:26px"></a></td></tr>
+<tr><td style="background:#ffffff;border-radius:18px;padding:32px 32px 28px;border:1px solid #dfe6f1">
+<h1 style="margin:0 0 10px;font-family:Caprasimo,Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;line-height:1.25;color:#14203a">${title}</h1>${body}</td></tr>
+<tr><td style="padding:18px 4px 0;font-size:12px;color:#7a8496"><a href="https://vibebook.dev" style="color:#1d5fc4;text-decoration:none;font-weight:600">vibebook.dev</a> · pensa junto, a AI organiza</td></tr>
+</table></td></tr></table></body></html>`;
