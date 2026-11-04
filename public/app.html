@@ -411,6 +411,12 @@
   .task .due { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--mute); cursor: pointer; white-space: nowrap; }
   .task .due.set { color: var(--ink); font-weight: 600; }
   .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: oklch(0.95 0.06 95); color: oklch(0.38 0.08 80); margin-left: 8px; white-space: nowrap; }
+  .waitWho { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .waitWho:hover { text-decoration-style: solid; }
+  .chathead { position: relative; }
+  .waitPop { position: absolute; top: calc(100% - 6px); left: 16px; z-index: 30; width: min(420px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.12); padding: 10px; display: grid; gap: 4px; font: 14px/1.35 "Schibsted Grotesk", system-ui, sans-serif; }
+  .waitPop > b { font-size: 12px; color: var(--mute); padding: 2px 8px 6px; }
+  .waitPop button { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; } .waitPop button:hover { background: oklch(0.96 0.01 250); }
+  .waitPop small { color: var(--mute); font-size: 12px; }
   .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
   .ftile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
@@ -1656,7 +1662,25 @@ function renderTasks() {
   const waiting = {};
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
   const w = Object.entries(waiting).sort((a, b) => b[1] - a[1]);
-  if (w.length) head.insertAdjacentHTML("beforeend", `<small class="waitChip" title="Tasks abertas por responsável">⏳ esperando ${w.map(([o, n]) => `${esc(o === S.me ? "você" : name(o))} ${n}`).join(" · ")}</small>`);
+  // Each person in the chip opens the list of what's waiting on them; a task opens its epic.
+  if (w.length) {
+    head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ esperando ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="Ver as tasks abertas">${esc(o === S.me ? "você" : name(o))} ${n}</button>`).join(" · ")}</span>`);
+    head.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
+      ev.stopPropagation();
+      const open = document.querySelector(".waitPop");
+      if (open) { const same = open.dataset.who === b.dataset.wait; open.remove(); if (same) return; }
+      const items = S.epics.flatMap((e) => e.tasks.filter((t) => !t.done && t.owner === b.dataset.wait).map((t) => ({ t, e })));
+      const pop = document.createElement("div");
+      pop.className = "waitPop"; pop.dataset.who = b.dataset.wait;
+      pop.innerHTML = `<b>Esperando ${esc(b.dataset.wait === S.me ? "você" : name(b.dataset.wait))}</b>${items.map(({ t, e }) => `<button type="button" data-goto="${e.id}"><span>${esc(t.title)}</span><small>${esc(e.title)}${e.archived ? " · arquivado" : ""} · ${t.status === "review" ? "esperando OK" : t.status === "doing" ? "fazendo" : "a fazer"}</small></button>`).join("")}`;
+      b.closest(".chathead").append(pop);
+      pop.querySelectorAll("[data-goto]").forEach((x) => (x.onclick = () => {
+        pop.remove(); thread = x.dataset.goto; boardEpic = thread; docRoom = false;
+        renderSide(); renderChat(); renderKanban(); renderDoc();
+      }));
+      setTimeout(() => document.addEventListener("click", function off(e2) { if (!pop.contains(e2.target)) { pop.remove(); document.removeEventListener("click", off); } }));
+    }));
+  }
   document.getElementById("roomName").onclick = () => {
     const cur = epic ? epic.title : bookTitle();
     const t = prompt(epic ? "Nome do épico:" : "Nome do vibebook:", cur);
