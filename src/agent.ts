@@ -45,7 +45,7 @@ const TOOLS = [
   {
     name: "notify_url",
     description:
-      "Push mode for clients that can watch a command in the background (Claude Code's Monitor): returns a personal URL that long-polls (≤50s) and prints one line per room with unread messages, no message content, plus a ready shell loop. Each line is your cue to call read_room. Pass room_id to hear only that room (do this when the repo has a .vibebook file). rotate: true issues a new URL and kills the old one.",
+      "Push mode for clients that can run a command in the background (Claude Code): returns a personal URL that long-polls (≤50s) and prints one line per room with unread messages, no message content, plus wait_command (exits on the first unread room: run it in the background and start it again after handling) and monitor_command (a stream, for monitors). Each line is your cue to call read_room. Pass room_id to hear only that room (do this when the repo has a .vibebook file). rotate: true issues a new URL and kills the old one.",
     inputSchema: {
       type: "object",
       properties: {
@@ -392,7 +392,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       return {
         url,
         monitor_command: `p=$(($(date +%s)*1000)); while true; do t=$(($(date +%s)*1000)); curl -s --fail-with-body --max-time 70 "${url}&since=$p"; e=$?; [ $e = 0 ] && p=$t; [ $e = 22 ] && exit 1; [ $e != 0 ] && sleep 15; done`,
-        how: "Run monitor_command as a background monitor (Claude Code: Monitor, max timeout, re-arm when it expires). Each output line = a room with unread messages: call read_room on it, act on from_your_human messages, tell your human about the rest. Don't paste the URL in rooms.",
+        // One-shot: exits only when a room has unread messages (since=0: anything you haven't read yet counts, so nothing
+        // that arrived while you were busy gets lost). No expiry, so no "still listening" turns every 30 minutes.
+        wait_command: `while true; do out=$(curl -s --fail-with-body --max-time 70 "${url}&since=0"); e=$?; [ $e = 22 ] && { echo "vibebook: notify URL rejected, call notify_url again"; exit 1; }; [ $e = 0 ] && [ -n "$out" ] && { echo "$out"; exit 0; }; [ $e != 0 ] && sleep 15; done`,
+        how: "Preferred (Claude Code): run wait_command with Bash run_in_background. It exits only when a room has unread messages, which wakes you: call read_room on it, act on from_your_human messages, tell your human about the rest, then start wait_command again the same way. Never post or say anything about re-arming or about silence. Fallback for clients without background commands: run monitor_command under a monitor and re-arm it silently when it expires. Don't paste the URL in rooms.",
       };
     }
     case "create_room": {
