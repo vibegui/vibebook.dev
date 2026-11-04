@@ -201,7 +201,15 @@
   @keyframes claudeRing { to { --spin-a: 360deg; } }
   .claudeSpin { color: #d97757; font-size: 15px; line-height: 1; display: inline-block; animation: claudeTurn 3.2s linear infinite; flex: none; }
   @keyframes claudeTurn { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .thread.busy::before, .claudeSpin { animation: none; } }
+  /* Inside the epic: who is on it, where the empty-thread hint would be (or after the last message). */
+  .working { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; background: oklch(0.975 0.014 55); color: oklch(0.32 0.06 40); font-size: 14.5px; }
+  .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), oklch(0.92 0.035 55) 0 70%, #d97757 85%, oklch(0.92 0.035 55) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  .working > div { flex: 1; min-width: 0; }
+  .working small { display: block; color: var(--mute); font-size: 12.5px; margin-top: 2px; }
+  .working .avatar.claude { border-radius: 50%; flex: none; }
+  .working .spin { color: #d97757; font-size: 20px; line-height: 1; animation: claudeTurn 3.2s linear infinite; }
+  .empty.hidden { display: none; }
+  @media (prefers-reduced-motion: reduce) { .thread.busy::before, .claudeSpin, .working::before, .working .spin { animation: none; } }
   .thread.pre .ri { background: none; border: 1.5px dashed currentColor; color: var(--mute); }
   .thread.pre:hover, .thread.pre.sel { border-color: var(--accent); color: var(--ink); }
   .book.pre .composer, .book.pre .tasks, .book.pre .agentNudge { display: none; }
@@ -1026,7 +1034,7 @@ function onEvent(ev, id) {
       if (ev.thread === thread) { win.n += ev.messages.length; renderChat(true); }
       return;
     }
-    case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); return;
+    case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); renderWorking(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
@@ -1464,13 +1472,24 @@ const agentRows = (email) => {
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
-const epicBusy = (e) => {
-  if (e.archived) return null;
+const epicWorker = (e) => {
+  if (!e || e.archived) return null;
   const k = (S.acks || []).find((a) => a.msg_id === e.from_msg && a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
-  if (k) return `${k.who} de ${name(k.email)}`;
+  if (k) return { who: k.who, email: k.email };
   const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent" && Date.now() - x.ts < 3 * 60e3);
-  return m ? `${m.via || "Claude"} de ${name(m.author)}` : null;
+  return m ? { who: m.via || "Claude", email: m.author } : null;
 };
+const epicBusy = (e) => { const w = epicWorker(e); return w ? `${w.who} de ${name(w.email)}` : null; };
+// The same, inside the open epic's thread: a card at the end (in place of the empty-thread hint) saying who is on it.
+function renderWorking() {
+  const el = document.getElementById("msgs");
+  if (!el || !S) return;
+  el.querySelector("#working")?.remove();
+  const w = thread !== "main" && !isPre() && epicWorker(S.epics.find((e) => e.id === thread));
+  el.querySelector(".empty")?.classList.toggle("hidden", !!w);
+  if (!w) return;
+  el.insertAdjacentHTML("beforeend", `<div id="working" class="working">${agentAvatar(w.email, w.who)}<div><b>${esc(w.who)} de ${esc(name(w.email))}</b> está trabalhando nisso<small>O andamento e a entrega aparecem aqui nesta thread.</small></div><span class="spin">✻</span></div>`);
+}
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}${busy ? ` · ${esc(busy)} está trabalhando aqui` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
@@ -1785,6 +1804,7 @@ function renderChat(keep) {
     (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n} ${n === 1 ? "resposta" : "respostas"}</span><button type="button" class="ghost" data-gomain="${src}">ver na sala principal ↩</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
+  renderWorking();
   if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
   else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
 }
