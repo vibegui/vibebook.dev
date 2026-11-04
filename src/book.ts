@@ -1163,6 +1163,8 @@ Answer SIMPLE or COMPLEX:`,
     }
     this.sql.exec(`UPDATE messages SET text = ? WHERE id = ?`, text, msg.id);
     flush(true);
+    // @vibe's reply was streamed into an empty message: its mentions only exist now.
+    if (ok && text.includes("@")) this.ctx.waitUntil(this.queueMentions({ ...msg, text }));
     await track(this.env, "ai_run", {
       user: email,
       dims: { book: this.get("book_id") ?? undefined, mode, model: modelName, ok, ms: Date.now() - started, tools, reads, cost: +cost.toFixed(6), route_cost: +routeCost.toFixed(6), tin: tokensIn, tout: tokensOut },
