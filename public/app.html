@@ -300,8 +300,14 @@
   .msg .who { font-size: 13px; color: var(--mute); margin-bottom: 3px; }
   .msg .txt { white-space: pre-wrap; word-wrap: break-word; }
   .msg.ai .txt { background: var(--ai-bg); padding: 14px 18px; border-radius: 4px 16px 16px 16px; white-space: normal; }
-  .msg.ai .txt p { margin: 0 0 10px; } .msg.ai .txt p:last-child { margin: 0; }
-  .msg.ai .txt ul { margin: 6px 0 10px; padding-left: 20px; } .msg.ai .txt li + li { margin-top: 4px; }
+  .msg.agent .txt { white-space: normal; }
+  .msg.ai .txt > :first-child, .msg.agent .txt > :first-child { margin-top: 0; } .msg.ai .txt > :last-child, .msg.agent .txt > :last-child { margin-bottom: 0; }
+  :is(.msg.ai, .msg.agent) .txt p { margin: 0 0 10px; }
+  :is(.msg.ai, .msg.agent) .txt :is(ul, ol) { margin: 6px 0 10px; padding-left: 20px; } :is(.msg.ai, .msg.agent) .txt li + li { margin-top: 4px; } :is(.msg.ai, .msg.agent) .txt li > :is(ul, ol) { margin: 4px 0 0; }
+  :is(.msg.ai, .msg.agent) .txt :is(h1, h2, h3, h4) { font-size: 1em; margin: 12px 0 6px; }
+  :is(.msg.ai, .msg.agent) .txt code { font: 0.88em ui-monospace, SFMono-Regular, Menlo, monospace; background: rgb(0 0 0 / 0.06); padding: 1px 5px; border-radius: 5px; }
+  :is(.msg.ai, .msg.agent) .txt pre { background: rgb(0 0 0 / 0.05); padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 6px 0 10px; } :is(.msg.ai, .msg.agent) .txt pre code { background: none; padding: 0; }
+  :is(.msg.ai, .msg.agent) .txt blockquote { margin: 6px 0 10px; padding-left: 10px; border-left: 3px solid var(--line); color: var(--mute); }
   .typing { color: var(--ai); font-size: 13px; overflow-wrap: anywhere; }
   .msg .txt a { color: var(--accent); overflow-wrap: anywhere; }
   .composer { border-top: 1px solid var(--line); padding: 12px 24px 14px; display: flex; flex-direction: column; gap: 6px; position: relative; }
@@ -590,12 +596,10 @@ const mentions = (h) => h.replace(/(^|[\s(>])@([\p{L}\p{N}._-]+)/gu, (all, pre, 
   return who ? `${pre}<span class="mention${who === S?.me ? " me" : ""}" title="${esc(who === "ai" ? "@vibe" : who)}">@${tag}</span>` : all;
 });
 const linkify = (h) => h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`);
-// Tiny markdown for AI messages: escape first, then bold/italics/lists/paragraphs.
-const md = (s) => linkify(esc(s))
-  .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(^|\W)_(.+?)_(\W|$)/g, "$1<i>$2</i>$3")
-  .split(/\n{2,}/).map((p) => /^\s*[-*] /m.test(p)
-    ? `<ul>${p.split("\n").map((l) => l.replace(/^\s*[-*] /, "")).filter(Boolean).map((l) => `<li>${l}</li>`).join("")}</ul>`
-    : `<p>${p.replace(/\n/g, "<br>")}</p>`).join("");
+// Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
+// No <img>: files go as attachments, and a remote image would be a tracker.
+const md = (s) => DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
+  .replace(/<a /g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ');
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
@@ -1740,7 +1744,7 @@ document.addEventListener("click", (ev) => {
 });
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
-  const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
+  const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
