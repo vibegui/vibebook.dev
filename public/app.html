@@ -1476,12 +1476,15 @@ const agentRows = (email) => {
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
+// A delivery (done card) or a "fez isso" ack ends it: a Claude that just reported done isn't "working on it".
 const epicWorker = (e) => {
   if (!e || e.archived) return null;
-  const k = (S.acks || []).find((a) => a.msg_id === e.from_msg && a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
+  const acks = (S.acks || []).filter((a) => a.msg_id === e.from_msg);
+  const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
   if (k) return { who: k.who, email: k.email };
-  const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent" && Date.now() - x.ts < 3 * 60e3);
-  return m ? { who: m.via || "Claude", email: m.author } : null;
+  if (acks.some((a) => a.status === "done")) return null;
+  const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent");
+  return m && m.tag !== "done" && Date.now() - m.ts < 3 * 60e3 ? { who: m.via || "Claude", email: m.author } : null;
 };
 const epicBusy = (e) => { const w = epicWorker(e); return w ? `${w.who} de ${name(w.email)}` : null; };
 // The same, inside the open epic's thread: a card at the end (in place of the empty-thread hint) saying who is on it.
