@@ -480,6 +480,8 @@ export class Book extends DurableObject<Env> {
       (msgId && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, msgId).toArray()[0]?.id) ??
       this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     if (!id) return { ok: false, error: "no message to acknowledge; pass message_id" };
+    // The same Claude after a /mcp reconnect is a new session: one ack per person + model per message.
+    this.sql.exec(`DELETE FROM acks WHERE msg_id = ? AND email = ? AND who = ? AND agent != ?`, id, email, who.slice(0, 40), agent);
     this.sql.exec(
       `INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, ?, 'doing', ?) ON CONFLICT DO UPDATE SET status = 'doing', who = excluded.who, ts = excluded.ts`,
       id, agent, email, who.slice(0, 40), Date.now(),

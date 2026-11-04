@@ -1353,7 +1353,8 @@ async function loadRoomAgents() {
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
-  return roomAgents.list.filter((a) => a.email === email && !seen.has(a.who + a.repo + a.listening) && seen.add(a.who + a.repo + a.listening)).slice(0, 3)
+  // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
+  return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
     .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? "ouvindo esta sala agora" : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✦</span><span class="fn">${esc(a.who)}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
 };
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
@@ -1621,7 +1622,10 @@ function loadOlder() {
 function renderReceipts() {
   const el = document.getElementById("msgs"); if (!el) return;
   el.querySelectorAll(".rcpt, .ack").forEach((x) => x.remove());
+  const seenAck = new Set();
   for (const k of S.acks || []) {
+    if (seenAck.has(`${k.msg_id}|${k.who}|${k.email}`)) continue;
+    seenAck.add(`${k.msg_id}|${k.who}|${k.email}`);
     const body = document.querySelector(`#m${k.msg_id} .body`); if (!body) continue;
     const doing = k.status === "doing";
     body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : "did"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${doing ? `<span class="spin"></span>${esc(k.who)} de ${esc(name(k.email))} está fazendo isso · ${ago(k.ts)}` : `✓ ${esc(k.who)} de ${esc(name(k.email))} fez isso`}</div>`);
