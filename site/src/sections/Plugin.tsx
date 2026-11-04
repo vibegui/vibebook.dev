@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Html, type Link } from "~/components/ui";
 
 /** @titleBy title */
@@ -50,7 +51,13 @@ export interface Props {
 	 * @format rich-text
 	 */
 	lede?: string;
-	/** @title Passos */
+	/** @title Card: rótulo */
+	askLabel?: string;
+	/** @title Card: a frase pro Claude */
+	ask?: string;
+	/** @title Card: botão copiar */
+	copyLabel?: string;
+	/** @title Passos (opcional) */
 	steps?: Step[];
 	/** @title Botão */
 	cta?: Link;
@@ -68,6 +75,12 @@ export interface Props {
 
 /** The repo ↔ room loop: install the plugin, ask for a room, listen, and the room reaches your Claude. */
 export default function Plugin(p: Props) {
+	const [copied, setCopied] = useState(false);
+	const copy = () => {
+		navigator.clipboard?.writeText(p.ask ?? "");
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1200);
+	};
 	return (
 		<section className="plug" id="plugin">
 			<div className="wrap plug-grid">
@@ -75,7 +88,16 @@ export default function Plugin(p: Props) {
 					{p.kicker ? <p className="plug-kicker">{p.kicker}</p> : null}
 					<Html as="h2" className="h2" html={p.title} />
 					<Html as="p" className="sub" html={p.lede} />
-					<ol className="plug-steps">
+					{p.ask ? (
+						<div className="plug-ask">
+							{p.askLabel ? <span>{p.askLabel}</span> : null}
+							<code>{p.ask}</code>
+							<button type="button" className="btn btn-sun" onClick={copy}>
+								{copied ? "✓" : p.copyLabel || "Copiar"}
+							</button>
+						</div>
+					) : null}
+					{p.steps?.length ? <ol className="plug-steps">
 						{(p.steps ?? []).map((s, i) => (
 							<li key={s.title} style={{ ["--i" as string]: i }}>
 								<b>{s.title}</b>
@@ -83,10 +105,10 @@ export default function Plugin(p: Props) {
 								{s.code ? <code>{s.code}</code> : null}
 							</li>
 						))}
-					</ol>
+					</ol> : null}
 					{p.cta ? (
 						<p className="plug-cta">
-							<a className="btn btn-sun" href={p.cta.href}>
+							<a className="plug-link" href={p.cta.href}>
 								{p.cta.label}
 							</a>
 						</p>

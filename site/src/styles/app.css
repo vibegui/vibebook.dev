@@ -286,3 +286,11 @@
   @keyframes plugIn { from { opacity: 0; transform: translateY(8px); } }
   @media (prefers-reduced-motion: reduce) { .plug-lines .pl, .plug-msg, .plug-seen { animation: none; } }
   @media (max-width: 920px) { .plug-grid { grid-template-columns: 1fr; } .plug-term, .plug-room { transform: none; } .plug-room { margin: 0; } }
+
+  .plug-ask { display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; align-items: center; background: var(--white); color: var(--ink); border-radius: 20px; padding: 16px 16px 16px 22px; margin-top: 30px; box-shadow: 0 30px 60px -30px oklch(0.1 0.1 250 / .8); }
+  .plug-ask span { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: var(--mute); }
+  .plug-ask code { font: 600 clamp(15px, 1.6vw, 18px)/1.4 ui-monospace, "SF Mono", Menlo, monospace; overflow-wrap: anywhere; }
+  .plug-ask .btn { color: var(--cobalt-ink); border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+  .plug-link { color: var(--sun); font-weight: 700; text-decoration: none; }
+  .plug-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+  @media (max-width: 560px) { .plug-ask { grid-template-columns: 1fr; } .plug-ask .btn { justify-self: start; } }

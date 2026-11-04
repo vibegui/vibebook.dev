@@ -98,7 +98,7 @@ export class Book extends DurableObject<Env> {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done"));
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
-      this.addMessage(e.id, "ai", `✓ Todas as ${e.tasks.length} tarefas de **${e.title}** estão feitas, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`);
+      this.addMessage(e.id, "ai", `✓ ${e.tasks.length === 1 ? "A tarefa" : `Todas as ${e.tasks.length} tarefas`} de **${e.title}** ${e.tasks.length === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`);
     }
     return done.length > 0;
   }

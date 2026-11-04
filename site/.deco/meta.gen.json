@@ -1993,6 +1993,21 @@
             "title": "Texto",
             "format": "rich-text"
           },
+          "askLabel": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: rótulo"
+          },
+          "ask": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: a frase pro Claude"
+          },
+          "copyLabel": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: botão copiar"
+          },
           "steps": {
             "type": "array",
             "items": {
@@ -2019,7 +2034,7 @@
               "titleBy": "title"
             },
             "nullable": true,
-            "title": "Passos"
+            "title": "Passos (opcional)"
           },
           "cta": {
             "type": "object",
