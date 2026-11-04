@@ -436,10 +436,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const url = `${origin}/api/notify?k=${row.key}${only ? `&room=${only}` : ""}`;
       return {
         url,
-        monitor_command: `p=$(($(date +%s)*1000)); while true; do t=$(($(date +%s)*1000)); curl -s --fail-with-body --max-time 70 "${url}&since=$p"; e=$?; [ $e = 0 ] && p=$t; [ $e = 22 ] && exit 1; [ $e != 0 ] && sleep 15; done`,
+        monitor_command: `p=$(($(date +%s)*1000)); while true; do t=$(($(date +%s)*1000)); out=$(curl -s --max-time 70 -w "%{http_code}" "${url}&since=$p"); c=\${out: -3}; b=\${out%???}; case $c in 200) p=$t; [ -n "$b" ] && echo "$b";; 401|403|404) echo "vibebook: notify URL rejected, call notify_url again"; exit 1;; *) sleep 15;; esac; done`,
         // One-shot: exits only when a room has unread messages (since=0: anything you haven't read yet counts, so nothing
         // that arrived while you were busy gets lost). No expiry, so no "still listening" turns every 30 minutes.
-        wait_command: `while true; do out=$(curl -s --fail-with-body --max-time 70 "${url}&since=0"); e=$?; [ $e = 22 ] && { echo "vibebook: notify URL rejected, call notify_url again"; exit 1; }; [ $e = 0 ] && [ -n "$out" ] && { echo "$out"; exit 0; }; [ $e != 0 ] && sleep 15; done`,
+        wait_command: `while true; do out=$(curl -s --max-time 70 -w "%{http_code}" "${url}&since=0"); c=\${out: -3}; b=\${out%???}; case $c in 200) [ -n "$b" ] && { echo "$b"; exit 0; };; 401|403|404) echo "vibebook: notify URL rejected, call notify_url again"; exit 1;; *) sleep 15;; esac; done`,
         how: "Preferred (Claude Code): run wait_command with Bash run_in_background. It exits only when a room has unread messages, which wakes you: call read_room on it, act on from_your_human messages, tell your human about the rest, then start wait_command again the same way. Never post or say anything about re-arming or about silence. Fallback for clients without background commands: run monitor_command under a monitor and re-arm it silently when it expires. Don't paste the URL in rooms.",
       };
     }
