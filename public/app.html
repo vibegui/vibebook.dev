@@ -194,6 +194,14 @@
   .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
   .thread.archived { opacity: .6; }
   .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
+  /* A Claude working on this epic: the asterisk turns slowly and a soft light runs around the row. */
+  .thread.busy { position: relative; isolation: isolate; }
+  .thread.busy::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), transparent 0 70%, #d97757 85%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  @property --spin-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+  @keyframes claudeRing { to { --spin-a: 360deg; } }
+  .claudeSpin { color: #d97757; font-size: 15px; line-height: 1; display: inline-block; animation: claudeTurn 3.2s linear infinite; flex: none; }
+  @keyframes claudeTurn { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .thread.busy::before, .claudeSpin { animation: none; } }
   .thread.pre .ri { background: none; border: 1.5px dashed currentColor; color: var(--mute); }
   .thread.pre:hover, .thread.pre.sel { border-color: var(--accent); color: var(--ink); }
   .book.pre .composer, .book.pre .tasks, .book.pre .agentNudge { display: none; }
@@ -1018,7 +1026,7 @@ function onEvent(ev, id) {
       if (ev.thread === thread) { win.n += ev.messages.length; renderChat(true); }
       return;
     }
-    case "acks": S.acks = ev.acks; renderReceipts(); return;
+    case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
@@ -1454,10 +1462,19 @@ const agentRows = (email) => {
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
     .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? (a.all_rooms ? "ouvindo todas as salas agora" : "ouvindo esta sala agora") : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who)}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
 };
-const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
-        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}">
+// A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
+// thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
+const epicBusy = (e) => {
+  if (e.archived) return null;
+  const k = (S.acks || []).find((a) => a.msg_id === e.from_msg && a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
+  if (k) return `${k.who} de ${name(k.email)}`;
+  const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent" && Date.now() - x.ts < 3 * 60e3);
+  return m ? `${m.via || "Claude"} de ${name(m.author)}` : null;
+};
+const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}${busy ? ` · ${esc(busy)} está trabalhando aqui` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
-          <span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
+          ${busy ? `<span class="claudeSpin" aria-label="${esc(busy)} está trabalhando">✻</span>` : ""}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   if (railMode && window.innerWidth > 900) return renderRail(el);
@@ -1709,7 +1726,7 @@ const msgHtml = (m, prev) => {
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
     <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
-      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${m.thread === "main" ? threadCards(m.id) : ""}</div>
+      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
 };
 

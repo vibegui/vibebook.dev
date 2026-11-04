@@ -196,6 +196,11 @@ const ask = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST
 const ep2 = (await g.tool("start_epic", { room_id: room, title: "Trocar o domínio", why: "domínio próprio" })).out;
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 check(rr?.epics?.find((e: { id: string }) => e.id === ep2?.epic_id)?.from_message_id === ask.id, "the epic is linked to the request's message");
+// Branching: a request written inside an epic's thread becomes an epic hanging under that message.
+const inEpic = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "e o certificado?", thread: ep2.epic_id }) })).json();
+const ep3 = (await g.tool("start_epic", { room_id: room, title: "Certificado", why: "https no domínio novo", from_message_id: inEpic.id })).out;
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+check(inEpic.id && rr?.epics?.find((e: { id: string }) => e.id === ep3?.epic_id)?.from_message_id === inEpic.id, "an epic can branch out of a message in another epic's thread");
 check(!rr?.messages?.some((x: { text: string }) => x.text.includes("Trocar o domínio")), "with a source message there's no pointer line");
 
 // Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.

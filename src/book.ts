@@ -182,7 +182,11 @@ export class Book extends DurableObject<Env> {
   // Suggestions that an epic already covers ("Primeira limpeza" vs "2. Primeira limpeza") are dropped.
   suggestions(): Suggestion[] {
     const have = new Set(this.epics().map((e) => epicKey(e.title)));
-    return (JSON.parse(this.get("suggestions") ?? "[]") as Suggestion[]).filter((x) => !have.has(epicKey(x.title)));
+    // Gone once an epic covers it, even under another name (half its significant words shared).
+    const words = (t: string) => new Set(epicKey(t).split(/[^a-z0-9]+/).filter((w) => w.length > 3));
+    const epicWords = this.epics().map((e) => words(e.title));
+    const covered = (t: string) => { const w = words(t); return epicWords.some((e) => [...w].filter((x) => e.has(x)).length >= Math.max(1, Math.ceil(Math.min(w.size, e.size) / 2))); };
+    return (JSON.parse(this.get("suggestions") ?? "[]") as Suggestion[]).filter((x) => x.title?.trim() && !have.has(epicKey(x.title)) && !covered(x.title));
   }
   // Invited but never signed in.
   async pending(): Promise<string[]> {
@@ -694,11 +698,11 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     const t = title.trim().slice(0, 200);
     if (!t) return { ok: false, error: "title is required" };
-    // The request it came from: the person's latest own message in the main thread (or the one given). The app
-    // draws the epic as a thread under that message, like Slack/Discord; without one, a pointer line instead.
+    // The request it came from: the one given, else the person's latest own message, in any thread (an epic can
+    // branch out of another epic's thread). The app draws the epic as a thread card under that message.
     const src =
-      (fromMsg && this.sql.exec(`SELECT id FROM messages WHERE id = ? AND thread = 'main'`, fromMsg).toArray()[0]?.id) ??
-      this.sql.exec(`SELECT id FROM messages WHERE thread = 'main' AND author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
+      (fromMsg && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, fromMsg).toArray()[0]?.id) ??
+      this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     // The agent took the work, so its human owns the tasks (self-assign).
     const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12).map((title) => ({ title, owner: email })), [email.toLowerCase()], why);
     if (src) {
@@ -1189,8 +1193,10 @@ Answer SIMPLE or COMPLEX:`,
       .bind(bookId)
       .all();
     const lastId = (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0;
+    // Requests an agent already took (ack) or that already became an epic are not for @vibe to suggest again.
+    const handled = new Set([...this.sql.exec<{ id: number }>(`SELECT msg_id AS id FROM acks UNION SELECT from_msg AS id FROM epics WHERE from_msg IS NOT NULL`).toArray().map((r) => r.id)]);
     const transcript = this.messages(undefined, 80)
-      .map((m) => `[${m.thread === "main" ? "principal" : m.thread}] ${m.author}: ${m.text}`)
+      .map((m) => `[${m.thread === "main" ? "principal" : m.thread}]${handled.has(m.id) ? " [já em andamento]" : ""} ${m.author}: ${m.text}`)
       .join("\n");
     try {
       const { output, usage } = await generateText({
@@ -1203,7 +1209,7 @@ Answer SIMPLE or COMPLEX:`,
             suggested_epics: z
               .array(z.object({ title: z.string(), why: z.string().describe("uma frase: por que vale um épico, a partir do que a conversa disse; sem emails"), tasks: z.array(z.string()).max(8) }))
               .max(3)
-              .describe("épicos que ainda NÃO existem e valeria criar; vazio se nada novo"),
+              .describe("épicos que ainda NÃO existem e valeria criar; nunca para pedidos marcados [já em andamento] nem para o que um épico existente já cobre, mesmo com outro nome; vazio se nada novo"),
           }),
         }),
         prompt: `Classifique este vibebook (documento compartilhado com chat e épicos).
@@ -1226,7 +1232,7 @@ ${transcript}`,
       const suggestions = [...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(epicKey(s.title)))].slice(-5);
       this.set("suggestions", JSON.stringify(suggestions));
       this.broadcast({ t: "meta", title, folder: output.folder, summary });
-      this.broadcast({ t: "suggestions", suggestions });
+      this.broadcast({ t: "suggestions", suggestions: this.suggestions() });
     } catch (e) {
       // Negative cache: mark as classified anyway so a failing provider isn't retried every alarm.
       console.error("classify failed", String(e));
