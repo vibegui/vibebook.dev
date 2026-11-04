@@ -1276,7 +1276,7 @@ function renderBook() {
 
 // Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
 // with everyone's cursors. Loaded on first edit; if it can't load or connect, the plain textarea keeps working.
-let collab = null, collabKey = null, collabLoad = null;
+let collab = null, collabKey = null, collabLoad = null, collabGen = 0;
 function ensureCollab() {
   const panel = $app.querySelector(".doc"), host = document.getElementById("cm");
   const ep = docEpic();
@@ -1285,13 +1285,16 @@ function ensureCollab() {
   collab?.destroy(); collab = null; collabKey = key;
   panel?.classList.remove("collab");
   if (host) host.innerHTML = "";
+  // Only the newest request mounts: switching room/epic while the module loads (A → B → A) must not leave two editors.
+  const gen = ++collabGen;
   if (!key || !host) return;
   (collabLoad ??= import("/collab.js")).then((m) => {
-    if (collabKey !== key) return;
+    if (gen !== collabGen) return;
+    collab?.destroy(); host.innerHTML = "";
     collab = m.mountCollab(host, {
       room: key, name: name(S.me), color: color(S.me),
-      onText: (t) => { if (collabKey !== key) return; if (ep) S.docs[ep] = t; else S.doc = t; },
-      onStatus: (s) => { if (collabKey !== key) return; panel.classList.toggle("collab", s === "connected"); if (s !== "connected") renderDoc(true); },
+      onText: (t) => { if (gen !== collabGen) return; if (ep) S.docs[ep] = t; else S.doc = t; },
+      onStatus: (s) => { if (gen !== collabGen) return; panel.classList.toggle("collab", s === "connected"); if (s !== "connected") renderDoc(true); },
     });
   }).catch(() => { collabLoad = null; });
 }
