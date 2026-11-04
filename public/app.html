@@ -168,6 +168,11 @@
   .tcard .tc-t b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tcard .tc-t small { font-size: 12px; color: var(--mute); }
   .tcard .tc-go { color: var(--mute); }
+  .member.agentRow { padding-left: 18px; font-size: 12.5px; color: var(--mute); }
+  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 11px; background: var(--line); color: var(--mute); flex: none; position: relative; }
+  .agentRow .aglyph.on { background: oklch(0.93 0.06 150); color: oklch(0.42 0.12 150); }
+  .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
+  .agentRow small { margin-left: auto; font-size: 11px; }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
   .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
   .thread.archived { opacity: .6; }
@@ -529,6 +534,7 @@ function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if 
 setInterval(() => {
   if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
   api("/api/me").then((me) => { myBooks = me.books; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher(); }).catch(() => {});
+  loadRoomAgents();
 }, 30_000);
 function renderSwitcher() {
   const cur = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1];
@@ -891,6 +897,7 @@ function onEvent(ev, id) {
       const firstLoad = !S;
       S = { ...ev, id, typing: {} };
       if (S.messages.length) seenHere(S.messages.at(-1).id);
+      loadRoomAgents();
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
@@ -1314,6 +1321,21 @@ function renderPre(el) {
   el.querySelector("#preSkip").onclick = () => { skipFrom = i; send({ t: "suggestion", i }); };
 }
 
+// Each person's connected Claudes, under them in "Pessoas": listening to this room now (green), or last seen.
+let roomAgents = { id: null, list: [] };
+async function loadRoomAgents() {
+  if (!S?.id) return;
+  const r = await api(`/api/books/${S.id}/agents`).catch(() => null);
+  if (!r) return;
+  roomAgents = { id: S.id, list: r.agents };
+  renderSide();
+}
+const agentRows = (email) => {
+  if (roomAgents.id !== S?.id) return "";
+  const seen = new Set();
+  return roomAgents.list.filter((a) => a.email === email && !seen.has(a.who + a.listening) && seen.add(a.who + a.listening)).slice(0, 3)
+    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))} · ${a.listening ? "ouvindo esta sala agora" : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✦</span><span class="fn">${esc(a.who)}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
+};
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
@@ -1339,7 +1361,7 @@ function renderSide() {
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
         ? `<button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
-        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>`).join("")}
+        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
         <div style="margin-top:10px;font-size:12px" class="muted">Seus amigos</div>
         ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="Adicionar ${esc(f)}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}

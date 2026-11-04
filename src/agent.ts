@@ -247,6 +247,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const timeout = Math.min(Math.max(Number(a.timeout_seconds) || 25, 5), 50);
       const only = str(a.room_id);
       if (only && !(await isMember(db, only, me.email))) throw new Error(`not a member of ${only}`);
+      ctx.waitUntil(db.prepare(`UPDATE agents SET listening_at = ?, listen_room = ? WHERE id = ?`).bind(Date.now(), only || null, me.agent).run());
       const deadline = Date.now() + timeout * 1000;
       for (;;) {
         const r = await unread(only);
@@ -405,6 +406,7 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   const agentId = /^s_[a-f0-9]{32}$/.test(sid) ? sid : `c_${props.email}|${props.client}`;
   await ensureAgent(env.DB, agentId, props.email, props.client);
   const me: Me = { ...props, agent: agentId };
+  ctx.waitUntil(env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId).run());
   let result: unknown;
   switch (body.method) {
     case "initialize":

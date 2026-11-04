@@ -69,7 +69,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -176,6 +176,8 @@ app.get("/api/notify", async (c) => {
   // &room=<id>: only that room (a repo linked to one room listens to it alone). Membership is in the query.
   const onlyRoom = /^[a-z0-9]{6,32}$/.test(c.req.query("room") ?? "") ? (c.req.query("room") as string) : "";
   const origin = new URL(c.req.url).origin;
+  // Presence: this agent is listening (to one room, or to all of its person's rooms when listen_room is null).
+  c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE agents SET listening_at = ?, listen_room = ?, seen_at = ? WHERE id = ?`).bind(Date.now(), onlyRoom || null, Date.now(), row.agent).run());
   const deadline = Date.now() + 50_000;
   for (;;) {
     // ponytail: D1 every 3s per listener, same as wait_for_messages; a per-person DO with push is the upgrade.
@@ -248,6 +250,29 @@ app.get("/api/archived", async (c) => {
     .bind(c.get("email"))
     .all();
   return c.json({ books: r.results });
+});
+
+// The agents of this room's members: model/client, last seen, and whether they're listening to this room now.
+app.get("/api/books/:id/agents", async (c) => {
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
+  const now = Date.now();
+  const r = await c.env.DB.prepare(
+    `SELECT a.id, a.email, coalesce(a.model, a.client) AS who, a.seen_at, a.listening_at, a.listen_room
+     FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?
+     WHERE a.seen_at > ? AND substr(a.id, 1, 2) != 'n_' ORDER BY a.seen_at DESC LIMIT 40`,
+  )
+    .bind(id, now - 7 * 864e5)
+    .all<{ id: string; email: string; who: string; seen_at: number; listening_at: number | null; listen_room: string | null }>();
+  return c.json({
+    agents: r.results.map((a) => ({
+      email: a.email,
+      who: a.who || "agent",
+      seen_at: a.seen_at,
+      // A listener long-polls every ≤50s; 2 minutes of silence means it stopped.
+      listening: !!a.listening_at && now - a.listening_at < 120_000 && (!a.listen_room || a.listen_room === id),
+    })),
+  });
 });
 
 // Home composer: suggest where a message should go, then post it there.
