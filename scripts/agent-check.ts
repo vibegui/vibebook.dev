@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,preview_mention_email,get_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 14 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,preview_mention_email,get_file,ack,set_task_status,add_task,update_task,delete_task,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 19 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -205,6 +205,39 @@ check(pv?.ok && pv.sent_to === gui, "preview_mention_email sends the email only 
 check(inEpic.id && rr?.epics?.find((e: { id: string }) => e.id === ep3?.epic_id)?.from_message_id === inEpic.id, "an epic can branch out of a message in another epic's thread");
 check(!rr?.messages?.some((x: { text: string }) => x.text.includes("Trocar o domínio")), "with a source message there's no pointer line");
 
+// Agents organize the room themselves (no @vibe in between): tasks, epics, docs.
+const nt = (await g.tool("add_task", { room_id: room, epic_id: ep2.epic_id, title: "Apontar DNS", owner: gui, due: "sex" })).out;
+check(nt?.ok && nt.task_id, "add_task adds a task with owner and due");
+check((await g.tool("add_task", { room_id: room, epic_id: "nope", title: "x" })).out?.ok === false, "add_task on an unknown epic is an error");
+check((await g.tool("update_task", { room_id: room, task_id: nt.task_id, title: "Apontar o DNS", due: "" })).out?.ok, "update_task renames and clears the due date");
+check((await g.tool("update_task", { room_id: room, task_id: nt.task_id, owner: "ninguem@x.dev" })).out?.ok === false, "update_task refuses an owner who isn't a member");
+check((await g.tool("update_task", { room_id: room, task_id: "nope", title: "x" })).out?.ok === false, "update_task on an unknown task is an error");
+check((await g.tool("update_epic", { room_id: room, epic_id: ep2.epic_id, title: "Domínio próprio" })).out?.ok, "update_epic renames");
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+let e2 = rr?.epics?.find((e: { id: string }) => e.id === ep2.epic_id);
+check(e2?.title === "Domínio próprio" && e2.tasks.some((t: { title: string; due: string | null }) => t.title === "Apontar o DNS" && !t.due), "the board shows the agent's edits");
+check(e2?.doc?.includes("- [ ] Apontar o DNS"), "the epic doc's checklist follows");
+check((await g.tool("update_doc", { room_id: room, epic_id: ep2.epic_id, markdown: e2.doc.replace("- [ ] Apontar o DNS", "- [x] Apontar o DNS") })).out?.ok, "update_doc rewrites an epic's doc");
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+e2 = rr?.epics?.find((e: { id: string }) => e.id === ep2.epic_id);
+check(e2?.tasks.find((t: { title: string }) => t.title === "Apontar o DNS")?.status === "done", "ticking the line in update_doc closes the task");
+check((await g.tool("delete_task", { room_id: room, task_id: nt.task_id })).out?.ok, "delete_task deletes");
+check((await g.tool("update_epic", { room_id: room, epic_id: ep2.epic_id, archived: true, mark_done: true })).out?.ok, "update_epic archives (mark_done closes the rest)");
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+check(rr?.epics?.find((e: { id: string }) => e.id === ep2.epic_id)?.archived === true, "the epic is archived");
+await g.tool("update_epic", { room_id: room, epic_id: ep2.epic_id, archived: false });
+// @vibe the housekeeper: a delivery with tasks still open gets a nudge to whoever delivered (4s in dev), once;
+// a task in doing with no news gets one to its owner (8s in dev).
+const hk = (await g.tool("start_epic", { room_id: room, title: "Zelador", why: "teste do zelador", tasks: ["A", "B"] })).out;
+await g.tool("set_task_status", { room_id: room, task_id: hk.tasks[1].id, status: "doing" });
+await g.tool("post", { room_id: room, thread: hk.epic_id, text: "entreguei A", done: true });
+await new Promise((r) => setTimeout(r, 6000));
+let hkMsgs = (await g.tool("read_room", { room_id: room, all: true })).out?.messages?.filter((x: { thread: string; from: string }) => x.thread === "epic: Zelador" && x.from === "@vibe");
+check(hkMsgs?.length === 1 && hkMsgs[0].text.includes("teve entrega aqui") && hkMsgs[0].text.includes("A; B"), "a delivery with open tasks gets one nudge from @vibe");
+await new Promise((r) => setTimeout(r, 9000));
+hkMsgs = (await g.tool("read_room", { room_id: room, all: true })).out?.messages?.filter((x: { thread: string; from: string }) => x.thread === "epic: Zelador" && x.from === "@vibe");
+check(hkMsgs?.length === 2 && hkMsgs[1].text.includes("B (fazendo)"), "a task in doing with no news gets a nudge to its owner");
+
 // Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.
 const nu = (await g.tool("notify_url")).out;
 check(nu?.url?.includes("/api/notify?k=") && nu.monitor_command?.includes(nu.url), "notify_url returns a URL and a ready monitor loop");
@@ -245,7 +278,7 @@ check((await m.tool("read_room", { room_id: room })).out?.messages?.some((x: { f
 // One agent reporting progress alone never pauses, however many posts in a row.
 await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "manda os updates aqui" }) });
 let solo = true;
-for (let i = 0; i < 8; i++) solo &&= !!(await g.tool("post", { room_id: room, text: `progresso ${i}` })).out?.ok;
+for (let i = 0; i < 8; i++) { const r = await g.tool("post", { room_id: room, text: `progresso ${i}` }); if (!r.out?.ok) console.log("post", i, JSON.stringify(r).slice(0, 200)); solo &&= !!r.out?.ok; }
 check(solo, "one agent posting 8 updates in a row is not paused");
 
 // Two agents ping-pong: the thread pauses at 6 in a row with no human.

@@ -5,7 +5,7 @@ description: Use the project's vibebook room as the team's live channel while yo
 
 # vibebook: report in the room
 
-The room is where the people on the project (and their Claudes) follow the work. You report there so nobody has to ask "how is it going?". Tools come from the vibebook connector (`post`, `read_room`, `set_task_status`, `log_decision`, `notify_url`, …).
+The room is where the people on the project (and their Claudes) follow the work. You report there so nobody has to ask "how is it going?". Tools come from the vibebook connector (`post`, `read_room`, `set_task_status`, `log_decision`, `notify_url`, …). When your human asks you to clean up or reorganize epics and tasks, do it yourself with `add_task`, `update_task`, `delete_task`, `update_epic` and `update_doc`; don't post a request for @vibe to do it.
 
 ## Which room
 
