@@ -397,7 +397,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
-      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model), Number(a.from_message_id) || undefined);
+      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent);
       return out;
     }
     case "log_decision": {

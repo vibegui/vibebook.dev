@@ -100,7 +100,11 @@ export class Book extends DurableObject<Env> {
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
       this.addMessage(e.id, "ai", `✓ ${e.tasks.length === 1 ? "A tarefa" : `Todas as ${e.tasks.length} tarefas`} de **${e.title}** ${e.tasks.length === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done" });
+      // The request it came from: "fazendo isso" turns into "fez isso".
+      const from = this.sql.exec(`SELECT from_msg FROM epics WHERE id = ?`, e.id).toArray()[0]?.from_msg;
+      if (from) this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE msg_id = ? AND status = 'doing'`, Date.now(), from);
     }
+    if (done.length) this.broadcast({ t: "acks", acks: this.acksList() });
     return done.length > 0;
   }
   epicsChanged() {
@@ -523,7 +527,7 @@ export class Book extends DurableObject<Env> {
 
   // A request becomes its own thread: an epic with the request as its first task(s) and a seeded doc, plus one
   // line in the main thread pointing at it. The discussion and the "done" happen inside the epic.
-  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number) {
+  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number, agent = "") {
     this.bind(bookId);
     const t = title.trim().slice(0, 200);
     if (!t) return { ok: false, error: "title is required" };
@@ -537,6 +541,8 @@ export class Book extends DurableObject<Env> {
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
       this.epicsChanged();
+      // Opening an epic for a request is taking it: the request shows "X está fazendo isso".
+      if (agent) this.agentAck(bookId, agent, email, via || "agent", Number(src));
     } else this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
     const epic = this.epics().find((e) => e.id === id);
     return { ok: true, epic_id: id, thread: id, tasks: epic?.tasks.map((x) => ({ id: x.id, title: x.title, status: x.status })) ?? [] };

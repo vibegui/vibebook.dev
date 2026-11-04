@@ -245,7 +245,8 @@
   .msg:hover { background: color-mix(in oklch, var(--line) 30%, transparent); }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
-  .rcpt { font-size: 12px; color: var(--mute); margin-top: 4px; }
+  .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
+  .rcpt .rd { color: var(--accent); }
   .older { display: flex; justify-content: center; padding: 8px 0 14px; }
   .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
@@ -1615,7 +1616,7 @@ function loadOlder() {
   olderBusy = true;
   send({ t: "older", thread, before: all[0].id });
 }
-// "✓✓ lido por" / "✓ entregue para": under the newest message each connected agent has read (or been told about)
+// Receipts: under the newest message each connected agent has read (or been told about)
 // in this thread, skipping its own person's agent posts.
 function renderReceipts() {
   const el = document.getElementById("msgs"); if (!el) return;
@@ -1625,19 +1626,21 @@ function renderReceipts() {
     const doing = k.status === "doing";
     body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : "did"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${doing ? `<span class="spin"></span>${esc(k.who)} de ${esc(name(k.email))} está fazendo isso · ${ago(k.ts)}` : `✓ ${esc(k.who)} de ${esc(name(k.email))} fez isso`}</div>`);
   }
+  // One compact line per message: each agent once (✓✓ read, ✓ delivered), full name on hover; an agent that
+  // acked the message shows its ack instead.
   const list = S.messages.filter((m) => m.thread === thread);
+  const acked = new Set((S.acks || []).map((k) => `${k.msg_id}|${k.who}|${k.email}`));
   const at = {};
-  const put = (upto, r, kind) => {
-    const m = list.findLast((x) => x.id <= upto && !(x.kind === "agent" && x.author === r.email));
-    if (!m) return;
-    const label = `${r.who} de ${name(r.email)}`;
-    ((at[m.id] ??= { read: new Set(), delivered: new Set() })[kind]).add(label);
-  };
-  for (const r of S.receipts || []) { put(r.read, r, "read"); if (r.delivered > r.read) put(r.delivered, r, "delivered"); }
+  // Each agent once, at the newest message it reached: ✓✓ if it read that far, ✓ if only delivered.
+  for (const r of S.receipts || []) {
+    const m = list.findLast((x) => x.id <= Math.max(r.read, r.delivered) && !(x.kind === "agent" && x.author === r.email));
+    if (!m || acked.has(`${m.id}|${r.who}|${r.email}`)) continue;
+    (at[m.id] ??= new Map()).set(`${r.who}|${r.email}`, { r, read: r.read >= m.id });
+  }
   for (const [id, g] of Object.entries(at)) {
     const body = document.querySelector(`#m${id} .body`); if (!body) continue;
-    const parts = [g.read.size && `✓✓ lido por ${[...g.read].join(", ")}`, g.delivered.size && `✓ entregue para ${[...g.delivered].filter((l) => !g.read.has(l)).join(", ")}`].filter((x) => x && !x.endsWith("para "));
-    if (parts.length) body.insertAdjacentHTML("beforeend", `<div class="rcpt">${esc(parts.join(" · "))}</div>`);
+    const chips = [...g.values()].map(({ r, read }) => `<span class="${read ? "rd" : ""}" title="${read ? "lido" : "entregue, ainda não lido"} por ${esc(r.who)} de ${esc(name(r.email))}">${read ? "✓✓" : "✓"} ${esc(r.who)}</span>`);
+    body.insertAdjacentHTML("beforeend", `<div class="rcpt">${chips.join("")}</div>`);
   }
 }
 function appendMsg(m) {
