@@ -653,6 +653,15 @@ export class Book extends DurableObject<Env> {
       case "task.add":
         if (String(m.title ?? "").trim()) this.addTask(String(m.epic), String(m.title).trim());
         return;
+      case "older": {
+        // Scroll-back: 100 messages of a thread before an id.
+        const before = Number(m.before) || 0;
+        const rows = this.sql
+          .exec(`SELECT * FROM messages WHERE thread = ? AND id < ? ORDER BY id DESC LIMIT 101`, String(m.thread ?? "main"), before)
+          .toArray()
+          .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+        return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: rows.slice(0, 100).reverse(), more: rows.length > 100 }));
+      }
       case "task.toggle":
         return this.setTask(String(m.id));
       case "task.status":

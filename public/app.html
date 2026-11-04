@@ -246,6 +246,8 @@
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { font-size: 12px; color: var(--mute); margin-top: 4px; }
+  .older { display: flex; justify-content: center; padding: 8px 0 14px; }
+  .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
   .ack.doing { background: var(--ai-bg); color: var(--accent); }
   .ack.did { background: oklch(0.95 0.04 155); color: oklch(0.42 0.12 155); }
@@ -936,6 +938,14 @@ function onEvent(ev, id) {
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
+    case "older": {
+      olderBusy = false;
+      const have = new Set(S.messages.map((m) => m.id));
+      S.messages = [...ev.messages.filter((m) => !have.has(m.id)), ...S.messages].sort((a, b) => a.id - b.id);
+      if (!ev.more) olderDone[S.id + ev.thread] = true;
+      if (ev.thread === thread) { win.n += ev.messages.length; renderChat(true); }
+      return;
+    }
     case "acks": S.acks = ev.acks; renderReceipts(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
@@ -1577,15 +1587,33 @@ function renderFiles() {
     : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
 }
 
-function renderChat() {
+// Sliding window: a thread renders its newest WIN messages; scrolling near the top shows WIN more, first from
+// what the state already has, then from the room (WS "older", 100 at a time) until the start of the thread.
+const WIN = 60;
+let win = { thread: null, n: WIN }, olderDone = {}, olderBusy = false;
+function renderChat(keep) {
   renderTasks();
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());
   if (isPre()) return renderPre(el);
-  const list = S.messages.filter((m) => m.thread === thread);
-  el.innerHTML = list.length ? list.map((m, i) => msgHtml(m, list[i - 1])).join("")
+  if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
+  const all = S.messages.filter((m) => m.thread === thread);
+  const list = all.slice(-win.n);
+  const more = all.length > list.length || (all.length && !olderDone[S.id + thread]);
+  const h0 = el.scrollHeight, t0 = el.scrollTop;
+  el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">Carregar mensagens anteriores</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
-  scrollDown(true); pinOnLoad(el); renderReceipts();
+  document.getElementById("olderBtn")?.addEventListener("click", loadOlder);
+  if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
+  else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
+}
+function loadOlder() {
+  if (olderBusy || isPre()) return;
+  const all = S.messages.filter((m) => m.thread === thread);
+  if (all.length > win.n) { win.n += WIN; return renderChat(true); }
+  if (olderDone[S.id + thread] || !all.length) return;
+  olderBusy = true;
+  send({ t: "older", thread, before: all[0].id });
 }
 // "✓✓ lido por" / "✓ entregue para": under the newest message each connected agent has read (or been told about)
 // in this thread, skipping its own person's agent posts.
@@ -1634,6 +1662,7 @@ function scrollDown(force) {
     const near = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     if (near) stick = true; else if (el.scrollTop < (el._lastTop ?? 0) - 2) stick = false;
     el._lastTop = el.scrollTop;
+    if (el.scrollTop < 150 && !stick) loadOlder();
   };
   if (force) stick = true;
   if (force || el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
