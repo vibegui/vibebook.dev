@@ -625,6 +625,8 @@ export class Book extends DurableObject<Env> {
         docs: this.epicDocs(),
         epics: this.epics(),
         messages: this.messages(),
+        // Everything fits in the first load: no thread has older messages to fetch.
+        complete: (this.sql.exec(`SELECT count(*) AS n FROM messages`).one().n as number) <= 500,
         files: this.files(),
         polls: this.polls(),
         decisions: this.decisions(),

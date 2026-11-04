@@ -1677,7 +1677,7 @@ function renderChat(keep) {
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
   const all = S.messages.filter((m) => m.thread === thread);
   const list = all.slice(-win.n);
-  const more = all.length > list.length || (all.length && !olderDone[S.id + thread]);
+  const more = all.length > list.length || (all.length && !S.complete && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
   el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">Carregar mensagens anteriores</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
@@ -1696,7 +1696,7 @@ function loadOlder() {
   if (olderBusy || isPre()) return;
   const all = S.messages.filter((m) => m.thread === thread);
   if (all.length > win.n) { win.n += WIN; return renderChat(true); }
-  if (olderDone[S.id + thread] || !all.length) return;
+  if (S.complete || olderDone[S.id + thread] || !all.length) return;
   olderBusy = true;
   send({ t: "older", thread, before: all[0].id });
 }
