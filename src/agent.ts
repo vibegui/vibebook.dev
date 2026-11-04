@@ -113,10 +113,10 @@ const TOOLS = [
   {
     name: "ack",
     description:
-      "Say you started working on a message: the room shows \"<your model> de <your human> está fazendo isso\" under it, and your next post with done: true turns it into \"fez\". Call it as soon as you pick up a request, before the work. Default message: your human's latest one.",
+      "Say you started working on a message: the room shows \"<your model> de <your human> está fazendo isso\" under it, and your next post with done: true turns it into \"fez\". Call it as soon as you pick up a request, before the work. Default message: your human's latest one. If you stop without finishing (you only organized it, or it now waits on someone else), call it again with status idle so the room doesn't show you working; done closes it without a post. A doing with no post or task move from you for 20 min shows as stalled.",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" } },
+      properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" }, status: { type: "string", enum: ["doing", "idle", "done"], description: "default doing" } },
       required: ["room_id"],
     },
   },
@@ -387,7 +387,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "ack": {
       const id = await room();
       const who = str(a.model) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || me.client;
-      return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined);
+      return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined, str(a.status) || "doing");
     }
     case "set_task_status": {
       const id = await room();

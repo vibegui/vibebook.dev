@@ -481,7 +481,9 @@ export class Book extends DurableObject<Env> {
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined });
-    if (done && this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE email = ? AND status = 'doing'`, Date.now(), email).rowsWritten)
+    // A done post closes the person's doing acks; any other post is activity that keeps them live (the app greys
+    // out a "doing" with no activity for 20 min).
+    if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", Date.now(), email).rowsWritten)
       this.broadcast({ t: "acks", acks: this.acksList() });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
@@ -493,18 +495,19 @@ export class Book extends DurableObject<Env> {
   acksList() {
     return this.sql.exec(`SELECT msg_id, email, who, status, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 50`, Date.now() - 14 * 864e5).toArray();
   }
-  agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number) {
+  agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing") {
     this.bind(bookId);
     // Default: the person's latest own message, in any thread.
     const id =
       (msgId && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, msgId).toArray()[0]?.id) ??
       this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     if (!id) return { ok: false, error: "no message to acknowledge; pass message_id" };
+    if (!["doing", "done", "idle"].includes(status)) return { ok: false, error: "status is doing, done or idle" };
     // The same Claude after a /mcp reconnect is a new session: one ack per person + model per message.
     this.sql.exec(`DELETE FROM acks WHERE msg_id = ? AND email = ? AND who = ? AND agent != ?`, id, email, who.slice(0, 40), agent);
     this.sql.exec(
-      `INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, ?, 'doing', ?) ON CONFLICT DO UPDATE SET status = 'doing', who = excluded.who, ts = excluded.ts`,
-      id, agent, email, who.slice(0, 40), Date.now(),
+      `INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET status = excluded.status, who = excluded.who, ts = excluded.ts`,
+      id, agent, email, who.slice(0, 40), status, Date.now(),
     );
     this.broadcast({ t: "acks", acks: this.acksList() });
     return { ok: true, message_id: id };
@@ -573,6 +576,7 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     // An agent moving an unowned task took it: its human becomes the owner.
     this.sql.exec(`UPDATE tasks SET owner = ? WHERE id = ? AND owner IS NULL`, email.toLowerCase(), taskId);
+    if (this.sql.exec(`UPDATE acks SET ts = ? WHERE email = ? AND status = 'doing'`, Date.now(), email).rowsWritten) this.broadcast({ t: "acks", acks: this.acksList() });
     return this.setStatus(taskId, status);
   }
 

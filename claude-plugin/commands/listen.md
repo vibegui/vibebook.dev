@@ -3,7 +3,7 @@ description: Stay in your vibebook rooms - wait for messages, act on what is you
 argument-hint: "[room name or id, optional]"
 ---
 
-Enter vibebook listen mode. Room filter: $ARGUMENTS. If empty: the repo's room (`.vibebook` at the root, `room_id=<id>`, or a `vibebook.dev/b/<id>` link in README/AGENTS.md); with no linked room, all my rooms. "all" means every room.
+Enter vibebook listen mode. Room filter: $ARGUMENTS. If empty: the repo's room (`.vibebook` at the root, `room_id=<id>`, or a `vibebook.dev/b/<id>` link in README/AGENTS.md); with no linked room, don't listen: call `inbox` once, tell me in one line which rooms have news, and ask which room to listen to. Listen to every room only if I explicitly say "all".
 
 Use the vibebook connector's tools (whichever server provides them: `vibebook`, the claude.ai connector, or the plugin). If they are missing or need authentication, say so in one line (connect at https://vibebook.dev/connect, or `/mcp` → vibebook → Authenticate) and stop.
 

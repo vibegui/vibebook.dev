@@ -251,6 +251,7 @@
   .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
   .ack.doing { background: var(--ai-bg); color: var(--accent); }
+  .ack.idle { background: var(--line, #eee); color: var(--mute); font-weight: 500; }
   .ack.did { background: oklch(0.95 0.04 155); color: oklch(0.42 0.12 155); }
   .ack .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
   @keyframes ackspin { to { transform: rotate(360deg); } }
@@ -1660,8 +1661,18 @@ function renderReceipts() {
     if (seenAck.has(`${k.msg_id}|${k.who}|${k.email}`)) continue;
     seenAck.add(`${k.msg_id}|${k.who}|${k.email}`);
     const body = document.querySelector(`#m${k.msg_id} .body`); if (!body) continue;
-    const doing = k.status === "doing";
-    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : "did"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${doing ? `<span class="spin"></span>${esc(k.who)} de ${esc(name(k.email))} está fazendo isso · ${ago(k.ts)}` : `✓ ${esc(k.who)} de ${esc(name(k.email))} fez isso`}</div>`);
+    // "doing" is live only while the agent shows activity (post / task move bumps ts); 20 min quiet or idle =
+    // nobody is on it now: say who the epic waits on (owners of its open tasks) instead of a spinner.
+    const doing = k.status === "doing" && Date.now() - k.ts < 20 * 60e3;
+    const who = `${esc(k.who)} de ${esc(name(k.email))}`;
+    let html;
+    if (doing) html = `<span class="spin"></span>${who} está fazendo isso · ${ago(k.ts)}`;
+    else if (k.status === "done") html = `✓ ${who} fez isso`;
+    else {
+      const owners = [...new Set((S.epics || []).filter((e) => e.from_msg === k.msg_id && !e.archived).flatMap((e) => e.tasks.filter((t) => t.status !== "done" && t.owner).map((t) => name(t.owner))))];
+      html = owners.length ? `⏳ aguardando ${owners.map(esc).join(", ")}` : `${who} parou · ${ago(k.ts)}`;
+    }
+    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${html}</div>`);
   }
   // One compact line per message: each agent once (✓✓ read, ✓ delivered), full name on hover; an agent that
   // acked the message shows its ack instead.

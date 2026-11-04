@@ -155,6 +155,9 @@ check(!!made?.tasks?.[0]?.owner, "the agent's human owns the tasks it started (s
 await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "troca o logo" }) });
 const ak = (await g.tool("ack", { room_id: room, model: "Claude Teste" })).out;
 check(ak?.ok && ak.message_id > 0, "ack points at the person's latest message");
+check((await g.tool("ack", { room_id: room, model: "Claude Teste", status: "idle" })).out?.ok, "ack can release the marker (status idle) without closing anything");
+check((await g.tool("ack", { room_id: room, status: "nope" })).out?.ok === false, "ack refuses an unknown status");
+await g.tool("ack", { room_id: room, model: "Claude Teste" });
 await g.tool("post", { room_id: room, text: "feito", done: true });
 // Pessoas shows only the sessions connected to this room, with their repo.
 await g.tool("read_room", { room_id: room, model: "Claude Teste", repo: "repo-teste" });
