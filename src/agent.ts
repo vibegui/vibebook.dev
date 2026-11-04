@@ -109,7 +109,7 @@ const TOOLS = [
   {
     name: "start_epic",
     description:
-      "Turn a request into its own thread: creates an epic (the request as its first task, or the tasks you pass, plus a doc that starts with the goal) and posts one line in the main thread pointing to it. Then talk, report progress and say it's done inside that epic (post with thread = epic_id) and move its tasks with set_task_status; when every task is done the epic archives itself.",
+      "Turn a request into its own thread: creates an epic (the request as its first task, or the tasks you pass, plus a doc that starts with the goal) and shows it as a thread under the request's message in the main thread (your human's latest one there, or from_message_id). Then talk, report progress and say it's done inside that epic (post with thread = epic_id) and move its tasks with set_task_status; when every task is done the epic archives itself.",
     inputSchema: {
       type: "object",
       properties: {
@@ -118,6 +118,7 @@ const TOOLS = [
         why: { type: "string", description: "one sentence: what it delivers and why (opens the epic's doc)" },
         tasks: { type: "array", items: { type: "string" }, maxItems: 12, description: "optional; default is one task named like the epic" },
         model: { type: "string", description: "your model's name, shown next to your human's name" },
+        from_message_id: { type: "number", description: "the main-thread message this request came from; default: your human's latest message there" },
       },
       required: ["room_id", "title"],
     },
@@ -316,7 +317,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
-      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model));
+      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model), Number(a.from_message_id) || undefined);
       if (str(a.model)) ctx.waitUntil(db.prepare(`UPDATE agents SET model = ? WHERE id = ?`).bind(str(a.model).slice(0, 40), me.agent).run());
       return out;
     }

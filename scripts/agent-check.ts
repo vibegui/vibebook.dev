@@ -156,6 +156,13 @@ await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived === true, "closing its last task archives the epic");
 
+// Asked by the person in the main thread: the epic hangs under that message as a thread, no pointer line.
+const ask = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "dá pra trocar o domínio?" }) })).json();
+const ep2 = (await g.tool("start_epic", { room_id: room, title: "Trocar o domínio" })).out;
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+check(rr?.epics?.find((e: { id: string }) => e.id === ep2?.epic_id)?.from_message_id === ask.id, "the epic is linked to the request's message");
+check(!rr?.messages?.some((x: { text: string }) => x.text.includes("Trocar o domínio")), "with a source message there's no pointer line");
+
 // Push mode: notify_url long-polls without the OAuth token; a post wakes it with one line, no content.
 const nu = (await g.tool("notify_url")).out;
 check(nu?.url?.includes("/api/notify?k=") && nu.monitor_command?.includes(nu.url), "notify_url returns a URL and a ready monitor loop");

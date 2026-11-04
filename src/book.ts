@@ -64,7 +64,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS receipts (agent TEXT PRIMARY KEY, email TEXT, who TEXT, read INTEGER, delivered INTEGER, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -86,7 +86,7 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
     return this.sql
-      .exec<{ id: string; title: string; archived: number | null }>(`SELECT id, title, archived FROM epics ORDER BY ts`)
+      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null }>(`SELECT id, title, archived, from_msg FROM epics ORDER BY ts`)
       .toArray()
       .map((e) => ({ ...e, archived: e.archived === 1, kept: e.archived === -1, tasks: tasks.filter((t) => t.epic_id === e.id) }));
   }
@@ -415,6 +415,7 @@ export class Book extends DurableObject<Env> {
         id: e.id,
         title: e.title,
         archived: e.archived || undefined,
+        from_message_id: e.from_msg ?? undefined,
         doc: (this.get(`doc:${e.id}`) ?? "").slice(0, 8_000) || undefined,
         tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due })),
       })),
@@ -499,12 +500,20 @@ export class Book extends DurableObject<Env> {
 
   // A request becomes its own thread: an epic with the request as its first task(s) and a seeded doc, plus one
   // line in the main thread pointing at it. The discussion and the "done" happen inside the epic.
-  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "") {
+  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number) {
     this.bind(bookId);
     const t = title.trim().slice(0, 200);
     if (!t) return { ok: false, error: "title is required" };
+    // The request it came from: the person's latest own message in the main thread (or the one given). The app
+    // draws the epic as a thread under that message, like Slack/Discord; without one, a pointer line instead.
+    const src =
+      (fromMsg && this.sql.exec(`SELECT id FROM messages WHERE id = ? AND thread = 'main'`, fromMsg).toArray()[0]?.id) ??
+      this.sql.exec(`SELECT id FROM messages WHERE thread = 'main' AND author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12), [], why);
-    this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
+    if (src) {
+      this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
+      this.epicsChanged();
+    } else this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
     const epic = this.epics().find((e) => e.id === id);
     return { ok: true, epic_id: id, thread: id, tasks: epic?.tasks.map((x) => ({ id: x.id, title: x.title, status: x.status })) ?? [] };
   }

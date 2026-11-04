@@ -162,6 +162,12 @@
   .docCrumb { display: flex; align-items: center; gap: 4px; padding: 10px 20px 0; font-size: 12.5px; color: var(--mute); }
   .docCrumb button { border: 0; background: none; padding: 3px 7px; border-radius: 7px; font: inherit; color: var(--mute); cursor: pointer; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .docCrumb button.sel { background: var(--bg); color: var(--ink); font-weight: 600; }
+  .tcard { display: flex; align-items: center; gap: 10px; margin-top: 8px; max-width: 420px; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
+  .tcard:hover { border-color: var(--accent); }
+  .tcard .tc-t { display: grid; min-width: 0; flex: 1; }
+  .tcard .tc-t b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tcard .tc-t small { font-size: 12px; color: var(--mute); }
+  .tcard .tc-go { color: var(--mute); }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
   .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
   .thread.archived { opacity: .6; }
@@ -888,7 +894,7 @@ function onEvent(ev, id) {
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); notifyMsg(ev.m); return;
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
@@ -898,7 +904,7 @@ function onEvent(ev, id) {
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
     case "epics": S.epics = ev.epics;
       if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
-      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); return;
+      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); if (thread === "main") refreshThreadCards(); return;
     case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
     case "meta":
       if (ev.title) { S.book.title = ev.title; const mine = myBooks?.find((b) => b.id === id); if (mine) { mine.title = ev.title; renderSwitcher(); } }
@@ -1489,6 +1495,26 @@ function pollHtml(id) {
 const hhmm = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
 const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
+// A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
+const threadCard = (e) => {
+  const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
+  const d = e.tasks.filter((t) => t.status === "done").length;
+  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? "✓ concluído · " : ""}${e.tasks.length ? `${d}/${e.tasks.length} tarefas · ` : ""}${replies.length} ${replies.length === 1 ? "resposta" : "respostas"}${last ? ` · ${ago(last.ts) === "agora" ? "agora" : `última há ${ago(last.ts)}`}` : ""}</small></span><span class="tc-go">→</span>`;
+};
+const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`).join("");
+function refreshThreadCards() {
+  document.querySelectorAll(".tcard[data-goepic]").forEach((b) => { const e = S.epics.find((x) => x.id === b.dataset.goepic); if (e) b.innerHTML = threadCard(e); });
+  // An epic just linked to a message already on screen: draw its card.
+  for (const e of S.epics.filter((x) => x.from_msg)) {
+    if (document.querySelector(`.tcard[data-goepic="${e.id}"]`)) continue;
+    document.querySelector(`#m${e.from_msg} .body`)?.insertAdjacentHTML("beforeend", `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`);
+  }
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".tcard[data-goepic]"); if (!b) return;
+  thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
+  renderSide(); renderChat(); renderKanban(); renderDoc();
+});
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
@@ -1496,7 +1522,7 @@ const msgHtml = (m, prev) => {
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${cont ? " cont" : ""}" id="m${m.id}">
     ${avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
     <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
-      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}</div>
+      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${m.thread === "main" ? threadCards(m.id) : ""}</div>
   </div>`;
 };
 
