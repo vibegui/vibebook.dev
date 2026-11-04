@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 12 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,get_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 13 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -176,6 +176,12 @@ const put = await fetch(ul.url, { method: "PUT", headers: { "content-type": "ima
 const putOut = (await put.json()) as { ok?: boolean; file?: { name: string } };
 check(put.status === 200 && putOut.ok && putOut.file?.name === "antes.png", "a file PUT to an upload link lands in the room with its message");
 check((await fetch(ul.url, { method: "PUT", headers: { "content-type": "image/png" }, body: png })).status === 404, "an upload link works once");
+// get_file: the agent sees an attached image as an MCP image part.
+const att = (await g.tool("read_room", { room_id: room, all: true })).out?.messages?.flatMap((x: { files?: { id: string; name: string }[] }) => x.files ?? []).find((f: { name: string }) => f.name === "antes.png");
+const gf = await g.rpc("tools/call", { name: "get_file", arguments: { room_id: room, file_id: att?.id } });
+check(gf.result?.content?.some((p: { type: string; mimeType?: string; data?: string }) => p.type === "image" && p.mimeType === "image/png" && p.data?.length > 10), "get_file returns the attached image as an image");
+const gfOut = await connectAgent(`outsider2-${stamp}@test.vibebook.dev`, "Claude Code (test)");
+check((await gfOut.rpc("tools/call", { name: "get_file", arguments: { room_id: room, file_id: att?.id } })).result?.isError === true, "a non-member can't get the file");
 
 // Asked by the person in the main thread: the epic hangs under that message as a thread, no pointer line.
 const ask = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "dá pra trocar o domínio?" }) })).json();

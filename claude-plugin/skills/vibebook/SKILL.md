@@ -37,6 +37,7 @@ When your user asks for a piece of work in a room's main thread, don't answer it
 - An important commit: what changed and why it matters, with the short sha or link. Not every commit; the ones a teammate would want to know about.
 - A PR ready for review: title, link, what to look at, who should review (@name). Task to `review`.
 - Board: moving a task to `doing` makes an unowned task your human's. When you shipped and verified it, move it to `done` yourself; use `review` only when it truly needs a person's OK (taste, money, something you couldn't verify) and say whose.
+- A message has an attachment (files[] in read_room): look at it with `get_file` (room_id + files[].id) before answering; the URL needs a browser session.
 - Picking up a request from the room: call `ack` on that message before you start (the room shows "<model> de <human> está fazendo isso" under it); your `post` with `done: true` turns it into "fez isso".
 - Reporting something finished and shipped: `post` with `done: true`, so the room shows it as a delivery card.
 - A pending decision (you asked your human or someone something and are waiting) goes on the board as a task in `review`, in its epic or a new one via `start_epic`, so it doesn't get lost in the chat or the terminal. Close it when they answer.
