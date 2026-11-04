@@ -1,3 +1,4 @@
+import { parseBlock, reconcile, renderBlock } from "./taskblock";
 import { DurableObject } from "cloudflare:workers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, type ModelMessage, Output, stepCountIs, streamText, tool } from "ai";
@@ -110,6 +111,7 @@ export class Book extends DurableObject<Env> {
   }
   epicsChanged() {
     this.autoArchive();
+    this.tasksToDocs();
     const epics = this.epics();
     this.broadcast({ t: "epics", epics });
     const id = this.get("book_id");
@@ -356,10 +358,36 @@ export class Book extends DurableObject<Env> {
     this.sql.exec(`UPDATE polls SET closed = 1 WHERE id = ?`, pollId);
     this.broadcast({ t: "poll", poll: this.polls([pollId])[pollId] });
   }
+  /** tasks → doc: each epic's "## Tarefas" checklist matches its tasks (only docs that differ are written). */
+  tasksToDocs() {
+    for (const e of this.epics()) {
+      const cur = this.get(`doc:${e.id}`) ?? epicDocSeed(e.title);
+      const next = renderBlock(cur, e.tasks.map((t) => ({ id: t.id, title: t.title, done: t.status === "done" })));
+      if (next !== cur) this.setDoc(next, "tasks", undefined, e.id);
+    }
+  }
+  /** doc → tasks: someone edited the checklist in an epic's doc; create, rename, tick or delete tasks to match. */
+  docToTasks(epic: string, text: string) {
+    const parsed = parseBlock(text);
+    const e = this.epics().find((x) => x.id === epic);
+    if (!parsed || !e) return;
+    const { update, add, del } = reconcile(parsed, e.tasks.map((t) => ({ id: t.id, title: t.title, done: t.status === "done" })));
+    if (!update.length && !add.length && !del.length) return;
+    for (const u of update) {
+      if (u.title) this.sql.exec(`UPDATE tasks SET title = ? WHERE id = ?`, u.title.slice(0, 300), u.id);
+      // [x] closes it; unticking reopens a done task as todo (doing/review stay as they are).
+      if (u.done !== undefined) this.sql.exec(`UPDATE tasks SET done = ?, status = CASE WHEN ? THEN 'done' WHEN status = 'done' THEN 'todo' ELSE status END WHERE id = ?`, u.done ? 1 : 0, u.done ? 1 : 0, u.id);
+    }
+    const ts = Date.now();
+    add.forEach((a, i) => this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts, done, status) VALUES (?, ?, ?, ?, ?, ?)`, rid(), epic, a.title.slice(0, 300), ts + i, a.done ? 1 : 0, a.done ? "done" : "todo"));
+    for (const id of del) this.sql.exec(`DELETE FROM tasks WHERE id = ?`, id);
+    this.epicsChanged();
+  }
   // The room's doc, or an epic's own doc (a child of the room's) when epic is set.
   setDoc(text: string, by: string, except?: WebSocket, epic?: string) {
     const key = epic ? `doc:${epic}` : "doc";
     this.set(key, text.slice(0, 100_000));
+    if (epic && by !== "tasks") this.docToTasks(epic, this.get(key) ?? "");
     this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
     // Whoever is co-editing sees @vibe's/agents' (or a non-Yjs client's) change arrive live.
     const id = this.get("book_id");
@@ -372,6 +400,7 @@ export class Book extends DurableObject<Env> {
     if (this.get(key) === text) return;
     this.set(key, text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get(key), by: "yjs", epic: epic ?? null });
+    if (epic) this.docToTasks(epic, this.get(key) ?? "");
   }
   /** What a fresh co-editing doc starts with: the stored markdown (an epic without one gets its seed); null = no such epic. */
   docSeed(bookId: string, epic?: string): string | null {

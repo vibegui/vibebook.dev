@@ -1878,6 +1878,9 @@ function placeTasks(pv, ep) {
   const tk = document.getElementById("tasks"); if (!tk) return;
   const home = document.getElementById("tasksHome");
   if (!ep) { home.append(tk); return; }
+  // The doc's "## Tarefas" checklist (kept in sync with the tasks by the server) shows as the live card.
+  const h = [...pv.querySelectorAll("h2")].find((x) => x.textContent.trim().toLowerCase() === "tarefas");
+  if (h) { const ul = h.nextElementSibling?.tagName === "UL" ? h.nextElementSibling : null; ul?.remove(); return h.replaceWith(tk); }
   const mark = [...pv.querySelectorAll("p")].find((p) => p.textContent.trim().toLowerCase() === "[[tarefas]]");
   if (mark) return mark.replaceWith(tk);
   const first = [...pv.children].find((x) => x.tagName === "P");
