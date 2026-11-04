@@ -688,7 +688,15 @@ async function login() {
   };
   view("email", q.get("error") === "google" ? "Não deu certo com o Google. Tenta com email." : "");
 }
-window.addEventListener("popstate", route);
+// Back/forward between threads of the open room only switches the thread; anything else reroutes.
+window.addEventListener("popstate", () => {
+  const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
+  if (!m || !S || m[1] !== S.id) return route();
+  thread = new URLSearchParams(location.search).get("t") || "main";
+  if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main";
+  docRoom = false; boardEpic = thread === "main" ? null : thread;
+  renderSide(); renderChat(); renderKanban(); renderDoc();
+});
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[data-nav]");
   if (a) { e.preventDefault(); history.pushState(null, "", a.getAttribute("href")); route(); }
@@ -911,8 +919,9 @@ const fileIcon = (f) => (f.type === "text/html" ? "🌐" : "📄");
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
 function openBook(id) {
-  thread = pendingThread || "main";
+  thread = pendingThread || new URLSearchParams(location.search).get("t") || "main";
   pendingThread = null;
+  urlSynced = false;
   S = null;
   attached = [];
   rememberRoom(id);
@@ -1651,7 +1660,16 @@ function renderFiles() {
 // what the state already has, then from the room (WS "older", 100 at a time) until the start of the thread.
 const WIN = 60;
 let win = { thread: null, n: WIN }, olderDone = {}, olderBusy = false;
+// The open thread lives in the URL (/b/<room>?t=<epic>): refresh, back and shared links land on it.
+let urlSynced = false;
+function syncUrl() {
+  if (!S) return;
+  const want = `/b/${S.id}${thread !== "main" && !isPre() ? `?t=${encodeURIComponent(thread)}` : ""}`;
+  if (location.pathname + location.search !== want) history[urlSynced ? "pushState" : "replaceState"](null, "", want);
+  urlSynced = true;
+}
 function renderChat(keep) {
+  syncUrl();
   renderTasks();
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());
