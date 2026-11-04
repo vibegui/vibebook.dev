@@ -300,7 +300,7 @@ export class Book extends DurableObject<Env> {
       if (now - last < MAIL_GAP_MS) { this.sql.exec(`UPDATE mail_q SET due = ? WHERE email = ?`, last + MAIL_GAP_MS, to); continue; }
       this.set(`mailed:${to}`, String(now));
       drop();
-      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread).catch((e) => console.error("mention mail failed", { to, error: String(e) }));
+      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread).catch((e) => { console.error("mention mail failed", { to, error: String(e) }); this.ctx.waitUntil(track(this.env, "mention_mail_failed", { user: to, dims: { book: bookId, error: String(e).slice(0, 200) } })); });
     }
     const next = this.sql.exec<{ d: number | null }>(`SELECT min(due) AS d FROM mail_q`).one().d;
     if (next) await this.wakeAt(next);
@@ -361,7 +361,7 @@ export class Book extends DurableObject<Env> {
     const lastAuthor = rows.at(-1)!.author as string;
     await this.env.EMAIL.send({
       to,
-      from: { email: "mencao@vibebook.dev", name: `${facts.mentions.at(-1)!.from} via vibebook` },
+      from: { email: "mencao@vibebook.dev", name: `${facts.mentions.at(-1)!.from.replace(/[@<>"]/g, "")} via vibebook` }, // "@vibe" in a display name is risky
       ...(lastAuthor !== "ai" ? { replyTo: lastAuthor } : {}),
       subject: copy.subject,
       text,
