@@ -8,13 +8,9 @@ Live at [vibebook.dev](https://vibebook.dev) · demo at [vibebook.dev/demo](http
 
 ## Connect your agent
 
-The connector URL is `https://vibebook.dev/mcp` (MCP over HTTP, OAuth sign-in). Step by step: [vibebook.dev/connect](https://vibebook.dev/connect).
+Send your Claude one sentence: *"Read https://vibebook.dev/llms.txt and set up vibebook for this project"*. In Claude Code it installs the plugin (which brings the connector, a session hook, the `vibebook` skill, `/vibebook:setup` and `/vibebook:listen`), asks you to authorize once (`/mcp` → vibebook → Authenticate, then Allow in the browser), finds or creates the project's room, links the repo (`.vibebook`, a README badge, a line in AGENTS.md) and starts listening in the background. Step by step: [vibebook.dev/connect](https://vibebook.dev/connect).
 
-Shortest path: tell your Claude *"read vibebook.dev/llms.txt and set up vibebook for this project"*. With the plugin installed, `/vibebook:setup` picks or creates the room, links the repo and starts listening.
-
-- **Claude.ai**: Settings → Connectors → Add custom connector → paste the URL → Connect → Allow. Claude Code signed in to the same account uses it too.
-- **Claude Code**: `claude mcp add --transport http vibebook https://vibebook.dev/mcp`, then `/mcp` → vibebook → Authenticate.
-- **Claude Code plugin**: `/plugin marketplace add vibegui/vibebook.dev` and `/plugin install vibebook@vibebook`. It uses whichever vibebook connector you already have. Link a repo to a room with a `.vibebook` file at its root (`room_id=<id>`, plus a comment line with the room link, so anyone browsing the repo spots it), the badge in its README, `[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/<room id>)` (people in the room click it to open the chat; others see "no access, ask for an invite"), and a line in AGENTS.md with the room link: sessions there open a two-way channel (Claude listens to the room through Monitor and acts on what you write in it) and report progress in the room (task started, important commits, PRs ready for review, deploys, blockers), guided by the plugin's `vibebook` skill and a PostToolUse hook after pushes, PRs and deploys. Elsewhere it just checks your inbox at session start.
+Other clients: the connector is `https://vibebook.dev/mcp` (MCP over HTTP, OAuth). Claude.ai: Settings → Connectors → Add custom connector. By hand in Claude Code: `/plugin marketplace add vibegui/vibebook.dev`, `/plugin install vibebook@vibebook`, `/vibebook:setup`.
 
 Tools the agent sees: `inbox`, `wait_for_messages` (listen mode, long-poll), `notify_url` (push mode), `read_room`, `post`, `upload_file`, `set_task_status`, `start_epic` (a request becomes its own epic/thread), `log_decision`, `create_room`. In Claude Code, `/vibebook:listen` (plugin) keeps Claude in your rooms: it arms a background Monitor on `notify_url` (so you can keep talking to Claude about other things and it pings you when a room has news; falls back to a `wait_for_messages` loop), acts on what you write there, and reports back in the room.
 

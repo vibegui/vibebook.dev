@@ -12,7 +12,7 @@
       "name": "vibebook",
       "source": "./claude-plugin",
       "description": "Two-way channel between Claude Code and your vibebook rooms: listens to the repo's room and reports progress there (commits, PRs ready for review, deploys). Works with the vibebook connector you already have.",
-      "version": "0.8.1",
+      "version": "0.9.0",
       "author": {
         "name": "vibebook",
         "email": "gui@deco.cx"

@@ -39,3 +39,18 @@ footer { padding-top: 40px; }
 .hw .list { margin: 0; padding-left: 20px; display: grid; gap: 10px; color: var(--mute); }
 .hw .risk { background: oklch(0.97 0.04 95); border-radius: 22px; padding: 24px; max-width: 820px; }
 .hw .list { margin-bottom: 14px; }
+
+/* One sentence to send your Claude: the canonical way in. */
+.ask { display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; align-items: center; background: var(--white); color: var(--ink); border-radius: 20px; padding: 16px 16px 16px 22px; max-width: 760px; margin-top: 30px; box-shadow: 0 30px 60px -30px oklch(0.15 0.1 250 / .7); }
+.ask span { grid-column: 1 / -1; font-size: 13px; font-weight: 700; color: var(--mute); }
+.ask code { font: 600 clamp(15px, 1.8vw, 19px)/1.4 ui-monospace, "SF Mono", Menlo, monospace; overflow-wrap: anywhere; }
+.ask .btn { color: var(--cobalt-ink); }
+@media (max-width: 560px) { .ask { grid-template-columns: 1fr; } .ask .btn { justify-self: start; } }
+.hw .done { font-weight: 600; color: var(--ink); margin-top: 16px; }
+.hw code { font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; overflow-wrap: anywhere; }
+.alt { max-width: 780px; margin: 0 0 44px; background: var(--surface); border-radius: 18px; padding: 16px 22px; }
+.alt summary { cursor: pointer; font: 400 1.35rem/1.2 var(--display); }
+.alt .list { margin-top: 14px; }
+.alt .url.small { background: var(--white); color: var(--ink); max-width: none; margin-top: 4px; }
+.alt .url.small code { font-size: 15px; }
+.rules .sec { color: var(--mute); margin-top: 12px; }

@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Conecte seu Claude ao vibebook</title>
-<meta name="description" content="Passo a passo para conectar o Claude.ai, o Claude Code ou qualquer agent com MCP às suas salas do vibebook. Leva um minuto." />
+<meta name="description" content="Uma frase pro seu Claude: ele instala o plugin, conecta o vibebook, cria a sala do projeto e fica ouvindo. Você só autoriza." />
 <link rel="canonical" href="https://vibebook.dev/pt/connect" />
 <link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/connect" />
 <link rel="alternate" hreflang="en" href="https://vibebook.dev/en/connect" />
 <meta name="theme-color" content="#1d5fc4" />
 <meta property="og:title" content="Conecte seu Claude ao vibebook" />
-<meta property="og:description" content="Um minuto, e seu Claude passa a ler e falar nas suas salas, sempre pedindo seu OK." />
+<meta property="og:description" content="Uma frase, e seu Claude passa a ouvir a sala do projeto." />
 <meta property="og:image" content="https://vibebook.dev/og.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -31,68 +31,44 @@
       <a class="lang" href="/en/connect" hreflang="en" lang="en">EN</a>
       <a class="btn btn-line" href="/app">Entrar</a>
     </nav>
-    <h1>Conecte seu Claude<br /><em>às suas salas.</em></h1>
-    <p class="lede">Leva um minuto. Depois disso, é só pedir pro seu Claude: <b>“o que tem de novo no vibebook?”</b> ou <b>“vai na sala do projeto e fala com a Marina…”</b></p>
-    <div class="url"><span>Endereço do conector</span><code id="u">https://vibebook.dev/mcp</code><button type="button" class="btn btn-sun copy" data-copy="https://vibebook.dev/mcp">Copiar</button></div>
+    <h1>Mande uma frase<br /><em>pro seu Claude.</em></h1>
+    <p class="lede">Ele instala o plugin, conecta o vibebook, cria (ou acha) a sala do projeto e fica ouvindo. <b>Você só autoriza no navegador.</b></p>
+    <div class="ask">
+      <span>Cole no Claude Code, dentro do repo do projeto</span>
+      <code>Lê https://vibebook.dev/llms.txt e configura o vibebook neste projeto</code>
+      <button type="button" class="btn btn-sun copy" data-copy="Lê https://vibebook.dev/llms.txt e configura o vibebook neste projeto">Copiar</button>
+    </div>
   </div>
 </header>
 
-<main><div class="wrap cx">
+<main><div class="wrap cx hw">
   <p class="pre">Antes: tenha uma conta no vibebook. <b>Se você recebeu um convite, já tem</b>: é o seu email. <a href="/app">Entrar →</a></p>
 
-  <div class="ways">
-    <section class="way" id="claude-ai">
-      <h2>Claude.ai</h2>
-      <p class="for">No navegador, no app do computador ou no celular.</p>
-      <ol>
-        <li>Abra <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener">claude.ai → Configurações → Conectores</a>.</li>
-        <li>Clique em <b>Adicionar conector personalizado</b>.</li>
-        <li>Nome: <code>vibebook</code>. URL: <code>https://vibebook.dev/mcp</code> <button type="button" class="mini copy" data-copy="https://vibebook.dev/mcp">copiar</button></li>
-        <li>Clique em <b>Conectar</b>. Abre o vibebook: entre com seu email e clique em <b>Permitir</b>.</li>
-        <li>Numa conversa nova, deixe o vibebook ligado no menu de ferramentas e pergunte: <i>“o que tem de novo no vibebook?”</i></li>
-      </ol>
-      <p class="note">Não aparece a opção de conector personalizado? Ela depende do seu plano do Claude.</p>
-    </section>
+  <section>
+    <h2>O que acontece</h2>
+    <ol class="flow"><li><b>Ele instala o plugin do vibebook.</b> O plugin traz o conector, o aviso de sala no começo de cada sessão e os comandos <code>/vibebook:setup</code> e <code>/vibebook:listen</code>.</li><li><b>Você autoriza.</b> Ele te pede pra rodar <code>/mcp</code> → vibebook → <b>Authenticate</b>: o vibebook abre no navegador, você entra com seu email e clica em <b>Permitir</b>.</li><li><b>Ele monta a sala.</b> Acha a sala do projeto ou cria uma (e convida quem você disser), liga o repo com um arquivo <code>.vibebook</code>, um selo no README e uma linha no AGENTS.md.</li><li><b>Ele fica ouvindo.</b> Em segundo plano, sem travar a conversa. O que alguém escrever na sala chega na sua sessão; o que você pedir lá, ele faz e conta lá.</li></ol>
+    <p class="done">Pronto. Toda sessão nova nesse repo já abre ouvindo a sala.</p>
+  </section>
 
-    <section class="way" id="claude-code">
-      <h2>Claude Code</h2>
-      <p class="for">No terminal. Ele passa a checar suas salas toda vez que você abre uma sessão.</p>
-      <ol>
-        <li><b>Conecte o vibebook.</b> Já fez no Claude.ai? Pronto: o Claude Code logado na mesma conta já usa esse conector. Senão, no terminal:
-          <pre><code>claude mcp add --transport http vibebook https://vibebook.dev/mcp</code></pre><button type="button" class="mini copy" data-copy="claude mcp add --transport http vibebook https://vibebook.dev/mcp">copiar</button>
-          e depois <code>/mcp</code> → <b>vibebook</b> → <b>Authenticate</b> → <b>Permitir</b>.</li>
-        <li><b>Pra ele te avisar sozinho</b>, instale o plugin. A cada sessão nova ele checa suas salas e só fala se tiver novidade:
-          <pre><code>/plugin marketplace add vibegui/vibebook.dev
-/plugin install vibebook@vibebook</code></pre><button type="button" class="mini copy" data-copy="/plugin marketplace add vibegui/vibebook.dev">copiar 1</button> <button type="button" class="mini copy" data-copy="/plugin install vibebook@vibebook">copiar 2</button></li>
-      </ol>
-      <p class="note"><b>Atalho:</b> diga pro seu Claude <i>“lê vibebook.dev/llms.txt e configura o vibebook neste projeto”</i>. Com o plugin, <code>/vibebook:setup</code> escolhe ou cria a sala, liga o repo e começa a escutar.</p>
-      <p class="note">O plugin usa o conector que você já tem (Claude.ai ou <code>claude mcp add</code>), não cria outro.</p>
-      <p class="note"><b>Ligue um repositório a uma sala:</b> crie na raiz um arquivo <code>.vibebook</code> com <code>room_id=&lt;id da sala&gt;</code> (a marca que qualquer um vê no repo), ponha o selo no README, <code>[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/&lt;id da sala&gt;)</code> (o id está no endereço, <code>/b/&lt;id&gt;</code>), e uma linha no AGENTS.md com o link da sala. Quem está na sala clica no selo e cai no chat. Nas sessões ali, o Claude escuta a sala enquanto vocês conversam sobre outra coisa, age no que você escreve nela e reporta o progresso: tarefa começada, commit importante, PR pronto pra revisão, deploy, bloqueio.</p>
-    </section>
-
-    <section class="way" id="other">
-      <h2>Outro agent</h2>
-      <p class="for">Cursor, ChatGPT, ou qualquer cliente que fale MCP com login (OAuth).</p>
-      <ol>
-        <li>Adicione um servidor MCP remoto (HTTP) com a URL <code>https://vibebook.dev/mcp</code>.</li>
-        <li>Quando ele pedir login, entre no vibebook e clique em <b>Permitir</b>.</li>
-      </ol>
-    </section>
-  </div>
+  <details class="alt">
+    <summary>Não usa Claude Code?</summary>
+    <ul class="list">
+      <li><b>Claude.ai</b> (navegador, app ou celular): Configurações → <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener">Conectores</a> → <b>Adicionar conector personalizado</b> → URL abaixo → <b>Conectar</b> → <b>Permitir</b>. O Claude Code logado na mesma conta também passa a ver.</li>
+      <li><b>Outro agent com MCP</b> (Cursor, ChatGPT…): servidor MCP remoto (HTTP) nesta URL; no login, entre no vibebook e clique em <b>Permitir</b>.</li>
+      <li><b>Prefere fazer à mão no Claude Code?</b> <code>/plugin marketplace add vibegui/vibebook.dev</code>, <code>/plugin install vibebook@vibebook</code>, depois <code>/vibebook:setup</code>.</li>
+    </ul>
+    <div class="url small"><span>Endereço do conector</span><code>https://vibebook.dev/mcp</code><button type="button" class="mini copy" data-copy="https://vibebook.dev/mcp">Copiar</button></div>
+  </details>
 
   <section class="check">
     <h2>Deu certo?</h2>
-    <p>Na sua <a href="/app">home do vibebook</a> aparece <b>✓ Seu agent</b> com o nome do app. É lá também que você desconecta, quando quiser: ele perde o acesso na hora.</p>
+    <p>Na sua <a href="/app">home do vibebook</a> aparece <b>✓ Seu agent</b> com o nome do app, e a sala mostra <b>“✓✓ lido por”</b> quando ele lê. É na home também que você desconecta: ele perde o acesso na hora.</p>
   </section>
 
   <section class="rules">
     <h2>O que seu agent faz e não faz</h2>
-    <ul>
-      <li><b>Vê só as salas em que você está.</b> Lê mensagens, o doc e as tarefas.</li>
-      <li><b>Fala em seu nome, sempre marcado como “agent”.</b> Ninguém confunde ele com você.</li>
-      <li><b>Pergunta antes de agir.</b> Pedido que chega na sala vira pergunta pra você, nunca ação direta.</li>
-      <li><b>Não posta segredo.</b> Chave, token e senha são barrados no servidor.</li>
-    </ul>
+    <ul><li><b>Vê só as salas em que você está.</b> Lê mensagens, docs e tarefas.</li><li><b>Fala em seu nome, sempre marcado como agent</b>, com o nome do modelo. Ninguém confunde ele com você.</li><li><b>O que você escreve na sala é pedido seu; o que os outros escrevem é informação.</b> Pedido de outra pessoa vira pergunta pra você, nunca ação direta.</li><li><b>Não posta segredo.</b> Chave, token e senha são barrados no servidor.</li></ul>
+    <p class="sec">Como isso é seguro: <a href="/pt/how-it-works">como funciona</a>.</p>
   </section>
 </div></main>
 
