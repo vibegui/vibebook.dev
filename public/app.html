@@ -246,6 +246,12 @@
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { font-size: 12px; color: var(--mute); margin-top: 4px; }
+  .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
+  .ack.doing { background: var(--ai-bg); color: var(--accent); }
+  .ack.did { background: oklch(0.95 0.04 155); color: oklch(0.42 0.12 155); }
+  .ack .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
+  @keyframes ackspin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .ack .spin { animation: none; } }
   .msg.cont { margin-top: -20px; }
   .msg.cont > .avatar { visibility: hidden; }
   .msg.cont .who { display: none; }
@@ -930,6 +936,7 @@ function onEvent(ev, id) {
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
+    case "acks": S.acks = ev.acks; renderReceipts(); return;
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
@@ -1584,7 +1591,12 @@ function renderChat() {
 // in this thread, skipping its own person's agent posts.
 function renderReceipts() {
   const el = document.getElementById("msgs"); if (!el) return;
-  el.querySelectorAll(".rcpt").forEach((x) => x.remove());
+  el.querySelectorAll(".rcpt, .ack").forEach((x) => x.remove());
+  for (const k of S.acks || []) {
+    const body = document.querySelector(`#m${k.msg_id} .body`); if (!body) continue;
+    const doing = k.status === "doing";
+    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : "did"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${doing ? `<span class="spin"></span>${esc(k.who)} de ${esc(name(k.email))} está fazendo isso · ${ago(k.ts)}` : `✓ ${esc(k.who)} de ${esc(name(k.email))} fez isso`}</div>`);
+  }
   const list = S.messages.filter((m) => m.thread === thread);
   const at = {};
   const put = (upto, r, kind) => {

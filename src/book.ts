@@ -62,6 +62,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
       CREATE TABLE IF NOT EXISTS decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, who TEXT, kind TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS receipts (agent TEXT PRIMARY KEY, email TEXT, who TEXT, read INTEGER, delivered INTEGER, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS acks (msg_id INTEGER, agent TEXT, email TEXT, who TEXT, status TEXT, ts INTEGER, PRIMARY KEY (msg_id, agent));
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
     for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
@@ -456,10 +457,31 @@ export class Book extends DurableObject<Env> {
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined });
+    if (done && this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE email = ? AND status = 'doing'`, Date.now(), email).rowsWritten)
+      this.broadcast({ t: "acks", acks: this.acksList() });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
     if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id };
+  }
+
+  // "X está fazendo isso": an agent took a message as work (MCP ack); its next done post marks it done.
+  acksList() {
+    return this.sql.exec(`SELECT msg_id, email, who, status, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 50`, Date.now() - 14 * 864e5).toArray();
+  }
+  agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number) {
+    this.bind(bookId);
+    // Default: the person's latest own message, in any thread.
+    const id =
+      (msgId && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, msgId).toArray()[0]?.id) ??
+      this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
+    if (!id) return { ok: false, error: "no message to acknowledge; pass message_id" };
+    this.sql.exec(
+      `INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, ?, 'doing', ?) ON CONFLICT DO UPDATE SET status = 'doing', who = excluded.who, ts = excluded.ts`,
+      id, agent, email, who.slice(0, 40), Date.now(),
+    );
+    this.broadcast({ t: "acks", acks: this.acksList() });
+    return { ok: true, message_id: id };
   }
 
   // "Delivered to / read by": each connected agent's cursor in this room (written by src/agent.ts from D1).
@@ -580,6 +602,7 @@ export class Book extends DurableObject<Env> {
         names: await this.names(),
         online: this.online(),
         receipts: this.receiptsList(),
+        acks: this.acksList(),
       }),
     );
     this.broadcast({ t: "online", online: this.online() });

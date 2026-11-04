@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 11 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,ack,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 12 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -151,6 +151,11 @@ let rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 const made = rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id);
 check(made?.doc?.includes("Trazer as reservas antigas"), "the new epic's doc starts with its goal");
 check(!!made?.tasks?.[0]?.owner, "the agent's human owns the tasks it started (self-assign)");
+// ack: "X está fazendo isso" under the person's latest message, turned into done by a done post.
+await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "troca o logo" }) });
+const ak = (await g.tool("ack", { room_id: room, model: "Claude Teste" })).out;
+check(ak?.ok && ak.message_id > 0, "ack points at the person's latest message");
+await g.tool("post", { room_id: room, text: "feito", done: true });
 // Pessoas shows only the sessions connected to this room, with their repo.
 await g.tool("read_room", { room_id: room, model: "Claude Teste", repo: "repo-teste" });
 const ags = (await fetch(`${BASE}/api/books/${room}/agents`, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } }).then((r) => r.json())) as { agents: { who: string; repo: string | null }[] };
