@@ -404,6 +404,13 @@
   body.resizing { cursor: col-resize; user-select: none; }
   .doc header h2 { margin: 0; font-size: 18px; flex: 1; }
   .doc textarea { flex: 1; border: none; border-radius: 0; background: transparent; padding: 24px; resize: none; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+  /* Co-editing (public/collab.js): CodeMirror replaces the textarea in edit mode once connected. */
+  .doc .cm { display: none; flex: 1; min-height: 0; overflow: auto; }
+  .doc.collab[data-view="edit"] .cm { display: flex; }
+  .doc.collab[data-view="edit"] textarea { display: none; }
+  .doc .cm .cm-editor { flex: 1; outline: none; background: transparent; }
+  .doc .cm .cm-scroller { padding: 16px 8px; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+  .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
   .tabs { display: none; }
   @media (max-width: 900px) {
@@ -1062,6 +1069,7 @@ function renderBook() {
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
+      <div class="cm" id="cm"></div>
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
     </section>
@@ -1257,13 +1265,35 @@ function renderBook() {
     docPanel.dataset.view = v;
     docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === v));
     try { localStorage.setItem("vb.docView", v); } catch {}
-    if (v === "edit") doc.focus(); else renderDoc();
+    if (v === "edit") { ensureCollab(); (collab || doc).focus(); } else { ensureCollab(); renderDoc(); }
   };
   docPanel.querySelectorAll(".seg button").forEach((b) => b.onclick = () => setView(b.dataset.view));
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
   renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); nudgeAgent(); renderBells();
+}
+
+// Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
+// with everyone's cursors. Loaded on first edit; if it can't load or connect, the plain textarea keeps working.
+let collab = null, collabKey = null, collabLoad = null;
+function ensureCollab() {
+  const panel = $app.querySelector(".doc"), host = document.getElementById("cm");
+  const ep = docEpic();
+  const key = panel?.dataset.view === "edit" && S?.id && !isPre() ? (ep ? `${S.id}~${ep}` : S.id) : null;
+  if (key === collabKey) return;
+  collab?.destroy(); collab = null; collabKey = key;
+  panel?.classList.remove("collab");
+  if (host) host.innerHTML = "";
+  if (!key || !host) return;
+  (collabLoad ??= import("/collab.js")).then((m) => {
+    if (collabKey !== key) return;
+    collab = m.mountCollab(host, {
+      room: key, name: name(S.me), color: color(S.me),
+      onText: (t) => { if (collabKey !== key) return; if (ep) S.docs[ep] = t; else S.doc = t; },
+      onStatus: (s) => { if (collabKey !== key) return; panel.classList.toggle("collab", s === "connected"); if (s !== "connected") renderDoc(true); },
+    });
+  }).catch(() => { collabLoad = null; });
 }
 
 const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
@@ -1710,6 +1740,7 @@ function renderDoc(force) {
   const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep);
   const text = ep ? S.docs[ep] || `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite ou peça pro @vibe).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : S.doc;
   if (docShown !== (ep || "room")) { force = true; docShown = ep || "room"; }
+  ensureCollab();
   const inEpic = !isPre() && S.epics.find((e) => e.id === thread);
   const crumb = document.getElementById("docCrumb");
   crumb.hidden = !inEpic;

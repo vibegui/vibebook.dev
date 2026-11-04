@@ -14,6 +14,9 @@ export const befriend = (db: D1Database, a: string, b: string) => {
 };
 
 export const bookStub = (env: Env, id: string) => env.BOOK.get(env.BOOK.idFromName(id));
+/** The co-editing relay for a room's doc (epic = "" for the room's own doc). */
+export const docRoomName = (id: string, epic?: string) => (epic ? `${id}~${epic}` : id);
+export const docRoomStub = (env: Env, id: string, epic?: string) => env.DOC_ROOMS.get(env.DOC_ROOMS.idFromName(docRoomName(id, epic)));
 
 export async function createBook(env: Env, email: string, title?: string) {
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);

@@ -6,9 +6,10 @@ import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
-import { befriend, bookStub, createBook, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
+import { befriend, bookStub, createBook, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
+export { DocRoom } from "./docroom";
 
 export type Env = {
   DB: D1Database;
@@ -16,6 +17,7 @@ export type Env = {
   /** The landing as a deco Studio site (site/, Worker vibebook-site). Missing or failing: the static page in public/. */
   SITE?: Fetcher;
   BOOK: DurableObjectNamespace<Book>;
+  DOC_ROOMS: DurableObjectNamespace<import("./docroom").DocRoom>;
   OAUTH_KV: KVNamespace;
   OAUTH_PROVIDER: OAuthHelpers;
   AGENT_LIMIT: RateLimit;
@@ -400,6 +402,18 @@ app.get("/api/books/:id/files/:fid", async (c) => {
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
   if (!obj) return c.notFound();
   return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
+});
+
+// Co-editing a doc (y-websocket): /yjs/<room> or /yjs/<room>~<epic>. Same session cookie as /ws, members only.
+app.get("/yjs/:name", async (c) => {
+  const [id, epic = ""] = c.req.param("name").split("~");
+  if (c.req.header("upgrade")?.toLowerCase() !== "websocket") return c.text("expected websocket", 426);
+  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
+  const seed = await bookStub(c.env, id).docSeed(id, epic || undefined);
+  if (seed === null) return c.json({ error: "unknown epic" }, 404);
+  const room = docRoomStub(c.env, id, epic || undefined);
+  await room.prepare(id, epic, seed);
+  return room.fetch(new Request(`https://doc/rooms/${encodeURIComponent(docRoomName(id, epic || undefined))}`, c.req.raw));
 });
 
 app.get("/ws/:id", async (c) => {

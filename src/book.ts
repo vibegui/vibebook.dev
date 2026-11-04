@@ -4,6 +4,7 @@ import { generateText, type ModelMessage, Output, stepCountIs, streamText, tool 
 import { z } from "zod";
 import type { Env } from "./index";
 import { checkUrl, type ReadResult, readUrl } from "./reader";
+import { docRoomStub } from "./rooms";
 import { findSecret } from "./secrets";
 import { track } from "./track";
 
@@ -351,6 +352,25 @@ export class Book extends DurableObject<Env> {
     const key = epic ? `doc:${epic}` : "doc";
     this.set(key, text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
+    // Whoever is co-editing sees @vibe's/agents' (or a non-Yjs client's) change arrive live.
+    const id = this.get("book_id");
+    if (id) this.ctx.waitUntil(docRoomStub(this.env, id, epic).setText(this.get(key) ?? "").catch(() => {}));
+  }
+  /** The co-editing relay's text, mirrored here (debounced) so @vibe, agents and the preview read it. */
+  docFromYjs(bookId: string, text: string, epic?: string) {
+    this.bind(bookId);
+    const key = epic ? `doc:${epic}` : "doc";
+    if (this.get(key) === text) return;
+    this.set(key, text.slice(0, 100_000));
+    this.broadcast({ t: "doc", text: this.get(key), by: "yjs", epic: epic ?? null });
+  }
+  /** What a fresh co-editing doc starts with: the stored markdown (an epic without one gets its seed); null = no such epic. */
+  docSeed(bookId: string, epic?: string): string | null {
+    this.bind(bookId);
+    if (!epic) return this.get("doc") ?? "";
+    const e = this.epics().find((x) => x.id === epic);
+    if (!e) return null;
+    return this.get(`doc:${epic}`) ?? epicDocSeed(e.title);
   }
   epicDocs(): Record<string, string> {
     return Object.fromEntries(this.sql.exec<{ k: string; v: string }>(`SELECT k, v FROM meta WHERE k LIKE 'doc:%'`).toArray().map((r) => [r.k.slice(4), r.v]));
