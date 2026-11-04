@@ -202,6 +202,15 @@ export class Book extends DurableObject<Env> {
       .all<{ email: string; name: string }>();
     return Object.fromEntries(r.results.map((x) => [x.email, x.name]));
   }
+  /** email → avatar version for this room's members who set a picture. */
+  async avatars(): Promise<Record<string, number>> {
+    const id = this.get("book_id");
+    if (!id) return {};
+    const r = await this.env.DB.prepare(`SELECT m.email, u.avatar FROM members m JOIN users u ON u.email = m.email WHERE m.book_id = ? AND u.avatar IS NOT NULL`)
+      .bind(id)
+      .all<{ email: string; avatar: number }>();
+    return Object.fromEntries(r.results.map((x) => [x.email, x.avatar]));
+  }
   async members(): Promise<string[]> {
     const id = this.get("book_id");
     if (!id) return [];
@@ -594,7 +603,7 @@ export class Book extends DurableObject<Env> {
       const members = await this.members();
       // Kick sockets of anyone no longer a member.
       for (const ws of this.sockets()) if (!members.includes(this.ctx.getTags(ws)[0])) ws.close(4003, "removed");
-      this.broadcast({ t: "members", members, pending: await this.pending(), names: await this.names() });
+      this.broadcast({ t: "members", members, pending: await this.pending(), names: await this.names(), avatars: await this.avatars() });
       this.broadcast({ t: "online", online: this.online() });
       return new Response("ok");
     }
@@ -634,6 +643,7 @@ export class Book extends DurableObject<Env> {
         members: await this.members(),
         pending: await this.pending(),
         names: await this.names(),
+        avatars: await this.avatars(),
         online: this.online(),
         receipts: this.receiptsList(),
         acks: this.acksList(),

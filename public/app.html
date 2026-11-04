@@ -31,6 +31,11 @@
     color: #fff; flex: none; position: relative; }
   .avatar.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); border: 2px solid var(--panel); }
   .avatar.ai { background: var(--ai); }
+  .avatar.pic { background: var(--line); overflow: visible; }
+  .avatar.pic img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
+  /* A person's Claude: orange asterisk, the person's avatar as a badge. */
+  .avatar.claude { background: #d97757; color: #fff; font-size: 17px; font-weight: 400; position: relative; overflow: visible; }
+  .avatar.claude > .avatar { position: absolute; right: -5px; bottom: -5px; width: 16px; height: 16px; font-size: 7px; box-shadow: 0 0 0 2px var(--panel); }
 
   /* home */
   .home { max-width: 1120px; margin: 0 auto; padding: 22px 24px 80px; }
@@ -122,13 +127,23 @@
   .bell.default::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; }
   .bell.denied { color: #c2410c; }
   .bell.muted { opacity: .55; }
-  .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #f2dc4a; color: #14305e; margin-left: 4px; }
-  .msg.agent .avatar { border-radius: 9px; }
+  .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: oklch(0.93 0.05 45); color: oklch(0.45 0.13 40); margin-left: 4px; }
+  /* Agents speak in a warm bubble; people stay plain text: who is talking reads at a glance. */
+  .msg.agent .txt { background: oklch(0.975 0.014 55); border: 1px solid oklch(0.92 0.035 55); border-radius: 4px 14px 14px 14px; padding: 10px 14px; margin-top: 4px; }
+  .msg.agent .who { color: oklch(0.45 0.1 40); }
+  .msg.agent .avatar.claude { border-radius: 50%; }
   .msg.done .txt { background: oklch(0.97 0.03 155); border: 1px solid oklch(0.86 0.07 155); border-left: 4px solid var(--ok); border-radius: 12px; padding: 10px 14px; margin-top: 4px; }
   .doneTag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--ok); color: #fff; margin-left: 4px; }
   .invite input { flex: 1; min-width: 0; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
+  .picAsk { display: flex; align-items: center; gap: 18px; background: oklch(0.96 0.03 50); border: 1px solid oklch(0.9 0.05 50); border-radius: 18px; padding: 18px 22px; margin-bottom: 24px; max-width: 640px; }
+  .picAsk > div { display: grid; gap: 4px; flex: 1; }
+  .picAsk b { font-size: 17px; }
+  .picAsk .picBig { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 20px; flex: none; }
+  .picAsk .primary { font-size: 15px; padding: 12px 18px; white-space: nowrap; }
+  @media (max-width: 560px) { .picAsk { flex-wrap: wrap; } .picAsk .primary { width: 100%; } }
+  .me .avatar { cursor: pointer; }
   .nameAsk { display: grid; gap: 6px; background: var(--ai-bg); border-radius: 16px; padding: 18px 20px; margin-bottom: 28px; max-width: 520px; }
   .nameAsk .row { margin-top: 6px; }
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
@@ -171,8 +186,8 @@
   .tcard .tc-t small { font-size: 12px; color: var(--mute); }
   .tcard .tc-go { color: var(--mute); }
   .member.agentRow { padding-left: 18px; font-size: 12.5px; color: var(--mute); }
-  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 11px; background: var(--line); color: var(--mute); flex: none; position: relative; }
-  .agentRow .aglyph.on { background: oklch(0.93 0.06 150); color: oklch(0.42 0.12 150); }
+  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; background: oklch(0.93 0.03 50); color: oklch(0.62 0.1 45); flex: none; position: relative; border-radius: 50%; }
+  .agentRow .aglyph.on { background: #d97757; color: #fff; }
   .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
   .agentRow small { margin-left: auto; font-size: 11px; }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
@@ -532,9 +547,16 @@ const COLORS = ["#ff5a36", "#1f9d8a", "#3b6cf6", "#c2410c", "#9333ea", "#0f766e"
 const color = (s) => COLORS[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
 let knownNames = {}; // email → display name (from /api/me friends + book state)
 const name = (email) => email === "ai" ? "@vibe" : S?.names?.[email] || knownNames[email] || email.split("@")[0];
-const avatar = (email, on) => email === "ai"
-  ? `<span class="avatar ai">✦</span>`
-  : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
+let avatarV = {}; // email → profile picture version (from /api/me; rooms bring theirs in S.avatars)
+const avatar = (email, on) => {
+  if (email === "ai") return `<span class="avatar ai">✦</span>`;
+  const v = S?.avatars?.[email] ?? avatarV[email];
+  return v
+    ? `<span class="avatar pic ${on ? "on" : ""}" title="${esc(name(email))}"><img src="/api/avatar/${encodeURIComponent(email)}?v=${v}" alt="" loading="lazy" /></span>`
+    : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
+};
+// A person's Claude: the orange asterisk, with its person's avatar as a small badge.
+const agentAvatar = (email, via) => `<span class="avatar claude" title="${esc(via || "Claude")} de ${esc(name(email))}">✻${avatar(email)}</span>`;
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
 // @mentions: a member's handle is their first name (accents stripped), else the first part of their email.
@@ -716,6 +738,7 @@ async function home() {
   const me = await api("/api/me");
   myBooks = me.books; renderSwitcher();
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
+  avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
   const OTHER = "Outros";
   const byFolder = {};
   for (const b of me.books) (byFolder[b.folder || OTHER] ??= []).push(b);
@@ -737,6 +760,10 @@ async function home() {
     </form>
     ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
+    ${me.avatar ? "" : `<div class="picAsk"><span class="picBig" style="background:${color(me.email)}">${esc(name(me.email).slice(0, 2).toUpperCase())}</span>
+      <div><b>Coloque sua foto</b><span class="muted">Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).</span></div>
+      <button class="primary" data-pic>📷 Adicionar foto</button></div>`}
+    <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />
     <div class="hello">
       <div class="helloText"><h1>${first ? `Oi, ${esc(first)}` : "Seus vibebooks"}</h1>
         <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · <a class="archLink" data-nav href="/archived">Arquivo</a></p></div>
@@ -774,7 +801,8 @@ async function home() {
     </div>
   </div>`;
   const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
-  document.getElementById("myName").onclick = () => saveName(prompt("Seu nome:", me.name || ""));
+  document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt("Seu nome:", me.name || ""));
+  document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
   document.getElementById("new").onclick = async () => {
@@ -978,7 +1006,7 @@ function onEvent(ev, id) {
       else if (isPre() && preOf()?.title !== was) { const j = S.suggestions.findIndex((x) => x.title === was); thread = j >= 0 ? `pre:${j}` : "main"; renderChat(); }
       renderSide(); return;
     }
-    case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; renderSide(); return;
+    case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
@@ -1424,7 +1452,7 @@ const agentRows = (email) => {
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? (a.all_rooms ? "ouvindo todas as salas agora" : "ouvindo esta sala agora") : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✦</span><span class="fn">${esc(a.who)}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
+    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? (a.all_rooms ? "ouvindo todas as salas agora" : "ouvindo esta sala agora") : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who)}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
 };
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}">
@@ -1490,6 +1518,25 @@ function renderSide() {
   };
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   setFavicon(bookTitle());
+}
+
+// Profile picture: pick, crop to a centered square, resize to 256px JPEG in the browser, upload.
+function pickPic() {
+  const input = document.getElementById("picFile"); if (!input) return;
+  input.onchange = async () => {
+    const f = input.files?.[0]; if (!f) return;
+    try {
+      const img = await createImageBitmap(f);
+      const s = Math.min(img.width, img.height), c = document.createElement("canvas");
+      c.width = c.height = 256;
+      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
+      const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.86));
+      const r = await fetch("/api/me/avatar", { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Não deu para salvar a foto.");
+      route();
+    } catch (err) { alert(err.message || "Não deu para ler essa imagem."); }
+  };
+  input.click();
 }
 
 // The invite email gets them in; this is the message you send yourself (WhatsApp etc.): the room link and the
@@ -1660,8 +1707,8 @@ const msgHtml = (m, prev) => {
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(linkify(esc(m.text))) : "";
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}" id="m${m.id}">
-    ${avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
-    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">✦ agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
+    ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
+    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${m.thread === "main" ? threadCards(m.id) : ""}</div>
   </div>`;
 };

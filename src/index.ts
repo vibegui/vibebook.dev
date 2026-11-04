@@ -71,7 +71,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -228,7 +228,7 @@ app.get("/api/me", async (c) => {
     .all();
   const friends = await db
     .prepare(
-      `SELECT f.b AS email, u.name, u.email IS NOT NULL AS joined,
+      `SELECT f.b AS email, u.name, u.avatar, u.email IS NOT NULL AS joined,
          (SELECT count(*) FROM members x JOIN members y ON x.book_id = y.book_id
            WHERE x.email = f.a AND y.email = f.b) AS shared
        FROM friends f LEFT JOIN users u ON u.email = f.b
@@ -236,8 +236,31 @@ app.get("/api/me", async (c) => {
     )
     .bind(email)
     .all();
-  const me = await db.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>();
-  return c.json({ email, name: me?.name ?? null, books: books.results, friends: friends.results });
+  const me = await db.prepare(`SELECT name, avatar FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null }>();
+  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results });
+});
+
+// Profile picture: the app resizes it to a small square before sending. R2 `avatars/<email>`, users.avatar = version.
+const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+app.post("/api/me/avatar", async (c) => {
+  const email = c.get("email");
+  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
+  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (!AVATAR_TYPES.includes(type)) return c.json({ error: "Use uma imagem PNG, JPEG ou WebP." }, 415);
+  const body = await c.req.arrayBuffer();
+  if (!body.byteLength || body.byteLength > 1_000_000) return c.json({ error: "Imagem vazia ou maior que 1MB." }, 413);
+  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
+  await c.env.FILES.put(`avatars/${email}`, body, { httpMetadata: { contentType: type } });
+  const v = Date.now();
+  await c.env.DB.prepare(`UPDATE users SET avatar = ? WHERE email = ?`).bind(v, email).run();
+  c.executionCtx.waitUntil(track(c.env, "avatar_set", { user: email }));
+  return c.json({ ok: true, avatar: v });
+});
+// Signed-in people only; the URL carries ?v=<version>, so it caches for good.
+app.get("/api/avatar/:email", async (c) => {
+  const obj = await c.env.FILES.get(`avatars/${c.req.param("email").toLowerCase()}`);
+  if (!obj) return c.notFound();
+  return new Response(obj.body, { headers: { ...fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "avatar"), "cache-control": "private, max-age=31536000, immutable" } });
 });
 
 // Archive is per person: the room leaves your list (and your agent's inbox) and lands in /archived.
