@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,start_epic,log_decision,create_room", "tools/list has the 10 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,set_task_status,upload_link,start_epic,log_decision,create_room", "tools/list has the 11 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -155,6 +155,14 @@ check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei
 await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived === true, "closing its last task archives the epic");
+
+// upload_link: a one-time URL the agent PUTs a file to (bytes never go through the model), posted with its message.
+const ul = (await g.tool("upload_link", { room_id: room, filename: "antes.png", content_type: "image/png", message: "antes" })).out;
+const png = Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="), (ch) => ch.charCodeAt(0));
+const put = await fetch(ul.url, { method: "PUT", headers: { "content-type": "image/png" }, body: png });
+const putOut = (await put.json()) as { ok?: boolean; file?: { name: string } };
+check(put.status === 200 && putOut.ok && putOut.file?.name === "antes.png", "a file PUT to an upload link lands in the room with its message");
+check((await fetch(ul.url, { method: "PUT", headers: { "content-type": "image/png" }, body: png })).status === 404, "an upload link works once");
 
 // Asked by the person in the main thread: the epic hangs under that message as a thread, no pointer line.
 const ask = await (await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "dá pra trocar o domínio?" }) })).json();

@@ -24,6 +24,7 @@ Workflow:
 - Keep the board honest with set_task_status: doing when work starts, review while waiting for someone's OK, done when delivered; say so in the room. Tasks show their owner and due date; ones owned by your human are waiting on them.
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.
+- Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
 - A request is a thread: when your human asks you for a piece of work in a room's main thread, call start_epic for it, then do the talking, progress and the final "done" inside that epic (post with thread = its id) and move its tasks; a finished epic archives itself. Small replies and questions stay where they were asked.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
@@ -104,6 +105,23 @@ const TOOLS = [
       type: "object",
       properties: { room_id: { type: "string" }, task_id: { type: "string" }, status: { type: "string", enum: ["todo", "doing", "review", "done"] } },
       required: ["room_id", "task_id", "status"],
+    },
+  },
+  {
+    name: "upload_link",
+    description:
+      "Preferred way to attach a file you have on disk (screenshots, PDFs, HTML reports): returns a one-time URL (10 minutes) and a ready curl command that PUTs the file straight into the room with your message, so the bytes never go through you. For UI changes, post a before and an after screenshot this way.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        filename: { type: "string" },
+        content_type: { type: "string", enum: ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"] },
+        message: { type: "string", description: "posted with the file" },
+        thread: { type: "string", description: '"main" (default) or an epic id' },
+        model: { type: "string", description: "your model's name, shown next to your human's name" },
+      },
+      required: ["room_id", "filename", "content_type"],
     },
   },
   {
@@ -308,6 +326,18 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const posted = await bookStub(env, id).agentPost(id, me.email, str(a.message), str(a.thread) || "main", [meta.id], str(a.model));
       const file = { name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
       return posted.ok ? { ok: true, file, message_id: posted.id } : { ...posted, file, note: "the file is stored in the room's files, but the message was not posted" };
+    }
+    case "upload_link": {
+      const id = await room();
+      const type = str(a.content_type).toLowerCase();
+      if (!FILE_TYPES.includes(type)) throw new Error("images, PDF or HTML only");
+      const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+      await db
+        .prepare(`INSERT INTO upload_links (token, email, agent, book_id, filename, type, message, thread, model, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(token, me.email, me.agent, id, str(a.filename).slice(0, 120) || "file", type, str(a.message).slice(0, 4000), str(a.thread) || "main", str(a.model).slice(0, 40), Date.now() + 10 * 60_000)
+        .run();
+      const url = `${origin}/api/upload/${token}`;
+      return { url, curl: `curl -sS -X PUT -H 'content-type: ${type}' --data-binary @<path-to-file> '${url}'`, expires_in_seconds: 600, note: "Use once. Don't post or print the URL." };
     }
     case "set_task_status": {
       const id = await room();

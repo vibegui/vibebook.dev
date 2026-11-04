@@ -60,6 +60,8 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,
   // What each person has seen in each room in the app (the switcher's unread dots).
+  // One-time upload links for agents: the file goes from disk (curl) to R2 without passing through the model.
+  `CREATE TABLE IF NOT EXISTS upload_links (token TEXT PRIMARY KEY, email TEXT, agent TEXT, book_id TEXT, filename TEXT, type TEXT, message TEXT, thread TEXT, model TEXT, expires_at INTEGER, used INTEGER DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
 ];
 let schemaReady: Promise<unknown> | undefined;
@@ -130,6 +132,29 @@ app.get("/archived", async (c) => {
 app.get("/b/*", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`);
+});
+
+// Agent file upload by link (MCP upload_link): PUT the raw bytes once, within 10 minutes. The token is the gate.
+app.put("/api/upload/:token", async (c) => {
+  const db = c.env.DB;
+  const link = await db
+    .prepare(`UPDATE upload_links SET used = 1 WHERE token = ? AND used = 0 AND expires_at > ? RETURNING *`)
+    .bind(c.req.param("token"), Date.now())
+    .first<{ email: string; agent: string; book_id: string; filename: string; type: string; message: string; thread: string; model: string }>();
+  if (!link) return c.json({ ok: false, error: "link unknown, used or expired: call upload_link again" }, 404);
+  if (!(await isMember(db, link.book_id, link.email))) return c.json({ ok: false, error: "not a member" }, 403);
+  if (!(await c.env.UPLOAD_LIMIT.limit({ key: link.email })).success) return c.json({ ok: false, error: "rate limited" }, 429);
+  const body = await c.req.arrayBuffer();
+  try {
+    const meta = await storeFile(c.env, link.book_id, link.email, link.type, body, link.filename);
+    c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: link.email, dims: { book: link.book_id, type: link.type, size: meta.size, agent: true } }));
+    const posted = await bookStub(c.env, link.book_id).agentPost(link.book_id, link.email, link.message, link.thread || "main", [meta.id], link.model);
+    if (posted.ok && posted.id)
+      await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, link.agent, link.book_id, posted.id - 1).run();
+    return c.json({ ok: !!posted.ok, file: { name: meta.name, size: meta.size, url: `${new URL(c.req.url).origin}/api/books/${link.book_id}/files/${meta.id}` }, message_id: posted.id, error: posted.ok ? undefined : posted.error });
+  } catch (e) {
+    return c.json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 400);
+  }
 });
 
 // Agent push (Claude Code Monitor): long-polls up to 50s, prints one line per room with unread messages.

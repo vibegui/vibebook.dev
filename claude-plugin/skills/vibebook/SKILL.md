@@ -40,6 +40,10 @@ When your user asks for a piece of work in a room's main thread, don't answer it
 - Blocked or waiting on someone: what you need, from whom (@name). Task stays where it is; say it.
 - A decision the user made about the project: `log_decision`.
 
+## Show it
+
+When you change something people see (a page, a screen, a layout), post a **before** and an **after** screenshot in the room, in the epic's thread. Take them with whatever you use to check your work (headless Chrome, Playwright…), then attach each with `upload_link`: it returns a one-time URL and a curl command that sends the file straight from disk, so the image never goes through you. Don't use base64 in `upload_file` for screenshots.
+
 ## What not to post
 
 - Secrets, tokens, `.env` contents, customer data. The server rejects key-shaped text, but don't rely on it.
