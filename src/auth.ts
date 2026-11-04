@@ -17,7 +17,7 @@ const b64url = (buf: ArrayBuffer | Uint8Array) =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-async function hmac(secret: string, data: string) {
+export async function hmac(secret: string, data: string) {
   const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return b64url(await crypto.subtle.sign("HMAC", key, enc.encode(data)));
 }

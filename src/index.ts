@@ -6,6 +6,7 @@ import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
+import { validUnsub } from "./mentionmail";
 import { befriend, bookStub, createBook, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
@@ -28,6 +29,7 @@ export type Env = {
   LOGIN_LIMIT: RateLimit;
   OPENROUTER_API_KEY: string;
   SESSION_SECRET: string;
+  PUBLIC_ORIGIN?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   MODEL_ROUTE: string;
@@ -71,7 +73,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -191,6 +193,16 @@ app.get("/api/notify", async (c) => {
     if (Date.now() + 3000 > deadline) return c.body(null, 204);
     await new Promise((res) => setTimeout(res, 3000));
   }
+});
+
+// Mention emails: the signed link in the footer turns them off (or back on) without signing in.
+app.get("/mail/:onoff{off|on}", async (c) => {
+  const email = (c.req.query("e") ?? "").toLowerCase(), on = c.req.param("onoff") === "on";
+  if (!email || !(await validUnsub(c.env.SESSION_SECRET, email, c.req.query("s") ?? ""))) return c.text("Link inválido.", 400);
+  await c.env.DB.prepare(`UPDATE users SET mention_mail = ? WHERE email = ?`).bind(on ? 1 : 0, email).run();
+  c.executionCtx.waitUntil(track(c.env, on ? "mention_mail_on" : "mention_mail_off", { user: email }));
+  const back = `/mail/${on ? "off" : "on"}?e=${encodeURIComponent(email)}&s=${encodeURIComponent(c.req.query("s") ?? "")}`;
+  return c.html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>vibebook</title><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:460px;margin:60px auto;padding:0 20px;color:#1a2130"><h1 style="font-size:22px">${on ? "Emails de menção ligados." : "Pronto, sem emails de menção."}</h1><p>${on ? "Quando alguém te mencionar e você não vir em 5 minutos, chega um email." : "Você continua vendo as menções no vibebook."}</p><p><a href="${back}">${on ? "Desligar de novo" : "Mudei de ideia, quero os emails"}</a> · <a href="/app">Abrir o vibebook</a></p></body>`);
 });
 
 app.use("*", async (c, next) => {

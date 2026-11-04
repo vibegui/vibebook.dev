@@ -5,6 +5,7 @@ import { generateText, type ModelMessage, Output, stepCountIs, streamText, tool 
 import { z } from "zod";
 import type { Env } from "./index";
 import { checkUrl, type ReadResult, readUrl } from "./reader";
+import { MAIL_DAY_MAX, MAIL_DELAY_MS, MAIL_GAP_MS, type MailFacts, COPY_PROMPT, mailBody, mentioned, plainCopy, unsubscribeUrl } from "./mentionmail";
 import { docRoomStub } from "./rooms";
 import { findSecret } from "./secrets";
 import { track } from "./track";
@@ -65,6 +66,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, who TEXT, kind TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS receipts (agent TEXT PRIMARY KEY, email TEXT, who TEXT, read INTEGER, delivered INTEGER, ts INTEGER);
       CREATE TABLE IF NOT EXISTS acks (msg_id INTEGER, agent TEXT, email TEXT, who TEXT, status TEXT, ts INTEGER, PRIMARY KEY (msg_id, agent));
+      CREATE TABLE IF NOT EXISTS mail_q (email TEXT, msg_id INTEGER, due INTEGER, PRIMARY KEY (email, msg_id));
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
     for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
@@ -254,7 +256,105 @@ export class Book extends DurableObject<Env> {
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
     const byPerson = !extra.kind && author !== "ai";
     this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
+    if (text.includes("@")) this.ctx.waitUntil(this.queueMentions(m));
     return m;
+  }
+
+  // ---- mention emails (src/mentionmail.ts) ----
+  /** Someone was @mentioned: email them in MAIL_DELAY_MS unless they read it first. */
+  async queueMentions(m: Msg) {
+    const who = mentioned(m.text, await this.members(), await this.names(), m.author);
+    if (!who.length) return;
+    const delay = this.env.DEV_EMAIL ? 5_000 : MAIL_DELAY_MS; // local dev: see it in seconds
+    for (const e of who) this.sql.exec(`INSERT OR IGNORE INTO mail_q (email, msg_id, due) VALUES (?, ?, ?)`, e, m.id, m.ts + delay);
+    await this.wakeAt(m.ts + delay);
+  }
+  /** One alarm serves classify and mail: keep the earliest. */
+  async wakeAt(at: number) {
+    const cur = await this.ctx.storage.getAlarm();
+    if (!cur || at < cur) await this.ctx.storage.setAlarm(at);
+  }
+  async sendDueMail() {
+    const bookId = this.get("book_id");
+    const now = Date.now();
+    const due = this.sql.exec<{ email: string }>(`SELECT DISTINCT email FROM mail_q WHERE due <= ?`, now).toArray().map((r) => r.email);
+    if (!bookId || !due.length) return;
+    const db = this.env.DB;
+    for (const to of due) {
+      const ids = this.sql.exec<{ msg_id: number }>(`SELECT msg_id FROM mail_q WHERE email = ? ORDER BY msg_id`, to).toArray().map((r) => r.msg_id);
+      const drop = () => this.sql.exec(`DELETE FROM mail_q WHERE email = ? AND msg_id <= ?`, to, ids.at(-1)!);
+      const [read, user, sentToday] = await Promise.all([
+        db.prepare(`SELECT last_id FROM human_reads WHERE email = ? AND book_id = ?`).bind(to, bookId).first<{ last_id: number }>(),
+        db.prepare(`SELECT name, mention_mail FROM users WHERE email = ?`).bind(to).first<{ name: string | null; mention_mail: number | null }>(),
+        db.prepare(`SELECT count(*) AS n FROM events WHERE name = 'mention_mail' AND ts > ? AND user = ?`).bind(now - 864e5, to).first<{ n: number }>(),
+      ]);
+      const unread = ids.filter((i) => i > (read?.last_id ?? 0));
+      // Read in the app already, opted out, or never signed up (the invite email covers them): nothing to send.
+      if (!unread.length || !user || user.mention_mail === 0) { drop(); continue; }
+      if ((sentToday?.n ?? 0) >= MAIL_DAY_MAX) { drop(); this.ctx.waitUntil(track(this.env, "mention_mail_skipped", { user: to, dims: { book: bookId, why: "day_cap" } })); continue; }
+      const last = Number(this.get(`mailed:${to}`) ?? 0);
+      if (now - last < MAIL_GAP_MS) { this.sql.exec(`UPDATE mail_q SET due = ? WHERE email = ?`, last + MAIL_GAP_MS, to); continue; }
+      this.set(`mailed:${to}`, String(now));
+      drop();
+      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread).catch((e) => console.error("mention mail failed", { to, error: String(e) }));
+    }
+    const next = this.sql.exec<{ d: number | null }>(`SELECT min(due) AS d FROM mail_q`).one().d;
+    if (next) await this.wakeAt(next);
+  }
+  async mentionMail(bookId: string, to: string, toName: string, msgIds: number[]) {
+    const started = Date.now();
+    const names = await this.names();
+    const nm = (e: string) => (e === "ai" ? "@vibe" : names[e] ?? e.split("@")[0]);
+    const rows = this.sql.exec(`SELECT * FROM messages WHERE id IN (${msgIds.map(() => "?").join(",")}) ORDER BY id`, ...msgIds).toArray();
+    if (!rows.length) return;
+    const thread = rows.at(-1)!.thread as string;
+    const epicRow = thread === "main" ? null : this.epics().find((e) => e.id === thread) ?? null;
+    const book = await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
+    const label = (r: Record<string, unknown>) => (r.kind === "agent" ? `${r.via || "Claude"} de ${nm(r.author as string)}` : nm(r.author as string));
+    const recent = this.messages(thread, 14).filter((x) => x.text);
+    const facts: MailFacts = {
+      to,
+      toName,
+      room: { id: bookId, title: book?.title ?? "vibebook" },
+      epic: epicRow ? { id: epicRow.id, title: epicRow.title } : null,
+      mentions: rows.map((r) => ({ from: label(r), text: r.text as string, ts: r.ts as number })),
+      context: recent.map((x) => `${x.kind === "agent" ? `${x.via || "Claude"} de ${nm(x.author)}` : nm(x.author)}: ${x.text.slice(0, 400)}`).join("\n"),
+      people: [...new Set(recent.map((x) => nm(x.author)).concat(toName))],
+      myTasks: epicRow ? epicRow.tasks.filter((t) => t.owner === to && t.status !== "done").map((t) => t.title) : [],
+    };
+    let copy = plainCopy(facts), cost = 0, ai = false;
+    try {
+      const { output, usage } = await generateText({
+        model: this.model(this.env.MODEL_FAST, true),
+        maxOutputTokens: 400,
+        output: Output.object({
+          schema: z.object({
+            subject: z.string().describe("assunto do email, máx 70 caracteres: o pedido, não 'você foi mencionado'"),
+            ask: z.string().describe(`uma frase: o que pedem a ${toName} ou o que ${toName} precisa fazer/decidir; se for só um aviso, diga o aviso`),
+            context: z.array(z.string()).max(3).describe("até 3 linhas curtas com o contexto que ajuda a responder (o que já foi feito, prazo, quem depende disso)"),
+          }),
+        }),
+        prompt: COPY_PROMPT(facts),
+      });
+      copy = { subject: output.subject.slice(0, 90), ask: output.ask.slice(0, 300), context: output.context.map((x) => x.slice(0, 200)) };
+      cost = costOf(usage);
+      ai = true;
+    } catch (e) {
+      console.error("mention mail copy failed", String(e));
+    }
+    const origin = this.env.PUBLIC_ORIGIN || "https://vibebook.dev";
+    const url = `${origin}/b/${bookId}${epicRow ? `?t=${epicRow.id}` : ""}`;
+    const { html, text } = mailBody(facts, copy, url, await unsubscribeUrl(this.env.SESSION_SECRET, origin, to));
+    const lastAuthor = rows.at(-1)!.author as string;
+    await this.env.EMAIL.send({
+      to,
+      from: { email: "mencao@vibebook.dev", name: `${facts.mentions.at(-1)!.from} via vibebook` },
+      ...(lastAuthor !== "ai" ? { replyTo: lastAuthor } : {}),
+      subject: copy.subject,
+      text,
+      html,
+    });
+    this.ctx.waitUntil(track(this.env, "mention_mail", { user: to, dims: { book: bookId, n: rows.length, ai, model: this.env.MODEL_FAST, cost: +cost.toFixed(6), ms: Date.now() - started } }));
   }
   createEpic(title: string, tasks: (string | { title: string; owner?: string; due?: string })[] = [], members: string[] = [], why = "") {
     const id = rid();
@@ -525,7 +625,7 @@ export class Book extends DurableObject<Env> {
       this.broadcast({ t: "acks", acks: this.acksList() });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
-    if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
+    await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id };
   }
 
@@ -584,7 +684,7 @@ export class Book extends DurableObject<Env> {
     const m = this.addMessage(thread, email, text);
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", via: "home" } }));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
-    if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
+    await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id, thread };
   }
 
@@ -706,7 +806,7 @@ export class Book extends DurableObject<Env> {
         if (VIBE_RE.test(text)) {
           this.ctx.waitUntil(this.runAI(thread, email));
         }
-        if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + CLASSIFY_DELAY_MS);
+        await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
         return;
       }
       case "doc": {
@@ -1075,6 +1175,7 @@ Answer SIMPLE or COMPLEX:`,
 
   // Debounced background pass with the cheap model: title, folder, summary, epic suggestions.
   async alarm() {
+    await this.sendDueMail().catch((e) => console.error("mention mail", String(e)));
     const since = Number(this.get("classified_at_id") ?? 0);
     // Only people's own messages count: @vibe and agent posts don't make a room "talked about".
     const fresh = this.sql.exec(`SELECT count(*) AS n FROM messages WHERE id > ? AND author != 'ai' AND kind IS NULL`, since).one().n as number;
