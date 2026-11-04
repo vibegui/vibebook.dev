@@ -1333,8 +1333,8 @@ async function loadRoomAgents() {
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
-  return roomAgents.list.filter((a) => a.email === email && !seen.has(a.who + a.listening) && seen.add(a.who + a.listening)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))} · ${a.listening ? "ouvindo esta sala agora" : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✦</span><span class="fn">${esc(a.who)}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
+  return roomAgents.list.filter((a) => a.email === email && !seen.has(a.who + a.repo + a.listening) && seen.add(a.who + a.repo + a.listening)).slice(0, 3)
+    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? "ouvindo esta sala agora" : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✦</span><span class="fn">${esc(a.who)}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
 };
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length; return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}">

@@ -151,6 +151,13 @@ let rr = (await g.tool("read_room", { room_id: room, all: true })).out;
 const made = rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id);
 check(made?.doc?.includes("Trazer as reservas antigas"), "the new epic's doc starts with its goal");
 check(!!made?.tasks?.[0]?.owner, "the agent's human owns the tasks it started (self-assign)");
+// Pessoas shows only the sessions connected to this room, with their repo.
+await g.tool("read_room", { room_id: room, model: "Claude Teste", repo: "repo-teste" });
+const ags = (await fetch(`${BASE}/api/books/${room}/agents`, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } }).then((r) => r.json())) as { agents: { who: string; repo: string | null }[] };
+check(ags.agents?.some((x) => x.who === "Claude Teste" && x.repo === "repo-teste"), "the room lists the session that read it, with model and repo");
+const other = (await g.tool("create_room", { title: "outra sala (teste)" })).out?.room_id;
+const ags2 = (await fetch(`${BASE}/api/books/${other}/agents`, { headers: { cookie: `dev_as=${encodeURIComponent(gui)}` } }).then((r) => r.json())) as { agents: unknown[] };
+check(Array.isArray(ags2.agents) && ags2.agents.length === 0, "a room the session never touched doesn't list it");
 check(rr?.messages?.some((x: { thread: string; text: string }) => x.thread === "main" && x.text.includes("Importar as reservas")), "main thread gets one line pointing to the epic");
 check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei o import" })).out?.ok, "the agent reports inside the epic");
 await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });

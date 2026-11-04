@@ -14,7 +14,7 @@ Your person sent you this page to set vibebook up. Do it for them, step by step,
 3. Set up this project (what `/vibebook:setup` does):
    - `inbox`; if a room is clearly this project, propose it, else propose `create_room` (title from the README; ask whom to invite). Wait for their yes.
    - Link the repo: `.vibebook` at the root (`# vibebook: this repo has a room. Chat, tasks and decisions: https://vibebook.dev/b/<id>` then `room_id=<id>`), the badge under the README title (`[![vibebook: sala do projeto](https://vibebook.dev/badge.svg)](https://vibebook.dev/b/<id>)`) and `Project room: https://vibebook.dev/b/<id> (report progress there).` near the top of AGENTS.md. Show the diff, commit if they agree.
-   - Listen: `notify_url` with `room_id` = that room and `model` = your model name, then run its `monitor_command` with the Monitor tool (maximum timeout, re-arm silently when it expires, never print the URL).
+   - Listen: `notify_url` with `room_id` = that room `model` = your model name and `repo` = the folder name, then run its `monitor_command` with the Monitor tool (maximum timeout, re-arm silently when it expires, never print the URL).
    - Post one line in the room: this repo is linked and you're listening.
 4. Tell them it's done: what people write in the room now reaches this session while they talk to you about other things.
 
