@@ -247,6 +247,9 @@
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
   .rcpt .rd { color: var(--accent); }
+  .origin { border-bottom: 1px solid var(--line); margin: 0 0 14px; padding-bottom: 6px; }
+  .origin [data-gomain] { font-size: 12px; color: var(--mute); padding: 2px 6px; margin: 0 0 2px; }
+  .origin .msg { opacity: 0.92; }
   .older { display: flex; justify-content: center; padding: 8px 0 14px; }
   .older button { font-size: 13px; color: var(--mute); }
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
@@ -1604,6 +1607,11 @@ function refreshThreadCards() {
   }
 }
 document.addEventListener("click", (ev) => {
+  const back = ev.target.closest("[data-gomain]");
+  if (back) {
+    thread = "main"; boardEpic = null; docRoom = false; renderSide(); renderChat(); renderKanban(); renderDoc();
+    return document.getElementById(`m${back.dataset.gomain}`)?.scrollIntoView({ block: "center" });
+  }
   const b = ev.target.closest(".tcard[data-goepic]"); if (!b) return;
   thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
   renderSide(); renderChat(); renderKanban(); renderDoc();
@@ -1656,6 +1664,13 @@ function renderChat(keep) {
   el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">Carregar mensagens anteriores</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
     : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
   document.getElementById("olderBtn")?.addEventListener("click", loadOlder);
+  // A thread starts with the request that opened it (the epic's message in main), like a Slack thread's parent.
+  const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && S.messages.find((x) => x.id === src);
+  if (srcMsg) {
+    el.querySelector(".empty")?.classList.add("afterOrigin");
+    el.insertAdjacentHTML("afterbegin", `<div class="origin"><button type="button" class="ghost" data-gomain="${src}">↩ pedido na sala principal</button>${msgHtml(srcMsg).replace(`id="m${src}"`, "")}</div>`);
+    el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
+  }
   if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
   else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
 }
