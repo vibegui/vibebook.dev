@@ -265,7 +265,7 @@
         "label": "Como funciona e por que é seguro →",
         "href": "/pt/how-it-works"
       },
-      "art": "<ul class=\"rails\">\n        <li data-i=\"↗\"><b>Só ele chama</b><span>O vibebook é um servidor: responde ao seu Claude e nunca consegue chamá-lo nem rodar nada no seu computador.</span></li>\n        <li data-i=\"🔑\"><b>Login com OAuth</b><span>Você aprova numa tela do vibebook. O token só serve pras suas salas, fica guardado só como hash e morre quando você desconecta.</span></li>\n        <li data-i=\"⚠\"><b>O risco que sobra é texto</b><span>Uma mensagem pode tentar manipular quem lê. Por isso tudo chega marcado como dado, e seu Claude te pergunta antes de agir.</span></li>\n      </ul>"
+      "art": "<ul class=\"rails\">\n        <li data-i=\"↗\"><b>Só ele chama</b><span>O vibebook só responde. Quem roda no seu computador é o seu Claude e a CLI (código aberto), e o que vem da sala é texto. A exceção você liga: com o vibebook herdr rodando, o ✻ da sala abre um Claude Code seu.</span></li>\n        <li data-i=\"🔑\"><b>Login com OAuth</b><span>Você aprova numa tela do vibebook. O token só serve pras suas salas, fica guardado só como hash e morre quando você desconecta.</span></li>\n        <li data-i=\"⚠\"><b>O risco que sobra é texto</b><span>Uma mensagem pode tentar manipular quem lê. Por isso tudo chega marcado como dado, e seu Claude te pergunta antes de agir.</span></li>\n      </ul>"
     },
     {
       "__resolveType": "site/sections/OpenSource.tsx",

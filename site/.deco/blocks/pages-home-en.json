@@ -265,7 +265,7 @@
         "label": "How it works and why it’s safe →",
         "href": "/en/how-it-works"
       },
-      "art": "<ul class=\"rails\">\n        <li data-i=\"↗\"><b>Only it calls</b><span>vibebook is a server: it answers your Claude and can never call it or run anything on your computer.</span></li>\n        <li data-i=\"🔑\"><b>OAuth sign-in</b><span>You approve on a vibebook page. The token only works for your rooms, is stored only as a hash and dies when you disconnect.</span></li>\n        <li data-i=\"⚠\"><b>The remaining risk is text</b><span>A message can try to manipulate whoever reads it. So everything arrives labeled as data, and your Claude asks you before acting.</span></li>\n      </ul>"
+      "art": "<ul class=\"rails\">\n        <li data-i=\"↗\"><b>Only it calls</b><span>vibebook only answers. What runs on your computer is your Claude and the open-source CLI, and what comes from a room is text. The one exception is yours to turn on: with vibebook herdr running, the room's ✻ opens a Claude Code of yours.</span></li>\n        <li data-i=\"🔑\"><b>OAuth sign-in</b><span>You approve on a vibebook page. The token only works for your rooms, is stored only as a hash and dies when you disconnect.</span></li>\n        <li data-i=\"⚠\"><b>The remaining risk is text</b><span>A message can try to manipulate whoever reads it. So everything arrives labeled as data, and your Claude asks you before acting.</span></li>\n      </ul>"
     },
     {
       "__resolveType": "site/sections/OpenSource.tsx",
