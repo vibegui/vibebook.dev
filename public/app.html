@@ -300,7 +300,7 @@
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
   .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
   .kcard .vnote { margin-left: 0; justify-self: start; }
-  .task.mine { box-shadow: inset 3px 0 0 #e3b505; padding-left: 8px; border-radius: 6px; }
+  .task.mine { box-shadow: inset 3px 0 0 #e3b505; padding: 8px 10px 8px 14px; margin: 6px 0; border-radius: 10px; }
   .task.mine .towner { font-weight: 700; color: light-dark(#7a5c00, #f0d36b); background: color-mix(in oklch, #e3b505 18%, transparent); border-radius: 999px; }
   .task.waitTask { background: color-mix(in oklch, #e3b505 14%, transparent); }
   .task.waitTask .tt::after { content: " ⏳ esperando você"; font: 700 11px/1 system-ui, sans-serif; color: light-dark(#7a5c00, #f0d36b); white-space: nowrap; }
@@ -314,6 +314,7 @@
   .msg.waitMsg > .body { position: relative; }
   .msg.waitMsg > .body::before { content: "⏳ esperando você"; display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: 999px; background: color-mix(in oklch, #e3b505 22%, transparent); color: light-dark(#7a5c00, #f0d36b); font: 700 11px/1.6 system-ui, sans-serif; }
   .msg.waitMsg .txt { box-shadow: inset 3px 0 0 #e3b505; }
+  .msg.waitMsg:not(.ai):not(.agent):not(.done) .txt { padding: 8px 12px 8px 14px; border-radius: 10px; background-color: color-mix(in oklch, #e3b505 8%, transparent); }
   .rb.askBadge { background: var(--accent); color: #fff; font-size: 12px; } .asks { margin: 0 0 14px; padding: 10px 10px 4px; border-radius: 12px; background: color-mix(in oklch, var(--accent) 9%, transparent); } .asks h4 { margin-top: 0; } .okAsk { color: var(--accent); font-weight: 700; }
   .docNotes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; } .docNotes .vnote { margin: 0; }
   .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
