@@ -73,7 +73,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -229,7 +229,7 @@ app.get("/api/me", async (c) => {
   const db = c.env.DB;
   const books = await db
     .prepare(
-      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
+      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, m.position, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
          coalesce(r.last_id, 0) AS read_id,
          (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
        FROM books b JOIN members m ON m.book_id = b.id
@@ -358,6 +358,17 @@ app.post("/api/books/:id/claude", async (c) => {
   await c.env.DB.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(on ? 1 : 0, id, email).run();
   c.executionCtx.waitUntil(track(c.env, on ? "claude_on" : "claude_off", { user: email, dims: { book: id } }));
   return c.json({ ok: true, claude_on: !!on });
+});
+
+// The person's own order of their rooms (dragged in the rail); vibebook herdr orders the herdr workspaces the same way.
+app.post("/api/rooms/order", async (c) => {
+  const email = c.get("email");
+  const { ids } = await c.req.json<{ ids?: unknown }>().catch(() => ({ ids: [] }));
+  const list = (Array.isArray(ids) ? ids : []).filter((x): x is string => typeof x === "string").slice(0, 300);
+  if (!list.length) return c.json({ error: "ids required" }, 400);
+  const st = c.env.DB.prepare(`UPDATE members SET position = ? WHERE book_id = ? AND email = ?`);
+  await c.env.DB.batch(list.map((id, i) => st.bind(i, id, email)));
+  return c.json({ ok: true });
 });
 
 app.post("/api/books/:id/archive", async (c) => {

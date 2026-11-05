@@ -528,6 +528,7 @@
   .sw-group .sw-item .pill { left: -8px; top: 12px; }
   .sw-item:hover .pill { opacity: .5; }
   .sw-item.on .pill { opacity: 1; height: 28px; top: 4px; }
+  .sw-item.dropTo .tile { outline: 2px dashed var(--accent); outline-offset: 2px; }
   .sw-group .sw-item.on .pill { top: 2px; }
   .tile { display: grid; place-items: center; color: #fff; font: 400 15px/1 Caprasimo, Georgia, serif; border-radius: 12px; opacity: .7; transition: opacity .15s, transform .15s; }
   .tile.lg { width: 36px; height: 36px; }
@@ -623,6 +624,8 @@ const SW_SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" s
 const SW_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
 const recentRooms = () => { try { return JSON.parse(localStorage.getItem("vb.recent") || "[]"); } catch { return []; } };
 const rememberRoom = (id) => { try { localStorage.setItem("vb.recent", JSON.stringify([id, ...recentRooms().filter((x) => x !== id)].slice(0, 4))); } catch {} };
+// Your order of rooms: the ones you placed first, then the rest oldest first (stable, unlike activity).
+const roomOrder = () => [...(myBooks || [])].sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9) || (a.created_at ?? 0) - (b.created_at ?? 0));
 const tile = (b, size) => `<span class="tile ${size}" style="background:${coverColor(b.title)}">${esc(initials(b.title))}</span>`;
 // The room you're in is read up to its newest message (the server marks it too); refresh the rail every 30s.
 function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if (mine && upto > mine.read_id) mine.read_id = upto; }
@@ -638,10 +641,10 @@ function renderSwitcher() {
   if (!show) { $sw.innerHTML = ""; return; }
   const byId = Object.fromEntries(myBooks.map((b) => [b.id, b]));
   const recent = recentRooms().map((id) => byId[id]).filter(Boolean);
-  const rest = myBooks.filter((b) => !recent.includes(b));
+  const rest = roomOrder().filter((b) => !recent.includes(b));
   // Green: someone wrote since you last looked; yellow: only agents/@vibe did.
   const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
-  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
+  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}"${label ? ' draggable="false"' : ' draggable="true" data-drag'} aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
   $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     ${recent.length ? `<div class="sw-group">${recent.map((b) => item(b, true)).join("")}</div>` : `<span class="sw-sep"></span>`}
     ${rest.map((b) => item(b, false)).join("")}
@@ -649,6 +652,23 @@ function renderSwitcher() {
     <button class="sw-btn" id="swSearch" title="Ir para um vibebook (⌘K)" aria-label="Ir para um vibebook">${SW_SEARCH}</button>
     <button class="sw-btn" id="swNew" title="Novo vibebook" aria-label="Novo vibebook">${SW_PLUS}</button>`;
   $sw.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+  // Drag a room tile to put it in your order (the same order vibebook herdr gives your Claudes' workspaces).
+  $sw.querySelectorAll("[data-drag]").forEach((a) => {
+    a.ondragstart = (e) => { e.dataTransfer.setData("text/plain", a.dataset.id); e.dataTransfer.effectAllowed = "move"; };
+    a.ondragover = (e) => { e.preventDefault(); a.classList.add("dropTo"); };
+    a.ondragleave = () => a.classList.remove("dropTo");
+    a.ondrop = (e) => {
+      e.preventDefault(); a.classList.remove("dropTo");
+      const from = e.dataTransfer.getData("text/plain"), to = a.dataset.id;
+      if (!from || from === to) return;
+      const ids = roomOrder().map((b) => b.id).filter((id) => id !== from);
+      const r = a.getBoundingClientRect();
+      ids.splice(ids.indexOf(to) + (e.clientY > r.top + r.height / 2 ? 1 : 0), 0, from);
+      ids.forEach((id, i) => { const b = myBooks.find((x) => x.id === id); if (b) b.position = i; });
+      renderSwitcher();
+      api("/api/rooms/order", { ids }).catch(() => {});
+    };
+  });
   document.getElementById("swSearch").onclick = openSwitch;
   document.getElementById("swNew").onclick = async () => { const { id } = await api("/api/books", {}); history.pushState(null, "", `/b/${id}`); route(); };
 }

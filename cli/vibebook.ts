@@ -216,7 +216,7 @@ function readData(): Record<string, unknown> {
 // workspace, else create it in the room's folder and start `claude "/vibebook:listen"` there (resuming the last
 // conversation). Off: remember the conversation id and close the workspace. Never touches workspaces it doesn't map.
 type HerdrRoom = { folder?: string; workspace?: string; session?: string };
-type Pane = { pane_id: string; workspace_id: string; cwd: string; foreground_cwd?: string; agent?: string; agent_status?: string; agent_session?: { value?: string } };
+type Pane = { pane_id: string; workspace_id: string; tab_id: string; cwd: string; foreground_cwd?: string; agent?: string; agent_status?: string; agent_session?: { value?: string } };
 const herdr = (...args: string[]) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 const PROJECTS = join(homedir(), "Projects");
 const slug = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "sala";
@@ -304,6 +304,52 @@ async function herdrSync(agent: string, tools: Tool[]) {
     delete e.workspace;
   }
   writePrivate(HERDR, map);
+  herdrOrder([...on.keys()], map);
+}
+/** Put the rooms' workspaces in the person's room order (others stay where they are). herdr can't reorder
+ *  workspaces, but a pane can move into a new workspace (appended at the end) with its process alive: so from the
+ *  first one out of place, each room's panes move to a fresh workspace, in order. Claude keeps running. */
+function herdrOrder(order: string[], map: Record<string, HerdrRoom>) {
+  type Ws = { workspace_id: string; label: string; focused: boolean };
+  const list = herdr("workspace", "list").workspaces as Ws[];
+  const ours = new Map(order.filter((r) => map[r]?.workspace).map((r) => [map[r].workspace as string, r]));
+  const current = list.filter((w) => ours.has(w.workspace_id)).map((w) => w.workspace_id);
+  const desired = order.map((r) => map[r]?.workspace).filter((w): w is string => !!w && current.includes(w));
+  // Only the order among ours matters (other workspaces may sit in between); move from the first one out of place.
+  let i = 0;
+  while (i < desired.length && current[i] === desired[i]) i++;
+  if (i === desired.length) return;
+  const focused = list.find((w) => w.focused)?.workspace_id;
+  let refocus: string | undefined;
+  const tabs = herdr("tab", "list").tabs as { tab_id: string; workspace_id: string; label: string }[];
+  for (const ws of desired.slice(i)) {
+    const room = ours.get(ws) as string;
+    const panes = (herdr("pane", "list").panes as Pane[]).filter((p) => p.workspace_id === ws);
+    let newWs: string | undefined;
+    const newTab = new Map<string, string>();
+    for (const p of panes) {
+      const tabLabel = tabs.find((t) => t.tab_id === p.tab_id)?.label ?? "1";
+      let r: any;
+      if (!newWs) r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room, "--tab-label", tabLabel);
+      else if (newTab.has(p.tab_id)) r = herdr("pane", "move", p.pane_id, "--tab", newTab.get(p.tab_id) as string, "--split", "right", "--no-focus");
+      else r = herdr("pane", "move", p.pane_id, "--new-tab", "--workspace", newWs, "--label", tabLabel, "--no-focus");
+      const moved = r.move_result.pane as { workspace_id: string; tab_id: string };
+      newWs = moved.workspace_id;
+      newTab.set(p.tab_id, moved.tab_id);
+    }
+    if (newWs) {
+      map[room].workspace = newWs;
+      if (ws === focused) refocus = newWs;
+    }
+  }
+  writePrivate(HERDR, map);
+  // Moving into a new workspace focuses it; give the person back the one they were in.
+  const back = refocus ?? focused;
+  if (back)
+    try {
+      herdr("workspace", "focus", back);
+    } catch {}
+  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s) na ordem das salas\n`);
 }
 
 const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you and your Claude).

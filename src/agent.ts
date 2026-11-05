@@ -36,7 +36,7 @@ const TOOLS = [
   },
   {
     name: "claude_rooms",
-    description: "The rooms where your human switched \"Meu Claude\" on or off in the vibebook app, for a local runner (vibebook herdr) that keeps one Claude Code per room open. on: true = they want a Claude in that room now.",
+    description: "The rooms where your human switched \"Meu Claude\" on or off in the vibebook app, for a local runner (vibebook herdr) that keeps one Claude Code per room open, in the order your human gave their rooms. on: true = they want a Claude in that room now.",
     inputSchema: { type: "object", properties: {} },
   },
   {
@@ -350,7 +350,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     }
     case "claude_rooms": {
       const r = await db
-        .prepare(`SELECT b.id, b.title, m.claude_on FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY b.created_at`)
+        .prepare(`SELECT b.id, b.title, m.claude_on FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY m.position IS NULL, m.position, b.created_at`)
         .bind(me.email)
         .all<{ id: string; title: string; claude_on: number }>();
       return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on })) };

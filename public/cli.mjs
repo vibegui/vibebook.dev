@@ -323,6 +323,53 @@ async function herdrSync(agent, tools) {
     delete e.workspace;
   }
   writePrivate(HERDR, map);
+  herdrOrder([...on.keys()], map);
+}
+function herdrOrder(order, map) {
+  const list = herdr("workspace", "list").workspaces;
+  const ours = new Map(order.filter((r) => map[r]?.workspace).map((r) => [map[r].workspace, r]));
+  const current = list.filter((w) => ours.has(w.workspace_id)).map((w) => w.workspace_id);
+  const desired = order.map((r) => map[r]?.workspace).filter((w) => !!w && current.includes(w));
+  let i = 0;
+  while (i < desired.length && current[i] === desired[i])
+    i++;
+  if (i === desired.length)
+    return;
+  const focused = list.find((w) => w.focused)?.workspace_id;
+  let refocus;
+  const tabs = herdr("tab", "list").tabs;
+  for (const ws of desired.slice(i)) {
+    const room = ours.get(ws);
+    const panes = herdr("pane", "list").panes.filter((p) => p.workspace_id === ws);
+    let newWs;
+    const newTab = new Map;
+    for (const p of panes) {
+      const tabLabel = tabs.find((t) => t.tab_id === p.tab_id)?.label ?? "1";
+      let r;
+      if (!newWs)
+        r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room, "--tab-label", tabLabel);
+      else if (newTab.has(p.tab_id))
+        r = herdr("pane", "move", p.pane_id, "--tab", newTab.get(p.tab_id), "--split", "right", "--no-focus");
+      else
+        r = herdr("pane", "move", p.pane_id, "--new-tab", "--workspace", newWs, "--label", tabLabel, "--no-focus");
+      const moved = r.move_result.pane;
+      newWs = moved.workspace_id;
+      newTab.set(p.tab_id, moved.tab_id);
+    }
+    if (newWs) {
+      map[room].workspace = newWs;
+      if (ws === focused)
+        refocus = newWs;
+    }
+  }
+  writePrivate(HERDR, map);
+  const back = refocus ?? focused;
+  if (back)
+    try {
+      herdr("workspace", "focus", back);
+    } catch {}
+  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s) na ordem das salas
+`);
 }
 var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you and your Claude).
 
