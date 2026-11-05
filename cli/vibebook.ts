@@ -60,10 +60,7 @@ function repoRoot() {
     return process.cwd();
   }
 }
-function linkedRoom(root: string) {
-  const own = readFileSync(join(root, ".vibebook"), { encoding: "utf8", flag: "r" }).match(/^room_id=([a-z0-9]+)/m)?.[1];
-  return own;
-}
+const linkedRoom = (root: string) => readFileSync(join(root, ".vibebook"), "utf8").match(/^room_id=([a-z0-9]+)/m)?.[1];
 function roomHere(root: string): string | undefined {
   try {
     const r = linkedRoom(root);

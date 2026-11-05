@@ -522,7 +522,29 @@
     .chathead h2 .folderChip, #toggleDoc { display: none; }
     .chathead h2 .waitChip { flex-basis: 100%; width: fit-content; max-width: 100%; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
     #toggleBoard { white-space: nowrap; }
+    /* Phones: the rail is gone, so the tab bar carries ← home and a room switcher; tighter gutters, safe areas. */
+    .tabs { align-items: center; padding: max(8px, env(safe-area-inset-top)) 10px 8px; position: sticky; top: 0; z-index: 3; }
+    .tabs button { padding: 6px 12px; }
+    .tabs .tabHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 18px; flex: none; }
+    .tabs .tabRooms { margin-left: auto; border: 0; background: none; color: var(--mute); width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
+    .msgs { padding: 16px 14px 12px; gap: 16px; }
+    .msg { gap: 10px; }
+    .composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    .composer textarea { scrollbar-width: none; }
+    .composer textarea::-webkit-scrollbar { display: none; }
+    .agentNudge { margin: 10px 12px 0; flex-wrap: wrap; gap: 8px 12px; padding: 12px 14px; }
+    .agentNudge > div { flex: 1 1 calc(100% - 64px); }
+    .agentNudge a.primary { margin-left: 34px; }
+    .home { padding: max(14px, env(safe-area-inset-top)) 14px 60px; }
+    .home .top { margin-bottom: 20px; gap: 4px; flex-wrap: nowrap; }
+    .home .top .me { flex: none; padding: 2px; }
+    .home .top .me > span:not(.avatar) { display: none; }
+    /* The Épicos tab is the whole sidebar: full width, never the desktop's compact rail; ← home lives in the tab bar. */
+    .book.rail .side, .book .side { padding: 14px 16px 24px; align-items: stretch; gap: 20px; border-right: 0; }
+    .book .side .sideTop { display: none; }
   }
+  .homeTheme { display: none; }
+  @media (max-width: 900px) { .homeTheme { display: grid; place-items: center; padding: 6px 8px; } }
   /* login */
   .login { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; background: oklch(0.5 0.17 248); }
   .login .box { width: min(420px, 100%); background: var(--panel); border-radius: 22px; padding: 32px 28px; box-shadow: 0 30px 60px -25px oklch(0.15 0.1 250 / .6); }
@@ -564,6 +586,7 @@
   .tile.hasIcon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
   #tintPop .iconRow { margin: 2px 0 0; display: flex; gap: 4px; }
   #tintPop .iconRow label, #tintPop .iconRow button { font-size: 12.5px; padding: 4px 8px; border-radius: 8px; cursor: pointer; width: auto; height: auto; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  #tintPop[hidden] { display: none; }
   #tintPop small { color: var(--mute); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #tintPop div { display: flex; gap: 6px; }
   #tintPop button { width: 22px; height: 22px; border-radius: 50%; padding: 0; border: 2px solid var(--line); background: var(--panel); }
@@ -573,19 +596,14 @@
   #tintPop button[data-tint="pink"] { background: oklch(0.65 0.18 350); } #tintPop button[data-tint="purple"] { background: oklch(0.58 0.17 300); }
   .tile { display: grid; place-items: center; color: #fff; font: 400 15px/1 Caprasimo, Georgia, serif; border-radius: 12px; opacity: .7; transition: opacity .15s, transform .15s; }
   .tile.lg { width: 36px; height: 36px; }
-  .tile.sm { width: 32px; height: 32px; font-size: 13px; border-radius: 10px; }
   .tile.logo { background: var(--accent); opacity: 1; }
   .tile.logo svg { width: 22px; height: 22px; }
   .sw-item:hover .tile, .sw-item.on .tile { opacity: 1; }
   .sw-item:hover .tile { transform: scale(1.05); }
-  .sw-item.on .tile.sm { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--ink); }
   .sw-item .tw { position: relative; display: block; }
   .sw-item .dot { position: absolute; right: -3px; top: -3px; width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--panel); }
   .sw-item .dot.h { background: oklch(0.68 0.17 150); }
   .sw-item .dot.a { background: oklch(0.85 0.16 90); }
-  .sw-item .lbl { font-size: 10.5px; line-height: 1.2; text-align: center; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .sw-item:hover .lbl, .sw-item.on .lbl { color: var(--ink); }
-  .sw-item.on .lbl { font-weight: 600; }
   .sw-group { width: calc(100% + 12px); margin: 0 -6px; padding: 10px 4px; border-radius: 12px; background: light-dark(oklch(0.2 0.02 250 / .045), oklch(1 0 0 / .05)); display: flex; flex-direction: column; gap: 12px; flex: none; }
   .sw-sep { width: 24px; height: 1px; background: var(--line); flex: none; }
   .sw-sp { flex: 1; }
@@ -706,10 +724,10 @@ function renderSwitcher() {
   const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="um Claude está trabalhando aqui">✻</b>` : "");
-  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}${busy(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
+  const item = (b) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}</span></a>`;
   $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
-    ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map((b) => item(b, false)).join("")}</div>` : item(g.rooms[0], false)).join("")}
+    ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map(item).join("")}</div>` : item(g.rooms[0])).join("")}
     <span class="sw-sp"></span>
     <button class="sw-btn" id="swTheme" title="${THEMES[theme()].label} (clique pra trocar)" aria-label="Tema: ${THEMES[theme()].label}">${THEMES[theme()].icon}</button>
     <button class="sw-btn" id="swSearch" title="Ir para um vibebook (⌘K)" aria-label="Ir para um vibebook">${SW_SEARCH}</button>
@@ -883,6 +901,7 @@ async function home() {
       <div class="brand"><a href="/">vibebook</a></div>
       <button class="me" id="myName" title="Mudar seu nome">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
       <button class="ghost bell" data-bell></button>
+      <button class="ghost homeTheme" id="homeTheme" aria-label="Tema">${THEMES[theme()].icon}</button>
       <button class="ghost" id="logout">Sair</button>
     </header>
     <form class="ask" id="ask">
@@ -936,6 +955,7 @@ async function home() {
   document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt("Seu nome:", me.name || ""));
   document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
+  document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
   document.getElementById("new").onclick = async () => {
     const { id } = await api("/api/books", {});
@@ -1235,7 +1255,7 @@ function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
   <div class="book ${railMode ? "rail" : ""}" data-tab="chat">
-    <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
+    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="Seus vibebooks" title="Seus vibebooks">←</a><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="Trocar de sala" title="Trocar de sala">${SW_SEARCH}</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="Ir pro seu Claude desta sala no herdr" aria-label="Ir pro seu Claude no herdr" hidden>↗</button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ <span class="lbl">Quadro</span></button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 <span class="lbl">Doc</span></button></div>
@@ -1254,7 +1274,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="pollBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg> Criar votação</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
-          <textarea id="input" rows="1" placeholder="Mensagem… @vibe organiza a sala"></textarea><button class="primary" id="sendBtn">Enviar</button>
+          <textarea id="input" rows="1" placeholder="${innerWidth < 600 ? "Mensagem…" : "Mensagem… @vibe organiza a sala"}"></textarea><button class="primary" id="sendBtn">Enviar</button>
         </div>
       </form>
     </main>
@@ -1280,10 +1300,11 @@ function renderBook() {
     </form>
   </dialog>`;
   const book = $app.querySelector(".book");
-  $app.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+  $app.querySelectorAll(".tabs button[data-tab]").forEach((b) => b.onclick = () => {
     book.dataset.tab = b.dataset.tab;
-    $app.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("sel", x === b));
+    $app.querySelectorAll(".tabs button[data-tab]").forEach((x) => x.classList.toggle("sel", x === b));
   });
+  $app.querySelector(".tabRooms").onclick = openSwitch;
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
   const setBoard = (on) => {
     book.classList.toggle("boardview", on);
