@@ -259,7 +259,7 @@
   .tedit { flex: 1; padding: 3px 6px; }
   .epicName { cursor: text; border-radius: 6px; }
   .epicName:hover { background: var(--bg); }
-  #threadTitle { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  #threadTitle { display: flex; align-items: center; gap: 6px; min-width: 5.5em; }
   #threadTitle .x { font-size: 14px; opacity: .5; }
   #threadTitle .x:hover { opacity: 1; }
   .task.done span { text-decoration: line-through; color: var(--mute); }
@@ -427,7 +427,14 @@
   .task .due.set { color: var(--ink); font-weight: 600; }
   .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); margin-left: 8px; white-space: nowrap; }
   .waitWho { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .waitWho:hover { text-decoration-style: solid; }
-  .chathead { position: relative; }
+  .chathead { position: relative; container-type: inline-size; }
+  /* Narrow header (zoom, a wide doc panel): the title shrinks with an ellipsis, buttons keep their icon. */
+  .chathead > button { flex: none; white-space: nowrap; }
+  .chathead h2 { overflow: hidden; }
+  .chathead h2 .epicName { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chathead h2 .folderChip, .chathead h2 .waitChip { flex: 0 4 auto; min-width: 2.2em; overflow: hidden; text-overflow: ellipsis; }
+  @container (max-width: 640px) { .chathead > button .lbl, .chathead h2 .folderChip { display: none; } }
+  @container (max-width: 360px) { .chathead h2 .waitChip { display: none; } .chathead > button { padding: 6px 7px; } }
   .waitPop { position: absolute; top: calc(100% - 6px); left: 16px; z-index: 30; width: min(420px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.12); padding: 10px; display: grid; gap: 4px; font: 14px/1.35 "Schibsted Grotesk", system-ui, sans-serif; }
   .waitPop > b { font-size: 12px; color: var(--mute); padding: 2px 8px 6px; }
   .waitPop button { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; } .waitPop button:hover { background: var(--hover); }
@@ -1210,7 +1217,7 @@ function renderBook() {
     <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ Claude</button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ Quadro</button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 Doc</button></div>
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ <span class="lbl">Quadro</span></button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 <span class="lbl">Doc</span></button></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -1559,7 +1566,7 @@ function renderMyClaude() {
   const live = roomAgents.list.some((a) => a.email === S.me && a.listening);
   b.hidden = false;
   b.setAttribute("aria-pressed", String(on));
-  b.textContent = on ? (live ? "✻ ouvindo" : "✻ abrindo…") : "✻ Ligar Claude";
+  b.innerHTML = `✻ <span class="lbl">${on ? (live ? "ouvindo" : "abrindo…") : "Ligar Claude"}</span>`;
   b.title = on
     ? "Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada)."
     : "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina.";
