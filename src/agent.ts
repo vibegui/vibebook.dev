@@ -390,10 +390,15 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     }
     case "claude_rooms": {
       const r = await db
-        .prepare(`SELECT b.id, b.title, m.claude_on FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY m.position IS NULL, m.position, b.created_at`)
-        .bind(me.email)
-        .all<{ id: string; title: string; claude_on: number }>();
-      return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on })) };
+        .prepare(
+          // listening = one of this person's agents waited on this room (or on all rooms) in the last 2 minutes, so the
+          // runner can tell a Claude whose listener died from one that's fine.
+          `SELECT b.id, b.title, m.claude_on, EXISTS (SELECT 1 FROM agents a WHERE a.email = m.email AND a.listening_at > ? AND (a.listen_room = b.id OR a.listen_room IS NULL)) AS listening
+           FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY m.position IS NULL, m.position, b.created_at`,
+        )
+        .bind(Date.now() - 120_000, me.email)
+        .all<{ id: string; title: string; claude_on: number; listening: number }>();
+      return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on, listening: !!b.listening })) };
     }
     case "switch_claude": {
       const id = await room();

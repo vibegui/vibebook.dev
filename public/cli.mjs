@@ -253,6 +253,7 @@ function readData() {
 }
 var herdr = (...args) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 var PROJECTS = join(homedir(), "Projects");
+var LISTEN_PROMPT = 'Ouça a sala do vibebook desta pasta: rode `vibebook listen --model "<seu modelo>"` em background (Bash run_in_background); quando ele sair, `vibebook call read_room`, aja nas mensagens from_your_human e volte a ouvir. (Com o plugin, é o /vibebook:listen.)';
 var slug = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "sala";
 function roomFolder(room, title) {
   const look = (dir, depth) => {
@@ -360,6 +361,7 @@ function herdrServer() {
 async function herdrSync(agent, tools) {
   const res = await callTool("claude_rooms", {}, agent, tools);
   const rooms = JSON.parse(res.content[0]?.text ?? "{}").rooms ?? [];
+  const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
   const map = readJson(HERDR, {});
   const live = new Set(herdr("workspace", "list").workspaces.map((w) => w.workspace_id));
   const panes = herdr("pane", "list").panes;
@@ -369,12 +371,15 @@ async function herdrSync(agent, tools) {
   for (const [room, title] of on) {
     const e = map[room] ??= {};
     if (e.workspace && live.has(e.workspace)) {
+      if (e.listening && deaf.has(room) && Date.now() - (e.prompted_at ?? 0) > 5 * 60000)
+        e.listening = false;
       if (!e.listening) {
         const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
         if (p && (p.agent_status === "idle" || p.agent_status === "done"))
           try {
-            herdr("agent", "prompt", p.pane_id, "/vibebook:listen");
+            herdr("agent", "prompt", p.pane_id, LISTEN_PROMPT);
             e.listening = true;
+            e.prompted_at = Date.now();
             log(`${title}: o Claude ficou livre, pedi pra ele ouvir a sala`);
           } catch {}
       }
@@ -392,8 +397,9 @@ async function herdrSync(agent, tools) {
       log(`${title}: adotei o Claude que já estava em ${e.folder}`);
       if (there.agent_status === "idle" || there.agent_status === "done")
         try {
-          herdr("agent", "prompt", there.pane_id, "/vibebook:listen");
+          herdr("agent", "prompt", there.pane_id, LISTEN_PROMPT);
           e.listening = true;
+          e.prompted_at = Date.now();
         } catch {}
       continue;
     }
@@ -403,6 +409,7 @@ async function herdrSync(agent, tools) {
     if (e.session)
       args.push("--resume", e.session);
     e.listening = true;
+    e.prompted_at = Date.now();
     writePrivate(HERDR, map);
     try {
       herdr(...args, "/vibebook:listen");
