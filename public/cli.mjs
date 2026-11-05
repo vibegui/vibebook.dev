@@ -328,8 +328,19 @@ async function herdrSync(agent, tools) {
 `);
   for (const [room, title] of on) {
     const e = map[room] ??= {};
-    if (e.workspace && live.has(e.workspace))
+    if (e.workspace && live.has(e.workspace)) {
+      if (!e.listening) {
+        const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
+        if (p && (p.agent_status === "idle" || p.agent_status === "done"))
+          try {
+            herdr("agent", "prompt", p.pane_id, "/vibebook:listen");
+            e.listening = true;
+            log(`${title}: o Claude ficou livre, pedi pra ele ouvir a sala`);
+          } catch {}
+      }
       continue;
+    }
+    e.listening = false;
     e.folder ??= roomFolder(room, title);
     linkFolder(e.folder, room);
     const there = panes.find((p) => p.agent === "claude" && (p.cwd === e.folder || p.foreground_cwd === e.folder));
@@ -342,6 +353,7 @@ async function herdrSync(agent, tools) {
       if (there.agent_status === "idle" || there.agent_status === "done")
         try {
           herdr("agent", "prompt", there.pane_id, "/vibebook:listen");
+          e.listening = true;
         } catch {}
       continue;
     }
@@ -350,6 +362,7 @@ async function herdrSync(agent, tools) {
     const args = ["agent", "start", `vb-${room}`, "--kind", "claude", "--pane", w.root_pane.pane_id, "--timeout", "60000", "--"];
     if (e.session)
       args.push("--resume", e.session);
+    e.listening = true;
     writePrivate(HERDR, map);
     try {
       herdr(...args, "/vibebook:listen");

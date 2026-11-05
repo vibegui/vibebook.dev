@@ -215,7 +215,7 @@ function readData(): Record<string, unknown> {
 // ~/.vibebook/herdr.json = { <room_id>: { folder, workspace?, session? } }. On: find (or adopt) the room's herdr
 // workspace, else create it in the room's folder and start `claude "/vibebook:listen"` there (resuming the last
 // conversation). Off: remember the conversation id and close the workspace. Never touches workspaces it doesn't map.
-type HerdrRoom = { folder?: string; workspace?: string; session?: string };
+type HerdrRoom = { folder?: string; workspace?: string; session?: string; listening?: boolean };
 type Pane = { pane_id: string; workspace_id: string; tab_id: string; cwd: string; foreground_cwd?: string; agent?: string; agent_status?: string; agent_session?: { value?: string } };
 const herdr = (...args: string[]) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 const PROJECTS = join(homedir(), "Projects");
@@ -308,7 +308,20 @@ async function herdrSync(agent: string, tools: Tool[]) {
   const log = (m: string) => process.stdout.write(`${new Date().toLocaleTimeString()} ${m}\n`);
   for (const [room, title] of on) {
     const e = (map[room] ??= {});
-    if (e.workspace && live.has(e.workspace)) continue;
+    if (e.workspace && live.has(e.workspace)) {
+      // Adopted while busy: ask it to listen once it's free (a prompt typed into a working Claude would interrupt it).
+      if (!e.listening) {
+        const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
+        if (p && (p.agent_status === "idle" || p.agent_status === "done"))
+          try {
+            herdr("agent", "prompt", p.pane_id, "/vibebook:listen");
+            e.listening = true;
+            log(`${title}: o Claude ficou livre, pedi pra ele ouvir a sala`);
+          } catch {}
+      }
+      continue;
+    }
+    e.listening = false;
     e.folder ??= roomFolder(room, title);
     linkFolder(e.folder, room);
     // A Claude already open in that folder: adopt its workspace (and ask it to listen) instead of opening a second one.
@@ -322,6 +335,7 @@ async function herdrSync(agent: string, tools: Tool[]) {
       if (there.agent_status === "idle" || there.agent_status === "done")
         try {
           herdr("agent", "prompt", there.pane_id, "/vibebook:listen");
+          e.listening = true;
         } catch {}
       continue;
     }
@@ -329,6 +343,7 @@ async function herdrSync(agent: string, tools: Tool[]) {
     e.workspace = w.workspace.workspace_id as string;
     const args = ["agent", "start", `vb-${room}`, "--kind", "claude", "--pane", w.root_pane.pane_id, "--timeout", "60000", "--"];
     if (e.session) args.push("--resume", e.session);
+    e.listening = true; // started with /vibebook:listen as its first prompt
     writePrivate(HERDR, map); // the workspace exists now: never open a second one if the start below fails
     try {
       herdr(...args, "/vibebook:listen");
