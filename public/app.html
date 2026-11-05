@@ -300,6 +300,7 @@
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
   .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
   .kcard .vnote { margin-left: 0; justify-self: start; }
+  .docNotes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; } .docNotes .vnote { margin: 0; }
   .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
   .kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .kcard.dragging { opacity: .5; }
@@ -1248,6 +1249,7 @@ function onEvent(ev, id) {
     case "epics": S.epics = ev.epics;
       if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); if (thread === "main") refreshThreadCards(); return;
+    case "docNotes": S.docNotes = ev.notes; renderDoc(); return;
     case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
     case "meta":
       if (ev.title) { S.book.title = ev.title; const mine = myBooks?.find((b) => b.id === id); if (mine) { mine.title = ev.title; renderSwitcher(); } }
@@ -2260,6 +2262,8 @@ function renderDoc(force) {
     ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
     : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
+  // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.
+  if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).">${S.docNotes.map((n) => `<span class="vnote">⚠ ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep);
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.

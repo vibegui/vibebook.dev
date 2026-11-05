@@ -17,6 +17,14 @@ export type FileMeta = { id: string; name: string; type: string; size: number; a
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 const SEED_GOAL = "o que este épico entrega e por quê";
+/** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
+const DOC_GRADE = "_doc";
+const DOC_CHECKS: [string, string, string][] = [
+  ["objetivo", "objetivo vago: o que o projeto entrega, e pra quem?", "O doc diz com clareza o que o projeto entrega e para quem, de um jeito específico (não genérico)?"],
+  ["escopo", "escopo sem limite: o que fica de fora?", "O doc deixa claro o que está dentro e o que está fora do escopo?"],
+  ["sucesso", "sem critério de sucesso: como saber que deu certo?", "O doc diz como saber que deu certo: um resultado, prazo ou número que alguém consiga conferir?"],
+  ["proximos", "sem próximos passos ou donos", "O doc diz quais são os próximos passos ou quem cuida de cada parte?"],
+];
 export const epicDocSeed = (title: string, why = "") =>
   `# ${title}\n\n**Objetivo:** ${why.trim() || `${SEED_GOAL} (edite aqui ou peça pro seu Claude).`}\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`;
 /** Epic titles compared without numbering, case or accents: "2. Primeira limpeza" = "primeira limpeza". */
@@ -79,9 +87,14 @@ export class Book extends DurableObject<Env> {
   set(k: string, v: string) {
     this.sql.exec(`INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v`, k, v);
   }
+  /** @vibe's notes on the room doc (grade()): what a sharp scope still misses. */
+  docNotes(): string[] {
+    const r = this.sql.exec<{ flags: string }>(`SELECT flags FROM grades WHERE id = ?`, DOC_GRADE).toArray()[0];
+    return r ? (JSON.parse(r.flags) as string[]) : [];
+  }
   epics() {
     // @vibe's grading (grade()): per epic, id → short notes on the epic itself and its tasks.
-    const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades`).toArray().map((r) => [r.id, JSON.parse(r.flags) as Record<string, string[]>]));
+    const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades WHERE id != ?`, DOC_GRADE).toArray().map((r) => [r.id, JSON.parse(r.flags) as Record<string, string[]>]));
     const tasks = this.sql
       .exec<{ id: string; epic_id: string; title: string; done: number; owner: string | null; due: string | null; status: string | null }>(
         `SELECT id, epic_id, title, done, owner, due, status FROM tasks ORDER BY ts`,
@@ -521,6 +534,7 @@ export class Book extends DurableObject<Env> {
     this.set(key, text.slice(0, 100_000));
     if (epic && by !== "tasks") this.docToTasks(epic, this.get(key) ?? "");
     this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
+    if (!epic) this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS)); // @vibe grades the room doc
     // Whoever is co-editing sees @vibe's/agents' (or a non-Yjs client's) change arrive live.
     const id = this.get("book_id");
     if (id) this.ctx.waitUntil(docRoomStub(this.env, id, epic).setText(this.get(key) ?? "").catch(() => {}));
@@ -533,6 +547,7 @@ export class Book extends DurableObject<Env> {
     this.set(key, text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get(key), by: "yjs", epic: epic ?? null });
     if (epic) this.docToTasks(epic, this.get(key) ?? "");
+    else this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
   }
   /** What a fresh co-editing doc starts with: the stored markdown (an epic without one gets its seed); null = no such epic. */
   docSeed(bookId: string, epic?: string): string | null {
@@ -609,6 +624,7 @@ export class Book extends DurableObject<Env> {
       title: book?.title ?? "",
       members: (await this.members()).map(who),
       doc: (this.get("doc") ?? "").slice(0, 20_000),
+      doc_notes: this.docNotes(),
       epics: epics.map((e) => ({
         id: e.id,
         title: e.title,
@@ -863,6 +879,7 @@ export class Book extends DurableObject<Env> {
         me: email,
         book,
         doc: this.get("doc") ?? "",
+        docNotes: this.docNotes(),
         docs: this.epicDocs(),
         epics: this.epics(),
         messages: this.messages(),
@@ -1038,7 +1055,28 @@ export class Book extends DurableObject<Env> {
       .slice(0, 3);
     let cost = 0;
     let changed = false;
-    for (const { e, sig } of todo) {
+    // The room's doc is the scope everyone (and every Claude) works from: is it sharp? One call per change.
+    const room = (this.get("doc") ?? "").trim();
+    const docSig = hash(room.slice(0, 4000));
+    if (seen.get(DOC_GRADE) !== docSig) {
+      let notes: string[] | null = null;
+      if (room.length < 120) notes = ["doc quase vazio: diga o que o projeto entrega, o que fica de fora e como saber que deu certo"];
+      else {
+        const q: Record<string, Question> = {};
+        for (const [k, , ask] of DOC_CHECKS) q[k] = { type: "noul", instructions: ask };
+        const r = await decide(this.env, { sala: (await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(this.get("book_id") ?? "").first<{ title: string }>())?.title ?? "", doc: room.slice(0, 4000) }, q);
+        if (r) {
+          cost += r.cost;
+          notes = DOC_CHECKS.filter(([k]) => (r.answers[k]?.noul ?? 1) < 0.35).map(([, note]) => note);
+        }
+      }
+      if (notes) {
+        this.sql.exec(`INSERT INTO grades (id, sig, flags, ts) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET sig = excluded.sig, flags = excluded.flags, ts = excluded.ts`, DOC_GRADE, docSig, JSON.stringify(notes), Date.now());
+        this.broadcast({ t: "docNotes", notes });
+        changed = true;
+      }
+    }
+    for (const { e, sig } of todo.slice(0, changed ? 2 : 3)) {
       const open = e.tasks.filter((t) => t.status !== "done").slice(0, 25);
       const doc = goal(e.id);
       const q: Record<string, Question> = {};
@@ -1062,7 +1100,7 @@ export class Book extends DurableObject<Env> {
       changed = true;
     }
     if (!changed) return;
-    this.broadcast({ t: "epics", epics: this.epics() });
+    if (todo.length) this.broadcast({ t: "epics", epics: this.epics() });
     this.ctx.waitUntil(track(this.env, "grade", { dims: { book: this.get("book_id") ?? undefined, epics: todo.length, model: this.env.MODEL_JUDGE, cost: +cost.toFixed(6) } }));
   }
 
