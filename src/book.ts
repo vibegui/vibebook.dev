@@ -1051,10 +1051,11 @@ export class Book extends DurableObject<Env> {
     const todo = this.epics()
       .filter((e) => !e.archived && e.tasks.some((t) => t.status !== "done"))
       .map((e) => ({ e, sig: hash([e.title, goal(e.id).slice(0, 1500), ...e.tasks.map((t) => `${t.title}:${t.status}`)].join("\n")) }))
-      .filter((x) => seen.get(x.e.id) !== x.sig)
-      .slice(0, 3);
+      .filter((x) => seen.get(x.e.id) !== x.sig);
     let cost = 0;
     let changed = false;
+    let failed = false;
+    let calls = 0;
     // The room's doc is the scope everyone (and every Claude) works from: is it sharp? One call per change.
     const room = (this.get("doc") ?? "").trim();
     const docSig = hash(room.slice(0, 4000));
@@ -1064,8 +1065,10 @@ export class Book extends DurableObject<Env> {
       else {
         const q: Record<string, Question> = {};
         for (const [k, , ask] of DOC_CHECKS) q[k] = { type: "noul", instructions: ask };
+        calls++;
         const r = await decide(this.env, { sala: (await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(this.get("book_id") ?? "").first<{ title: string }>())?.title ?? "", doc: room.slice(0, 4000) }, q);
-        if (r) {
+        if (!r) failed = true;
+        else {
           cost += r.cost;
           notes = DOC_CHECKS.filter(([k]) => (r.answers[k]?.noul ?? 1) < 0.35).map(([, note]) => note);
         }
@@ -1076,7 +1079,8 @@ export class Book extends DurableObject<Env> {
         changed = true;
       }
     }
-    for (const { e, sig } of todo.slice(0, changed ? 2 : 3)) {
+    const batch = failed ? [] : todo.slice(0, 3 - calls); // ≤3 Jev calls per pass, the doc included
+    for (const { e, sig } of batch) {
       const open = e.tasks.filter((t) => t.status !== "done").slice(0, 25);
       const doc = goal(e.id);
       const q: Record<string, Question> = {};
@@ -1087,7 +1091,10 @@ export class Book extends DurableObject<Env> {
         q[`u${i}`] = { type: "noul", instructions: `A tarefa "${t.title.slice(0, 200)}" é uma coisa só, e não várias tarefas diferentes juntas?` };
       });
       const r = await decide(this.env, { epico: e.title, doc_do_epico: doc.slice(0, 1500) || "(vazio)", tarefas: e.tasks.map((t) => `- [${STATUS_LABEL[t.status]}] ${t.title}`).join("\n").slice(0, 3000) }, q);
-      if (!r) break; // tried again on the next change
+      if (!r) {
+        failed = true;
+        break; // tried again on the next change
+      }
       cost += r.cost;
       const no = (k: string) => (r.answers[k]?.noul ?? 1) < 0.35;
       const f: Record<string, string[]> = {};
@@ -1099,9 +1106,11 @@ export class Book extends DurableObject<Env> {
       this.sql.exec(`INSERT INTO grades (id, sig, flags, ts) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET sig = excluded.sig, flags = excluded.flags, ts = excluded.ts`, e.id, sig, JSON.stringify(f), Date.now());
       changed = true;
     }
+    // The rest in a follow-up pass, unless Jev just failed (then the next change retries: no loop against a down API).
+    if (!failed && todo.length > batch.length) this.ctx.waitUntil(this.wakeAt(Date.now() + 5_000));
     if (!changed) return;
-    if (todo.length) this.broadcast({ t: "epics", epics: this.epics() });
-    this.ctx.waitUntil(track(this.env, "grade", { dims: { book: this.get("book_id") ?? undefined, epics: todo.length, model: this.env.MODEL_JUDGE, cost: +cost.toFixed(6) } }));
+    if (batch.length) this.broadcast({ t: "epics", epics: this.epics() });
+    this.ctx.waitUntil(track(this.env, "grade", { dims: { book: this.get("book_id") ?? undefined, epics: batch.length, model: this.env.MODEL_JUDGE, cost: +cost.toFixed(6) } }));
   }
 
   /** "Esperando você": Jev reads each new message (≤20 per pass, newest week only) and decides who it asks something
