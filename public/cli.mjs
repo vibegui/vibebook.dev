@@ -1,17 +1,18 @@
 #!/usr/bin/env node
 
 // cli/vibebook.ts
-import { execSync, spawn } from "node:child_process";
+import { execFileSync, execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.0.1";
+var VERSION = "1.1.0";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
 var DEFAULT_ORIGIN = "https://vibebook.dev";
+var HERDR = join(HOME, "herdr.json");
 var die = (msg, code = 1) => {
   process.stderr.write(`${msg}
 `);
@@ -224,6 +225,102 @@ function readData() {
     return die(`arguments must be a JSON object, e.g. '{"room_id":"abc"}' (or -d @file.json, -d @-)`);
   }
 }
+var herdr = (...args) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
+var PROJECTS = join(homedir(), "Projects");
+var slug = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "sala";
+function roomFolder(room, title) {
+  const look = (dir, depth) => {
+    let names = [];
+    try {
+      names = readdirSync(dir);
+    } catch {
+      return;
+    }
+    if (names.includes(".vibebook")) {
+      try {
+        if (linkedRoom(dir) === room)
+          return dir;
+      } catch {}
+    }
+    if (depth === 0)
+      return;
+    for (const n of names)
+      if (!n.startsWith(".") && n !== "node_modules" && n !== "_archive") {
+        const f = look(join(dir, n), depth - 1);
+        if (f)
+          return f;
+      }
+  };
+  return look(PROJECTS, 2) ?? join(PROJECTS, slug(title));
+}
+function linkFolder(folder, room) {
+  mkdirSync(folder, { recursive: true });
+  const f = join(folder, ".vibebook");
+  try {
+    if (linkedRoom(folder) === room)
+      return;
+  } catch {}
+  writeFileSync(f, `room_id=${room}
+`);
+  const exclude = join(folder, ".git", "info", "exclude");
+  if (existsSync(exclude) && !readFileSync(exclude, "utf8").split(`
+`).includes(".vibebook"))
+    appendFileSync(exclude, `
+.vibebook
+`);
+}
+async function herdrSync(agent, tools) {
+  const res = await callTool("claude_rooms", {}, agent, tools);
+  const rooms = JSON.parse(res.content[0]?.text ?? "{}").rooms ?? [];
+  const map = readJson(HERDR, {});
+  const live = new Set(herdr("workspace", "list").workspaces.map((w) => w.workspace_id));
+  const panes = herdr("pane", "list").panes;
+  const on = new Map(rooms.filter((r) => r.on).map((r) => [r.room_id, r.title]));
+  const log = (m) => process.stdout.write(`${new Date().toLocaleTimeString()} ${m}
+`);
+  for (const [room, title] of on) {
+    const e = map[room] ??= {};
+    if (e.workspace && live.has(e.workspace))
+      continue;
+    e.folder ??= roomFolder(room, title);
+    linkFolder(e.folder, room);
+    const there = panes.find((p) => p.agent === "claude" && (p.cwd === e.folder || p.foreground_cwd === e.folder));
+    if (there) {
+      e.workspace = there.workspace_id;
+      log(`${title}: adotei o Claude que já estava em ${e.folder}`);
+      if (there.agent_status === "idle" || there.agent_status === "done")
+        try {
+          herdr("agent", "prompt", there.pane_id, "/vibebook:listen");
+        } catch {}
+      continue;
+    }
+    const w = herdr("workspace", "create", "--cwd", e.folder, "--label", title.slice(0, 40), "--no-focus");
+    e.workspace = w.workspace.workspace_id;
+    const args = ["agent", "start", `vb-${room}`, "--kind", "claude", "--pane", w.root_pane.pane_id, "--timeout", "60000", "--"];
+    if (e.session)
+      args.push("--resume", e.session);
+    writePrivate(HERDR, map);
+    try {
+      herdr(...args, "/vibebook:listen");
+      log(`${title}: abri um Claude em ${e.folder}${e.session ? " (retomando a conversa)" : ""}`);
+    } catch (err) {
+      log(`${title}: Claude aberto em ${e.folder}, esperando você confirmar no herdr (${String(err.stderr ?? err).match(/"message":"([^"]+)"/)?.[1] ?? "não ficou pronto"})`);
+    }
+  }
+  for (const [room, e] of Object.entries(map)) {
+    if (on.has(room) || !e.workspace)
+      continue;
+    if (live.has(e.workspace)) {
+      const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
+      if (p?.agent_session?.value)
+        e.session = p.agent_session.value;
+      herdr("workspace", "close", e.workspace);
+      log(`${rooms.find((r) => r.room_id === room)?.title ?? room}: Claude desligado, fechei a aba (a conversa fica pra retomar)`);
+    }
+    delete e.workspace;
+  }
+  writePrivate(HERDR, map);
+}
 var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you and your Claude).
 
   vibebook login                 connect this machine (opens the browser; once per machine)
@@ -235,6 +332,8 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>]
+  vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
+                                 "Meu Claude" on in the app, closes it when you switch it off
   vibebook update                install the latest version
 
 Options: --model "Claude Opus 5.5" (or VIBEBOOK_MODEL) names the agent in the room; --origin for a local server.`;
@@ -299,6 +398,25 @@ async function main() {
         } catch (e) {
           await new Promise((r) => setTimeout(r, 15000));
         }
+      }
+    }
+    case "herdr": {
+      try {
+        execFileSync("herdr", ["status"], { stdio: "ignore" });
+      } catch {
+        return die("herdr not found or not running (https://herdr.dev)");
+      }
+      const tools = await listTools(agent);
+      for (;; ) {
+        try {
+          await herdrSync(agent, tools);
+        } catch (e) {
+          process.stderr.write(`vibebook herdr: ${String(e?.message ?? e)}
+`);
+        }
+        if (flags.once)
+          return;
+        await new Promise((r) => setTimeout(r, 15000));
       }
     }
     case "upload": {

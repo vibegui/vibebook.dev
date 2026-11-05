@@ -35,6 +35,11 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "claude_rooms",
+    description: "The rooms where your human switched \"Meu Claude\" on or off in the vibebook app, for a local runner (vibebook herdr) that keeps one Claude Code per room open. on: true = they want a Claude in that room now.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
     name: "wait_for_messages",
     description: "Listen mode: waits (up to timeout_seconds, max 50) until any of your human's rooms gets a message you haven't read, then returns those rooms. Returns new: [] on timeout; just call it again. Use it in a loop to stay available in the rooms.",
     inputSchema: {
@@ -337,6 +342,13 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         if (Date.now() + 3000 > deadline) return { new: [], waited_seconds: timeout, next: "nothing new; call wait_for_messages again to keep listening" };
         await new Promise((res) => setTimeout(res, 3000));
       }
+    }
+    case "claude_rooms": {
+      const r = await db
+        .prepare(`SELECT b.id, b.title, m.claude_on FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY b.created_at`)
+        .bind(me.email)
+        .all<{ id: string; title: string; claude_on: number }>();
+      return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on })) };
     }
     case "inbox": {
       const r = await db

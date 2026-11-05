@@ -94,11 +94,18 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,wait_for_messages,notify_url,read_room,post,upload_file,preview_mention_email,get_file,ack,set_task_status,add_task,update_task,delete_task,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 19 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,claude_rooms,wait_for_messages,notify_url,read_room,post,upload_file,preview_mention_email,get_file,ack,set_task_status,add_task,update_task,delete_task,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 20 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
 check(room && created.out.invited?.[0] === marina, "create_room creates the room and invites Marina");
+// "Meu Claude" toggle: the app switches it, claude_rooms (read by vibebook herdr) reports it.
+const toggle = (on: boolean) => fetch(`${BASE}/api/books/${room}/claude`, { method: "POST", headers: { cookie: `dev_as=${encodeURIComponent(gui)}`, "content-type": "application/json" }, body: JSON.stringify({ on }) });
+check(!(await g.tool("claude_rooms")).out?.rooms?.some((r: { room_id: string }) => r.room_id === room), "claude_rooms: a room never switched on isn't listed");
+await toggle(true);
+check((await g.tool("claude_rooms")).out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.on === true, "claude_rooms: switched on in the app = on");
+await toggle(false);
+check((await g.tool("claude_rooms")).out?.rooms?.find((r: { room_id: string }) => r.room_id === room)?.on === false, "claude_rooms: switched off = listed as off (so the runner closes it)");
 const sent = await g.tool("post", { room_id: room, text: "@marina o site novo tá no ar. falta o script de aluguel no tema e os webhooks de pedido" });
 check(sent.out?.ok, "Gui's agent posts with a mention");
 

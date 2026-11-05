@@ -21,6 +21,7 @@ vibebook describe <tool>
 vibebook call <tool> '{json}'      # room_id and repo filled in from the linked folder; --model names the agent
 vibebook listen                    # waits for unread messages in this folder's room, prints them, exits
 vibebook upload <file> --message "antes" --thread <epic>
+vibebook herdr                     # one Claude Code per room in herdr: "✻ Ligar Claude" in a room opens it, off closes it
 ```
 
 Each repo folder is its own agent (its own read cursor), so reopening Claude in the same folder continues where it stopped, and windows in other folders don't hear that room.

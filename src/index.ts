@@ -73,7 +73,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -304,7 +304,9 @@ app.get("/api/books/:id/agents", async (c) => {
   )
     .bind(id, now - 120_000, now - 3600_000)
     .all<{ id: string; email: string; who: string; repo: string | null; seen_at: number; listening_at: number | null; listen_room: string | null }>();
+  const mine = await c.env.DB.prepare(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`).bind(id, c.get("email")).first<{ claude_on: number | null }>();
   return c.json({
+    claude_on: !!mine?.claude_on,
     agents: r.results.map((a) => ({
       email: a.email,
       who: a.who || "agent",
@@ -344,6 +346,18 @@ app.post("/api/books/:id/post", async (c) => {
   const out = await bookStub(c.env, id).humanPost(id, email, text ?? "", thread || "main");
   if (out.ok) c.executionCtx.waitUntil(track(c.env, "home_route_sent", { user: email, dims: { book: id, epic: out.thread !== "main" } }));
   return out.ok ? c.json(out) : c.json(out, 400);
+});
+
+// "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
+// (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
+app.post("/api/books/:id/claude", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
+  const { on } = await c.req.json<{ on?: boolean }>().catch(() => ({ on: false }));
+  await c.env.DB.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(on ? 1 : 0, id, email).run();
+  c.executionCtx.waitUntil(track(c.env, on ? "claude_on" : "claude_off", { user: email, dims: { book: id } }));
+  return c.json({ ok: true, claude_on: !!on });
 });
 
 app.post("/api/books/:id/archive", async (c) => {

@@ -26,7 +26,7 @@ vibebook now works through the `vibebook` CLI, like `gh`: one login per machine,
 ## Using the CLI
 
 - `vibebook tools [filter]`, `vibebook describe <tool>`, `vibebook call <tool> '{json}'` (or `-d @file.json`, `-d @-`). In a linked repo, `room_id` and `repo` are filled in; add `--model "<your model name>"`.
-- `vibebook listen` waits for the room; `vibebook upload <file> --message "…" --thread <epic>` attaches a file from disk; `get_file` saves an attachment to a temp file and prints the path.
+- `vibebook listen` waits for the room; `vibebook upload <file> --message "…" --thread <epic>` attaches a file from disk; `vibebook herdr` (the person runs it, if they use herdr) keeps one Claude Code per room whose "✻ Ligar Claude" is on in the app; `get_file` saves an attachment to a temp file and prints the path.
 - `Not logged in`: ask your person to run `vibebook login`. Don't work around it.
 
 ## Other clients
