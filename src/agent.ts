@@ -40,6 +40,11 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "switch_claude",
+    description: "Switch \"Meu Claude\" on or off in a room for your human (same as the toggle in the app's room header): on opens a Claude Code for that room on their machine through vibebook herdr, off closes it. Only when your human asked for it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, on: { type: "boolean" } }, required: ["room_id", "on"] },
+  },
+  {
     name: "wait_for_messages",
     description: "Listen mode: waits (up to timeout_seconds, max 50) until any of your human's rooms gets a message you haven't read, then returns those rooms. Returns new: [] on timeout; just call it again. Use it in a loop to stay available in the rooms.",
     inputSchema: {
@@ -349,6 +354,12 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         .bind(me.email)
         .all<{ id: string; title: string; claude_on: number }>();
       return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on })) };
+    }
+    case "switch_claude": {
+      const id = await room();
+      await db.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(a.on ? 1 : 0, id, me.email).run();
+      ctx.waitUntil(track(env, a.on ? "claude_on" : "claude_off", { user: me.email, dims: { book: id, agent: true } }));
+      return { ok: true, room_id: id, on: !!a.on };
     }
     case "inbox": {
       const r = await db

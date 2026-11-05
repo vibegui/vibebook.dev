@@ -270,6 +270,9 @@ async function herdrSync(agent: string, tools: Tool[]) {
     const there = panes.find((p) => p.agent === "claude" && (p.cwd === e.folder || p.foreground_cwd === e.folder));
     if (there) {
       e.workspace = there.workspace_id;
+      try {
+        herdr("workspace", "rename", there.workspace_id, title.slice(0, 40)); // the tab says which room it is
+      } catch {}
       log(`${title}: adotei o Claude que já estava em ${e.folder}`);
       if (there.agent_status === "idle" || there.agent_status === "done")
         try {
