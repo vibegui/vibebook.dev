@@ -62,6 +62,22 @@ export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown
   await bookStub(env, bookId).fetch("https://book/members-changed", { method: "POST" });
 }
 
+// A room's icon (e.g. its site's favicon), shared by the room: R2 `icons/<book>`, books.icon = version (null = none).
+export const ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "image/x-icon", "image/vnd.microsoft.icon"];
+export async function setRoomIcon(env: Env, bookId: string, img: { type: string; body: ArrayBuffer } | null): Promise<number | null> {
+  if (!img) {
+    await env.FILES.delete(`icons/${bookId}`);
+    await env.DB.prepare(`UPDATE books SET icon = NULL WHERE id = ?`).bind(bookId).run();
+    return null;
+  }
+  if (!ICON_TYPES.includes(img.type)) throw new Error("Use PNG, JPEG, WebP, GIF ou ICO (SVG não).");
+  if (!img.body.byteLength || img.body.byteLength > 256_000) throw new Error("Ícone vazio ou maior que 256KB.");
+  await env.FILES.put(`icons/${bookId}`, img.body, { httpMetadata: { contentType: img.type } });
+  const v = Date.now();
+  await env.DB.prepare(`UPDATE books SET icon = ? WHERE id = ?`).bind(v, bookId).run();
+  return v;
+}
+
 // Files: images, PDF and HTML (no SVG: it can carry script without our sandbox applying to <img>).
 // HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
 export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];

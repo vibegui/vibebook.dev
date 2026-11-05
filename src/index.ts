@@ -7,7 +7,7 @@ import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { validUnsub } from "./mentionmail";
-import { befriend, bookStub, createBook, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
+import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 export { DocRoom } from "./docroom";
@@ -73,7 +73,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`, `ALTER TABLE books ADD COLUMN icon INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -229,7 +229,7 @@ app.get("/api/me", async (c) => {
   const db = c.env.DB;
   const books = await db
     .prepare(
-      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, m.position, m.tint, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
+      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, b.icon, m.position, m.tint, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
          coalesce(r.last_id, 0) AS read_id,
          (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
        FROM books b JOIN members m ON m.book_id = b.id
@@ -268,6 +268,30 @@ app.post("/api/me/avatar", async (c) => {
   c.executionCtx.waitUntil(track(c.env, "avatar_set", { user: email }));
   return c.json({ ok: true, avatar: v });
 });
+// Room icon: the app sends a small PNG (it resizes first); members only. ?v=<books.icon> caches it for good.
+app.post("/api/books/:id/icon", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
+  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
+  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  try {
+    const v = await setRoomIcon(c.env, id, type === "application/json" ? null : { type, body: await c.req.arrayBuffer() });
+    c.executionCtx.waitUntil(track(c.env, "room_icon", { user: email, dims: { book: id, set: v !== null } }));
+    return c.json({ ok: true, icon: v });
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 400);
+  }
+});
+app.get("/api/books/:id/icon", async (c) => {
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
+  const obj = await c.env.FILES.get(`icons/${id}`);
+  if (!obj) return c.notFound();
+  return new Response(obj.body, { headers: { ...fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "icon"), "cache-control": "private, max-age=31536000, immutable" } });
+});
+
 // Signed-in people only; the URL carries ?v=<version>, so it caches for good.
 app.get("/api/avatar/:email", async (c) => {
   const obj = await c.env.FILES.get(`avatars/${c.req.param("email").toLowerCase()}`);

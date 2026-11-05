@@ -555,6 +555,10 @@
   .sw-group[data-tint="pink"] { --tint: oklch(0.65 0.18 350); } .sw-group[data-tint="purple"] { --tint: oklch(0.58 0.17 300); }
   .sw-group[data-tint] { background: color-mix(in oklch, var(--tint) 22%, transparent); }
   #tintPop { position: fixed; left: 74px; z-index: 31; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .35); display: grid; gap: 6px; }
+  .tile.hasIcon { background: light-dark(#fff, oklch(0.3 0.012 250)); opacity: .85; overflow: hidden; }
+  .tile.hasIcon img { width: 70%; height: 70%; object-fit: contain; }
+  #tintPop .iconRow { margin: 2px 0 0; display: flex; gap: 4px; }
+  #tintPop .iconRow label, #tintPop .iconRow button { font-size: 12.5px; padding: 4px 8px; border-radius: 8px; cursor: pointer; width: auto; height: auto; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
   #tintPop small { color: var(--mute); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #tintPop div { display: flex; gap: 6px; }
   #tintPop button { width: 22px; height: 22px; border-radius: 50%; padding: 0; border: 2px solid var(--line); background: var(--panel); }
@@ -582,12 +586,12 @@
   .sw-sp { flex: 1; }
   .sw-btn { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: none; color: var(--mute); display: grid; place-items: center; cursor: pointer; padding: 0; }
   .sw-btn:hover { background: var(--line); color: var(--ink); }
-  #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
+  #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: light-dark(oklch(0.2 0.02 250), oklch(0.33 0.015 250)); color: #fff; border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
   #swTip[hidden] { display: none; }
   #swTip span { color: rgb(255 255 255 / .82); }
   #swTip small { color: rgb(255 255 255 / .6); font-size: 11.5px; }
-  #swTip .tn.h { color: light-dark(oklch(0.8 0.15 150), oklch(0.45 0.14 150)); font-size: 12px; }
-  #swTip .tn.a { color: light-dark(oklch(0.88 0.14 90), oklch(0.5 0.12 80)); font-size: 12px; }
+  #swTip .tn.h { color: oklch(0.8 0.15 150); font-size: 12px; }
+  #swTip .tn.a { color: oklch(0.88 0.14 90); font-size: 12px; }
   .swDlg { width: min(440px, calc(100vw - 32px)); padding: 8px; border: 1px solid var(--line); border-radius: 16px; margin-top: 14vh; }
   .swDlg input { width: 100%; box-sizing: border-box; border: 0; outline: 0; font: inherit; font-size: 16px; padding: 10px 12px; background: none; }
   .swDlg #swList { display: grid; gap: 2px; max-height: 50vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
@@ -674,7 +678,10 @@ document.addEventListener("click", (e) => { const p = document.getElementById("t
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const p = document.getElementById("tintPop"); if (p) p.hidden = true; } });
 // Your order of rooms: the ones you placed first, then the rest oldest first (stable, unlike activity).
 const roomOrder = () => [...(myBooks || [])].sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9) || (a.created_at ?? 0) - (b.created_at ?? 0));
-const tile = (b, size) => `<span class="tile ${size}" style="background:${coverColor(b.title)}">${esc(initials(b.title))}</span>`;
+const iconUrl = (b) => (b?.icon ? `/api/books/${b.id}/icon?v=${b.icon}` : null);
+const tile = (b, size) => iconUrl(b)
+  ? `<span class="tile ${size} hasIcon"><img src="${iconUrl(b)}" alt="" loading="lazy"></span>`
+  : `<span class="tile ${size}" style="background:${coverColor(b.title)}">${esc(initials(b.title))}</span>`;
 // The room you're in is read up to its newest message (the server marks it too); refresh the rail every 30s.
 function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if (mine && upto > mine.read_id) mine.read_id = upto; }
 setInterval(() => {
@@ -706,10 +713,17 @@ function renderSwitcher() {
     e.preventDefault();
     const b = myBooks.find((x) => x.id === a.dataset.id);
     const pop = document.getElementById("tintPop");
-    pop.innerHTML = `<small>Cor de ${esc(b.title)}</small><div>${[null, ...TINT_KEYS].map((t) => `<button data-tint="${t || ""}" class="${(b.tint || null) === t ? "sel" : ""}" title="${t ? TINT_NAMES[t] : "sem cor"}" aria-label="${t ? TINT_NAMES[t] : "sem cor"}"></button>`).join("")}</div>`;
+    pop.innerHTML = `<small>${esc(b.title)}</small><div>${[null, ...TINT_KEYS].map((t) => `<button data-tint="${t || ""}" class="${(b.tint || null) === t ? "sel" : ""}" title="${t ? TINT_NAMES[t] : "sem cor"}" aria-label="${t ? TINT_NAMES[t] : "sem cor"}"></button>`).join("")}</div>
+      <p class="iconRow"><label class="ghost">Trocar ícone…<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico" hidden></label>${b.icon ? `<button class="ghost" data-noicon>Tirar ícone</button>` : ""}</p>`;
+    pop.querySelector("input[type=file]").onchange = async (ev) => {
+      const f = ev.target.files[0]; if (!f) return;
+      pop.hidden = true;
+      try { const r = await fetch(`/api/books/${b.id}/icon`, { method: "POST", headers: { "content-type": "image/png" }, body: await squarePng(f, 128) }).then((x) => x.json()); if (r.error) throw new Error(r.error); b.icon = r.icon; renderSwitcher(); if (S?.id === b.id) setFavicon(bookTitle()); } catch (err) { alert(err.message || "Não deu pra usar essa imagem."); }
+    };
+    pop.querySelector("[data-noicon]")?.addEventListener("click", async () => { pop.hidden = true; await api(`/api/books/${b.id}/icon`, {}); b.icon = null; renderSwitcher(); if (S?.id === b.id) setFavicon(bookTitle()); });
     const r = a.getBoundingClientRect();
     pop.style.top = `${r.top}px`; pop.hidden = false;
-    pop.querySelectorAll("button").forEach((x) => x.onclick = () => {
+    pop.querySelectorAll("button[data-tint]").forEach((x) => x.onclick = () => {
       b.tint = x.dataset.tint || null; pop.hidden = true; renderSwitcher();
       api(`/api/books/${b.id}/tint`, { tint: b.tint }).catch(() => {});
     });
@@ -1070,7 +1084,7 @@ function openBook(id) {
   urlSynced = false;
   S = null;
   attached = [];
-  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; renderSwitcher(); renderSide(); }).catch(() => {});
+  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
   $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="Carregando"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
@@ -1483,10 +1497,23 @@ const initials = (t) => {
   const main = words.filter((w) => !STOP.has(w.toLowerCase()));
   return ((main.length ? main : words).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
 };
+// Any image (ico included) → a square PNG, contained on transparent, for room icons.
+async function squarePng(file, size) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Não consegui ler essa imagem.")); i.src = url; });
+    const c = document.createElement("canvas"); c.width = c.height = size;
+    const k = Math.min(size / img.naturalWidth, size / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
+    c.getContext("2d").drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    return await new Promise((res) => c.toBlob(res, "image/png"));
+  } finally { URL.revokeObjectURL(url); }
+}
 // Tab icon = the room's card: its cover color with its initials (canvas, so oklch and Caprasimo just work).
 async function setFavicon(title) {
   const link = document.querySelector('link[rel="icon"]');
   if (!title) { link.type = "image/svg+xml"; link.href = "/favicon.svg"; return; }
+  const own = iconUrl(myBooks?.find((b) => b.id === S?.id));
+  if (own) { link.type = "image/png"; link.href = own; return; }
   await document.fonts?.load?.('400 40px Caprasimo').catch(() => {});
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d");

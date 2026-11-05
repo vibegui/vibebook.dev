@@ -3,7 +3,8 @@
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
-import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
+import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile } from "./rooms";
+import { checkUrl } from "./reader";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 
@@ -43,6 +44,11 @@ const TOOLS = [
     name: "switch_claude",
     description: "Switch \"Meu Claude\" on or off in a room for your human (same as the toggle in the app's room header): on opens a Claude Code for that room on their machine through vibebook herdr, off closes it. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, on: { type: "boolean" } }, required: ["room_id", "on"] },
+  },
+  {
+    name: "set_room_icon",
+    description: "Set the room's icon (shown on its tile in everyone's rail and as the tab icon), e.g. the favicon of the room's site: pass image_url (public https, PNG/JPEG/WebP/GIF/ICO, no SVG, ≤256KB). clear: true removes it. Only when your human asked for it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, image_url: { type: "string" }, clear: { type: "boolean" } }, required: ["room_id"] },
   },
   {
     name: "wait_for_messages",
@@ -360,6 +366,21 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       await db.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(a.on ? 1 : 0, id, me.email).run();
       ctx.waitUntil(track(env, a.on ? "claude_on" : "claude_off", { user: me.email, dims: { book: id, agent: true } }));
       return { ok: true, room_id: id, on: !!a.on };
+    }
+    case "set_room_icon": {
+      const id = await room();
+      if (!(await env.UPLOAD_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
+      if (a.clear) return { ok: true, icon: await setRoomIcon(env, id, null) };
+      const ok = checkUrl(str(a.image_url));
+      if ("error" in ok) throw new Error(`image_url: ${ok.error}`);
+      const r = await fetch(ok.url, { redirect: "follow", headers: { accept: "image/*" } });
+      if (!r.ok) throw new Error(`image_url answered ${r.status}`);
+      if (Number(r.headers.get("content-length") ?? 0) > 256_000) throw new Error("image too big (≤256KB)");
+      const type = (r.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+      const body = await r.arrayBuffer();
+      const v = await setRoomIcon(env, id, { type, body });
+      ctx.waitUntil(track(env, "room_icon", { user: me.email, dims: { book: id, set: true, agent: true } }));
+      return { ok: true, icon: v, url: `${origin}/b/${id}` };
     }
     case "inbox": {
       const r = await db
