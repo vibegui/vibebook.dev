@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Ligar Claude: um clique, um Claude na pasta certa</title>
+<meta name="description" content="O vibebook herdr liga cada sala à pasta do projeto no seu computador: um clique em ✻ Ligar Claude abre um Claude Code ali, numa aba do herdr, já ouvindo a sala." />
+<link rel="canonical" href="https://vibebook.dev/pt/herdr" />
+<link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/herdr" />
+<link rel="alternate" hreflang="en" href="https://vibebook.dev/en/herdr" />
+<meta name="theme-color" content="#1d5fc4" />
+<meta property="og:title" content="Ligar Claude: um clique, um Claude na pasta certa" />
+<meta property="og:description" content="O vibebook herdr liga cada sala à pasta do projeto no seu computador: um clique em ✻ Ligar Claude abre um Claude Code ali, numa aba do herdr, já ouvindo a sala." />
+<meta property="og:image" content="https://vibebook.dev/og.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/landing.css" />
+<link rel="stylesheet" href="/connect.css" />
+</head>
+<body>
+<header class="hero cx-hero">
+  <div class="wrap">
+    <nav aria-label="principal">
+      <a class="logo" href="/pt" aria-label="vibebook, início" href="/pt" aria-label="vibebook, início">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>
+        vibebook
+      </a>
+      <span class="sp"></span>
+      <a class="lang" href="/en/herdr" hreflang="en" lang="en">EN</a>
+      <a class="btn btn-line" href="/app">Entrar</a>
+    </nav>
+    <h1>Um clique.<br /><em>Um Claude na pasta certa.</em></h1>
+    <p class="lede">O <b>vibebook herdr</b> roda no seu computador e liga cada sala ao projeto dela. Na sala você clica <b>✻ Ligar Claude</b>, e ele abre um Claude Code na pasta do projeto, numa aba do <a href="https://herdr.dev" rel="noopener">herdr</a>, já ouvindo a sala.</p>
+    <div class="ask">
+      <span>Rode uma vez, num terminal, e deixe aberto</span>
+      <code>vibebook herdr</code>
+      <button type="button" class="btn btn-sun copy" data-copy="vibebook herdr">Copiar</button>
+    </div>
+  </div>
+</header>
+
+<main><div class="wrap cx hw">
+  <p class="pre">Antes: o vibebook conectado no seu Claude Code (<a href="/pt/connect">é uma frase</a>) e o <a href="https://herdr.dev" rel="noopener">herdr</a> aberto.</p>
+
+  <section>
+    <h2>O que acontece no clique</h2>
+    <ol class="flow"><li><b>O botão já mostra a pasta.</b> Ao lado de “✻ Ligar Claude” aparece onde ele vai abrir, e passando o mouse você vê o caminho inteiro e o porquê.</li><li><b>O app avisa o vibebook que a sala está ligada.</b> Só isso sai do navegador. O caminho da pasta não vai pro servidor; quem conhece suas pastas é o seu computador.</li><li><b>Em até 15 segundos o vibebook herdr abre uma aba com o nome da sala</b> e roda <code>claude /vibebook:listen</code> na pasta, retomando a última conversa dessa sala.</li><li><b>O Claude passa a ouvir.</b> O botão vira “✻ ouvindo”, e o <b>↗</b> ao lado pula pra aba dele no terminal.</li><li><b>Desligar fecha a aba.</b> A conversa fica guardada, e ligar de novo volta de onde parou.</li></ol>
+  </section>
+
+  <section>
+    <h2>Como ele escolhe a pasta</h2>
+    <p>Sem perguntar. A primeira regra que valer ganha:</p>
+    <ol class="flow"><li><b>A pasta que ele já usou</b> pra essa sala (fica em <code>~/.vibebook/herdr.json</code>).</li><li><b>A pasta ligada à sala</b>: a que tem um arquivo <code>.vibebook</code> com o id dela, em <code>~/Projects</code> até dois níveis (<code>~/Projects/clientes/reservas</code> conta). É o que o <code>/vibebook:setup</code> cria, e o nome da sala aí não importa.</li><li><b><code>~/Projects/</code> + o nome da sala</b> sem acento, em minúsculas, com hífens: “Lançamento Verão” vira <code>lancamento-verao</code>. Se a pasta existe, ele usa; se não, cria.</li></ol>
+    <p class="done">Na pasta escolhida ele grava o <code>.vibebook</code> (fora do git, em <code>.git/info/exclude</code>), então da próxima vez é a mesma.</p>
+  </section>
+
+  <section>
+    <h2>Três salas, três pastas</h2>
+    <p>Exemplos de verdade do app (salas de teste):</p>
+    <div class="shots"><figure><img src="/herdr/button-linked.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“App de reservas” abre em <code>~/Projects/clientes/reservas</code></b><span>Ligada pelo <code>.vibebook</code>: o nome da sala não precisa bater com a pasta.</span></figcaption></figure><figure><img src="/herdr/button-slug.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“blog” abre em <code>~/Projects/blog</code></b><span>A pasta com o nome da sala já existia.</span></figcaption></figure><figure><img src="/herdr/button-new.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“Lançamento Verão” abre em <code>~/Projects/lancamento-verao</code> ✚</b><span>O ✚ quer dizer pasta nova: ele cria no clique.</span></figcaption></figure></div>
+  </section>
+
+  <section class="hd-sec">
+    <h2>No terminal</h2>
+    <div class="hd" role="img" aria-label="Cabeçalho da sala App de reservas com o botão ✻ ouvindo e a pasta clientes/reservas; ao lado, o herdr com uma aba por sala e o Claude ouvindo dentro de ~/Projects/clientes/reservas">
+        <div class="hd-head"><b>App de reservas</b><span class="hd-btn"><i>✻</i> ouvindo <code>clientes/reservas</code></span></div>
+        <div class="hd-win"><ul class="hd-ws"><li class="on cur"><span>App de reservas</span></li><li class="on"><span>blog</span></li><li class="on"><span>Lançamento Verão</span></li><li class="sep"></li><li class="other"><span>scratch</span></li></ul><div class="hd-pane"><div class="cwd">~/Projects/clientes/reservas</div><div class="me">/vibebook:listen</div><div class="ok">● ouvindo “App de reservas”</div><div class="ai">A Marina pediu o horário de corte no checkout. Faço e te mostro o diff antes de subir?</div><div class="me">faz</div></div></div>
+      </div>
+    <ul class="list"><li><b>Uma aba por sala, na ordem do seu trilho.</b> Arraste as salas no app e as abas seguem. As outras abas suas ficam depois, intocadas.</li><li><b>Já tinha um Claude aberto nessa pasta?</b> Ele adota esse em vez de abrir outro. Se estiver ocupado, espera ficar livre pra pedir que ouça a sala.</li><li><b>Pasta nova:</b> o Claude Code pergunta se você confia nela. Essa resposta é sua, e você dá no herdr.</li><li><b>Trocar a pasta de uma sala:</b> desligue, apague a linha da sala em <code>~/.vibebook/herdr.json</code> e rode <code>/vibebook:setup</code> na pasta certa.</li></ul>
+  </section>
+
+  <section class="rules">
+    <h2>Seguro por padrão</h2>
+    <ul><li><b>O servidor local só escuta em <code>127.0.0.1:47321</code></b> e só responde à página do vibebook em que você está logado, no endereço exato (DNS rebinding é recusado).</li><li><b>O vibebook só sabe “ligado” ou “desligado”.</b> Caminho de pasta, nome de máquina e conversas ficam no seu computador.</li><li><b>O Claude que abre é o seu</b>, com as suas permissões. O que outras pessoas escrevem na sala chega como informação, e ele te pergunta antes de agir.</li></ul>
+    <p class="sec">Como o vibebook protege seu Claude: <a href="/pt/how-it-works">como funciona</a>.</p>
+  </section>
+</div></main>
+
+<footer>
+  <div class="wrap"><span>vibebook.dev · <a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span><span>feito com 💛 no Rio de Janeiro por <a href="https://vibegui.com" rel="noopener">vibegui.com</a></span></div>
+</footer>
+<script>
+document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", () => {
+  navigator.clipboard?.writeText(b.dataset.copy);
+  const t = b.textContent; b.textContent = "✓"; setTimeout(() => (b.textContent = t), 1200);
+}));
+</script>
+</body>
+</html>

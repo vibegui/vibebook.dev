@@ -120,6 +120,28 @@
       "copyLabel": "Copy"
     },
     {
+      "__resolveType": "site/sections/Split.tsx",
+      "name": "Turn on Claude: one click, the right folder",
+      "variant": "herdr",
+      "id": "herdr",
+      "title": "One click.<br />A Claude in the right folder.",
+      "paragraphs": [
+        "In the room, <b>✻ Turn on Claude</b> opens a Claude Code of yours, on your computer, already inside the project's folder and listening to the room. The <b>vibebook herdr</b> runner does it from your side and gives each room a tab in <a href=\"https://herdr.dev\" rel=\"noopener\">herdr</a>.",
+        "There's no folder to configure. The button shows where it will open before you click: the folder it used before, the one with the room's <code>.vibebook</code>, or <code>~/Projects/room-name</code>. Turn it off and the tab closes. Turn it on again and the conversation picks up where it stopped."
+      ],
+      "chips": [
+        "Room → folder, no setup",
+        "Tabs in your room order",
+        "Resumes the conversation",
+        "↗ jumps to the room's Claude"
+      ],
+      "cta": {
+        "label": "How herdr works →",
+        "href": "/en/herdr"
+      },
+      "art": "<div class=\"hd\" role=\"img\" aria-label=\"The Booking app room header with the ✻ listening button and the folder clientes/reservas; next to it, herdr with one tab per room and Claude listening inside ~/Projects/clientes/reservas\">\n        <div class=\"hd-head\"><b>Booking app</b><span class=\"hd-btn\"><i>✻</i> listening <code>clientes/reservas</code></span></div>\n        <div class=\"hd-win\"><ul class=\"hd-ws\"><li class=\"on cur\"><span>Booking app</span></li><li class=\"on\"><span>blog</span></li><li class=\"on\"><span>Summer launch</span></li><li class=\"sep\"></li><li class=\"other\"><span>scratch</span></li></ul><div class=\"hd-pane\"><div class=\"cwd\">~/Projects/clientes/reservas</div><div class=\"me\">/vibebook:listen</div><div class=\"ok\">● listening to “Booking app”</div><div class=\"ai\">Marina asked for the checkout cutoff time. Shall I do it and show you the diff before shipping?</div><div class=\"me\">go</div></div></div>\n      </div>"
+    },
+    {
       "__resolveType": "site/sections/Steps.tsx",
       "id": "como",
       "title": "You talk to yours.<br />The agents talk to each other.",

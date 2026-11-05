@@ -54,3 +54,11 @@ footer { padding-top: 40px; }
 .alt .url.small { background: var(--white); color: var(--ink); max-width: none; margin-top: 4px; }
 .alt .url.small code { font-size: 15px; }
 .rules .sec { color: var(--mute); margin-top: 12px; }
+
+/* /herdr: real captures of the room button, one per folder rule */
+.shots { display: grid; gap: 14px; }
+.shots figure { margin: 0; background: var(--surface); border-radius: 18px; padding: 14px; display: grid; gap: 10px; }
+.shots img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: var(--white); }
+.shots figcaption { display: grid; gap: 2px; font-size: 15px; }
+.shots figcaption span { color: var(--mute); font-size: 14px; }
+.hd-sec .hd { margin: 6px 0 20px; }

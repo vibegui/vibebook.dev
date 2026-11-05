@@ -281,6 +281,15 @@ function herdrServer() {
     const u = new URL(req.url ?? "/", "http://127.0.0.1");
     const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
     if (u.pathname === "/ping") return send(200, { ok: true, rooms: Object.keys(map).filter((r) => map[r].workspace) });
+    // Where "Ligar Claude" will open this room: the folder it used before, the one linked by .vibebook, else
+    // ~/Projects/<title slug> (how = new when that folder doesn't exist yet). Same rule herdrSync follows.
+    if (u.pathname === "/where") {
+      const room = u.searchParams.get("room") ?? "";
+      if (!/^[a-z0-9]{6,40}$/.test(room)) return send(400, { error: "room" });
+      const folder = map[room]?.folder ?? roomFolder(room, (u.searchParams.get("title") ?? "").slice(0, 200));
+      const how = map[room]?.folder ? "used" : (() => { try { return linkedRoom(folder) === room; } catch { return false; } })() ? "linked" : existsSync(folder) ? "slug" : "new";
+      return send(200, { folder, home: homedir(), how });
+    }
     if (u.pathname !== "/focus") return send(404, { error: "not found" });
     const ws = map[u.searchParams.get("room") ?? ""]?.workspace;
     if (!ws) return send(404, { error: "Nenhum Claude aberto pra essa sala no herdr." });

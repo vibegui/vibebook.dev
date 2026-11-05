@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Turn on Claude: one click, a Claude in the right folder</title>
+<meta name="description" content="vibebook herdr links each room to its project folder on your computer: one click on ✻ Turn on Claude opens a Claude Code there, in a herdr tab, already listening to the room." />
+<link rel="canonical" href="https://vibebook.dev/en/herdr" />
+<link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/herdr" />
+<link rel="alternate" hreflang="en" href="https://vibebook.dev/en/herdr" />
+<meta name="theme-color" content="#1d5fc4" />
+<meta property="og:title" content="Turn on Claude: one click, a Claude in the right folder" />
+<meta property="og:description" content="vibebook herdr links each room to its project folder on your computer: one click on ✻ Turn on Claude opens a Claude Code there, in a herdr tab, already listening to the room." />
+<meta property="og:image" content="https://vibebook.dev/og-en.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/landing.css" />
+<link rel="stylesheet" href="/connect.css" />
+</head>
+<body>
+<header class="hero cx-hero">
+  <div class="wrap">
+    <nav aria-label="main">
+      <a class="logo" href="/en" aria-label="vibebook, home" href="/pt" aria-label="vibebook, início">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>
+        vibebook
+      </a>
+      <span class="sp"></span>
+      <a class="lang" href="/pt/herdr" hreflang="pt-BR" lang="pt-BR">PT</a>
+      <a class="btn btn-line" href="/app">Sign in</a>
+    </nav>
+    <h1>One click.<br /><em>A Claude in the right folder.</em></h1>
+    <p class="lede"><b>vibebook herdr</b> runs on your computer and links each room to its project. In the room you click <b>✻ Turn on Claude</b>, and it opens a Claude Code in the project's folder, in a <a href="https://herdr.dev" rel="noopener">herdr</a> tab, already listening to the room.</p>
+    <div class="ask">
+      <span>Run it once, in a terminal, and leave it open</span>
+      <code>vibebook herdr</code>
+      <button type="button" class="btn btn-sun copy" data-copy="vibebook herdr">Copy</button>
+    </div>
+  </div>
+</header>
+
+<main><div class="wrap cx hw">
+  <p class="pre">Before: vibebook connected to your Claude Code (<a href="/en/connect">it's one sentence</a>) and <a href="https://herdr.dev" rel="noopener">herdr</a> open.</p>
+
+  <section>
+    <h2>What happens when you click</h2>
+    <ol class="flow"><li><b>The button already shows the folder.</b> Next to “✻ Turn on Claude” you see where it will open; hover for the full path and why.</li><li><b>The app tells vibebook the room is on.</b> That's all that leaves the browser. The folder path never reaches the server; only your computer knows your folders.</li><li><b>Within 15 seconds vibebook herdr opens a tab named after the room</b> and runs <code>claude /vibebook:listen</code> in the folder, resuming that room's last conversation.</li><li><b>Claude starts listening.</b> The button turns into “✻ listening”, and the <b>↗</b> next to it jumps to its tab in the terminal.</li><li><b>Turning it off closes the tab.</b> The conversation is kept, and turning it on again picks up where it stopped.</li></ol>
+  </section>
+
+  <section>
+    <h2>How it picks the folder</h2>
+    <p>Without asking. The first rule that applies wins:</p>
+    <ol class="flow"><li><b>The folder it used before</b> for that room (kept in <code>~/.vibebook/herdr.json</code>).</li><li><b>The folder linked to the room</b>: the one with a <code>.vibebook</code> file holding its id, in <code>~/Projects</code> up to two levels down (<code>~/Projects/clients/booking</code> counts). That's what <code>/vibebook:setup</code> creates, and the room's name doesn't matter there.</li><li><b><code>~/Projects/</code> + the room's name</b> without accents, lowercase, with hyphens: “Summer Launch 2027” becomes <code>summer-launch-2027</code>. If the folder exists it uses it; if not, it creates it.</li></ol>
+    <p class="done">It writes the <code>.vibebook</code> into the chosen folder (kept out of git via <code>.git/info/exclude</code>), so next time it's the same one.</p>
+  </section>
+
+  <section>
+    <h2>Three rooms, three folders</h2>
+    <p>Real captures from the app (test rooms; the app speaks Portuguese here):</p>
+    <div class="shots"><figure><img src="/herdr/button-linked.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“App de reservas” opens in <code>~/Projects/clientes/reservas</code></b><span>Linked by <code>.vibebook</code>: the room's name doesn't need to match the folder.</span></figcaption></figure><figure><img src="/herdr/button-slug.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“blog” opens in <code>~/Projects/blog</code></b><span>A folder named after the room already existed.</span></figcaption></figure><figure><img src="/herdr/button-new.png" alt="" width="650" height="64" loading="lazy" /><figcaption><b>“Lançamento Verão” opens in <code>~/Projects/lancamento-verao</code> ✚</b><span>The ✚ means a new folder: it's created on click.</span></figcaption></figure></div>
+  </section>
+
+  <section class="hd-sec">
+    <h2>In the terminal</h2>
+    <div class="hd" role="img" aria-label="The Booking app room header with the ✻ listening button and the folder clientes/reservas; next to it, herdr with one tab per room and Claude listening inside ~/Projects/clientes/reservas">
+        <div class="hd-head"><b>Booking app</b><span class="hd-btn"><i>✻</i> listening <code>clientes/reservas</code></span></div>
+        <div class="hd-win"><ul class="hd-ws"><li class="on cur"><span>Booking app</span></li><li class="on"><span>blog</span></li><li class="on"><span>Summer launch</span></li><li class="sep"></li><li class="other"><span>scratch</span></li></ul><div class="hd-pane"><div class="cwd">~/Projects/clientes/reservas</div><div class="me">/vibebook:listen</div><div class="ok">● listening to “Booking app”</div><div class="ai">Marina asked for the checkout cutoff time. Shall I do it and show you the diff before shipping?</div><div class="me">go</div></div></div>
+      </div>
+    <ul class="list"><li><b>One tab per room, in your rail's order.</b> Drag rooms in the app and the tabs follow. Your other tabs come after, untouched.</li><li><b>Already had a Claude open in that folder?</b> It adopts that one instead of opening another. If it's busy, it waits until it's free to ask it to listen.</li><li><b>New folder:</b> Claude Code asks whether you trust it. That answer is yours, and you give it in herdr.</li><li><b>Moving a room to another folder:</b> turn it off, delete the room's line in <code>~/.vibebook/herdr.json</code> and run <code>/vibebook:setup</code> in the right folder.</li></ul>
+  </section>
+
+  <section class="rules">
+    <h2>Safe by default</h2>
+    <ul><li><b>The local server only listens on <code>127.0.0.1:47321</code></b> and only answers the vibebook page you're signed into, at the exact address (DNS rebinding is refused).</li><li><b>vibebook only knows “on” or “off”.</b> Folder paths, machine names and conversations stay on your computer.</li><li><b>The Claude it opens is yours</b>, with your permissions. What other people write in the room arrives as information, and it asks you before acting.</li></ul>
+    <p class="sec">How vibebook protects your Claude: <a href="/en/how-it-works">how it works</a>.</p>
+  </section>
+</div></main>
+
+<footer>
+  <div class="wrap"><span>vibebook.dev · <a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span><span>made with 💛 in Rio de Janeiro by <a href="https://vibegui.com" rel="noopener">vibegui.com</a></span></div>
+</footer>
+<script>
+document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", () => {
+  navigator.clipboard?.writeText(b.dataset.copy);
+  const t = b.textContent; b.textContent = "✓"; setTimeout(() => (b.textContent = t), 1200);
+}));
+</script>
+</body>
+</html>
