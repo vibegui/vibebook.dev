@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#ffffff" />
+<script>try { const t = localStorage.getItem("vb.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <title>vibebook</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
@@ -12,12 +13,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: oklch(0.975 0.008 240); --panel: oklch(1 0 0); --line: oklch(0.91 0.01 245); --ink: oklch(0.2 0.02 250); --mute: oklch(0.45 0.02 250);
-    --accent: oklch(0.5 0.17 248); --accent-ink: #fff; --ai: oklch(0.5 0.17 248); --ai-bg: oklch(0.95 0.03 245); --ok: oklch(0.6 0.14 155); --sun: oklch(0.9 0.16 98);
+    /* Every color once, light and dark (light-dark follows color-scheme: auto = the system, or the rail's toggle). */
+    color-scheme: light dark;
+    --bg: light-dark(oklch(0.975 0.008 240), oklch(0.17 0.012 250)); --panel: light-dark(oklch(1 0 0), oklch(0.215 0.014 250));
+    --line: light-dark(oklch(0.91 0.01 245), oklch(0.31 0.015 250)); --ink: light-dark(oklch(0.2 0.02 250), oklch(0.93 0.008 250)); --mute: light-dark(oklch(0.45 0.02 250), oklch(0.7 0.015 250));
+    --accent: light-dark(oklch(0.5 0.17 248), oklch(0.6 0.16 248)); --accent-ink: #fff; --ai: var(--accent); --ai-bg: light-dark(oklch(0.95 0.03 245), oklch(0.27 0.045 248));
+    --ok: oklch(0.6 0.14 155); --sun: oklch(0.9 0.16 98);
+    /* tinted surfaces: Claude (warm), delivered (green), mentions, waiting (yellow) */
+    --warm-bg: light-dark(oklch(0.975 0.014 55), oklch(0.25 0.03 50)); --warm-line: light-dark(oklch(0.92 0.035 55), oklch(0.36 0.05 50)); --warm-ink: light-dark(oklch(0.32 0.06 40), oklch(0.85 0.06 50));
+    --ok-bg: light-dark(oklch(0.97 0.03 155), oklch(0.25 0.04 155)); --ok-line: light-dark(oklch(0.86 0.07 155), oklch(0.38 0.07 155)); --ok-ink: light-dark(oklch(0.42 0.12 155), oklch(0.8 0.1 155));
+    --mention-bg: light-dark(oklch(0.92 0.06 245), oklch(0.33 0.08 248)); --mention-ink: light-dark(#14305e, oklch(0.9 0.05 245));
+    --wait-bg: light-dark(oklch(0.95 0.06 95), oklch(0.32 0.06 90)); --wait-ink: light-dark(oklch(0.38 0.08 80), oklch(0.9 0.08 95));
+    --hover: light-dark(oklch(0.96 0.01 250), oklch(0.27 0.015 250));
   }
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); color-scheme: light;
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
     font: 16px/1.55 "Schibsted Grotesk", system-ui, sans-serif; }
   button, input, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 6px 12px; }
@@ -127,17 +140,17 @@
   .bell.default::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; }
   .bell.denied { color: #c2410c; }
   .bell.muted { opacity: .55; }
-  .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: oklch(0.93 0.05 45); color: oklch(0.45 0.13 40); margin-left: 4px; }
+  .agentTag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warm-line); color: var(--warm-ink); margin-left: 4px; }
   /* Agents speak in a warm bubble; people stay plain text: who is talking reads at a glance. */
-  .msg.agent .txt { background: oklch(0.975 0.014 55); border: 1px solid oklch(0.92 0.035 55); border-radius: 4px 14px 14px 14px; padding: 10px 14px; margin-top: 4px; }
-  .msg.agent .who { color: oklch(0.45 0.1 40); }
+  .msg.agent .txt { background: var(--warm-bg); border: 1px solid var(--warm-line); border-radius: 4px 14px 14px 14px; padding: 10px 14px; margin-top: 4px; }
+  .msg.agent .who { color: light-dark(oklch(0.45 0.1 40), oklch(0.78 0.1 45)); }
   .msg.agent .avatar.claude { border-radius: 50%; }
-  .msg.done .txt { background: oklch(0.97 0.03 155); border: 1px solid oklch(0.86 0.07 155); border-left: 4px solid var(--ok); border-radius: 12px; padding: 10px 14px; margin-top: 4px; }
+  .msg.done .txt { background: var(--ok-bg); border: 1px solid var(--ok-line); border-left: 4px solid var(--ok); border-radius: 12px; padding: 10px 14px; margin-top: 4px; }
   .doneTag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--ok); color: #fff; margin-left: 4px; }
   .invite input { flex: 1; min-width: 0; }
   .row { display: flex; gap: 8px; }
   .row input, .row textarea { flex: 1; min-width: 0; }
-  .picAsk { display: flex; align-items: center; gap: 18px; background: oklch(0.96 0.03 50); border: 1px solid oklch(0.9 0.05 50); border-radius: 18px; padding: 18px 22px; margin-bottom: 24px; max-width: 640px; }
+  .picAsk { display: flex; align-items: center; gap: 18px; background: var(--warm-bg); border: 1px solid var(--warm-line); border-radius: 18px; padding: 18px 22px; margin-bottom: 24px; max-width: 640px; }
   .picAsk > div { display: grid; gap: 4px; flex: 1; }
   .picAsk b { font-size: 17px; }
   .picAsk .picBig { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 20px; flex: none; }
@@ -186,7 +199,7 @@
   .tcard .tc-t small { font-size: 12px; color: var(--mute); }
   .tcard .tc-go { color: var(--mute); }
   .member.agentRow { padding-left: 18px; font-size: 12.5px; color: var(--mute); }
-  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; background: oklch(0.93 0.03 50); color: oklch(0.62 0.1 45); flex: none; position: relative; border-radius: 50%; }
+  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; background: var(--warm-line); color: #d97757; flex: none; position: relative; border-radius: 50%; }
   .agentRow .aglyph.on { background: #d97757; color: #fff; }
   .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
   .agentRow small { margin-left: auto; font-size: 11px; }
@@ -202,8 +215,8 @@
   .claudeSpin { color: #d97757; font-size: 15px; line-height: 1; display: inline-block; animation: claudeTurn 3.2s linear infinite; flex: none; }
   @keyframes claudeTurn { to { transform: rotate(360deg); } }
   /* Inside the epic: who is on it, where the empty-thread hint would be (or after the last message). */
-  .working { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; background: oklch(0.975 0.014 55); color: oklch(0.32 0.06 40); font-size: 14.5px; }
-  .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), oklch(0.92 0.035 55) 0 70%, #d97757 85%, oklch(0.92 0.035 55) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  .working { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; background: var(--warm-bg); color: var(--warm-ink); font-size: 14.5px; }
+  .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), var(--warm-line) 0 70%, #d97757 85%, var(--warm-line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
   .working > div { flex: 1; min-width: 0; }
   .working small { display: block; color: var(--mute); font-size: 12.5px; margin-top: 2px; }
   .working .avatar.claude { border-radius: 50%; flex: none; }
@@ -229,7 +242,7 @@
   .friendAdd b { color: var(--accent); font-size: 16px; }
   .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .x { font-size: 18px; line-height: 1; padding: 2px 7px; color: var(--mute); flex: none; }
-  .x:hover { color: oklch(0.5 0.2 25); background: oklch(0.95 0.03 25); }
+  .x:hover { color: oklch(0.6 0.2 25); background: light-dark(oklch(0.95 0.03 25), oklch(0.3 0.06 25)); }
   .friend .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .resend { font-size: 12px; padding: 2px 6px; color: var(--accent); flex: none; }
   .member { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; }
@@ -289,7 +302,7 @@
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
   .ack.doing { background: var(--ai-bg); color: var(--accent); }
   .ack.idle { background: var(--line, #eee); color: var(--mute); font-weight: 500; }
-  .ack.did { background: oklch(0.95 0.04 155); color: oklch(0.42 0.12 155); }
+  .ack.did { background: var(--ok-bg); color: var(--ok-ink); }
   .ack .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
   @keyframes ackspin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .ack .spin { animation: none; } }
@@ -313,7 +326,7 @@
   .typing { color: var(--ai); font-size: 13px; overflow-wrap: anywhere; }
   .msg .txt a { color: var(--accent); overflow-wrap: anywhere; }
   .composer { border-top: 1px solid var(--line); padding: 12px 24px 14px; display: flex; flex-direction: column; gap: 6px; position: relative; }
-  .mention { background: oklch(0.92 0.06 245); color: #14305e; border-radius: 5px; padding: 0 4px; font-weight: 600; }
+  .mention { background: var(--mention-bg); color: var(--mention-ink); border-radius: 5px; padding: 0 4px; font-weight: 600; }
   .mention.me { background: var(--sun, #f2dc4a); color: #14305e; }
   .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
   .mentionPop[hidden] { display: none; }
@@ -412,12 +425,12 @@
   .task .towner.set { color: var(--ink); font-weight: 600; }
   .task .due { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--mute); cursor: pointer; white-space: nowrap; }
   .task .due.set { color: var(--ink); font-weight: 600; }
-  .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: oklch(0.95 0.06 95); color: oklch(0.38 0.08 80); margin-left: 8px; white-space: nowrap; }
+  .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); margin-left: 8px; white-space: nowrap; }
   .waitWho { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .waitWho:hover { text-decoration-style: solid; }
   .chathead { position: relative; }
   .waitPop { position: absolute; top: calc(100% - 6px); left: 16px; z-index: 30; width: min(420px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.12); padding: 10px; display: grid; gap: 4px; font: 14px/1.35 "Schibsted Grotesk", system-ui, sans-serif; }
   .waitPop > b { font-size: 12px; color: var(--mute); padding: 2px 8px 6px; }
-  .waitPop button { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; } .waitPop button:hover { background: oklch(0.96 0.01 250); }
+  .waitPop button { all: unset; cursor: pointer; display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; } .waitPop button:hover { background: var(--hover); }
   .waitPop small { color: var(--mute); font-size: 12px; }
   .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
@@ -453,10 +466,10 @@
   .opt { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 14px; margin-top: 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; transition: border-color .2s; }
   .opt:hover:not(:disabled) { border-color: var(--accent); }
   .opt:disabled { cursor: default; }
-  .opt .fill { position: absolute; inset: 0 auto 0 0; background: oklch(0.93 0.04 245); transition: width .5s cubic-bezier(.22,1,.36,1); z-index: 0; }
+  .opt .fill { position: absolute; inset: 0 auto 0 0; background: var(--mention-bg); transition: width .5s cubic-bezier(.22,1,.36,1); z-index: 0; }
   .opt.mine { border-color: var(--accent); }
-  .opt.mine .fill { background: oklch(0.88 0.07 245); }
-  .opt.win .fill { background: oklch(0.92 0.12 98); }
+  .opt.mine .fill { background: light-dark(oklch(0.88 0.07 245), oklch(0.4 0.1 248)); }
+  .opt.win .fill { background: var(--wait-bg); }
   .opt > :not(.fill) { position: relative; z-index: 1; }
   .opt .ol { flex: 1; font-weight: 600; }
   .opt .pc { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3ch; text-align: right; }
@@ -545,17 +558,17 @@
   .sw-item .lbl { font-size: 10.5px; line-height: 1.2; text-align: center; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .sw-item:hover .lbl, .sw-item.on .lbl { color: var(--ink); }
   .sw-item.on .lbl { font-weight: 600; }
-  .sw-group { width: calc(100% + 12px); margin: 0 -6px; padding: 10px 4px; border-radius: 12px; background: oklch(0.2 0.02 250 / .045); display: flex; flex-direction: column; gap: 12px; flex: none; }
+  .sw-group { width: calc(100% + 12px); margin: 0 -6px; padding: 10px 4px; border-radius: 12px; background: light-dark(oklch(0.2 0.02 250 / .045), oklch(1 0 0 / .05)); display: flex; flex-direction: column; gap: 12px; flex: none; }
   .sw-sep { width: 24px; height: 1px; background: var(--line); flex: none; }
   .sw-sp { flex: 1; }
   .sw-btn { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: none; color: var(--mute); display: grid; place-items: center; cursor: pointer; padding: 0; }
   .sw-btn:hover { background: var(--line); color: var(--ink); }
-  #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: var(--ink); color: #fff; border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
+  #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
   #swTip[hidden] { display: none; }
   #swTip span { color: rgb(255 255 255 / .82); }
   #swTip small { color: rgb(255 255 255 / .6); font-size: 11.5px; }
-  #swTip .tn.h { color: oklch(0.8 0.15 150); font-size: 12px; }
-  #swTip .tn.a { color: oklch(0.88 0.14 90); font-size: 12px; }
+  #swTip .tn.h { color: light-dark(oklch(0.8 0.15 150), oklch(0.45 0.14 150)); font-size: 12px; }
+  #swTip .tn.a { color: light-dark(oklch(0.88 0.14 90), oklch(0.5 0.12 80)); font-size: 12px; }
   .swDlg { width: min(440px, calc(100vw - 32px)); padding: 8px; border: 1px solid var(--line); border-radius: 16px; margin-top: 14vh; }
   .swDlg input { width: 100%; box-sizing: border-box; border: 0; outline: 0; font: inherit; font-size: 16px; padding: 10px 12px; background: none; }
   .swDlg #swList { display: grid; gap: 2px; max-height: 50vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
@@ -624,6 +637,19 @@ const SW_SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" s
 const SW_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
 const recentRooms = () => { try { return JSON.parse(localStorage.getItem("vb.recent") || "[]"); } catch { return []; } };
 const rememberRoom = (id) => { try { localStorage.setItem("vb.recent", JSON.stringify([id, ...recentRooms().filter((x) => x !== id)].slice(0, 4))); } catch {} };
+// Theme: auto (follows the system) → light → dark, remembered per browser; the CSS reads data-theme via color-scheme.
+const ICO = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const THEMES = {
+  auto: { label: "Tema automático (do sistema)", next: "light", icon: ICO(`<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>`) },
+  light: { label: "Tema claro", next: "dark", icon: ICO(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`) },
+  dark: { label: "Tema escuro", next: "auto", icon: ICO(`<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>`) },
+};
+const theme = () => document.documentElement.dataset.theme || "auto";
+function setTheme(t) {
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  try { t === "auto" ? localStorage.removeItem("vb.theme") : localStorage.setItem("vb.theme", t); } catch {}
+  renderSwitcher();
+}
 // Your order of rooms: the ones you placed first, then the rest oldest first (stable, unlike activity).
 const roomOrder = () => [...(myBooks || [])].sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9) || (a.created_at ?? 0) - (b.created_at ?? 0));
 const tile = (b, size) => `<span class="tile ${size}" style="background:${coverColor(b.title)}">${esc(initials(b.title))}</span>`;
@@ -649,6 +675,7 @@ function renderSwitcher() {
     ${recent.length ? `<div class="sw-group">${recent.map((b) => item(b, true)).join("")}</div>` : `<span class="sw-sep"></span>`}
     ${rest.map((b) => item(b, false)).join("")}
     <span class="sw-sp"></span>
+    <button class="sw-btn" id="swTheme" title="${THEMES[theme()].label} (clique pra trocar)" aria-label="Tema: ${THEMES[theme()].label}">${THEMES[theme()].icon}</button>
     <button class="sw-btn" id="swSearch" title="Ir para um vibebook (⌘K)" aria-label="Ir para um vibebook">${SW_SEARCH}</button>
     <button class="sw-btn" id="swNew" title="Novo vibebook" aria-label="Novo vibebook">${SW_PLUS}</button>`;
   $sw.querySelector(".on")?.scrollIntoView({ block: "nearest" });
@@ -670,6 +697,7 @@ function renderSwitcher() {
     };
   });
   document.getElementById("swSearch").onclick = openSwitch;
+  document.getElementById("swTheme").onclick = () => setTheme(THEMES[theme()].next);
   document.getElementById("swNew").onclick = async () => { const { id } = await api("/api/books", {}); history.pushState(null, "", `/b/${id}`); route(); };
 }
 // Hover a room on the rail: its name and what's going on, right away (no native title delay).
