@@ -371,7 +371,11 @@ async function herdrSync(agent, tools) {
   for (const [room, title] of on) {
     const e = map[room] ??= {};
     if (e.workspace && live.has(e.workspace)) {
-      if (e.listening && deaf.has(room) && Date.now() - (e.prompted_at ?? 0) > 5 * 60000)
+      if (!deaf.has(room))
+        delete e.deaf_since;
+      else
+        e.deaf_since ??= Date.now();
+      if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60000)
         e.listening = false;
       if (!e.listening) {
         const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
@@ -380,6 +384,7 @@ async function herdrSync(agent, tools) {
             herdr("agent", "prompt", p.pane_id, LISTEN_PROMPT);
             e.listening = true;
             e.prompted_at = Date.now();
+            delete e.deaf_since;
             log(`${title}: o Claude ficou livre, pedi pra ele ouvir a sala`);
           } catch {}
       }

@@ -240,7 +240,7 @@ function readData(): Record<string, unknown> {
 // ~/.vibebook/herdr.json = { <room_id>: { folder, workspace?, session? } }. On: find (or adopt) the room's herdr
 // workspace, else create it in the room's folder and start `claude "/vibebook:listen"` there (resuming the last
 // conversation). Off: remember the conversation id and close the workspace. Never touches workspaces it doesn't map.
-type HerdrRoom = { folder?: string; workspace?: string; session?: string; listening?: boolean; prompted_at?: number };
+type HerdrRoom = { folder?: string; workspace?: string; session?: string; listening?: boolean; prompted_at?: number; deaf_since?: number };
 type Pane = { pane_id: string; workspace_id: string; tab_id: string; cwd: string; foreground_cwd?: string; agent?: string; agent_status?: string; agent_session?: { value?: string } };
 const herdr = (...args: string[]) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 const PROJECTS = join(homedir(), "Projects");
@@ -350,7 +350,11 @@ async function herdrSync(agent: string, tools: Tool[]) {
     if (e.workspace && live.has(e.workspace)) {
       // Its listener died (the session expired, the loop crashed…): the server sees nobody listening. Once it's free,
       // ask again, at most every 5 minutes (a Claude that just started listening takes a moment to show up).
-      if (e.listening && deaf.has(room) && Date.now() - (e.prompted_at ?? 0) > 5 * 60_000) e.listening = false;
+      // Deaf for a moment is normal (it's handling a message, or just restarted its listener): only 3 minutes in a row
+      // of nobody listening counts.
+      if (!deaf.has(room)) delete e.deaf_since;
+      else e.deaf_since ??= Date.now();
+      if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60_000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60_000) e.listening = false;
       // Adopted while busy: ask it to listen once it's free (a prompt typed into a working Claude would interrupt it).
       if (!e.listening) {
         const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
@@ -359,6 +363,7 @@ async function herdrSync(agent: string, tools: Tool[]) {
             herdr("agent", "prompt", p.pane_id, LISTEN_PROMPT);
             e.listening = true;
             e.prompted_at = Date.now();
+            delete e.deaf_since;
             log(`${title}: o Claude ficou livre, pedi pra ele ouvir a sala`);
           } catch {}
       }
