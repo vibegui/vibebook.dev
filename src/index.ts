@@ -1,6 +1,7 @@
 import { type Context, Hono } from "hono";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
+import { accessPage, roomMeta } from "./access";
 import { auth, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -70,6 +71,9 @@ const SCHEMA = [
   // (a task of theirs in review, rewritten by the room's epicsChanged).
   `CREATE TABLE IF NOT EXISTS waits (book_id TEXT, ref TEXT, email TEXT, thread TEXT, topic TEXT, author TEXT, text TEXT, ts INTEGER, PRIMARY KEY (book_id, ref, email))`,
   `CREATE INDEX IF NOT EXISTS waits_email ON waits (email, ts)`,
+  // Someone opened a room link without access and asked to join (/b/<id> → "Pedir acesso"). A member approves (=
+  // invite) or declines (denied = 1, kept so the same person can't keep asking).
+  `CREATE TABLE IF NOT EXISTS access_requests (book_id TEXT, email TEXT, ts INTEGER, denied INTEGER DEFAULT 0, PRIMARY KEY (book_id, email))`,
   `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
 ];
 let schemaReady: Promise<unknown> | undefined;
@@ -159,9 +163,21 @@ app.get("/archived", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect("/login?next=%2Farchived");
 });
+// A room link: members get the app; anyone else (and link-preview bots) a page with the room's name and "Pedir
+// acesso". The title is readable by whoever holds the link, on purpose: that's what makes the shared card useful.
 app.get("/b/*", async (c) => {
   const email = await identify(c);
-  return email ? pageview(c, await shell(c), email) : c.redirect(`/login?next=${encodeURIComponent(new URL(c.req.url).pathname)}`);
+  const url = new URL(c.req.url);
+  const id = url.pathname.match(/^\/b\/([a-z0-9]{6,40})/)?.[1] ?? "";
+  const book = id ? await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>() : null;
+  if (email && book && (await isMember(c.env.DB, id, email)))
+    return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
+  const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
+  const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
+  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") }), book ? 200 : 404);
+  res.headers.set("x-frame-options", "DENY");
+  res.headers.set("content-security-policy", "frame-ancestors 'none'");
+  return pageview(c, res, email ?? undefined);
 });
 
 // Agent file upload by link (MCP upload_link): PUT the raw bytes once, within 10 minutes. The token is the gate.
@@ -468,6 +484,40 @@ app.post("/api/books", async (c) => {
   const id = await createBook(c.env, email, title);
   c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: id } }));
   return c.json({ id });
+});
+
+// Ask to join a room you opened by link. Silent when already asked or declined (no way to probe or spam).
+app.post("/api/books/:id/request", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  const book = await c.env.DB.prepare(`SELECT 1 FROM books WHERE id = ?`).bind(id).first();
+  if (!book) return c.json({ error: "not found" }, 404);
+  if (await isMember(c.env.DB, id, email)) return c.json({ ok: true, member: true });
+  if (!(await c.env.LOGIN_LIMIT.limit({ key: `ask:${email}` })).success) return c.json({ error: "rate limited" }, 429);
+  const r = await c.env.DB.prepare(`INSERT OR IGNORE INTO access_requests (book_id, email, ts) VALUES (?, ?, ?)`).bind(id, email, Date.now()).run();
+  if (r.meta.changes) {
+    const name = (await c.env.DB.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>())?.name ?? undefined;
+    await bookStub(c.env, id).fetch(`https://book/access-requested?book=${id}`, { method: "POST", body: JSON.stringify({ who: email, name }) });
+    c.executionCtx.waitUntil(track(c.env, "access_requested", { user: email, dims: { book: id } }));
+  }
+  return c.json({ ok: true });
+});
+app.get("/api/books/:id/access", async (c) => c.json({ member: await isMember(c.env.DB, c.req.param("id"), c.get("email")) }));
+// A member lets someone in (= the usual invite, which emails them the link) or declines (kept, so they can't re-ask).
+app.post("/api/books/:id/requests", async (c) => {
+  const email = c.get("email");
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
+  const { email: who, ok } = await c.req.json<{ email: string; ok: boolean }>();
+  const req = await c.env.DB.prepare(`SELECT email FROM access_requests WHERE book_id = ? AND email = ? AND denied = 0`).bind(id, String(who ?? "").toLowerCase()).first<{ email: string }>();
+  if (!req) return c.json({ error: "no such request" }, 404);
+  if (ok) {
+    await c.env.DB.prepare(`DELETE FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
+    await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, req.email);
+  } else await c.env.DB.prepare(`UPDATE access_requests SET denied = 1 WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
+  await bookStub(c.env, id).fetch("https://book/requests-changed", { method: "POST" });
+  c.executionCtx.waitUntil(track(c.env, ok ? "access_approved" : "access_denied", { user: email, dims: { book: id } }));
+  return c.json({ ok: true });
 });
 
 app.post("/api/books/:id/members", async (c) => {

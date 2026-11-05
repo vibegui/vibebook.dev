@@ -225,6 +225,12 @@ export class Book extends DurableObject<Env> {
     return r.results.map((m) => m.email as string);
   }
   /** email → display name for members who set one. */
+  /** People who opened the room's link without access and asked to join (sidebar "Pedindo pra entrar"). */
+  async requests(): Promise<{ email: string; name: string | null; ts: number }[]> {
+    const id = this.get("book_id");
+    if (!id) return [];
+    return (await this.env.DB.prepare(`SELECT r.email, u.name, r.ts FROM access_requests r LEFT JOIN users u ON u.email = r.email WHERE r.book_id = ? AND r.denied = 0 ORDER BY r.ts LIMIT 20`).bind(id).all<{ email: string; name: string | null; ts: number }>()).results;
+  }
   async names(): Promise<Record<string, string>> {
     const id = this.get("book_id");
     if (!id) return {};
@@ -844,6 +850,21 @@ export class Book extends DurableObject<Env> {
       this.broadcast({ t: "files", files: this.files() });
       return new Response("ok");
     }
+    if (url.pathname === "/access-requested") {
+      // A new request: tell the room (an @mention of the owner, so it reaches them by email too) and refresh the sidebar.
+      const { who, name } = (await req.json()) as { who: string; name?: string };
+      if (!this.get("book_id")) this.set("book_id", url.searchParams.get("book") ?? "");
+      const owner = (await this.env.DB.prepare(`SELECT owner FROM books WHERE id = ?`).bind(this.get("book_id") ?? "").first<{ owner: string }>())?.owner;
+      const ownerName = owner ? ((await this.names())[owner] ?? owner.split("@")[0]).split(/\s+/)[0] : "";
+      const label = (name ? `${name} (${who})` : who).replace(/[<>\[\]`*_@\p{Cc}]/gu, (ch) => (ch === "@" ? "＠" : ""));
+      this.addMessage("main", "ai", `${ownerName ? `@${ownerName} ` : ""}${label} pediu pra entrar nesta sala. Libere ou recuse em **Pessoas**, na lateral.`);
+      this.broadcast({ t: "requests", requests: await this.requests() });
+      return new Response("ok");
+    }
+    if (url.pathname === "/requests-changed") {
+      this.broadcast({ t: "requests", requests: await this.requests() });
+      return new Response("ok");
+    }
     if (url.pathname === "/members-changed") {
       const members = await this.members();
       // Kick sockets of anyone no longer a member.
@@ -851,7 +872,7 @@ export class Book extends DurableObject<Env> {
       // The docs' live editors too (the room's doc and each epic's), or a removed person keeps typing in them.
       const id = this.get("book_id");
       if (id) await Promise.all([undefined, ...this.epics().map((e) => e.id)].map((ep) => docRoomStub(this.env, id, ep).kickAll().catch(() => {})));
-      this.broadcast({ t: "members", members, pending: await this.pending(), names: await this.names(), avatars: await this.avatars() });
+      this.broadcast({ t: "members", members, pending: await this.pending(), requests: await this.requests(), names: await this.names(), avatars: await this.avatars() });
       this.broadcast({ t: "online", online: this.online() });
       return new Response("ok");
     }
@@ -891,6 +912,7 @@ export class Book extends DurableObject<Env> {
         suggestions: this.suggestions(),
         members: await this.members(),
         pending: await this.pending(),
+        requests: await this.requests(),
         names: await this.names(),
         avatars: await this.avatars(),
         online: this.online(),

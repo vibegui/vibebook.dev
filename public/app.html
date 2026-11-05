@@ -300,6 +300,7 @@
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
   .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
   .kcard .vnote { margin-left: 0; justify-self: start; }
+  .rb.askBadge { background: var(--accent); color: #fff; font-size: 12px; } .asks { margin: 0 0 14px; padding: 10px 10px 4px; border-radius: 12px; background: color-mix(in oklch, var(--accent) 9%, transparent); } .asks h4 { margin-top: 0; } .okAsk { color: var(--accent); font-weight: 700; }
   .docNotes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; } .docNotes .vnote { margin: 0; }
   .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
   .kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -1262,7 +1263,8 @@ function onEvent(ev, id) {
       else if (isPre() && preOf()?.title !== was) { const j = S.suggestions.findIndex((x) => x.title === was); thread = j >= 0 ? `pre:${j}` : "main"; renderChat(); }
       renderSide(); return;
     }
-    case "members": S.members = ev.members; S.pending = ev.pending; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
+    case "requests": S.requests = ev.requests; renderSide(); return;
+    case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
@@ -1675,8 +1677,9 @@ function renderRail(el) {
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="Novo épico" aria-label="Novo épico">+</button>
     </div>
-    <div class="railPeople">${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
+    <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${S.requests.length} pedindo pra entrar" aria-label="${S.requests.length} pedindo pra entrar">+${S.requests.length}</button>` : ""}${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
+  el.querySelector("#railAsks")?.addEventListener("click", toggleRail);
   el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
   // The board follows the thread: an epic filters it to that epic, the main room shows every epic.
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => { thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc(); });
@@ -1806,6 +1809,7 @@ function renderSide() {
     ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · sugestão do @vibe, clique para ver"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
+      ${(S.requests || []).length ? `<div class="asks"><h4>Pedindo pra entrar</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <span class="fn" title="${esc(r.email)} · pediu ${ago(r.ts)}">${esc(r.name || r.email)}</span><button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="Liberar: entra na sala e recebe o link por email">liberar</button><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="Recusar ${esc(r.email)}" title="Recusar">×</button></div>`).join("")}</div>` : ""}
       <h4>Pessoas</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
         ? `<button class="ghost resend" data-copyinv="${esc(m)}" title="Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp">copiar</button><button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
@@ -1828,6 +1832,12 @@ function renderSide() {
     if (!confirm((S.pending || []).includes(who) ? `Cancelar o convite de ${who}?` : `Remover ${who} deste vibebook?`)) return;
     const r = await fetch(`/api/books/${S.id}/members/${encodeURIComponent(who)}`, { method: "DELETE" });
     if (!r.ok) alert((await r.json().catch(() => ({}))).error || "Não deu para remover.");
+  });
+  el.querySelectorAll("[data-ask]").forEach((b) => b.onclick = async () => {
+    const ok = !!b.dataset.ok, who = b.dataset.ask;
+    if (!ok && !confirm(`Recusar o pedido de ${who}?`)) return;
+    b.disabled = true;
+    await api(`/api/books/${S.id}/requests`, { email: who, ok }).then(() => ok && toast(`${esc(who)} entrou na sala e recebeu o link por email.`)).catch((err) => { alert(err.message); b.disabled = false; });
   });
   el.querySelectorAll("[data-resend]").forEach((b) => b.onclick = async () => {
     b.disabled = true; b.textContent = "…";
