@@ -376,8 +376,8 @@ async function herdrSync(agent, tools) {
 function herdrOrder(order, map) {
   const list = herdr("workspace", "list").workspaces;
   const ours = new Map(order.filter((r) => map[r]?.workspace).map((r) => [map[r].workspace, r]));
-  const current = list.filter((w) => ours.has(w.workspace_id)).map((w) => w.workspace_id);
-  const desired = order.map((r) => map[r]?.workspace).filter((w) => !!w && current.includes(w));
+  const current = list.map((w) => w.workspace_id);
+  const desired = [...order.map((r) => map[r]?.workspace).filter((w) => !!w && current.includes(w)), ...current.filter((w) => !ours.has(w))];
   let i = 0;
   while (i < desired.length && current[i] === desired[i])
     i++;
@@ -395,7 +395,7 @@ function herdrOrder(order, map) {
       const tabLabel = tabs.find((t) => t.tab_id === p.tab_id)?.label ?? "1";
       let r;
       if (!newWs)
-        r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room, "--tab-label", tabLabel);
+        r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room ?? "1", "--tab-label", tabLabel);
       else if (newTab.has(p.tab_id))
         r = herdr("pane", "move", p.pane_id, "--tab", newTab.get(p.tab_id), "--split", "right", "--no-focus");
       else
@@ -405,7 +405,8 @@ function herdrOrder(order, map) {
       newTab.set(p.tab_id, moved.tab_id);
     }
     if (newWs) {
-      map[room].workspace = newWs;
+      if (room)
+        map[room].workspace = newWs;
       if (ws === focused)
         refocus = newWs;
     }
@@ -416,7 +417,7 @@ function herdrOrder(order, map) {
     try {
       herdr("workspace", "focus", back);
     } catch {}
-  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s) na ordem das salas
+  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s): salas na ordem do vibebook, depois o resto
 `);
 }
 var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you and your Claude).

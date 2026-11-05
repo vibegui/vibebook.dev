@@ -351,16 +351,16 @@ async function herdrSync(agent: string, tools: Tool[]) {
   writePrivate(HERDR, map);
   herdrOrder([...on.keys()], map);
 }
-/** Put the rooms' workspaces in the person's room order (others stay where they are). herdr can't reorder
+/** Put the rooms' workspaces first, in the person's room order, and the other workspaces after them. herdr can't reorder
  *  workspaces, but a pane can move into a new workspace (appended at the end) with its process alive: so from the
  *  first one out of place, each room's panes move to a fresh workspace, in order. Claude keeps running. */
 function herdrOrder(order: string[], map: Record<string, HerdrRoom>) {
   type Ws = { workspace_id: string; label: string; focused: boolean };
   const list = herdr("workspace", "list").workspaces as Ws[];
   const ours = new Map(order.filter((r) => map[r]?.workspace).map((r) => [map[r].workspace as string, r]));
-  const current = list.filter((w) => ours.has(w.workspace_id)).map((w) => w.workspace_id);
-  const desired = order.map((r) => map[r]?.workspace).filter((w): w is string => !!w && current.includes(w));
-  // Only the order among ours matters (other workspaces may sit in between); move from the first one out of place.
+  const current = list.map((w) => w.workspace_id);
+  // The rooms first, in the person's order, then every other workspace as it was; move from the first one out of place.
+  const desired = [...order.map((r) => map[r]?.workspace).filter((w): w is string => !!w && current.includes(w)), ...current.filter((w) => !ours.has(w))];
   let i = 0;
   while (i < desired.length && current[i] === desired[i]) i++;
   if (i === desired.length) return;
@@ -368,14 +368,14 @@ function herdrOrder(order: string[], map: Record<string, HerdrRoom>) {
   let refocus: string | undefined;
   const tabs = herdr("tab", "list").tabs as { tab_id: string; workspace_id: string; label: string }[];
   for (const ws of desired.slice(i)) {
-    const room = ours.get(ws) as string;
+    const room = ours.get(ws);
     const panes = (herdr("pane", "list").panes as Pane[]).filter((p) => p.workspace_id === ws);
     let newWs: string | undefined;
     const newTab = new Map<string, string>();
     for (const p of panes) {
       const tabLabel = tabs.find((t) => t.tab_id === p.tab_id)?.label ?? "1";
       let r: any;
-      if (!newWs) r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room, "--tab-label", tabLabel);
+      if (!newWs) r = herdr("pane", "move", p.pane_id, "--new-workspace", "--label", list.find((w) => w.workspace_id === ws)?.label ?? room ?? "1", "--tab-label", tabLabel);
       else if (newTab.has(p.tab_id)) r = herdr("pane", "move", p.pane_id, "--tab", newTab.get(p.tab_id) as string, "--split", "right", "--no-focus");
       else r = herdr("pane", "move", p.pane_id, "--new-tab", "--workspace", newWs, "--label", tabLabel, "--no-focus");
       const moved = r.move_result.pane as { workspace_id: string; tab_id: string };
@@ -383,7 +383,7 @@ function herdrOrder(order: string[], map: Record<string, HerdrRoom>) {
       newTab.set(p.tab_id, moved.tab_id);
     }
     if (newWs) {
-      map[room].workspace = newWs;
+      if (room) map[room].workspace = newWs;
       if (ws === focused) refocus = newWs;
     }
   }
@@ -394,7 +394,7 @@ function herdrOrder(order: string[], map: Record<string, HerdrRoom>) {
     try {
       herdr("workspace", "focus", back);
     } catch {}
-  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s) na ordem das salas\n`);
+  process.stdout.write(`${new Date().toLocaleTimeString()} reordenei ${desired.length - i} workspace(s): salas na ordem do vibebook, depois o resto\n`);
 }
 
 const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you and your Claude).
