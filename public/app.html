@@ -305,10 +305,9 @@
   .task.waitTask { background: color-mix(in oklch, #e3b505 14%, transparent); }
   .task.waitTask .tt::after { content: " ⏳ esperando você"; font: 700 11px/1 system-ui, sans-serif; color: light-dark(#7a5c00, #f0d36b); white-space: nowrap; }
   .kcard.mine { box-shadow: inset 3px 0 0 #e3b505; }
-  .shimmer { position: relative; overflow: hidden; }
-  .shimmer::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; background: linear-gradient(100deg, transparent 20%, color-mix(in oklch, #e3b505 45%, transparent) 50%, transparent 80%); transform: translateX(-100%); animation: shimmer 1.1s ease-in-out 3; border-radius: inherit; }
-  @keyframes shimmer { to { transform: translateX(100%); } }
-  @media (prefers-reduced-motion: reduce) { .shimmer::before { animation: none; } }
+  .shimmer { background-image: linear-gradient(100deg, transparent 35%, color-mix(in oklch, #e3b505 40%, transparent) 50%, transparent 65%) !important; background-size: 300% 100% !important; background-repeat: no-repeat !important; animation: shimmer 1.2s ease-in-out 3; }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  @media (prefers-reduced-motion: reduce) { .shimmer { animation: none; background-image: none; } }
   .thread .wN { flex: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; background: #e3b505; color: #1a2130; font: 700 11px/1 system-ui, sans-serif; }
   .thread.waiting:not(.sel) { background: color-mix(in oklch, #e3b505 14%, transparent); }
   .rb.waiting { box-shadow: 0 0 0 2px #e3b505; }
@@ -2136,14 +2135,16 @@ function renderChat(keep) {
   // Opening an epic with no conversation yet: show its doc (goal + tasks) instead of an empty panel, if it was closed.
   if (win.thread !== thread || win.room !== S.id) {
     const bk = $app.querySelector(".book");
-    const taskWaits = waitsIn(thread).some((w) => w.ref.startsWith("t"));
+    const taskWaits = waitsIn(thread).some((w) => w.ref.startsWith("t")) || !!S.epics.find((e) => e.id === thread)?.tasks.some((t) => !t.done && t.owner === S.me);
     if (thread !== "main" && bk?.classList.contains("nodoc") && !bk.classList.contains("boardview") && (taskWaits || !S.messages.some((m) => m.thread === thread))) bk.classList.remove("nodoc");
-    // You came here because of a yellow count: shine on what's waiting for you and bring it into view.
-    if (waitsIn(thread).length) setTimeout(() => {
-      const els = [...document.querySelectorAll(".task.waitTask, .msg.waitMsg")];
+    // Point at what's yours here: what's waiting on you (tasks, messages), else your own open tasks. Bring the first
+    // into view and let them shine (a sweep of light over the item itself, nothing clipped).
+    if (thread !== "main" || waitsIn(thread).length) setTimeout(() => {
+      let els = [...document.querySelectorAll(".task.waitTask, .msg.waitMsg .txt")];
+      if (!els.length) els = [...document.querySelectorAll(".task.mine")];
       els[0]?.scrollIntoView({ block: "center", behavior: "smooth" });
       els.forEach((x) => { x.classList.remove("shimmer"); void x.offsetWidth; x.classList.add("shimmer"); });
-    }, 350);
+    }, 400);
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
   const all = S.messages.filter((m) => m.thread === thread);
