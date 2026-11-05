@@ -3,7 +3,7 @@
 // cli/vibebook.ts
 import { execFileSync, execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -27,8 +27,10 @@ var readJson = (f, fallback) => {
 };
 var writePrivate = (f, data) => {
   mkdirSync(dirname(f), { recursive: true, mode: 448 });
-  writeFileSync(f, JSON.stringify(data, null, 2), { mode: 384 });
-  chmodSync(f, 384);
+  const tmp = `${f}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(data, null, 2), { mode: 384 });
+  chmodSync(tmp, 384);
+  renameSync(tmp, f);
 };
 var argv = process.argv.slice(2);
 var flags = {};
@@ -137,27 +139,54 @@ ${url}
   const t = await tok.json();
   writePrivate(SESSION, { origin, client_id, access_token: t.access_token, refresh_token: t.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 });
 }
+var fresh = (s) => !!s && Date.now() < s.expires_at - 60000;
 async function session() {
-  const s = readJson(SESSION, null);
+  let s = readJson(SESSION, null);
   if (!s)
     return die("Not logged in. Ask your human to run, in their own terminal: vibebook login");
-  if (Date.now() < s.expires_at - 60000)
+  if (fresh(s))
     return s;
-  if (!s.refresh_token)
-    return die("Session expired. Ask your human to run, in their own terminal: vibebook login");
-  const r = await fetch(`${s.origin}/oauth/token`, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: s.refresh_token, client_id: s.client_id })
-  });
-  if (r.status === 400 || r.status === 401)
-    return die("Could not refresh the session. Ask your human to run, in their own terminal: vibebook login");
-  if (!r.ok)
-    return die(`vibebook unreachable (${r.status}); try again in a moment`, 75);
-  const t = await r.json();
-  const next = { ...s, access_token: t.access_token, refresh_token: t.refresh_token ?? s.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 };
-  writePrivate(SESSION, next);
-  return next;
+  const lock = `${SESSION}.lock`;
+  for (let i = 0;; i++) {
+    try {
+      mkdirSync(lock);
+      break;
+    } catch {
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > 30000)
+          rmSync(lock, { recursive: true, force: true });
+      } catch {}
+      if (i > 100)
+        return die("vibebook session is locked by another process; try again in a moment", 75);
+      await new Promise((r) => setTimeout(r, 100));
+      const again = readJson(SESSION, null);
+      if (fresh(again))
+        return again;
+    }
+  }
+  const quit = (m, code) => (rmSync(lock, { recursive: true, force: true }), die(m, code));
+  try {
+    s = readJson(SESSION, null) ?? s;
+    if (fresh(s))
+      return s;
+    if (!s.refresh_token)
+      return quit("Session expired. Ask your human to run, in their own terminal: vibebook login");
+    const r = await fetch(`${s.origin}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: s.refresh_token, client_id: s.client_id })
+    });
+    if (r.status === 400 || r.status === 401)
+      return quit("Could not refresh the session. Ask your human to run, in their own terminal: vibebook login");
+    if (!r.ok)
+      return quit(`vibebook unreachable (${r.status}); try again in a moment`, 75);
+    const t = await r.json();
+    const next = { ...s, access_token: t.access_token, refresh_token: t.refresh_token ?? s.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 };
+    writePrivate(SESSION, next);
+    return next;
+  } finally {
+    rmSync(lock, { recursive: true, force: true });
+  }
 }
 var rpcId = 0;
 async function rpc(method, params, agent) {

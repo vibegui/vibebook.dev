@@ -4,7 +4,7 @@
 // Built into public/cli.mjs (bun run build:cli); on npm as vibebook.dev (npm i -g vibebook.dev), or installed by https://vibebook.dev/install.sh.
 import { execFileSync, execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -32,8 +32,11 @@ const readJson = <T>(f: string, fallback: T): T => {
 };
 const writePrivate = (f: string, data: unknown) => {
   mkdirSync(dirname(f), { recursive: true, mode: 0o700 });
-  writeFileSync(f, JSON.stringify(data, null, 2), { mode: 0o600 });
-  chmodSync(f, 0o600);
+  // Written aside and renamed in place: another vibebook process never reads half a file.
+  const tmp = `${f}.${process.pid}.tmp`;
+  writeFileSync(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
+  chmodSync(tmp, 0o600);
+  renameSync(tmp, f);
 };
 
 // ---- args ----
@@ -134,22 +137,47 @@ async function login(origin: string) {
   const t = (await tok.json()) as { access_token: string; refresh_token?: string; expires_in?: number };
   writePrivate(SESSION, { origin, client_id, access_token: t.access_token, refresh_token: t.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 } satisfies Session);
 }
+// Several vibebook processes share one session (listen, herdr, every call): only one may spend the refresh token,
+// or the others' copies die with it. A lock dir serializes the refresh; whoever waited re-reads the fresh tokens.
+const fresh = (s: Session | null) => !!s && Date.now() < s.expires_at - 60_000;
 async function session(): Promise<Session> {
-  const s = readJson<Session | null>(SESSION, null);
+  let s = readJson<Session | null>(SESSION, null);
   if (!s) return die("Not logged in. Ask your human to run, in their own terminal: vibebook login");
-  if (Date.now() < s.expires_at - 60_000) return s;
-  if (!s.refresh_token) return die("Session expired. Ask your human to run, in their own terminal: vibebook login");
-  const r = await fetch(`${s.origin}/oauth/token`, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: s.refresh_token, client_id: s.client_id }),
-  });
-  if (r.status === 400 || r.status === 401) return die("Could not refresh the session. Ask your human to run, in their own terminal: vibebook login");
-  if (!r.ok) return die(`vibebook unreachable (${r.status}); try again in a moment`, 75);
-  const t = (await r.json()) as { access_token: string; refresh_token?: string; expires_in?: number };
-  const next = { ...s, access_token: t.access_token, refresh_token: t.refresh_token ?? s.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 };
-  writePrivate(SESSION, next);
-  return next;
+  if (fresh(s)) return s;
+  const lock = `${SESSION}.lock`;
+  for (let i = 0; ; i++) {
+    try {
+      mkdirSync(lock);
+      break;
+    } catch {
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > 30_000) rmSync(lock, { recursive: true, force: true }); // a crashed refresher
+      } catch {}
+      if (i > 100) return die("vibebook session is locked by another process; try again in a moment", 75);
+      await new Promise((r) => setTimeout(r, 100));
+      const again = readJson<Session | null>(SESSION, null);
+      if (fresh(again)) return again as Session;
+    }
+  }
+  const quit = (m: string, code?: number): never => (rmSync(lock, { recursive: true, force: true }), die(m, code));
+  try {
+    s = readJson<Session | null>(SESSION, null) ?? s;
+    if (fresh(s)) return s;
+    if (!s.refresh_token) return quit("Session expired. Ask your human to run, in their own terminal: vibebook login");
+    const r = await fetch(`${s.origin}/oauth/token`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: s.refresh_token, client_id: s.client_id }),
+    });
+    if (r.status === 400 || r.status === 401) return quit("Could not refresh the session. Ask your human to run, in their own terminal: vibebook login");
+    if (!r.ok) return quit(`vibebook unreachable (${r.status}); try again in a moment`, 75);
+    const t = (await r.json()) as { access_token: string; refresh_token?: string; expires_in?: number };
+    const next = { ...s, access_token: t.access_token, refresh_token: t.refresh_token ?? s.refresh_token, expires_at: Date.now() + (t.expires_in ?? 3600) * 1000 };
+    writePrivate(SESSION, next);
+    return next;
+  } finally {
+    rmSync(lock, { recursive: true, force: true });
+  }
 }
 
 // ---- MCP over the CLI's session ----
