@@ -647,6 +647,7 @@ export class Book extends DurableObject<Env> {
     if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", Date.now(), email).rowsWritten)
       this.broadcast({ t: "acks", acks: this.acksList() });
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
+    this.ctx.waitUntil(this.markBusy(!done));
     if (VIBE_RE.test(text)) this.ctx.waitUntil(this.runAI(thread, email));
     await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id };
@@ -671,7 +672,17 @@ export class Book extends DurableObject<Env> {
       id, agent, email, who.slice(0, 40), status, Date.now(),
     );
     this.broadcast({ t: "acks", acks: this.acksList() });
+    this.ctx.waitUntil(this.markBusy(false));
     return { ok: true, message_id: id };
+  }
+  /** books.busy_until for the rail's turning ✻: a live "doing" ack keeps the room busy 20 min after its last
+   *  activity, an agent's non-delivery post 3 min; a delivery or a done ack ends it (same rule as the epic's ✻). */
+  async markBusy(agentPosted: boolean) {
+    const id = this.get("book_id");
+    if (!id) return;
+    const doing = this.sql.exec<{ t: number | null }>(`SELECT max(ts) AS t FROM acks WHERE status = 'doing'`).toArray()[0]?.t ?? 0;
+    const until = Math.max(doing ? doing + 20 * 60e3 : 0, agentPosted ? Date.now() + 3 * 60e3 : 0);
+    await this.env.DB.prepare(`UPDATE books SET busy_until = ? WHERE id = ?`).bind(until > Date.now() ? until : null, id).run();
   }
 
   // "Delivered to / read by": each connected agent's cursor in this room (written by src/agent.ts from D1).

@@ -548,6 +548,9 @@
   .sw-group .sw-item .pill { left: -8px; top: 12px; }
   .sw-item:hover .pill { opacity: .5; }
   .sw-item.on .pill { opacity: 1; height: 28px; top: 4px; }
+  .swBusy { position: absolute; left: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: #d97757; font: 400 15px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
+  .swBusy { animation: claudeTurn 3.2s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .swBusy { animation: none; } }
   .sw-item.dropTo .tile { outline: 2px dashed var(--accent); outline-offset: 2px; }
   .sw-group .sw-item.on .pill { top: 4px; }
   .sw-group[data-tint="blue"] { --tint: oklch(0.6 0.15 248); } .sw-group[data-tint="green"] { --tint: oklch(0.62 0.14 155); }
@@ -699,7 +702,9 @@ function renderSwitcher() {
   for (const b of roomOrder()) { const g = groups.at(-1); if (g && b.tint && g.tint === b.tint) g.rooms.push(b); else groups.push({ tint: b.tint || null, rooms: [b] }); }
   // Green: someone wrote since you last looked; yellow: only agents/@vibe did.
   const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
-  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
+  // A Claude working in the room right now: the same turning ✻ as an epic's.
+  const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="um Claude está trabalhando aqui">✻</b>` : "");
+  const item = (b, label) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, label ? "sm" : "lg")}${dot(b)}${busy(b)}</span>${label ? `<span class="lbl">${esc(b.title)}</span>` : ""}</a>`;
   $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
     ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map((b) => item(b, false)).join("")}</div>` : item(g.rooms[0], false)).join("")}
