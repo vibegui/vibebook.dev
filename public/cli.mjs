@@ -289,7 +289,7 @@ function herdrServer() {
       res.writeHead(code, { "content-type": "application/json", ...allowed.has(origin) ? { "access-control-allow-origin": origin, "access-control-allow-private-network": "true", vary: "origin" } : {} });
       res.end(JSON.stringify(body));
     };
-    if (!allowed.has(origin))
+    if (!allowed.has(origin) || req.headers.host !== `127.0.0.1:${port}`)
       return send(403, { error: "origin" });
     if (req.method === "OPTIONS")
       return send(204, null);
@@ -499,8 +499,9 @@ async function main() {
           const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...room ? { room_id: room } : {} }, agent, tools);
           const out = JSON.parse(res.content[0]?.text ?? "{}");
           if (out.new?.length) {
+            const title = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
             for (const r of out.new)
-              process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${r.title}" room_id=${r.room_id}${r.url ? ` ${r.url}` : ""}
+              process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}
 `);
             return;
           }

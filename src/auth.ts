@@ -70,7 +70,8 @@ const sameOrigin = (c: Context) => {
 export async function identify(c: Context<any>): Promise<string | null> {
   const email = await sessionEmail(c);
   const env = c.env as Env;
-  if (email || !env.DEV_EMAIL) return email;
+  // DEV_EMAIL is local dev only: even if it ever reached production config, it works on loopback alone.
+  if (email || !env.DEV_EMAIL || !/^(127\.0\.0\.1|localhost)$/.test(new URL(c.req.url).hostname)) return email;
   const as = getCookie(c, "dev_as");
   return (as && EMAIL_RE.test(as) ? as : env.DEV_EMAIL).toLowerCase();
 }
@@ -93,10 +94,13 @@ auth.post("/email/start", async (c) => {
 
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
   await c.env.DB.prepare(
+    // Asking for a new code doesn't reset the wrong guesses while the last code is still valid: at most
+    // MAX_CODE_ATTEMPTS guesses per CODE_TTL per email, however many codes are requested.
     `INSERT INTO login_codes (email, hash, expires_at, attempts) VALUES (?, ?, ?, 0)
-     ON CONFLICT(email) DO UPDATE SET hash = excluded.hash, expires_at = excluded.expires_at, attempts = 0`,
+     ON CONFLICT(email) DO UPDATE SET hash = excluded.hash, expires_at = excluded.expires_at,
+       attempts = CASE WHEN login_codes.expires_at > ?4 THEN login_codes.attempts ELSE 0 END`,
   )
-    .bind(email, await codeHash(c.env, email, code), Date.now() + CODE_TTL_MS)
+    .bind(email, await codeHash(c.env, email, code), Date.now() + CODE_TTL_MS, Date.now())
     .run();
 
   c.executionCtx.waitUntil(track(c.env, "login_code_sent", { user: email }));
@@ -132,8 +136,9 @@ auth.post("/email/verify", async (c) => {
     expires_at: number;
     attempts: number;
   }>();
-  if (!row || row.expires_at < Date.now() || row.attempts >= MAX_CODE_ATTEMPTS)
-    return c.json({ error: "Código expirado. Pede um novo." }, 400);
+  if (row && row.expires_at > Date.now() && row.attempts >= MAX_CODE_ATTEMPTS)
+    return c.json({ error: "Muitas tentativas erradas. Espera 10 minutos e pede um código novo." }, 429);
+  if (!row || row.expires_at < Date.now()) return c.json({ error: "Código expirado. Pede um novo." }, 400);
   if (!safeEqual(row.hash, await codeHash(c.env, email, code))) {
     await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ?`).bind(email).run();
     return c.json({ error: "Código errado." }, 400);

@@ -30,6 +30,12 @@ export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
     }
   }
 
+  /** Membership changed: drop every editor. y-websocket reconnects on its own, and the Worker only lets members
+   *  back in, so someone removed from the room stops editing its doc at once (not when they close the tab). */
+  async kickAll() {
+    for (const ws of this.state.getWebSockets()) ws.close(4003, "membership changed");
+  }
+
   /** Replace the text from outside (@vibe / agents): apply only the changed middle so live cursors survive. */
   async setText(markdown: string) {
     const t = this.ytext();

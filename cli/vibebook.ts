@@ -275,7 +275,8 @@ function herdrServer() {
       res.writeHead(code, { "content-type": "application/json", ...(allowed.has(origin) ? { "access-control-allow-origin": origin, "access-control-allow-private-network": "true", vary: "origin" } : {}) });
       res.end(JSON.stringify(body));
     };
-    if (!allowed.has(origin)) return send(403, { error: "origin" });
+    // Origin: only the vibebook page. Host: only this exact loopback address (a DNS-rebound name is refused).
+    if (!allowed.has(origin) || req.headers.host !== `127.0.0.1:${port}`) return send(403, { error: "origin" });
     if (req.method === "OPTIONS") return send(204, null);
     const u = new URL(req.url ?? "/", "http://127.0.0.1");
     const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
@@ -472,7 +473,9 @@ async function main() {
           const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...(room ? { room_id: room } : {}) }, agent, tools);
           const out = JSON.parse(res.content[0]?.text ?? "{}") as { new?: { room_id: string; title: string; new_messages: number; url?: string }[] };
           if (out.new?.length) {
-            for (const r of out.new) process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${r.title}" room_id=${r.room_id}${r.url ? ` ${r.url}` : ""}\n`);
+            // The title is written by room members: one line, no quotes (it lands in the agent's context as output).
+            const title = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+            for (const r of out.new) process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}\n`);
             return;
           }
         } catch (e) {

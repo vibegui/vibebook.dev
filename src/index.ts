@@ -85,6 +85,28 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+// Cross-site guard + anti-framing, before any route.
+// - A state-changing request (or a WebSocket upgrade) whose Origin is another site, or that the browser marks
+//   cross-site, is refused: the session cookie is SameSite=Lax already, this is the second lock (also for /ws, /yjs).
+//   The Studio-editable site (/deco, /_serverFn, /_site) is called from Studio's own origin and keeps its own auth.
+// - Pages that act with your session (the app, login, OAuth consent, mail links) can't be framed by anyone,
+//   so no site can overlay an invisible "Permitir" on the consent page (clickjacking).
+const CROSS_OK = /^\/(deco|_serverFn|_site)\//;
+const NO_FRAME = /^\/(app|archived|login|b\/|authorize|auth\/|mail\/)/;
+app.use("*", async (c, next) => {
+  const url = new URL(c.req.url);
+  const origin = c.req.header("origin");
+  const writes = !["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.header("upgrade")?.toLowerCase() === "websocket";
+  if (writes && !CROSS_OK.test(url.pathname) && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
+    return c.json({ error: "cross-site request refused" }, 403);
+  await next();
+  if (NO_FRAME.test(url.pathname) && c.res.status !== 101) {
+    c.res = new Response(c.res.body, c.res);
+    c.res.headers.set("x-frame-options", "DENY");
+    c.res.headers.set("content-security-policy", "frame-ancestors 'none'");
+  }
+});
+
 app.route("/auth", auth);
 app.route("/", connect);
 
@@ -188,12 +210,15 @@ app.get("/api/notify", async (c) => {
     const r = await unreadRooms(c.env.DB, row.email, row.agent, onlyRoom, since);
     if (r.results.length) {
       c.executionCtx.waitUntil(markDelivered(c.env, { email: row.email, client: row.client ?? "", agent: row.agent }, r.results));
-      return c.text(r.results.map((b) => `vibebook: ${b.n} nova(s) em "${b.title}" room_id=${b.id} ${origin}/b/${b.id}`).join("\n") + "\n");
+      // Titles are written by room members: one line, no quotes, so they can't pose as more output.
+      return c.text(r.results.map((b) => `vibebook: ${b.n} nova(s) em "${safeTitle(b.title)}" room_id=${b.id} ${origin}/b/${b.id}`).join("\n") + "\n");
     }
     if (Date.now() + 3000 > deadline) return c.body(null, 204);
     await new Promise((res) => setTimeout(res, 3000));
   }
 });
+
+const safeTitle = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
 
 // Mention emails: the signed link in the footer turns them off (or back on) without signing in.
 app.get("/mail/:onoff{off|on}", async (c) => {
@@ -418,7 +443,7 @@ app.post("/api/books/:id/archive", async (c) => {
 
 app.post("/api/me", async (c) => {
   const { name } = await c.req.json<{ name?: string }>().catch(() => ({ name: "" }));
-  const clean = (name ?? "").replace(/\s+/g, " ").trim().slice(0, 60);
+  const clean = (name ?? "").replace(/[<>"@\p{Cc}]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60);
   if (!clean) return c.json({ error: "Nome vazio." }, 400);
   await c.env.DB.prepare(`UPDATE users SET name = ? WHERE email = ?`).bind(clean, c.get("email")).run();
   return c.json({ ok: true, name: clean });
