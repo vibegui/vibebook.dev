@@ -558,6 +558,8 @@
   .sw-group[data-tint="pink"] { --tint: oklch(0.65 0.18 350); } .sw-group[data-tint="purple"] { --tint: oklch(0.58 0.17 300); }
   .sw-group[data-tint] { background: color-mix(in oklch, var(--tint) 22%, transparent); }
   #tintPop { position: fixed; left: 74px; z-index: 31; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .35); display: grid; gap: 6px; }
+  .ri.hasIcon, .rb.hasIcon { background: none !important; overflow: hidden; padding: 0; }
+  .ri.hasIcon img, .rb.hasIcon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
   .tile.hasIcon { background: none; opacity: .85; overflow: hidden; }
   .tile.hasIcon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
   #tintPop .iconRow { margin: 2px 0 0; display: flex; gap: 4px; }
@@ -723,9 +725,9 @@ function renderSwitcher() {
     pop.querySelector("input[type=file]").onchange = async (ev) => {
       const f = ev.target.files[0]; if (!f) return;
       pop.hidden = true;
-      try { const r = await fetch(`/api/books/${b.id}/icon`, { method: "POST", headers: { "content-type": "image/png" }, body: await squarePng(f, 128) }).then((x) => x.json()); if (r.error) throw new Error(r.error); b.icon = r.icon; renderSwitcher(); if (S?.id === b.id) setFavicon(bookTitle()); } catch (err) { alert(err.message || "Não deu pra usar essa imagem."); }
+      try { const r = await fetch(`/api/books/${b.id}/icon`, { method: "POST", headers: { "content-type": "image/png" }, body: await squarePng(f, 128) }).then((x) => x.json()); if (r.error) throw new Error(r.error); b.icon = r.icon; renderSwitcher(); if (S?.id === b.id) { setFavicon(bookTitle()); renderSide(); } } catch (err) { alert(err.message || "Não deu pra usar essa imagem."); }
     };
-    pop.querySelector("[data-noicon]")?.addEventListener("click", async () => { pop.hidden = true; await api(`/api/books/${b.id}/icon`, {}); b.icon = null; renderSwitcher(); if (S?.id === b.id) setFavicon(bookTitle()); });
+    pop.querySelector("[data-noicon]")?.addEventListener("click", async () => { pop.hidden = true; await api(`/api/books/${b.id}/icon`, {}); b.icon = null; renderSwitcher(); if (S?.id === b.id) { setFavicon(bookTitle()); renderSide(); } });
     const r = a.getBoundingClientRect();
     pop.style.top = `${r.top}px`; pop.hidden = false;
     pop.querySelectorAll("button[data-tint]").forEach((x) => x.onclick = () => {
@@ -1502,6 +1504,12 @@ const initials = (t) => {
   const main = words.filter((w) => !STOP.has(w.toLowerCase()));
   return ((main.length ? main : words).slice(0, 2).map((w) => w[0]).join("") || "◆").toUpperCase();
 };
+// The open room's mark in its own sidebar: its icon if it has one, else cover color + initials.
+const roomMark = (cls) => {
+  const u = iconUrl(myBooks?.find((b) => b.id === S?.id));
+  if (!cls) return u ? `<img src="${u}" alt="">` : esc(initials(bookTitle()));
+  return u ? `<span class="${cls} hasIcon"><img src="${u}" alt=""></span>` : `<span class="${cls}" style="background:${coverColor(bookTitle())}">${esc(initials(bookTitle()))}</span>`;
+};
 // Any image (ico included) → a square PNG, contained on transparent, for room icons.
 async function squarePng(file, size) {
   const url = URL.createObjectURL(file);
@@ -1548,7 +1556,7 @@ function renderRail(el) {
     <a data-nav href="/app" class="iconBtn" title="Seus vibebooks" aria-label="Seus vibebooks" style="text-decoration:none;font-size:18px">←</a>
     <div class="railSep"></div>
     <div class="railList">
-      <button class="rb geral ${thread === "main" ? "sel" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${esc(initials(bookTitle()))}</button>
+      <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
@@ -1665,7 +1673,7 @@ function renderSide() {
       <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
-      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}"><span class="ri book" style="background:${coverColor(bookTitle())}">${esc(initials(bookTitle()))}</span><span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri book")}<span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
       ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>Arquivados (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
