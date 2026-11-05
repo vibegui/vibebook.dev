@@ -300,6 +300,12 @@
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
   .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
   .kcard .vnote { margin-left: 0; justify-self: start; }
+  .thread .wN { flex: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; background: #e3b505; color: #1a2130; font: 700 11px/1 system-ui, sans-serif; }
+  .thread.waiting:not(.sel) { background: color-mix(in oklch, #e3b505 14%, transparent); }
+  .rb.waiting { box-shadow: 0 0 0 2px #e3b505; }
+  .msg.waitMsg > .body { position: relative; }
+  .msg.waitMsg > .body::before { content: "⏳ esperando você"; display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: 999px; background: color-mix(in oklch, #e3b505 22%, transparent); color: light-dark(#7a5c00, #f0d36b); font: 700 11px/1.6 system-ui, sans-serif; }
+  .msg.waitMsg .txt { box-shadow: inset 3px 0 0 #e3b505; }
   .rb.askBadge { background: var(--accent); color: #fff; font-size: 12px; } .asks { margin: 0 0 14px; padding: 10px 10px 4px; border-radius: 12px; background: color-mix(in oklch, var(--accent) 9%, transparent); } .asks h4 { margin-top: 0; } .okAsk { color: var(--accent); font-weight: 700; }
   .docNotes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; } .docNotes .vnote { margin: 0; }
   .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
@@ -751,7 +757,11 @@ const tile = (b, size) => iconUrl(b)
 function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if (mine && upto > mine.read_id) mine.read_id = upto; }
 setInterval(() => {
   if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
-  api("/api/me").then((me) => { myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher(); }).catch(() => {});
+  api("/api/me").then((me) => {
+    const before = JSON.stringify(waitsIn());
+    myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher();
+    if (S && JSON.stringify(waitsIn()) !== before) { renderSide(); renderChat(true); }
+  }).catch(() => {});
   loadRoomAgents();
 }, 30_000);
 function renderSwitcher() {
@@ -1673,7 +1683,7 @@ function renderRail(el) {
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
-        <button class="rb ${thread === e.id ? "sel" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
+        <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="Novo épico" aria-label="Novo épico">+</button>
     </div>
@@ -1788,10 +1798,14 @@ function renderWorking() {
   if (!w) return;
   el.insertAdjacentHTML("beforeend", `<div id="working" class="working">${agentAvatar(w.email, w.who)}<div><b>${esc(w.who)} de ${esc(name(w.email))}</b> está trabalhando nisso<small>O andamento e a entrega aparecem aqui nesta thread.</small></div><span class="spin">✻</span></div>`);
 }
+// "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
+// count leads somewhere. From /api/me waits (refreshed every 30s).
+const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
+const waitPill = (t) => { const n = waitsIn(t).length; return n ? `<b class="wN" title="${n === 1 ? "Alguém está esperando você aqui" : `${n} coisas esperando você aqui`}">${n}</b>` : ""; };
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
-        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}${busy ? ` · ${esc(busy)} está trabalhando aqui` : ""}">
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}${busy ? ` · ${esc(busy)} está trabalhando aqui` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
-          ${busy ? `<span class="claudeSpin" aria-label="${esc(busy)} está trabalhando">✻</span>` : ""}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
+          ${busy ? `<span class="claudeSpin" aria-label="${esc(busy)} está trabalhando">✻</span>` : ""}${waitPill(e.id)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   if (railMode && window.innerWidth > 900) return renderRail(el);
@@ -1801,7 +1815,7 @@ function renderSide() {
       <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
-      <button class="thread ${thread === "main" ? "sel" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri book")}<span class="rt">${esc(bookTitle())}</span><span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri book")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
       ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>Arquivados (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
@@ -2065,7 +2079,7 @@ const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `
-  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}" id="m${m.id}">
+  <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
     <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
