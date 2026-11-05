@@ -2110,6 +2110,11 @@ function renderChat(keep) {
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());
   if (isPre()) return renderPre(el);
+  // Opening an epic with no conversation yet: show its doc (goal + tasks) instead of an empty panel, if it was closed.
+  if (win.thread !== thread || win.room !== S.id) {
+    const bk = $app.querySelector(".book");
+    if (thread !== "main" && bk?.classList.contains("nodoc") && !bk.classList.contains("boardview") && !S.messages.some((m) => m.thread === thread)) bk.classList.remove("nodoc");
+  }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
   const all = S.messages.filter((m) => m.thread === thread);
   const list = all.slice(-win.n);
