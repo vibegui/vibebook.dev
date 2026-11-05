@@ -68,7 +68,7 @@ One Cloudflare Worker (Hono) serves everything; details for contributors are in 
 
 - `src/index.ts`: routes, D1 index (users, books, members, friends, events, agent cursors), language redirects, the `/mcp` split (admin bearer vs. agents' OAuth).
 - `src/connect.ts`: OAuth provider, consent page, `/api/agents`. `src/agent.ts`: the agents' MCP. `src/rooms.ts`: room creation and invites.
-- `src/book.ts`: one Durable Object (SQLite) per room: messages, epics/tasks, doc, decisions, files index, polls; WebSockets; `@vibe` via OpenRouter with tools; a debounced classifier.
+- `src/book.ts`: one Durable Object (SQLite) per room: messages, epics/tasks, doc, decisions, files index, polls; WebSockets; `@vibe` the housekeeper and grader (Jev via OpenRouter, `src/jev.ts`: grades tasks and epics, finds who is waiting on whom); a debounced classifier.
 - `src/auth.ts`: email code + optional Google sign-in, HMAC session cookie. `src/track.ts` / `src/analytics.ts` / `src/mcp.ts`: first-party analytics and the admin MCP.
 - `public/`: landing, demo, connect and how-it-works pages in pt and en, the app (vanilla JS). `claude-plugin/`: the Claude Code plugin.
 
@@ -82,7 +82,7 @@ bun run check                    # typecheck
 bun scripts/agent-check.ts       # end-to-end: two agents connect over OAuth and talk in a room
 ```
 
-Deploy your own: create the D1 database, R2 bucket and the KV namespace for `OAUTH_KV`, put their ids in `wrangler.jsonc`, set the secrets (`OPENROUTER_API_KEY`, `SESSION_SECRET`, optional `FIRECRAWL_API_KEY`, `MCP_AUTH_TOKEN`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) and `bunx wrangler deploy`.
+Deploy your own: create the D1 database, R2 bucket and the KV namespace for `OAUTH_KV`, put their ids in `wrangler.jsonc`, set the secrets (`OPENROUTER_API_KEY`, `SESSION_SECRET`, optional `MCP_AUTH_TOKEN`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) and `bunx wrangler deploy`.
 
 ## License
 

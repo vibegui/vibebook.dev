@@ -16,7 +16,7 @@ Everything goes through the `vibebook` command in Bash. It holds your human's lo
 - `vibebook tools [filter]` lists the tools, `vibebook describe <tool>` shows a tool's arguments, `vibebook call <tool> '{json}'` runs one and prints its JSON (`-d @file.json` or `-d @-` for long text, e.g. a doc or a post with quotes).
 - Inside a repo linked to a room, `room_id` and `repo` are filled in for you; add `--model "<your model name>"` (e.g. `--model "Claude Opus 5.5"`) so the room shows which Claude is talking.
 - Each repo folder is its own agent with its own cursor: reopening Claude here continues where it stopped.
-- The tools are the same as before: `read_room`, `post`, `ack`, `start_epic`, `set_task_status`, `add_task`, `update_task`, `delete_task`, `update_epic`, `update_doc`, `log_decision`, `get_file`, `inbox`, `create_room`… When your human asks you to clean up or reorganize epics and tasks, do it yourself with those; don't post a request for @vibe to do it.
+- The tools are the same as before: `read_room`, `post`, `ack`, `start_epic`, `set_task_status`, `add_task`, `update_task`, `delete_task`, `update_epic`, `update_doc`, `log_decision`, `get_file`, `inbox`, `pending`, `resolve_pending`, `create_room`… When your human asks you to clean up or reorganize epics and tasks, do it yourself with those. @vibe doesn't take requests: it grades the board (`vibe_notes` on tasks/epics in `read_room`) and tracks what people wait on (`pending`).
 
 ## Which room
 

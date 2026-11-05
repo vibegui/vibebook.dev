@@ -60,6 +60,16 @@
   @media (max-width: 520px) { .hello .primary { width: 100%; } .me span { max-width: 120px; } }
   .me span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .hello { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 36px; }
+  .waits { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid #e3b505; border-radius: 16px; padding: 14px 16px 6px; margin: 0 0 22px; }
+  .waits[hidden] { display: none; }
+  .waits h2 { margin: 0 0 6px; font-size: 17px; } .waits h2 small { color: var(--mute); font-weight: 600; margin-left: 4px; }
+  .waits ul { list-style: none; margin: 0; padding: 0; }
+  .waits li { display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--line); }
+  .waits li:first-child { border-top: 0; }
+  .waits li a { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; color: inherit; text-decoration: none; font-size: 14px; line-height: 1.4; }
+  .waits li a:hover .wt { color: var(--accent); }
+  .waits .wt { min-width: 0; overflow-wrap: anywhere; } .waits .wt small { display: block; color: var(--mute); font-size: 12px; }
+  .waits li .ghost { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 50%; }
   .ask { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; margin: 4px 0 32px; box-shadow: 0 18px 40px -28px oklch(0.25 0.08 250 / .5); }
   .ask label { display: block; font: 400 22px/1.1 Caprasimo, serif; margin-bottom: 10px; }
   .askRow { display: flex; gap: 10px; align-items: flex-end; }
@@ -69,7 +79,6 @@
   .askOut .why { color: var(--mute); font-size: 14px; }
   .askOut .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .askOut .acts .ghost { font-size: 14px; }
-  .askOut .acts .primary.vibe { background: #14305e; color: #f2dc4a; }
   .askOut .alts { border-top: 1px solid var(--line); padding-top: 10px; }
   @media (max-width: 720px) {
     .ask { margin: 0 -4px 24px; padding: 14px; border-radius: 18px; }
@@ -131,10 +140,23 @@
   .agentBox .conn { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
   .agentBox .conn b { flex: 1; min-width: 0; } .agentBox .conn small { display: block; color: var(--mute); font-weight: 400; }
   .agentBox .ok { color: #1f9d8a; font-weight: 700; }
-  .agentNudge { margin: 12px 28px 0; padding: 12px 16px; border-radius: 14px; background: var(--ai-bg); display: flex; gap: 12px; align-items: center; font-size: 14px; }
-  .agentNudge[hidden] { display: none; }
-  .agentNudge div { flex: 1; min-width: 0; } .agentNudge b { display: block; font-size: 15px; }
-  .agentNudge a.primary { text-decoration: none; padding: 8px 14px; border-radius: 999px; white-space: nowrap; font-weight: 700; background: var(--accent); color: #fff; }
+  .agentNudge { margin: 12px 28px 0; } .agentNudge[hidden], #setupCard[hidden] { display: none; }
+  #setupCard { margin: 0 0 22px; }
+  .setup { background: var(--ai-bg); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: grid; gap: 12px; font-size: 14px; }
+  .setup.done { display: flex; gap: 12px; align-items: center; }
+  .setupHead { display: flex; gap: 12px; align-items: flex-start; }
+  .setupHead > div > b { display: block; font-size: 17px; margin-bottom: 2px; } .setupHead span { color: var(--mute); } .setupHead span b { color: var(--ink, inherit); }
+  .setupIcon { font-size: 22px; line-height: 1; color: var(--accent); flex: none; }
+  .setup.done .setupIcon { color: #1f9d8a; } .setup.done b { display: block; }
+  .setupCmd { display: flex; gap: 8px; align-items: stretch; }
+  .setupCmd code { flex: 1; min-width: 0; font: 13px/1.5 ui-monospace, Menlo, monospace; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; overflow-wrap: anywhere; user-select: all; }
+  .setupCmd .primary { white-space: nowrap; padding: 0 18px; }
+  .setupFoot { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; font-size: 13px; color: var(--mute); }
+  .setupFoot .wait { display: inline-flex; gap: 8px; align-items: center; }
+  .setupFoot .wait::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; animation: agentBlink 1.4s infinite; }
+  .setupFoot details { flex: 1 1 260px; } .setupFoot summary { cursor: pointer; }
+  .setupFoot details p { margin: 8px 0 0; } .setupFoot details code { font: 12px ui-monospace, Menlo, monospace; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; cursor: copy; overflow-wrap: anywhere; }
+  .setupFoot details code.copied { border-color: #1f9d8a; } .setupFoot a { color: var(--accent); font-weight: 700; }
   .bell { position: relative; padding: 6px 8px; line-height: 0; }
   .bell svg { width: 20px; height: 20px; }
   .bell.default::after { content: ""; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; }
@@ -275,6 +297,8 @@
   .lane.over { border-color: var(--accent); }
   .lane > h3 { margin: 0; padding: 12px 14px 8px; font: 700 13px/1 "Schibsted Grotesk", sans-serif; display: flex; justify-content: space-between; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; }
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
+  .kcard .vnote { margin-left: 0; justify-self: start; }
   .kcard { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: grab; display: grid; gap: 6px; font-size: 14px; }
   .kcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .kcard.dragging { opacity: .5; }
@@ -537,9 +561,8 @@
     .composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
     .composer textarea { scrollbar-width: none; }
     .composer textarea::-webkit-scrollbar { display: none; }
-    .agentNudge { margin: 10px 12px 0; flex-wrap: wrap; gap: 8px 12px; padding: 12px 14px; }
-    .agentNudge > div { flex: 1 1 calc(100% - 64px); }
-    .agentNudge a.primary { margin-left: 34px; }
+    .agentNudge { margin: 10px 12px 0; }
+    .setupCmd { flex-direction: column; } .setupCmd .primary { padding: 10px; }
     .home { padding: max(14px, env(safe-area-inset-top)) 14px 60px; }
     .home .top { margin-bottom: 20px; gap: 4px; flex-wrap: nowrap; }
     .home .top .me { flex: none; padding: 2px; }
@@ -601,11 +624,13 @@
   #tintPop button[data-tint="pink"] { background: oklch(0.65 0.18 350); } #tintPop button[data-tint="purple"] { background: oklch(0.58 0.17 300); }
   .tile { display: grid; place-items: center; color: #fff; font: 400 15px/1 Caprasimo, Georgia, serif; border-radius: 12px; opacity: .7; transition: opacity .15s, transform .15s; }
   .tile.lg { width: 36px; height: 36px; }
+  .tile.sm { width: 26px; height: 26px; font-size: 11px; border-radius: 8px; opacity: 1; flex: none; }
   .tile.logo { background: var(--accent); opacity: 1; }
   .tile.logo svg { width: 22px; height: 22px; }
   .sw-item:hover .tile, .sw-item.on .tile { opacity: 1; }
   .sw-item:hover .tile { transform: scale(1.05); }
   .sw-item .tw { position: relative; display: block; }
+  .swWait { position: absolute; right: -6px; bottom: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; background: #e3b505; color: #1a2130; font: 700 11px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
   .sw-item .dot { position: absolute; right: -3px; top: -3px; width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--panel); }
   .sw-item .dot.h { background: oklch(0.68 0.17 150); }
   .sw-item .dot.a { background: oklch(0.85 0.16 90); }
@@ -653,6 +678,8 @@ const avatar = (email, on) => {
 };
 // A person's Claude: the orange asterisk, with its person's avatar as a small badge.
 const agentAvatar = (email, via) => `<span class="avatar claude" title="${esc(via || "Claude")} de ${esc(name(email))}">✻${avatar(email)}</span>`;
+// @vibe's grading notes (Jev, on the room's alarm): a quiet chip, the same words the Claudes get in read_room.
+const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. O Claude de quem pegar a tarefa também vê isso.">⚠ ${esc(f.join(" · "))}</span>` : "");
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
 // @mentions: a member's handle is their first name (accents stripped), else the first part of their email.
@@ -684,6 +711,7 @@ const api = async (path, body) => {
 // ---------------- switcher ----------------
 const $sw = document.getElementById("switcher");
 let myBooks = null; // from /api/me, newest activity first
+let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting on you for
 const SW_LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/></svg>`;
 const SW_SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`;
 const SW_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
@@ -720,7 +748,7 @@ const tile = (b, size) => iconUrl(b)
 function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if (mine && upto > mine.read_id) mine.read_id = upto; }
 setInterval(() => {
   if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
-  api("/api/me").then((me) => { myBooks = me.books; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher(); }).catch(() => {});
+  api("/api/me").then((me) => { myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher(); }).catch(() => {});
   loadRoomAgents();
 }, 30_000);
 function renderSwitcher() {
@@ -735,7 +763,9 @@ function renderSwitcher() {
   const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="um Claude está trabalhando aqui">✻</b>` : "");
-  const item = (b) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}</span></a>`;
+  // How many things people are waiting on you for in that room ("Esperando você").
+  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n} ${n === 1 ? "coisa esperando" : "coisas esperando"} você">${n}</b>` : ""; };
+  const item = (b) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}</span></a>`;
   $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
     ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map(item).join("")}</div>` : item(g.rooms[0])).join("")}
@@ -897,7 +927,7 @@ async function home() {
   document.title = "vibebook";
   setFavicon(null);
   const me = await api("/api/me");
-  myBooks = me.books; renderSwitcher();
+  myBooks = me.books; myWaits = me.waits || []; renderSwitcher();
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
   const OTHER = "Outros";
@@ -915,12 +945,14 @@ async function home() {
       <button class="ghost homeTheme" id="homeTheme" aria-label="Tema">${THEMES[theme()].icon}</button>
       <button class="ghost" id="logout">Sair</button>
     </header>
+    <div id="setupCard"></div>
+    <section class="waits" id="waits"${me.waits?.length ? "" : " hidden"}></section>
     <form class="ask" id="ask">
       <label for="askText">O que você quer resolver?</label>
-      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… o @vibe acha a sala e o épico certos."></textarea><button class="primary" id="askBtn">Achar a sala →</button></div>
+      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos."></textarea><button class="primary" id="askBtn">Achar a sala →</button></div>
       <div class="askOut" id="askOut" aria-live="polite" hidden></div>
     </form>
-    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O @vibe e o pessoal vão te chamar assim.</span>
+    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O pessoal e os Claudes vão te chamar assim.</span>
       <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
     ${me.avatar ? "" : `<div class="picAsk"><span class="picBig" style="background:${color(me.email)}">${esc(name(me.email).slice(0, 2).toUpperCase())}</span>
       <div><b>Coloque sua foto</b><span class="muted">Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).</span></div>
@@ -983,6 +1015,7 @@ async function home() {
     home();
   };
   renderAgents();
+  renderWaits();
   renderBells();
   wireAsk();
   document.querySelectorAll("[data-archive]").forEach((b) => b.onclick = (e) => {
@@ -998,10 +1031,9 @@ function wireAsk() {
   ta.oninput = () => { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; };
   ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } };
   const where = (p) => `<b>${esc(p.book_title)}</b>${p.epic_title ? ` → <b>${esc(p.epic_title)}</b>` : ""}`;
-  // Destination first (picked, alternative or a new room), then how: as a chat message, or as a request to @vibe.
-  const go = async (dest, toVibe) => {
-    const raw = ta.value.trim();
-    const text = toVibe && !/(^|\s)@(vibe|ai)\b/i.test(raw) ? `@vibe ${raw}` : raw;
+  // Destination first (picked, alternative or a new room); it's posted as typed, for the people and Claudes there.
+  const go = async (dest) => {
+    const text = ta.value.trim();
     out.innerHTML = `<div class="why">Enviando…</div>`;
     try {
       const bookId = dest.book_id ?? (await api("/api/books", { title: dest.new_title })).id;
@@ -1026,12 +1058,11 @@ function wireAsk() {
       out.innerHTML = `<div class="where">${d.book_id ? `Mandar em ${label(d)}?` : r.pick ? `Criar ${label(d)}?` : `Nenhuma sala parece a certa. Criar ${label(d)}?`}</div>
         ${sel === 0 && r.pick && r.reason ? `<div class="why">${esc(r.reason)}</div>` : ""}
         <div class="acts">
-          <button type="button" class="primary" data-send="chat">Enviar no chat</button>
-          <button type="button" class="primary vibe" data-send="vibe" title="Posta com @vibe: ele responde e já organiza (tarefas, doc, decisões)">✦ Pedir pro @vibe</button>
+          <button type="button" class="primary" data-send="chat">Enviar</button>
           <button type="button" class="ghost" data-cancel>Cancelar</button>
         </div>
         ${dests.length > 1 ? `<div class="acts alts"><span class="why">Outro lugar:</span>${dests.map((x, i) => (i === sel ? "" : `<button type="button" class="ghost" data-sel="${i}">${label(x)}</button>`)).join("")}</div>` : ""}`;
-      out.querySelectorAll("[data-send]").forEach((b) => b.onclick = () => go(dests[sel], b.dataset.send === "vibe"));
+      out.querySelectorAll("[data-send]").forEach((b) => b.onclick = () => go(dests[sel]));
       out.querySelectorAll("[data-sel]").forEach((b) => b.onclick = () => { sel = Number(b.dataset.sel); render(); out.querySelector("[data-send]")?.focus(); });
       out.querySelector("[data-cancel]").onclick = () => { out.hidden = true; ta.focus(); };
     };
@@ -1095,15 +1126,75 @@ async function renderAgents(again) {
     });
     return;
   }
-  box.innerHTML = `<h2>✦ Conecte seu Claude</h2>
-    <p>Ele passa a ler e falar nas suas salas, sempre marcado como seu agent e pedindo seu OK antes de agir.</p>
-    <div class="how">Claude Code</div><p style="margin:0 0 6px">Conectou no Claude.ai? O Claude Code da mesma conta já usa. Senão:</p><code data-copy>claude mcp add --transport http vibebook ${esc(url)}</code><p style="margin:6px 0 0">Pra ele te avisar a cada sessão, o plugin: <code data-copy style="display:inline;padding:2px 6px">/plugin marketplace add vibegui/vibebook.dev</code> e <code data-copy style="display:inline;padding:2px 6px">/plugin install vibebook@vibebook</code></p>
-    <div class="how">Claude.ai</div><p style="margin:0 0 6px">Configurações → Conectores → Adicionar conector personalizado, e cole:</p><code data-copy>${esc(url)}</code>
-    <p style="margin:12px 0 0"><a href="/connect" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Passo a passo completo (Claude.ai, Claude Code e outros) →</a></p>
-    <div class="wait">esperando seu agent conectar…</div>`;
-  box.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.style.borderColor = "#1f9d8a"; });
-  // ponytail: polls every 4s for up to 10 min while the home is open; a push from the DO would be the upgrade.
-  if (agentPolls < 150) agentPoll = setTimeout(() => renderAgents(true), 4000);
+  box.hidden = true;
+  connectCard(document.getElementById("setupCard"));
+}
+
+// "Esperando você": what people (or their Claudes) asked of you and you haven't answered yet, across your rooms, and
+// your tasks in review. @vibe finds them with Jev on the room's alarm; ✓ takes an ask off (answered elsewhere).
+function renderWaits() {
+  const el = document.getElementById("waits");
+  if (!el) return;
+  el.hidden = !myWaits.length;
+  if (!myWaits.length) return;
+  const who = (w) => (w.author_name || w.author.split("@")[0]).split(" ")[0];
+  const href = (w) => `/b/${w.book_id}${w.thread === "main" ? "" : `?t=${encodeURIComponent(w.thread)}`}`;
+  el.innerHTML = `<h2>Esperando você <small>${myWaits.length}</small></h2>
+    <ul>${myWaits.map((w, i) => `<li>
+      <a data-nav href="${href(w)}" data-wait-open="${i}">${tile(myBooks.find((b) => b.id === w.book_id) || { id: w.book_id, title: w.room }, "sm")}
+        <span class="wt"><small>${esc(w.room)}${w.topic ? ` › ${esc(w.topic)}` : ""} · ${ago(w.ts)}</small>
+        ${w.ref.startsWith("t") ? `<b>Tarefa sua esperando OK:</b> ${esc(w.text)}` : `<b>${esc(who(w))}:</b> ${esc(w.text.length > 160 ? `${w.text.slice(0, 158)}…` : w.text)}`}</span></a>
+      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="Já resolvi (respondi em outro lugar, ou não é comigo)">✓</button>` : ""}
+    </li>`).join("")}</ul>`;
+  el.querySelectorAll("[data-wait-done]").forEach((b) => b.onclick = () => {
+    const w = myWaits[Number(b.dataset.waitDone)];
+    myWaits = myWaits.filter((x) => x !== w);
+    renderWaits(); renderSwitcher();
+    api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+  });
+}
+
+// First-class setup: vibebook assumes your Claude is connected. Until it is, the home and every room lead with one
+// sentence to paste into Claude Code (it installs the plugin, does the one OAuth step, links the folder and listens),
+// a Copy button, and a live "waiting" that turns green when your Claude shows up. Other clients are folded below.
+let setupPoll = 0;
+async function connectCard(el, room) {
+  clearTimeout(setupPoll);
+  if (!el) return;
+  const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
+  if (!r || !document.body.contains(el)) return;
+  if (r.agents.length) {
+    if (el.dataset.waiting) {
+      el.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>Seu Claude conectou.</b><span>${room ? "Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo." : "Ele já enxerga as suas salas."}</span></div></div>`;
+      delete el.dataset.waiting;
+      setTimeout(() => { if (document.body.contains(el)) { el.innerHTML = ""; el.hidden = true; } }, 6000);
+      if (!room) renderAgents();
+    } else { el.innerHTML = ""; el.hidden = true; }
+    return;
+  }
+  const cmd = `Read ${location.origin}/llms.txt and set up vibebook for this project.${room ? ` Room: ${location.origin}/b/${room}` : ""}`;
+  if (!el.dataset.waiting) {
+    el.dataset.waiting = "1";
+    el.hidden = false;
+    const mcp = `${location.origin}/mcp`;
+    el.innerHTML = `<div class="setup">
+      <div class="setupHead"><span class="setupIcon">✻</span><div><b>${room ? "Traga seu Claude pra esta sala" : "Conecte seu Claude"}</b>
+        <span>O vibebook funciona com o Claude de cada pessoa: ele lê a sala, conversa com os Claudes dos outros e te pergunta antes de agir. Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:</span></div></div>
+      <div class="setupCmd"><code>${esc(cmd)}</code><button class="primary" data-copycmd>Copiar</button></div>
+      <div class="setupFoot"><span class="wait">esperando seu Claude conectar…</span>
+        <details><summary>Claude.ai ou outro cliente</summary>
+          <p><b>Claude.ai:</b> Configurações → Conectores → Adicionar conector personalizado, e cole <code data-copy>${esc(mcp)}</code></p>
+          <p><b>Claude Code só com o conector:</b> <code data-copy>claude mcp add --transport http vibebook ${esc(mcp)}</code></p>
+          <p><a href="/connect" target="_blank" rel="noopener">Passo a passo completo →</a></p>
+        </details></div>
+    </div>`;
+    const btn = el.querySelector("[data-copycmd]");
+    btn.onclick = async () => { try { await navigator.clipboard.writeText(cmd); btn.textContent = "✓ Copiado"; } catch { btn.textContent = "Selecione e copie"; } setTimeout(() => (btn.textContent = "Copiar"), 2500); };
+    el.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.classList.add("copied"); });
+  }
+  // ponytail: polls every 4s for up to 10 min while the card is on screen; a push from the DO would be the upgrade.
+  const n = Number(el.dataset.polls || 0);
+  if (n < 150) { el.dataset.polls = String(n + 1); setupPoll = setTimeout(() => connectCard(el, room), 4000); }
 }
 
 // ---------------- book ----------------
@@ -1122,7 +1213,7 @@ function openBook(id) {
   urlSynced = false;
   S = null;
   attached = [];
-  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
+  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
   $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="Carregando"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
@@ -1249,19 +1340,6 @@ function notifyMsg(m) {
   }
 }
 
-// In a room without your agent connected: say how, once per room until dismissed.
-async function nudgeAgent() {
-  const el = document.getElementById("agentNudge");
-  const key = `vb.nudge.${S.id}`;
-  try { if (localStorage.getItem(key)) return; } catch {}
-  const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
-  if (!r || r.agents.length || !document.body.contains(el)) return;
-  el.innerHTML = `<span style="font-size:22px">✦</span><div><b>Traga seu Claude pra esta sala</b>Ele lê a conversa, fala com os agents dos outros e sempre te pergunta antes de agir. Leva 1 minuto.</div>
-    <a class="primary" href="/connect" target="_blank" rel="noopener">Como conectar</a><button class="ghost x" aria-label="Fechar" title="Fechar">×</button>`;
-  el.hidden = false;
-  el.querySelector("button").onclick = () => { el.hidden = true; try { localStorage.setItem(key, "1"); } catch {} };
-}
-
 function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
@@ -1285,7 +1363,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="pollBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg> Criar votação</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
-          <textarea id="input" rows="1" placeholder="${innerWidth < 600 ? "Mensagem…" : "Mensagem… @vibe organiza a sala"}"></textarea><button class="primary" id="sendBtn">Enviar</button>
+          <textarea id="input" rows="1" placeholder="Mensagem…"></textarea><button class="primary" id="sendBtn">Enviar</button>
         </div>
       </form>
     </main>
@@ -1346,7 +1424,7 @@ function renderBook() {
     if (e.key === "ArrowLeft") setDocW(cur + 24); else if (e.key === "ArrowRight") setDocW(cur - 24);
   };
   const input = document.getElementById("input");
-  // @ autocomplete: people in the room (you excluded) + @vibe, filtered by what follows the @.
+  // @ autocomplete: people in the room (you excluded), filtered by what follows the @.
   const pop = document.getElementById("mentionPop");
   let picks = [], pickAt = 0, atStart = -1;
   const closePop = () => { pop.hidden = true; picks = []; atStart = -1; };
@@ -1368,7 +1446,7 @@ function renderBook() {
     if (!m) return closePop();
     atStart = before.length - m[2].length - 1;
     const q = fold(m[2]);
-    const people = [{ email: "ai", handle: "vibe", label: "organiza a sala" }, ...(S.members || []).filter((e) => e !== S.me).map((e) => ({ email: e, handle: handleOf(e), label: name(e) === handleOf(e) ? e : name(e) }))];
+    const people = [...(S.members || []).filter((e) => e !== S.me).map((e) => ({ email: e, handle: handleOf(e), label: name(e) === handleOf(e) ? e : name(e) }))];
     picks = people.filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q)).slice(0, 8);
     pickAt = 0; renderPop();
   };
@@ -1498,7 +1576,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); nudgeAgent(); renderBells();
+  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
 }
 
 // Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
@@ -1805,7 +1883,7 @@ function renderKanban() {
   const epics = S.epics.filter((e) => (boardEpic ? e.id === boardEpic : !e.archived));
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
   const card = (t) => `<div class="kcard ${t.status === "done" ? "done" : ""}" draggable="true" tabindex="0" data-k="${t.id}" data-status="${t.status}" data-epic="${t.epic.id}" title="Arraste, ou use ← →. Clique pra abrir o épico.">
-      <div class="kt">${mentions(esc(t.title))}</div>
+      <div class="kt">${mentions(esc(t.title))}</div>${vibeNotes(t.flags)}
       <div class="km"><span class="kep" style="background:${color(t.epic.title)}">${esc(t.epic.title)}</span>${t.owner ? `${avatar(t.owner)}<span>${esc(t.owner === S.me ? "você" : name(t.owner))}</span>` : ""}${t.due ? `<span>📅 ${esc(t.due)}</span>` : ""}</div></div>`;
   el.innerHTML = S.epics.length ? `
     <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
@@ -1813,7 +1891,7 @@ function renderKanban() {
         <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? "Nada a fazer." : "Arraste um card pra cá."}</div>`}</div>
         ${k === "todo" ? `<form class="kadd"><input placeholder="nova tarefa" aria-label="Nova tarefa" /><button>+</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="Épico">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
       </section>`; }).join("")}</div>`
-    : `<div class="empty">Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça: <b>@vibe</b> organiza o projeto em épicos e tarefas.</div>`;
+    : `<div class="empty">Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.</div>`;
   const move = (id, status) => send({ t: "task.status", id, status });
   el.querySelectorAll(".kcard").forEach((c) => {
     c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
@@ -1881,8 +1959,8 @@ function renderTasks() {
   document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
   document.getElementById("epicDel").onclick = () => { if (confirm(`Apagar o épico "${epic.title}", as tasks e a discussão dele? Não dá pra desfazer.`)) send({ t: "epic.del", id: epic.id }); };
   const nDone = epic.tasks.filter((t) => t.done).length;
-  el.innerHTML = `<div class="thead"><b>Tarefas</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}" data-task="${t.id}">
-      <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}</span>
+  el.innerHTML = `<div class="thead"><b>Tarefas</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(epic.flags)}${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}" data-task="${t.id}">
+      <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}${vibeNotes(t.flags)}</span>
       <select class="towner ${t.owner ? "set" : ""}" data-owner="${t.id}" aria-label="Responsável"><option value="">sem dono</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${t.owner === e ? "selected" : ""}>${esc(e === S.me ? "você" : name(e))}</option>`).join("")}</select>
       <button type="button" class="due ${t.due ? "set" : ""}" data-due="${t.id}" title="Prazo">${t.due ? `📅 ${esc(t.due)}` : "📅"}</button>
       <button class="ghost x" data-tdel="${t.id}" aria-label="Apagar task" title="Apagar task">×</button></div>`).join("")}
@@ -1975,7 +2053,7 @@ function renderDecisions() {
   document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
   el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? "✓ aprovado" : "decidido"} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
       <button class="ghost x" data-ddel="${d.id}" aria-label="Apagar registro" title="Apagar registro">×</button></div>`).join("")
-    : `<div class="empty">O que a sala decidir e cada aprovação aparecem aqui. O <b>@vibe</b> e os agents registram conforme a conversa anda.</div>`;
+    : `<div class="empty">O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.</div>`;
   el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm("Apagar esse registro?")) send({ t: "decision.del", id: b.dataset.ddel }); });
 }
 
@@ -2013,7 +2091,7 @@ function renderChat(keep) {
   const more = all.length > list.length || (all.length && !S.complete && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
   el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">Carregar mensagens anteriores</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
-    : `<div class="empty">${thread === "main" ? "Comece a conversa. Ex.: <b>@vibe</b> organiza o projeto: site novo, aluguéis e domínio. Ou peça pro seu Claude: <i>vai na sala e fala com a Marina</i>." : "Discussão deste épico. O @vibe enxerga as tasks e a sala principal."}</div>`;
+    : `<div class="empty">${thread === "main" ? "Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>." : "Discussão deste épico. Os Claudes leem as tarefas, o doc e a sala principal."}</div>`;
   document.getElementById("olderBtn")?.addEventListener("click", loadOlder);
   // A thread starts with the request that opened it (the epic's message in main), like a Slack thread's parent.
   const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && S.messages.find((x) => x.id === src);
@@ -2152,7 +2230,7 @@ function renderDoc(force) {
   S.docs ??= {};
   // Older epics without a doc open with the same start new ones get (epicDocSeed in src/book.ts).
   const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep);
-  const text = ep ? S.docs[ep] || `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite ou peça pro @vibe).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : S.doc;
+  const text = ep ? S.docs[ep] || `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite aqui ou peça pro seu Claude).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : S.doc;
   if (docShown !== (ep || "room")) { force = true; docShown = ep || "room"; }
   ensureCollab();
   const inEpic = !isPre() && S.epics.find((e) => e.id === thread);
@@ -2167,7 +2245,7 @@ function renderDoc(force) {
   const tk = document.getElementById("tasks"); if (tk) document.getElementById("tasksHome").append(tk); // keep it out of the innerHTML wipe
   pv.innerHTML = text.trim()
     ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
-    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro <b>@vibe</b> resumir as decisões aqui.</div>`;
+    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   renderMermaid(pv);
   placeTasks(pv, ep);

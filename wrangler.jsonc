@@ -23,17 +23,16 @@
   "ratelimits": [
     { "name": "AI_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "LOGIN_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
-    { "name": "READ_LIMIT", "namespace_id": "1003", "simple": { "limit": 20, "period": 60 } },
     { "name": "UPLOAD_LIMIT", "namespace_id": "1004", "simple": { "limit": 30, "period": 60 } },
     { "name": "AGENT_LIMIT", "namespace_id": "1005", "simple": { "limit": 30, "period": 60 } }
   ],
   "vars": {
-    // Cost first: a cheap model routes every @vibe request and does the background classify; Haiku answers,
-    // Sonnet only when the router says the request is complex. No Opus/Fable.
+    // Cost first: a cheap model routes the home box and does the background classify; Haiku writes mention emails;
+    // Jev (decision model, input-only billing) grades tasks/epics and finds who is waiting on whom. No Opus/Fable.
     "MODEL_ROUTE": "deepseek/deepseek-v4.1-flash",
     "MODEL_CLASSIFY": "deepseek/deepseek-v4.1-flash",
     "MODEL_FAST": "anthropic/claude-haiku-5.5",
-    "MODEL_SMART": "anthropic/claude-sonnet-5.5"
+    "MODEL_JUDGE": "~typesafe/jev-latest"
   },
   // Local dev serves as http://127.0.0.1:8797 (OAuth accepts http only on a loopback IP; :8787 is taken here).
   "dev": { "port": 8797, "host": "127.0.0.1:8797", "upstream_protocol": "http" },

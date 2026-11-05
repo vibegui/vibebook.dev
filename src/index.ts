@@ -7,7 +7,7 @@ import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { validUnsub } from "./mentionmail";
-import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile } from "./rooms";
+import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 export { DocRoom } from "./docroom";
@@ -34,10 +34,9 @@ export type Env = {
   GOOGLE_CLIENT_SECRET?: string;
   MODEL_ROUTE: string;
   MODEL_FAST: string;
-  MODEL_SMART: string;
   MODEL_CLASSIFY: string;
-  FIRECRAWL_API_KEY?: string;
-  READ_LIMIT: RateLimit;
+  /** Jev decision model for @vibe's grading (src/jev.ts); "off" disables it. */
+  MODEL_JUDGE?: string;
   DEV_EMAIL?: string;
   MCP_AUTH_TOKEN?: string;
 };
@@ -66,6 +65,11 @@ const SCHEMA = [
   // What each person has seen in each room in the app (the switcher's unread dots).
   // One-time upload links for agents: the file goes from disk (curl) to R2 without passing through the model.
   `CREATE TABLE IF NOT EXISTS upload_links (token TEXT PRIMARY KEY, email TEXT, agent TEXT, book_id TEXT, filename TEXT, type TEXT, message TEXT, thread TEXT, model TEXT, expires_at INTEGER, used INTEGER DEFAULT 0)`,
+  // "Esperando você": what someone is waiting on a person for. ref = m<message id> (Jev read the message as an ask
+  // to them; deleted when Jev reads their later post in that thread as the answer, or they tick it) or t<task id>
+  // (a task of theirs in review, rewritten by the room's epicsChanged).
+  `CREATE TABLE IF NOT EXISTS waits (book_id TEXT, ref TEXT, email TEXT, thread TEXT, topic TEXT, author TEXT, text TEXT, ts INTEGER, PRIMARY KEY (book_id, ref, email))`,
+  `CREATE INDEX IF NOT EXISTS waits_email ON waits (email, ts)`,
   `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
 ];
 let schemaReady: Promise<unknown> | undefined;
@@ -274,7 +278,16 @@ app.get("/api/me", async (c) => {
     .bind(email)
     .all();
   const me = await db.prepare(`SELECT name, avatar FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null }>();
-  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results });
+  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits: await waitsFor(db, email) });
+});
+
+// "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
+app.post("/api/waits/resolve", async (c) => {
+  const { book_id, ref } = await c.req.json<{ book_id?: string; ref?: string }>().catch(() => ({}) as { book_id?: string; ref?: string });
+  if (!book_id || !ref?.startsWith("m")) return c.json({ error: "bad request" }, 400);
+  await c.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(book_id, ref, c.get("email")).run();
+  c.executionCtx.waitUntil(track(c.env, "wait_resolved", { user: c.get("email"), dims: { book: book_id } }));
+  return c.json({ ok: true });
 });
 
 // Profile picture: the app resizes it to a small square before sending. R2 `avatars/<email>`, users.avatar = version.
