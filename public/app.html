@@ -1231,7 +1231,7 @@ function renderBook() {
     <nav class="tabs"><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ <span class="lbl">Quadro</span></button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 <span class="lbl">Doc</span></button></div>
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="Ir pro seu Claude desta sala no herdr" aria-label="Ir pro seu Claude no herdr" hidden>↗</button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ <span class="lbl">Quadro</span></button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 <span class="lbl">Doc</span></button></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -1585,6 +1585,12 @@ async function loadRoomAgents() {
   renderMyClaude();
   renderSide();
 }
+const HERDR_LOCAL = "http://127.0.0.1:47321";
+let herdrSeen = null; // rooms with an open Claude per the local runner, refreshed at most every 20s
+const herdrPing = () => {
+  if (herdrSeen && Date.now() - herdrSeen.at < 20e3) return Promise.resolve(herdrSeen.rooms);
+  return fetch(`${HERDR_LOCAL}/ping`).then((r) => r.json()).then((j) => (herdrSeen = { at: Date.now(), rooms: j.rooms }).rooms).catch(() => (herdrSeen = { at: Date.now(), rooms: null }).rooms);
+};
 // "✻ Meu Claude": on = a Claude Code of yours opens for this room on your machine (vibebook herdr), off = it closes.
 function renderMyClaude() {
   const b = document.getElementById("myClaude");
@@ -1597,6 +1603,11 @@ function renderMyClaude() {
   b.title = on
     ? "Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada)."
     : "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina.";
+  // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
+  const go = document.getElementById("goClaude");
+  go.hidden = true;
+  if (on) herdrPing().then((rooms) => { go.hidden = !rooms?.includes(S.id); });
+  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast("O vibebook herdr não está rodando nesta máquina."));
   b.onclick = async () => {
     const next = !roomAgents.claudeOn;
     roomAgents.claudeOn = next;

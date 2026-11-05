@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -253,6 +253,51 @@ function linkFolder(folder: string, room: string) {
   const exclude = join(folder, ".git", "info", "exclude");
   if (existsSync(exclude) && !readFileSync(exclude, "utf8").split("\n").includes(".vibebook")) appendFileSync(exclude, "\n.vibebook\n");
 }
+/** The terminal app hosting herdr (walk up from a herdr process to an .app), so "go to my Claude" can raise it. */
+function terminalApp(): string | undefined {
+  try {
+    for (const pid of execFileSync("pgrep", ["-x", "herdr"]).toString().split(/\s+/).filter(Boolean)) {
+      let p = pid;
+      for (let i = 0; i < 10 && p && p !== "1"; i++) {
+        const [ppid, ...cmd] = execFileSync("ps", ["-o", "ppid=,comm=", "-p", p]).toString().trim().split(/\s+/);
+        const app = cmd.join(" ").match(/^(.*?\.app)\/Contents\/MacOS\//)?.[1];
+        if (app) return app;
+        p = ppid;
+      }
+    }
+  } catch {}
+}
+/** Local endpoint for the app's "↗" button: focus this room's workspace in herdr and raise the terminal. Only the
+ *  vibebook origin this machine is logged into may call it (CORS + Private Network Access preflight). */
+function herdrServer() {
+  const allowed = new Set([readJson<Session | null>(SESSION, null)?.origin ?? DEFAULT_ORIGIN, DEFAULT_ORIGIN]);
+  const port = Number(process.env.VIBEBOOK_HERDR_PORT || 47321);
+  createServer((req, res) => {
+    const origin = req.headers.origin ?? "";
+    const send = (code: number, body: unknown) => {
+      res.writeHead(code, { "content-type": "application/json", ...(allowed.has(origin) ? { "access-control-allow-origin": origin, "access-control-allow-private-network": "true", vary: "origin" } : {}) });
+      res.end(JSON.stringify(body));
+    };
+    if (!allowed.has(origin)) return send(403, { error: "origin" });
+    if (req.method === "OPTIONS") return send(204, null);
+    const u = new URL(req.url ?? "/", "http://127.0.0.1");
+    const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
+    if (u.pathname === "/ping") return send(200, { ok: true, rooms: Object.keys(map).filter((r) => map[r].workspace) });
+    if (u.pathname !== "/focus") return send(404, { error: "not found" });
+    const ws = map[u.searchParams.get("room") ?? ""]?.workspace;
+    if (!ws) return send(404, { error: "Nenhum Claude aberto pra essa sala no herdr." });
+    try {
+      herdr("workspace", "focus", ws);
+      const app = terminalApp();
+      if (app) execFileSync("open", ["-a", app]);
+      send(200, { ok: true });
+    } catch (e) {
+      send(500, { error: String((e as Error).message ?? e) });
+    }
+  })
+    .on("error", (e) => process.stderr.write(`vibebook herdr: botão "ir pro Claude" desligado (${(e as Error).message})\n`))
+    .listen(port, "127.0.0.1");
+}
 async function herdrSync(agent: string, tools: Tool[]) {
   const res = await callTool("claude_rooms", {}, agent, tools);
   const rooms = (JSON.parse(res.content[0]?.text ?? "{}") as { rooms?: { room_id: string; title: string; on: boolean }[] }).rooms ?? [];
@@ -430,6 +475,7 @@ async function main() {
         return die("herdr not found or not running (https://herdr.dev)");
       }
       const tools = await listTools(agent);
+      if (!flags.once) herdrServer();
       for (;;) {
         try {
           await herdrSync(agent, tools);
