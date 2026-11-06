@@ -988,6 +988,7 @@ async function login() {
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
+  if (viewerPop()) return;
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
   if (!m || !S || m[1] !== S.id) return route();
   thread = new URLSearchParams(location.search).get("t") || "main";
@@ -2167,7 +2168,8 @@ function openViewer(url, kind, fname) {
     d.querySelector("button").onclick = () => d.close();
     d.querySelector("header a").onclick = () => d.close();
     d.addEventListener("click", (e) => { if (e.target.classList.contains("vbody")) d.close(); });
-    d.addEventListener("close", () => { d.querySelector(".vbody").innerHTML = ""; });
+    // Closed by ×, Esc or a tap outside: drop the history entry it pushed, so Back doesn't reopen nothing.
+    d.addEventListener("close", () => { d.querySelector(".vbody").innerHTML = ""; if (history.state?.viewer) { viewerSkip = true; history.back(); } });
     document.body.appendChild(d);
   }
   d.querySelector("header b").textContent = fname;
@@ -2176,7 +2178,18 @@ function openViewer(url, kind, fname) {
   body.className = `vbody ${kind}`;
   if (kind === "img") { const img = new Image(); img.src = url; img.alt = fname; body.replaceChildren(img); }
   else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
+  if (!d.open) history.pushState({ viewer: 1 }, "", location.href); // Back (phone gesture, browser, PWA) closes it
   d.showModal();
+}
+let viewerSkip = false;
+// popstate: Back while the viewer is open closes it; the pop that follows our own close is swallowed.
+function viewerPop() {
+  if (viewerSkip) { viewerSkip = false; return true; }
+  const d = document.getElementById("viewer");
+  if (!d?.open) return false;
+  history.replaceState(null, "", location.href);
+  d.close();
+  return true;
 }
 document.addEventListener("click", (e) => {
   const a = e.target.closest?.("a[data-view]");
