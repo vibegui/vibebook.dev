@@ -268,6 +268,10 @@
   .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
   .friendAdd b { color: var(--accent); font-size: 16px; }
   .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Pending invites and access requests: the email gets the whole row (wrapping, never cut) and the actions go under it. */
+  .member .fnCol { flex: 1; min-width: 0; display: grid; gap: 1px; }
+  .member .fnCol .fn, .member > .fn { overflow-wrap: anywhere; overflow: visible; }
+  .member .memActs { color: var(--mute); font-size: 11.5px; } .member .memActs .resend { padding: 0 2px; font-size: 11.5px; }
   .x { font-size: 18px; line-height: 1; padding: 2px 7px; color: var(--mute); flex: none; }
   .x:hover { color: oklch(0.6 0.2 25); background: light-dark(oklch(0.95 0.03 25), oklch(0.3 0.06 25)); }
   .friend .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -1993,10 +1997,11 @@ function renderSide() {
     ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · sugestão do @vibe, clique para ver"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
-      ${(S.requests || []).length ? `<div class="asks"><h4>Pedindo pra entrar</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <span class="fn" title="${esc(r.email)} · pediu ${ago(r.ts)}">${esc(r.name || r.email)}</span><button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="Liberar: entra na sala e recebe o link por email">liberar</button><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="Recusar ${esc(r.email)}" title="Recusar">×</button></div>`).join("")}</div>` : ""}
+      ${(S.requests || []).length ? `<div class="asks"><h4>Pedindo pra entrar</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · pediu ${ago(r.ts)}">${wrapEmail(r.name || r.email)}</span><small class="memActs">pediu ${ago(r.ts)} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="Liberar: entra na sala e recebe o link por email">liberar</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="Recusar ${esc(r.email)}" title="Recusar">×</button></div>`).join("")}</div>` : ""}
       <h4>Pessoas</h4>
-      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} <span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m)}</span>${(S.pending || []).includes(m)
-        ? `<button class="ghost resend" data-copyinv="${esc(m)}" title="Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp">copiar</button><button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button>` : ""}${
+      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
+        ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${wrapEmail(S.names?.[m] || m)}</span><small class="memActs">pendente · <button class="ghost resend" data-copyinv="${esc(m)}" title="Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp">copiar</button> · <button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button></small></div>`
+        : `<span class="fn" title="${esc(m)}">${wrapEmail(S.names?.[m] || m)}</span>`}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
         ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
@@ -2335,6 +2340,8 @@ document.addEventListener("touchend", () => {
   m.classList.remove("swipe"); m.style.transform = "";
   if (dx > 60) startReply(Number(m.id.slice(1)));
 });
+// Long emails in the people list wrap before the @ (never cut, never mid-word when it fits).
+const wrapEmail = (s) => esc(s).replace("@", "<wbr>@");
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
