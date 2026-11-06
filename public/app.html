@@ -322,7 +322,15 @@
   .thread.waiting:not(.sel) { background: color-mix(in oklch, #e3b505 14%, transparent); }
   .rb.waiting { box-shadow: 0 0 0 2px #e3b505; }
   .msg.waitMsg > .body { position: relative; }
+  html[lang="en"] .task.waitTask .tt::after { content: " ⏳ waiting on you"; }
+  .langSw { display: inline-flex; align-items: center; gap: 2px; font: 600 12px/1 system-ui, sans-serif; color: var(--mute); }
+  .langSw button { background: none; border: 0; padding: 4px 5px; font: inherit; color: inherit; cursor: pointer; border-radius: 6px; }
+  .langSw button.sel { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .langSw i { font-style: normal; opacity: .6; }
+  .pdNav > .pdRow { justify-content: space-between; padding: 0 8px 0 0; }
+  .pdRow #homeTheme { display: flex; align-items: center; gap: 10px; padding: 10px 8px; font-size: 15px; color: var(--ink); }
   .msg.waitMsg > .body::before { content: "⏳ esperando você"; display: inline-block; margin-bottom: 4px; padding: 1px 8px; border-radius: 999px; background: color-mix(in oklch, #e3b505 22%, transparent); color: light-dark(#7a5c00, #f0d36b); font: 700 11px/1.6 system-ui, sans-serif; }
+  html[lang="en"] .msg.waitMsg > .body::before { content: "⏳ waiting on you"; }
   .msg.waitMsg .txt { box-shadow: inset 3px 0 0 #e3b505; }
   .msg.waitMsg:not(.ai):not(.agent):not(.done) .txt { padding: 8px 12px 8px 14px; border-radius: 10px; background-color: color-mix(in oklch, #e3b505 8%, transparent); }
   .rb.askBadge { background: var(--accent); color: #fff; font-size: 12px; } .asks { margin: 0 0 14px; padding: 10px 10px 4px; border-radius: 12px; background: color-mix(in oklch, var(--accent) 9%, transparent); } .asks h4 { margin-top: 0; } .okAsk { color: var(--accent); font-weight: 700; }
@@ -783,6 +791,379 @@
 <dialog id="swDlg" class="swDlg" aria-label="Ir para um vibebook"><input id="swQ" placeholder="Ir para um vibebook…" autocomplete="off" /><div id="swList" role="listbox"></div></dialog>
 <div id="app"></div>
 <script>
+// i18n: the Portuguese string is the key; EN has the English, anything missing falls back to Portuguese.
+// Language = the vb_lang cookie (set by the landing and the PT · EN switch), else the browser's.
+const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^pt/i.test(navigator.language) ? "pt" : (/^en/i.test(navigator.language) ? "en" : "pt"));
+document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
+const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
+const EN = {
+  "{via} de {who}": "{who}'s {via}",
+  "O Claude de quem pegar a tarefa também vê isso.": "Whoever's Claude picks up the task sees this too.",
+  "agora": "now",
+  "Tema automático (do sistema)": "Automatic theme (system)",
+  "Tema claro": "Light theme",
+  "Tema escuro": "Dark theme",
+  "azul": "blue",
+  "verde": "green",
+  "amarelo": "yellow",
+  "laranja": "orange",
+  "rosa": "pink",
+  "roxo": "purple",
+  "mensagens novas": "new messages",
+  "agents escreveram": "agents wrote",
+  "um Claude está trabalhando aqui": "a Claude is working here",
+  "1 coisa esperando você": "1 thing waiting on you",
+  "{n} coisas esperando você": "{n} things waiting on you",
+  "Seus vibebooks": "Your vibebooks",
+  "{theme} (clique pra trocar)": "{theme} (click to change)",
+  "Tema: {theme}": "Theme: {theme}",
+  "Ir para um vibebook (⌘K)": "Go to a vibebook (⌘K)",
+  "Ir para um vibebook": "Go to a vibebook",
+  "Ir para um vibebook…": "Go to a vibebook…",
+  "Novo vibebook": "New vibebook",
+  "sem cor": "no color",
+  "Trocar ícone…": "Change icon…",
+  "Tirar ícone": "Remove icon",
+  "Não deu pra usar essa imagem.": "Couldn't use that image.",
+  "1 pessoa": "1 person",
+  "{n} pessoas": "{n} people",
+  "ativa agora": "active now",
+  "ativa há {ago}": "active {ago} ago",
+  "Nada com esse nome.": "Nothing by that name.",
+  "Entrar": "Sign in",
+  "Seus vibebooks e seus amigos te esperando.": "Your vibebooks and your friends are waiting.",
+  "Continuar com Google": "Continue with Google",
+  "ou com email": "or with email",
+  "Seu email": "Your email",
+  "voce@gmail.com": "you@gmail.com",
+  "Mandar código": "Send code",
+  "Confere seu email": "Check your email",
+  "Mandamos um código de 6 dígitos para <b>{email}</b>.": "We sent a 6-digit code to <b>{email}</b>.",
+  "Código": "Code",
+  "usar outro email": "use another email",
+  "Algo deu errado. Tenta de novo.": "Something went wrong. Try again.",
+  "Não deu certo com o Google. Tenta com email.": "Google sign-in didn't work. Try with email.",
+  "Outros": "Other",
+  "Mudar seu nome": "Change your name",
+  "Tema": "Theme",
+  "Sair": "Sign out",
+  "O que você quer resolver?": "What do you want to get done?",
+  "Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.": "A request, an idea, a task for someone… I'll find the right room and epic.",
+  "Achar a sala →": "Find the room →",
+  "Como seus amigos te chamam?": "What do your friends call you?",
+  "O pessoal e os Claudes vão te chamar assim.": "People and Claudes will call you that.",
+  "Seu nome": "Your name",
+  "Salvar": "Save",
+  "Coloque sua foto": "Add your photo",
+  "Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).": "So people can tell at a glance when it's you talking, and when it's your Claude (✻).",
+  "Adicionar foto": "Add photo",
+  "Oi, {name}": "Hi, {name}",
+  "amigo": "friend",
+  "amigos": "friends",
+  "Arquivo": "Archive",
+  "Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu Claude ao lado.": "No vibebooks yet. Create one, invite the people you work with and connect your Claude on the side.",
+  "Arquivar": "Archive",
+  "Arquivar {title}": "Archive {title}",
+  "Ainda sem resumo. O @vibe escreve um quando a conversa andar.": "No summary yet. @vibe writes one once the conversation gets going.",
+  "Amigos": "Friends",
+  "vibebook junto": "shared vibebook",
+  "vibebooks juntos": "shared vibebooks",
+  "na plataforma": "on vibebook",
+  "convidado": "invited",
+  "Remover {email} dos amigos": "Remove {email} from friends",
+  "Remover dos amigos": "Remove from friends",
+  "Quem você convida para um vibebook vira amigo aqui.": "People you invite to a vibebook show up here as friends.",
+  "email do amigo": "friend's email",
+  "Email do amigo": "Friend's email",
+  "Convidar": "Invite",
+  "Seu perfil": "Your profile",
+  "Novo": "New",
+  "O que você quer resolver? Eu acho a sala e o épico certos.": "What do you want to get done? I'll find the right room and epic.",
+  "Notificações": "Notifications",
+  "Seu nome:": "Your name:",
+  "Remover {email} dos seus amigos? Os vibebooks em comum continuam.": "Remove {email} from your friends? Shared vibebooks stay.",
+  "Enviando…": "Sending…",
+  "Procurando a sala certa…": "Finding the right room…",
+  "sala nova <b>“{title}”</b>": "new room <b>“{title}”</b>",
+  "Mandar em {where}?": "Send to {where}?",
+  "Criar {where}?": "Create {where}?",
+  "Nenhuma sala parece a certa. Criar {where}?": "No room looks right. Create {where}?",
+  "Enviar": "Send",
+  "Cancelar": "Cancel",
+  "Outro lugar:": "Somewhere else:",
+  "Arquivar “{title}”?": "Archive “{title}”?",
+  "Sai da sua lista e do inbox do seu agent e vai pro <b>Arquivo</b>. Nada é apagado: quem mais está na sala continua vendo, e você restaura quando quiser.": "It leaves your list and your agent's inbox and goes to the <b>Archive</b>. Nothing is deleted: everyone else in the room still sees it, and you can restore it anytime.",
+  "Salas que você arquivou. Elas continuam existindo pra quem está nelas.": "Rooms you archived. They're still there for everyone else in them.",
+  "Voltar": "Back",
+  "arquivada {ago}": "archived {ago} ago",
+  "abrir": "open",
+  "Restaurar": "Restore",
+  "Nada arquivado.": "Nothing archived.",
+  "Seu agent": "Your agent",
+  "conectado {ago}": "connected {ago} ago",
+  "último uso {ago}": "last used {ago} ago",
+  "Desconectar": "Disconnect",
+  "Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i>": "Ask your Claude: <i>“what's new on vibebook?”</i> or <i>“go to room X and tell Marina…”</i>",
+  "Desconectar esse agent? Ele perde o acesso a todas as salas na hora.": "Disconnect this agent? It loses access to every room right away.",
+  "Esperando você": "Waiting on you",
+  "Tarefa sua esperando OK:": "Your task waiting for OK:",
+  "Já resolvi (respondi em outro lugar, ou não é comigo)": "Done (I answered elsewhere, or it's not for me)",
+  "Seu Claude conectou.": "Your Claude is connected.",
+  "Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo.": "It can already see this room. Turn it on here with ✻ Turn on Claude at the top.",
+  "Ele já enxerga as suas salas.": "It can already see your rooms.",
+  "Traga seu Claude pra esta sala": "Bring your Claude to this room",
+  "Conecte seu Claude": "Connect your Claude",
+  "O vibebook funciona com o Claude de cada pessoa: ele lê a sala, conversa com os Claudes dos outros e te pergunta antes de agir. Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:": "vibebook works with each person's own Claude: it reads the room, talks to the other people's Claudes and asks you before acting. Paste this into <b>Claude Code</b>, inside the project folder:",
+  "Copiar": "Copy",
+  "esperando seu Claude conectar…": "waiting for your Claude to connect…",
+  "Claude.ai ou outro cliente": "Claude.ai or another client",
+  "Configurações → Conectores → Adicionar conector personalizado, e cole": "Settings → Connectors → Add custom connector, and paste",
+  "Claude Code só com o conector:": "Claude Code with just the connector:",
+  "Passo a passo completo →": "Full step-by-step →",
+  "Copiado": "Copied",
+  "Selecione e copie": "Select and copy",
+  "Carregando": "Loading",
+  "Você foi removido deste vibebook.": "You were removed from this vibebook.",
+  "seus vibebooks": "your vibebooks",
+  "Sem acesso a este vibebook. Peça para alguém de dentro te convidar.": "No access to this vibebook. Ask someone in it to invite you.",
+  "voltar": "back",
+  "pensando ({mode})": "thinking ({mode})",
+  "Não enviei: parece {reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.": "Not sent: it looks like {reason}. Secrets don't go in the room, not for you and not for the agents. Use a secure channel.",
+  "escolhendo o modelo": "picking the model",
+  "rápido": "fast",
+  "com calma": "careful",
+  "Notificações ligadas: clique pra silenciar": "Notifications on: click to mute",
+  "Notificações silenciadas: clique pra ligar": "Notifications muted: click to turn on",
+  "Ativar notificações de mensagem": "Turn on message notifications",
+  "Notificações bloqueadas no navegador": "Notifications blocked in this browser",
+  "Este navegador não tem notificações": "This browser doesn't support notifications",
+  "As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.": "Notifications are blocked for vibebook.dev in this browser. Click the lock next to the address → Notifications → Allow, and reload the page.",
+  "Te mencionaram": "You were mentioned",
+  "respondendo…": "replying…",
+  "anexo": "attachment",
+  "Épicos": "Epics",
+  "Trocar de sala": "Switch room",
+  "Ir pro seu Claude desta sala no herdr": "Go to your Claude for this room in herdr",
+  "Ir pro seu Claude no herdr": "Go to your Claude in herdr",
+  "Quadro de tarefas (kanban)": "Task board (kanban)",
+  "Quadro": "Board",
+  "mostrar/ocultar documento": "show/hide doc",
+  "Mencionar": "Mention",
+  "Anexar, mencionar, votação": "Attach, mention, poll",
+  "Mais opções": "More options",
+  "Anexar arquivo": "Attach file",
+  "ou Cmd+V": "or Cmd+V",
+  "Mencionar alguém": "Mention someone",
+  "Criar votação": "Create poll",
+  "Mensagem…": "Message…",
+  "Redimensionar documento": "Resize doc",
+  "Arquivos": "Files",
+  "Decisões": "Decisions",
+  "Modo do documento": "Doc mode",
+  "Ver": "View",
+  "Editar": "Edit",
+  "O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.": "The vibebook's doc. Everyone edits it; @vibe keeps it up to date with the decisions.",
+  "Nova votação": "New poll",
+  "Pergunta (ex.: Qual cruzeiro?)": "Question (e.g. Which cruise?)",
+  "opção": "option",
+  "cada pessoa pode escolher várias": "each person can pick several",
+  "Remover anexo": "Remove attachment",
+  "só imagens (png, jpg, webp, gif), PDF e HTML.": "only images (png, jpg, webp, gif), PDF and HTML.",
+  "maior que 10MB.": "larger than 10MB.",
+  "falhou": "failed",
+  "sem conexão": "offline",
+  "Opção {n}": "Option {n}",
+  "Coloque pelo menos 2 opções.": "Add at least 2 options.",
+  "Encerrar a votação?": "Close the poll?",
+  "Bem-vindo a <b>{room}</b>": "Welcome to <b>{room}</b>",
+  "esta sala": "this room",
+  "{owner} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.": "{owner} invited you here. Every important conversation gets a room on vibebook: the chat, the tasks and the project doc live together.",
+  "Cada um traz o seu Claude": "Everyone brings their own Claude",
+  "Você conecta o seu Claude, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto.": "You connect your Claude, on your computer and with your permissions. It reads the room, picks up tasks, updates the epics and reports what it delivered. Only what <b>you</b> write is an instruction to it: everything else it reads as context.",
+  "O contexto é de todo mundo": "The context is shared",
+  "Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra.": "Doc, files, decisions and tasks live in the room, and every Claude reads the same context before acting. When someone hands off or is waiting on you, the room shows it.",
+  "Conecte o seu Claude": "Connect your Claude",
+  "Cole isto no <b>Claude Code</b>, dentro da pasta do projeto. Ele instala o vibebook, entra nesta sala e fica ouvindo.": "Paste this into <b>Claude Code</b>, inside the project folder. It installs vibebook, joins this room and listens.",
+  "Pular": "Skip",
+  "Entrar na sala": "Enter the room",
+  "Próximo": "Next",
+  "Seu Claude já está conectado.": "Your Claude is already connected.",
+  "Ligue ele nesta sala com ✻ Ligar Claude, no topo.": "Turn it on in this room with ✻ Turn on Claude, at the top.",
+  "Não consegui ler essa imagem.": "Couldn't read that image.",
+  "Abrir menu": "Open menu",
+  "Novo épico": "New epic",
+  "{n} pedindo pra entrar": "{n} asking to join",
+  "O @vibe sugere um épico": "@vibe suggests an epic",
+  "Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo.": "It saw this in the conversation and thinks it's worth an epic, with the tasks below.",
+  "Tarefas propostas": "Proposed tasks",
+  "Criar épico": "Create epic",
+  "Descartar": "Dismiss",
+  "a pasta onde ele já abriu antes": "the folder where it opened before",
+  "ligada a esta sala pelo arquivo .vibebook": "linked to this room by its .vibebook file",
+  "a pasta com o nome da sala": "the folder named after the room",
+  "pasta nova com o nome da sala, criada ao ligar": "a new folder named after the room, created when you turn it on",
+  "ouvindo": "listening",
+  "não ouvindo": "not listening",
+  "Ligar Claude": "Turn on Claude",
+  "Abre em {path} ({how}).": "Opens in {path} ({how}).",
+  "pasta da sala": "room folder",
+  "Ligado, mas nenhum Claude seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar.": "On, but none of your Claudes is listening to this room right now: it may be starting, busy with another task (vibebook herdr asks it to listen once it's free), or vibebook herdr isn't running. Click to turn off.",
+  "Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada).": "Your Claude is on in this room. Click to turn off (closes its tab in herdr; the conversation can be resumed).",
+  "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina.": "Opens a Claude Code of yours for this room in herdr, listening for messages. Needs vibebook herdr running on your machine.",
+  "O vibebook herdr não está rodando nesta máquina.": "vibebook herdr isn't running on this machine.",
+  "em {repo}": "in {repo}",
+  "ouvindo todas as salas agora": "listening to every room now",
+  "ouvindo esta sala agora": "listening to this room now",
+  "visto há {ago}": "seen {ago} ago",
+  "está trabalhando nisso": "is working on this",
+  "O andamento e a entrega aparecem aqui nesta thread.": "Progress and the delivery show up here in this thread.",
+  "Alguém está esperando você aqui": "Someone is waiting on you here",
+  "{n} coisas esperando você aqui": "{n} things waiting on you here",
+  "arquivado": "archived",
+  "{who} está trabalhando aqui": "{who} is working here",
+  "{who} está trabalhando": "{who} is working",
+  "Recolher menu": "Collapse menu",
+  "novo épico": "new epic",
+  "Arquivados": "Archived",
+  "@vibe sugere": "@vibe suggests",
+  "sugestão do @vibe, clique para ver": "suggested by @vibe, click to see",
+  "Pedindo pra entrar": "Asking to join",
+  "pediu {ago}": "asked {ago} ago",
+  "Liberar: entra na sala e recebe o link por email": "Let in: joins the room and gets the link by email",
+  "liberar": "let in",
+  "Recusar {email}": "Decline {email}",
+  "Recusar": "Decline",
+  "Pessoas": "People",
+  "pendente": "pending",
+  "Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp": "Copy the invite message (room link + Claude setup) to send on WhatsApp",
+  "copiar": "copy",
+  "Convidada(o), ainda não entrou": "Invited, hasn't joined yet",
+  "reenviar": "resend",
+  "Remover {email}": "Remove {email}",
+  "Cancelar convite": "Cancel invite",
+  "Remover do vibebook": "Remove from vibebook",
+  "Seus amigos": "Your friends",
+  "Adicionar {email}": "Add {email}",
+  "convidar por email": "invite by email",
+  "Cancelar o convite de {email}?": "Cancel {email}'s invite?",
+  "Remover {email} deste vibebook?": "Remove {email} from this vibebook?",
+  "Não deu para remover.": "Couldn't remove.",
+  "Recusar o pedido de {email}?": "Decline {email}'s request?",
+  "{email} entrou na sala e recebeu o link por email.": "{email} joined the room and got the link by email.",
+  "enviado": "sent",
+  "Não deu para salvar a foto.": "Couldn't save the photo.",
+  "Não deu para ler essa imagem.": "Couldn't read that image.",
+  "Te convidei pro vibebook \"{title}\": {url}": "I invited you to the vibebook \"{title}\": {url}",
+  "1. Entra com {email} (o convite chegou nesse email).": "1. Sign in with {email} (the invite went to that address).",
+  "2. Manda isto pro seu Claude Code:": "2. Send this to your Claude Code:",
+  "Convite enviado por email para <b>{email}</b>.": "Invite emailed to <b>{email}</b>.",
+  "Copiei a mensagem com o link da sala e o setup do Claude para {name}: cola no WhatsApp.": "Copied the message with the room link and the Claude setup for {name}: paste it in WhatsApp.",
+  "Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.": "Couldn't copy. Use \"copy\" next to {email} in People.",
+  "A fazer": "To do",
+  "Fazendo": "Doing",
+  "Esperando OK": "Waiting for OK",
+  "Feito": "Done",
+  "Arraste, ou use ← →. Clique pra abrir o épico.": "Drag, or use ← →. Click to open the epic.",
+  "você": "you",
+  "Nada a fazer.": "Nothing to do.",
+  "Arraste um card pra cá.": "Drag a card here.",
+  "nova tarefa": "new task",
+  "Nova tarefa": "New task",
+  "Épico": "Epic",
+  "Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.": "No epics or tasks yet. Create an epic in the sidebar, or ask your Claude to organize the project into epics and tasks.",
+  "sugestão do @vibe": "suggested by @vibe",
+  "Clique para renomear": "Click to rename",
+  "Desarquivar épico": "Unarchive epic",
+  "Arquivar épico (concluído)": "Archive epic (done)",
+  "Arquivar épico": "Archive epic",
+  "Apagar épico": "Delete epic",
+  "esperando": "waiting on",
+  "Ver as tasks abertas": "See open tasks",
+  "Esperando {who}": "Waiting on {who}",
+  "esperando OK": "waiting for OK",
+  "fazendo": "doing",
+  "a fazer": "to do",
+  "Nome do épico:": "Epic name:",
+  "Nome do vibebook:": "Vibebook name:",
+  "Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.": "Delete the epic \"{title}\", its tasks and its discussion? This can't be undone.",
+  "Tarefas": "Tasks",
+  "Feita": "Done",
+  "Clique para editar": "Click to edit",
+  "Responsável": "Owner",
+  "sem dono": "no owner",
+  "Prazo": "Due date",
+  "Apagar task": "Delete task",
+  "nova task": "new task",
+  "Prazo (ex.: sex, qua 23h, 06/11). Vazio tira o prazo:": "Due (e.g. Fri, Wed 11pm, 11/06). Empty removes it:",
+  "Abrir numa aba": "Open in a tab",
+  "Fechar": "Close",
+  "1 pessoa votou": "1 person voted",
+  "{n} pessoas votaram": "{n} people voted",
+  "pode escolher várias": "pick several",
+  "escolha uma": "pick one",
+  "encerrada": "closed",
+  "encerrar": "close",
+  "concluído": "done",
+  "{d}/{n} tarefas": "{d}/{n} tasks",
+  "1 resposta": "1 reply",
+  "{n} respostas": "{n} replies",
+  "última há {ago}": "last {ago} ago",
+  "Épico concluído": "Epic done",
+  "Escreva aqui pra continuar: ele reabre.": "Write here to keep going: it reopens.",
+  "votação": "poll",
+  "Ver a mensagem respondida": "See the message being replied to",
+  "mensagem anterior": "earlier message",
+  "Respondendo a <b>{who}</b>": "Replying to <b>{who}</b>",
+  "Cancelar resposta": "Cancel reply",
+  "Essa mensagem está mais acima: role o chat pra carregar.": "That message is further up: scroll the chat to load it.",
+  "pensando…": "thinking…",
+  "Responder": "Reply",
+  "Responder a esta mensagem": "Reply to this message",
+  "Escrito pelo agent (Claude) dessa pessoa, em nome dela": "Written by this person's agent (Claude), on their behalf",
+  "Reporta algo entregue": "Reports something delivered",
+  "entregue": "delivered",
+  "aprovado": "approved",
+  "decidido": "decided",
+  "Apagar registro": "Delete entry",
+  "O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.": "What the room decides and every approval show up here. The Claudes log them as the conversation goes.",
+  "Apagar esse registro?": "Delete this entry?",
+  "Este embed quer mandar, como você:": "This embed wants to send, as you:",
+  "Lembretes": "Reminders",
+  "próximo {when}": "next {when}",
+  "de {who}": "by {who}",
+  "épico": "epic",
+  "Apagar lembrete": "Delete reminder",
+  "Apagar app": "Delete app",
+  "Apagar app {name}": "Delete app {name}",
+  "Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.": "No apps yet. Apps are HTML message templates (a report card, a chart) that the Claudes save with <code>save_app</code> and reuse with <code>post</code> + <code>app</code>. Ask your Claude: “make an app for the daily report”.",
+  "Apagar este lembrete?": "Delete this reminder?",
+  "Apagar o app {name}? As mensagens já postadas continuam.": "Delete the app {name}? Messages already posted stay.",
+  "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.": "Paste an image in the chat (Cmd+V), drag a file in or use the clip. Everything shared in this vibebook lands here.",
+  "Carregar mensagens anteriores": "Load earlier messages",
+  "Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>.": "Start the conversation. The Claudes on in this room read and reply; yours acts with your OK. E.g. <i>organize the project into epics: new site, rentals and domain</i>.",
+  "Discussão deste épico. Os Claudes leem as tarefas, o doc e a sala principal.": "This epic's discussion. The Claudes read the tasks, the doc and the main room.",
+  "ver na sala principal": "see in the main room",
+  "{who} está fazendo isso": "{who} is on it",
+  "{who} fez isso": "{who} did it",
+  "aguardando {who}": "waiting on {who}",
+  "{who} parou": "{who} stopped",
+  "lido por {who}": "read by {who}",
+  "entregue, ainda não lido por {who}": "delivered, not yet read by {who}",
+  "Diagrama com erro": "Diagram error",
+  "na linha {n}": "on line {n}",
+  "Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.": "Empty doc. Click <b>Edit</b> or ask your Claude to summarize the decisions here.",
+  "@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).": "@vibe reviewed this doc. Everyone's Claude gets this too (doc_notes).",
+};
+const t = (pt, vars) => {
+  const s = LANG === "en" && EN[pt] !== undefined ? EN[pt] : pt;
+  return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : s;
+};
+const langSwitch = () => `<span class="langSw" role="group" aria-label="Idioma / Language">${["pt", "en"].map((l) => `<button type="button" class="${LANG === l ? "sel" : ""}" data-lang="${l}" aria-pressed="${LANG === l}">${l.toUpperCase()}</button>`).join("<i>·</i>")}</span>`;
+document.addEventListener("click", (e) => {
+  const b = e.target.closest?.("[data-lang]"); if (!b || b.dataset.lang === LANG) return;
+  document.cookie = `vb_lang=${b.dataset.lang}; path=/; max-age=31536000; samesite=lax`;
+  location.reload();
+});
 const $app = document.getElementById("app");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const COLORS = ["#ff5a36", "#1f9d8a", "#3b6cf6", "#c2410c", "#9333ea", "#0f766e", "#be185d", "#4d7c0f"];
@@ -798,10 +1179,10 @@ const avatar = (email, on) => {
     : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
 };
 // A person's Claude: the orange asterisk, with its person's avatar as a small badge.
-const agentAvatar = (email, via) => `<span class="avatar claude" title="${esc(via || "Claude")} de ${esc(name(email))}">✻${avatar(email)}</span>`;
+const agentAvatar = (email, via) => `<span class="avatar claude" title="${t("{via} de {who}", { via: esc(via || "Claude"), who: esc(name(email)) })}">✻${avatar(email)}</span>`;
 // @vibe's grading notes (Jev, on the room's alarm): a quiet chip, the same words the Claudes get in read_room.
-const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. O Claude de quem pegar a tarefa também vê isso.">⚠ ${esc(f.join(" · "))}</span>` : "");
-const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? "agora" : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
+const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. ${t("O Claude de quem pegar a tarefa também vê isso.")}">⚠ ${esc(f.join(" · "))}</span>` : "");
+const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? t("agora") : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
 // @mentions: a member's handle is their first name (accents stripped), else the first part of their email.
 const fold = (x) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, "");
@@ -846,9 +1227,9 @@ if (window.visualViewport) {
 // Theme: auto (follows the system) → light → dark, remembered per browser; the CSS reads data-theme via color-scheme.
 const ICO = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const THEMES = {
-  auto: { label: "Tema automático (do sistema)", next: "light", icon: ICO(`<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>`) },
-  light: { label: "Tema claro", next: "dark", icon: ICO(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`) },
-  dark: { label: "Tema escuro", next: "auto", icon: ICO(`<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>`) },
+  auto: { label: t("Tema automático (do sistema)"), next: "light", icon: ICO(`<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>`) },
+  light: { label: t("Tema claro"), next: "dark", icon: ICO(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`) },
+  dark: { label: t("Tema escuro"), next: "auto", icon: ICO(`<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>`) },
 };
 const theme = () => document.documentElement.dataset.theme || "auto";
 function setTheme(t) {
@@ -856,7 +1237,7 @@ function setTheme(t) {
   try { t === "auto" ? localStorage.removeItem("vb.theme") : localStorage.setItem("vb.theme", t); } catch {}
   renderSwitcher();
 }
-const TINT_NAMES = { blue: "azul", green: "verde", yellow: "amarelo", orange: "laranja", pink: "rosa", purple: "roxo" };
+const TINT_NAMES = { blue: t("azul"), green: t("verde"), yellow: t("amarelo"), orange: t("laranja"), pink: t("rosa"), purple: t("roxo") };
 const TINT_KEYS = Object.keys(TINT_NAMES);
 document.addEventListener("click", (e) => { const p = document.getElementById("tintPop"); if (p && !p.hidden && !p.contains(e.target)) p.hidden = true; });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const p = document.getElementById("tintPop"); if (p) p.hidden = true; } });
@@ -886,31 +1267,31 @@ function renderSwitcher() {
   const groups = [];
   for (const b of roomOrder()) { const g = groups.at(-1); if (g && b.tint && g.tint === b.tint) g.rooms.push(b); else groups.push({ tint: b.tint || null, rooms: [b] }); }
   // Green: someone wrote since you last looked; yellow: only agents/@vibe did.
-  const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="mensagens novas"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="agents escreveram"></b>` : "";
+  const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="${t("mensagens novas")}"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="${t("agents escreveram")}"></b>` : "";
   // A Claude working in the room right now: the same turning ✻ as an epic's.
-  const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="um Claude está trabalhando aqui">✻</b>` : "");
+  const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um Claude está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
-  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n} ${n === 1 ? "coisa esperando" : "coisas esperando"} você">${n}</b>` : ""; };
+  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
   const item = (b) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}</span></a>`;
-  $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="Seus vibebooks" aria-label="Seus vibebooks"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
+  $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
     ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map(item).join("")}</div>` : item(g.rooms[0])).join("")}
     <span class="sw-sp"></span>
-    <button class="sw-btn" id="swTheme" title="${THEMES[theme()].label} (clique pra trocar)" aria-label="Tema: ${THEMES[theme()].label}">${THEMES[theme()].icon}</button>
-    <button class="sw-btn" id="swSearch" title="Ir para um vibebook (⌘K)" aria-label="Ir para um vibebook">${SW_SEARCH}</button>
-    <button class="sw-btn" id="swNew" title="Novo vibebook" aria-label="Novo vibebook">${SW_PLUS}</button>`;
+    <button class="sw-btn" id="swTheme" title="${t("{theme} (clique pra trocar)", { theme: THEMES[theme()].label })}" aria-label="${t("Tema: {theme}", { theme: THEMES[theme()].label })}">${THEMES[theme()].icon}</button>
+    <button class="sw-btn" id="swSearch" title="${t("Ir para um vibebook (⌘K)")}" aria-label="${t("Ir para um vibebook")}">${SW_SEARCH}</button>
+    <button class="sw-btn" id="swNew" title="${t("Novo vibebook")}" aria-label="${t("Novo vibebook")}">${SW_PLUS}</button>`;
   $sw.querySelector(".on")?.scrollIntoView({ block: "nearest" });
   // Right-click a room: pick its color (rooms next to each other with the same color form a group).
   $sw.querySelectorAll("[data-drag]").forEach((a) => a.oncontextmenu = (e) => {
     e.preventDefault();
     const b = myBooks.find((x) => x.id === a.dataset.id);
     const pop = document.getElementById("tintPop");
-    pop.innerHTML = `<small>${esc(b.title)}</small><div>${[null, ...TINT_KEYS].map((t) => `<button data-tint="${t || ""}" class="${(b.tint || null) === t ? "sel" : ""}" title="${t ? TINT_NAMES[t] : "sem cor"}" aria-label="${t ? TINT_NAMES[t] : "sem cor"}"></button>`).join("")}</div>
-      <p class="iconRow"><label class="ghost">Trocar ícone…<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico" hidden></label>${b.icon ? `<button class="ghost" data-noicon>Tirar ícone</button>` : ""}</p>`;
+    pop.innerHTML = `<small>${esc(b.title)}</small><div>${[null, ...TINT_KEYS].map((k) => `<button data-tint="${k || ""}" class="${(b.tint || null) === k ? "sel" : ""}" title="${k ? TINT_NAMES[k] : t("sem cor")}" aria-label="${k ? TINT_NAMES[k] : t("sem cor")}"></button>`).join("")}</div>
+      <p class="iconRow"><label class="ghost">${t("Trocar ícone…")}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico" hidden></label>${b.icon ? `<button class="ghost" data-noicon>${t("Tirar ícone")}</button>` : ""}</p>`;
     pop.querySelector("input[type=file]").onchange = async (ev) => {
       const f = ev.target.files[0]; if (!f) return;
       pop.hidden = true;
-      try { const r = await fetch(`/api/books/${b.id}/icon`, { method: "POST", headers: { "content-type": "image/png" }, body: await squarePng(f, 128) }).then((x) => x.json()); if (r.error) throw new Error(r.error); b.icon = r.icon; renderSwitcher(); if (S?.id === b.id) { setFavicon(bookTitle()); renderSide(); } } catch (err) { alert(err.message || "Não deu pra usar essa imagem."); }
+      try { const r = await fetch(`/api/books/${b.id}/icon`, { method: "POST", headers: { "content-type": "image/png" }, body: await squarePng(f, 128) }).then((x) => x.json()); if (r.error) throw new Error(r.error); b.icon = r.icon; renderSwitcher(); if (S?.id === b.id) { setFavicon(bookTitle()); renderSide(); } } catch (err) { alert(err.message || t("Não deu pra usar essa imagem.")); }
     };
     pop.querySelector("[data-noicon]")?.addEventListener("click", async () => { pop.hidden = true; await api(`/api/books/${b.id}/icon`, {}); b.icon = null; renderSwitcher(); if (S?.id === b.id) { setFavicon(bookTitle()); renderSide(); } });
     const r = a.getBoundingClientRect();
@@ -947,9 +1328,9 @@ $sw.addEventListener("mouseover", (e) => {
   const a = e.target.closest(".sw-item[data-id]"); const b = a && myBooks?.find((x) => x.id === a.dataset.id);
   if (!b) { swTip.hidden = true; return; }
   const people = (b.members || "").split(",").filter(Boolean).length;
-  const news = b.id === S?.id ? "" : b.last_human_id > b.read_id ? `<span class="tn h">● mensagens novas</span>` : b.last_agent_id > b.read_id ? `<span class="tn a">● agents escreveram</span>` : "";
+  const news = b.id === S?.id ? "" : b.last_human_id > b.read_id ? `<span class="tn h">● ${t("mensagens novas")}</span>` : b.last_agent_id > b.read_id ? `<span class="tn a">● ${t("agents escreveram")}</span>` : "";
   swTip.innerHTML = `<b>${esc(b.title)}</b>${b.summary ? `<span>${esc(b.summary)}</span>` : ""}
-    <small>${b.folder ? `📁 ${esc(b.folder)} · ` : ""}${people} ${people === 1 ? "pessoa" : "pessoas"} · ${ago(b.updated_at) === "agora" ? "ativa agora" : `ativa há ${ago(b.updated_at)}`}</small>${news}`;
+    <small>${b.folder ? `📁 ${esc(b.folder)} · ` : ""}${people === 1 ? t("1 pessoa") : t("{n} pessoas", { n: people })} · ${ago(b.updated_at) === t("agora") ? t("ativa agora") : t("ativa há {ago}", { ago: ago(b.updated_at) })}</small>${news}`;
   const r = a.querySelector(".tile").getBoundingClientRect();
   swTip.style.top = `${r.top + r.height / 2}px`;
   swTip.hidden = false;
@@ -958,12 +1339,13 @@ $sw.addEventListener("mouseleave", () => (swTip.hidden = true));
 $sw.addEventListener("click", () => (swTip.hidden = true));
 // ⌘K / Ctrl+K: type to jump to a room.
 const swDlg = document.getElementById("swDlg"), swQ = document.getElementById("swQ"), swList = document.getElementById("swList");
+$sw.setAttribute("aria-label", t("Seus vibebooks")); swDlg.setAttribute("aria-label", t("Ir para um vibebook")); swQ.placeholder = t("Ir para um vibebook…");
 let swPick = 0;
 function renderSwitchList() {
   const q = fold(swQ.value);
   const list = (myBooks || []).filter((b) => !q || fold(b.title).includes(q) || fold(b.folder || "").includes(q)).slice(0, 12);
   swPick = Math.min(swPick, Math.max(0, list.length - 1));
-  swList.innerHTML = list.map((b, i) => `<a href="/b/${b.id}" data-nav class="${i === swPick ? "sel" : ""}" role="option">${tile(b, "")}<span>${esc(b.title)}</span>${b.folder ? `<small>${esc(b.folder)}</small>` : ""}</a>`).join("") || `<p class="muted" style="padding:8px 10px;margin:0">Nada com esse nome.</p>`;
+  swList.innerHTML = list.map((b, i) => `<a href="/b/${b.id}" data-nav class="${i === swPick ? "sel" : ""}" role="option">${tile(b, "")}<span>${esc(b.title)}</span>${b.folder ? `<small>${esc(b.folder)}</small>` : ""}</a>`).join("") || `<p class="muted" style="padding:8px 10px;margin:0">${t("Nada com esse nome.")}</p>`;
 }
 function openSwitch() { if (!myBooks) return; swQ.value = ""; swPick = 0; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
 swQ.oninput = () => { swPick = 0; renderSwitchList(); };
@@ -989,7 +1371,7 @@ function route() {
 const GOOGLE_ICON = `<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
 
 async function login() {
-  document.title = "Entrar · vibebook";
+  document.title = `${t("Entrar")} · vibebook`;
   setFavicon(null);
   const q = new URLSearchParams(location.search);
   const next = q.get("next") || "/app";
@@ -1000,20 +1382,20 @@ async function login() {
     <div class="login"><div class="box">
       <a class="brand" href="/">vibebook</a>
       ${step === "email" ? `
-        <h1>Entrar</h1>
-        <p>Seus vibebooks e seus amigos te esperando.</p>
-        ${providers.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(next)}" style="text-decoration:none"><button type="button" class="google">${GOOGLE_ICON} Continuar com Google</button></a><div class="or">ou com email</div>` : ""}
-        <form id="f"><label class="muted" for="email" style="font-size:14px">Seu email</label>
-          <input id="email" type="email" autocomplete="email" required placeholder="voce@gmail.com" value="${esc(email)}" />
-          <button class="primary" id="go">Mandar código</button>
+        <h1>${t("Entrar")}</h1>
+        <p>${t("Seus vibebooks e seus amigos te esperando.")}</p>
+        ${providers.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(next)}" style="text-decoration:none"><button type="button" class="google">${GOOGLE_ICON} ${t("Continuar com Google")}</button></a><div class="or">${t("ou com email")}</div>` : ""}
+        <form id="f"><label class="muted" for="email" style="font-size:14px">${t("Seu email")}</label>
+          <input id="email" type="email" autocomplete="email" required placeholder="${t("voce@gmail.com")}" value="${esc(email)}" />
+          <button class="primary" id="go">${t("Mandar código")}</button>
           <p class="err" role="alert">${esc(err)}</p></form>` : `
-        <h1>Confere seu email</h1>
-        <p>Mandamos um código de 6 dígitos para <b>${esc(email)}</b>.</p>
-        <form id="f"><label class="muted" for="code" style="font-size:14px">Código</label>
+        <h1>${t("Confere seu email")}</h1>
+        <p>${t("Mandamos um código de 6 dígitos para <b>{email}</b>.", { email: esc(email) })}</p>
+        <form id="f"><label class="muted" for="code" style="font-size:14px">${t("Código")}</label>
           <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required pattern="[0-9]{6}" />
-          <button class="primary" id="go">Entrar</button>
+          <button class="primary" id="go">${t("Entrar")}</button>
           <p class="err" role="alert">${esc(err)}</p>
-          <button type="button" class="link" id="back">usar outro email</button></form>`}
+          <button type="button" class="link" id="back">${t("usar outro email")}</button></form>`}
     </div></div>`;
     const f = document.getElementById("f");
     f.querySelector("input").focus();
@@ -1026,13 +1408,13 @@ async function login() {
       const body = step === "email" ? { email } : { email, code: document.getElementById("code").value, next };
       const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) return view(step, j.error || "Algo deu errado. Tenta de novo.");
+      if (!r.ok) return view(step, j.error || t("Algo deu errado. Tenta de novo."));
       if (step === "email") return view("code");
       location.href = j.next || "/app";
     };
     if (step === "code") document.getElementById("code").oninput = (e) => { if (e.target.value.replace(/\D/g, "").length === 6) f.requestSubmit(); };
   };
-  view("email", q.get("error") === "google" ? "Não deu certo com o Google. Tenta com email." : "");
+  view("email", q.get("error") === "google" ? t("Não deu certo com o Google. Tenta com email.") : "");
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
@@ -1057,7 +1439,7 @@ async function home() {
   myBooks = me.books; myWaits = me.waits || []; renderSwitcher();
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
-  const OTHER = "Outros";
+  const OTHER = t("Outros");
   const byFolder = {};
   for (const b of me.books) (byFolder[b.folder || OTHER] ??= []).push(b);
   const folders = Object.keys(byFolder).sort((a, b) => (a === OTHER) - (b === OTHER) || a.localeCompare(b));
@@ -1068,42 +1450,43 @@ async function home() {
   <div class="home">
     <header class="top">
       <div class="brand"><a href="/">vibebook</a></div>
-      <button class="me" id="myName" title="Mudar seu nome">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
+      <button class="me" id="myName" title="${t("Mudar seu nome")}">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
       <button class="ghost bell" data-bell></button>
-      <button class="ghost homeTheme" id="homeTheme" aria-label="Tema">${THEMES[theme()].icon}</button>
-      <button class="ghost" id="logout">Sair</button>
+      <button class="ghost homeTheme" id="homeTheme" aria-label="${t("Tema")}">${THEMES[theme()].icon}</button>
+      ${langSwitch()}
+      <button class="ghost" id="logout">${t("Sair")}</button>
     </header>
     <div id="setupCard"></div>
     <section class="waits" id="waits"${me.waits?.length ? "" : " hidden"}></section>
     <form class="ask" id="ask">
-      <label for="askText">O que você quer resolver?</label>
-      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos."></textarea><button class="primary" id="askBtn">Achar a sala →</button></div>
+      <label for="askText">${t("O que você quer resolver?")}</label>
+      <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="${t("Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.")}"></textarea><button class="primary" id="askBtn">${t("Achar a sala →")}</button></div>
       <div class="askOut" id="askOut" aria-live="polite" hidden></div>
     </form>
-    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O pessoal e os Claudes vão te chamar assim.</span>
-      <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
+    ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${t("Como seus amigos te chamam?")}</b><span class="muted">${t("O pessoal e os Claudes vão te chamar assim.")}</span>
+      <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
     ${me.avatar ? "" : `<div class="picAsk"><span class="picBig" style="background:${color(me.email)}">${esc(name(me.email).slice(0, 2).toUpperCase())}</span>
-      <div><b>Coloque sua foto</b><span class="muted">Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).</span></div>
-      <button class="primary" data-pic>📷 Adicionar foto</button></div>`}
+      <div><b>${t("Coloque sua foto")}</b><span class="muted">${t("Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).")}</span></div>
+      <button class="primary" data-pic>📷 ${t("Adicionar foto")}</button></div>`}
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />
     <div class="hello">
-      <div class="helloText"><h1>${first ? `Oi, ${esc(first)}` : "Seus vibebooks"}</h1>
-        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, "amigo", "amigos")} · <a class="archLink" data-nav href="/archived">Arquivo</a></p></div>
-      <button class="primary" id="new">+ Novo vibebook</button>
+      <div class="helloText"><h1>${first ? t("Oi, {name}", { name: esc(first) }) : t("Seus vibebooks")}</h1>
+        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, t("amigo"), t("amigos"))} · <a class="archLink" data-nav href="/archived">${t("Arquivo")}</a></p></div>
+      <button class="primary" id="new">+ ${t("Novo vibebook")}</button>
     </div>
     <div class="grid">
       <main>
-        ${me.books.length ? "" : `<div class="empty">Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu Claude ao lado.</div>`}
+        ${me.books.length ? "" : `<div class="empty">${t("Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu Claude ao lado.")}</div>`}
         ${folders.map((f) => `
           <section class="folder">
             <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
             <div class="cards">${byFolder[f].map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
               <a class="card" data-nav href="/b/${b.id}">
-                <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="Arquivar" aria-label="Arquivar ${esc(b.title)}">🗑</button>
+                <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="${t("Arquivar")}" aria-label="${t("Arquivar {title}", { title: esc(b.title) })}">🗑</button>
                 <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
                 <div class="info">
                   <b>${esc(b.title)}</b>
-                  <div class="sum">${esc(b.summary || "Ainda sem resumo. O @vibe escreve um quando a conversa andar.")}</div>
+                  <div class="sum">${esc(b.summary || t("Ainda sem resumo. O @vibe escreve um quando a conversa andar."))}</div>
                   <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span>${ago(b.updated_at)}</span></div>
                 </div>
               </a>`; }).join("")}
@@ -1112,13 +1495,13 @@ async function home() {
       </main>
       <aside class="friends">
         <section class="agentBox" id="agentBox" aria-live="polite"></section>
-        <h2>Amigos <small>${me.friends.length || ""}</small></h2>
+        <h2>${t("Amigos")} <small>${me.friends.length || ""}</small></h2>
         ${me.friends.length ? me.friends.map((f) => `
           <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(f.name || name(f.email))}
-            <small>${f.shared ? `${plural(f.shared, "vibebook junto", "vibebooks juntos")}` : f.joined ? "na plataforma" : "convidado"}</small></div>
-            <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos" title="Remover dos amigos">×</button></div>`).join("")
-          : `<p class="muted" style="font-size:14px">Quem você convida para um vibebook vira amigo aqui.</p>`}
-        <form class="invite" id="addFriend"><input type="email" required placeholder="email do amigo" aria-label="Email do amigo" /><button>Convidar</button></form>
+            <small>${f.shared ? `${plural(f.shared, t("vibebook junto"), t("vibebooks juntos"))}` : f.joined ? t("na plataforma") : t("convidado")}</small></div>
+            <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}" title="${t("Remover dos amigos")}">×</button></div>`).join("")
+          : `<p class="muted" style="font-size:14px">${t("Quem você convida para um vibebook vira amigo aqui.")}</p>`}
+        <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
       </aside>
     </div>
   </div>`;
@@ -1140,37 +1523,37 @@ function phoneHome(me) {
     <header class="ptop">
       <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait">${myWaits.length}</b>` : ""}</button>
       <a class="plogo" href="/"><span class="tile logo">${SW_LOGO}</span>vibebook</a>
-      <button class="me" id="myName" aria-label="Seu perfil">${avatar(me.email)}</button>
+      <button class="me" id="myName" aria-label="${t("Seu perfil")}">${avatar(me.email)}</button>
     </header>
     <main class="pmain">
       <div id="setupCard"></div>
-      ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O pessoal e os Claudes vão te chamar assim.</span>
-        <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
+      ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${t("Como seus amigos te chamam?")}</b><span class="muted">${t("O pessoal e os Claudes vão te chamar assim.")}</span>
+        <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
       <div class="pgrid">
         ${rooms.map((b) => `<a class="proom" data-nav href="/b/${b.id}"><span class="tw">${tile(b, "xl")}${dot(b)}${waitN(b)}</span><span class="nm">${esc(b.title)}</span></a>`).join("")}
-        <button class="proom" id="new" type="button"><span class="tile xl pnew">${SW_PLUS}</span><span class="nm">Novo</span></button>
+        <button class="proom" id="new" type="button"><span class="tile xl pnew">${SW_PLUS}</span><span class="nm">${t("Novo")}</span></button>
       </div>
     </main>
     <form class="pask" id="ask">
-      <textarea id="askText" maxlength="2000" placeholder="O que você quer resolver? Eu acho a sala e o épico certos."></textarea>
-      <button class="primary" id="askBtn">Achar a sala →</button>
+      <textarea id="askText" maxlength="2000" placeholder="${t("O que você quer resolver? Eu acho a sala e o épico certos.")}"></textarea>
+      <button class="primary" id="askBtn">${t("Achar a sala →")}</button>
       <div class="askOut" id="askOut" aria-live="polite" hidden></div>
     </form>
   </div>
   <dialog class="pdrawer" id="pDrawer">
-    <div class="pdHead">${avatar(me.email)}<div><b>${esc(me.name || "Seu nome")}</b><small>${esc(me.email)}</small></div></div>
+    <div class="pdHead">${avatar(me.email)}<div><b>${esc(me.name || t("Seu nome"))}</b><small>${esc(me.email)}</small></div></div>
     <section class="waits" id="waits"${myWaits.length ? "" : " hidden"}></section>
     <nav class="pdNav">
-      <a data-nav href="/archived">Arquivo</a>
-      <button class="ghost" id="homeTheme">${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span></button>
-      <div class="pdBell"><button class="ghost bell" data-bell></button><span>Notificações</span></div>
+      <a data-nav href="/archived">${t("Arquivo")}</a>
+      <div class="pdRow"><button class="ghost" id="homeTheme">${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span></button>${langSwitch()}</div>
+      <div class="pdBell"><button class="ghost bell" data-bell></button><span>${t("Notificações")}</span></div>
     </nav>
     <section class="agentBox" id="agentBox" aria-live="polite"></section>
-    <h2>Amigos <small>${me.friends.length || ""}</small></h2>
-    ${me.friends.map((f) => `<div class="friend">${avatar(f.email)}<div class="fn">${esc(f.name || name(f.email))}<small>${f.shared ? plural(f.shared, "vibebook junto", "vibebooks juntos") : f.joined ? "na plataforma" : "convidado"}</small></div>
-      <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos">×</button></div>`).join("")}
-    <form class="invite" id="addFriend"><input type="email" required placeholder="email do amigo" aria-label="Email do amigo" /><button>Convidar</button></form>
-    <button class="ghost pdOut" id="logout">Sair</button>
+    <h2>${t("Amigos")} <small>${me.friends.length || ""}</small></h2>
+    ${me.friends.map((f) => `<div class="friend">${avatar(f.email)}<div class="fn">${esc(f.name || name(f.email))}<small>${f.shared ? plural(f.shared, t("vibebook junto"), t("vibebooks juntos")) : f.joined ? t("na plataforma") : t("convidado")}</small></div>
+      <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}">×</button></div>`).join("")}
+    <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
+    <button class="ghost pdOut" id="logout">${t("Sair")}</button>
   </dialog>
   <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />`;
   const d = document.getElementById("pDrawer");
@@ -1182,12 +1565,12 @@ function phoneHome(me) {
   document.getElementById("myName").onclick = () => d.showModal();
   d.querySelector(".pdHead .avatar").onclick = pickPic;
   d.querySelector(".pdBell span").onclick = () => d.querySelector(".pdBell .bell").click();
-  d.querySelector(".pdHead b").onclick = async () => { const n = prompt("Seu nome:", me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
+  d.querySelector(".pdHead b").onclick = async () => { const n = prompt(t("Seu nome:"), me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
 }
 
 function wireHome(me) {
   const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
-  document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt("Seu nome:", me.name || ""));
+  document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt(t("Seu nome:"), me.name || ""));
   document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
@@ -1197,7 +1580,7 @@ function wireHome(me) {
     history.pushState(null, "", `/b/${id}`); route();
   };
   document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
-    if (!confirm(`Remover ${b.dataset.unfriend} dos seus amigos? Os vibebooks em comum continuam.`)) return;
+    if (!confirm(t("Remover {email} dos seus amigos? Os vibebooks em comum continuam.", { email: b.dataset.unfriend }))) return;
     await fetch(`/api/friends/${encodeURIComponent(b.dataset.unfriend)}`, { method: "DELETE" });
     home();
   });
@@ -1226,7 +1609,7 @@ function wireAsk() {
   // Destination first (picked, alternative or a new room); it's posted as typed, for the people and Claudes there.
   const go = async (dest) => {
     const text = ta.value.trim();
-    out.innerHTML = `<div class="why">Enviando…</div>`;
+    out.innerHTML = `<div class="why">${t("Enviando…")}</div>`;
     try {
       const bookId = dest.book_id ?? (await api("/api/books", { title: dest.new_title })).id;
       await api(`/api/books/${bookId}/post`, { text, thread: dest.epic_id || "main" });
@@ -1237,23 +1620,23 @@ function wireAsk() {
   form.onsubmit = async (e) => {
     e.preventDefault();
     const text = ta.value.trim(); if (!text) return;
-    btn.disabled = true; out.hidden = false; out.innerHTML = `<div class="why">Procurando a sala certa…</div>`;
+    btn.disabled = true; out.hidden = false; out.innerHTML = `<div class="why">${t("Procurando a sala certa…")}</div>`;
     let r;
     try { r = await api("/api/route", { text }); } catch (err) { out.innerHTML = `<div class="why">${esc(err.message)}</div>`; btn.disabled = false; return; }
     btn.disabled = false;
     const short = (t) => (t.length > 40 ? `${t.slice(0, 38)}…` : t);
     const dests = [...[r.pick, ...r.alternatives].filter(Boolean), { book_id: null, epic_id: null, new_title: r.new_room_title }];
     let sel = 0;
-    const label = (d) => (d.book_id ? where(d) : `sala nova <b>“${esc(short(d.new_title))}”</b>`);
+    const label = (d) => (d.book_id ? where(d) : t("sala nova <b>“{title}”</b>", { title: esc(short(d.new_title)) }));
     const render = () => {
       const d = dests[sel];
-      out.innerHTML = `<div class="where">${d.book_id ? `Mandar em ${label(d)}?` : r.pick ? `Criar ${label(d)}?` : `Nenhuma sala parece a certa. Criar ${label(d)}?`}</div>
+      out.innerHTML = `<div class="where">${d.book_id ? t("Mandar em {where}?", { where: label(d) }) : r.pick ? t("Criar {where}?", { where: label(d) }) : t("Nenhuma sala parece a certa. Criar {where}?", { where: label(d) })}</div>
         ${sel === 0 && r.pick && r.reason ? `<div class="why">${esc(r.reason)}</div>` : ""}
         <div class="acts">
-          <button type="button" class="primary" data-send="chat">Enviar</button>
-          <button type="button" class="ghost" data-cancel>Cancelar</button>
+          <button type="button" class="primary" data-send="chat">${t("Enviar")}</button>
+          <button type="button" class="ghost" data-cancel>${t("Cancelar")}</button>
         </div>
-        ${dests.length > 1 ? `<div class="acts alts"><span class="why">Outro lugar:</span>${dests.map((x, i) => (i === sel ? "" : `<button type="button" class="ghost" data-sel="${i}">${label(x)}</button>`)).join("")}</div>` : ""}`;
+        ${dests.length > 1 ? `<div class="acts alts"><span class="why">${t("Outro lugar:")}</span>${dests.map((x, i) => (i === sel ? "" : `<button type="button" class="ghost" data-sel="${i}">${label(x)}</button>`)).join("")}</div>` : ""}`;
       out.querySelectorAll("[data-send]").forEach((b) => b.onclick = () => go(dests[sel]));
       out.querySelectorAll("[data-sel]").forEach((b) => b.onclick = () => { sel = Number(b.dataset.sel); render(); out.querySelector("[data-send]")?.focus(); });
       out.querySelector("[data-cancel]").onclick = () => { out.hidden = true; ta.focus(); };
@@ -1265,9 +1648,9 @@ function wireAsk() {
 
 function confirmArchive(id, title) {
   const d = document.createElement("dialog");
-  d.innerHTML = `<h3>Arquivar “${esc(title)}”?</h3>
-    <p class="muted" style="margin:0 0 6px">Sai da sua lista e do inbox do seu agent e vai pro <b>Arquivo</b>. Nada é apagado: quem mais está na sala continua vendo, e você restaura quando quiser.</p>
-    <div class="acts"><button type="button" class="ghost" value="no">Cancelar</button><button type="button" class="primary" value="yes">Arquivar</button></div>`;
+  d.innerHTML = `<h3>${t("Arquivar “{title}”?", { title: esc(title) })}</h3>
+    <p class="muted" style="margin:0 0 6px">${t("Sai da sua lista e do inbox do seu agent e vai pro <b>Arquivo</b>. Nada é apagado: quem mais está na sala continua vendo, e você restaura quando quiser.")}</p>
+    <div class="acts"><button type="button" class="ghost" value="no">${t("Cancelar")}</button><button type="button" class="primary" value="yes">${t("Arquivar")}</button></div>`;
   document.body.appendChild(d);
   d.addEventListener("close", () => d.remove());
   d.querySelector('[value="no"]').onclick = () => d.close();
@@ -1277,20 +1660,20 @@ function confirmArchive(id, title) {
 }
 
 async function archivedPage() {
-  document.title = "Arquivo · vibebook";
+  document.title = `${t("Arquivo")} · vibebook`;
   setFavicon(null);
   const { books } = await api("/api/archived");
   $app.innerHTML = `
   <div class="home">
     <header class="top"><div class="brand"><a href="/app" data-nav>vibebook</a></div></header>
-    <div class="hello"><div class="helloText"><h1>Arquivo</h1><p>Salas que você arquivou. Elas continuam existindo pra quem está nelas.</p></div>
-      <a class="ghost" data-nav href="/app" style="text-decoration:none">← Voltar</a></div>
+    <div class="hello"><div class="helloText"><h1>${t("Arquivo")}</h1><p>${t("Salas que você arquivou. Elas continuam existindo pra quem está nelas.")}</p></div>
+      <a class="ghost" data-nav href="/app" style="text-decoration:none">← ${t("Voltar")}</a></div>
     <main>${books.length ? `<div class="cards">${books.map((b) => `
       <div class="card" style="cursor:default">
         <div class="cover" style="background-color:${coverColor(b.title)};filter:grayscale(.6)"><span>${esc(initials(b.title))}</span></div>
         <div class="info"><b>${esc(b.title)}</b><div class="sum">${esc(b.summary || "")}</div>
-          <div class="meta"><span>arquivada ${ago(b.archived_at)}</span><span><a data-nav href="/b/${b.id}">abrir</a> · <button type="button" class="link" data-restore="${b.id}">Restaurar</button></span></div></div>
-      </div>`).join("")}</div>` : `<div class="empty">Nada arquivado.</div>`}</main>
+          <div class="meta"><span>${t("arquivada {ago}", { ago: ago(b.archived_at) })}</span><span><a data-nav href="/b/${b.id}">${t("abrir")}</a> · <button type="button" class="link" data-restore="${b.id}">${t("Restaurar")}</button></span></div></div>
+      </div>`).join("")}</div>` : `<div class="empty">${t("Nada arquivado.")}</div>`}</main>
   </div>`;
   document.querySelectorAll("[data-restore]").forEach((b) => b.onclick = async () => { await api(`/api/books/${b.dataset.restore}/archive`, { archived: false }); archivedPage(); });
 }
@@ -1307,12 +1690,12 @@ async function renderAgents(again) {
   if (!r || !document.body.contains(box)) return;
   const url = `${location.origin}/mcp`;
   if (r.agents.length) {
-    box.innerHTML = `<h2>✦ Seu agent</h2>
-      ${r.agents.map((a) => `<div class="conn"><span class="ok">✓</span><b>${esc(a.client)}<small>conectado ${ago(a.connected_at)}${r.last_used ? ` · último uso ${ago(r.last_used)}` : ""}</small></b>
-        <button class="ghost" data-revoke="${esc(a.id)}">Desconectar</button></div>`).join("")}
-      <p style="margin-top:8px">Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i></p>`;
+    box.innerHTML = `<h2>✦ ${t("Seu agent")}</h2>
+      ${r.agents.map((a) => `<div class="conn"><span class="ok">✓</span><b>${esc(a.client)}<small>${t("conectado {ago}", { ago: ago(a.connected_at) })}${r.last_used ? ` · ${t("último uso {ago}", { ago: ago(r.last_used) })}` : ""}</small></b>
+        <button class="ghost" data-revoke="${esc(a.id)}">${t("Desconectar")}</button></div>`).join("")}
+      <p style="margin-top:8px">${t("Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i>")}</p>`;
     box.querySelectorAll("[data-revoke]").forEach((b) => b.onclick = async () => {
-      if (!confirm("Desconectar esse agent? Ele perde o acesso a todas as salas na hora.")) return;
+      if (!confirm(t("Desconectar esse agent? Ele perde o acesso a todas as salas na hora."))) return;
       await fetch(`/api/agents/${encodeURIComponent(b.dataset.revoke)}`, { method: "DELETE" });
       renderAgents();
     });
@@ -1331,12 +1714,12 @@ function renderWaits() {
   if (!myWaits.length) return;
   const who = (w) => (w.author_name || w.author.split("@")[0]).split(" ")[0];
   const href = (w) => `/b/${w.book_id}${w.thread === "main" ? "" : `?t=${encodeURIComponent(w.thread)}`}`;
-  el.innerHTML = `<h2>Esperando você <small>${myWaits.length}</small></h2>
+  el.innerHTML = `<h2>${t("Esperando você")} <small>${myWaits.length}</small></h2>
     <ul>${myWaits.map((w, i) => `<li>
       <a data-nav href="${href(w)}" data-wait-open="${i}">${tile(myBooks.find((b) => b.id === w.book_id) || { id: w.book_id, title: w.room }, "sm")}
         <span class="wt"><small>${esc(w.room)}${w.topic ? ` › ${esc(w.topic)}` : ""} · ${ago(w.ts)}</small>
-        ${w.ref.startsWith("t") ? `<b>Tarefa sua esperando OK:</b> ${esc(w.text)}` : `<b>${esc(who(w))}:</b> ${esc(w.text.length > 160 ? `${w.text.slice(0, 158)}…` : w.text)}`}</span></a>
-      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="Já resolvi (respondi em outro lugar, ou não é comigo)">✓</button>` : ""}
+        ${w.ref.startsWith("t") ? `<b>${t("Tarefa sua esperando OK:")}</b> ${esc(w.text)}` : `<b>${esc(who(w))}:</b> ${esc(w.text.length > 160 ? `${w.text.slice(0, 158)}…` : w.text)}`}</span></a>
+      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">✓</button>` : ""}
     </li>`).join("")}</ul>`;
   el.querySelectorAll("[data-wait-done]").forEach((b) => b.onclick = () => {
     const w = myWaits[Number(b.dataset.waitDone)];
@@ -1357,7 +1740,7 @@ async function connectCard(el, room) {
   if (!r || !document.body.contains(el)) return;
   if (r.agents.length) {
     if (el.dataset.waiting) {
-      el.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>Seu Claude conectou.</b><span>${room ? "Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo." : "Ele já enxerga as suas salas."}</span></div></div>`;
+      el.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>${t("Seu Claude conectou.")}</b><span>${room ? t("Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo.") : t("Ele já enxerga as suas salas.")}</span></div></div>`;
       delete el.dataset.waiting;
       setTimeout(() => { if (document.body.contains(el)) { el.innerHTML = ""; el.hidden = true; } }, 6000);
       if (!room) renderAgents();
@@ -1370,18 +1753,18 @@ async function connectCard(el, room) {
     el.hidden = false;
     const mcp = `${location.origin}/mcp`;
     el.innerHTML = `<div class="setup">
-      <div class="setupHead"><span class="setupIcon">✻</span><div><b>${room ? "Traga seu Claude pra esta sala" : "Conecte seu Claude"}</b>
-        <span>O vibebook funciona com o Claude de cada pessoa: ele lê a sala, conversa com os Claudes dos outros e te pergunta antes de agir. Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:</span></div></div>
-      <div class="setupCmd"><code>${esc(cmd)}</code><button class="primary" data-copycmd>Copiar</button></div>
-      <div class="setupFoot"><span class="wait">esperando seu Claude conectar…</span>
-        <details><summary>Claude.ai ou outro cliente</summary>
-          <p><b>Claude.ai:</b> Configurações → Conectores → Adicionar conector personalizado, e cole <code data-copy>${esc(mcp)}</code></p>
-          <p><b>Claude Code só com o conector:</b> <code data-copy>claude mcp add --transport http vibebook ${esc(mcp)}</code></p>
-          <p><a href="/connect" target="_blank" rel="noopener">Passo a passo completo →</a></p>
+      <div class="setupHead"><span class="setupIcon">✻</span><div><b>${room ? t("Traga seu Claude pra esta sala") : t("Conecte seu Claude")}</b>
+        <span>${t("O vibebook funciona com o Claude de cada pessoa: ele lê a sala, conversa com os Claudes dos outros e te pergunta antes de agir. Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:")}</span></div></div>
+      <div class="setupCmd"><code>${esc(cmd)}</code><button class="primary" data-copycmd>${t("Copiar")}</button></div>
+      <div class="setupFoot"><span class="wait">${t("esperando seu Claude conectar…")}</span>
+        <details><summary>${t("Claude.ai ou outro cliente")}</summary>
+          <p><b>Claude.ai:</b> ${t("Configurações → Conectores → Adicionar conector personalizado, e cole")} <code data-copy>${esc(mcp)}</code></p>
+          <p><b>${t("Claude Code só com o conector:")}</b> <code data-copy>claude mcp add --transport http vibebook ${esc(mcp)}</code></p>
+          <p><a href="/connect" target="_blank" rel="noopener">${t("Passo a passo completo →")}</a></p>
         </details></div>
     </div>`;
     const btn = el.querySelector("[data-copycmd]");
-    btn.onclick = async () => { try { await navigator.clipboard.writeText(cmd); btn.textContent = "✓ Copiado"; } catch { btn.textContent = "Selecione e copie"; } setTimeout(() => (btn.textContent = "Copiar"), 2500); };
+    btn.onclick = async () => { try { await navigator.clipboard.writeText(cmd); btn.textContent = `✓ ${t("Copiado")}`; } catch { btn.textContent = t("Selecione e copie"); } setTimeout(() => (btn.textContent = t("Copiar")), 2500); };
     el.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.classList.add("copied"); });
   }
   // ponytail: polls every 4s for up to 10 min while the card is on screen; a push from the DO would be the upgrade.
@@ -1407,11 +1790,11 @@ function openBook(id) {
   attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
-  $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="Carregando"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
+  $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
-    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>Você foi removido deste vibebook.</p><a data-nav href="/app">← seus vibebooks</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>Sem acesso a este vibebook. Peça para alguém de dentro te convidar.</p><a data-nav href="/app">← voltar</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">← ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
   };
   connect();
 }
@@ -1435,7 +1818,7 @@ function onEvent(ev, id) {
       const el = document.getElementById(`m${ev.id}`); if (el) { const t = el.querySelector(".txt"); t.hidden = false; t.innerHTML = mentions(md(ev.text)); }
       scrollDown(); return;
     }
-    case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
+    case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : t("pensando ({mode})", { mode: modeLabel[ev.mode] })}…</span>`; return; }
     case "epics": S.epics = ev.epics;
       if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
@@ -1476,13 +1859,13 @@ function onEvent(ev, id) {
     case "blocked": {
       const input = document.getElementById("input");
       if (input && !input.value) input.value = ev.text;
-      alert(`Não enviei: parece ${ev.reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.`);
+      alert(t("Não enviei: parece {reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.", { reason: ev.reason }));
       return;
     }
   }
 }
 
-const modeLabel = { route: "escolhendo o modelo", fast: "rápido", smart: "com calma" };
+const modeLabel = { route: t("escolhendo o modelo"), fast: t("rápido"), smart: t("com calma") };
 
 // 🔔 Browser notifications + a chime when a message arrives while this tab is in the background
 // (or in another thread). Needs the app open in a tab; push with the tab closed would need Web Push.
@@ -1496,7 +1879,7 @@ const notifyMuted = () => { try { return localStorage.getItem("vb.mute") === "1"
 function renderBells() {
   const p = notifyPerm(), muted = notifyMuted();
   const state = p === "granted" ? (muted ? "muted" : "on") : p;
-  const title = { on: "Notificações ligadas: clique pra silenciar", muted: "Notificações silenciadas: clique pra ligar", default: "Ativar notificações de mensagem", denied: "Notificações bloqueadas no navegador", unsupported: "Este navegador não tem notificações" }[state];
+  const title = { on: t("Notificações ligadas: clique pra silenciar"), muted: t("Notificações silenciadas: clique pra ligar"), default: t("Ativar notificações de mensagem"), denied: t("Notificações bloqueadas no navegador"), unsupported: t("Este navegador não tem notificações") }[state];
   document.querySelectorAll("[data-bell]").forEach((b) => {
     b.className = `ghost bell ${state}`;
     b.innerHTML = state === "on" ? BELL.on : BELL.off;
@@ -1504,7 +1887,7 @@ function renderBells() {
     b.onclick = async () => {
       unlockChime();
       if (state === "default") { await Notification.requestPermission(); if (notifyPerm() === "granted") { try { localStorage.removeItem("vb.mute"); } catch {} chime(); } }
-      else if (state === "denied") alert("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.");
+      else if (state === "denied") alert(t("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página."));
       else if (state === "on" || state === "muted") { try { localStorage.setItem("vb.mute", state === "on" ? "1" : ""); } catch {} if (state === "muted") chime(); }
       renderBells();
     };
@@ -1530,8 +1913,8 @@ function notifyMsg(m) {
   if (!away && !mentioned) return;
   chime();
   if (notifyPerm() === "granted" && document.hidden) {
-    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? `${m.via || "agent"} de ${name(m.author)}` : name(m.author);
-    const n = new Notification(`${mentioned ? "Te mencionaram · " : ""}${who} · ${S.book?.title ?? "vibebook"}`, { body: (m.text || (m.author === "ai" ? "respondendo…" : "📎 anexo")).slice(0, 180), tag: `vb-${S.id}`, icon: "/apple-touch-icon.png" });
+    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: m.via || "agent", who: name(m.author) }) : name(m.author);
+    const n = new Notification(`${mentioned ? `${t("Te mencionaram")} · ` : ""}${who} · ${S.book?.title ?? "vibebook"}`, { body: (m.text || (m.author === "ai" ? t("respondendo…") : `📎 ${t("anexo")}`)).slice(0, 180), tag: `vb-${S.id}`, icon: "/apple-touch-icon.png" });
     n.onclick = () => { window.focus(); n.close(); };
   }
 }
@@ -1540,10 +1923,10 @@ function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
   <div class="book ${railMode ? "rail" : ""}" data-tab="chat">
-    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="Seus vibebooks" title="Seus vibebooks">←</a><button data-tab="side">☰ Épicos</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="Trocar de sala" title="Trocar de sala">${SW_SEARCH}</button></nav>
+    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">←</a><button data-tab="side">☰ ${t("Épicos")}</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="${t("Trocar de sala")}" title="${t("Trocar de sala")}">${SW_SEARCH}</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="Ir pro seu Claude desta sala no herdr" aria-label="Ir pro seu Claude no herdr" hidden>↗</button><button class="ghost" id="toggleBoard" title="Quadro de tarefas (kanban)" aria-pressed="false">▦ <span class="lbl">Quadro</span></button><button class="ghost" id="toggleDoc" title="mostrar/ocultar documento">📄 <span class="lbl">Doc</span></button></div>
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>↗</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">▦ <span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">📄 <span class="lbl">Doc</span></button></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -1551,25 +1934,25 @@ function renderBook() {
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
         <div class="replyBar" id="replyBar" hidden></div>
-        <div class="mentionPop" id="mentionPop" role="listbox" aria-label="Mencionar" hidden></div>
+        <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon" id="plusBtn" title="Anexar, mencionar, votação" aria-label="Mais opções" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
-            <button type="button" role="menuitem" id="attach"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> Anexar arquivo <small>ou Cmd+V</small></button>
-            <button type="button" role="menuitem" id="mentionBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg> Mencionar alguém <small>@</small></button>
-            <button type="button" role="menuitem" id="pollBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg> Criar votação</button>
+            <button type="button" role="menuitem" id="attach"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> ${t("Anexar arquivo")} <small>${t("ou Cmd+V")}</small></button>
+            <button type="button" role="menuitem" id="mentionBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg> ${t("Mencionar alguém")} <small>@</small></button>
+            <button type="button" role="menuitem" id="pollBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg> ${t("Criar votação")}</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
-          <textarea id="input" rows="1" placeholder="Mensagem…"></textarea><button class="primary" id="sendBtn">Enviar</button>
+          <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
         </div>
       </form>
     </main>
     <section class="doc">
-      <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">Decisões<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
+      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
-      <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
+      <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
       <div class="cm" id="cm"></div>
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
@@ -1577,13 +1960,13 @@ function renderBook() {
     </section>
   </div>
   <dialog id="pollDlg">
-    <h3>Nova votação</h3>
+    <h3>${t("Nova votação")}</h3>
     <form id="pollForm">
-      <input name="q" required maxlength="300" placeholder="Pergunta (ex.: Qual cruzeiro?)" />
+      <input name="q" required maxlength="300" placeholder="${t("Pergunta (ex.: Qual cruzeiro?)")}" />
       <div id="pollOpts" style="display:grid;gap:8px"></div>
-      <button type="button" class="link" id="addOpt" style="justify-self:start">+ opção</button>
-      <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="multi" /> cada pessoa pode escolher várias</label>
-      <div class="acts"><button type="button" id="pollCancel">Cancelar</button><button class="primary">Criar votação</button></div>
+      <button type="button" class="link" id="addOpt" style="justify-self:start">+ ${t("opção")}</button>
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="multi" /> ${t("cada pessoa pode escolher várias")}</label>
+      <div class="acts"><button type="button" id="pollCancel">${t("Cancelar")}</button><button class="primary">${t("Criar votação")}</button></div>
     </form>
   </dialog>`;
   const book = $app.querySelector(".book");
@@ -1667,22 +2050,22 @@ function renderBook() {
   const renderTray = () => {
     tray.innerHTML = attached.map((p, i) => `<div class="pend ${!p.meta && !p.error ? "up" : ""} ${p.error ? "err" : ""}" title="${esc(p.error || p.file.name)}">
       ${p.url ? `<img src="${p.url}" alt="">` : `📄<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
-      <button type="button" class="rm" data-rm="${i}" aria-label="Remover anexo">×</button></div>`).join("");
+      <button type="button" class="rm" data-rm="${i}" aria-label="${t("Remover anexo")}">×</button></div>`).join("");
     tray.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { const [p] = attached.splice(Number(b.dataset.rm), 1); if (p?.url) URL.revokeObjectURL(p.url); renderTray(); });
     const uploading = attached.some((p) => !p.meta && !p.error);
-    sendBtn.disabled = uploading; sendBtn.textContent = uploading ? "Enviando…" : "Enviar";
+    sendBtn.disabled = uploading; sendBtn.textContent = uploading ? t("Enviando…") : t("Enviar");
   };
   const addFiles = (list) => {
     for (let file of list) {
       if (!file.type && /\.html?$/i.test(file.name)) file = new File([file], file.name, { type: "text/html" });
-      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: só imagens (png, jpg, webp, gif), PDF e HTML.`); continue; }
-      if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: maior que 10MB.`); continue; }
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF e HTML.")}`); continue; }
+      if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: ${t("maior que 10MB.")}`); continue; }
       if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
       const p = { file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null };
       attached.push(p);
       fetch(`/api/books/${S.id}/files`, { method: "POST", headers: { "content-type": file.type, "x-filename": encodeURIComponent(file.name) }, body: file })
-        .then(async (r) => { const j = await r.json().catch(() => ({})); if (r.ok) p.meta = j; else p.error = j.error || "falhou"; })
-        .catch(() => { p.error = "sem conexão"; })
+        .then(async (r) => { const j = await r.json().catch(() => ({})); if (r.ok) p.meta = j; else p.error = j.error || t("falhou"); })
+        .catch(() => { p.error = t("sem conexão"); })
         .finally(renderTray);
     }
     renderTray();
@@ -1732,7 +2115,7 @@ function renderBook() {
   // Polls: create via dialog, vote/close via delegation on the message list.
   const dlg = document.getElementById("pollDlg");
   const opts = document.getElementById("pollOpts");
-  const addOpt = (v = "") => { opts.insertAdjacentHTML("beforeend", `<input name="opt" maxlength="200" placeholder="Opção ${opts.children.length + 1}" value="${esc(v)}" />`); };
+  const addOpt = (v = "") => { opts.insertAdjacentHTML("beforeend", `<input name="opt" maxlength="200" placeholder="${t("Opção {n}", { n: opts.children.length + 1 })}" value="${esc(v)}" />`); };
   document.getElementById("pollBtn").onclick = () => { document.getElementById("pollForm").reset(); opts.innerHTML = ""; addOpt(); addOpt(); addOpt(); dlg.showModal(); };
   document.getElementById("addOpt").onclick = () => { if (opts.children.length < 10) addOpt(); opts.lastElementChild.focus(); };
   document.getElementById("pollCancel").onclick = () => dlg.close();
@@ -1740,7 +2123,7 @@ function renderBook() {
     e.preventDefault();
     const f = e.target;
     const options = [...f.querySelectorAll('[name="opt"]')].map((i) => i.value.trim()).filter(Boolean);
-    if (options.length < 2) return alert("Coloque pelo menos 2 opções.");
+    if (options.length < 2) return alert(t("Coloque pelo menos 2 opções."));
     send({ t: "poll.create", thread, question: f.q.value, options, multi: f.multi.checked });
     dlg.close();
   };
@@ -1748,7 +2131,7 @@ function renderBook() {
     const v = e.target.closest("[data-vote]");
     if (v) return send({ t: "vote", id: v.closest("[data-poll]").dataset.poll, opt: Number(v.dataset.vote) });
     const c = e.target.closest("[data-close]");
-    if (c && confirm("Encerrar a votação?")) send({ t: "poll.close", id: c.dataset.close });
+    if (c && confirm(t("Encerrar a votação?"))) send({ t: "poll.close", id: c.dataset.close });
   });
 
   // Right panel: Documento / Arquivos
@@ -1788,10 +2171,10 @@ function welcome() {
   try { if (!S.book?.owner || S.me === S.book.owner || localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { return; }
   const owner = name(S.book.owner);
   const steps = [
-    ["👋", `Bem-vindo a <b>${esc(S.book.title || "esta sala")}</b>`, `${esc(owner)} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.`],
-    ["✻", "Cada um traz o seu Claude", "Você conecta o seu Claude, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto."],
-    ["📎", "O contexto é de todo mundo", "Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra."],
-    ["→", "Conecte o seu Claude", ""],
+    ["👋", t("Bem-vindo a <b>{room}</b>", { room: esc(S.book.title || t("esta sala")) }), t("{owner} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.", { owner: esc(owner) })],
+    ["✻", t("Cada um traz o seu Claude"), t("Você conecta o seu Claude, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto.")],
+    ["📎", t("O contexto é de todo mundo"), t("Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra.")],
+    ["→", t("Conecte o seu Claude"), ""],
   ];
   const d = document.createElement("dialog");
   d.className = "welcome";
@@ -1799,13 +2182,13 @@ function welcome() {
   let i = 0;
   const done = () => { d.close(); d.remove(); connectCard(document.getElementById("agentNudge"), S.id); };
   const show = () => {
-    const [ico, t, p] = steps[i], last = i === steps.length - 1;
-    d.innerHTML = `<div class="wIco">${ico}</div><h3>${t}</h3>${p ? `<p>${p}</p>` : `<p>Cole isto no <b>Claude Code</b>, dentro da pasta do projeto. Ele instala o vibebook, entra nesta sala e fica ouvindo.</p><div id="wConnect"></div>`}
+    const [ico, ttl, p] = steps[i], last = i === steps.length - 1;
+    d.innerHTML = `<div class="wIco">${ico}</div><h3>${ttl}</h3>${p ? `<p>${p}</p>` : `<p>${t("Cole isto no <b>Claude Code</b>, dentro da pasta do projeto. Ele instala o vibebook, entra nesta sala e fica ouvindo.")}</p><div id="wConnect"></div>`}
       <div class="wFoot"><span class="wDots">${steps.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("")}</span>
-        ${i ? `<button type="button" class="ghost" data-w="-1">Voltar</button>` : `<button type="button" class="ghost" data-w="skip">Pular</button>`}
-        <button type="button" class="primary" data-w="1">${last ? "Entrar na sala" : "Próximo"}</button></div>`;
+        ${i ? `<button type="button" class="ghost" data-w="-1">${t("Voltar")}</button>` : `<button type="button" class="ghost" data-w="skip">${t("Pular")}</button>`}
+        <button type="button" class="primary" data-w="1">${last ? t("Entrar na sala") : t("Próximo")}</button></div>`;
     d.querySelectorAll("[data-w]").forEach((b) => b.onclick = () => { const w = b.dataset.w; if (w === "skip" || (w === "1" && last)) return done(); i += Number(w); show(); });
-    if (last) connectCard(d.querySelector("#wConnect"), S.id).then(() => { const c = d.querySelector("#wConnect"); if (c && c.hidden) { c.hidden = false; c.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>Seu Claude já está conectado.</b><span>Ligue ele nesta sala com ✻ Ligar Claude, no topo.</span></div></div>`; } });
+    if (last) connectCard(d.querySelector("#wConnect"), S.id).then(() => { const c = d.querySelector("#wConnect"); if (c && c.hidden) { c.hidden = false; c.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>${t("Seu Claude já está conectado.")}</b><span>${t("Ligue ele nesta sala com ✻ Ligar Claude, no topo.")}</span></div></div>`; } });
     d.querySelector(".wFoot .primary").focus();
   };
   d.addEventListener("cancel", (e) => { e.preventDefault(); done(); });
@@ -1858,7 +2241,7 @@ const roomMark = (cls) => {
 async function squarePng(file, size) {
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("Não consegui ler essa imagem.")); i.src = url; });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(t("Não consegui ler essa imagem."))); i.src = url; });
     const c = document.createElement("canvas"); c.width = c.height = size;
     const k = Math.min(size / img.naturalWidth, size / img.naturalHeight), w = img.naturalWidth * k, h = img.naturalHeight * k;
     c.getContext("2d").drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
@@ -1896,17 +2279,17 @@ function toggleRail() {
 
 function renderRail(el) {
   el.innerHTML = `
-    <button class="iconBtn" id="railToggle" title="Abrir menu" aria-label="Abrir menu" aria-expanded="false">${SIDEBAR_ICON}</button>
-    <a data-nav href="/app" class="iconBtn" title="Seus vibebooks" aria-label="Seus vibebooks" style="text-decoration:none;font-size:18px">←</a>
+    <button class="iconBtn" id="railToggle" title="${t("Abrir menu")}" aria-label="${t("Abrir menu")}" aria-expanded="false">${SIDEBAR_ICON}</button>
+    <a data-nav href="/app" class="iconBtn" title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}" style="text-decoration:none;font-size:18px">←</a>
     <div class="railSep"></div>
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
-      <button class="rb add" id="railAdd" title="Novo épico" aria-label="Novo épico">+</button>
+      <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">+</button>
     </div>
-    <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${S.requests.length} pedindo pra entrar" aria-label="${S.requests.length} pedindo pra entrar">+${S.requests.length}</button>` : ""}${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
+    <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${t("{n} pedindo pra entrar", { n: S.requests.length })}" aria-label="${t("{n} pedindo pra entrar", { n: S.requests.length })}">+${S.requests.length}</button>` : ""}${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
   el.querySelector("#railAsks")?.addEventListener("click", toggleRail);
   el.querySelector("#railAdd").onclick = () => { toggleRail(); document.querySelector("#newEpic input")?.focus(); };
@@ -1922,11 +2305,11 @@ let skipFrom = null; // index of a suggestion just discarded: show the next one
 function renderPre(el) {
   const s = preOf(); if (!s) { thread = "main"; return renderChat(); }
   el.innerHTML = `<div class="preCard">
-    <p class="kicker">✦ O @vibe sugere um épico</p>
+    <p class="kicker">✦ ${t("O @vibe sugere um épico")}</p>
     <h3>${esc(s.title)}</h3>
-    <p class="${s.why ? "" : "muted"}">${esc(s.why || "Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo.")}</p>
-    ${s.tasks.length ? `<h4>Tarefas propostas</h4><ul>${s.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-    <div class="row"><button class="primary" id="preAccept">Criar épico</button><button class="ghost" id="preSkip">Descartar</button></div>
+    <p class="${s.why ? "" : "muted"}">${esc(s.why || t("Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo."))}</p>
+    ${s.tasks.length ? `<h4>${t("Tarefas propostas")}</h4><ul>${s.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+    <div class="row"><button class="primary" id="preAccept">${t("Criar épico")}</button><button class="ghost" id="preSkip">${t("Descartar")}</button></div>
   </div>`;
   const i = Number(thread.slice(4));
   el.querySelector("#preAccept").onclick = () => { pendingEpic = s.title; send({ t: "suggestion", i, accept: true }); };
@@ -1957,7 +2340,7 @@ const whereOf = (id, title) => {
   return fetch(`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || "")}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     .then((w) => (herdrWhere[id] = { at: Date.now(), w }).w);
 };
-const WHERE_HOW = { used: "a pasta onde ele já abriu antes", linked: "ligada a esta sala pelo arquivo .vibebook", slug: "a pasta com o nome da sala", new: "pasta nova com o nome da sala, criada ao ligar" };
+const WHERE_HOW = { used: t("a pasta onde ele já abriu antes"), linked: t("ligada a esta sala pelo arquivo .vibebook"), slug: t("a pasta com o nome da sala"), new: t("pasta nova com o nome da sala, criada ao ligar") };
 // "✻ Meu Claude": on = a Claude Code of yours opens for this room on your machine (vibebook herdr), off = it closes.
 function renderMyClaude() {
   const b = document.getElementById("myClaude");
@@ -1968,18 +2351,18 @@ function renderMyClaude() {
   b.setAttribute("aria-pressed", String(on));
   const w = herdrWhere[S.id]?.w;
   const path = w?.folder ? (w.folder.startsWith(w.home + "/") ? "~" + w.folder.slice(w.home.length) : w.folder) : "";
-  b.innerHTML = `✻ <span class="lbl">${on ? (live ? "ouvindo" : "não ouvindo") : "Ligar Claude"}</span>${path ? `<span class="where">${esc(path.replace(/^~\/Projects\//, ""))}${w.how === "new" ? " ✚" : ""}</span>` : ""}`;
+  b.innerHTML = `✻ <span class="lbl">${on ? (live ? t("ouvindo") : t("não ouvindo")) : t("Ligar Claude")}</span>${path ? `<span class="where">${esc(path.replace(/^~\/Projects\//, ""))}${w.how === "new" ? " ✚" : ""}</span>` : ""}`;
   if (!herdrWhere[S.id]) whereOf(S.id, bookTitle()).then((x) => x && renderMyClaude());
-  b.title = (path ? `Abre em ${path} (${WHERE_HOW[w.how] || "pasta da sala"}).\n\n` : "") + (on && !live
-    ? "Ligado, mas nenhum Claude seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar."
+  b.title = (path ? `${t("Abre em {path} ({how}).", { path, how: WHERE_HOW[w.how] || t("pasta da sala") })}\n\n` : "") + (on && !live
+    ? t("Ligado, mas nenhum Claude seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar.")
     : on
-    ? "Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada)."
-    : "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina.");
+    ? t("Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada).")
+    : t("Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina."));
   // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
   const go = document.getElementById("goClaude");
   go.hidden = true;
   if (on) herdrPing().then((rooms) => { go.hidden = !rooms?.includes(S.id); });
-  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast("O vibebook herdr não está rodando nesta máquina."));
+  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
   b.onclick = async () => {
     const next = !roomAgents.claudeOn;
     roomAgents.claudeOn = next;
@@ -1992,7 +2375,7 @@ const agentRows = (email) => {
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${esc(a.who)} de ${esc(name(email))}${a.repo ? ` em ${esc(a.repo)}` : ""} · ${a.listening ? (a.all_rooms ? "ouvindo todas as salas agora" : "ouvindo esta sala agora") : `visto há ${ago(a.seen_at)}`}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? "ouvindo" : ago(a.seen_at)}</small></div>`).join("");
+    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}</small></div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
@@ -2006,7 +2389,7 @@ const epicWorker = (e) => {
   const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent");
   return m && m.tag !== "done" && Date.now() - m.ts < 3 * 60e3 ? { who: m.via || "Claude", email: m.author } : null;
 };
-const epicBusy = (e) => { const w = epicWorker(e); return w ? `${w.who} de ${name(w.email)}` : null; };
+const epicBusy = (e) => { const w = epicWorker(e); return w ? t("{via} de {who}", { via: w.who, who: name(w.email) }) : null; };
 // The same, inside the open epic's thread: a card at the end (in place of the empty-thread hint) saying who is on it.
 function renderWorking() {
   const el = document.getElementById("msgs");
@@ -2015,45 +2398,45 @@ function renderWorking() {
   const w = thread !== "main" && !isPre() && epicWorker(S.epics.find((e) => e.id === thread));
   el.querySelector(".empty")?.classList.toggle("hidden", !!w);
   if (!w) return;
-  el.insertAdjacentHTML("beforeend", `<div id="working" class="working">${agentAvatar(w.email, w.who)}<div><b>${esc(w.who)} de ${esc(name(w.email))}</b> está trabalhando nisso<small>O andamento e a entrega aparecem aqui nesta thread.</small></div><span class="spin">✻</span></div>`);
+  el.insertAdjacentHTML("beforeend", `<div id="working" class="working">${agentAvatar(w.email, w.who)}<div><b>${t("{via} de {who}", { via: esc(w.who), who: esc(name(w.email)) })}</b> ${t("está trabalhando nisso")}<small>${t("O andamento e a entrega aparecem aqui nesta thread.")}</small></div><span class="spin">✻</span></div>`);
 }
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
-const waitPill = (t) => { const n = waitsIn(t).length; return n ? `<b class="wN" title="${n === 1 ? "Alguém está esperando você aqui" : `${n} coisas esperando você aqui`}">${n}</b>` : ""; };
+const waitPill = (th) => { const n = waitsIn(th).length; return n ? `<b class="wN" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
-        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? " · arquivado" : ""}${busy ? ` · ${esc(busy)} está trabalhando aqui` : ""}">
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
-          ${busy ? `<span class="claudeSpin" aria-label="${esc(busy)} está trabalhando">✻</span>` : ""}${waitPill(e.id)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
+          ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   if (railMode && window.innerWidth > 900) return renderRail(el);
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `
     <div>
-      <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">${SIDEBAR_ICON}</button></div>
+      <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
-      <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="novo épico" aria-label="Novo épico" /></form>
-      ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>Arquivados (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
+      <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
+      ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
     </div>
-    ${S.suggestions.length ? `<div class="sec"><h4>✦ @vibe sugere</h4>${S.suggestions.map((s, i) => `
-      <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · sugestão do @vibe, clique para ver"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
+    ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
+      <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
-      ${(S.requests || []).length ? `<div class="asks"><h4>Pedindo pra entrar</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · pediu ${ago(r.ts)}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">pediu ${ago(r.ts)} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="Liberar: entra na sala e recebe o link por email">liberar</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="Recusar ${esc(r.email)}" title="Recusar">×</button></div>`).join("")}</div>` : ""}
-      <h4>Pessoas</h4>
+      ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">×</button></div>`).join("")}</div>` : ""}
+      <h4>${t("Pessoas")}</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
-        ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><small class="memActs">pendente · <button class="ghost resend" data-copyinv="${esc(m)}" title="Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp">copiar</button> · <button class="ghost resend" data-resend="${esc(m)}" title="Convidada(o), ainda não entrou">reenviar</button></small></div>`
+        ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><small class="memActs">${t("pendente")} · <button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
         : S.names?.[m] ? `<span class="fn" title="${esc(m)}">${esc(S.names[m])}</span>`
         : `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(m.split("@")[0])}</span><small class="memActs">@${esc(m.split("@")[1] ?? "")}</small></div>`}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
-        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="Remover ${esc(m)}" title="${(S.pending || []).includes(m) ? "Cancelar convite" : "Remover do vibebook"}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
+        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="${t("Remover {email}", { email: esc(m) })}" title="${(S.pending || []).includes(m) ? t("Cancelar convite") : t("Remover do vibebook")}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
-        <div style="margin-top:10px;font-size:12px" class="muted">Seus amigos</div>
-        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="Adicionar ${esc(f)}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
-      <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="convidar por email" list="friendList" autocomplete="off" /><button>+</button></form>
+        <div style="margin-top:10px;font-size:12px" class="muted">${t("Seus amigos")}</div>
+        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="${t("Adicionar {email}", { email: esc(f) })}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
+      <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="${t("convidar por email")}" list="friendList" autocomplete="off" /><button>+</button></form>
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
@@ -2064,20 +2447,20 @@ function renderSide() {
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
-    if (!confirm((S.pending || []).includes(who) ? `Cancelar o convite de ${who}?` : `Remover ${who} deste vibebook?`)) return;
+    if (!confirm((S.pending || []).includes(who) ? t("Cancelar o convite de {email}?", { email: who }) : t("Remover {email} deste vibebook?", { email: who }))) return;
     const r = await fetch(`/api/books/${S.id}/members/${encodeURIComponent(who)}`, { method: "DELETE" });
-    if (!r.ok) alert((await r.json().catch(() => ({}))).error || "Não deu para remover.");
+    if (!r.ok) alert((await r.json().catch(() => ({}))).error || t("Não deu para remover."));
   });
   el.querySelectorAll("[data-ask]").forEach((b) => b.onclick = async () => {
     const ok = !!b.dataset.ok, who = b.dataset.ask;
-    if (!ok && !confirm(`Recusar o pedido de ${who}?`)) return;
+    if (!ok && !confirm(t("Recusar o pedido de {email}?", { email: who }))) return;
     b.disabled = true;
-    await api(`/api/books/${S.id}/requests`, { email: who, ok }).then(() => ok && toast(`${esc(who)} entrou na sala e recebeu o link por email.`)).catch((err) => { alert(err.message); b.disabled = false; });
+    await api(`/api/books/${S.id}/requests`, { email: who, ok }).then(() => ok && toast(t("{email} entrou na sala e recebeu o link por email.", { email: esc(who) }))).catch((err) => { alert(err.message); b.disabled = false; });
   });
   el.querySelectorAll("[data-resend]").forEach((b) => b.onclick = async () => {
     b.disabled = true; b.textContent = "…";
-    try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = "enviado ✓"; }
-    catch (err) { b.textContent = "reenviar"; b.disabled = false; alert(err.message); }
+    try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = `${t("enviado")} ✓`; }
+    catch (err) { b.textContent = t("reenviar"); b.disabled = false; alert(err.message); }
   });
   el.querySelectorAll("[data-copyinv]").forEach((b) => b.onclick = () => copyInvite(b.dataset.copyinv, false));
   el.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
@@ -2108,9 +2491,9 @@ function pickPic() {
       c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
       const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.86));
       const r = await fetch("/api/me/avatar", { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Não deu para salvar a foto.");
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || t("Não deu para salvar a foto."));
       route();
-    } catch (err) { alert(err.message || "Não deu para ler essa imagem."); }
+    } catch (err) { alert(err.message || t("Não deu para ler essa imagem.")); }
   };
   input.click();
 }
@@ -2119,12 +2502,12 @@ function pickPic() {
 // one sentence that sets up their Claude. Copied on invite, and from "copiar" next to a pending invite.
 function inviteText(email) {
   const url = `${location.origin}/b/${S.id}`;
-  return `Te convidei pro vibebook "${bookTitle()}": ${url}\n\n1. Entra com ${email} (o convite chegou nesse email).\n2. Manda isto pro seu Claude Code:\n\nRead ${location.origin}/llms.txt and set up vibebook for this project. Room: ${url}`;
+  return `${t("Te convidei pro vibebook \"{title}\": {url}", { title: bookTitle(), url })}\n\n${t("1. Entra com {email} (o convite chegou nesse email).", { email })}\n${t("2. Manda isto pro seu Claude Code:")}\n\nRead ${location.origin}/llms.txt and set up vibebook for this project. Room: ${url}`;
 }
 function copyInvite(email, sent = true) {
   navigator.clipboard?.writeText(inviteText(email)).then(
-    () => toast(`${sent ? `Convite enviado por email para <b>${esc(email)}</b>. ` : ""}Copiei a mensagem com o link da sala e o setup do Claude para ${esc(name(email))}: cola no WhatsApp.`),
-    () => toast(`Não consegui copiar. Use "copiar" ao lado de ${esc(email)} em Pessoas.`),
+    () => toast(`${sent ? `${t("Convite enviado por email para <b>{email}</b>.", { email: esc(email) })} ` : ""}${t("Copiei a mensagem com o link da sala e o setup do Claude para {name}: cola no WhatsApp.", { name: esc(name(email)) })}`),
+    () => toast(t("Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.", { email: esc(email) })),
   );
 }
 function toast(html) {
@@ -2134,7 +2517,7 @@ function toast(html) {
 }
 
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
-const LANES = [["todo", "A fazer"], ["doing", "Fazendo"], ["review", "Esperando OK"], ["done", "Feito"]];
+const LANES = [["todo", t("A fazer")], ["doing", t("Fazendo")], ["review", t("Esperando OK")], ["done", t("Feito")]];
 let boardEpic = null;
 function renderKanban() {
   const el = document.getElementById("kanban");
@@ -2142,16 +2525,16 @@ function renderKanban() {
   if (boardEpic && !S.epics.some((e) => e.id === boardEpic)) boardEpic = null;
   const epics = S.epics.filter((e) => (boardEpic ? e.id === boardEpic : !e.archived));
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
-  const card = (t) => `<div class="kcard ${t.status === "done" ? "done" : ""}${t.status !== "done" && t.owner === S.me ? " mine" : ""}" draggable="true" tabindex="0" data-k="${t.id}" data-status="${t.status}" data-epic="${t.epic.id}" title="Arraste, ou use ← →. Clique pra abrir o épico.">
-      <div class="kt">${mentions(esc(t.title))}</div>${vibeNotes(t.flags)}
-      <div class="km"><span class="kep" style="background:${color(t.epic.title)}">${esc(t.epic.title)}</span>${t.owner ? `${avatar(t.owner)}<span>${esc(t.owner === S.me ? "você" : name(t.owner))}</span>` : ""}${t.due ? `<span>📅 ${esc(t.due)}</span>` : ""}</div></div>`;
+  const card = (tk) => `<div class="kcard ${tk.status === "done" ? "done" : ""}${tk.status !== "done" && tk.owner === S.me ? " mine" : ""}" draggable="true" tabindex="0" data-k="${tk.id}" data-status="${tk.status}" data-epic="${tk.epic.id}" title="${t("Arraste, ou use ← →. Clique pra abrir o épico.")}">
+      <div class="kt">${mentions(esc(tk.title))}</div>${vibeNotes(tk.flags)}
+      <div class="km"><span class="kep" style="background:${color(tk.epic.title)}">${esc(tk.epic.title)}</span>${tk.owner ? `${avatar(tk.owner)}<span>${esc(tk.owner === S.me ? t("você") : name(tk.owner))}</span>` : ""}${tk.due ? `<span>📅 ${esc(tk.due)}</span>` : ""}</div></div>`;
   el.innerHTML = S.epics.length ? `
     <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
       <section class="lane" data-lane="${k}"><h3>${label}<span>${list.length}</span></h3>
-        <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? "Nada a fazer." : "Arraste um card pra cá."}</div>`}</div>
-        ${k === "todo" ? `<form class="kadd"><input placeholder="nova tarefa" aria-label="Nova tarefa" /><button>+</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="Épico">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
+        <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? t("Nada a fazer.") : t("Arraste um card pra cá.")}</div>`}</div>
+        ${k === "todo" ? `<form class="kadd"><input placeholder="${t("nova tarefa")}" aria-label="${t("Nova tarefa")}" /><button>+</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="${t("Épico")}">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
       </section>`; }).join("")}</div>`
-    : `<div class="empty">Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.</div>`;
+    : `<div class="empty">${t("Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.")}</div>`;
   const move = (id, status) => send({ t: "task.status", id, status });
   el.querySelectorAll(".kcard").forEach((c) => {
     c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
@@ -2181,17 +2564,17 @@ function renderTasks() {
   const el = document.getElementById("tasks"); if (!el) return;
   const epic = S.epics.find((e) => e.id === thread);
   const head = document.getElementById("threadTitle");
-  if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ sugestão do @vibe</small>`; el.innerHTML = ""; return; }
+  if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; el.innerHTML = ""; return; }
   head.innerHTML = epic
-    ? `<span class="epicName" id="roomName" title="Clique para renomear">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? "Desarquivar épico" : "Arquivar épico (concluído)"}" aria-label="${epic.archived ? "Desarquivar épico" : "Arquivar épico"}">${epic.archived ? "↩" : "✓"}</button><button class="ghost x" id="epicDel" title="Apagar épico" aria-label="Apagar épico">🗑</button>`
-    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || "Clique para renomear")}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
+    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${epic.archived ? "↩" : "✓"}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">🗑</button>`
+    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
   const w = Object.entries(waiting).sort((a, b) => b[1] - a[1]);
   // Each person in the chip opens the list of what's waiting on them; a task opens its epic.
   if (w.length) {
-    head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ esperando ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="Ver as tasks abertas">${esc(o === S.me ? "você" : name(o))} ${n}</button>`).join(" · ")}</span>`);
+    head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ ${t("esperando")} ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="${t("Ver as tasks abertas")}">${esc(o === S.me ? t("você") : name(o))} ${n}</button>`).join(" · ")}</span>`);
     head.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
       ev.stopPropagation();
       const open = document.querySelector(".waitPop");
@@ -2199,7 +2582,7 @@ function renderTasks() {
       const items = S.epics.flatMap((e) => e.tasks.filter((t) => !t.done && t.owner === b.dataset.wait).map((t) => ({ t, e })));
       const pop = document.createElement("div");
       pop.className = "waitPop"; pop.dataset.who = b.dataset.wait;
-      pop.innerHTML = `<b>Esperando ${esc(b.dataset.wait === S.me ? "você" : name(b.dataset.wait))}</b>${items.map(({ t, e }) => `<button type="button" data-goto="${e.id}"><span>${esc(t.title)}</span><small>${esc(e.title)}${e.archived ? " · arquivado" : ""} · ${t.status === "review" ? "esperando OK" : t.status === "doing" ? "fazendo" : "a fazer"}</small></button>`).join("")}`;
+      pop.innerHTML = `<b>${t("Esperando {who}", { who: esc(b.dataset.wait === S.me ? t("você") : name(b.dataset.wait)) })}</b>${items.map(({ t: tk, e }) => `<button type="button" data-goto="${e.id}"><span>${esc(tk.title)}</span><small>${esc(e.title)}${e.archived ? ` · ${t("arquivado")}` : ""} · ${tk.status === "review" ? t("esperando OK") : tk.status === "doing" ? t("fazendo") : t("a fazer")}</small></button>`).join("")}`;
       b.closest(".chathead").append(pop);
       pop.querySelectorAll("[data-goto]").forEach((x) => (x.onclick = () => {
         pop.remove(); thread = x.dataset.goto; boardEpic = thread; docRoom = false;
@@ -2210,21 +2593,21 @@ function renderTasks() {
   }
   document.getElementById("roomName").onclick = () => {
     const cur = epic ? epic.title : bookTitle();
-    const t = prompt(epic ? "Nome do épico:" : "Nome do vibebook:", cur);
-    if (!t?.trim() || t === cur) return;
-    send(epic ? { t: "epic.rename", id: epic.id, title: t } : { t: "title", title: t });
+    const nt = prompt(epic ? t("Nome do épico:") : t("Nome do vibebook:"), cur);
+    if (!nt?.trim() || nt === cur) return;
+    send(epic ? { t: "epic.rename", id: epic.id, title: nt } : { t: "title", title: nt });
   };
   el.style.display = epic ? "" : "none";
   if (!epic) return;
   document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
-  document.getElementById("epicDel").onclick = () => { if (confirm(`Apagar o épico "${epic.title}", as tasks e a discussão dele? Não dá pra desfazer.`)) send({ t: "epic.del", id: epic.id }); };
+  document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
   const nDone = epic.tasks.filter((t) => t.done).length;
-  el.innerHTML = `<div class="thead"><b>Tarefas</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(epic.flags)}${epic.tasks.map((t) => `<div class="task ${t.done ? "done" : ""}${!t.done && t.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${t.id}`) ? " waitTask" : ""}" data-task="${t.id}">
-      <input type="checkbox" ${t.done ? "checked" : ""} aria-label="Feita" /><span class="tt" title="Clique para editar">${esc(t.title)}${vibeNotes(t.flags)}</span>
-      <select class="towner ${t.owner ? "set" : ""}" data-owner="${t.id}" aria-label="Responsável"><option value="">sem dono</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${t.owner === e ? "selected" : ""}>${esc(e === S.me ? "você" : name(e))}</option>`).join("")}</select>
-      <button type="button" class="due ${t.due ? "set" : ""}" data-due="${t.id}" title="Prazo">${t.due ? `📅 ${esc(t.due)}` : "📅"}</button>
-      <button class="ghost x" data-tdel="${t.id}" aria-label="Apagar task" title="Apagar task">×</button></div>`).join("")}
-    <form class="row" id="newTask" style="margin-top:6px"><input placeholder="nova task" /><button>+</button></form>`;
+  el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(epic.flags)}${epic.tasks.map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
+      <input type="checkbox" ${tk.done ? "checked" : ""} aria-label="${t("Feita")}" /><span class="tt" title="${t("Clique para editar")}">${esc(tk.title)}${vibeNotes(tk.flags)}</span>
+      <select class="towner ${tk.owner ? "set" : ""}" data-owner="${tk.id}" aria-label="${t("Responsável")}"><option value="">${t("sem dono")}</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${tk.owner === e ? "selected" : ""}>${esc(e === S.me ? t("você") : name(e))}</option>`).join("")}</select>
+      <button type="button" class="due ${tk.due ? "set" : ""}" data-due="${tk.id}" title="${t("Prazo")}">${tk.due ? `📅 ${esc(tk.due)}` : "📅"}</button>
+      <button class="ghost x" data-tdel="${tk.id}" aria-label="${t("Apagar task")}" title="${t("Apagar task")}">×</button></div>`).join("")}
+    <form class="row" id="newTask" style="margin-top:6px"><input placeholder="${t("nova task")}" /><button>+</button></form>`;
   el.querySelectorAll("[data-task] input[type=checkbox]").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
   el.querySelectorAll("[data-task] .tt").forEach((sp) => sp.onclick = () => {
     const id = sp.closest("[data-task]").dataset.task;
@@ -2238,7 +2621,7 @@ function renderTasks() {
   el.querySelectorAll("[data-owner]").forEach((sel) => sel.onchange = () => send({ t: "task.assign", id: sel.dataset.owner, owner: sel.value }));
   el.querySelectorAll("[data-due]").forEach((b) => b.onclick = () => {
     const cur = epic.tasks.find((t) => t.id === b.dataset.due)?.due || "";
-    const v = prompt("Prazo (ex.: sex, qua 23h, 06/11). Vazio tira o prazo:", cur);
+    const v = prompt(t("Prazo (ex.: sex, qua 23h, 06/11). Vazio tira o prazo:"), cur);
     if (v !== null) send({ t: "task.assign", id: b.dataset.due, due: v });
   });
   document.getElementById("newTask").onsubmit = (e) => { e.preventDefault(); send({ t: "task.add", epic: thread, title: e.target[0].value }); e.target.reset(); };
@@ -2254,7 +2637,7 @@ function openViewer(url, kind, fname) {
   if (!d) {
     d = document.createElement("dialog");
     d.id = "viewer"; d.className = "viewer";
-    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="Abrir numa aba" aria-label="Abrir numa aba">↗</a><button type="button" title="Fechar" aria-label="Fechar">×</button></header><div class="vbody"></div>`;
+    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">↗</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">×</button></header><div class="vbody"></div>`;
     d.querySelector("button").onclick = () => d.close();
     d.querySelector("header a").onclick = () => d.close();
     d.addEventListener("click", (e) => { if (e.target.classList.contains("vbody")) d.close(); });
@@ -2308,18 +2691,18 @@ function pollHtml(id) {
         <span class="fill" style="width:${pct}%"></span><span class="ol">${win ? "🏆 " : mine ? "✓ " : ""}${esc(o)}</span>
         <span class="stack">${p.votes[i].slice(0, 4).map((e) => avatar(e)).join("")}</span><span class="pc">${n ? `${pct}%` : ""}</span></button>`;
     }).join("")}
-    <div class="pf">${voters} ${voters === 1 ? "pessoa votou" : "pessoas votaram"} · ${p.multi ? "pode escolher várias" : "escolha uma"}${p.closed ? " · encerrada" : p.author === S.me || p.author === "ai" ? ` · <button type="button" class="link" data-close="${id}">encerrar</button>` : ""}</div>
+    <div class="pf">${voters === 1 ? t("1 pessoa votou") : t("{n} pessoas votaram", { n: voters })} · ${p.multi ? t("pode escolher várias") : t("escolha uma")}${p.closed ? ` · ${t("encerrada")}` : p.author === S.me || p.author === "ai" ? ` · <button type="button" class="link" data-close="${id}">${t("encerrar")}</button>` : ""}</div>
   </div>`;
 }
 
-const hhmm = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const hhmm = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
 const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && (prev.tag || null) === (m.tag || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
 const threadCard = (e) => {
   const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
   const d = e.tasks.filter((t) => t.status === "done").length;
-  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? "✓ concluído · " : ""}${e.tasks.length ? `${d}/${e.tasks.length} tarefas · ` : ""}${replies.length} ${replies.length === 1 ? "resposta" : "respostas"}${last ? ` · ${ago(last.ts) === "agora" ? "agora" : `última há ${ago(last.ts)}`}` : ""}</small></span><span class="tc-go">→</span>`;
+  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${replies.length === 1 ? t("1 resposta") : t("{n} respostas", { n: replies.length })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
 };
 const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`).join("");
 function refreshThreadCards() {
@@ -2344,22 +2727,22 @@ document.addEventListener("click", (ev) => {
 function syncEnd() {
   const el = document.getElementById("msgs"); if (!el) return;
   el.querySelector(".endMark")?.remove();
-  if (S.epics.find((e) => e.id === thread)?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ Épico concluído</b><span>Escreva aqui pra continuar: ele reabre.</span></div>`);
+  if (S.epics.find((e) => e.id === thread)?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${t("Épico concluído")}</b><span>${t("Escreva aqui pra continuar: ele reabre.")}</span></div>`);
 }
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.
 let replyTo = null;
-const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll ? "votação" : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120);
-const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? `Claude de ${name(m.author)}` : name(m.author));
+const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll ? t("votação") : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120);
+const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: "Claude", who: name(m.author) }) : name(m.author));
 const quoteHtml = (id) => {
   const o = S.messages.find((x) => x.id === id);
-  return `<button type="button" class="quote" data-goto="${id}" title="Ver a mensagem respondida">↩ ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : "mensagem anterior"}</button>`;
+  return `<button type="button" class="quote" data-goto="${id}" title="${t("Ver a mensagem respondida")}">↩ ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : t("mensagem anterior")}</button>`;
 };
 function renderReply() {
   const bar = document.getElementById("replyBar"); if (!bar) return;
   if (replyTo && replyTo.thread !== thread) replyTo = null;
   bar.hidden = !replyTo;
-  if (replyTo) bar.innerHTML = `<span>↩ Respondendo a <b>${esc(replyWho(replyTo))}</b>: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="Cancelar resposta" title="Cancelar">×</button>`;
+  if (replyTo) bar.innerHTML = `<span>↩ ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">×</button>`;
   document.getElementById("replyX")?.addEventListener("click", () => { replyTo = null; renderReply(); });
 }
 function startReply(id) {
@@ -2372,7 +2755,7 @@ document.addEventListener("click", (ev) => {
   if (r) return startReply(Number(r.dataset.reply));
   const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
   const el = document.getElementById(`m${q.dataset.goto}`);
-  if (!el) return toast("Essa mensagem está mais acima: role o chat pra carregar.");
+  if (!el) return toast(t("Essa mensagem está mais acima: role o chat pra carregar."));
   el.scrollIntoView({ block: "center", behavior: "smooth" });
   el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
 });
@@ -2394,12 +2777,12 @@ document.addEventListener("touchend", () => {
 });
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
-  const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
+  const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">${t("pensando…")}</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
-    ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
-    <button type="button" class="rbtn" data-reply="${m.id}" title="Responder" aria-label="Responder a esta mensagem">↩ Responder</button>
-    <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
+    ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
+    <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">↩ ${t("Responder")}</button>
+    <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
 };
@@ -2408,10 +2791,10 @@ function renderDecisions() {
   const el = document.getElementById("decPane"); if (!el) return;
   const list = S.decisions || [];
   document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
-  el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? "✓ aprovado" : "decidido"} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
-      <button class="ghost x" data-ddel="${d.id}" aria-label="Apagar registro" title="Apagar registro">×</button></div>`).join("")
-    : `<div class="empty">O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.</div>`;
-  el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm("Apagar esse registro?")) send({ t: "decision.del", id: b.dataset.ddel }); });
+  el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? `✓ ${t("aprovado")}` : t("decidido")} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
+      <button class="ghost x" data-ddel="${d.id}" aria-label="${t("Apagar registro")}" title="${t("Apagar registro")}">×</button></div>`).join("")
+    : `<div class="empty">${t("O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.")}</div>`;
+  el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar esse registro?"))) send({ t: "decision.del", id: b.dataset.ddel }); });
 }
 
 // Embeds (HTML an agent posted inline): they report their height, and window.vibebook.send(text) shows the text
@@ -2427,7 +2810,7 @@ addEventListener("message", (e) => {
     box.querySelector(".embedAsk")?.remove();
     const ask = document.createElement("div");
     ask.className = "embedAsk";
-    ask.innerHTML = `<span>Este embed quer mandar, como você:</span><q></q><div><button type="button" class="primary">Enviar</button><button type="button" class="ghost">Cancelar</button></div>`;
+    ask.innerHTML = `<span>${t("Este embed quer mandar, como você:")}</span><q></q><div><button type="button" class="primary">${t("Enviar")}</button><button type="button" class="ghost">${t("Cancelar")}</button></div>`;
     ask.querySelector("q").textContent = d.send.trim().slice(0, 1000);
     const at = thread; // the open thread: an embed only shows in its own message's thread
     ask.querySelector(".primary").onclick = () => { send({ t: "msg", thread: at, text: d.send.trim().slice(0, 1000), files: [] }); ask.remove(); };
@@ -2444,17 +2827,17 @@ function renderApps() {
   document.getElementById("appCount").textContent = n ? ` ${n}` : "";
   const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
   // Reminders (set_reminder) sit on top: each one later posts as the person who set it, so they're listed with ×.
-  const when = (t) => new Date(t).toLocaleString("pt-BR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  const rem = S.reminders?.length ? `<div class="rems"><h4>⏰ Lembretes</h4>${S.reminders.map((r) => `
-    <div class="rem"><div><b>${esc(r.text)}</b><small><code>${esc(r.cron)}</code> ${esc(r.tz)} · próximo ${when(r.next_at)} · de ${esc(name(r.owner))}${r.thread !== "main" ? ` · ${esc(S.epics?.find((e) => e.id === r.thread)?.title ?? "épico")}` : ""}</small></div>
-      <button class="ghost" data-rem-del="${esc(r.id)}" title="Apagar lembrete" aria-label="Apagar lembrete">×</button></div>`).join("")}</div>` : "";
+  const when = (t) => new Date(t).toLocaleString(LOCALE, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const rem = S.reminders?.length ? `<div class="rems"><h4>⏰ ${t("Lembretes")}</h4>${S.reminders.map((r) => `
+    <div class="rem"><div><b>${esc(r.text)}</b><small><code>${esc(r.cron)}</code> ${esc(r.tz)} · ${t("próximo {when}", { when: when(r.next_at) })} · ${t("de {who}", { who: esc(name(r.owner)) })}${r.thread !== "main" ? ` · ${esc(S.epics?.find((e) => e.id === r.thread)?.title ?? t("épico"))}` : ""}</small></div>
+      <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">×</button></div>`).join("")}</div>` : "";
   el.innerHTML = rem + (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
     <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
       <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
-      <button class="ghost" data-app-del="${esc(a.name)}" title="Apagar app" aria-label="Apagar app ${esc(a.name)}">×</button></div>`).join("")}</div>`
-    : `<div class="empty">Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.</div>`);
-  el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm("Apagar este lembrete?")) send({ t: "reminder.delete", id: b.dataset.remDel }); });
-  el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(`Apagar o app ${b.dataset.appDel}? As mensagens já postadas continuam.`)) send({ t: "app.delete", name: b.dataset.appDel }); });
+      <button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">×</button></div>`).join("")}</div>`
+    : `<div class="empty">${t("Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.")}</div>`);
+  el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar este lembrete?"))) send({ t: "reminder.delete", id: b.dataset.remDel }); });
+  el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar o app {name}? As mensagens já postadas continuam.", { name: b.dataset.appDel }))) send({ t: "app.delete", name: b.dataset.appDel }); });
 }
 
 function renderFiles() {
@@ -2464,7 +2847,7 @@ function renderFiles() {
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
-    : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
+    : `<div class="empty">${t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")}</div>`;
 }
 
 // Sliding window: a thread renders its newest WIN messages; scrolling near the top shows WIN more, first from
@@ -2505,8 +2888,8 @@ function renderChat(keep) {
   const list = all.slice(-win.n);
   const more = all.length > list.length || (all.length && !S.complete && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
-  el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">Carregar mensagens anteriores</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
-    : `<div class="empty">${thread === "main" ? "Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>." : "Discussão deste épico. Os Claudes leem as tarefas, o doc e a sala principal."}</div>`;
+  el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">${t("Carregar mensagens anteriores")}</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
+    : `<div class="empty">${thread === "main" ? t("Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>.") : t("Discussão deste épico. Os Claudes leem as tarefas, o doc e a sala principal.")}</div>`;
   document.getElementById("olderBtn")?.addEventListener("click", loadOlder);
   // A thread starts with the request that opened it (the epic's message in main), like a Slack thread's parent.
   const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && S.messages.find((x) => x.id === src);
@@ -2514,7 +2897,7 @@ function renderChat(keep) {
     el.querySelector(".empty")?.classList.add("afterOrigin");
     // Under "Carregar mensagens anteriores" (that button always sits at the very top), above the replies.
     const n = all.length, older = el.querySelector(".older");
-    (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n} ${n === 1 ? "resposta" : "respostas"}</span><button type="button" class="ghost" data-gomain="${src}">ver na sala principal ↩</button></div></div>`);
+    (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n === 1 ? t("1 resposta") : t("{n} respostas", { n })}</span><button type="button" class="ghost" data-gomain="${src}">${t("ver na sala principal")} ↩</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
   renderWorking();
@@ -2544,15 +2927,15 @@ function renderReceipts() {
     // "doing" is live only while the agent shows activity (post / task move bumps ts); 20 min quiet or idle =
     // nobody is on it now: say who the epic waits on (owners of its open tasks) instead of a spinner.
     const doing = k.status === "doing" && Date.now() - k.ts < 20 * 60e3;
-    const who = `${esc(k.who)} de ${esc(name(k.email))}`;
+    const who = t("{via} de {who}", { via: esc(k.who), who: esc(name(k.email)) });
     let html;
-    if (doing) html = `<span class="spin"></span>${who} está fazendo isso · ${ago(k.ts)}`;
-    else if (k.status === "done") html = `✓ ${who} fez isso`;
+    if (doing) html = `<span class="spin"></span>${t("{who} está fazendo isso", { who })} · ${ago(k.ts)}`;
+    else if (k.status === "done") html = `✓ ${t("{who} fez isso", { who })}`;
     else {
       const owners = [...new Set((S.epics || []).filter((e) => e.from_msg === k.msg_id && !e.archived).flatMap((e) => e.tasks.filter((t) => t.status !== "done" && t.owner).map((t) => name(t.owner))))];
-      html = owners.length ? `⏳ aguardando ${owners.map(esc).join(", ")}` : `${who} parou · ${ago(k.ts)}`;
+      html = owners.length ? `⏳ ${t("aguardando {who}", { who: owners.map(esc).join(", ") })}` : `${t("{who} parou", { who })} · ${ago(k.ts)}`;
     }
-    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString("pt-BR"))}">${html}</div>`);
+    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${html}</div>`);
   }
   // One compact line per message: each agent once (✓✓ read, ✓ delivered), full name on hover; an agent that
   // acked the message shows its ack instead.
@@ -2567,7 +2950,7 @@ function renderReceipts() {
   }
   for (const [id, g] of Object.entries(at)) {
     const body = document.querySelector(`#m${id} .body`); if (!body) continue;
-    const chips = [...g.values()].map(({ r, read }) => `<span class="${read ? "rd" : ""}" title="${read ? "lido" : "entregue, ainda não lido"} por ${esc(r.who)} de ${esc(name(r.email))}">${read ? "✓✓" : "✓"} ${esc(r.who)}</span>`);
+    const chips = [...g.values()].map(({ r, read }) => `<span class="${read ? "rd" : ""}" title="${read ? t("lido por {who}", { who: t("{via} de {who}", { via: esc(r.who), who: esc(name(r.email)) }) }) : t("entregue, ainda não lido por {who}", { who: t("{via} de {who}", { via: esc(r.who), who: esc(name(r.email)) }) })}">${read ? "✓✓" : "✓"} ${esc(r.who)}</span>`);
     body.insertAdjacentHTML("beforeend", `<div class="rcpt">${chips.join("")}</div>`);
   }
 }
@@ -2620,7 +3003,7 @@ async function renderMermaid(pv) {
       fig.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
     } catch (e) {
       fig.classList.add("err");
-      fig.textContent = `Diagrama com erro${e.line ? ` na linha ${e.line}` : ""}: ${e.message}`;
+      fig.textContent = `${t("Diagrama com erro")}${e.line ? ` ${t("na linha {n}", { n: e.line })}` : ""}: ${e.message}`;
     }
     code.parentElement.replaceWith(fig);
   });
@@ -2662,10 +3045,10 @@ function renderDoc(force) {
   const tk = document.getElementById("tasks"); if (tk) document.getElementById("tasksHome").append(tk); // keep it out of the innerHTML wipe
   pv.innerHTML = text.trim()
     ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
-    : `<div class="empty">Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.</div>`;
+    : `<div class="empty">${t("Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.")}</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.
-  if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).">${S.docNotes.map((n) => `<span class="vnote">⚠ ${esc(n)}</span>`).join("")}</div>`);
+  if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">⚠ ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep);
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.

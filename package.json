@@ -30,7 +30,7 @@
     "dev": "bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
-    "check": "tsc --noEmit && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts",
+    "check": "tsc --noEmit && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
     "build:collab": "bun build collab/editor.ts --outfile public/collab.js --format esm --minify --target browser",
     "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs"
   }
