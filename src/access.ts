@@ -40,6 +40,35 @@ export function accessPage(o: { origin: string; id: string; title: string | null
               ? `<p>Você entrou como <b>${escapeHtml(o.email ?? "")}</b>. Quem está na sala vê seu pedido e libera.</p><button class="btn" id="ask" type="button">Pedir acesso</button><p class="err" id="err" hidden></p>`
               : `<p class="ok">✓ Pedido enviado.</p><p>Quando liberarem, você recebe um email com o link, e esta página abre a sala.</p>`
         }`;
+  const script =
+    o.state === "ask"
+      ? `<script>
+const b = document.getElementById("ask"), err = document.getElementById("err");
+async function ask() {
+  b.disabled = true; b.textContent = "Pedindo…";
+  const r = await fetch("/api/books/${o.id}/request", { method: "POST" }).catch(() => null);
+  if (r && r.ok) return location.replace("/b/${o.id}");
+  b.disabled = false; b.textContent = "Pedir acesso";
+  err.hidden = false; err.textContent = r && r.status === 429 ? "Muitos pedidos agora. Tente de novo em um minuto." : "Não deu pra pedir agora. Tente de novo.";
+}
+b.onclick = ask;${o.auto ? "\nask();" : ""}
+</script>`
+      : o.state === "asked"
+        ? `<script>setInterval(() => fetch("/api/books/${o.id}/access").then((r) => r.json()).then((j) => j.member && location.reload()).catch(() => {}), 15000);</script>`
+        : "";
+  return cardPage(roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title), body, script);
+}
+
+/** A file link (/api/books/<id>/files/<fid>) opened in a browser by someone signed out or outside the room. */
+export function filePage(o: { id: string; path: string; signedIn: boolean }) {
+  const body = o.signedIn
+    ? `<p class="k">Arquivo de uma sala do vibebook</p><h1>Você não está nesta sala</h1><p>Só quem está na sala abre os arquivos dela. Peça acesso: quem está nela libera.</p><a class="btn" href="/b/${o.id}?pedir=1">Pedir acesso à sala</a>`
+    : `<p class="k">Arquivo de uma sala do vibebook</p><h1>Entre para ver este arquivo</h1><p>Os arquivos de uma sala são só de quem está nela. Entre com seu email: se você já está na sala, o arquivo abre.</p><a class="btn" href="/login?next=${encodeURIComponent(o.path)}">Entrar</a>`;
+  const ad = `<div class="ad"><b>Ainda não usa o vibebook?</b><p>Chat, doc e tarefas pra você, seu time e os Claudes de cada um trabalharem juntos no mesmo projeto.</p><a href="/app">Criar meu primeiro vibebook →</a></div>`;
+  return cardPage(`<title>vibebook</title>`, body + ad, "");
+}
+
+function cardPage(head: string, body: string, script: string) {
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -47,7 +76,7 @@ export function accessPage(o: { origin: string; id: string; title: string | null
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="robots" content="noindex" />
 <meta name="theme-color" content="#1d5fc4" />
-${roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title)}
+${head}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <style>
   :root { color-scheme: light dark; --bg: light-dark(#eef3fb, #0f1620); --card: light-dark(#fff, #18212e); --ink: light-dark(#141b26, #e8edf5); --mute: light-dark(#5b6576, #9aa6b8); --line: light-dark(#dde4ee, #263142); --accent: #1d5fc4; }
@@ -63,6 +92,9 @@ ${roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title)}
   .err { color: oklch(0.55 0.18 30); margin: 12px 0 0; }
   .btn { display: inline-block; background: var(--accent); color: #fff; border: 0; border-radius: 999px; padding: 12px 22px; font: 700 15px/1 inherit; text-decoration: none; cursor: pointer; }
   .btn:disabled { opacity: .6; cursor: default; }
+  .ad { margin-top: 24px; padding: 16px 18px; border-radius: 16px; background: light-dark(#fdf6d3, #2a2716); border: 1px solid light-dark(#f2e3a0, #4a4220); text-align: left; font-size: 14px; }
+  .ad p { margin: 4px 0 8px; font-size: 14px; }
+  .ad a { color: light-dark(#1d5fc4, #8fb4ff); font-weight: 700; text-decoration: none; }
 </style>
 </head>
 <body>
@@ -70,23 +102,7 @@ ${roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title)}
   <a class="logo" href="/">${LOGO}vibebook</a>
   ${body}
 </div></main>
-${
-  o.state === "ask"
-    ? `<script>
-const b = document.getElementById("ask"), err = document.getElementById("err");
-async function ask() {
-  b.disabled = true; b.textContent = "Pedindo…";
-  const r = await fetch("/api/books/${o.id}/request", { method: "POST" }).catch(() => null);
-  if (r && r.ok) return location.replace("/b/${o.id}");
-  b.disabled = false; b.textContent = "Pedir acesso";
-  err.hidden = false; err.textContent = r && r.status === 429 ? "Muitos pedidos agora. Tente de novo em um minuto." : "Não deu pra pedir agora. Tente de novo.";
-}
-b.onclick = ask;${o.auto ? "\nask();" : ""}
-</script>`
-    : o.state === "asked"
-      ? `<script>setInterval(() => fetch("/api/books/${o.id}/access").then((r) => r.json()).then((j) => j.member && location.reload()).catch(() => {}), 15000);</script>`
-      : ""
-}
+${script}
 </body>
 </html>`;
 }

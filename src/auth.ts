@@ -56,7 +56,7 @@ async function startSession(c: Context<{ Bindings: Env }>, email: string) {
 
 // Only follow same-site relative paths after login.
 // /authorize?… is the agent-connect consent page (OAuth), reached through login.
-const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+|archived$|authorize\?)/.test(next) ? next : "/app");
+const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+|archived$|authorize\?|api\/books\/[a-z0-9]+\/files\/[a-z0-9]+$)/.test(next) ? next : "/app");
 
 const codeHash = (env: Env, email: string, code: string) => hmac(env.SESSION_SECRET, `code:${email}:${code}`);
 

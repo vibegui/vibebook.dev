@@ -1,7 +1,7 @@
 import { type Context, Hono } from "hono";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
-import { accessPage, roomMeta } from "./access";
+import { accessPage, filePage, roomMeta } from "./access";
 import { auth, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -250,9 +250,16 @@ app.get("/mail/:onoff{off|on}", async (c) => {
   return c.html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>vibebook</title><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:460px;margin:60px auto;padding:0 20px;color:#1a2130"><h1 style="font-size:22px">${on ? "Emails de menção ligados." : "Pronto, sem emails de menção."}</h1><p>${on ? "Quando alguém te mencionar e você não vir em 5 minutos, chega um email." : "Você continua vendo as menções no vibebook."}</p><p><a href="${back}">${on ? "Desligar de novo" : "Mudei de ideia, quero os emails"}</a> · <a href="/app">Abrir o vibebook</a></p></body>`);
 });
 
+// A file link opened in a browser tab (not fetched by the app): the room id, so it gets a page instead of JSON.
+const fileLink = (c: Context) =>
+  c.req.method === "GET" && (c.req.header("accept") ?? "").includes("text/html") ? new URL(c.req.url).pathname.match(/^\/api\/books\/([^/]+)\/files\/[^/]+$/)?.[1] : undefined;
+
 app.use("*", async (c, next) => {
   const email = await identify(c);
-  if (!email) return c.json({ error: "unauthenticated" }, 401);
+  if (!email) {
+    const file = fileLink(c);
+    return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false }), 401) : c.json({ error: "unauthenticated" }, 401);
+  }
   const created = await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
     .bind(email, Date.now())
     .run();
@@ -582,7 +589,8 @@ app.post("/api/books/:id/files", async (c) => {
 
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
+  if (!(await isMember(c.env.DB, id, c.get("email"))))
+    return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true }), 403) : c.json({ error: "forbidden" }, 403);
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
   if (!obj) return c.notFound();
   return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
