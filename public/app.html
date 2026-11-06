@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#ffffff" />
 <script>try { const t = localStorage.getItem("vb.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="vibebook" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <title>vibebook</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
@@ -735,9 +740,10 @@ const SW_LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" w
 const SW_SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`;
 const SW_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
 // Phones: the room is as tall as what's visible (the iOS keyboard shrinks the visual viewport, not 100dvh),
-// and iOS's habit of scrolling the whole page to show a focused input is undone.
+// and iOS's habit of scrolling the whole page to show a focused input is undone (in a room only: the home is a
+// normal scrolling page, and snapping it back to the top on every scroll event broke scrolling there).
 if (window.visualViewport) {
-  const fit = () => { document.documentElement.style.setProperty("--vvh", `${Math.round(visualViewport.height)}px`); if (innerWidth <= 900 && scrollY) scrollTo(0, 0); };
+  const fit = () => { document.documentElement.style.setProperty("--vvh", `${Math.round(visualViewport.height)}px`); if (innerWidth <= 900 && scrollY && document.querySelector(".book")) scrollTo(0, 0); };
   visualViewport.addEventListener("resize", fit); visualViewport.addEventListener("scroll", fit); fit();
 }
 // Theme: auto (follows the system) → light → dark, remembered per browser; the CSS reads data-theme via color-scheme.
