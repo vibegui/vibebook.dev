@@ -44,4 +44,4 @@ main { padding-bottom: 80px; }
 footer { color: var(--dim); font-size: 14px; padding: 0 0 50px; }
 footer .w { width: min(1120px, 100% - 48px); border-top: 1px solid var(--line); padding-top: 26px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; }
 footer a { color: var(--mute); text-decoration: none; }
-@media (max-width: 760px) { nav a.l { display: none; } header.top { padding-top: 48px; } section.risk { padding: 22px 18px 10px; } }
+@media (max-width: 760px) { nav a.l:not([hreflang]) { display: none; } header.top { padding-top: 48px; } section.risk { padding: 22px 18px 10px; } }

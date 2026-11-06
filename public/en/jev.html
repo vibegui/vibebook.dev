@@ -90,7 +90,7 @@
   footer .sp { flex: 1; } footer a { text-decoration: none; }
   @media (max-width: 800px) {
     .what, .use, .grid3 { grid-template-columns: 1fr; } .use { padding: 24px; gap: 26px; }
-    nav a.l { display: none; } header { padding-top: 56px; }
+    nav a.l:not([hreflang]) { display: none; } header { padding-top: 56px; }
   }
 </style>
 </head>
@@ -101,6 +101,7 @@
   <a class="l" href="/en">Home</a>
   <a class="l" href="/en/jev" aria-current="page" style="color:var(--ink)">@vibe and Jev</a>
   <a class="l" href="/en/how-it-works">Security</a>
+  <a class="l" href="/pt/jev" hreflang="pt-BR" lang="pt-BR">PT</a>
   <a class="btn sm" href="/login">Sign in</a>
 </div></nav>
 

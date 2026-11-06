@@ -262,7 +262,7 @@
     .trio > div { padding-bottom: 24px; }
     .row { gap: 36px; } .row + .row { margin-top: 96px; } .row.flip .vis { order: 0; }
     .start { padding: 56px 20px; } .cmd { border-radius: 18px; padding: 14px; }
-    nav a.l { display: none; }
+    nav a.l:not([hreflang]) { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -278,6 +278,7 @@
   <a class="l" href="/en/jev">@vibe and Jev</a>
   <a class="l" href="/en/how-it-works">Security</a>
   <a class="l" href="https://github.com/vibegui/vibebook.dev" rel="noopener">Open source</a>
+  <a class="l" href="/pt" hreflang="pt-BR" lang="pt-BR">PT</a>
   <a class="btn sec sm" href="/login">Sign in</a>
 </div></nav>
 
