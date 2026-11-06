@@ -45,3 +45,40 @@ footer { color: var(--dim); font-size: 14px; padding: 0 0 50px; }
 footer .w { width: min(1120px, 100% - 48px); border-top: 1px solid var(--line); padding-top: 26px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; }
 footer a { color: var(--mute); text-decoration: none; }
 @media (max-width: 760px) { nav a.l:not([hreflang]) { display: none; } header.top { padding-top: 48px; } section.risk { padding: 22px 18px 10px; } }
+/* herdr page: the run box, button shots and the terminal illustration */
+.ask { display: grid; grid-template-columns: 1fr auto; gap: 10px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line2); border-radius: 18px; padding: 14px 14px 14px 20px; max-width: 560px; margin-top: 26px; position: relative; }
+.ask span { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--mute); }
+.ask code { font: 600 18px/1.4 ui-monospace, "SF Mono", Menlo, monospace; background: none; border: 0; padding: 0; color: var(--ink); }
+.ask .btn, .btn.btn-sun { background: var(--sun); color: #16203a; border-color: transparent; height: 40px; cursor: pointer; }
+.pre { color: var(--mute); margin: 30px 0 10px; }
+p.done { color: var(--soft); }
+.shots { display: grid; gap: 14px; }
+.shots figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
+.shots img { width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+.shots figcaption { display: grid; gap: 2px; font-size: 15px; color: var(--ink); }
+.shots figcaption span { color: var(--mute); font-size: 14px; }
+.rules ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.rules li { position: relative; padding-left: 22px; color: var(--soft); }
+.rules li::before { content: "—"; position: absolute; left: 0; color: var(--orange); }
+.rules .sec { color: var(--mute); margin-top: 14px; }
+.hd { display: grid; gap: 14px; margin-bottom: 22px; }
+.hd-head { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line2); border-radius: 14px; padding: 12px 16px; }
+.hd-head b { font: 600 18px/1 var(--serif); font-variation-settings: "SOFT" 100; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--blue); background: rgb(91 147 255 / .12); border-radius: 999px; padding: 6px 12px; font: 600 14px/1 var(--sans); white-space: nowrap; }
+.hd-btn i { font-style: normal; color: var(--orange); }
+.hd-btn code { font: 500 12px/1 ui-monospace, "SF Mono", Menlo, monospace; color: var(--mute); background: none; border: 0; border-left: 1px solid var(--line2); border-radius: 0; padding: 0 0 0 8px; }
+.hd-win { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr); background: #0c1018; border: 1px solid var(--line2); color: var(--soft); border-radius: 16px; overflow: hidden; font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+.hd-ws { list-style: none; margin: 0; padding: 12px 8px; display: grid; align-content: start; gap: 4px; background: #090c12; }
+.hd-ws li { padding: 6px 10px; border-radius: 8px; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.hd-ws li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hd-ws li::before { content: "✻"; color: var(--dim); }
+.hd-ws li.on::before { color: var(--orange); }
+.hd-ws li.cur { background: var(--panel2); color: var(--ink); }
+.hd-ws li.other { opacity: .55; } .hd-ws li.other::before { content: "›"; }
+.hd-ws .sep { height: 1px; background: var(--line2); margin: 4px 6px; padding: 0; } .hd-ws .sep::before { content: none; }
+.hd-pane { padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.hd-pane .cwd { color: var(--mute); font-size: 11.5px; overflow-wrap: anywhere; }
+.hd-pane .me { color: var(--ink); } .hd-pane .me::before { content: "› "; color: var(--sun); font-weight: 700; }
+.hd-pane .ok { color: var(--green); }
+.hd-pane .ai { padding-left: 10px; border-left: 2px solid var(--orange); }
+@media (max-width: 560px) { .ask { grid-template-columns: 1fr; } .hd-head { flex-wrap: wrap; } .hd-win { grid-template-columns: 1fr; } .hd-ws { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; } }

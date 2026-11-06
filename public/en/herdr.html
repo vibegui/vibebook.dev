@@ -8,40 +8,38 @@
 <link rel="canonical" href="https://vibebook.dev/en/herdr" />
 <link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/herdr" />
 <link rel="alternate" hreflang="en" href="https://vibebook.dev/en/herdr" />
-<meta name="theme-color" content="#1d5fc4" />
+<meta name="theme-color" content="#0a0d13" />
 <meta property="og:title" content="Turn on Claude: one click, a Claude in the right folder" />
 <meta property="og:description" content="vibebook herdr links each room to its project folder on your computer: one click on ✻ Turn on Claude opens a Claude Code there, in a herdr tab, already listening to the room." />
 <meta property="og:image" content="https://vibebook.dev/og-en.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/landing.css" />
-<link rel="stylesheet" href="/connect.css" />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/site.css" />
 </head>
 <body>
-<header class="hero cx-hero">
-  <div class="wrap">
-    <nav aria-label="main">
-      <a class="logo" href="/en" aria-label="vibebook, home" href="/pt" aria-label="vibebook, início">
-        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>
-        vibebook
-      </a>
-      <span class="sp"></span>
-      <a class="lang" href="/pt/herdr" hreflang="pt-BR" lang="pt-BR">PT</a>
-      <a class="btn btn-line" href="/app">Sign in</a>
-    </nav>
-    <h1>One click.<br /><em>A Claude in the right folder.</em></h1>
+<nav><div class="w">
+  <a class="logo" href="/en" aria-label="vibebook"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>vibebook</a>
+  <span class="sp"></span>
+  <a class="l" href="/en">Home</a>
+  <a class="l" href="/en/herdr" aria-current="page">herdr</a>
+  <a class="l" href="/en/jev">@vibe and Jev</a>
+  <a class="l" href="/en/how-it-works">Security</a>
+  <a class="l" href="/pt/herdr" hreflang="pt" lang="pt">PT</a>
+  <a class="btn sm" href="/app">Sign in</a>
+</div></nav>
+<header class="top"><div class="w">
+  <h1>One click.<br /><em>A Claude in the right folder.</em></h1>
     <p class="lede"><b>vibebook herdr</b> runs on your computer and links each room to its project. In the room you click <b>✻ Turn on Claude</b>, and it opens a Claude Code in the project's folder, in a <a href="https://herdr.dev" rel="noopener">herdr</a> tab, already listening to the room.</p>
     <div class="ask">
       <span>Run it once, in a terminal, and leave it open</span>
       <code>vibebook herdr</code>
       <button type="button" class="btn btn-sun copy" data-copy="vibebook herdr">Copy</button>
     </div>
-  </div>
-</header>
+</div></header>
 
-<main><div class="wrap cx hw">
+<main><div class="w">
   <p class="pre">Before: vibebook connected to your Claude Code (<a href="/en/connect">it's one sentence</a>) and <a href="https://herdr.dev" rel="noopener">herdr</a> open.</p>
 
   <section>
@@ -78,9 +76,7 @@
   </section>
 </div></main>
 
-<footer>
-  <div class="wrap"><span>vibebook.dev · <a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span><span>made with 💛 in Rio de Janeiro by <a href="https://vibegui.com" rel="noopener">vibegui.com</a></span></div>
-</footer>
+<footer><div class="w"><span>vibebook · made with ✨ in Rio de Janeiro by <a href="https://vibegui.com" rel="noopener">vibegui</a></span><span><a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span></div></footer>
 <script>
 document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", () => {
   navigator.clipboard?.writeText(b.dataset.copy);
