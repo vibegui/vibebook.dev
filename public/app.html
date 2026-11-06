@@ -34,6 +34,13 @@
   :root[data-theme="light"] { color-scheme: light; }
   :root[data-theme="dark"] { color-scheme: dark; }
   * { box-sizing: border-box; }
+  /* Scrollbars: thin and see-through; the thumb only shows while the pointer is over the area that scrolls. */
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  *:hover, *:focus-within { scrollbar-color: color-mix(in oklab, var(--mute) 45%, transparent) transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+  ::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+  :hover::-webkit-scrollbar-thumb { background-color: color-mix(in oklab, var(--mute) 45%, transparent); }
+  ::-webkit-scrollbar-corner { background: transparent; }
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
     font: 16px/1.55 "Schibsted Grotesk", system-ui, sans-serif; }
