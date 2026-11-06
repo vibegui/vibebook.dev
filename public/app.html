@@ -496,6 +496,18 @@
   .ftile b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ftile small { font-size: 12px; color: var(--mute); margin-top: -4px; }
 
+  /* file viewer */
+  .viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: #0c1016; color: #fff; }
+  .viewer[open] { display: flex; flex-direction: column; }
+  .viewer::backdrop { background: rgb(0 0 0 / .6); }
+  .viewer header { display: flex; align-items: center; gap: 6px; padding: max(8px, env(safe-area-inset-top)) 8px 8px 16px; flex: none; }
+  .viewer header b { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .viewer header a, .viewer header button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: none; color: #fff; font-size: 22px; line-height: 1; text-decoration: none; padding: 0; }
+  .viewer header a:hover, .viewer header button:hover { background: rgb(255 255 255 / .12); }
+  .viewer .vbody { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 0 env(safe-area-inset-bottom); }
+  .viewer .vbody.img { padding: 0 12px calc(12px + env(safe-area-inset-bottom)); overflow: auto; }
+  .viewer .vbody img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+  .viewer .vbody iframe { width: 100%; height: 100%; border: 0; background: #fff; }
   /* attachments */
   .tray { display: flex; gap: 10px; flex-wrap: wrap; }
   .tray:empty { display: none; }
@@ -2142,10 +2154,40 @@ function renderTasks() {
 }
 
 const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
+// Files open in an in-app viewer (a native <dialog>: name, ↗ open in a tab, ×) instead of navigating away, which in
+// the PWA meant no way back. Images are an <img>; HTML and PDF an iframe (HTML keeps the server's sandbox CSP and
+// gets sandbox="allow-scripts" here too). Cmd/Ctrl/middle click still opens a tab.
+const viewAttrs = (f) => `data-view="${f.type.startsWith("image/") ? "img" : "frame"}" data-name="${esc(f.name)}"`;
+function openViewer(url, kind, fname) {
+  let d = document.getElementById("viewer");
+  if (!d) {
+    d = document.createElement("dialog");
+    d.id = "viewer"; d.className = "viewer";
+    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="Abrir numa aba" aria-label="Abrir numa aba">↗</a><button type="button" title="Fechar" aria-label="Fechar">×</button></header><div class="vbody"></div>`;
+    d.querySelector("button").onclick = () => d.close();
+    d.querySelector("header a").onclick = () => d.close();
+    d.addEventListener("click", (e) => { if (e.target.classList.contains("vbody")) d.close(); });
+    d.addEventListener("close", () => { d.querySelector(".vbody").innerHTML = ""; });
+    document.body.appendChild(d);
+  }
+  d.querySelector("header b").textContent = fname;
+  d.querySelector("header a").href = url;
+  const body = d.querySelector(".vbody");
+  body.className = `vbody ${kind}`;
+  if (kind === "img") { const img = new Image(); img.src = url; img.alt = fname; body.replaceChildren(img); }
+  else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
+  d.showModal();
+}
+document.addEventListener("click", (e) => {
+  const a = e.target.closest?.("a[data-view]");
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  openViewer(a.getAttribute("href"), a.dataset.view, a.dataset.name || "");
+});
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.type.startsWith("image/")
-  ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener"><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
-  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener">${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
+  ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
+  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}>${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
 
 function pollHtml(id) {
   const p = S.polls?.[id]; if (!p) return "";
@@ -2218,7 +2260,7 @@ function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
-    <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}">
+    <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
     : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
