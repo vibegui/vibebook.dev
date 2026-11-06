@@ -1,0 +1,47 @@
+/* Long-form public pages (how it works, …) in the landing's style: dark, Fraunces headings, Schibsted body. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0d13; --panel: #111722; --panel2: #161d2a; --line: #1f2735; --line2: #2a3446;
+  --ink: #eef2f8; --soft: #c5cdda; --mute: #8b95a7; --dim: #5b6577;
+  --blue: #5b93ff; --sun: #f2dc4a; --orange: #f08c5a; --green: #49c48a; --red: #ff8a7a;
+  --serif: "Fraunces", Georgia, serif; --sans: "Schibsted Grotesk", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 17px/1.65 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: var(--blue); text-underline-offset: 3px; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; font-variation-settings: "SOFT" 100, "WONK" 0; letter-spacing: -0.025em; line-height: 1.06; margin: 0; text-wrap: balance; color: var(--ink); }
+p { text-wrap: pretty; }
+code { font: 0.88em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--panel2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; color: var(--soft); }
+.w { width: min(860px, 100% - 48px); margin-inline: auto; }
+nav .w { width: min(1120px, 100% - 48px); display: flex; align-items: center; gap: 24px; height: 68px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font: 22px Caprasimo, serif; text-decoration: none; color: var(--ink); }
+.logo svg { width: 28px; height: 28px; }
+nav .sp { flex: 1; }
+nav a.l { text-decoration: none; color: var(--mute); font-size: 15px; }
+nav a.l:hover, nav a.l[aria-current] { color: var(--ink); }
+.btn { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border-radius: 999px; font: 600 15px var(--sans); text-decoration: none; border: 1px solid var(--line2); color: var(--ink); }
+.btn.pri { background: var(--sun); color: #16203a; border-color: transparent; }
+.btn.sm { height: 38px; padding: 0 16px; font-size: 14.5px; }
+header.top { padding: 84px 0 56px; position: relative; overflow-x: clip; }
+header.top::before { content: ""; position: absolute; left: 30%; top: 0; width: 900px; height: 500px; background: radial-gradient(closest-side, rgb(29 95 196 / .25), transparent 70%); pointer-events: none; }
+header.top h1 { font-size: clamp(40px, 5.6vw, 68px); position: relative; }
+header.top h1 em { font-style: normal; color: var(--sun); }
+header.top .lede { margin: 22px 0 0; font-size: 19px; color: var(--soft); max-width: 38em; position: relative; }
+main section { padding: 34px 0 30px; border-top: 1px solid var(--line); }
+main section h2 { font-size: clamp(28px, 3.2vw, 38px); margin-bottom: 16px; }
+main section p { color: var(--soft); margin: 0 0 14px; }
+main section p b, main li b { color: var(--ink); font-weight: 600; }
+ol.flow { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 12px; }
+ol.flow li { counter-increment: s; position: relative; padding-left: 46px; min-height: 30px; color: var(--soft); }
+ol.flow li::before { content: counter(s); position: absolute; left: 0; top: -1px; width: 30px; height: 30px; border-radius: 50%; background: var(--panel2); border: 1px solid var(--line2); color: var(--soft); font: 600 13px/28px var(--sans); text-align: center; }
+ul.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+ul.list li { position: relative; padding-left: 22px; color: var(--soft); }
+ul.list li::before { content: "—"; position: absolute; left: 0; color: var(--orange); }
+section.risk { background: linear-gradient(180deg, #17120c, #0f0c08); border: 1px solid #3a2a1a; border-radius: 20px; padding: 30px 30px 18px; margin: 30px 0; }
+section.risk h2 { color: #ffd9b8; }
+main { padding-bottom: 80px; }
+footer { color: var(--dim); font-size: 14px; padding: 0 0 50px; }
+footer .w { width: min(1120px, 100% - 48px); border-top: 1px solid var(--line); padding-top: 26px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; }
+footer a { color: var(--mute); text-decoration: none; }
+@media (max-width: 760px) { nav a.l { display: none; } header.top { padding-top: 48px; } section.risk { padding: 22px 18px 10px; } }

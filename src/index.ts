@@ -142,9 +142,9 @@ for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr"]) {
   });
   for (const lang of ["pt", "en"])
     app.get(`/${lang}${path}`, async (c) => {
-      // The home comes from the Studio-editable site; if it's down, the static copy in public/ answers.
-      const fromSite = !path && c.env.SITE ? await c.env.SITE.fetch(c.req.raw).catch(() => null) : null;
-      const asset = fromSite && fromSite.status < 500 ? fromSite : await c.env.ASSETS.fetch(c.req.raw);
+      // Every page here is static (public/pt.html, public/en.html, public/<lang>/*.html). The Studio site (site/,
+      // binding SITE) no longer serves the home since the Nov 2026 landing; its /_site, /deco routes stay below.
+      const asset = await c.env.ASSETS.fetch(c.req.raw);
       const res = new Response(asset.body, asset);
       res.headers.append("set-cookie", `${LANG_COOKIE}=${lang}; Max-Age=31536000; Path=/; SameSite=Lax`);
       return pageview(c, res);

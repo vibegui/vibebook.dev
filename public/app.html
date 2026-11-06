@@ -15,21 +15,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     /* Every color once, light and dark (light-dark follows color-scheme: auto = the system, or the rail's toggle). */
     color-scheme: light dark;
-    --bg: light-dark(oklch(0.975 0.008 240), oklch(0.17 0.012 250)); --panel: light-dark(oklch(1 0 0), oklch(0.215 0.014 250));
-    --line: light-dark(oklch(0.91 0.01 245), oklch(0.31 0.015 250)); --ink: light-dark(oklch(0.2 0.02 250), oklch(0.93 0.008 250)); --mute: light-dark(oklch(0.45 0.02 250), oklch(0.7 0.015 250));
-    --accent: light-dark(oklch(0.5 0.17 248), oklch(0.6 0.16 248)); --accent-ink: #fff; --ai: var(--accent); --ai-bg: light-dark(oklch(0.95 0.03 245), oklch(0.27 0.045 248));
-    --ok: oklch(0.6 0.14 155); --sun: oklch(0.9 0.16 98);
+    /* Dark = the landing's palette (public/pt/v2.html): ink-black bg, panels #111722/#161d2a, lines #1f2735. */
+    --bg: light-dark(oklch(0.975 0.008 240), #0a0d13); --panel: light-dark(oklch(1 0 0), #111722);
+    --line: light-dark(oklch(0.915 0.01 245), #1f2735); --ink: light-dark(oklch(0.2 0.02 250), #eef2f8); --mute: light-dark(oklch(0.47 0.02 250), #8b95a7);
+    --accent: light-dark(oklch(0.5 0.17 248), #5b93ff); --accent-ink: #fff; --ai: var(--accent); --ai-bg: light-dark(oklch(0.95 0.03 245), #142037);
+    --ok: light-dark(oklch(0.6 0.14 155), #49c48a); --sun: light-dark(oklch(0.9 0.16 98), #f2dc4a);
+    --claude: light-dark(#d97757, #f08c5a);
     /* tinted surfaces: Claude (warm), delivered (green), mentions, waiting (yellow) */
-    --warm-bg: light-dark(oklch(0.975 0.014 55), oklch(0.25 0.03 50)); --warm-line: light-dark(oklch(0.92 0.035 55), oklch(0.36 0.05 50)); --warm-ink: light-dark(oklch(0.32 0.06 40), oklch(0.85 0.06 50));
-    --ok-bg: light-dark(oklch(0.97 0.03 155), oklch(0.25 0.04 155)); --ok-line: light-dark(oklch(0.86 0.07 155), oklch(0.38 0.07 155)); --ok-ink: light-dark(oklch(0.42 0.12 155), oklch(0.8 0.1 155));
-    --mention-bg: light-dark(oklch(0.92 0.06 245), oklch(0.33 0.08 248)); --mention-ink: light-dark(#14305e, oklch(0.9 0.05 245));
-    --wait-bg: light-dark(oklch(0.95 0.06 95), oklch(0.32 0.06 90)); --wait-ink: light-dark(oklch(0.38 0.08 80), oklch(0.9 0.08 95));
-    --hover: light-dark(oklch(0.96 0.01 250), oklch(0.27 0.015 250));
+    --warm-bg: light-dark(oklch(0.975 0.014 55), #1c1612); --warm-line: light-dark(oklch(0.92 0.035 55), #3a2718); --warm-ink: light-dark(oklch(0.32 0.06 40), #f3b48e);
+    --ok-bg: light-dark(oklch(0.97 0.03 155), #0f2219); --ok-line: light-dark(oklch(0.86 0.07 155), #1e4232); --ok-ink: light-dark(oklch(0.42 0.12 155), #7fdcae);
+    --mention-bg: light-dark(oklch(0.92 0.06 245), #1a2c4f); --mention-ink: light-dark(#14305e, #cfe0ff);
+    --wait-bg: light-dark(oklch(0.95 0.06 95), #2a2610); --wait-ink: light-dark(oklch(0.38 0.08 80), #f2dc4a);
+    --hover: light-dark(oklch(0.96 0.01 250), #161d2a);
+    --serif: "Fraunces", Georgia, serif;
   }
   :root[data-theme="light"] { color-scheme: light; }
   :root[data-theme="dark"] { color-scheme: dark; }
@@ -50,7 +53,12 @@
   button.ghost { border-color: transparent; background: transparent; }
   input, textarea { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 8px 10px; outline: none; }
   input:focus, textarea:focus { border-color: var(--ink); }
-  h1, h2, .brand { font-family: Caprasimo, Georgia, serif; font-weight: 400; letter-spacing: -0.01em; }
+  /* Headings: Fraunces, soft and upright, like the landing; Caprasimo stays for the wordmark and room initials. */
+  h1, h2, h3, dialog h3, .ask label, .side .title, .ptabs button { font-family: var(--serif); font-weight: 600; font-variation-settings: "SOFT" 100, "WONK" 0; letter-spacing: -0.025em; }
+  .brand { font-family: Caprasimo, Georgia, serif; font-weight: 400; font-variation-settings: normal; letter-spacing: -0.01em; }
+  /* Icons: one stroke set (ICONS in the script), sized by the call, aligned with the text around them. */
+  svg.i { flex: none; vertical-align: -0.18em; }
+  button:has(> svg.i), a:has(> svg.i) { display: inline-flex; align-items: center; gap: 6px; }
   .muted { color: var(--mute); }
   .avatar { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; font-weight: 700;
     color: #fff; flex: none; position: relative; }
@@ -59,7 +67,7 @@
   .avatar.pic { background: var(--line); overflow: visible; }
   .avatar.pic img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
   /* A person's Claude: orange asterisk, the person's avatar as a badge. */
-  .avatar.claude { background: #d97757; color: #fff; font-size: 17px; font-weight: 400; position: relative; overflow: visible; }
+  .avatar.claude { background: var(--claude); color: #fff; font-size: 17px; font-weight: 400; position: relative; overflow: visible; }
   .avatar.claude > .avatar { position: absolute; right: -5px; bottom: -5px; width: 16px; height: 16px; font-size: 7px; box-shadow: 0 0 0 2px var(--panel); }
 
   /* home */
@@ -81,9 +89,9 @@
   .waits li a { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; color: inherit; text-decoration: none; font-size: 14px; line-height: 1.4; }
   .waits li a:hover .wt { color: var(--accent); }
   .waits .wt { min-width: 0; overflow-wrap: anywhere; } .waits .wt small { display: block; color: var(--mute); font-size: 12px; }
-  .waits li .ghost { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 50%; }
+  .waits li .ghost { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 50%; display: grid; place-items: center; color: var(--mute); }
   .ask { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 16px 18px; margin: 4px 0 32px; box-shadow: 0 18px 40px -28px oklch(0.25 0.08 250 / .5); }
-  .ask label { display: block; font: 400 22px/1.1 Caprasimo, serif; margin-bottom: 10px; }
+  .ask label { display: block; font-size: 22px; line-height: 1.15; margin-bottom: 10px; }
   .askRow { display: flex; gap: 10px; align-items: flex-end; }
   .askRow textarea { flex: 1; min-width: 0; resize: none; min-height: 52px; max-height: 200px; font-size: 16px; }
   .askOut { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); display: grid; gap: 10px; }
@@ -113,9 +121,9 @@
     display: flex; min-height: 112px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
   .card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px oklch(0.25 0.08 250 / .45); }
   .card { position: relative; }
-  .card .arch { position: absolute; top: 10px; right: 10px; opacity: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 5px 8px; font-size: 14px; line-height: 1; cursor: pointer; }
+  .card .arch { position: absolute; top: 10px; right: 10px; opacity: 0; border: 1px solid var(--line); background: var(--bg); color: var(--mute); border-radius: 10px; padding: 6px; line-height: 0; cursor: pointer; }
   .card:hover .arch, .card .arch:focus-visible { opacity: 1; }
-  .card .arch:hover { border-color: #c2410c; }
+  .card .arch:hover { border-color: #c2410c; color: #c2410c; }
   @media (hover: none) { .card .arch { opacity: .7; } }
   .archLink { font-size: 14px; color: var(--mute); }
   .archLink:hover { color: var(--ink); }
@@ -158,7 +166,7 @@
   .setup.done { display: flex; gap: 12px; align-items: center; }
   .setupHead { display: flex; gap: 12px; align-items: flex-start; }
   .setupHead > div > b { display: block; font-size: 17px; margin-bottom: 2px; } .setupHead span { color: var(--mute); } .setupHead span b { color: var(--ink, inherit); }
-  .setupIcon { font-size: 22px; line-height: 1; color: var(--accent); flex: none; }
+  .setupIcon { font-size: 22px; line-height: 1; color: var(--accent); flex: none; display: inline-grid; place-items: center; }
   .setup.done .setupIcon { color: #1f9d8a; } .setup.done b { display: block; }
   .setupCmd { display: flex; gap: 8px; align-items: stretch; }
   .setupCmd code { flex: 1; min-width: 0; font: 13px/1.5 ui-monospace, Menlo, monospace; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; overflow-wrap: anywhere; user-select: all; }
@@ -203,7 +211,7 @@
   .book.nodoc { grid-template-columns: var(--side-w, 272px) 1fr; }
   .book.nodoc .doc { display: none; }
   .side { border-right: 1px solid var(--line); padding: 20px 16px; overflow: auto; display: flex; flex-direction: column; gap: 24px; background: var(--bg); }
-  .side .title { font-family: Caprasimo, serif; font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
+  .side .title { font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
   .side .folderTag { font-size: 12px; color: var(--mute); }
   .sec h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
@@ -213,7 +221,7 @@
   /* Rows keep their hover/selected padding but their content lines up with the sidebar edge. */
   .side .sec .thread, .side .newRoom, .side .friendAdd { margin-left: -10px; margin-right: -10px; width: calc(100% + 20px); }
   .ri.roomIco, .rb.geral { background: var(--accent); color: #fff; box-shadow: none; }
-  .folderChip { font: 500 12px "Schibsted Grotesk", sans-serif; color: var(--mute); background: var(--bg); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .folderChip { display: inline-flex; align-items: center; gap: 5px; font: 500 12px "Schibsted Grotesk", sans-serif; letter-spacing: 0; font-variation-settings: normal; color: var(--mute); background: var(--bg); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
   #roomName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ri { width: 26px; height: 26px; border-radius: 8px; flex: none; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
   .rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -233,28 +241,28 @@
   .tcard .tc-t small { font-size: 12px; color: var(--mute); }
   .tcard .tc-go { color: var(--mute); }
   .member.agentRow { padding-left: 18px; font-size: 12.5px; color: var(--mute); }
-  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; background: var(--warm-line); color: #d97757; flex: none; position: relative; border-radius: 50%; }
-  .agentRow .aglyph.on { background: #d97757; color: #fff; }
+  .agentRow .aglyph { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 14px; background: var(--warm-line); color: var(--claude); flex: none; position: relative; border-radius: 50%; }
+  .agentRow .aglyph.on { background: var(--claude); color: #fff; }
   .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
   .agentRow small { margin-left: auto; font-size: 11px; }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
-  .arch summary::before { content: "▸ "; } .arch[open] summary::before { content: "▾ "; }
+  .arch summary::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 8px 2px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; } .arch[open] summary::before { transform: rotate(45deg); }
   .thread.archived { opacity: .6; }
   .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
   /* A Claude working on this epic: the asterisk turns slowly and a soft light runs around the row. */
   .thread.busy { position: relative; isolation: isolate; }
-  .thread.busy::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), transparent 0 70%, #d97757 85%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  .thread.busy::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), transparent 0 70%, var(--claude) 85%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
   @property --spin-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
   @keyframes claudeRing { to { --spin-a: 360deg; } }
-  .claudeSpin { color: #d97757; font-size: 15px; line-height: 1; display: inline-block; animation: claudeTurn 3.2s linear infinite; flex: none; }
+  .claudeSpin { color: var(--claude); font-size: 15px; line-height: 1; display: inline-grid; place-items: center; width: 1em; height: 1em; transform-origin: 50% 50%; animation: claudeTurn 3.2s linear infinite; flex: none; }
   @keyframes claudeTurn { to { transform: rotate(360deg); } }
   /* Inside the epic: who is on it, where the empty-thread hint would be (or after the last message). */
   .working { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; background: var(--warm-bg); color: var(--warm-ink); font-size: 14.5px; }
-  .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), var(--warm-line) 0 70%, #d97757 85%, var(--warm-line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), var(--warm-line) 0 70%, var(--claude) 85%, var(--warm-line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
   .working > div { flex: 1; min-width: 0; }
   .working small { display: block; color: var(--mute); font-size: 12.5px; margin-top: 2px; }
   .working .avatar.claude { border-radius: 50%; flex: none; }
-  .working .spin { color: #d97757; font-size: 20px; line-height: 1; animation: claudeTurn 3.2s linear infinite; }
+  .working .spin { color: var(--claude); font-size: 20px; line-height: 1; display: inline-grid; place-items: center; width: 1em; height: 1em; flex: none; transform-origin: 50% 50%; animation: claudeTurn 3.2s linear infinite; }
   .empty.hidden { display: none; }
   @media (prefers-reduced-motion: reduce) { .thread.busy::before, .claudeSpin, .working::before, .working .spin { animation: none; } }
   .thread.pre .ri { background: none; border: 1.5px dashed currentColor; color: var(--mute); }
@@ -273,14 +281,14 @@
   .friendAdd { display: flex; align-items: center; gap: 8px; border: none; background: transparent; padding: 4px 10px; margin-top: 2px; font-size: 13px; text-align: left; border-radius: 10px; color: var(--mute); }
   .friendAdd:hover { background: var(--panel); color: var(--ink); }
   .friendAdd .fn { flex: 1; overflow: hidden; text-overflow: ellipsis; }
-  .friendAdd b { color: var(--accent); font-size: 16px; }
+  .friendAdd b { color: var(--accent); line-height: 0; }
   .member .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Pending invites and access requests: the email gets the whole row (wrapping, never cut) and the actions go under it. */
   .member .fnCol { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .member .fnCol .fn { font-weight: 500; }
   .member .memActs { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .member .memActs { color: var(--mute); font-size: 11.5px; } .member .memActs .resend { padding: 0 2px; font-size: 11.5px; }
-  .x { font-size: 18px; line-height: 1; padding: 2px 7px; color: var(--mute); flex: none; }
+  .x { font-size: 18px; line-height: 1; padding: 4px 6px; color: var(--mute); flex: none; display: inline-grid; place-items: center; border-radius: 8px; }
   .x:hover { color: oklch(0.6 0.2 25); background: light-dark(oklch(0.95 0.03 25), oklch(0.3 0.06 25)); }
   .friend .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .resend { font-size: 12px; padding: 2px 6px; color: var(--accent); flex: none; }
@@ -288,7 +296,7 @@
 
   .chat { display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
   .chathead, .doc header { height: 64px; flex: none; padding: 0 24px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
-  .chathead h2 { margin: 0; font-size: 18px; flex: 1; }
+  .chathead h2 { margin: 0; font-size: 19px; flex: 1; }
   .tasks { padding: 14px 28px; border-bottom: 1px solid var(--line); background: var(--bg); max-height: 40%; overflow: auto; }
   .task { display: flex; gap: 10px; align-items: center; padding: 3px 0; }
   .task .tt { flex: 1; cursor: text; border-radius: 6px; padding: 2px 4px; margin: -2px -4px; }
@@ -306,16 +314,16 @@
   .kanban { display: none; }
   .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
-  #toggleBoard[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+  #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
   #myClaude { white-space: nowrap; }
-  #myClaude .where { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); font: 500 11.5px ui-monospace, "SF Mono", Menlo, monospace; color: var(--mute); }
+  #myClaude .where { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); font: 500 11.5px ui-monospace, "SF Mono", Menlo, monospace; color: var(--mute); }
   #myClaude[aria-pressed="true"] { background: color-mix(in oklch, var(--accent) 16%, var(--panel)); border-color: var(--accent); color: var(--ink); }
   .lanes { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 10px; overflow-x: auto; }
   .lane { min-width: 0; background: color-mix(in oklch, var(--line) 45%, var(--bg)); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; border: 2px solid transparent; }
   .lane.over { border-color: var(--accent); }
   .lane > h3 { margin: 0; padding: 12px 14px 8px; font: 700 13px/1 "Schibsted Grotesk", sans-serif; display: flex; justify-content: space-between; color: var(--mute); text-transform: uppercase; letter-spacing: .04em; }
   .lane .cards { flex: 0 1 auto; overflow: auto; padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
-  .vnote { display: inline-block; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: oklch(0.5 0.12 75); background: oklch(0.85 0.12 85 / .25); vertical-align: 1px; }
+  .vnote { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 0 6px; padding: 1px 7px; border-radius: 999px; font: 600 11px/1.5 system-ui, sans-serif; color: var(--wait-ink); background: var(--wait-bg); vertical-align: 1px; }
   .kcard .vnote { margin-left: 0; justify-self: start; }
   .task.mine { box-shadow: inset 3px 0 0 #e3b505; padding: 8px 10px 8px 14px; margin: 6px 0; border-radius: 10px; }
   .task.mine .towner { font-weight: 700; color: light-dark(#7a5c00, #f0d36b); background: color-mix(in oklch, #e3b505 18%, transparent); border-radius: 999px; }
@@ -347,7 +355,7 @@
   .kcard.dragging { opacity: .5; }
   .kcard .kt { font-weight: 600; line-height: 1.35; }
   .kcard.done .kt { text-decoration: line-through; color: var(--mute); }
-  .kcard .km { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
+  .kcard .km > span:not(.kep) { display: inline-flex; align-items: center; gap: 4px; } .kcard .km { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--mute); }
   .kcard .kep { color: #fff; border-radius: 6px; padding: 1px 6px; font-weight: 700; font-size: 11px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kcard .avatar { width: 20px; height: 20px; font-size: 9px; }
   .kadd { display: flex; gap: 6px; padding: 0 10px 10px; flex-wrap: wrap; }
@@ -425,7 +433,7 @@
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
   .sideTop { display: flex; align-items: center; gap: 8px; }
-  .sideTop a { flex: 1; font-size: 13px; text-decoration: none; }
+  .sideTop a { flex: 1; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
   .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
   .iconBtn:hover { background: var(--panel); color: var(--ink); }
   .iconBtn svg { width: 20px; height: 20px; }
@@ -452,9 +460,9 @@
   .seg button.sel { background: var(--ink); color: var(--panel); }
   .preview { flex: 1; overflow: auto; padding: 24px 28px 40px; line-height: 1.6; overflow-wrap: anywhere; }
   .preview > :first-child { margin-top: 0; }
-  .preview h1 { font-size: 26px; line-height: 1.15; margin: 0 0 16px; }
-  .preview h2 { font: 700 18px/1.3 "Schibsted Grotesk", sans-serif; margin: 28px 0 8px; }
-  .preview h3 { font: 700 16px/1.3 "Schibsted Grotesk", sans-serif; margin: 20px 0 6px; }
+  .preview h1 { font-size: 28px; line-height: 1.12; margin: 0 0 16px; }
+  .preview h2 { font-size: 20px; line-height: 1.25; margin: 28px 0 8px; }
+  .preview h3 { font-size: 17px; line-height: 1.3; margin: 20px 0 6px; }
   .preview p { margin: 0 0 12px; }
   /* Tasks are the heart of an epic: a white card with its own header, same type size as the doc. */
   .preview .tasks { margin: 20px 0 26px; padding: 4px 18px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05); max-height: none; line-height: 1.45; font-size: 16px; }
@@ -493,9 +501,9 @@
   .preview .empty { margin: 0; }
   .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
   /* doc panel tabs + files library */
-  .ptabs { display: flex; gap: 10px; flex: 1; align-items: baseline; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .ptabs { display: flex; gap: 12px; flex: 1; align-items: baseline; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .doc header .seg { flex: none; }
-  .ptabs button { border: none; background: none; padding: 0; font: 400 16px/1 Caprasimo, serif; color: var(--mute); white-space: nowrap; }
+  .ptabs button { border: none; background: none; padding: 0; font-size: 15px; line-height: 1; color: var(--mute); white-space: nowrap; }
   .ptabs button.sel { color: var(--ink); }
   .ptabs small { font: 600 12px "Schibsted Grotesk", sans-serif; color: var(--mute); margin-left: 4px; }
   .doc[data-pane="files"] .preview, .doc[data-pane="files"] textarea, .doc[data-pane="files"] .seg { display: none; }
@@ -510,13 +518,14 @@
   .dec .x { opacity: 0; } .dec:hover .x { opacity: 1; }
   .task .towner { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 6px; background: var(--bg); color: var(--mute); max-width: 120px; }
   .task .towner.set { color: var(--ink); font-weight: 600; }
-  .task .due { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--mute); cursor: pointer; white-space: nowrap; }
+  .task .due { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--mute); cursor: pointer; white-space: nowrap; }
   .task .due.set { color: var(--ink); font-weight: 600; }
   .waitChip { font: 700 12px/1.3 "Schibsted Grotesk", system-ui, sans-serif; padding: 3px 9px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); margin-left: 8px; white-space: nowrap; }
   .waitWho { all: unset; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; } .waitWho:hover { text-decoration-style: solid; }
   .chathead { position: relative; container-type: inline-size; }
   /* Narrow header (zoom, a wide doc panel): the title shrinks with an ellipsis, buttons keep their icon. */
-  .chathead > button { flex: none; white-space: nowrap; }
+  .chathead > button { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 11px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; }
+  .chathead > button:hover { background: var(--hover); color: var(--ink); }
   .chathead h2 { overflow: hidden; }
   .chathead h2 .epicName { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chathead h2 .folderChip, .chathead h2 .waitChip { flex: 0 4 auto; min-width: 2.2em; overflow: hidden; text-overflow: ellipsis; }
@@ -529,7 +538,7 @@
   .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
   .ftile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
-  .ftile .thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; font-size: 30px; }
+  .ftile .thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; color: var(--mute); }
   .ftile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s cubic-bezier(.22,1,.36,1); }
   .ftile:hover img { transform: scale(1.04); }
   .ftile b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -541,7 +550,7 @@
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
   .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
-  .rems { margin-bottom: 20px; } .rems h4 { margin: 0 0 8px; font-size: 13px; color: var(--mute); }
+  .rems { margin-bottom: 20px; } .rems h4 { margin: 0 0 8px; font-size: 13px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
   .rem { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 8px; }
   .rem > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .rem small { color: var(--mute); font-size: 12px; }
   .rem button { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none; }
@@ -558,7 +567,7 @@
   .viewer::backdrop { background: rgb(0 0 0 / .6); }
   .viewer header { display: flex; align-items: center; gap: 6px; padding: max(8px, env(safe-area-inset-top)) 8px 8px 16px; flex: none; }
   .viewer header b { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .viewer header a, .viewer header button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: none; color: #fff; font-size: 22px; line-height: 1; text-decoration: none; padding: 0; }
+  .viewer header a, .viewer header button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; background: none; color: #fff; line-height: 1; text-decoration: none; padding: 0; }
   .viewer header a:hover, .viewer header button:hover { background: rgb(255 255 255 / .12); }
   .viewer .vbody { flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 0 env(safe-area-inset-bottom); }
   .viewer .vbody.img { padding: 0 12px calc(12px + env(safe-area-inset-bottom)); overflow: auto; }
@@ -572,7 +581,7 @@
   .pend.up::after { content: ""; position: absolute; inset: 0; background: oklch(1 0 0 / .55); }
   .pend.up::before { content: ""; position: absolute; z-index: 1; width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
   .pend.err { border-color: oklch(0.6 0.2 25); color: oklch(0.5 0.2 25); }
-  .pend .rm { position: absolute; z-index: 2; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: none; background: oklch(0.2 0.02 250 / .75); color: #fff; font-size: 14px; line-height: 1; }
+  .pend .rm { position: absolute; z-index: 2; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0; border-radius: 50%; border: none; background: oklch(0.2 0.02 250 / .75); color: #fff; display: grid; place-items: center; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .icon { padding: 6px 9px; font-size: 18px; line-height: 1; flex: none; align-self: center; }
   .composer .icon { padding: 5px; color: var(--mute); display: inline-flex; }
@@ -585,7 +594,7 @@
 
   /* polls */
   .poll { margin-top: 6px; width: min(460px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: 0 8px 24px -16px oklch(0.3 0.08 250 / .5); }
-  .pq { font-weight: 700; font-size: 17px; margin-bottom: 12px; }
+  .pq { font-weight: 700; font-size: 17px; margin-bottom: 12px; display: flex; gap: 8px; align-items: center; } .pq svg { color: var(--accent); }
   .opt { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 14px; margin-top: 8px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; transition: border-color .2s; }
   .opt:hover:not(:disabled) { border-color: var(--accent); }
   .opt:disabled { cursor: default; }
@@ -599,7 +608,7 @@
   .opt .stack .avatar { width: 20px; height: 20px; font-size: 9px; margin-right: -6px; border: 2px solid var(--panel); }
   .pf { margin-top: 12px; font-size: 13px; color: var(--mute); }
   .link { background: none; border: none; color: var(--accent); padding: 0; font-size: inherit; text-decoration: underline; }
-  dialog { border: none; border-radius: 20px; padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
+  dialog { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--ink); padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
   dialog::backdrop { background: oklch(0.2 0.05 250 / .35); }
   dialog.welcome { width: min(520px, calc(100% - 32px)); padding: 30px 30px 22px; }
   dialog.welcome .wIco { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--ai-bg); color: var(--accent); margin-bottom: 16px; }
@@ -608,7 +617,7 @@
   dialog.welcome .wFoot { display: flex; align-items: center; gap: 8px; margin-top: 18px; }
   dialog.welcome .wDots { flex: 1; display: flex; gap: 6px; } dialog.welcome .wDots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); } dialog.welcome .wDots i.on { background: var(--accent); width: 20px; border-radius: 4px; }
   dialog.welcome #wConnect .setup { margin: 0; } dialog.welcome #wConnect .setupHead { display: none; }
-  dialog h3 { margin: 0 0 14px; font: 400 22px Caprasimo, serif; }
+  dialog h3 { margin: 0 0 14px; font-size: 22px; line-height: 1.2; }
   dialog form { display: grid; gap: 10px; }
   dialog .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
   @media (prefers-reduced-motion: reduce) { .opt .fill, .ftile img { transition: none; } .pend.up::before { animation: none; } }
@@ -653,7 +662,7 @@
     /* Phones: the rail is gone, so the tab bar carries ← home and a room switcher; tighter gutters, safe areas. */
     .tabs { align-items: center; padding: max(8px, env(safe-area-inset-top)) 10px 8px; position: sticky; top: 0; z-index: 3; }
     .tabs button { padding: 6px 12px; }
-    .tabs .tabHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); text-decoration: none; font-size: 18px; flex: none; }
+    .tabs .tabHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); text-decoration: none; flex: none; }
     .tabs .tabRooms { margin-left: auto; border: 0; background: none; color: var(--mute); width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
     .msgs { padding: 16px 14px 12px; gap: 16px; }
     .msg { gap: 10px; }
@@ -703,7 +712,7 @@
   .pdHead b { display: block; cursor: pointer; } .pdHead small { color: var(--mute); font-size: 13px; }
   .pdNav { display: grid; gap: 2px; }
   .pdNav > * { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 10px; color: var(--ink); text-decoration: none; text-align: left; font-size: 15px; line-height: 1.2; }
-  .pdrawer h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 4px 0 -6px; }
+  .pdrawer h2 { font: 600 13px "Schibsted Grotesk", sans-serif; letter-spacing: .06em; font-variation-settings: normal; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 4px 0 -6px; }
   .pask .askOut[hidden] { display: none; }
   .pdBell { cursor: pointer; padding-left: 0 !important; } .pdBell .bell { padding: 0 8px; }
   .pdOut { margin-top: auto; align-self: flex-start; color: var(--mute); }
@@ -734,7 +743,7 @@
   .sw-group .sw-item .pill { left: -8px; top: 12px; }
   .sw-item:hover .pill { opacity: .5; }
   .sw-item.on .pill { opacity: 1; height: 28px; top: 4px; }
-  .swBusy { position: absolute; left: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); color: #d97757; font: 400 15px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
+  .swBusy { position: absolute; left: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; line-height: 1; transform-origin: 50% 50%; background: var(--panel); color: var(--claude); font: 400 15px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
   .swBusy { animation: claudeTurn 3.2s linear infinite; }
   @media (prefers-reduced-motion: reduce) { .swBusy { animation: none; } }
   .sw-item.dropTo .tile { outline: 2px dashed var(--accent); outline-offset: 2px; }
@@ -1188,7 +1197,7 @@ const avatar = (email, on) => {
 // A person's Claude: the orange asterisk, with its person's avatar as a small badge.
 const agentAvatar = (email, via) => `<span class="avatar claude" title="${t("{via} de {who}", { via: esc(via || "Claude"), who: esc(name(email)) })}">✻${avatar(email)}</span>`;
 // @vibe's grading notes (Jev, on the room's alarm): a quiet chip, the same words the Claudes get in read_room.
-const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. ${t("O Claude de quem pegar a tarefa também vê isso.")}">⚠ ${esc(f.join(" · "))}</span>` : "");
+const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. ${t("O Claude de quem pegar a tarefa também vê isso.")}">${icon("alert", 12)} ${esc(f.join(" · "))}</span>` : "");
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? t("agora") : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
 // Escaped text → clickable http(s) links (opened safely in a new tab).
 // @mentions: a member's handle is their first name (accents stripped), else the first part of their email.
@@ -1221,9 +1230,46 @@ const api = async (path, body) => {
 const $sw = document.getElementById("switcher");
 let myBooks = null; // from /api/me, newest activity first
 let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting on you for
+// One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
+const ICONS = {
+  search: `<circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4-4"/>`,
+  plus: `<path d="M5 12h14"/><path d="M12 5v14"/>`,
+  x: `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`,
+  check: `<path d="M20 6 9 17l-5-5"/>`,
+  menu: `<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>`,
+  list: `<path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/>`,
+  sidebar: `<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M9 3v18"/>`,
+  back: `<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>`,
+  external: `<path d="M7 7h10v10"/><path d="M7 17 17 7"/>`,
+  board: `<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/>`,
+  doc: `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>`,
+  file: `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>`,
+  globe: `<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>`,
+  folder: `<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>`,
+  calendar: `<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/>`,
+  trash: `<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>`,
+  archive: `<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>`,
+  undo: `<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>`,
+  reply: `<path d="m9 17-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>`,
+  bell: `<path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/>`,
+  bellOff: `<path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.67C4.59 13.96 6 12.5 6 8a6 6 0 0 1 .26-1.74"/><path d="m2 2 20 20"/><path d="M8.67 3.01A6 6 0 0 1 18 8c0 2.69.77 4.65 1.71 6.05"/>`,
+  camera: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`,
+  chart: `<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>`,
+  trophy: `<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>`,
+  clock: `<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>`,
+  alert: `<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>`,
+  paperclip: `<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/>`,
+  at: `<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>`,
+  hand: `<path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>`,
+  arrowRight: `<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`,
+  sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>`,
+  moon: `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`,
+  contrast: `<circle cx="12" cy="12" r="9"/><path d="M12 17a5 5 0 0 0 0-10z" fill="currentColor"/>`,
+};
+const icon = (n, size = 16) => `<svg class="i" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const SW_LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/></svg>`;
-const SW_SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`;
-const SW_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
+const SW_SEARCH = icon("search", 18);
+const SW_PLUS = icon("plus", 18);
 // Phones: the room is as tall as what's visible (the iOS keyboard shrinks the visual viewport, not 100dvh),
 // and iOS's habit of scrolling the whole page to show a focused input is undone (in a room only: the home is a
 // normal scrolling page, and snapping it back to the top on every scroll event broke scrolling there).
@@ -1232,11 +1278,10 @@ if (window.visualViewport) {
   visualViewport.addEventListener("resize", fit); visualViewport.addEventListener("scroll", fit); fit();
 }
 // Theme: auto (follows the system) → light → dark, remembered per browser; the CSS reads data-theme via color-scheme.
-const ICO = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const THEMES = {
-  auto: { label: t("Tema automático (do sistema)"), next: "light", icon: ICO(`<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>`) },
-  light: { label: t("Tema claro"), next: "dark", icon: ICO(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`) },
-  dark: { label: t("Tema escuro"), next: "auto", icon: ICO(`<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>`) },
+  auto: { label: t("Tema automático (do sistema)"), next: "light", icon: icon("contrast", 18) },
+  light: { label: t("Tema claro"), next: "dark", icon: icon("sun", 18) },
+  dark: { label: t("Tema escuro"), next: "auto", icon: icon("moon", 18) },
 };
 const theme = () => document.documentElement.dataset.theme || "auto";
 function setTheme(t) {
@@ -1337,7 +1382,7 @@ $sw.addEventListener("mouseover", (e) => {
   const people = (b.members || "").split(",").filter(Boolean).length;
   const news = b.id === S?.id ? "" : b.last_human_id > b.read_id ? `<span class="tn h">● ${t("mensagens novas")}</span>` : b.last_agent_id > b.read_id ? `<span class="tn a">● ${t("agents escreveram")}</span>` : "";
   swTip.innerHTML = `<b>${esc(b.title)}</b>${b.summary ? `<span>${esc(b.summary)}</span>` : ""}
-    <small>${b.folder ? `📁 ${esc(b.folder)} · ` : ""}${people === 1 ? t("1 pessoa") : t("{n} pessoas", { n: people })} · ${ago(b.updated_at) === t("agora") ? t("ativa agora") : t("ativa há {ago}", { ago: ago(b.updated_at) })}</small>${news}`;
+    <small>${b.folder ? `${icon("folder", 12)} ${esc(b.folder)} · ` : ""}${people === 1 ? t("1 pessoa") : t("{n} pessoas", { n: people })} · ${ago(b.updated_at) === t("agora") ? t("ativa agora") : t("ativa há {ago}", { ago: ago(b.updated_at) })}</small>${news}`;
   const r = a.querySelector(".tile").getBoundingClientRect();
   swTip.style.top = `${r.top + r.height / 2}px`;
   swTip.hidden = false;
@@ -1474,12 +1519,12 @@ async function home() {
       <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
     ${me.avatar ? "" : `<div class="picAsk"><span class="picBig" style="background:${color(me.email)}">${esc(name(me.email).slice(0, 2).toUpperCase())}</span>
       <div><b>${t("Coloque sua foto")}</b><span class="muted">${t("Assim o pessoal sabe na hora quando é você falando, e quando é o seu Claude (✻).")}</span></div>
-      <button class="primary" data-pic>📷 ${t("Adicionar foto")}</button></div>`}
+      <button class="primary" data-pic>${icon("camera")} ${t("Adicionar foto")}</button></div>`}
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />
     <div class="hello">
       <div class="helloText"><h1>${first ? t("Oi, {name}", { name: esc(first) }) : t("Seus vibebooks")}</h1>
         <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, t("amigo"), t("amigos"))} · <a class="archLink" data-nav href="/archived">${t("Arquivo")}</a></p></div>
-      <button class="primary" id="new">+ ${t("Novo vibebook")}</button>
+      <button class="primary" id="new">${icon("plus")} ${t("Novo vibebook")}</button>
     </div>
     <div class="grid">
       <main>
@@ -1489,7 +1534,7 @@ async function home() {
             <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
             <div class="cards">${byFolder[f].map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
               <a class="card" data-nav href="/b/${b.id}">
-                <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="${t("Arquivar")}" aria-label="${t("Arquivar {title}", { title: esc(b.title) })}">🗑</button>
+                <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="${t("Arquivar")}" aria-label="${t("Arquivar {title}", { title: esc(b.title) })}">${icon("archive")}</button>
                 <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
                 <div class="info">
                   <b>${esc(b.title)}</b>
@@ -1506,7 +1551,7 @@ async function home() {
         ${me.friends.length ? me.friends.map((f) => `
           <div class="friend">${avatar(f.email)}<div class="fn" title="${esc(f.email)}">${esc(f.name || name(f.email))}
             <small>${f.shared ? `${plural(f.shared, t("vibebook junto"), t("vibebooks juntos"))}` : f.joined ? t("na plataforma") : t("convidado")}</small></div>
-            <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}" title="${t("Remover dos amigos")}">×</button></div>`).join("")
+            <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}" title="${t("Remover dos amigos")}">${icon("x")}</button></div>`).join("")
           : `<p class="muted" style="font-size:14px">${t("Quem você convida para um vibebook vira amigo aqui.")}</p>`}
         <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
       </aside>
@@ -1519,7 +1564,7 @@ async function home() {
 // router box at the bottom (30%). Everything else (waits, your Claude, friends, theme, archive, sign out) is in ☰.
 const PHONE = matchMedia("(max-width: 720px)");
 PHONE.addEventListener("change", () => { if (location.pathname === "/app") home(); });
-const MENU_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
+const MENU_ICON = icon("menu", 22);
 function phoneHome(me) {
   const rooms = [...me.books].sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0) || b.updated_at - a.updated_at);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
@@ -1558,7 +1603,7 @@ function phoneHome(me) {
     <section class="agentBox" id="agentBox" aria-live="polite"></section>
     <h2>${t("Amigos")} <small>${me.friends.length || ""}</small></h2>
     ${me.friends.map((f) => `<div class="friend">${avatar(f.email)}<div class="fn">${esc(f.name || name(f.email))}<small>${f.shared ? plural(f.shared, t("vibebook junto"), t("vibebooks juntos")) : f.joined ? t("na plataforma") : t("convidado")}</small></div>
-      <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}">×</button></div>`).join("")}
+      <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}">${icon("x")}</button></div>`).join("")}
     <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
     <button class="ghost pdOut" id="logout">${t("Sair")}</button>
   </dialog>
@@ -1674,7 +1719,7 @@ async function archivedPage() {
   <div class="home">
     <header class="top"><div class="brand"><a href="/app" data-nav>vibebook</a></div></header>
     <div class="hello"><div class="helloText"><h1>${t("Arquivo")}</h1><p>${t("Salas que você arquivou. Elas continuam existindo pra quem está nelas.")}</p></div>
-      <a class="ghost" data-nav href="/app" style="text-decoration:none">← ${t("Voltar")}</a></div>
+      <a class="ghost" data-nav href="/app" style="text-decoration:none">${icon("back")} ${t("Voltar")}</a></div>
     <main>${books.length ? `<div class="cards">${books.map((b) => `
       <div class="card" style="cursor:default">
         <div class="cover" style="background-color:${coverColor(b.title)};filter:grayscale(.6)"><span>${esc(initials(b.title))}</span></div>
@@ -1726,7 +1771,7 @@ function renderWaits() {
       <a data-nav href="${href(w)}" data-wait-open="${i}">${tile(myBooks.find((b) => b.id === w.book_id) || { id: w.book_id, title: w.room }, "sm")}
         <span class="wt"><small>${esc(w.room)}${w.topic ? ` › ${esc(w.topic)}` : ""} · ${ago(w.ts)}</small>
         ${w.ref.startsWith("t") ? `<b>${t("Tarefa sua esperando OK:")}</b> ${esc(w.text)}` : `<b>${esc(who(w))}:</b> ${esc(w.text.length > 160 ? `${w.text.slice(0, 158)}…` : w.text)}`}</span></a>
-      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">✓</button>` : ""}
+      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check")}</button>` : ""}
     </li>`).join("")}</ul>`;
   el.querySelectorAll("[data-wait-done]").forEach((b) => b.onclick = () => {
     const w = myWaits[Number(b.dataset.waitDone)];
@@ -1747,7 +1792,7 @@ async function connectCard(el, room) {
   if (!r || !document.body.contains(el)) return;
   if (r.agents.length) {
     if (el.dataset.waiting) {
-      el.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>${t("Seu Claude conectou.")}</b><span>${room ? t("Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo.") : t("Ele já enxerga as suas salas.")}</span></div></div>`;
+      el.innerHTML = `<div class="setup done"><span class="setupIcon">${icon("check", 22)}</span><div><b>${t("Seu Claude conectou.")}</b><span>${room ? t("Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo.") : t("Ele já enxerga as suas salas.")}</span></div></div>`;
       delete el.dataset.waiting;
       setTimeout(() => { if (document.body.contains(el)) { el.innerHTML = ""; el.hidden = true; } }, 6000);
       if (!room) renderAgents();
@@ -1786,7 +1831,7 @@ let thread = "main";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
 const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
-const fileIcon = (f) => (f.type === "text/html" ? "🌐" : "📄");
+const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : "file", size);
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
 function openBook(id) {
@@ -1801,7 +1846,7 @@ function openBook(id) {
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
-    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">← ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
   };
   connect();
 }
@@ -1878,8 +1923,8 @@ const modeLabel = { route: t("escolhendo o modelo"), fast: t("rápido"), smart: 
 // (or in another thread). Needs the app open in a tab; push with the tab closed would need Web Push.
 // ponytail: tab-open only; add a service worker + VAPID push when people ask for closed-tab alerts.
 const BELL = {
-  on: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
-  off: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg>',
+  on: icon("bell", 20),
+  off: icon("bellOff", 20),
 };
 const notifyPerm = () => ("Notification" in window ? Notification.permission : "unsupported");
 const notifyMuted = () => { try { return localStorage.getItem("vb.mute") === "1"; } catch { return false; } };
@@ -1930,10 +1975,10 @@ function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
   <div class="book ${railMode ? "rail" : ""}" data-tab="chat">
-    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">←</a><button data-tab="side">☰ ${t("Épicos")}</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="${t("Trocar de sala")}" title="${t("Trocar de sala")}">${SW_SEARCH}</button></nav>
+    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><button data-tab="side">${icon("list")} ${t("Épicos")}</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="${t("Trocar de sala")}" title="${t("Trocar de sala")}">${SW_SEARCH}</button></nav>
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>↗</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">▦ <span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">📄 <span class="lbl">Doc</span></button></div>
+      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -1943,11 +1988,11 @@ function renderBook() {
         <div class="replyBar" id="replyBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
-            <button type="button" role="menuitem" id="attach"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> ${t("Anexar arquivo")} <small>${t("ou Cmd+V")}</small></button>
-            <button type="button" role="menuitem" id="mentionBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg> ${t("Mencionar alguém")} <small>@</small></button>
-            <button type="button" role="menuitem" id="pollBtn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5"/><path d="M13 17V8"/><path d="M18 17v-3"/></svg> ${t("Criar votação")}</button>
+            <button type="button" role="menuitem" id="attach">${icon("paperclip")} ${t("Anexar arquivo")} <small>${t("ou Cmd+V")}</small></button>
+            <button type="button" role="menuitem" id="mentionBtn">${icon("at")} ${t("Mencionar alguém")} <small>@</small></button>
+            <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
           <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
@@ -2056,8 +2101,8 @@ function renderBook() {
   const sendBtn = document.getElementById("sendBtn");
   const renderTray = () => {
     tray.innerHTML = attached.map((p, i) => `<div class="pend ${!p.meta && !p.error ? "up" : ""} ${p.error ? "err" : ""}" title="${esc(p.error || p.file.name)}">
-      ${p.url ? `<img src="${p.url}" alt="">` : `📄<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
-      <button type="button" class="rm" data-rm="${i}" aria-label="${t("Remover anexo")}">×</button></div>`).join("");
+      ${p.url ? `<img src="${p.url}" alt="">` : `${icon("file", 22)}<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
+      <button type="button" class="rm" data-rm="${i}" aria-label="${t("Remover anexo")}">${icon("x")}</button></div>`).join("");
     tray.querySelectorAll("[data-rm]").forEach((b) => b.onclick = () => { const [p] = attached.splice(Number(b.dataset.rm), 1); if (p?.url) URL.revokeObjectURL(p.url); renderTray(); });
     const uploading = attached.some((p) => !p.meta && !p.error);
     sendBtn.disabled = uploading; sendBtn.textContent = uploading ? t("Enviando…") : t("Enviar");
@@ -2178,10 +2223,10 @@ function welcome() {
   try { if (!S.book?.owner || S.me === S.book.owner || localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { return; }
   const owner = name(S.book.owner);
   const steps = [
-    ["👋", t("Bem-vindo a <b>{room}</b>", { room: esc(S.book.title || t("esta sala")) }), t("{owner} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.", { owner: esc(owner) })],
+    [icon("hand", 24), t("Bem-vindo a <b>{room}</b>", { room: esc(S.book.title || t("esta sala")) }), t("{owner} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.", { owner: esc(owner) })],
     ["✻", t("Cada um traz o seu Claude"), t("Você conecta o seu Claude, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto.")],
-    ["📎", t("O contexto é de todo mundo"), t("Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra.")],
-    ["→", t("Conecte o seu Claude"), ""],
+    [icon("paperclip", 24), t("O contexto é de todo mundo"), t("Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra.")],
+    [icon("arrowRight", 24), t("Conecte o seu Claude"), ""],
   ];
   const d = document.createElement("dialog");
   d.className = "welcome";
@@ -2195,7 +2240,7 @@ function welcome() {
         ${i ? `<button type="button" class="ghost" data-w="-1">${t("Voltar")}</button>` : `<button type="button" class="ghost" data-w="skip">${t("Pular")}</button>`}
         <button type="button" class="primary" data-w="1">${last ? t("Entrar na sala") : t("Próximo")}</button></div>`;
     d.querySelectorAll("[data-w]").forEach((b) => b.onclick = () => { const w = b.dataset.w; if (w === "skip" || (w === "1" && last)) return done(); i += Number(w); show(); });
-    if (last) connectCard(d.querySelector("#wConnect"), S.id).then(() => { const c = d.querySelector("#wConnect"); if (c && c.hidden) { c.hidden = false; c.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>${t("Seu Claude já está conectado.")}</b><span>${t("Ligue ele nesta sala com ✻ Ligar Claude, no topo.")}</span></div></div>`; } });
+    if (last) connectCard(d.querySelector("#wConnect"), S.id).then(() => { const c = d.querySelector("#wConnect"); if (c && c.hidden) { c.hidden = false; c.innerHTML = `<div class="setup done"><span class="setupIcon">${icon("check", 22)}</span><div><b>${t("Seu Claude já está conectado.")}</b><span>${t("Ligue ele nesta sala com ✻ Ligar Claude, no topo.")}</span></div></div>`; } });
     d.querySelector(".wFoot .primary").focus();
   };
   d.addEventListener("cancel", (e) => { e.preventDefault(); done(); });
@@ -2228,7 +2273,7 @@ function ensureCollab() {
   }).catch(() => { collabLoad = null; });
 }
 
-const SIDEBAR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>`;
+const SIDEBAR_ICON = icon("sidebar", 20);
 const bookTitle = () => S?.book?.title || "vibebook";
 const COVERS = ["oklch(0.5 0.17 248)", "oklch(0.58 0.17 35)", "oklch(0.52 0.11 175)", "oklch(0.47 0.15 315)", "oklch(0.6 0.13 75)", "oklch(0.45 0.1 145)", "oklch(0.36 0.06 255)", "oklch(0.55 0.16 10)"];
 const coverColor = (t) => COVERS[[...String(t)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % COVERS.length];
@@ -2287,14 +2332,14 @@ function toggleRail() {
 function renderRail(el) {
   el.innerHTML = `
     <button class="iconBtn" id="railToggle" title="${t("Abrir menu")}" aria-label="${t("Abrir menu")}" aria-expanded="false">${SIDEBAR_ICON}</button>
-    <a data-nav href="/app" class="iconBtn" title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}" style="text-decoration:none;font-size:18px">←</a>
+    <a data-nav href="/app" class="iconBtn" title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}" style="text-decoration:none">${icon("back", 20)}</a>
     <div class="railSep"></div>
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
-      <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">+</button>
+      <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">${icon("plus", 18)}</button>
     </div>
     <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${t("{n} pedindo pra entrar", { n: S.requests.length })}" aria-label="${t("{n} pedindo pra entrar", { n: S.requests.length })}">+${S.requests.length}</button>` : ""}${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
@@ -2358,7 +2403,7 @@ function renderMyClaude() {
   b.setAttribute("aria-pressed", String(on));
   const w = herdrWhere[S.id]?.w;
   const path = w?.folder ? (w.folder.startsWith(w.home + "/") ? "~" + w.folder.slice(w.home.length) : w.folder) : "";
-  b.innerHTML = `✻ <span class="lbl">${on ? (live ? t("ouvindo") : t("não ouvindo")) : t("Ligar Claude")}</span>${path ? `<span class="where">${esc(path.replace(/^~\/Projects\//, ""))}${w.how === "new" ? " ✚" : ""}</span>` : ""}`;
+  b.innerHTML = `✻ <span class="lbl">${on ? (live ? t("ouvindo") : t("não ouvindo")) : t("Ligar Claude")}</span>${path ? `<span class="where">${esc(path.replace(/^~\/Projects\//, ""))}${w.how === "new" ? ` ${icon("plus", 12)}` : ""}</span>` : ""}`;
   if (!herdrWhere[S.id]) whereOf(S.id, bookTitle()).then((x) => x && renderMyClaude());
   b.title = (path ? `${t("Abre em {path} ({how}).", { path, how: WHERE_HOW[w.how] || t("pasta da sala") })}\n\n` : "") + (on && !live
     ? t("Ligado, mas nenhum Claude seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar.")
@@ -2421,29 +2466,29 @@ function renderSide() {
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `
     <div>
-      <div class="sideTop"><a data-nav href="/app" class="muted">← vibebooks</a><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
+      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
-      <form id="newEpic" class="newRoom"><span class="ri">+</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
+      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
       ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
-      ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">×</button></div>`).join("")}</div>` : ""}
+      ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">${icon("x")}</button></div>`).join("")}</div>` : ""}
       <h4>${t("Pessoas")}</h4>
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
         ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><small class="memActs">${t("pendente")} · <button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
         : S.names?.[m] ? `<span class="fn" title="${esc(m)}">${esc(S.names[m])}</span>`
         : `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(m.split("@")[0])}</span><small class="memActs">@${esc(m.split("@")[1] ?? "")}</small></div>`}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
-        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="${t("Remover {email}", { email: esc(m) })}" title="${(S.pending || []).includes(m) ? t("Cancelar convite") : t("Remover do vibebook")}">×</button>` : ""}</div>${agentRows(m)}`).join("")}
+        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="${t("Remover {email}", { email: esc(m) })}" title="${(S.pending || []).includes(m) ? t("Cancelar convite") : t("Remover do vibebook")}">${icon("x")}</button>` : ""}</div>${agentRows(m)}`).join("")}
       ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
         <div style="margin-top:10px;font-size:12px" class="muted">${t("Seus amigos")}</div>
-        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="${t("Adicionar {email}", { email: esc(f) })}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>+</b></button>`).join("")}` : ""; })()}
-      <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="${t("convidar por email")}" list="friendList" autocomplete="off" /><button>+</button></form>
+        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="${t("Adicionar {email}", { email: esc(f) })}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>${icon("plus")}</b></button>`).join("")}` : ""; })()}
+      <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="${t("convidar por email")}" list="friendList" autocomplete="off" /><button aria-label="${t("convidar por email")}">${icon("plus")}</button></form>
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
@@ -2534,12 +2579,12 @@ function renderKanban() {
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
   const card = (tk) => `<div class="kcard ${tk.status === "done" ? "done" : ""}${tk.status !== "done" && tk.owner === S.me ? " mine" : ""}" draggable="true" tabindex="0" data-k="${tk.id}" data-status="${tk.status}" data-epic="${tk.epic.id}" title="${t("Arraste, ou use ← →. Clique pra abrir o épico.")}">
       <div class="kt">${mentions(esc(tk.title))}</div>${vibeNotes(tk.flags)}
-      <div class="km"><span class="kep" style="background:${color(tk.epic.title)}">${esc(tk.epic.title)}</span>${tk.owner ? `${avatar(tk.owner)}<span>${esc(tk.owner === S.me ? t("você") : name(tk.owner))}</span>` : ""}${tk.due ? `<span>📅 ${esc(tk.due)}</span>` : ""}</div></div>`;
+      <div class="km"><span class="kep" style="background:${color(tk.epic.title)}">${esc(tk.epic.title)}</span>${tk.owner ? `${avatar(tk.owner)}<span>${esc(tk.owner === S.me ? t("você") : name(tk.owner))}</span>` : ""}${tk.due ? `<span>${icon("calendar", 12)} ${esc(tk.due)}</span>` : ""}</div></div>`;
   el.innerHTML = S.epics.length ? `
     <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
       <section class="lane" data-lane="${k}"><h3>${label}<span>${list.length}</span></h3>
         <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? t("Nada a fazer.") : t("Arraste um card pra cá.")}</div>`}</div>
-        ${k === "todo" ? `<form class="kadd"><input placeholder="${t("nova tarefa")}" aria-label="${t("Nova tarefa")}" /><button>+</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="${t("Épico")}">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
+        ${k === "todo" ? `<form class="kadd"><input placeholder="${t("nova tarefa")}" aria-label="${t("Nova tarefa")}" /><button aria-label="${t("Nova tarefa")}">${icon("plus")}</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="${t("Épico")}">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
       </section>`; }).join("")}</div>`
     : `<div class="empty">${t("Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.")}</div>`;
   const move = (id, status) => send({ t: "task.status", id, status });
@@ -2573,8 +2618,8 @@ function renderTasks() {
   const head = document.getElementById("threadTitle");
   if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; el.innerHTML = ""; return; }
   head.innerHTML = epic
-    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${epic.archived ? "↩" : "✓"}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">🗑</button>`
-    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">📁 ${esc(S.book.folder)}</small>` : ""}`;
+    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
+    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
@@ -2612,9 +2657,9 @@ function renderTasks() {
   el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(epic.flags)}${epic.tasks.map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
       <input type="checkbox" ${tk.done ? "checked" : ""} aria-label="${t("Feita")}" /><span class="tt" title="${t("Clique para editar")}">${esc(tk.title)}${vibeNotes(tk.flags)}</span>
       <select class="towner ${tk.owner ? "set" : ""}" data-owner="${tk.id}" aria-label="${t("Responsável")}"><option value="">${t("sem dono")}</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${tk.owner === e ? "selected" : ""}>${esc(e === S.me ? t("você") : name(e))}</option>`).join("")}</select>
-      <button type="button" class="due ${tk.due ? "set" : ""}" data-due="${tk.id}" title="${t("Prazo")}">${tk.due ? `📅 ${esc(tk.due)}` : "📅"}</button>
-      <button class="ghost x" data-tdel="${tk.id}" aria-label="${t("Apagar task")}" title="${t("Apagar task")}">×</button></div>`).join("")}
-    <form class="row" id="newTask" style="margin-top:6px"><input placeholder="${t("nova task")}" /><button>+</button></form>`;
+      <button type="button" class="due ${tk.due ? "set" : ""}" data-due="${tk.id}" title="${t("Prazo")}">${icon("calendar", 13)}${tk.due ? ` ${esc(tk.due)}` : ""}</button>
+      <button class="ghost x" data-tdel="${tk.id}" aria-label="${t("Apagar task")}" title="${t("Apagar task")}">${icon("x")}</button></div>`).join("")}
+    <form class="row" id="newTask" style="margin-top:6px"><input placeholder="${t("nova task")}" /><button aria-label="${t("Nova tarefa")}">${icon("plus")}</button></form>`;
   el.querySelectorAll("[data-task] input[type=checkbox]").forEach((c) => c.onchange = () => send({ t: "task.toggle", id: c.closest("[data-task]").dataset.task }));
   el.querySelectorAll("[data-task] .tt").forEach((sp) => sp.onclick = () => {
     const id = sp.closest("[data-task]").dataset.task;
@@ -2644,7 +2689,7 @@ function openViewer(url, kind, fname) {
   if (!d) {
     d = document.createElement("dialog");
     d.id = "viewer"; d.className = "viewer";
-    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">↗</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">×</button></header><div class="vbody"></div>`;
+    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">${icon("external", 20)}</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 20)}</button></header><div class="vbody"></div>`;
     d.querySelector("button").onclick = () => d.close();
     d.querySelector("header a").onclick = () => d.close();
     d.addEventListener("click", (e) => { if (e.target.classList.contains("vbody")) d.close(); });
@@ -2691,11 +2736,11 @@ function pollHtml(id) {
   const max = Math.max(...counts);
   const voters = new Set(p.votes.flat()).size;
   return `<div class="poll" data-poll="${id}">
-    <div class="pq">📊 ${esc(p.question)}</div>
+    <div class="pq">${icon("chart", 18)} ${esc(p.question)}</div>
     ${p.options.map((o, i) => {
       const n = counts[i], pct = sum ? Math.round((100 * n) / sum) : 0, mine = p.votes[i].includes(S.me), win = p.closed && n > 0 && n === max;
       return `<button type="button" class="opt ${mine ? "mine" : ""} ${win ? "win" : ""}" data-vote="${i}" ${p.closed ? "disabled" : ""} aria-pressed="${mine}">
-        <span class="fill" style="width:${pct}%"></span><span class="ol">${win ? "🏆 " : mine ? "✓ " : ""}${esc(o)}</span>
+        <span class="fill" style="width:${pct}%"></span><span class="ol">${win ? `${icon("trophy")} ` : mine ? `${icon("check")} ` : ""}${esc(o)}</span>
         <span class="stack">${p.votes[i].slice(0, 4).map((e) => avatar(e)).join("")}</span><span class="pc">${n ? `${pct}%` : ""}</span></button>`;
     }).join("")}
     <div class="pf">${voters === 1 ? t("1 pessoa votou") : t("{n} pessoas votaram", { n: voters })} · ${p.multi ? t("pode escolher várias") : t("escolha uma")}${p.closed ? ` · ${t("encerrada")}` : p.author === S.me || p.author === "ai" ? ` · <button type="button" class="link" data-close="${id}">${t("encerrar")}</button>` : ""}</div>
@@ -2743,13 +2788,13 @@ const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll
 const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: "Claude", who: name(m.author) }) : name(m.author));
 const quoteHtml = (id) => {
   const o = S.messages.find((x) => x.id === id);
-  return `<button type="button" class="quote" data-goto="${id}" title="${t("Ver a mensagem respondida")}">↩ ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : t("mensagem anterior")}</button>`;
+  return `<button type="button" class="quote" data-goto="${id}" title="${t("Ver a mensagem respondida")}">${icon("reply", 13)} ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : t("mensagem anterior")}</button>`;
 };
 function renderReply() {
   const bar = document.getElementById("replyBar"); if (!bar) return;
   if (replyTo && replyTo.thread !== thread) replyTo = null;
   bar.hidden = !replyTo;
-  if (replyTo) bar.innerHTML = `<span>↩ ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">×</button>`;
+  if (replyTo) bar.innerHTML = `<span>${icon("reply", 13)} ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">${icon("x")}</button>`;
   document.getElementById("replyX")?.addEventListener("click", () => { replyTo = null; renderReply(); });
 }
 function startReply(id) {
@@ -2788,7 +2833,7 @@ const msgHtml = (m, prev) => {
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
-    <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">↩ ${t("Responder")}</button>
+    <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button>
     <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
@@ -2799,7 +2844,7 @@ function renderDecisions() {
   const list = S.decisions || [];
   document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
   el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? `✓ ${t("aprovado")}` : t("decidido")} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
-      <button class="ghost x" data-ddel="${d.id}" aria-label="${t("Apagar registro")}" title="${t("Apagar registro")}">×</button></div>`).join("")
+      <button class="ghost x" data-ddel="${d.id}" aria-label="${t("Apagar registro")}" title="${t("Apagar registro")}">${icon("x")}</button></div>`).join("")
     : `<div class="empty">${t("O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.")}</div>`;
   el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar esse registro?"))) send({ t: "decision.del", id: b.dataset.ddel }); });
 }
@@ -2835,13 +2880,13 @@ function renderApps() {
   const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
   // Reminders (set_reminder) sit on top: each one later posts as the person who set it, so they're listed with ×.
   const when = (t) => new Date(t).toLocaleString(LOCALE, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  const rem = S.reminders?.length ? `<div class="rems"><h4>⏰ ${t("Lembretes")}</h4>${S.reminders.map((r) => `
+  const rem = S.reminders?.length ? `<div class="rems"><h4>${icon("clock", 14)} ${t("Lembretes")}</h4>${S.reminders.map((r) => `
     <div class="rem"><div><b>${esc(r.text)}</b><small><code>${esc(r.cron)}</code> ${esc(r.tz)} · ${t("próximo {when}", { when: when(r.next_at) })} · ${t("de {who}", { who: esc(name(r.owner)) })}${r.thread !== "main" ? ` · ${esc(S.epics?.find((e) => e.id === r.thread)?.title ?? t("épico"))}` : ""}</small></div>
-      <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">×</button></div>`).join("")}</div>` : "";
+      <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">${icon("x")}</button></div>`).join("")}</div>` : "";
   el.innerHTML = rem + (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
     <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
       <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
-      <button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">×</button></div>`).join("")}</div>`
+      <button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">${icon("x")}</button></div>`).join("")}</div>`
     : `<div class="empty">${t("Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.")}</div>`);
   el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar este lembrete?"))) send({ t: "reminder.delete", id: b.dataset.remDel }); });
   el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar o app {name}? As mensagens já postadas continuam.", { name: b.dataset.appDel }))) send({ t: "app.delete", name: b.dataset.appDel }); });
@@ -2852,7 +2897,7 @@ function renderFiles() {
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
-      <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
+      <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f, 30)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
     : `<div class="empty">${t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")}</div>`;
 }
@@ -2904,7 +2949,7 @@ function renderChat(keep) {
     el.querySelector(".empty")?.classList.add("afterOrigin");
     // Under "Carregar mensagens anteriores" (that button always sits at the very top), above the replies.
     const n = all.length, older = el.querySelector(".older");
-    (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n === 1 ? t("1 resposta") : t("{n} respostas", { n })}</span><button type="button" class="ghost" data-gomain="${src}">${t("ver na sala principal")} ↩</button></div></div>`);
+    (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n === 1 ? t("1 resposta") : t("{n} respostas", { n })}</span><button type="button" class="ghost" data-gomain="${src}">${t("ver na sala principal")} ${icon("reply", 13)}</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
   renderWorking();
@@ -3055,7 +3100,7 @@ function renderDoc(force) {
     : `<div class="empty">${t("Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.")}</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.
-  if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">⚠ ${esc(n)}</span>`).join("")}</div>`);
+  if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep);
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.

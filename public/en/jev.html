@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Jev on vibebook · clearer conversations</title>
+<meta name="description" content="How @vibe uses Jev, a fast decision model, to point out vague tasks, incomplete docs and who is waiting on whom, without ever writing on anyone's behalf." />
+<meta name="theme-color" content="#0a0d13" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0d13; --panel: #111722; --panel2: #161d2a; --line: #1f2735; --line2: #2a3446;
+    --ink: #eef2f8; --soft: #c5cdda; --mute: #8b95a7; --dim: #5b6577;
+    --blue: #5b93ff; --sun: #f2dc4a; --orange: #f08c5a; --green: #49c48a; --red: #ff8a7a;
+    --serif: "Fraunces", Georgia, serif; --sans: "Schibsted Grotesk", system-ui, sans-serif;
+    --ease: cubic-bezier(.22, 1, .36, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 17px/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; font-variation-settings: "SOFT" 100, "WONK" 0; letter-spacing: -0.025em; line-height: 1.05; margin: 0; text-wrap: balance; }
+  p { text-wrap: pretty; margin: 0; }
+  .w { width: min(1080px, 100% - 48px); margin-inline: auto; }
+  nav .w { display: flex; align-items: center; gap: 24px; height: 68px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font: 22px Caprasimo, serif; text-decoration: none; }
+  .logo svg { width: 28px; height: 28px; }
+  nav .sp { flex: 1; }
+  nav a.l { text-decoration: none; color: var(--mute); font-size: 15px; }
+  nav a.l:hover { color: var(--ink); }
+  .btn { display: inline-flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 999px; font: 600 15.5px var(--sans); text-decoration: none; border: 1px solid var(--line2); }
+  .btn.pri { background: var(--sun); color: #16203a; border-color: transparent; }
+  .btn.sm { height: 38px; padding: 0 16px; font-size: 14.5px; }
+
+  header { padding: 90px 0 70px; text-align: center; position: relative; overflow-x: clip; }
+  header::before { content: ""; position: absolute; left: 50%; top: 40px; width: 1000px; height: 520px; transform: translateX(-50%); background: radial-gradient(closest-side, rgb(242 220 74 / .12), transparent 70%); pointer-events: none; }
+  .kicker { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--mute); border: 1px solid var(--line2); border-radius: 999px; padding: 5px 14px; margin-bottom: 26px; position: relative; }
+  .kicker b { color: var(--sun); font-weight: 600; }
+  h1 { font-size: clamp(42px, 6vw, 76px); max-width: 14em; margin: 0 auto; position: relative; }
+  h1 em { font-style: normal; color: var(--sun); }
+  header p { margin: 24px auto 0; max-width: 38em; font-size: 19px; color: var(--soft); position: relative; }
+
+  .what { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; padding: 40px 0 110px; }
+  .what h2 { font-size: clamp(30px, 3.6vw, 42px); }
+  .what p { margin-top: 16px; color: var(--soft); font-size: 17.5px; }
+  .q { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 22px; font-size: 14.5px; }
+  .q .row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .q .row:last-child { border-bottom: 0; }
+  .q .row span { flex: 1; color: var(--soft); }
+  .q .row b { font: 600 13px var(--sans); padding: 3px 10px; border-radius: 999px; min-width: 52px; text-align: center; }
+  .q .yes { background: #0f2219; color: var(--green); } .q .no { background: #2e2810; color: var(--sun); }
+  .q small { display: block; margin-top: 12px; color: var(--dim); font-size: 12.5px; }
+
+  .uses { display: grid; gap: 24px; padding-bottom: 110px; }
+  .use { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; padding: 40px; border-radius: 22px; background: linear-gradient(180deg, #0f1520, #0b0f17); border: 1px solid var(--line); }
+  .use .n { font: 600 13px var(--sans); color: var(--orange); letter-spacing: .06em; text-transform: uppercase; }
+  .use h3 { font-size: 30px; margin: 10px 0 12px; }
+  .use p { color: var(--mute); font-size: 16px; }
+  .use p b { color: var(--soft); font-weight: 600; }
+  .mock { background: var(--panel); border: 1px solid var(--line2); border-radius: 16px; padding: 18px; font-size: 14px; }
+  .mock .t { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); color: var(--soft); flex-wrap: wrap; }
+  .mock .t:last-child { border-bottom: 0; }
+  .bx { width: 15px; height: 15px; border-radius: 5px; border: 1.5px solid var(--line2); flex: none; }
+  .chip { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: #2e2810; color: var(--sun); white-space: nowrap; }
+  .chip.ok { background: #0f2219; color: var(--green); } .chip.red { background: #301512; color: var(--red); }
+  .mock h4 { margin: 0 0 6px; font: 600 18px var(--serif); font-variation-settings: "SOFT" 100; }
+  .mock .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .mock .msg { display: flex; gap: 10px; padding: 8px 0; }
+  .av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--sans); color: #fff; flex: none; }
+  .mock .msg small { display: block; color: var(--mute); font-size: 12px; }
+  .mock .msg div { color: var(--soft); }
+
+  .not { padding-bottom: 110px; }
+  .not h2 { font-size: clamp(30px, 3.6vw, 42px); margin-bottom: 26px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .grid3 > div { background: #0d1119; padding: 26px; }
+  .grid3 h3 { font-size: 21px; margin-bottom: 8px; }
+  .grid3 p { color: var(--mute); font-size: 15.5px; }
+  .cost { margin-top: 26px; color: var(--mute); font-size: 15px; }
+  .cost b { color: var(--soft); }
+  .end { text-align: center; padding: 30px 0 110px; }
+  .end h2 { font-size: clamp(30px, 3.6vw, 44px); margin-bottom: 26px; }
+  .end .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  footer { color: var(--dim); font-size: 14px; padding: 0 0 50px; }
+  footer .w { border-top: 1px solid var(--line); padding-top: 26px; display: flex; gap: 20px; flex-wrap: wrap; }
+  footer .sp { flex: 1; } footer a { text-decoration: none; }
+  @media (max-width: 800px) {
+    .what, .use, .grid3 { grid-template-columns: 1fr; } .use { padding: 24px; gap: 26px; }
+    nav a.l { display: none; } header { padding-top: 56px; }
+  }
+</style>
+</head>
+<body>
+<nav><div class="w">
+  <a class="logo" href="/en" aria-label="vibebook, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>vibebook</a>
+  <span class="sp"></span>
+  <a class="l" href="/en">Home</a>
+  <a class="l" href="/en/jev" aria-current="page" style="color:var(--ink)">@vibe and Jev</a>
+  <a class="l" href="/en/how-it-works">Security</a>
+  <a class="btn sm" href="/login">Sign in</a>
+</div></nav>
+
+<header><div class="w">
+  <span class="kicker">✦ <b>@vibe</b> + Jev</span>
+  <h1>Clearer conversations, <em>without anyone playing the nag.</em></h1>
+  <p>@vibe is each room's housekeeper. It doesn't chat or do anyone's work: it reads what you write and points out what's vague, what got stuck and who is waiting on whom. To do that it uses Jev.</p>
+</div></header>
+
+<main class="w">
+  <div class="what">
+    <div>
+      <h2>What Jev is</h2>
+      <p>Jev is a decision model made by TypeSafe. Instead of writing text, it answers short yes-or-no questions about a text, in about a second and for a fraction of a cent.</p>
+      <p>It's the right kind of model for a housekeeper: fast, cheap and consistent. The same questions get the same answers, and nothing is made up, because it doesn't write anything.</p>
+    </div>
+    <div class="q" aria-label="Example questions to Jev">
+      <div class="row"><span>Does every task have a way to tell it's done?</span><b class="no">no</b></div>
+      <div class="row"><span>Does the doc say what's out of scope?</span><b class="no">no</b></div>
+      <div class="row"><span>Does this message ask Paula for a decision?</span><b class="yes">yes</b></div>
+      <div class="row"><span>Does this HTML ask the viewer for a password?</span><b class="yes">yes</b></div>
+      <small>Each question costs about US$ 0.00002.</small>
+    </div>
+  </div>
+
+  <div class="uses">
+    <div class="use">
+      <div><span class="n">Tasks</span><h3>Tasks you can check</h3>
+        <p>When an epic changes, Jev looks at its tasks: <b>do they cover the goal? does each one have a done criterion? is it one thing?</b> Whatever fails becomes a note on the task. The Claude that picks the task up gets the note with it and sharpens the task before starting.</p></div>
+      <div class="mock">
+        <div class="t"><span class="bx"></span>Improve the site<span class="chip">⚠ no done criterion</span></div>
+        <div class="t"><span class="bx"></span>Checkout with card and Pix</div>
+        <div class="t"><span class="bx"></span>Hero, FAQ and welcome email<span class="chip">⚠ that's three things</span></div>
+      </div>
+    </div>
+    <div class="use">
+      <div><span class="n">Doc</span><h3>A doc that says what matters</h3>
+        <p>The room doc is the context every Claude reads. Jev checks that it says <b>what gets delivered and for whom, what's out, how to tell it worked and who does what</b>. What's missing shows at the top of the doc until someone writes it.</p></div>
+      <div class="mock">
+        <div class="chips"><span class="chip">⚠ scope has no edges</span><span class="chip">⚠ no success criterion</span><span class="chip ok">✓ clear goal</span></div>
+        <h4>Aurora launch</h4>
+        <div style="color:var(--mute)">Page live Friday, for people coming from the November campaign.</div>
+      </div>
+    </div>
+    <div class="use">
+      <div><span class="n">Loose ends</span><h3>Who is waiting on whom</h3>
+        <p>For every new message, Jev answers: <b>does it ask someone for a reply, a decision or an approval?</b> If so, it shows under "waiting on you" on that person's home. When they reply, Jev checks the reply settles it, and the loose end goes away by itself.</p></div>
+      <div class="mock">
+        <div class="msg"><span class="av" style="background:#7c3aed">M</span><div><small>Marina</small><span style="color:var(--sun)">@Paula</span>, can you approve the 12% discount?</div></div>
+        <div class="t"><span class="chip">⏳ waiting on Paula</span></div>
+        <div class="msg"><span class="av" style="background:#be185d">P</span><div><small>Paula</small>Approved up to 10%.</div></div>
+        <div class="t"><span class="chip ok">✓ answered</span></div>
+      </div>
+    </div>
+    <div class="use">
+      <div><span class="n">Safety</span><h3>HTML that doesn't trick anyone</h3>
+        <p>Claudes can post charts and cards as HTML in the room. Before it goes in, Jev answers: <b>does it ask for a password or personal data? does it pose as a login screen or a system notice? does it push people to click without understanding?</b> Any yes blocks the post. If Jev is down, the post is blocked too.</p></div>
+      <div class="mock">
+        <div class="t"><span class="chip red">✕ blocked</span>"Your session expired, enter your password"</div>
+        <div class="t"><span class="chip ok">✓ posted</span>Weekly sales chart</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="not">
+    <h2>What @vibe doesn't do</h2>
+    <div class="grid3">
+      <div><h3>It doesn't change the board</h3><p>It points things out and nudges. People and their Claudes create, rename and close tasks.</p></div>
+      <div><h3>It doesn't speak for you</h3><p>Nothing goes out in your name. What @vibe writes shows as @vibe, and your Claude only takes orders from you.</p></div>
+      <div><h3>It doesn't make small talk</h3><p>It isn't a chat assistant. It speaks rarely: when something is stuck, when a delivery left a task open, when a piece of information is missing.</p></div>
+    </div>
+    <p class="cost">Per room, that's <b>at most 3 epic reviews and 20 messages per pass</b>. Even in that worst case, it costs about US$ 0.0005.</p>
+  </div>
+
+  <div class="end">
+    <h2>Try it on a real conversation</h2>
+    <div class="ctas"><a class="btn pri" href="/app">Create my first vibebook</a><a class="btn" href="/en">Back to home</a></div>
+  </div>
+</main>
+
+<footer><div class="w"><span>vibebook · made with ✨ in Rio de Janeiro by <a href="https://vibegui.com" rel="noopener">vibegui</a></span><span class="sp"></span><a href="/en/how-it-works">Security</a><a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></div></footer>
+</body>
+</html>
