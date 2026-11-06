@@ -10,7 +10,7 @@ import type { Env } from "./index";
 import { track } from "./track";
 
 export const SCOPE = "rooms";
-export type AgentProps = { email: string; client: string };
+export type AgentProps = { email: string; client: string; gid?: string }; // gid: this grant, to record its last use
 
 // The resource URL is the request's own origin, so local dev (http://localhost:8787) works like prod.
 const providers = new Map<string, OAuthProvider<Env>>();
@@ -143,12 +143,13 @@ connect.post("/authorize", async (c) => {
     const approved = await oauth.approveConsent(c.req.raw, handle, { scope: [SCOPE, "offline_access"] });
     const client = await oauth.lookupClient(approved.request.clientId);
     const clientName = (client?.clientName || approved.request.clientId).slice(0, 80);
+    const gid = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     const { redirectTo } = await oauth.completeAuthorization({
       request: approved.request,
       userId: email,
-      metadata: { client: clientName, at: Date.now() },
+      metadata: { client: clientName, at: Date.now(), gid },
       scope: approved.request.scope,
-      props: { email, client: clientName } satisfies AgentProps,
+      props: { email, client: clientName, gid } satisfies AgentProps,
     });
     c.executionCtx.waitUntil(track(c.env, "agent_connected", { user: email, dims: { client: clientName } }));
     approved.headers.set("location", redirectTo);
@@ -166,10 +167,31 @@ connect.get("/api/agents", async (c) => {
   const last = await c.env.DB.prepare(`SELECT max(ts) AS ts FROM events WHERE user = ? AND name = 'agent_call' AND ts > ?`)
     .bind(email, Date.now() - 90 * 86_400_000)
     .first<{ ts: number | null }>();
+  // Last use per grant: grants made since Nov 2026 carry a gid that handleAgentMcp stamps in D1 grant_seen; older
+  // ones only have the person-wide last call (null per grant = unknown).
+  const gids = items.map((g) => (g.metadata as { gid?: string } | undefined)?.gid).filter(Boolean) as string[];
+  const seen = gids.length
+    ? Object.fromEntries((await c.env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r) => [r.gid, r.ts]))
+    : {};
   return c.json({
-    agents: items.map((g) => ({ id: g.id, client: g.metadata?.client ?? g.clientId, connected_at: g.createdAt * 1000 })),
+    agents: items.map((g) => {
+      const gid = (g.metadata as { gid?: string } | undefined)?.gid;
+      return { id: g.id, client: g.metadata?.client ?? g.clientId, connected_at: g.createdAt * 1000, used_at: gid ? (seen[gid] ?? null) : undefined };
+    }),
     last_used: last?.ts ?? null,
   });
+});
+
+// Remove several at once (the app's checkbox list). At most 100 per call.
+connect.post("/api/agents/revoke", async (c) => {
+  const email = await identify(c);
+  if (!email) return c.json({ error: "unauthenticated" }, 401);
+  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
+  const { ids } = await c.req.json<{ ids?: unknown }>().catch(() => ({ ids: [] }));
+  const list = (Array.isArray(ids) ? ids : []).map(String).slice(0, 100);
+  for (const id of list) await c.env.OAUTH_PROVIDER.revokeGrant(id, email);
+  c.executionCtx.waitUntil(track(c.env, "agent_disconnected", { user: email, dims: { n: list.length } }));
+  return c.json({ ok: true, removed: list.length });
 });
 
 connect.delete("/api/agents/:id", async (c) => {

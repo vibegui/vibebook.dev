@@ -157,7 +157,11 @@
   .agentBox .wait { font-size: 13px; color: var(--mute); margin-top: 12px; display: flex; gap: 8px; align-items: center; }
   .agentBox .wait::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #e3b505; animation: agentBlink 1.4s infinite; }
   @keyframes agentBlink { 50% { opacity: .3; } }
-  .agentBox .conn { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; }
+  .agentBox .conn { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 14px; cursor: pointer; }
+  .agentBox .conn span { display: grid; } .agentBox .conn small { color: var(--mute); font-size: 12px; }
+  .agentBox .connGroup { padding: 6px 0; border-top: 1px solid var(--line); } .agentBox .connGroup:first-of-type { border-top: 0; }
+  .agentBox .connHead { display: flex; align-items: baseline; gap: 8px; } .agentBox .connHead small { color: var(--mute); }
+  .agentBox .connActs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; } .agentBox .connActs .ghost { font-size: 12.5px; }
   .agentBox .conn b { flex: 1; min-width: 0; } .agentBox .conn small { display: block; color: var(--mute); font-weight: 400; }
   .agentBox .ok { color: #1f9d8a; font-weight: 700; }
   .agentNudge { margin: 12px 28px 0; } .agentNudge[hidden], #setupCard[hidden] { display: none; }
@@ -915,12 +919,15 @@ const EN = {
   "abrir": "open",
   "Restaurar": "Restore",
   "Nada arquivado.": "Nothing archived.",
-  "Seu agent": "Your agent",
   "conectado {ago}": "connected {ago} ago",
-  "último uso {ago}": "last used {ago} ago",
-  "Desconectar": "Disconnect",
   "Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i>": "Ask your Claude: <i>“what's new on vibebook?”</i> or <i>“go to room X and tell Marina…”</i>",
-  "Desconectar esse agent? Ele perde o acesso a todas as salas na hora.": "Disconnect this agent? It loses access to every room right away.",
+  "Seus Claudes conectados": "Your connected Claudes",
+  "usado {ago}": "used {ago}",
+  "sem uso ainda": "not used yet",
+  "uso desconhecido": "last use unknown",
+  "Marcar todas menos a mais recente de cada": "Check all but the newest of each",
+  "Remover selecionadas ({n})": "Remove selected ({n})",
+  "Remover {n} conexões? Os Claudes delas perdem o acesso na hora.": "Remove {n} connections? Their Claudes lose access right away.",
   "Esperando você": "Waiting on you",
   "Tarefa sua esperando OK:": "Your task waiting for OK:",
   "Já resolvi (respondi em outro lugar, ou não é comigo)": "Done (I answered elsewhere, or it's not for me)",
@@ -1742,15 +1749,30 @@ async function renderAgents(again) {
   if (!r || !document.body.contains(box)) return;
   const url = `${location.origin}/mcp`;
   if (r.agents.length) {
-    box.innerHTML = `<h2>✦ ${t("Seu agent")}</h2>
-      ${r.agents.map((a) => `<div class="conn"><span class="ok">✓</span><b>${esc(a.client)}<small>${t("conectado {ago}", { ago: ago(a.connected_at) })}${r.last_used ? ` · ${t("último uso {ago}", { ago: ago(r.last_used) })}` : ""}</small></b>
-        <button class="ghost" data-revoke="${esc(a.id)}">${t("Desconectar")}</button></div>`).join("")}
+    // One row per connection (each login or connector is one), grouped by client, newest first. Old or unused ones
+    // come pre-checked; one button removes the checked ones.
+    const DAY = 864e5, now = Date.now();
+    const last = (a) => a.used_at ?? a.connected_at;
+    const stale = (a) => now - last(a) > 14 * DAY;
+    const groups = {};
+    for (const a of r.agents) (groups[a.client] ??= []).push(a);
+    for (const g of Object.values(groups)) g.sort((x, y) => last(y) - last(x));
+    const usedTxt = (a) => a.used_at ? t("usado {ago}", { ago: ago(a.used_at) }) : a.used_at === null ? t("sem uso ainda") : t("uso desconhecido");
+    box.innerHTML = `<h2>✦ ${t("Seus Claudes conectados")}</h2>
+      ${Object.entries(groups).map(([client, list]) => `<div class="connGroup"><div class="connHead"><b>${esc(client)}</b><small>${list.length}</small></div>
+        ${list.map((a) => `<label class="conn"><input type="checkbox" data-gid="${esc(a.id)}" ${stale(a) ? "checked" : ""} /><span>${t("conectado {ago}", { ago: ago(a.connected_at) })}<small>${usedTxt(a)}</small></span></label>`).join("")}</div>`).join("")}
+      <div class="connActs"><button type="button" class="ghost" id="connKeep">${t("Marcar todas menos a mais recente de cada")}</button><button type="button" class="primary" id="connDel"></button></div>
       <p style="margin-top:8px">${t("Peça pro seu Claude: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i>")}</p>`;
-    box.querySelectorAll("[data-revoke]").forEach((b) => b.onclick = async () => {
-      if (!confirm(t("Desconectar esse agent? Ele perde o acesso a todas as salas na hora."))) return;
-      await fetch(`/api/agents/${encodeURIComponent(b.dataset.revoke)}`, { method: "DELETE" });
+    const boxes = () => [...box.querySelectorAll("[data-gid]")];
+    const sync = () => { const n = boxes().filter((b) => b.checked).length; const d = box.querySelector("#connDel"); d.textContent = t("Remover selecionadas ({n})", { n }); d.disabled = !n; };
+    box.addEventListener("change", sync); sync();
+    box.querySelector("#connKeep").onclick = () => { box.querySelectorAll(".connGroup").forEach((g) => g.querySelectorAll("[data-gid]").forEach((b, i) => (b.checked = i > 0))); sync(); };
+    box.querySelector("#connDel").onclick = async () => {
+      const ids = boxes().filter((b) => b.checked).map((b) => b.dataset.gid);
+      if (!ids.length || !confirm(t("Remover {n} conexões? Os Claudes delas perdem o acesso na hora.", { n: ids.length }))) return;
+      await fetch("/api/agents/revoke", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids }) });
       renderAgents();
-    });
+    };
     return;
   }
   box.hidden = true;

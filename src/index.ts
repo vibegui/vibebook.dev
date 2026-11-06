@@ -62,6 +62,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS notify_keys (email TEXT PRIMARY KEY, key TEXT UNIQUE, created_at INTEGER)`,
   // One row per connected agent (an MCP session of someone's Claude), with its own cursor per room and notify key.
   `CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, email TEXT, client TEXT, model TEXT, created_at INTEGER, seen_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS grant_seen (gid TEXT PRIMARY KEY, ts INTEGER)`,
   `CREATE TABLE IF NOT EXISTS agent_reads (agent TEXT, book_id TEXT, email TEXT, last_id INTEGER, delivered_id INTEGER, PRIMARY KEY (agent, book_id))`,
   `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,

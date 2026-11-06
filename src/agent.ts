@@ -720,6 +720,8 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   }
   const agentId = /^s_[a-f0-9]{32}$/.test(sid) ? sid : `c_${props.email}|${props.client}`;
   await ensureAgent(env.DB, agentId, props.email, props.client);
+  // This grant was used now (written at most every 5 min per grant): the app lists connections with their last use.
+  if (props.gid) ctx.waitUntil(env.DB.prepare(`INSERT INTO grant_seen (gid, ts) VALUES (?, ?) ON CONFLICT(gid) DO UPDATE SET ts = excluded.ts WHERE excluded.ts > grant_seen.ts + 300000`).bind(props.gid, Date.now()).run().catch(() => {}));
   const me: Me = { ...props, agent: agentId };
   ctx.waitUntil(env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId).run());
   let result: unknown;
