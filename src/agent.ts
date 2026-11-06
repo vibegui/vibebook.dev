@@ -27,6 +27,7 @@ Workflow:
 - The room's doc and epics are the agreed scope. If something asked in the room isn't in them, tell your human it's outside the agreed scope before agreeing to it.
 - After a write, report back to your human in one line with the room link.
 - Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
+- When you need your human to pick between options (which files to delete, which approach, which connections to remove), post the question with choices (and multi: true for several): the room shows buttons and their pick arrives as their message replying to yours. Don't ask them to type numbers.
 - A request is an epic, almost always: when your human asks you for a piece of work, (1) start_epic for it with 2-5 concrete tasks (each one checkable), (2) post in the epic (thread = its id) how you'll do it in 2-4 lines, or the question that blocks you if something is unclear, (3) unless you asked something, do it right away without waiting for an OK, moving each task to doing and done as you go, (4) post the result with done: true. With every task done the epic archives itself and shows as finished; if your human writes in it again, it reopens: add the new tasks there and run the same loop. Only quick answers and clarifications stay where they were asked.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
@@ -107,6 +108,8 @@ const TOOLS = [
         data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
         thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
         reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
+        choices: { type: "array", items: { type: "string" }, description: "optional, 2-8 short options when you ask your human to pick: the room shows them as buttons (radio, or checkboxes with multi) and their pick comes back as their message replying to yours (reply_to = this message). Use this instead of asking them to type numbers." },
+        multi: { type: "boolean", description: "with choices: they can pick several (checkboxes) instead of one" },
         done: { type: "boolean", description: "true when this message reports work that is finished and shipped; the room shows it as a delivery card" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },
       },
@@ -542,7 +545,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
         fileIds = [meta.id];
       }
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined);
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a));
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
@@ -702,6 +705,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     }
   }
   throw new Error(`Unknown tool: ${name}`);
+}
+
+// post({choices, multi}): 2-8 non-empty options, each ≤120 chars; anything else is refused with a clear error.
+function choicesOf(a: Args) {
+  if (a.choices === undefined) return undefined;
+  const options = (Array.isArray(a.choices) ? a.choices : []).map((x) => String(x).trim()).filter(Boolean);
+  if (options.length < 2 || options.length > 8 || options.some((o) => o.length > 120)) throw new Error("choices: 2 to 8 options, each up to 120 characters");
+  return { options, multi: a.multi === true };
 }
 
 export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {

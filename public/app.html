@@ -378,6 +378,14 @@
   .msg.flash { animation: msgflash 1.6s ease-out; }
   @keyframes msgflash { 0%, 40% { background: color-mix(in oklch, var(--accent) 16%, transparent); } }
   .msg.swipe { transition: none; } .msg { transition: transform .18s; }
+  .choice { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .choice .opt { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 14px; background: var(--panel); cursor: pointer; }
+  .choice label.opt:has(input:checked) { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 10%, var(--panel)); }
+  .choice .opt input { margin: 0; accent-color: var(--accent); }
+  .choice button { padding: 7px 16px; }
+  .choice.ro .opt, .choice.done .opt { cursor: default; color: var(--mute); }
+  .choice.done .opt.on { color: var(--ink); border-color: var(--ok-ink, var(--accent)); }
+  .choice small { color: var(--mute); font-size: 12.5px; }
   .replyBar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--mute); padding: 4px 4px 4px 10px; border-left: 3px solid var(--accent); min-width: 0; }
   .replyBar[hidden] { display: none; }
   .replyBar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -909,6 +917,7 @@ const EN = {
   "Criar {where}?": "Create {where}?",
   "Nenhuma sala parece a certa. Criar {where}?": "No room looks right. Create {where}?",
   "Enviar": "Send",
+  "esperando {who}": "waiting on {who}",
   "Cancelar": "Cancel",
   "Outro lugar:": "Somewhere else:",
   "Arquivar “{title}”?": "Archive “{title}”?",
@@ -1885,7 +1894,8 @@ function onEvent(ev, id) {
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide(); notifyMsg(ev.m); return;
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide();
+      if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
@@ -2849,6 +2859,29 @@ document.addEventListener("touchend", () => {
   m.classList.remove("swipe"); m.style.transform = "";
   if (dx > 60) startReply(Number(m.id.slice(1)));
 });
+// Choices: an agent asks its human to pick (post with choices). That person sees radio/checkboxes + Enviar; the
+// pick is sent as their message replying to the question, which is also how the block knows it was answered.
+function choiceHtml(m) {
+  let c; try { c = JSON.parse(m.choices); } catch { return ""; }
+  const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
+  if (ans) {
+    const picked = new Set(ans.text.split(" · "));
+    return `<div class="choice done">${c.options.map((o) => `<span class="opt ${picked.has(o) ? "on" : ""}">${picked.has(o) ? icon("check", 14) : ""}${esc(o)}</span>`).join("")}</div>`;
+  }
+  if (m.kind === "agent" && m.author === S.me)
+    return `<form class="choice" data-choice="${m.id}">${c.options.map((o, i) => `<label class="opt"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="${esc(o)}" ${!c.multi && !i ? "" : ""} />${esc(o)}</label>`).join("")}<button class="primary" type="submit" disabled>${t("Enviar")}</button></form>`;
+  return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
+}
+document.addEventListener("change", (e) => { const f = e.target.closest("form.choice"); if (f) f.querySelector("button").disabled = !f.querySelector("input:checked"); });
+document.addEventListener("submit", (e) => {
+  const f = e.target.closest("form.choice"); if (!f) return;
+  e.preventDefault();
+  const picked = [...f.querySelectorAll("input:checked")].map((i) => i.value);
+  if (!picked.length) return;
+  const q = S.messages.find((x) => x.id === Number(f.dataset.choice));
+  send({ t: "msg", thread: q?.thread ?? thread, text: picked.join(" · "), files: [], reply_to: Number(f.dataset.choice) });
+  f.querySelector("button").disabled = true;
+});
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">${t("pensando…")}</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
@@ -2857,7 +2890,7 @@ const msgHtml = (m, prev) => {
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
     <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button>
     <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
-      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
+      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.choices ? choiceHtml(m) : ""}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
 };
 
