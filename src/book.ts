@@ -12,7 +12,7 @@ import { track } from "./track";
 
 // OpenRouter reports each call's USD cost in usage.raw.cost; the admin sums it per model.
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
-export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number };
+export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number; embed?: boolean };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
 type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
@@ -64,6 +64,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, epic_id TEXT, title TEXT, done INTEGER DEFAULT 0, ts INTEGER);
       CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
       CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT, type TEXT, size INTEGER, author TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS apps (name TEXT PRIMARY KEY, description TEXT, html TEXT, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS polls (id TEXT PRIMARY KEY, question TEXT, options TEXT, multi INTEGER, closed INTEGER DEFAULT 0, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
       CREATE TABLE IF NOT EXISTS decisions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, who TEXT, kind TEXT, ts INTEGER);
@@ -182,8 +183,32 @@ export class Book extends DurableObject<Env> {
     this.epicsChanged();
     return { ok: true };
   }
+  // Room apps: HTML templates with {{field}} slots that agents fill to post a special message (post with app + data).
+  apps(): { name: string; description: string; author: string; ts: number }[] {
+    return this.sql.exec<{ name: string; description: string; author: string; ts: number }>(`SELECT name, description, author, ts FROM apps ORDER BY name`).toArray();
+  }
+  appsOf(bookId: string) {
+    this.bind(bookId);
+    return this.apps();
+  }
+  appHtml(bookId: string, name: string) {
+    this.bind(bookId);
+    return (this.sql.exec(`SELECT html FROM apps WHERE name = ?`, name).toArray()[0]?.html as string | undefined) ?? null;
+  }
+  appSave(bookId: string, email: string, name: string, description: string, html: string) {
+    this.bind(bookId);
+    this.sql.exec(`INSERT INTO apps (name, description, html, author, ts) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET description = excluded.description, html = excluded.html, author = excluded.author, ts = excluded.ts`, name, description, html, email, Date.now());
+    this.broadcast({ t: "apps", apps: this.apps() });
+    return this.apps();
+  }
+  appDelete(bookId: string, name: string) {
+    this.bind(bookId);
+    const n = this.sql.exec(`DELETE FROM apps WHERE name = ?`, name).rowsWritten;
+    if (n) this.broadcast({ t: "apps", apps: this.apps() });
+    return n > 0;
+  }
   files(): FileMeta[] {
-    return this.sql.exec<FileMeta>(`SELECT * FROM files ORDER BY ts DESC`).toArray();
+    return this.sql.exec(`SELECT * FROM files ORDER BY ts DESC`).toArray() as unknown as FileMeta[];
   }
   polls(ids?: string[]): Record<string, Poll> {
     const rows = this.sql.exec(`SELECT * FROM polls`).toArray();
@@ -665,10 +690,11 @@ export class Book extends DurableObject<Env> {
   }
 
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
-  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false) {
+  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false) {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
-    const files = fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : [];
+    // embed: the file is HTML the agent posted inline (checked by checkEmbed); the app draws it inside the message.
+    const files = (fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : []).map((f) => (embed ? { ...f, embed: true } : f));
     if (!text && !files.length) return { ok: false, error: "empty message" };
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) return { ok: false, error: `unknown thread ${thread}; use "main" or an epic id from read_room` };
     const secret = findSecret(text);
@@ -907,6 +933,7 @@ export class Book extends DurableObject<Env> {
         // Everything fits in the first load: no thread has older messages to fetch.
         complete: (this.sql.exec(`SELECT count(*) AS n FROM messages`).one().n as number) <= 500,
         files: this.files(),
+        apps: this.apps(),
         polls: this.polls(),
         decisions: this.decisions(),
         suggestions: this.suggestions(),
@@ -974,6 +1001,8 @@ export class Book extends DurableObject<Env> {
           .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
         return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: rows.slice(0, 100).reverse(), more: rows.length > 100 }));
       }
+      case "app.delete":
+        return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
       case "task.toggle":
         return this.setTask(String(m.id));
       case "task.status":

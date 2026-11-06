@@ -496,6 +496,16 @@
   .ftile b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ftile small { font-size: 12px; color: var(--mute); margin-top: -4px; }
 
+  /* embeds: HTML an agent posted inline */
+  .embedBox { width: min(560px, 100%); display: grid; gap: 8px; }
+  .atts:has(.embedBox) { display: block; }
+  iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
+  .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
+  .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
+  .appsList { margin-bottom: 20px; } .appsList h3 { margin: 0 0 2px; font-size: 15px; } .appsList .muted { font-size: 13px; margin: 0 0 8px; }
+  .appRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .appRow b { font-family: ui-monospace, Menlo, monospace; font-size: 13px; flex: none; }
+  .appRow span { flex: 1; min-width: 0; color: var(--mute); } .appRow small { display: block; font-size: 12px; }
   /* file viewer */
   .viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: #0c1016; color: #fff; }
   .viewer[open] { display: flex; flex-direction: column; }
@@ -1407,6 +1417,7 @@ function onEvent(ev, id) {
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
+    case "apps": S.apps = ev.apps; renderFiles(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
@@ -2198,7 +2209,9 @@ document.addEventListener("click", (e) => {
   openViewer(a.getAttribute("href"), a.dataset.view, a.dataset.name || "");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
-const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.type.startsWith("image/")
+const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
+  ? `<div class="embedBox"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div>`
+  : f.type.startsWith("image/")
   ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
   : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}>${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
 
@@ -2269,6 +2282,28 @@ function renderDecisions() {
   el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm("Apagar esse registro?")) send({ t: "decision.del", id: b.dataset.ddel }); });
 }
 
+// Embeds (HTML an agent posted inline): they report their height, and window.vibebook.send(text) shows the text
+// under the embed with Enviar/Cancelar; only the person's click posts it, as a normal message (same filters).
+addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.vbEmbed !== 1) return;
+  const fr = [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
+  if (!fr) return;
+  if (typeof d.h === "number") fr.style.height = `${Math.min(Math.max(Math.ceil(d.h) + 2, 40), 900)}px`; // +2: the frame's border
+  if (typeof d.send === "string" && d.send.trim() && S) {
+    const box = fr.parentElement;
+    box.querySelector(".embedAsk")?.remove();
+    const ask = document.createElement("div");
+    ask.className = "embedAsk";
+    ask.innerHTML = `<span>Este embed quer mandar, como você:</span><q></q><div><button type="button" class="primary">Enviar</button><button type="button" class="ghost">Cancelar</button></div>`;
+    ask.querySelector("q").textContent = d.send.trim().slice(0, 1000);
+    const at = thread; // the open thread: an embed only shows in its own message's thread
+    ask.querySelector(".primary").onclick = () => { send({ t: "msg", thread: at, text: d.send.trim().slice(0, 1000), files: [] }); ask.remove(); };
+    ask.querySelector(".ghost").onclick = () => ask.remove();
+    box.appendChild(ask);
+  }
+});
+
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
@@ -2277,6 +2312,11 @@ function renderFiles() {
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
     : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
+  if (S.apps?.length) {
+    el.insertAdjacentHTML("afterbegin", `<section class="appsList"><h3>Apps da sala</h3><p class="muted">Modelos que os Claudes usam pra mensagens especiais (post com app + dados).</p>
+      ${S.apps.map((a) => `<div class="appRow"><b>${esc(a.name)}</b><span>${esc(a.description || "")}<small>${esc(name(a.author))} · ${ago(a.ts)}</small></span><button class="ghost" data-app-del="${esc(a.name)}" title="Apagar app" aria-label="Apagar app ${esc(a.name)}">×</button></div>`).join("")}</section>`);
+    el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(`Apagar o app ${b.dataset.appDel}? As mensagens já postadas continuam.`)) send({ t: "app.delete", name: b.dataset.appDel }); });
+  }
 }
 
 // Sliding window: a thread renders its newest WIN messages; scrolling near the top shows WIN more, first from

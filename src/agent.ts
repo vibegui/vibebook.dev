@@ -3,6 +3,7 @@
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
+import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
 import { EMAIL_RE } from "./auth";
@@ -95,18 +96,46 @@ const TOOLS = [
   },
   {
     name: "post",
-    description: "Post a message in a room as your human's agent. Mention people with @name; Never include secrets. To change tasks, epics or the doc, use those tools yourself.",
+    description: "Post a message in a room as your human's agent. Mention people with @name; Never include secrets. To change tasks, epics or the doc, use those tools yourself. To show something richer than text (a chart, a table, a card with buttons), pass html (or a room app + data): it renders inside the message, sandboxed (no network, no external scripts: inline everything), after a safety check that refuses HTML asking for credentials, impersonating a login/system, or tricking people. In an embed, window.vibebook.send(text) asks the person looking at it to post that text as themselves (they see it and confirm).",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
-        text: { type: "string", description: "Short, group-chat style, in the room's language" },
+        text: { type: "string", description: "Short, group-chat style, in the room's language (optional caption when you pass html or app)" },
+        html: { type: "string", description: `optional: a self-contained HTML snippet (≤${EMBED_MAX / 1000}KB) shown inline in the message` },
+        app: { type: "string", description: "optional: name of a room app (list_apps) to render with data instead of html" },
+        data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
         thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
         done: { type: "boolean", description: "true when this message reports work that is finished and shipped; the room shows it as a delivery card" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },
       },
-      required: ["room_id", "text"],
+      required: ["room_id"],
     },
+  },
+  {
+    name: "save_app",
+    description: "Save (or replace) a room app: an HTML template with {{field}} slots that any agent in the room can post with post({app, data}) for a recurring special message (daily report card, metric chart, approval card). Same sandbox and safety check as html posts. People see the room's apps under Arquivos.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        name: { type: "string", description: "short id, letters/digits/-, e.g. \"daily-report\"" },
+        description: { type: "string", description: "one line: what it shows and which fields it takes" },
+        html: { type: "string", description: `the template (≤${EMBED_MAX / 1000}KB), self-contained, with {{field}} slots` },
+        model: { type: "string" },
+      },
+      required: ["room_id", "name", "html"],
+    },
+  },
+  {
+    name: "list_apps",
+    description: "List the room's apps (name, description, author). Pass name to get one app's template too.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id"] },
+  },
+  {
+    name: "delete_app",
+    description: "Delete a room app by name.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id", "name"] },
   },
   {
     name: "upload_file",
@@ -474,11 +503,39 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "post": {
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", [], str(a.model), a.done === true);
+      let fileIds: string[] = [];
+      if (a.html || a.app) {
+        let html = str(a.html);
+        if (a.app) {
+          const tpl = await bookStub(env, id).appHtml(id, str(a.app));
+          if (tpl === null) throw new Error(`no app named ${str(a.app)} in this room; see list_apps`);
+          html = renderApp(tpl, a.data && typeof a.data === "object" ? (a.data as Record<string, unknown>) : {});
+        }
+        await checkEmbed(env, html, me.email);
+        const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
+        fileIds = [meta.id];
+      }
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0);
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
       return posted;
+    }
+    case "save_app": {
+      const id = await room();
+      const name = str(a.name).trim().toLowerCase();
+      if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(name)) throw new Error("name: letters, digits and -, up to 40");
+      await checkEmbed(env, str(a.html), me.email);
+      return { ok: true, apps: await bookStub(env, id).appSave(id, me.email, name, str(a.description).slice(0, 200), str(a.html)) };
+    }
+    case "list_apps": {
+      const id = await room();
+      const stub = bookStub(env, id);
+      return a.name ? { name: str(a.name), html: await stub.appHtml(id, str(a.name)) } : { apps: await stub.appsOf(id) };
+    }
+    case "delete_app": {
+      const id = await room();
+      return { ok: await bookStub(env, id).appDelete(id, str(a.name)) };
     }
     case "upload_file": {
       const id = await room();
