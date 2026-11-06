@@ -1,6 +1,7 @@
 // Mention emails: someone @mentions you and you don't read it within MAIL_DELAY_MS → one email, written by the fast
 // model (what they want from you, in one line, plus the context), with the room/epic/people and a button back.
 // Your email inbox is the vibebook inbox. Queue + timing live in the Book (mail_q); this file is the pure parts.
+import type { Lang } from "./lang";
 import { emailHtml, escapeHtml, hmac } from "./auth";
 
 export const MAIL_DELAY_MS = 5 * 60_000; // time to read it in the app before we email
@@ -29,12 +30,13 @@ export type MailFacts = {
   context: string; // recent lines of that thread, "Nome: texto"
   people: string[]; // names of who is in the conversation
   myTasks: string[]; // their open tasks in that epic
+  lang: Lang; // the recipient's (users.lang)
 };
 export type MailCopy = { subject: string; ask: string; context: string[] };
 
 /** Fallback when the model fails: still a useful email. */
 export const plainCopy = (f: MailFacts): MailCopy => ({
-  subject: `${f.mentions.at(-1)!.from} te mencionou em ${f.epic?.title ?? f.room.title}`,
+  subject: f.lang === "en" ? `${f.mentions.at(-1)!.from} mentioned you in ${f.epic?.title ?? f.room.title}` : `${f.mentions.at(-1)!.from} te mencionou em ${f.epic?.title ?? f.room.title}`,
   ask: f.mentions.at(-1)!.text.slice(0, 280),
   context: [],
 });
@@ -50,26 +52,31 @@ ${f.context}
 Mensagens que mencionaram ${f.toName}:
 ${f.mentions.map((m) => `${m.from}: ${m.text}`).join("\n")}
 
-Escreva em português, direto, sem floreio, sem inventar nada que não está na conversa.`;
+Escreva em ${f.lang === "en" ? "inglês (subject, ask e context em inglês)" : "português"}, direto, sem floreio, sem inventar nada que não está na conversa.`;
 
 export async function unsubscribeUrl(secret: string, origin: string, email: string) {
   return `${origin}/mail/off?e=${encodeURIComponent(email)}&s=${await hmac(secret, `mail-off:${email}`)}`;
 }
 export const validUnsub = async (secret: string, email: string, sig: string) => sig === (await hmac(secret, `mail-off:${email}`));
 
+const MAIL_T = {
+  pt: { mentioned: "te mencionou em", tasks: "Suas tarefas abertas aqui", reply: "Responder no vibebook", inConv: "Na conversa:", replyTo: (w: string) => `Responder este email vai direto para ${w}.`, why: "Você recebe isto quando alguém te menciona e você não viu em 5 minutos.", off: "Não quero esses emails", replyText: "Responder:" },
+  en: { mentioned: "mentioned you in", tasks: "Your open tasks here", reply: "Reply on vibebook", inConv: "In the conversation:", replyTo: (w: string) => `Replying to this email goes straight to ${w}.`, why: "You get this when someone mentions you and you haven't seen it in 5 minutes.", off: "Stop these emails", replyText: "Reply:" },
+};
 export function mailBody(f: MailFacts, c: MailCopy, url: string, unsub: string, replyable = true) {
+  const t = MAIL_T[f.lang];
   const where = `${escapeHtml(f.room.title)}${f.epic ? ` › ${escapeHtml(f.epic.title)}` : ""}`;
   const who = [...new Set(f.mentions.map((m) => m.from))].join(", ");
   const html = emailHtml(
     escapeHtml(c.ask || c.subject),
-    `<p style="margin:0 0 18px;color:#6b7383;font-size:14px">${escapeHtml(who)} te mencionou em <b style="color:#1a2130">${where}</b></p>
+    `<p style="margin:0 0 18px;color:#6b7383;font-size:14px">${escapeHtml(who)} ${t.mentioned} <b style="color:#1a2130">${where}</b></p>
 ${c.context.length ? `<ul style="margin:0 0 18px;padding-left:20px;line-height:1.55">${c.context.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : ""}
 ${f.mentions.map((m) => `<div style="border-left:3px solid #d0d8e6;padding:6px 0 6px 12px;margin:0 0 10px;color:#3a4356"><b>${escapeHtml(m.from)}</b><br>${escapeHtml(m.text).replace(/\n/g, "<br>")}</div>`).join("")}
-${f.myTasks.length ? `<p style="margin:18px 0 6px;font-weight:700">Suas tarefas abertas aqui</p><ul style="margin:0;padding-left:20px;line-height:1.55">${f.myTasks.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 4px"><tr><td style="background:#1d5fc4;border-radius:999px"><a href="${url}" style="display:inline-block;padding:13px 24px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px">Responder no vibebook</a></td></tr></table>
-<p style="font-size:13px;color:#6b7383;margin:18px 0 0">Na conversa: ${escapeHtml(f.people.join(", "))}.${replyable ? ` Responder este email vai direto para ${escapeHtml(who)}.` : ""}</p>
-<p style="font-size:12px;color:#8a93a3;margin:20px 0 0;padding-top:16px;border-top:1px solid #eef1f6">Você recebe isto quando alguém te menciona e você não viu em 5 minutos. <a href="${unsub}" style="color:#8a93a3">Não quero esses emails</a></p>`,
+${f.myTasks.length ? `<p style="margin:18px 0 6px;font-weight:700">${t.tasks}</p><ul style="margin:0;padding-left:20px;line-height:1.55">${f.myTasks.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 4px"><tr><td style="background:#1d5fc4;border-radius:999px"><a href="${url}" style="display:inline-block;padding:13px 24px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px">${t.reply}</a></td></tr></table>
+<p style="font-size:13px;color:#6b7383;margin:18px 0 0">${t.inConv} ${escapeHtml(f.people.join(", "))}.${replyable ? ` ${t.replyTo(escapeHtml(who))}` : ""}</p>
+<p style="font-size:12px;color:#8a93a3;margin:20px 0 0;padding-top:16px;border-top:1px solid #eef1f6">${t.why} <a href="${unsub}" style="color:#8a93a3">${t.off}</a></p>`,
   );
-  const text = `${c.ask}\n\n${who} te mencionou em ${f.room.title}${f.epic ? ` › ${f.epic.title}` : ""}\n\n${c.context.map((x) => `- ${x}`).join("\n")}\n\n${f.mentions.map((m) => `${m.from}: ${m.text}`).join("\n\n")}\n\nResponder: ${url}\n\nNão quero esses emails: ${unsub}`;
+  const text = `${c.ask}\n\n${who} ${t.mentioned} ${f.room.title}${f.epic ? ` › ${f.epic.title}` : ""}\n\n${c.context.map((x) => `- ${x}`).join("\n")}\n\n${f.mentions.map((m) => `${m.from}: ${m.text}`).join("\n\n")}\n\n${t.replyText} ${url}\n\n${t.off}: ${unsub}`;
   return { html, text };
 }

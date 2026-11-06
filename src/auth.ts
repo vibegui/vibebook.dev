@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { reqLang } from "./lang";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./index";
@@ -85,12 +86,13 @@ auth.post("/email/start", async (c) => {
   const ip = c.req.header("cf-connecting-ip") ?? "local";
   const { email: raw } = await c.req.json<{ email?: string }>().catch(() => ({ email: "" }));
   const email = (raw ?? "").trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) return c.json({ error: "Email inválido." }, 400);
+  const en = reqLang(c.req.raw) === "en";
+  if (!EMAIL_RE.test(email)) return c.json({ error: en ? "Invalid email." : "Email inválido." }, 400);
   const [byIp, byEmail] = await Promise.all([
     c.env.LOGIN_LIMIT.limit({ key: `ip:${ip}` }),
     c.env.LOGIN_LIMIT.limit({ key: `email:${email}` }),
   ]);
-  if (!byIp.success || !byEmail.success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
+  if (!byIp.success || !byEmail.success) return c.json({ error: en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto." }, 429);
 
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
   await c.env.DB.prepare(
@@ -112,16 +114,16 @@ auth.post("/email/start", async (c) => {
     await c.env.EMAIL.send({
       to: email,
       from: { email: "login@vibebook.dev", name: "vibebook" },
-      subject: `${code} é seu código do vibebook`,
-      text: `Seu código para entrar no vibebook: ${code}\n\nVale por 10 minutos. Se não foi você, ignore este email.`,
+      subject: en ? `${code} is your vibebook code` : `${code} é seu código do vibebook`,
+      text: en ? `Your code to sign in to vibebook: ${code}\n\nIt works for 10 minutes. If this wasn't you, ignore this email.` : `Seu código para entrar no vibebook: ${code}\n\nVale por 10 minutos. Se não foi você, ignore este email.`,
       html: emailHtml(
-        "Seu código para entrar",
-        `<p style="font-size:40px;letter-spacing:8px;font-weight:700;margin:24px 0;color:#14305e">${code}</p><p>Vale por 10 minutos. Se não foi você, ignore este email.</p>`,
+        en ? "Your sign-in code" : "Seu código para entrar",
+        `<p style="font-size:40px;letter-spacing:8px;font-weight:700;margin:24px 0;color:#14305e">${code}</p><p>${en ? "It works for 10 minutes. If this wasn't you, ignore this email." : "Vale por 10 minutos. Se não foi você, ignore este email."}</p>`,
       ),
     });
   } catch (e) {
     console.error("login email failed", { email, error: String(e) });
-    return c.json({ error: "Não conseguimos enviar o email agora. Tenta de novo em instantes." }, 502);
+    return c.json({ error: en ? "We couldn't send the email right now. Try again in a moment." : "Não conseguimos enviar o email agora. Tenta de novo em instantes." }, 502);
   }
   return c.json({ ok: true });
 });
@@ -131,17 +133,18 @@ auth.post("/email/verify", async (c) => {
   const body = await c.req.json<{ email?: string; code?: string; next?: string }>().catch(() => ({}) as Record<string, string>);
   const email = (body.email ?? "").trim().toLowerCase();
   const code = (body.code ?? "").replace(/\D/g, "");
+  const en = reqLang(c.req.raw) === "en";
   const row = await c.env.DB.prepare(`SELECT hash, expires_at, attempts FROM login_codes WHERE email = ?`).bind(email).first<{
     hash: string;
     expires_at: number;
     attempts: number;
   }>();
   if (row && row.expires_at > Date.now() && row.attempts >= MAX_CODE_ATTEMPTS)
-    return c.json({ error: "Muitas tentativas erradas. Espera 10 minutos e pede um código novo." }, 429);
-  if (!row || row.expires_at < Date.now()) return c.json({ error: "Código expirado. Pede um novo." }, 400);
+    return c.json({ error: en ? "Too many wrong codes. Wait 10 minutes and ask for a new one." : "Muitas tentativas erradas. Espera 10 minutos e pede um código novo." }, 429);
+  if (!row || row.expires_at < Date.now()) return c.json({ error: en ? "Code expired. Ask for a new one." : "Código expirado. Pede um novo." }, 400);
   if (!safeEqual(row.hash, await codeHash(c.env, email, code))) {
     await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ?`).bind(email).run();
-    return c.json({ error: "Código errado." }, 400);
+    return c.json({ error: en ? "Wrong code." : "Código errado." }, 400);
   }
   await c.env.DB.prepare(`DELETE FROM login_codes WHERE email = ?`).bind(email).run();
   await startSession(c, email);

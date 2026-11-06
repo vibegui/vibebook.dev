@@ -1,4 +1,5 @@
 import { parseBlock, reconcile, renderBlock } from "./taskblock";
+import { asLang, type Lang } from "./lang";
 import { DurableObject } from "cloudflare:workers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
@@ -407,7 +408,7 @@ export class Book extends DurableObject<Env> {
       const drop = () => this.sql.exec(`DELETE FROM mail_q WHERE email = ? AND msg_id <= ?`, to, ids.at(-1)!);
       const [read, user, sentToday] = await Promise.all([
         db.prepare(`SELECT last_id FROM human_reads WHERE email = ? AND book_id = ?`).bind(to, bookId).first<{ last_id: number }>(),
-        db.prepare(`SELECT name, mention_mail FROM users WHERE email = ?`).bind(to).first<{ name: string | null; mention_mail: number | null }>(),
+        db.prepare(`SELECT name, mention_mail, lang FROM users WHERE email = ?`).bind(to).first<{ name: string | null; mention_mail: number | null; lang: string | null }>(),
         db.prepare(`SELECT count(*) AS n FROM events WHERE name = 'mention_mail' AND ts > ? AND user = ?`).bind(now - 864e5, to).first<{ n: number }>(),
       ]);
       const unread = ids.filter((i) => i > (read?.last_id ?? 0));
@@ -418,7 +419,7 @@ export class Book extends DurableObject<Env> {
       if (now - last < MAIL_GAP_MS) { this.sql.exec(`UPDATE mail_q SET due = ? WHERE email = ?`, last + MAIL_GAP_MS, to); continue; }
       this.set(`mailed:${to}`, String(now));
       drop();
-      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread).catch((e) => { console.error("mention mail failed", { to, error: String(e) }); this.ctx.waitUntil(track(this.env, "mention_mail_failed", { user: to, dims: { book: bookId, error: String(e).slice(0, 200) } })); });
+      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread, false, asLang(user.lang)).catch((e) => { console.error("mention mail failed", { to, error: String(e) }); this.ctx.waitUntil(track(this.env, "mention_mail_failed", { user: to, dims: { book: bookId, error: String(e).slice(0, 200) } })); });
     }
     const next = this.sql.exec<{ d: number | null }>(`SELECT min(due) AS d FROM mail_q`).one().d;
     if (next) await this.wakeAt(next);
@@ -428,11 +429,11 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     const id = msgId ?? (this.sql.exec(`SELECT id FROM messages WHERE NOT (author = ? AND kind IS NULL) AND text != '' ORDER BY id DESC LIMIT 1`, to).toArray()[0]?.id as number | undefined);
     if (!id || !this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, id).toArray().length) return { ok: false, error: "no such message; pass message_id from read_room" };
-    const u = await this.env.DB.prepare(`SELECT name FROM users WHERE email = ?`).bind(to).first<{ name: string | null }>();
-    await this.mentionMail(bookId, to, u?.name ?? to.split("@")[0], [id], true);
+    const u = await this.env.DB.prepare(`SELECT name, lang FROM users WHERE email = ?`).bind(to).first<{ name: string | null; lang: string | null }>();
+    await this.mentionMail(bookId, to, u?.name ?? to.split("@")[0], [id], true, asLang(u?.lang));
     return { ok: true, sent_to: to, message_id: id };
   }
-  async mentionMail(bookId: string, to: string, toName: string, msgIds: number[], preview = false) {
+  async mentionMail(bookId: string, to: string, toName: string, msgIds: number[], preview = false, lang: Lang = "pt") {
     const started = Date.now();
     const names = await this.names();
     const nm = (e: string) => (e === "ai" ? "@vibe" : names[e] ?? e.split("@")[0]);
@@ -452,6 +453,7 @@ export class Book extends DurableObject<Env> {
       context: recent.map((x) => `${x.kind === "agent" ? `${x.via || "Claude"} de ${nm(x.author)}` : nm(x.author)}: ${x.text.slice(0, 400)}`).join("\n"),
       people: [...new Set(recent.map((x) => nm(x.author)).concat(toName))],
       myTasks: epicRow ? epicRow.tasks.filter((t) => t.owner === to && t.status !== "done").map((t) => t.title) : [],
+      lang,
     };
     let copy = plainCopy(facts), cost = 0, ai = false;
     try {

@@ -1,6 +1,7 @@
 // Connecting an agent: OAuth 2.1 (DCR + CIMD + PKCE, via workers-oauth-provider) in front of /mcp.
 // /authorize signs the person in with the normal vibebook session and asks for consent; the grant's
 // props carry only their email. The app lists and revokes grants through /api/agents.
+import { reqLang } from "./lang";
 import { AuthorizationError, CimdFetchError, type ConsentDescription, OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { type Context, Hono } from "hono";
 import { handleAgentMcp } from "./agent";
@@ -38,10 +39,7 @@ export function providerFor(origin: string, defaultHandler: ExportedHandler<Env>
 }
 
 type Lang = "pt" | "en";
-const lang = (c: Context): Lang =>
-  /(?:^|;\s*)vb_lang=en\b/.test(c.req.header("cookie") ?? "") || (!/vb_lang=pt/.test(c.req.header("cookie") ?? "") && /^en/i.test(c.req.header("accept-language") ?? ""))
-    ? "en"
-    : "pt";
+const lang = (c: Context): Lang => reqLang(c.req.raw);
 
 const T = {
   pt: {

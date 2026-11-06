@@ -1,10 +1,36 @@
 // A room link opened by someone without access (/b/<id>): a page with the room's name for link previews (WhatsApp,
 // Slack, iMessage read og:*) and a card to ask to join. The title is readable by anyone holding the link, on purpose.
 import { escapeHtml } from "./auth";
+import type { Lang } from "./lang";
 
 export type AccessState = "out" | "ask" | "asked" | "missing";
 
 const DESC = "Sala no vibebook: chat, doc e tarefas pras pessoas e os Claudes delas trabalharem juntos.";
+
+// Visible text of the access and file pages; link-preview tags (roomMeta) stay in pt: bots send no language.
+const T = {
+  pt: {
+    missingH: "Sala não encontrada", missingP: "O link pode estar errado, ou a sala não existe mais.", open: "Abrir o vibebook",
+    k: "Peça permissão para entrar no vibebook", outP: "Esta sala é fechada. Entre com seu email e peça acesso: quem está nela libera.", outBtn: "Entrar e pedir acesso",
+    askP: (e: string) => `Você entrou como <b>${e}</b>. Quem está na sala vê seu pedido e libera.`, askBtn: "Pedir acesso", asking: "Pedindo…",
+    err429: "Muitos pedidos agora. Tente de novo em um minuto.", err: "Não deu pra pedir agora. Tente de novo.",
+    sent: "✓ Pedido enviado.", sentP: "Quando liberarem, você recebe um email com o link, e esta página abre a sala.",
+    fileK: "Arquivo de uma sala do vibebook", fileInH: "Você não está nesta sala", fileInP: "Só quem está na sala abre os arquivos dela. Peça acesso: quem está nela libera.", fileInBtn: "Pedir acesso à sala",
+    fileOutH: "Entre para ver este arquivo", fileOutP: "Os arquivos de uma sala são só de quem está nela. Entre com seu email: se você já está na sala, o arquivo abre.", fileOutBtn: "Entrar",
+    adH: "Ainda não usa o vibebook?", adP: "Chat, doc e tarefas pra você, seu time e os Claudes de cada um trabalharem juntos no mesmo projeto.", adA: "Criar meu primeiro vibebook →",
+  },
+  en: {
+    missingH: "Room not found", missingP: "The link may be wrong, or the room no longer exists.", open: "Open vibebook",
+    k: "Ask to join this vibebook", outP: "This room is closed. Sign in with your email and ask to join: someone in it lets you in.", outBtn: "Sign in and ask to join",
+    askP: (e: string) => `You're signed in as <b>${e}</b>. People in the room see your request and let you in.`, askBtn: "Ask to join", asking: "Asking…",
+    err429: "Too many requests right now. Try again in a minute.", err: "Couldn't send the request. Try again.",
+    sent: "✓ Request sent.", sentP: "When they let you in, you get an email with the link, and this page opens the room.",
+    fileK: "A file from a vibebook room", fileInH: "You're not in this room", fileInP: "Only people in the room can open its files. Ask to join: someone in it lets you in.", fileInBtn: "Ask to join the room",
+    fileOutH: "Sign in to see this file", fileOutP: "A room's files are only for the people in it. Sign in with your email: if you're in the room, the file opens.", fileOutBtn: "Sign in",
+    adH: "Not on vibebook yet?", adP: "Chat, doc and tasks for you, your team and each person's Claude to work on the same project together.", adA: "Create my first vibebook →",
+  },
+};
+
 
 /** <head> tags that make a shared room link render as a card: vibebook's image + the room's name. */
 export function roomMeta(origin: string, id: string, title: string | null) {
@@ -27,50 +53,52 @@ export function roomMeta(origin: string, id: string, title: string | null) {
 
 const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true" width="28" height="28"><rect x="3" y="4" width="22" height="24" rx="5" fill="#1d5fc4"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#fff"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#fff"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>`;
 
-export function accessPage(o: { origin: string; id: string; title: string | null; state: AccessState; email?: string; auto?: boolean }) {
+export function accessPage(o: { origin: string; id: string; title: string | null; state: AccessState; email?: string; auto?: boolean; lang?: Lang }) {
+  const t = T[o.lang ?? "pt"];
   const title = escapeHtml(o.title ?? "");
   const next = encodeURIComponent(`/b/${o.id}?pedir=1`);
   const body =
     o.state === "missing"
-      ? `<h1>Sala não encontrada</h1><p>O link pode estar errado, ou a sala não existe mais.</p><a class="btn" href="/app">Abrir o vibebook</a>`
-      : `<p class="k">Peça permissão para entrar no vibebook</p><h1>${title}</h1>${
+      ? `<h1>${t.missingH}</h1><p>${t.missingP}</p><a class="btn" href="/app">${t.open}</a>`
+      : `<p class="k">${t.k}</p><h1>${title}</h1>${
           o.state === "out"
-            ? `<p>Esta sala é fechada. Entre com seu email e peça acesso: quem está nela libera.</p><a class="btn" href="/login?next=${next}">Entrar e pedir acesso</a>`
+            ? `<p>${t.outP}</p><a class="btn" href="/login?next=${next}">${t.outBtn}</a>`
             : o.state === "ask"
-              ? `<p>Você entrou como <b>${escapeHtml(o.email ?? "")}</b>. Quem está na sala vê seu pedido e libera.</p><button class="btn" id="ask" type="button">Pedir acesso</button><p class="err" id="err" hidden></p>`
-              : `<p class="ok">✓ Pedido enviado.</p><p>Quando liberarem, você recebe um email com o link, e esta página abre a sala.</p>`
+              ? `<p>${t.askP(escapeHtml(o.email ?? ""))}</p><button class="btn" id="ask" type="button">${t.askBtn}</button><p class="err" id="err" hidden></p>`
+              : `<p class="ok">${t.sent}</p><p>${t.sentP}</p>`
         }`;
   const script =
     o.state === "ask"
       ? `<script>
 const b = document.getElementById("ask"), err = document.getElementById("err");
 async function ask() {
-  b.disabled = true; b.textContent = "Pedindo…";
+  b.disabled = true; b.textContent = ${JSON.stringify(t.asking)};
   const r = await fetch("/api/books/${o.id}/request", { method: "POST" }).catch(() => null);
   if (r && r.ok) return location.replace("/b/${o.id}");
-  b.disabled = false; b.textContent = "Pedir acesso";
-  err.hidden = false; err.textContent = r && r.status === 429 ? "Muitos pedidos agora. Tente de novo em um minuto." : "Não deu pra pedir agora. Tente de novo.";
+  b.disabled = false; b.textContent = ${JSON.stringify(t.askBtn)};
+  err.hidden = false; err.textContent = r && r.status === 429 ? ${JSON.stringify(t.err429)} : ${JSON.stringify(t.err)};
 }
 b.onclick = ask;${o.auto ? "\nask();" : ""}
 </script>`
       : o.state === "asked"
         ? `<script>setInterval(() => fetch("/api/books/${o.id}/access").then((r) => r.json()).then((j) => j.member && location.reload()).catch(() => {}), 15000);</script>`
         : "";
-  return cardPage(roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title), body, script);
+  return cardPage(roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title), body, script, o.lang);
 }
 
 /** A file link (/api/books/<id>/files/<fid>) opened in a browser by someone signed out or outside the room. */
-export function filePage(o: { id: string; path: string; signedIn: boolean }) {
+export function filePage(o: { id: string; path: string; signedIn: boolean; lang?: Lang }) {
+  const t = T[o.lang ?? "pt"];
   const body = o.signedIn
-    ? `<p class="k">Arquivo de uma sala do vibebook</p><h1>Você não está nesta sala</h1><p>Só quem está na sala abre os arquivos dela. Peça acesso: quem está nela libera.</p><a class="btn" href="/b/${o.id}?pedir=1">Pedir acesso à sala</a>`
-    : `<p class="k">Arquivo de uma sala do vibebook</p><h1>Entre para ver este arquivo</h1><p>Os arquivos de uma sala são só de quem está nela. Entre com seu email: se você já está na sala, o arquivo abre.</p><a class="btn" href="/login?next=${encodeURIComponent(o.path)}">Entrar</a>`;
-  const ad = `<div class="ad"><b>Ainda não usa o vibebook?</b><p>Chat, doc e tarefas pra você, seu time e os Claudes de cada um trabalharem juntos no mesmo projeto.</p><a href="/app">Criar meu primeiro vibebook →</a></div>`;
-  return cardPage(`<title>vibebook</title>`, body + ad, "");
+    ? `<p class="k">${t.fileK}</p><h1>${t.fileInH}</h1><p>${t.fileInP}</p><a class="btn" href="/b/${o.id}?pedir=1">${t.fileInBtn}</a>`
+    : `<p class="k">${t.fileK}</p><h1>${t.fileOutH}</h1><p>${t.fileOutP}</p><a class="btn" href="/login?next=${encodeURIComponent(o.path)}">${t.fileOutBtn}</a>`;
+  const ad = `<div class="ad"><b>${t.adH}</b><p>${t.adP}</p><a href="/app">${t.adA}</a></div>`;
+  return cardPage(`<title>vibebook</title>`, body + ad, "", o.lang);
 }
 
-function cardPage(head: string, body: string, script: string) {
+function cardPage(head: string, body: string, script: string, lang: Lang = "pt") {
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${lang === "en" ? "en" : "pt-BR"}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

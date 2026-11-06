@@ -1,4 +1,5 @@
 // Room (vibebook) operations shared by the app API and the agent MCP.
+import type { Lang } from "./lang";
 import { emailHtml, escapeHtml, inviteLink } from "./auth";
 import type { Env } from "./index";
 import { findSecret } from "./secrets";
@@ -35,26 +36,43 @@ export async function createBook(env: Env, email: string, title?: string) {
 }
 
 /** Adds `who` to the room, befriends, emails a magic link (rate-limited per inviter) and tells the DO. */
-export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, origin: string, inviter: string, bookId: string, who: string) {
+export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, origin: string, inviter: string, bookId: string, who: string, inviterLang: Lang = "pt") {
   await env.DB.prepare(`INSERT OR IGNORE INTO members (book_id, email) VALUES (?, ?)`).bind(bookId, who).run();
   await befriend(env.DB, inviter, who);
   ctx.waitUntil(track(env, "invite_sent", { user: inviter, dims: { book: bookId } }));
   if (!env.DEV_EMAIL && (await env.LOGIN_LIMIT.limit({ key: `invite:${inviter}` })).success) {
-    const book = await env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
+    const [book, known] = await Promise.all([
+      env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>(),
+      env.DB.prepare(`SELECT lang FROM users WHERE email = ?`).bind(who).first<{ lang: string | null }>(),
+    ]);
+    // The invitee's own language when they've used vibebook, else the inviter's (likely the same team).
+    const en = (known?.lang ?? inviterLang) === "en";
     const url = await inviteLink(env, origin, who, bookId);
-    const title = book?.title ?? "um vibebook";
+    const title = book?.title ?? (en ? "a vibebook" : "um vibebook");
     const name = inviter.split("@")[0];
+    const connect = `${origin}/${en ? "en" : "pt"}/connect`;
+    const setup = `Read ${origin}/llms.txt and set up vibebook for this project. Room: ${origin}/b/${bookId}`;
     ctx.waitUntil(
       env.EMAIL.send({
         to: who,
         from: { email: "convite@vibebook.dev", name: "vibebook" },
         replyTo: inviter,
-        subject: `${name} te chamou pro vibebook "${title}"`,
-        text: `${inviter} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}\n\nTraga seu Claude (1 minuto): no Claude.ai, Configurações → Conectores → Adicionar conector personalizado, URL ${origin}/mcp, e Permitir.\nClaude Code e outros agents: ${origin}/pt/connect`,
+        subject: en ? `${name} invited you to the vibebook "${title}"` : `${name} te chamou pro vibebook "${title}"`,
+        text: en
+          ? `${inviter} invited you to the vibebook "${title}".\n\nOpen it: ${url}\n\nBring your Claude: paste this in Claude Code, inside the project folder:\n${setup}\nOther clients: ${connect}`
+          : `${inviter} te convidou para o vibebook "${title}".\n\nEntra aqui: ${url}\n\nTraga seu Claude: cole isto no Claude Code, dentro da pasta do projeto:\n${setup}\nOutros clientes: ${connect}`,
         html: emailHtml(
-          `${escapeHtml(name)} te chamou pro vibebook`,
-          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${escapeHtml(inviter)} quer tocar esse projeto com você no vibebook: uma sala com chat, documento e tarefas, onde o seu Claude e o de ${escapeHtml(name)} também conversam.</p><p style="margin:24px 0"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir a sala</a></p><p style="font-size:13px;color:#6b7383">O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email.</p>
-<div style="margin-top:28px;padding:18px 20px;background:#f3f6fb;border-radius:14px"><p style="margin:0 0 8px;font-weight:700">✦ Traga seu Claude (1 minuto)</p><ol style="margin:0;padding-left:20px;line-height:1.6"><li>No Claude.ai: Configurações → Conectores → <b>Adicionar conector personalizado</b></li><li>Cole a URL <b>${origin}/mcp</b> e clique em Conectar</li><li>Entre com este email e clique em <b>Permitir</b></li></ol><p style="margin:10px 0 0;font-size:14px">Usa o Claude Code ou outro agent? <a href="${origin}/pt/connect" style="color:#1d5fc4;font-weight:700">Passo a passo completo</a></p></div>`,
+          en ? `${escapeHtml(name)} invited you to vibebook` : `${escapeHtml(name)} te chamou pro vibebook`,
+          `<p style="font-size:18px;font-weight:700">${escapeHtml(title)}</p><p>${
+            en
+              ? `${escapeHtml(inviter)} wants to run this project with you on vibebook: a room with chat, a doc and tasks, where your Claude and ${escapeHtml(name)}'s talk too.`
+              : `${escapeHtml(inviter)} quer tocar esse projeto com você no vibebook: uma sala com chat, documento e tarefas, onde o seu Claude e o de ${escapeHtml(name)} também conversam.`
+          }</p><p style="margin:24px 0"><a href="${url}" style="background:#1d5fc4;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">${en ? "Open the room" : "Abrir a sala"}</a></p><p style="font-size:13px;color:#6b7383">${
+            en ? "The button signs you in and works for 24h. After that, just sign in with your email." : "O botão já te deixa logado e vale por 24h. Depois disso é só entrar com seu email."
+          }</p>
+<div style="margin-top:28px;padding:18px 20px;background:#f3f6fb;border-radius:14px"><p style="margin:0 0 8px;font-weight:700">✦ ${en ? "Bring your Claude" : "Traga seu Claude"}</p><p style="margin:0 0 8px">${
+            en ? "Paste this in <b>Claude Code</b>, inside the project folder:" : "Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:"
+          }</p><p style="margin:0;font-family:ui-monospace,Menlo,monospace;font-size:13px;background:#fff;border:1px solid #dde4ee;border-radius:8px;padding:10px 12px">${escapeHtml(setup)}</p><p style="margin:10px 0 0;font-size:14px">${en ? "Claude.ai or another client?" : "Claude.ai ou outro cliente?"} <a href="${connect}" style="color:#1d5fc4;font-weight:700">${en ? "Step by step" : "Passo a passo"}</a></p></div>`,
         ),
       }).catch((e) => console.error("invite email failed", { who, error: String(e) })),
     );

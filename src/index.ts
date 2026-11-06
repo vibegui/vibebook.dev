@@ -1,4 +1,5 @@
 import { type Context, Hono } from "hono";
+import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { accessPage, filePage, roomMeta } from "./access";
@@ -82,7 +83,7 @@ export const ensureSchema = (db: D1Database) =>
   (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
     // Columns added after launch; ALTER fails harmlessly once they exist.
     Promise.all(
-      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`, `ALTER TABLE books ADD COLUMN icon INTEGER`, `ALTER TABLE books ADD COLUMN busy_until INTEGER`, `ALTER TABLE members ADD COLUMN opened_at INTEGER`].map((q) => db.prepare(q).run().catch(() => {})),
+      [`ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`, `ALTER TABLE books ADD COLUMN icon INTEGER`, `ALTER TABLE books ADD COLUMN busy_until INTEGER`, `ALTER TABLE members ADD COLUMN opened_at INTEGER`, `ALTER TABLE users ADD COLUMN lang TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
     ),
   ));
 
@@ -131,9 +132,7 @@ const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new 
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
-const pickLang = (req: Request) =>
-  req.headers.get("cookie")?.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] ??
-  (req.headers.get("accept-language")?.split(",", 1)[0]?.trim().toLowerCase().startsWith("en") ? "en" : "pt");
+const pickLang = reqLang;
 for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr"]) {
   app.get(path || "/", (c) => {
     const url = new URL(c.req.url);
@@ -175,7 +174,7 @@ app.get("/b/*", async (c) => {
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
   const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
   const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
-  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") }), book ? 200 : 404);
+  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir"), lang: reqLang(c.req.raw) }), book ? 200 : 404);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
   return pageview(c, res, email ?? undefined);
@@ -259,7 +258,7 @@ app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) {
     const file = fileLink(c);
-    return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false }), 401) : c.json({ error: "unauthenticated" }, 401);
+    return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json({ error: "unauthenticated" }, 401);
   }
   const created = await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
     .bind(email, Date.now())
@@ -301,7 +300,10 @@ app.get("/api/me", async (c) => {
     )
     .bind(email)
     .all();
-  const me = await db.prepare(`SELECT name, avatar FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null }>();
+  const me = await db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>();
+  // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
+  const lang = cookieLang(c.req.raw) ?? (me?.lang ? null : reqLang(c.req.raw));
+  if (me && lang && lang !== me.lang) c.executionCtx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
   return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits: await waitsFor(db, email) });
 });
 
@@ -521,7 +523,7 @@ app.post("/api/books/:id/requests", async (c) => {
   if (!req) return c.json({ error: "no such request" }, 404);
   if (ok) {
     await c.env.DB.prepare(`DELETE FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
-    await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, req.email);
+    await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, req.email, reqLang(c.req.raw));
   } else await c.env.DB.prepare(`UPDATE access_requests SET denied = 1 WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
   await bookStub(c.env, id).fetch("https://book/requests-changed", { method: "POST" });
   c.executionCtx.waitUntil(track(c.env, ok ? "access_approved" : "access_denied", { user: email, dims: { book: id } }));
@@ -535,7 +537,7 @@ app.post("/api/books/:id/members", async (c) => {
   const { email: invitee } = await c.req.json<{ email: string }>();
   const who = (invitee ?? "").trim().toLowerCase();
   if (!EMAIL_RE.test(who)) return c.json({ error: "invalid email" }, 400);
-  await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, who);
+  await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, who, reqLang(c.req.raw));
   return c.json({ ok: true });
 });
 
@@ -591,7 +593,7 @@ app.post("/api/books/:id/files", async (c) => {
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, c.get("email"))))
-    return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true }), 403) : c.json({ error: "forbidden" }, 403);
+    return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true, lang: reqLang(c.req.raw) }), 403) : c.json({ error: "forbidden" }, 403);
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
   if (!obj) return c.notFound();
   return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
