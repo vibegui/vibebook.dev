@@ -336,6 +336,20 @@
   @media (max-width: 900px) { .lanes { grid-template-columns: repeat(4, 78vw); scroll-snap-type: x mandatory; } .lane { scroll-snap-align: start; } }
   .msg { display: flex; gap: 14px; max-width: 760px; position: relative; margin: 0 -10px; padding: 6px 10px; border-radius: 12px; }
   .msg:hover { background: color-mix(in oklch, var(--line) 30%, transparent); }
+  /* Reply: ↩ floats over the message's top-right corner on hover (absolute: nothing moves); touch screens swipe instead. */
+  .msg .rbtn { position: absolute; top: 4px; right: 8px; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; font-size: 12.5px; color: var(--mute); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / .08); opacity: 0; pointer-events: none; }
+  .msg:hover .rbtn, .msg .rbtn:focus-visible { opacity: 1; pointer-events: auto; }
+  .msg .rbtn:hover { color: var(--ink); }
+  @media (hover: none) { .msg .rbtn { display: none; } }
+  .msg .quote { display: block; max-width: 100%; margin: 0 0 4px; padding: 2px 10px; border: 0; border-left: 3px solid var(--line); border-radius: 0; background: none; font: inherit; font-size: 12.5px; color: var(--mute); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .msg .quote:hover { color: var(--ink); border-left-color: var(--accent); }
+  .msg.flash { animation: msgflash 1.6s ease-out; }
+  @keyframes msgflash { 0%, 40% { background: color-mix(in oklch, var(--accent) 16%, transparent); } }
+  .msg.swipe { transition: none; } .msg { transition: transform .18s; }
+  .replyBar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--mute); padding: 4px 4px 4px 10px; border-left: 3px solid var(--accent); min-width: 0; }
+  .replyBar[hidden] { display: none; }
+  .replyBar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .replyBar button { padding: 2px 8px; }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
@@ -1521,6 +1535,7 @@ function renderBook() {
       <div class="kanban" id="kanban"></div>
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
+        <div class="replyBar" id="replyBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="Mencionar" hidden></div>
         <div class="row">
           <button type="button" class="ghost icon" id="plusBtn" title="Anexar, mencionar, votação" aria-label="Mais opções" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -1693,7 +1708,8 @@ function renderBook() {
     const text = input.value.trim();
     const files = attached.filter((p) => p.meta).map((p) => p.meta.id);
     if (!text && !files.length) return;
-    send({ t: "msg", thread, text, files });
+    send({ t: "msg", thread, text, files, reply_to: replyTo?.id });
+    replyTo = null; renderReply();
     attached.forEach((p) => p.url && URL.revokeObjectURL(p.url)); attached = [];
     input.value = ""; input.oninput(); renderTray();
   };
@@ -2273,13 +2289,60 @@ document.addEventListener("click", (ev) => {
   thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
   renderSide(); renderChat(); renderKanban(); renderDoc();
 });
+// Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
+// reply_to and shows that quote, which scrolls to the original and flashes it.
+let replyTo = null;
+const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll ? "votação" : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120);
+const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? `Claude de ${name(m.author)}` : name(m.author));
+const quoteHtml = (id) => {
+  const o = S.messages.find((x) => x.id === id);
+  return `<button type="button" class="quote" data-goto="${id}" title="Ver a mensagem respondida">↩ ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : "mensagem anterior"}</button>`;
+};
+function renderReply() {
+  const bar = document.getElementById("replyBar"); if (!bar) return;
+  if (replyTo && replyTo.thread !== thread) replyTo = null;
+  bar.hidden = !replyTo;
+  if (replyTo) bar.innerHTML = `<span>↩ Respondendo a <b>${esc(replyWho(replyTo))}</b>: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="Cancelar resposta" title="Cancelar">×</button>`;
+  document.getElementById("replyX")?.addEventListener("click", () => { replyTo = null; renderReply(); });
+}
+function startReply(id) {
+  replyTo = S.messages.find((x) => x.id === id) ?? null;
+  renderReply();
+  document.getElementById("input")?.focus();
+}
+document.addEventListener("click", (ev) => {
+  const r = ev.target.closest("[data-reply]");
+  if (r) return startReply(Number(r.dataset.reply));
+  const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
+  const el = document.getElementById(`m${q.dataset.goto}`);
+  if (!el) return toast("Essa mensagem está mais acima: role o chat pra carregar.");
+  el.scrollIntoView({ block: "center", behavior: "smooth" });
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo && document.activeElement?.id === "input") { replyTo = null; renderReply(); } });
+// Touch: drag a message right past 60px to reply (it follows the finger, then snaps back).
+let sw = null;
+document.addEventListener("touchstart", (e) => { const m = e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
+document.addEventListener("touchmove", (e) => {
+  if (!sw) return;
+  const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
+  if (Math.abs(dy) > Math.abs(dx) || dx < 0) { if (sw.dx) sw.m.style.transform = ""; sw.m.classList.remove("swipe"); sw = Math.abs(dy) > 12 ? null : sw; return; }
+  sw.dx = dx; sw.m.classList.add("swipe"); sw.m.style.transform = `translateX(${Math.min(dx, 80)}px)`;
+}, { passive: true });
+document.addEventListener("touchend", () => {
+  if (!sw) return;
+  const { m, dx } = sw; sw = null;
+  m.classList.remove("swipe"); m.style.transform = "";
+  if (dx > 60) startReply(Number(m.id.slice(1)));
+});
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">pensando…</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span>` : ""}
-    <div class="body"><div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
+    <button type="button" class="rbtn" data-reply="${m.id}" title="Responder" aria-label="Responder a esta mensagem">↩ Responder</button>
+    <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${esc(m.via || "agent")} de ${esc(name(m.author))} <span class="agentTag" title="Escrito pelo agent (Claude) dessa pessoa, em nome dela">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="Reporta algo entregue">✓ entregue</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString("pt-BR"))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
 };
@@ -2361,6 +2424,7 @@ function syncUrl() {
 }
 function renderChat(keep) {
   syncUrl();
+  renderReply();
   renderTasks();
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());

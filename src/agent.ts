@@ -106,6 +106,7 @@ const TOOLS = [
         app: { type: "string", description: "optional: name of a room app (list_apps) to render with data instead of html" },
         data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
         thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
+        reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
         done: { type: "boolean", description: "true when this message reports work that is finished and shipped; the room shows it as a delivery card" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },
       },
@@ -541,7 +542,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
         fileIds = [meta.id];
       }
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0);
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined);
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();

@@ -15,7 +15,7 @@ import { track } from "./track";
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number; embed?: boolean };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
-type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null };
+type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 const SEED_GOAL = "o que este épico entrega e por quê";
 /** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
@@ -78,7 +78,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -351,12 +351,14 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder"; replyTo?: number } = {}): Msg {
+    // A reply points at a message of this room; anything else is dropped rather than refused.
+    const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
     const files = extra.files ?? [];
     const id = this.sql
       .exec(
-        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via, tag) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via, tag, reply_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         thread,
         author,
         text,
@@ -366,9 +368,10 @@ export class Book extends DurableObject<Env> {
         extra.kind ?? null,
         extra.via ?? null,
         extra.tag ?? null,
+        replyTo,
       )
       .one().id as number;
-    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null };
+    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null, reply_to: replyTo };
     this.broadcast({ t: "msg", m });
     // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
@@ -705,6 +708,7 @@ export class Book extends DurableObject<Env> {
         mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
         from_your_human: !!email && m.author === email && m.kind !== "agent",
         reminder: m.tag === "reminder" || undefined,
+        reply_to: (m.reply_to as number | null) ?? undefined,
         text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
         files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
@@ -756,7 +760,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
-  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false) {
+  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false, replyTo?: number) {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
     // embed: the file is HTML the agent posted inline (checked by checkEmbed); the app draws it inside the message.
@@ -767,7 +771,7 @@ export class Book extends DurableObject<Env> {
     if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}). Never post secrets in a room; send them through a secure channel.` };
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
-    const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined });
+    const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined, replyTo });
     // A done post closes the person's doing acks; any other post is activity that keeps them live (the app greys
     // out a "doing" with no activity for 20 min).
     if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", Date.now(), email).rowsWritten)
@@ -1035,7 +1039,7 @@ export class Book extends DurableObject<Env> {
         if ((!text && !files.length) || !thread) return;
         const secret = findSecret(text);
         if (secret) return ws.send(JSON.stringify({ t: "blocked", text, reason: secret }));
-        this.addMessage(thread, email, text, { files });
+        this.addMessage(thread, email, text, { files, replyTo: Number(m.reply_to) || undefined });
         this.ctx.waitUntil(
           track(this.env, "message", { user: email, dims: { book: this.get("book_id") ?? undefined, thread: thread === "main" ? "main" : "epic", files: files.length || undefined } }),
         );
