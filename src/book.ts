@@ -513,6 +513,7 @@ export class Book extends DurableObject<Env> {
     if (!this.sql.exec(`SELECT 1 FROM epics WHERE id = ?`, epicId).toArray().length) return null;
     const id = rid();
     this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts) VALUES (?, ?, ?, ?)`, id, epicId, title.slice(0, 300), Date.now());
+    this.rearm(epicId);
     this.epicsChanged();
     return id;
   }
@@ -618,7 +619,19 @@ export class Book extends DurableObject<Env> {
     const ts = Date.now();
     add.forEach((a, i) => this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts, done, status) VALUES (?, ?, ?, ?, ?, ?)`, rid(), epic, a.title.slice(0, 300), ts + i, a.done ? 1 : 0, a.done ? "done" : "todo"));
     for (const id of del) this.sql.exec(`DELETE FROM tasks WHERE id = ?`, id);
+    if (add.length) this.rearm(epic);
     this.epicsChanged();
+  }
+  // Continuing a finished epic: a person writing in an archived epic's thread reopens it (kept open, so it doesn't
+  // archive again right away with its old tasks all done); the next task added to it re-arms auto-archive, so the
+  // new round closes itself too.
+  reopenIfArchived(thread: string) {
+    if (thread === "main" || !this.sql.exec(`UPDATE epics SET archived = -1 WHERE id = ? AND archived = 1`, thread).rowsWritten) return;
+    this.addMessage(thread, "ai", "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.");
+    this.epicsChanged();
+  }
+  rearm(epicId: string) {
+    this.sql.exec(`UPDATE epics SET archived = 0 WHERE id = ? AND archived = -1`, epicId);
   }
   // The room's doc, or an epic's own doc (a child of the room's) when epic is set.
   setDoc(text: string, by: string, except?: WebSocket, epic?: string) {
@@ -845,6 +858,7 @@ export class Book extends DurableObject<Env> {
     const secret = findSecret(text);
     if (secret) return { ok: false, error: `Não enviei: parece ${secret}. Segredo não entra na sala.` };
     const m = this.addMessage(thread, email, text);
+    this.reopenIfArchived(thread);
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", via: "home" } }));
     await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
     return { ok: true, id: m.id, thread };
@@ -1040,6 +1054,7 @@ export class Book extends DurableObject<Env> {
         const secret = findSecret(text);
         if (secret) return ws.send(JSON.stringify({ t: "blocked", text, reason: secret }));
         this.addMessage(thread, email, text, { files, replyTo: Number(m.reply_to) || undefined });
+        this.reopenIfArchived(thread);
         this.ctx.waitUntil(
           track(this.env, "message", { user: email, dims: { book: this.get("book_id") ?? undefined, thread: thread === "main" ? "main" : "epic", files: files.length || undefined } }),
         );

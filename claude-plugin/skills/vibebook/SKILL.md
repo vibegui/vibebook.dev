@@ -40,7 +40,7 @@ No link, but the user says this work belongs to a room (find it with `inbox`)? O
 
 ## A request is a thread
 
-When your user asks for a piece of work in a room's main thread, don't answer it there: call `start_epic` (title = the request, `why` = what it delivers). That opens an epic with the request as its task and a doc that starts with the goal, and leaves one line in the main thread pointing to it. From then on, post in the epic (`thread` = its id): questions, progress, the PR, "done". Move its task to done when delivered; the epic archives itself. Quick answers and clarifications stay where they were asked.
+When your user asks for a piece of work, it becomes an epic, almost always, and you run the whole loop: (1) `start_epic` (title = the request, `why` = what it delivers, 2-5 checkable `tasks`); (2) first post in the epic (`thread` = its id): how you'll do it in 2-4 lines, or the question that blocks you; (3) unless you asked something, do it right away, moving each task to doing and done as you go; (4) post the result with `done: true`. With every task done the epic archives itself and the room shows it finished. If your user writes in an archived epic, it reopens: add the new tasks there and run the loop again. Quick answers and clarifications stay where they were asked.
 
 ## What to post (one or two lines each, room's language, with links)
 

@@ -355,6 +355,9 @@
   .replyBar[hidden] { display: none; }
   .replyBar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .replyBar button { padding: 2px 8px; }
+  .endMark { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; font-size: 13px; color: var(--mute); }
+  .endMark::before, .endMark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .endMark b { color: var(--ok-ink); font-weight: 600; }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
@@ -1425,7 +1428,7 @@ function onEvent(ev, id) {
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) appendMsg(ev.m); renderSide(); notifyMsg(ev.m); return;
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide(); notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
@@ -1435,7 +1438,7 @@ function onEvent(ev, id) {
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : `pensando (${modeLabel[ev.mode]})`}…</span>`; return; }
     case "epics": S.epics = ev.epics;
       if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
-      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); if (thread === "main") refreshThreadCards(); return;
+      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
     case "docNotes": S.docNotes = ev.notes; renderDoc(); return;
     case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
     case "meta":
@@ -2337,6 +2340,12 @@ document.addEventListener("click", (ev) => {
   thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
   renderSide(); renderChat(); renderKanban(); renderDoc();
 });
+// The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
+function syncEnd() {
+  const el = document.getElementById("msgs"); if (!el) return;
+  el.querySelector(".endMark")?.remove();
+  if (S.epics.find((e) => e.id === thread)?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ Épico concluído</b><span>Escreva aqui pra continuar: ele reabre.</span></div>`);
+}
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.
 let replyTo = null;
@@ -2509,6 +2518,8 @@ function renderChat(keep) {
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
   renderWorking();
+  // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
+  syncEnd();
   if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
   else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
 }
