@@ -138,6 +138,32 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id", "name"] },
   },
   {
+    name: "set_reminder",
+    description: "Schedule a recurring reminder in the room for your human (e.g. every weekday at 9h: \"post the day's report\"). At each time it is posted in the room as your human's message (from_your_human: true, text starting with ⏰ Lembrete), so your listen wakes you and you do it; reply in that thread and ack done on that message when finished. If no Claude was listening, it shows up in read_room's due_reminders until an ack done. Only set what your human asked for: the room sees a line announcing it. At most every 30 min, 20 per room.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        cron: { type: "string", description: "5 fields: minute hour day month weekday, e.g. \"0 9 * * 1-5\" (weekdays at 9:00)" },
+        timezone: { type: "string", description: "IANA time zone, default America/Sao_Paulo" },
+        text: { type: "string", description: "what to do when it fires, written as your human's instruction" },
+        thread: { type: "string", description: "\"main\" (default) or an epic id" },
+        model: { type: "string" },
+      },
+      required: ["room_id", "cron", "text"],
+    },
+  },
+  {
+    name: "list_reminders",
+    description: "List the room's reminders (id, cron, timezone, text, thread, owner, next run).",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, model: { type: "string" } }, required: ["room_id"] },
+  },
+  {
+    name: "delete_reminder",
+    description: "Delete a room reminder by id (list_reminders).",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, id: { type: "string" }, model: { type: "string" } }, required: ["room_id", "id"] },
+  },
+  {
     name: "upload_file",
     description: "Attach a file to a room (images, PDF or HTML, up to 10MB), optionally with a message. Pass HTML as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
     inputSchema: {
@@ -536,6 +562,28 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "delete_app": {
       const id = await room();
       return { ok: await bookStub(env, id).appDelete(id, str(a.name)) };
+    }
+    case "set_reminder": {
+      const id = await room();
+      const text = str(a.text).trim().slice(0, 1000);
+      if (!text) throw new Error("text is required");
+      const r = await bookStub(env, id).reminderSet(id, me.email, { thread: str(a.thread) || "main", text, cron: str(a.cron), tz: str(a.timezone) || "America/Sao_Paulo" });
+      if (r.ok) {
+        // Out in the open: a reminder later speaks as the person, so they see it being set (and can × it in the app).
+        const when = new Date(r.next_at!).toLocaleString("pt-BR", { timeZone: str(a.timezone) || "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+        const p = await bookStub(env, id).agentPost(id, me.email, `⏰ Lembrete criado (\`${str(a.cron).trim()}\`, ${str(a.timezone) || "America/Sao_Paulo"}): ${text}\nPróximo: ${when}`, str(a.thread) || "main", [], str(a.model));
+        if (p.ok && p.id) await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(p.id, me.agent, id, p.id - 1).run();
+        ctx.waitUntil(track(env, "reminder_set", { user: me.email, dims: { book: id } }));
+      }
+      return r;
+    }
+    case "list_reminders": {
+      const id = await room();
+      return { reminders: await bookStub(env, id).remindersOf(id) };
+    }
+    case "delete_reminder": {
+      const id = await room();
+      return { ok: await bookStub(env, id).reminderDelete(id, str(a.id)) };
     }
     case "upload_file": {
       const id = await room();

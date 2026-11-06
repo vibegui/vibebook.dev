@@ -7,6 +7,7 @@ import type { Env } from "./index";
 import { MAIL_DAY_MAX, MAIL_DELAY_MS, MAIL_GAP_MS, type MailFacts, COPY_PROMPT, mailBody, mentioned, plainCopy, unsubscribeUrl } from "./mentionmail";
 import { docRoomStub } from "./rooms";
 import { findSecret } from "./secrets";
+import { nextRun, parseCron } from "./cron";
 import { decide, type Question } from "./jev";
 import { track } from "./track";
 
@@ -42,6 +43,8 @@ const CLASSIFY_FIRST_MSGS = 1; // a new room gets its title/summary after its fi
 // Agents can't talk among themselves forever: after this many messages in a row with no human, the thread pauses.
 const AGENT_STREAK_MAX = 6;
 const AGENT_READ_MAX = 60;
+const REMINDERS_MAX = 20; // per room
+const REMINDER_MIN_GAP_MS = 30 * 60_000; // each fire wakes a Claude: no more than twice an hour
 // Board lanes. `done` stays in sync with status = "done" so older readers keep working.
 export const STATUSES = ["todo", "doing", "review", "done"] as const;
 type Status = (typeof STATUSES)[number];
@@ -64,6 +67,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, epic_id TEXT, title TEXT, done INTEGER DEFAULT 0, ts INTEGER);
       CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
       CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, name TEXT, type TEXT, size INTEGER, author TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS reminders (id TEXT PRIMARY KEY, thread TEXT, text TEXT, cron TEXT, tz TEXT, owner TEXT, next_at INTEGER, ts INTEGER);
       CREATE TABLE IF NOT EXISTS apps (name TEXT PRIMARY KEY, description TEXT, html TEXT, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS polls (id TEXT PRIMARY KEY, question TEXT, options TEXT, multi INTEGER, closed INTEGER DEFAULT 0, author TEXT, ts INTEGER);
       CREATE TABLE IF NOT EXISTS votes (poll_id TEXT, email TEXT, opt INTEGER, PRIMARY KEY (poll_id, email, opt));
@@ -207,6 +211,60 @@ export class Book extends DurableObject<Env> {
     if (n) this.broadcast({ t: "apps", apps: this.apps() });
     return n > 0;
   }
+  // Reminders: a cron (in a time zone) that posts a message in the room as the person who set it, so their Claude's
+  // listen wakes up and treats it as an instruction (from_your_human). Fired from the alarm; a fire nobody acked done
+  // stays in read_room's due_reminders, so a Claude that was offline runs it when it comes back.
+  reminders() {
+    return this.sql.exec<{ id: string; thread: string; text: string; cron: string; tz: string; owner: string; next_at: number }>(`SELECT id, thread, text, cron, tz, owner, next_at FROM reminders ORDER BY next_at`).toArray();
+  }
+  async reminderSet(bookId: string, email: string, r: { thread: string; text: string; cron: string; tz: string }) {
+    this.bind(bookId);
+    if (r.thread !== "main" && !this.epics().some((e) => e.id === r.thread)) return { ok: false, error: `unknown thread ${r.thread}; use "main" or an epic id from read_room` };
+    const secret = findSecret(r.text);
+    if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}).` };
+    let next: number | null;
+    try {
+      const c = parseCron(r.cron);
+      next = nextRun(c, r.tz, Date.now());
+      const after = next && nextRun(c, r.tz, next);
+      if (after && after - next! < REMINDER_MIN_GAP_MS) return { ok: false, error: `fires too often: at most once every ${REMINDER_MIN_GAP_MS / 60_000} minutes` };
+    } catch (e) {
+      return { ok: false, error: e instanceof RangeError ? `unknown timezone ${r.tz}` : String((e as Error).message) };
+    }
+    if (!next) return { ok: false, error: "that cron never fires" };
+    if (this.reminders().length >= REMINDERS_MAX) return { ok: false, error: `this room already has ${REMINDERS_MAX} reminders; delete one first` };
+    const id = crypto.randomUUID().slice(0, 8);
+    this.sql.exec(`INSERT INTO reminders (id, thread, text, cron, tz, owner, next_at, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, id, r.thread, r.text, r.cron.trim(), r.tz, email, next, Date.now());
+    this.broadcast({ t: "reminders", reminders: this.reminders() });
+    await this.wakeAt(next);
+    return { ok: true, id, next_at: new Date(next).toISOString() };
+  }
+  remindersOf(bookId: string) {
+    this.bind(bookId);
+    return this.reminders().map((r) => ({ ...r, next_at: new Date(r.next_at).toISOString() }));
+  }
+  reminderDelete(bookId: string, id: string) {
+    this.bind(bookId);
+    const n = this.sql.exec(`DELETE FROM reminders WHERE id = ?`, id).rowsWritten;
+    if (n) this.broadcast({ t: "reminders", reminders: this.reminders() });
+    return n > 0;
+  }
+  async fireReminders() {
+    const now = Date.now();
+    const due = this.sql.exec<{ id: string; thread: string; text: string; cron: string; tz: string; owner: string }>(`SELECT * FROM reminders WHERE next_at <= ?`, now).toArray();
+    for (const r of due) {
+      const thread = r.thread === "main" || this.epics().some((e) => e.id === r.thread) ? r.thread : "main";
+      this.addMessage(thread, r.owner, `⏰ Lembrete: ${r.text}`, { tag: "reminder" });
+      let next: number | null = null;
+      try { next = nextRun(parseCron(r.cron), r.tz, now); } catch {}
+      if (next) this.sql.exec(`UPDATE reminders SET next_at = ? WHERE id = ?`, next, r.id);
+      else this.sql.exec(`DELETE FROM reminders WHERE id = ?`, r.id);
+      this.ctx.waitUntil(track(this.env, "reminder_fired", { user: r.owner, dims: { book: this.get("book_id") ?? "" } }));
+    }
+    if (due.length) this.broadcast({ t: "reminders", reminders: this.reminders() });
+    const next = this.sql.exec<{ t: number | null }>(`SELECT min(next_at) AS t FROM reminders`).one().t;
+    if (next) await this.wakeAt(next);
+  }
   files(): FileMeta[] {
     return this.sql.exec(`SELECT * FROM files ORDER BY ts DESC`).toArray() as unknown as FileMeta[];
   }
@@ -293,7 +351,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" } = {}): Msg {
     const ts = Date.now();
     const files = extra.files ?? [];
     const id = this.sql
@@ -646,6 +704,7 @@ export class Book extends DurableObject<Env> {
         by_agent: m.kind === "agent",
         mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
         from_your_human: !!email && m.author === email && m.kind !== "agent",
+        reminder: m.tag === "reminder" || undefined,
         text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
         files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
@@ -667,6 +726,13 @@ export class Book extends DurableObject<Env> {
       })),
       decisions: this.decisions().map((d) => ({ text: d.text, who: d.who, kind: d.kind, at: new Date(d.ts).toISOString() })),
       messages,
+      // Reminders your human set that fired in the last 7 days and no agent of theirs closed with ack done yet.
+      due_reminders: email
+        ? this.sql
+            .exec(`SELECT m.id, m.thread, m.text, m.ts FROM messages m WHERE m.tag = 'reminder' AND m.author = ? AND m.ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = m.id AND a.status = 'done') ORDER BY m.id`, email, Date.now() - 7 * 864e5)
+            .toArray()
+            .map((m) => ({ message_id: m.id as number, thread: threadName(m.thread as string), text: m.text as string, at: new Date(m.ts as number).toISOString() }))
+        : undefined,
       last_id: lastId,
       paused: this.agentStreak("main") >= AGENT_STREAK_MAX,
     };
@@ -934,6 +1000,7 @@ export class Book extends DurableObject<Env> {
         complete: (this.sql.exec(`SELECT count(*) AS n FROM messages`).one().n as number) <= 500,
         files: this.files(),
         apps: this.apps(),
+        reminders: this.reminders(),
         polls: this.polls(),
         decisions: this.decisions(),
         suggestions: this.suggestions(),
@@ -1003,6 +1070,8 @@ export class Book extends DurableObject<Env> {
       }
       case "app.delete":
         return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
+      case "reminder.delete":
+        return void this.reminderDelete(this.get("book_id") ?? "", String(m.id ?? ""));
       case "task.toggle":
         return this.setTask(String(m.id));
       case "task.status":
@@ -1221,6 +1290,7 @@ export class Book extends DurableObject<Env> {
   }
 
   async alarm() {
+    await this.fireReminders().catch((e) => console.error("reminders", String(e)));
     await this.sendDueMail().catch((e) => console.error("mention mail", String(e)));
     await this.housekeep().catch((e) => console.error("housekeep", String(e)));
     await this.findWaits().catch((e) => console.error("waits", String(e)));

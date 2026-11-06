@@ -504,6 +504,10 @@
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
   .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
+  .rems { margin-bottom: 20px; } .rems h4 { margin: 0 0 8px; font-size: 13px; color: var(--mute); }
+  .rem { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 8px; }
+  .rem > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .rem small { color: var(--mute); font-size: 12px; }
+  .rem button { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none; }
   .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .acard { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
   .aprev { display: block; height: 170px; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
@@ -1423,6 +1427,7 @@ function onEvent(ev, id) {
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "apps": S.apps = ev.apps; renderApps(); return;
+    case "reminders": S.reminders = ev.reminders; renderApps(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
@@ -2315,13 +2320,20 @@ addEventListener("message", (e) => {
 // as their names, served sandboxed by /api/books/:id/apps/:name); click opens it in the viewer.
 function renderApps() {
   const el = document.getElementById("appsPane"); if (!el) return;
-  document.getElementById("appCount").textContent = S.apps?.length ? ` ${S.apps.length}` : "";
+  const n = (S.apps?.length ?? 0) + (S.reminders?.length ?? 0);
+  document.getElementById("appCount").textContent = n ? ` ${n}` : "";
   const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
-  el.innerHTML = S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
+  // Reminders (set_reminder) sit on top: each one later posts as the person who set it, so they're listed with ×.
+  const when = (t) => new Date(t).toLocaleString("pt-BR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const rem = S.reminders?.length ? `<div class="rems"><h4>⏰ Lembretes</h4>${S.reminders.map((r) => `
+    <div class="rem"><div><b>${esc(r.text)}</b><small><code>${esc(r.cron)}</code> ${esc(r.tz)} · próximo ${when(r.next_at)} · de ${esc(name(r.owner))}${r.thread !== "main" ? ` · ${esc(S.epics?.find((e) => e.id === r.thread)?.title ?? "épico")}` : ""}</small></div>
+      <button class="ghost" data-rem-del="${esc(r.id)}" title="Apagar lembrete" aria-label="Apagar lembrete">×</button></div>`).join("")}</div>` : "";
+  el.innerHTML = rem + (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
     <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
       <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
       <button class="ghost" data-app-del="${esc(a.name)}" title="Apagar app" aria-label="Apagar app ${esc(a.name)}">×</button></div>`).join("")}</div>`
-    : `<div class="empty">Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.</div>`;
+    : `<div class="empty">Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.</div>`);
+  el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm("Apagar este lembrete?")) send({ t: "reminder.delete", id: b.dataset.remDel }); });
   el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(`Apagar o app ${b.dataset.appDel}? As mensagens já postadas continuam.`)) send({ t: "app.delete", name: b.dataset.appDel }); });
 }
 
