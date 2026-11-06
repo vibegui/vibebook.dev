@@ -114,7 +114,7 @@ const TOOLS = [
   },
   {
     name: "save_app",
-    description: "Save (or replace) a room app: an HTML template with {{field}} slots that any agent in the room can post with post({app, data}) for a recurring special message (daily report card, metric chart, approval card). Same sandbox and safety check as html posts. People see the room's apps under Arquivos.",
+    description: "Save (or replace) a room app: an HTML template with {{field}} slots that any agent in the room can post with post({app, data}) for a recurring special message (daily report card, metric chart, approval card). Same sandbox and safety check as html posts. People see the room's apps in its Apps tab, with a preview.",
     inputSchema: {
       type: "object",
       properties: {

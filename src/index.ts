@@ -8,6 +8,7 @@ import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { validUnsub } from "./mentionmail";
+import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
@@ -594,6 +595,16 @@ app.get("/api/books/:id/files/:fid", async (c) => {
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
   if (!obj) return c.notFound();
   return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
+});
+
+// A room app's preview (Apps tab): the template with each {{field}} shown as its name, served like an HTML file.
+app.get("/api/books/:id/apps/:name", async (c) => {
+  const id = c.req.param("id");
+  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
+  const tpl = await bookStub(c.env, id).appHtml(id, c.req.param("name"));
+  if (tpl === null) return c.notFound();
+  const fields = Object.fromEntries([...tpl.matchAll(/\{\{\s*([\w.-]+)\s*\}\}/g)].map((m) => [m[1], `‹${m[1]}›`]));
+  return new Response(withBridge(renderApp(tpl, fields)), { headers: { ...fileHeaders("text/html", `${c.req.param("name")}.html`), "cache-control": "private, max-age=60" } });
 });
 
 // Co-editing a doc (y-websocket): /yjs/<room> or /yjs/<room>~<epic>. Same session cookie as /ws, members only.

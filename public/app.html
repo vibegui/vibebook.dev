@@ -464,6 +464,8 @@
   .doc[data-pane="files"] .preview, .doc[data-pane="files"] textarea, .doc[data-pane="files"] .seg { display: none; }
   .doc[data-pane="doc"] .filesPane, .doc:not([data-pane="decisions"]) .decPane { display: none; }
   .doc[data-pane="decisions"] .preview, .doc[data-pane="decisions"] textarea, .doc[data-pane="decisions"] .seg, .doc[data-pane="decisions"] .filesPane { display: none; }
+  .doc[data-pane="apps"] :is(.preview, textarea, .seg, .filesPane), .doc:not([data-pane="apps"]) .appsPane { display: none; }
+  .appsPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .decPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .dec { border-left: 3px solid var(--sun); padding: 2px 0 2px 12px; margin-bottom: 14px; display: flex; gap: 8px; }
   .dec.approval { border-left-color: var(--ok); }
@@ -502,10 +504,13 @@
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
   .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
-  .appsList { margin-bottom: 20px; } .appsList h3 { margin: 0 0 2px; font-size: 15px; } .appsList .muted { font-size: 13px; margin: 0 0 8px; }
-  .appRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
-  .appRow b { font-family: ui-monospace, Menlo, monospace; font-size: 13px; flex: none; }
-  .appRow span { flex: 1; min-width: 0; color: var(--mute); } .appRow small { display: block; font-size: 12px; }
+  .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .acard { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+  .aprev { display: block; height: 170px; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
+  .aprev iframe { width: 200%; height: 340px; border: 0; transform: scale(.5); transform-origin: 0 0; pointer-events: none; }
+  .ainfo { display: grid; gap: 2px; padding: 10px 12px 12px; font-size: 13.5px; }
+  .ainfo b { font: 600 13px ui-monospace, Menlo, monospace; } .ainfo span { color: var(--ink); } .ainfo small { color: var(--mute); font-size: 12px; }
+  .acard [data-app-del] { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; padding: 0; border-radius: 50%; background: var(--panel); opacity: .8; }
   /* file viewer */
   .viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: #0c1016; color: #fff; }
   .viewer[open] { display: flex; flex-direction: column; }
@@ -1417,7 +1422,7 @@ function onEvent(ev, id) {
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
-    case "apps": S.apps = ev.apps; renderFiles(); return;
+    case "apps": S.apps = ev.apps; renderApps(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
@@ -1526,13 +1531,14 @@ function renderBook() {
     </main>
     <section class="doc">
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar documento" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button><button type="button" data-pane="decisions">Decisões<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">Arquivos<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">Decisões<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="Modo do documento"><button type="button" data-view="preview">Ver</button><button type="button" data-view="edit">Editar</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões."></textarea>
       <div class="cm" id="cm"></div>
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
+      <div class="appsPane" id="appsPane"></div>
     </section>
   </div>
   <dialog id="pollDlg">
@@ -1715,6 +1721,7 @@ function renderBook() {
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     if (pane === "files") renderFiles();
     if (pane === "decisions") renderDecisions();
+    if (pane === "apps") renderApps();
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   setPane("doc");
@@ -1733,7 +1740,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
+  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderApps(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
 }
 
 // Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
@@ -2304,6 +2311,20 @@ addEventListener("message", (e) => {
   }
 });
 
+// Apps: the room's HTML templates (save_app), each with a live preview (the template with its {{fields}} shown
+// as their names, served sandboxed by /api/books/:id/apps/:name); click opens it in the viewer.
+function renderApps() {
+  const el = document.getElementById("appsPane"); if (!el) return;
+  document.getElementById("appCount").textContent = S.apps?.length ? ` ${S.apps.length}` : "";
+  const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
+  el.innerHTML = S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
+    <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
+      <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
+      <button class="ghost" data-app-del="${esc(a.name)}" title="Apagar app" aria-label="Apagar app ${esc(a.name)}">×</button></div>`).join("")}</div>`
+    : `<div class="empty">Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.</div>`;
+  el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(`Apagar o app ${b.dataset.appDel}? As mensagens já postadas continuam.`)) send({ t: "app.delete", name: b.dataset.appDel }); });
+}
+
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
@@ -2312,11 +2333,6 @@ function renderFiles() {
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f)}</div>
       <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
     : `<div class="empty">Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.</div>`;
-  if (S.apps?.length) {
-    el.insertAdjacentHTML("afterbegin", `<section class="appsList"><h3>Apps da sala</h3><p class="muted">Modelos que os Claudes usam pra mensagens especiais (post com app + dados).</p>
-      ${S.apps.map((a) => `<div class="appRow"><b>${esc(a.name)}</b><span>${esc(a.description || "")}<small>${esc(name(a.author))} · ${ago(a.ts)}</small></span><button class="ghost" data-app-del="${esc(a.name)}" title="Apagar app" aria-label="Apagar app ${esc(a.name)}">×</button></div>`).join("")}</section>`);
-    el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(`Apagar o app ${b.dataset.appDel}? As mensagens já postadas continuam.`)) send({ t: "app.delete", name: b.dataset.appDel }); });
-  }
 }
 
 // Sliding window: a thread renders its newest WIN messages; scrolling near the top shows WIN more, first from
