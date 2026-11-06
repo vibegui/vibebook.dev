@@ -582,6 +582,13 @@
   .link { background: none; border: none; color: var(--accent); padding: 0; font-size: inherit; text-decoration: underline; }
   dialog { border: none; border-radius: 20px; padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
   dialog::backdrop { background: oklch(0.2 0.05 250 / .35); }
+  dialog.welcome { width: min(520px, calc(100% - 32px)); padding: 30px 30px 22px; }
+  dialog.welcome .wIco { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--ai-bg); color: var(--accent); margin-bottom: 16px; }
+  dialog.welcome h3 { font-size: 26px; line-height: 1.15; margin-bottom: 10px; }
+  dialog.welcome p { margin: 0 0 14px; color: var(--mute); line-height: 1.55; } dialog.welcome p b { color: var(--ink); }
+  dialog.welcome .wFoot { display: flex; align-items: center; gap: 8px; margin-top: 18px; }
+  dialog.welcome .wDots { flex: 1; display: flex; gap: 6px; } dialog.welcome .wDots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); } dialog.welcome .wDots i.on { background: var(--accent); width: 20px; border-radius: 4px; }
+  dialog.welcome #wConnect .setup { margin: 0; } dialog.welcome #wConnect .setupHead { display: none; }
   dialog h3 { margin: 0 0 14px; font: 400 22px Caprasimo, serif; }
   dialog form { display: grid; gap: 10px; }
   dialog .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
@@ -1766,6 +1773,40 @@ function renderBook() {
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
   renderSide(); renderChat(); renderDoc(true); renderFiles(); renderApps(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
+  welcome();
+}
+
+// First room someone opens after being invited (not their own room): a few steps on how vibebook works (each
+// person brings their Claude, context is shared), ending on the sentence that connects theirs. Once per person
+// per browser. ponytail: localStorage; a users column would make it once per account if people complain.
+function welcome() {
+  const key = `vb.welcomed.${S.me}`;
+  try { if (!S.book?.owner || S.me === S.book.owner || localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { return; }
+  const owner = name(S.book.owner);
+  const steps = [
+    ["👋", `Bem-vindo a <b>${esc(S.book.title || "esta sala")}</b>`, `${esc(owner)} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.`],
+    ["✻", "Cada um traz o seu Claude", "Você conecta o seu Claude, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto."],
+    ["📎", "O contexto é de todo mundo", "Doc, arquivos, decisões e tarefas ficam na sala, e todo Claude lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra."],
+    ["→", "Conecte o seu Claude", ""],
+  ];
+  const d = document.createElement("dialog");
+  d.className = "welcome";
+  document.body.appendChild(d);
+  let i = 0;
+  const done = () => { d.close(); d.remove(); connectCard(document.getElementById("agentNudge"), S.id); };
+  const show = () => {
+    const [ico, t, p] = steps[i], last = i === steps.length - 1;
+    d.innerHTML = `<div class="wIco">${ico}</div><h3>${t}</h3>${p ? `<p>${p}</p>` : `<p>Cole isto no <b>Claude Code</b>, dentro da pasta do projeto. Ele instala o vibebook, entra nesta sala e fica ouvindo.</p><div id="wConnect"></div>`}
+      <div class="wFoot"><span class="wDots">${steps.map((_, j) => `<i class="${j === i ? "on" : ""}"></i>`).join("")}</span>
+        ${i ? `<button type="button" class="ghost" data-w="-1">Voltar</button>` : `<button type="button" class="ghost" data-w="skip">Pular</button>`}
+        <button type="button" class="primary" data-w="1">${last ? "Entrar na sala" : "Próximo"}</button></div>`;
+    d.querySelectorAll("[data-w]").forEach((b) => b.onclick = () => { const w = b.dataset.w; if (w === "skip" || (w === "1" && last)) return done(); i += Number(w); show(); });
+    if (last) connectCard(d.querySelector("#wConnect"), S.id).then(() => { const c = d.querySelector("#wConnect"); if (c && c.hidden) { c.hidden = false; c.innerHTML = `<div class="setup done"><span class="setupIcon">✓</span><div><b>Seu Claude já está conectado.</b><span>Ligue ele nesta sala com ✻ Ligar Claude, no topo.</span></div></div>`; } });
+    d.querySelector(".wFoot .primary").focus();
+  };
+  d.addEventListener("cancel", (e) => { e.preventDefault(); done(); });
+  show();
+  d.showModal();
 }
 
 // Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
