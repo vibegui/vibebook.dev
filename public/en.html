@@ -278,6 +278,34 @@
   .term .ok { color: var(--green); }
   .term .ai { padding-left: 10px; border-left: 2px solid var(--orange); font-family: var(--sans); font-size: 14px; }
   @media (max-width: 760px) { .term .tw { grid-template-columns: 1fr; } .term ul { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); } }
+
+  /* vibebook rooms ↔ herdr tabs: each room wired to its own terminal tab */
+  .hmap { display: grid; gap: 14px; }
+  .hmap .cols { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: stretch; }
+  .hmap .colh { height: 27px; font: 600 11px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding: 0 4px 8px; display: flex; align-items: center; gap: 8px; box-sizing: border-box; }
+  .hmap .colh svg { width: 16px; height: 16px; }
+  .hmap .list { display: grid; gap: 8px; }
+  .hmap .rm, .hmap .tab { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-size: 14px; color: var(--soft); min-width: 0; }
+  .hmap .rm span, .hmap .tab span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hmap .rm .sq, .hmap .tab .sq { width: 24px; height: 24px; border-radius: 8px; flex: none; display: grid; place-items: center; font: 10px Caprasimo, serif; color: #fff; }
+  .hmap .rm small { color: var(--orange); font-size: 12px; white-space: nowrap; }
+  .hmap .rm.off small { color: var(--dim); }
+  .hmap .tab { background: #0c1018; font: 13px ui-monospace, "SF Mono", Menlo, monospace; }
+  .hmap .tab em { font-style: normal; color: var(--orange); }
+  .hmap .tab.cur { border-color: var(--line2); background: var(--panel2); color: var(--ink); }
+  .hmap .off, .hmap .tab.gone { opacity: .4; }
+  .hmap .wires { display: grid; gap: 8px; padding-top: 27px; }
+  .hmap .wire { height: 44px; position: relative; }
+  .hmap .wire::before { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; border-top: 1.5px dashed var(--line2); }
+  .hmap .wire i { position: absolute; top: 50%; left: 4px; width: 7px; height: 7px; margin-top: -3px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 10px var(--orange); animation: wire 2.6s linear infinite; }
+  .hmap .wire.off::before { border-top-color: var(--line); } .hmap .wire.off i { display: none; }
+  @keyframes wire { 0% { left: 4px; opacity: 0; } 15%, 85% { opacity: 1; } 100% { left: calc(100% - 11px); opacity: 0; } }
+  .hmap .pane { background: #0c1018; border: 1px solid var(--line2); border-radius: 14px; padding: 14px 16px; display: grid; gap: 7px; font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: var(--soft); }
+  .hmap .pane .cwd { color: var(--mute); font-size: 11.5px; }
+  .hmap .pane .me { color: var(--ink); } .hmap .pane .me::before { content: "› "; color: var(--sun); font-weight: 700; }
+  .hmap .pane .ok { color: var(--green); }
+  .hmap .pane .ai { padding-left: 10px; border-left: 2px solid var(--orange); font-family: var(--sans); font-size: 14px; }
+  @media (max-width: 760px) { .hmap .cols { grid-template-columns: 1fr 28px 1fr; } .hmap .rm small, .hmap .tab .pre { display: none; } }
   @media (max-width: 980px) {
     .shot { grid-template-columns: 64px minmax(0, 1fr) 280px; } .side { display: none; }
     .rooms { grid-template-columns: 1fr 1fr; }
@@ -477,9 +505,15 @@
       <a class="more" href="/en/herdr">How to use it with herdr →</a>
     </div>
     <div class="vis rv" aria-hidden="true">
-      <div class="term"><div class="tb"><i></i><i></i><i></i><span>herdr · your rooms</span></div>
-        <div class="tw"><ul><li class="cur"><span class="sq" style="background:oklch(0.6 0.13 75)">AL</span>Aurora launch<em>✻</em></li><li class=""><span class="sq" style="background:oklch(0.47 0.15 315)">AP</span>Aurora proposal<em>✻</em></li><li class=""><span class="sq" style="background:oklch(0.47 0.15 315)">HA</span>Hire an SDR<em>✻</em></li><li class=""><span class="sq" style="background:oklch(0.58 0.17 35)">OC</span>October close<em>✻</em></li><li class="other"><span class="sq" style="background:#2a3446">›</span>scratch</li></ul>
-          <div class="pane"><div class="cwd">~/Projects/aurora</div><div class="me">/vibebook:listen</div><div class="ok">● listening to “Aurora launch”</div><div class="ai">Paula asked for the checkout cutoff time. Shall I do it and show you the diff before shipping?</div><div class="me">go</div></div></div></div>
+      <div class="hmap">
+        <div class="cols">
+          <div><div class="colh"><svg viewBox="0 0 32 32"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/></svg>Your rooms</div><div class="list"><div class="rm "><span class="sq" style="background:oklch(0.6 0.13 75)">AL</span><span>Aurora launch</span><small>✻ on</small></div><div class="rm "><span class="sq" style="background:oklch(0.47 0.15 315)">AP</span><span>Aurora proposal</span><small>✻ on</small></div><div class="rm "><span class="sq" style="background:oklch(0.47 0.15 315)">HA</span><span>Hire an SDR</span><small>✻ on</small></div><div class="rm off"><span class="sq" style="background:oklch(0.58 0.17 35)">OC</span><span>October close</span><small>off</small></div></div></div>
+          <div class="wires"><div class="wire "><i style="animation-delay:0.0s"></i></div><div class="wire "><i style="animation-delay:0.6s"></i></div><div class="wire "><i style="animation-delay:1.2s"></i></div><div class="wire off"><i style="animation-delay:1.7999999999999998s"></i></div></div>
+          <div><div class="colh">▤ herdr tabs</div><div class="list"><div class="tab cur"><span class="sq" style="background:oklch(0.6 0.13 75)">AL</span><span><i class="pre" style="font-style:normal">~/Projects/</i>aurora</span><em>✻</em></div><div class="tab "><span class="sq" style="background:oklch(0.47 0.15 315)">AP</span><span><i class="pre" style="font-style:normal">~/Projects/</i>aurora-proposal</span><em>✻</em></div><div class="tab "><span class="sq" style="background:oklch(0.47 0.15 315)">HA</span><span><i class="pre" style="font-style:normal">~/Projects/</i>hiring</span><em>✻</em></div><div class="tab  gone"><span class="sq" style="background:oklch(0.58 0.17 35)">OC</span><span><i class="pre" style="font-style:normal">~/Projects/</i>october-close</span></div></div></div>
+        </div>
+        <div class="pane"><div class="cwd">~/Projects/aurora</div><div class="me">/vibebook:listen</div><div class="ok">● listening to “Aurora launch”</div><div class="ai">Paula asked for the checkout cutoff time. Shall I do it and show you the diff before shipping?</div><div class="me">go</div></div>
+      </div>
+    </div>
     </div>
   </div>
 </section>
