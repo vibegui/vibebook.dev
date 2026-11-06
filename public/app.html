@@ -595,6 +595,43 @@
     .book.rail .side, .book .side { padding: 14px 16px 24px; align-items: stretch; gap: 20px; border-right: 0; }
     .book .side .sideTop { display: none; }
   }
+  /* Phone home (≤720px): top bar, room grid (70%), router box (30%); the rest lives in the ☰ drawer. */
+  .phome { display: grid; grid-template-rows: auto minmax(0, 7fr) minmax(0, 3fr); height: var(--vvh, 100dvh); }
+  .ptop { display: flex; align-items: center; gap: 8px; padding: max(8px, env(safe-area-inset-top)) 10px 8px; border-bottom: 1px solid var(--line); background: var(--bg); }
+  .ptop .pbtn { position: relative; width: 42px; height: 42px; padding: 0; display: grid; place-items: center; color: var(--ink); }
+  .ptop .pbtn .swWait { right: -2px; bottom: auto; top: -2px; }
+  .plogo { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font: 400 22px/1 Caprasimo, serif; color: var(--ink); text-decoration: none; }
+  .plogo .tile { width: 30px; height: 30px; border-radius: 9px; } .plogo .tile svg { width: 19px; height: 19px; }
+  .ptop .me { padding: 2px; flex: none; }
+  .pmain { overflow: auto; overscroll-behavior: contain; padding: 18px 14px 20px; }
+  .pmain #setupCard, .pmain .nameAsk { margin: 0 0 18px; }
+  .pgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 8px; }
+  .proom { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; padding: 0; border: 0; background: none; color: var(--ink); text-decoration: none; font-size: 12.5px; line-height: 1.25; text-align: center; }
+  .proom .tw { position: relative; display: block; }
+  .tile.xl { width: 62px; height: 62px; border-radius: 17px; font-size: 22px; opacity: 1; }
+  .tile.xl.hasIcon img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+  .tile.pnew { background: var(--panel); color: var(--mute); border: 1.5px dashed var(--line); }
+  .proom .nm { width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .proom .dot { position: absolute; right: -3px; top: -3px; width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--bg); }
+  .proom .dot.h { background: oklch(0.68 0.17 150); } .proom .dot.a { background: oklch(0.85 0.16 90); }
+  .proom .swWait { box-shadow: 0 0 0 2px var(--bg); }
+  .pask { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: auto; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--panel); box-shadow: 0 -14px 30px -24px oklch(0.25 0.08 250 / .5); }
+  .pask textarea { flex: 1 1 auto; min-height: 56px; width: 100%; resize: none; font-size: 16px; }
+  .pask .primary { padding: 12px; font-size: 16px; flex: none; }
+  .pask .askOut { margin-top: 0; }
+  .pdrawer { margin: 0; height: 100dvh; max-height: none; width: min(340px, 86vw); border: 0; border-radius: 0 20px 20px 0; padding: max(18px, env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); overflow: auto; }
+  .pdrawer[open] { display: flex; flex-direction: column; gap: 16px; animation: pdIn .18s ease-out; }
+  .pdrawer::backdrop { background: rgb(0 0 0 / .35); }
+  @keyframes pdIn { from { transform: translateX(-100%); } }
+  @media (prefers-reduced-motion: reduce) { .pdrawer[open] { animation: none; } }
+  .pdHead { display: flex; align-items: center; gap: 12px; } .pdHead .avatar { width: 48px; height: 48px; cursor: pointer; }
+  .pdHead b { display: block; cursor: pointer; } .pdHead small { color: var(--mute); font-size: 13px; }
+  .pdNav { display: grid; gap: 2px; }
+  .pdNav > * { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 10px; color: var(--ink); text-decoration: none; text-align: left; font-size: 15px; line-height: 1.2; }
+  .pdrawer h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); margin: 4px 0 -6px; }
+  .pask .askOut[hidden] { display: none; }
+  .pdBell { cursor: pointer; padding-left: 0 !important; } .pdBell .bell { padding: 0 8px; }
+  .pdOut { margin-top: auto; align-self: flex-start; color: var(--mute); }
   .homeTheme { display: none; }
   @media (max-width: 900px) { .homeTheme { display: grid; place-items: center; padding: 6px 8px; } }
   /* login */
@@ -965,6 +1002,7 @@ async function home() {
   const folders = Object.keys(byFolder).sort((a, b) => (a === OTHER) - (b === OTHER) || a.localeCompare(b));
   const first = (me.name || "").split(" ")[0];
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  if (PHONE.matches) return phoneHome(me);
   $app.innerHTML = `
   <div class="home">
     <header class="top">
@@ -1023,6 +1061,70 @@ async function home() {
       </aside>
     </div>
   </div>`;
+  wireHome(me);
+}
+
+// Phones: top bar (☰, logo, you), your rooms as an icon grid (last opened first, 70% of the screen), and the
+// router box at the bottom (30%). Everything else (waits, your Claude, friends, theme, archive, sign out) is in ☰.
+const PHONE = matchMedia("(max-width: 720px)");
+PHONE.addEventListener("change", () => { if (location.pathname === "/app") home(); });
+const MENU_ICON = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
+function phoneHome(me) {
+  const rooms = [...me.books].sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0) || b.updated_at - a.updated_at);
+  const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
+  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait">${n}</b>` : ""; };
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  $app.innerHTML = `
+  <div class="phome">
+    <header class="ptop">
+      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait">${myWaits.length}</b>` : ""}</button>
+      <a class="plogo" href="/"><span class="tile logo">${SW_LOGO}</span>vibebook</a>
+      <button class="me" id="myName" aria-label="Seu perfil">${avatar(me.email)}</button>
+    </header>
+    <main class="pmain">
+      <div id="setupCard"></div>
+      ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>Como seus amigos te chamam?</b><span class="muted">O pessoal e os Claudes vão te chamar assim.</span>
+        <div class="row"><input name="n" required maxlength="60" placeholder="Seu nome" autocomplete="given-name" /><button class="primary">Salvar</button></div></form>`}
+      <div class="pgrid">
+        ${rooms.map((b) => `<a class="proom" data-nav href="/b/${b.id}"><span class="tw">${tile(b, "xl")}${dot(b)}${waitN(b)}</span><span class="nm">${esc(b.title)}</span></a>`).join("")}
+        <button class="proom" id="new" type="button"><span class="tile xl pnew">${SW_PLUS}</span><span class="nm">Novo</span></button>
+      </div>
+    </main>
+    <form class="pask" id="ask">
+      <textarea id="askText" maxlength="2000" placeholder="O que você quer resolver? Eu acho a sala e o épico certos."></textarea>
+      <button class="primary" id="askBtn">Achar a sala →</button>
+      <div class="askOut" id="askOut" aria-live="polite" hidden></div>
+    </form>
+  </div>
+  <dialog class="pdrawer" id="pDrawer">
+    <div class="pdHead">${avatar(me.email)}<div><b>${esc(me.name || "Seu nome")}</b><small>${esc(me.email)}</small></div></div>
+    <section class="waits" id="waits"${myWaits.length ? "" : " hidden"}></section>
+    <nav class="pdNav">
+      <a data-nav href="/archived">Arquivo</a>
+      <button class="ghost" id="homeTheme">${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span></button>
+      <div class="pdBell"><button class="ghost bell" data-bell></button><span>Notificações</span></div>
+    </nav>
+    <section class="agentBox" id="agentBox" aria-live="polite"></section>
+    <h2>Amigos <small>${me.friends.length || ""}</small></h2>
+    ${me.friends.map((f) => `<div class="friend">${avatar(f.email)}<div class="fn">${esc(f.name || name(f.email))}<small>${f.shared ? plural(f.shared, "vibebook junto", "vibebooks juntos") : f.joined ? "na plataforma" : "convidado"}</small></div>
+      <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="Remover ${esc(f.email)} dos amigos">×</button></div>`).join("")}
+    <form class="invite" id="addFriend"><input type="email" required placeholder="email do amigo" aria-label="Email do amigo" /><button>Convidar</button></form>
+    <button class="ghost pdOut" id="logout">Sair</button>
+  </dialog>
+  <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />`;
+  const d = document.getElementById("pDrawer");
+  document.getElementById("pMenu").onclick = () => d.showModal();
+  d.onclick = (e) => { if (e.target === d || e.target.closest("a[data-nav]")) d.close(); };
+  wireHome(me);
+  document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = `${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span>`; };
+  // You (top right) opens the same menu, where tapping your photo changes it and your name renames you.
+  document.getElementById("myName").onclick = () => d.showModal();
+  d.querySelector(".pdHead .avatar").onclick = pickPic;
+  d.querySelector(".pdBell span").onclick = () => d.querySelector(".pdBell .bell").click();
+  d.querySelector(".pdHead b").onclick = async () => { const n = prompt("Seu nome:", me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
+}
+
+function wireHome(me) {
   const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
   document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt("Seu nome:", me.name || ""));
   document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
