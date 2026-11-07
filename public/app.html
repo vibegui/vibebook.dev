@@ -693,7 +693,10 @@
     .sheetGrab { display: grid; place-items: center; flex: none; width: 100%; height: 22px; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: transparent; touch-action: none; cursor: grab; }
     .sheetGrab i, .docPeek .grab { display: block; width: 38px; height: 5px; border-radius: 99px; background: var(--line); }
     .doc header { height: 48px; padding: 0 16px; }
-    .side .sheetGrab { position: sticky; top: -14px; z-index: 1; margin: -14px -16px -14px; width: calc(100% + 32px); background: var(--bg); }
+    /* The thread switcher drops down from the title that opens it (handle at its bottom, drag up to close); the doc
+       still rises from its peek bar above the composer. */
+    .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) * .85); padding-top: max(14px, env(safe-area-inset-top)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
+    .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
     .docPeek { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: none; margin: 0 8px; padding: 5px 14px 8px; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--bg); color: var(--mute); font-size: 13px; text-align: left; touch-action: none; }
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
     #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -2817,14 +2820,15 @@ function sheetDrag(handle, which, opening) {
     const bk = $app.querySelector(".book"), el = bk?.querySelector(which === "doc" ? ".doc" : ".side"), dim = document.getElementById("sheetDim");
     if (!el || !ROOM_PHONE.matches) return;
     const y0 = e.clientY, H = el.offsetHeight; let dy = 0, moving = false;
+    const up = which === "side" ? -1 : 1; // the switcher hangs from the top: dragging it up closes it
     dragged = false;
     handle.setPointerCapture(e.pointerId);
     handle.onpointermove = (ev) => {
-      dy = ev.clientY - y0;
+      dy = (ev.clientY - y0) * up;
       if (!moving && Math.abs(dy) < 6) return;
       moving = true; el.classList.add("sheetDrag"); dim.style.transition = "none";
       const y = Math.min(H, Math.max(0, opening ? H + dy : dy));
-      el.style.transform = `translateY(${y}px)`; dim.style.opacity = String(1 - y / H);
+      el.style.transform = `translateY(${y * up}px)`; dim.style.opacity = String(1 - y / H);
     };
     handle.onpointerup = handle.onpointercancel = () => {
       handle.onpointermove = handle.onpointerup = handle.onpointercancel = null;
