@@ -168,7 +168,13 @@
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
   .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary { white-space: nowrap; }
+  .claudeBar.start { align-items: flex-start; } .claudeBar ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+  .claudeBar li { display: flex; gap: 8px; color: var(--mute); } .claudeBar li i { font-style: normal; width: 14px; text-align: center; flex: none; }
+  .claudeBar li.ok { color: var(--ink); } .claudeBar li.ok i { color: #1f9d8a; font-weight: 700; } .claudeBar li.wait { color: var(--ink); } .claudeBar li.wait i { color: var(--accent); animation: spin 2.4s linear infinite; }
+  .claudeBar .linkish { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
   .book.pre .claudeBar, .book.boardview .claudeBar, .agentNudge:not([hidden]) + .claudeBar { display: none; }
+  .newRoomDlg { width: min(480px, calc(100vw - 32px)); } .newRoomDlg h3 { margin: 0 0 12px; } .newRoomDlg label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .newRoomDlg textarea { width: 100%; box-sizing: border-box; font: inherit; resize: vertical; } .newRoomDlg .muted { font-size: 13px; margin: 8px 0 0; } .newRoomDlg .err { color: var(--bad, #c0392b); font-size: 13px; }
   .agentNudge { margin: 12px 28px 0; } .agentNudge[hidden], #setupCard[hidden] { display: none; }
   #setupCard { margin: 0 0 22px; }
   .setup { background: var(--ai-bg); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: grid; gap: 12px; font-size: 14px; }
@@ -1140,6 +1146,21 @@ const EN = {
   "Recolher menu": "Collapse menu",
   "novo épico": "new epic",
   "Arquivados": "Archived",
+  "Conecte seu Claude (o card acima diz como)": "Connect your Claude (the card above shows how)",
+  "Seu Claude está aqui": "Your Claude is here",
+  "Seu Claude está desligado nesta sala": "Your Claude is off in this room",
+  "Ligar": "Turn on",
+  "Começando a sala": "Starting the room",
+  "Sala criada": "Room created",
+  "Na sala: {who}": "In the room: {who}",
+  "Só você aqui: convide em Pessoas": "Only you here: invite people in People",
+  "O Claude escreve o doc e cria os épicos": "Claude writes the doc and creates the epics",
+  "Não achei {who} nos seus amigos: convide pelo email em Pessoas.": "Couldn't find {who} among your friends: invite them by email in People.",
+  "O que é e com quem?": "What is it, and with whom?",
+  "Ex.: viagem de avião pra SP com os dogs, eu e a Alexia": "E.g.: flying to São Paulo with the dogs, me and Alexia",
+  "Vira o título da sala e a primeira mensagem. Quem você citar é convidado, e seu Claude já liga na sala.": "It becomes the room's title and first message. Whoever you mention is invited, and your Claude turns on in the room.",
+  "Criar": "Create",
+  "Criando…": "Creating…",
   "Verificado em prod": "Verified in prod",
   "No ar, falta verificar em prod": "Live, not yet verified in prod",
   "No ar": "Live",
@@ -1235,7 +1256,6 @@ const EN = {
   "1 resposta": "1 reply",
   "{n} respostas": "{n} replies",
   "última há {ago}": "last {ago} ago",
-  "Épico concluído": "Epic done",
   "Escreva aqui pra continuar: ele reabre.": "Write here to keep going: it reopens.",
   "votação": "poll",
   "Abrir em tela cheia": "Open full screen",
@@ -1502,7 +1522,7 @@ function renderSwitcher() {
   });
   document.getElementById("swSearch").onclick = openSwitch;
   document.getElementById("swTheme").onclick = () => setTheme(THEMES[theme()].next);
-  document.getElementById("swNew").onclick = async () => { const { id } = await api("/api/books", {}); history.pushState(null, "", `/b/${id}`); route(); };
+  document.getElementById("swNew").onclick = () => newRoom();
 }
 // Hover a room on the rail: its name and what's going on, right away (no native title delay).
 const swTip = document.getElementById("swTip");
@@ -1771,10 +1791,7 @@ function wireHome(me) {
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
-  document.getElementById("new").onclick = async () => {
-    const { id } = await api("/api/books", {});
-    history.pushState(null, "", `/b/${id}`); route();
-  };
+  document.getElementById("new").onclick = () => newRoom();
   document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
     if (!confirm(t("Remover {email} dos seus amigos? Os vibebooks em comum continuam.", { email: b.dataset.unfriend }))) return;
     await fetch(`/api/friends/${encodeURIComponent(b.dataset.unfriend)}`, { method: "DELETE" });
@@ -1807,7 +1824,8 @@ function wireAsk() {
     const text = ta.value.trim();
     out.innerHTML = `<div class="why">${t("Enviando…")}</div>`;
     try {
-      const bookId = dest.book_id ?? (await api("/api/books", { title: dest.new_title })).id;
+      if (!dest.book_id) return await startRoom(text);
+      const bookId = dest.book_id;
       await api(`/api/books/${bookId}/post`, { text, thread: dest.epic_id || "main" });
       pendingThread = dest.epic_id || null;
       history.pushState(null, "", `/b/${bookId}`); route();
@@ -1840,6 +1858,37 @@ function wireAsk() {
     render();
     out.querySelector("[data-send]")?.focus();
   };
+}
+
+// "Novo vibebook" in one step: what it is and with whom → POST /api/books/start (title, first message, invites, your
+// Claude on), then the room. Also the home router's "new room" choice, with the typed text already in.
+async function startRoom(text) {
+  const r = await api("/api/books/start", { text });
+  history.pushState(null, "", `/b/${r.id}`); route();
+  if (r.unknown?.length) setTimeout(() => toast(t("Não achei {who} nos seus amigos: convide pelo email em Pessoas.", { who: esc(r.unknown.join(", ")) })), 1500);
+}
+function newRoom() {
+  const d = document.createElement("dialog");
+  d.className = "newRoomDlg";
+  d.innerHTML = `<form method="dialog"><h3>${t("Novo vibebook")}</h3>
+    <label for="nrText">${t("O que é e com quem?")}</label>
+    <textarea id="nrText" rows="3" placeholder="${t("Ex.: viagem de avião pra SP com os dogs, eu e a Alexia")}"></textarea>
+    <p class="muted">${t("Vira o título da sala e a primeira mensagem. Quem você citar é convidado, e seu Claude já liga na sala.")}</p>
+    <p class="err" hidden></p>
+    <div class="acts"><button type="button" class="ghost" value="no">${t("Cancelar")}</button><button class="primary" value="yes">${t("Criar")}</button></div></form>`;
+  document.body.appendChild(d);
+  d.addEventListener("close", () => d.remove());
+  const ta = d.querySelector("textarea"), go = d.querySelector('[value="yes"]'), err = d.querySelector(".err");
+  d.querySelector('[value="no"]').onclick = () => d.close();
+  ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); go.click(); } };
+  go.onclick = async (e) => {
+    e.preventDefault();
+    const text = ta.value.trim(); if (!text) return ta.focus();
+    go.disabled = true; go.textContent = t("Criando…");
+    try { await startRoom(text); d.close(); } catch (x) { err.hidden = false; err.textContent = x.message; go.disabled = false; go.textContent = t("Criar"); }
+  };
+  d.showModal();
+  ta.focus();
 }
 
 function confirmArchive(id, title) {
@@ -2625,6 +2674,9 @@ function renderClaudeBar(on, live) {
     const b = el.querySelector("[data-x]");
     if (b) b.onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; clearTimeout(claudeBarPoll); };
   };
+  // A new room of yours (no epic yet, main thread): a start list that ticks as things happen.
+  let startOff = false; try { startOff = localStorage.getItem(`vb.start.${S.id}`) === "off"; } catch {}
+  if (S.book?.owner === S.me && !S.epics.length && thread === "main" && !startOff) return renderStart(el, on, live, `vb.start.${S.id}`);
   if (noClaude || (nudge && !nudge.hidden) || (live && !claudeWaiting[S.id]) || (off && !claudeAsked[S.id])) { el.hidden = true; return; }
   if (live) {
     claudeWaiting[S.id] = false;
@@ -2642,6 +2694,25 @@ function renderClaudeBar(on, live) {
   claudeWaiting[S.id] = false;
   set("", `<span class="star">✻</span><span><b>${t("Seu Claude não está nesta sala.")}</b><small>${t("Ele ouve e trabalha aqui, pelo vibebook herdr no seu computador.")}</small></span><button class="primary" data-on>${t("Ligar Claude")}</button>${x}`);
   el.querySelector("[data-on]").onclick = () => document.getElementById("myClaude")?.click();
+}
+function renderStart(el, on, here, key) {
+  const others = (S.members || []).filter((m) => m !== S.me);
+  const row = (state, html) => `<li class="${state}"><i>${state === "ok" ? "✓" : state === "wait" ? "✻" : "○"}</i><span>${html}</span></li>`;
+  const claude = noClaude ? row("todo", t("Conecte seu Claude (o card acima diz como)"))
+    : here ? row("ok", t("Seu Claude está aqui"))
+    : on ? row("wait", t("Abrindo seu Claude no seu computador…"))
+    : row("todo", `${t("Seu Claude está desligado nesta sala")} <button class="linkish" data-on>${t("Ligar")}</button>`);
+  el.className = "claudeBar start";
+  el.hidden = false;
+  el.innerHTML = `<span class="star">✻</span><span><b>${t("Começando a sala")}</b><ul>
+    ${row("ok", t("Sala criada"))}
+    ${others.length ? row("ok", t("Na sala: {who}", { who: esc(others.map(name).join(", ")) })) : row("todo", t("Só você aqui: convide em Pessoas"))}
+    ${claude}
+    ${row(here ? "wait" : "todo", t("O Claude escreve o doc e cria os épicos"))}
+  </ul></span><button class="ghost" data-x aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>`;
+  el.querySelector("[data-on]")?.addEventListener("click", () => document.getElementById("myClaude")?.click());
+  el.querySelector("[data-x]").onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; clearTimeout(claudeBarPoll); };
+  if (!noClaude && !here) claudeBarPoll = setTimeout(loadRoomAgents, 5000);
 }
 const kTok = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`);
 /** The context bar under a Claude: green, yellow from 60%, red from 80% (the runner compacts a free Claude at 75%). */
@@ -2709,6 +2780,7 @@ const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = 
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
+  renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   if (railMode && window.innerWidth > 900) return renderRail(el);
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `

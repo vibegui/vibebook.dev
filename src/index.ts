@@ -8,6 +8,7 @@ import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
+import { startRoom } from "./start-room";
 import { validUnsub } from "./mentionmail";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
@@ -497,6 +498,18 @@ app.post("/api/books", async (c) => {
   const id = await createBook(c.env, email, title);
   c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: id } }));
   return c.json({ id });
+});
+
+// "Novo vibebook" in one step (src/start-room.ts): what it is and with whom → titled room, first message, invites,
+// Claude on.
+app.post("/api/books/start", async (c) => {
+  const email = c.get("email");
+  const { text } = await c.req.json<{ text?: string }>().catch(() => ({ text: "" }));
+  if (!text?.trim()) return c.json({ error: "Escreva o que é e com quem." }, 400);
+  if (!(await c.env.AI_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." }, 429);
+  const out = await startRoom(c.env, c.executionCtx, new URL(c.req.url).origin, email, text.trim(), reqLang(c.req.raw));
+  c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: out.id, start: true, invited: out.invited.length, unknown: out.unknown.length, cost: out.cost } }));
+  return c.json(out);
 });
 
 // Ask to join a room you opened by link. Silent when already asked or declined (no way to probe or spam).

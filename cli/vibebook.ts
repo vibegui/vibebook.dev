@@ -316,7 +316,12 @@ const PROJECTS = join(homedir(), "Projects");
 // What a Claude that's already running gets typed in. Plain words, not /vibebook:listen: a session that started
 // before the plugin was installed (or with it disabled) answers "Unknown command" to the slash command.
 const LISTEN_PROMPT = "Ouça a sala do vibebook desta pasta: rode `vibebook listen --model \"<seu modelo>\"` em background (Bash run_in_background); quando ele sair, `vibebook call read_room`, aja nas mensagens from_your_human e volte a ouvir. (Com o plugin, é o /vibebook:listen.)";
-const slug = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "sala";
+// A room's folder name: its first three meaningful words ("Viagem de avião para SP com os dogs" → viagem-aviao-sp).
+const STOP = new Set("a o as os e de da do das dos para pra pro com em no na nos nas um uma por que the of for with and to in on at my our".split(" "));
+const slug = (t: string) => {
+  const words = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  return (words.filter((w) => !STOP.has(w)).slice(0, 3).join("-") || words.slice(0, 3).join("-")).slice(0, 32) || "sala";
+};
 /** The folder whose .vibebook points at this room (~/Projects, two levels down), else ~/Projects/<title slug>. */
 function roomFolder(room: string, title: string) {
   const look = (dir: string, depth: number): string | undefined => {

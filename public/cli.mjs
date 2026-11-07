@@ -322,7 +322,11 @@ var COMPACT_AT = Number(process.env.VIBEBOOK_COMPACT_AT) || 0.75;
 var herdr = (...args) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 var PROJECTS = join(homedir(), "Projects");
 var LISTEN_PROMPT = 'Ouça a sala do vibebook desta pasta: rode `vibebook listen --model "<seu modelo>"` em background (Bash run_in_background); quando ele sair, `vibebook call read_room`, aja nas mensagens from_your_human e volte a ouvir. (Com o plugin, é o /vibebook:listen.)';
-var slug = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "sala";
+var STOP = new Set("a o as os e de da do das dos para pra pro com em no na nos nas um uma por que the of for with and to in on at my our".split(" "));
+var slug = (t) => {
+  const words = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  return (words.filter((w) => !STOP.has(w)).slice(0, 3).join("-") || words.slice(0, 3).join("-")).slice(0, 32) || "sala";
+};
 function roomFolder(room, title) {
   const look = (dir, depth) => {
     let names = [];
