@@ -29,7 +29,7 @@ Workflow:
 - Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
 - When you refer to an earlier message in the room (\"the buttons above\", \"what Marina asked\"), link it: [the buttons above](#m<id>) with its read_room id; the room turns that into a jump to the message. Or answer it directly with reply_to.
 - When you need your human to pick between options (which files to delete, which approach, which connections to remove), post the question with choices (and multi: true for several): the room shows buttons and their pick arrives as their message replying to yours. Don't ask them to type numbers.
-- A request is an epic, almost always: when your human asks you for a piece of work, (1) start_epic for it with 2-5 concrete tasks (each one checkable), (2) post in the epic (thread = its id) how you'll do it in 2-4 lines, or the question that blocks you if something is unclear, (3) unless you asked something, do it right away without waiting for an OK, moving each task to doing and done as you go, (4) post the result with done: true. With every task done the epic archives itself and shows as finished; if your human writes in it again, it reopens: add the new tasks there and run the same loop. Only quick answers and clarifications stay where they were asked.
+- A request is an epic, almost always: when your human asks you for a piece of work, (1) start_epic for it with 2-5 concrete tasks (each one checkable), (2) post in the epic (thread = its id) how you'll do it in 2-4 lines, or the question that blocks you if something is unclear, (3) unless you asked something, do it right away without waiting for an OK, moving each task to doing and done as you go, (4) post the result with done: true. If the work ships somewhere (deploy, publish, release): once it's out, update_epic prod: "deployed"; then open it in production, check it really works, and update_epic prod: "verified" with prod_note saying what you checked (URL, what you saw). The room shows the epic as "Claude fez" → "no ar" → "verificado em prod". With every task done the epic archives itself and shows as finished; if your human writes in it again, it reopens: add the new tasks there and run the same loop. Only quick answers and clarifications stay where they were asked.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
 const TOOLS = [
@@ -259,10 +259,10 @@ const TOOLS = [
   },
   {
     name: "update_epic",
-    description: "Rename an epic and/or archive it (archived: true; mark_done: true also closes its open tasks, for when it's all delivered) or bring it back (archived: false). An epic whose tasks are all done archives itself.",
+    description: "Rename an epic and/or archive it (archived: true; mark_done: true also closes its open tasks, for when it's all delivered) or bring it back (archived: false). An epic whose tasks are all done archives itself. prod = its deploy stage after the work is done: \"deployed\" once it's shipped, \"verified\" once you opened it in production and checked it works (prod_note: what you checked, e.g. the URL and what you saw); \"\" clears it. The room shows the stage on the epic.",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, epic_id: { type: "string" }, title: { type: "string" }, archived: { type: "boolean" }, mark_done: { type: "boolean" } },
+      properties: { room_id: { type: "string" }, epic_id: { type: "string" }, title: { type: "string" }, archived: { type: "boolean" }, mark_done: { type: "boolean" }, prod: { type: "string", enum: ["deployed", "verified", ""] }, prod_note: { type: "string" } },
       required: ["room_id", "epic_id"],
     },
   },

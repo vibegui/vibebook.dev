@@ -417,6 +417,9 @@
   .endMark { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; font-size: 13px; color: var(--mute); }
   .endMark::before, .endMark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   .endMark b { color: var(--ok-ink); font-weight: 600; }
+  .prodStage { margin: 6px auto 10px; max-width: 520px; display: grid; gap: 2px; text-align: center; font-size: 13px; color: var(--mute); padding: 10px 14px; border: 1px dashed var(--line); border-radius: 12px; }
+  .prodStage b { color: var(--ink); font-weight: 600; } .prodStage.ok { border-style: solid; border-color: color-mix(in oklch, var(--ok-ink) 40%, var(--line)); } .prodStage.ok b { color: var(--ok-ink); }
+  .prodMark { font-size: 11px; margin-left: 4px; flex: none; } .prodMark.ok { color: var(--ok-ink); font-weight: 700; }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
   .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
@@ -1137,6 +1140,11 @@ const EN = {
   "Recolher menu": "Collapse menu",
   "novo épico": "new epic",
   "Arquivados": "Archived",
+  "Verificado em prod": "Verified in prod",
+  "No ar, falta verificar em prod": "Live, not yet verified in prod",
+  "No ar": "Live",
+  "Falta o Claude verificar em prod.": "Claude hasn't verified it in prod yet.",
+  "Claude fez": "Claude did it",
   "@vibe sugere": "@vibe suggests",
   "sugestão do @vibe, clique para ver": "suggested by @vibe, click to see",
   "Pedindo pra entrar": "Asking to join",
@@ -2691,10 +2699,14 @@ function renderWorking() {
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
 const waitPill = (th) => { const n = waitsIn(th).length; return n ? `<b class="wN" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
+// Deploy stage after "Claude fez" (set by agents with update_epic prod): 🚀 no ar, ✓✓ verificado em prod.
+const prodMark = (e) => !e.prod ? "" : e.prod.stage === "verified"
+  ? `<span class="prodMark ok" title="${esc(t("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>`
+  : `<span class="prodMark" title="${t("No ar, falta verificar em prod")}">🚀</span>`;
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
-          ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
+          ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   if (railMode && window.innerWidth > 900) return renderRail(el);
@@ -3111,8 +3123,14 @@ document.addEventListener("click", (ev) => {
 // The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
 function syncEnd() {
   const el = document.getElementById("msgs"); if (!el) return;
-  el.querySelector(".endMark")?.remove();
-  if (S.epics.find((e) => e.id === thread)?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${t("Épico concluído")}</b><span>${t("Escreva aqui pra continuar: ele reabre.")}</span></div>`);
+  el.querySelectorAll(".endMark, .prodStage").forEach((x) => x.remove());
+  const e = S.epics.find((x) => x.id === thread);
+  const p = e?.prod;
+  const stage = !p ? "" : p.stage === "verified"
+    ? `<div class="prodStage ok"><b>✓✓ ${t("Verificado em prod")}</b>${p.note ? `<span>${esc(p.note)}</span>` : ""}</div>`
+    : `<div class="prodStage"><b>🚀 ${t("No ar")}</b><span>${t("Falta o Claude verificar em prod.")}</span></div>`;
+  if (e?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${t("Claude fez")}</b><span>${t("Escreva aqui pra continuar: ele reabre.")}</span></div>`);
+  if (stage) el.insertAdjacentHTML("beforeend", stage);
 }
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.

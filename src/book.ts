@@ -79,7 +79,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -115,11 +115,12 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
     return this.sql
-      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null }>(`SELECT id, title, archived, from_msg FROM epics ORDER BY ts`)
+      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null }>(`SELECT id, title, archived, from_msg, prod FROM epics ORDER BY ts`)
       .toArray()
       .map((e) => {
         const f = flags[e.id] ?? {};
-        return { ...e, archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
+        // Deploy stage after "Claude fez": { stage: "deployed" | "verified", at, note } set by agents (update_epic prod).
+        return { ...e, prod: e.prod ? (JSON.parse(e.prod) as { stage: string; at: number; note?: string }) : null, archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
       });
   }
   // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a
@@ -954,6 +955,15 @@ export class Book extends DurableObject<Env> {
           if (!e) return { ok: false, error: "epic not found" };
           if (s("title")) this.renameEpic(e, s("title")!);
           if (typeof a.archived === "boolean") this.archiveEpic(e, a.archived, a.archived && a.mark_done === true);
+          if (a.prod !== undefined) {
+            const stage = s("prod");
+            if (stage && stage !== "deployed" && stage !== "verified") return { ok: false, error: "prod is deployed, verified or empty (clears it)" };
+            const note = (s("prod_note") ?? "").slice(0, 500);
+            const found = findSecret(note);
+            if (found) return { ok: false, error: `blocked: looks like a secret (${found})` };
+            this.sql.exec(`UPDATE epics SET prod = ? WHERE id = ?`, stage ? JSON.stringify({ stage, at: Date.now(), note: note || undefined }) : null, e);
+            this.epicsChanged();
+          }
           return { ok: true };
         }
         case "update_doc": {
