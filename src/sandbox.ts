@@ -297,3 +297,36 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     }
   });
 }
+
+// ---- for agents (MCP sandboxes / sandbox_exec in src/agent.ts): a person's Claude works on that person's own
+// sandboxes with the key that stays on the server. Output is redacted (tokens, keys) before it reaches the agent.
+export const redact = (s: string) =>
+  s.replace(/sk-ant-[A-Za-z0-9_.-]{10,}/g, "sk-ant-…[redacted]").replace(/(CLAUDE_CODE_OAUTH_TOKEN|FREESTYLE_API_KEY|API_KEY|TOKEN|SECRET)=\S+/gi, "$1=[redacted]");
+export async function agentSandboxes(env: Env, email: string) {
+  const k = await loadKey(env, email).catch(() => null);
+  if (!k) return { connected: false, sandboxes: [], note: "your human hasn't connected freestyle.sh (Agents → Na nuvem in a room)" };
+  const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE email = ? ORDER BY created_at`).bind(email).all()).results as Row[];
+  const out = await Promise.all(rows.map(async (r) => {
+    try {
+      const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+      return { sandbox_id: r.id, room_id: r.book_id, name: r.name, state: vm.state, ready: !!r.ready };
+    } catch (e) {
+      return { sandbox_id: r.id, room_id: r.book_id, name: r.name, state: "unknown", ready: !!r.ready, error: (e as Error).message };
+    }
+  }));
+  return { connected: true, sandboxes: out };
+}
+export async function agentSandboxExec(env: Env, email: string, sid: string, command: string, timeoutS = 60) {
+  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
+  const k = await loadKey(env, email).catch(() => null);
+  if (!k) throw new Error("your human's freestyle.sh isn't connected");
+  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  if (vm.state !== "running") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
+  const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
+    command: command.slice(0, 8000),
+    timeoutMs: Math.min(Math.max(timeoutS, 1), 280) * 1000,
+  });
+  if (/test -f ~\/\.vibebook-setup-done/.test(command) && /READY|done/.test(x.stdout ?? "")) await env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run();
+  return { exit_code: x.statusCode, stdout: redact(x.stdout ?? "").slice(-12000), stderr: redact(x.stderr ?? "").slice(-4000) };
+}

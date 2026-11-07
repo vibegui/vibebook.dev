@@ -7,6 +7,7 @@ import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
 import { growthReport, productReport } from "./reports";
+import { agentSandboxes, agentSandboxExec } from "./sandbox";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 import { findSecret } from "./secrets";
@@ -225,6 +226,20 @@ const TOOLS = [
       type: "object",
       properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" }, status: { type: "string", enum: ["doing", "idle", "done", "blocked"], description: "default doing" }, note: { type: "string", description: "with blocked: what you're waiting for, one line (e.g. the permission prompt)" } },
       required: ["room_id"],
+    },
+  },
+  {
+    name: "sandboxes",
+    description: "Your human's cloud sandboxes (freestyle.sh VMs created from a room's Agents tab): id, room, name, state (running/paused/stopped), ready (setup finished). Their freestyle key stays on vibebook's server; you never see it.",
+    inputSchema: { type: "object", properties: { model: { type: "string" } } },
+  },
+  {
+    name: "sandbox_exec",
+    description: "Run a shell command in one of your human's sandboxes (as its default user; starts it if paused) and get exit code, stdout and stderr (tokens and keys redacted). For setting it up, debugging its setup (~/vibebook-setup.log, /tmp/vibebook-setup.sh) or checking on the Claude inside. Only on your human's own sandboxes, and only when they asked you to work on them. ≤280s per call.",
+    inputSchema: {
+      type: "object",
+      properties: { sandbox_id: { type: "string" }, command: { type: "string" }, timeout_seconds: { type: "number", description: "default 60, max 280" }, model: { type: "string" } },
+      required: ["sandbox_id", "command"],
     },
   },
   {
@@ -707,6 +722,13 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       const who = str(a.model) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || me.client;
       return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined, str(a.status) || "doing", str(a.note));
+    }
+    case "sandboxes":
+      return agentSandboxes(env, me.email);
+    case "sandbox_exec": {
+      const out = await agentSandboxExec(env, me.email, str(a.sandbox_id), str(a.command), Number(a.timeout_seconds) || 60);
+      ctx.waitUntil(track(env, "sandbox_exec", { user: me.email, dims: { client: me.client, exit: out.exit_code ?? -1 } }));
+      return out;
     }
     case "report_issue": {
       const id = a.room_id ? await room() : "";
