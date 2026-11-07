@@ -928,8 +928,9 @@ export class Book extends DurableObject<Env> {
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined, replyTo, choices });
     // A done post closes the person's doing acks; any other post is activity that keeps them live (the app greys
     // out a "doing" with no activity for 20 min).
-    if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", Date.now(), email).rowsWritten)
-      this.broadcast({ t: "acks", acks: this.acksList() });
+    const now = Date.now();
+    if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", now, email).rowsWritten)
+      this.pushAcks(`email = ? AND ts = ?`, email, now);
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     this.ctx.waitUntil(this.markBusy(!done));
     await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
@@ -939,7 +940,12 @@ export class Book extends DurableObject<Env> {
   // "X está fazendo isso": an agent took a message as work (MCP ack); its next done post marks it done.
   acksList() {
     // Enough for every request of the last two weeks: the app's "Fila do seu Claude" counts on seeing each one's ack.
-    return this.sql.exec(`SELECT msg_id, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 500`, Date.now() - 14 * 864e5).toArray();
+    return this.sql.exec(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 500`, Date.now() - 14 * 864e5).toArray();
+  }
+  /** Only the ack rows that changed (the app merges them by message + agent), not the whole list on every post. */
+  pushAcks(where: string, ...args: unknown[]) {
+    const acks = this.sql.exec(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ${where}`, ...args).toArray();
+    if (acks.length) this.broadcast({ t: "ackRows", acks });
   }
   agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing", rawNote = "") {
     this.bind(bookId);
@@ -959,7 +965,7 @@ export class Book extends DurableObject<Env> {
       `INSERT INTO acks (msg_id, agent, email, who, status, note, ts) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET status = excluded.status, note = excluded.note, who = excluded.who, ts = excluded.ts`,
       id, agent, email, who.slice(0, 40), status, note, Date.now(),
     );
-    this.broadcast({ t: "acks", acks: this.acksList() });
+    this.pushAcks(`msg_id = ? AND agent = ?`, id, agent);
     this.ctx.waitUntil(this.markBusy(false));
     this.ctx.waitUntil(this.blockedWait(email, id as number, status === "blocked" ? note || "uma pergunta no terminal" : null));
     return { ok: true, message_id: id };
@@ -978,8 +984,9 @@ export class Book extends DurableObject<Env> {
   unblock(email: string) {
     const rows = this.sql.exec<{ msg_id: number }>(`SELECT msg_id FROM acks WHERE email = ? AND status = 'blocked'`, email).toArray();
     if (!rows.length) return;
-    this.sql.exec(`UPDATE acks SET status = 'doing', note = NULL, ts = ? WHERE email = ? AND status = 'blocked'`, Date.now(), email);
-    this.broadcast({ t: "acks", acks: this.acksList() });
+    const now = Date.now();
+    this.sql.exec(`UPDATE acks SET status = 'doing', note = NULL, ts = ? WHERE email = ? AND status = 'blocked'`, now, email);
+    this.pushAcks(`email = ? AND ts = ?`, email, now);
     for (const r of rows) this.ctx.waitUntil(this.blockedWait(email, r.msg_id, null));
   }
   /** books.busy_until for the rail's turning ✻: a live "doing" ack keeps the room busy 20 min after its last
@@ -1058,7 +1065,7 @@ export class Book extends DurableObject<Env> {
     const s = (k: string) => (typeof a[k] === "string" ? (a[k] as string) : undefined);
     const task = (id = s("task_id")) => id && this.sql.exec(`SELECT id FROM tasks WHERE id = ?`, id).toArray().length ? id : null;
     const epic = (id = s("epic_id")) => (id && this.epics().some((e) => e.id === id) ? id : null);
-    const bump = () => this.sql.exec(`UPDATE acks SET ts = ? WHERE email = ? AND status = 'doing'`, Date.now(), email).rowsWritten && this.broadcast({ t: "acks", acks: this.acksList() });
+    const bump = () => { const now = Date.now(); if (this.sql.exec(`UPDATE acks SET ts = ? WHERE email = ? AND status = 'doing'`, now, email).rowsWritten) this.pushAcks(`email = ? AND ts = ?`, email, now); };
     const out = await (async () => {
       switch (op) {
         case "add_task": {
@@ -1139,7 +1146,8 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     // An agent moving an unowned task took it: its human becomes the owner.
     this.sql.exec(`UPDATE tasks SET owner = ? WHERE id = ? AND owner IS NULL`, email.toLowerCase(), taskId);
-    if (this.sql.exec(`UPDATE acks SET ts = ? WHERE email = ? AND status = 'doing'`, Date.now(), email).rowsWritten) this.broadcast({ t: "acks", acks: this.acksList() });
+    const now = Date.now();
+    if (this.sql.exec(`UPDATE acks SET ts = ? WHERE email = ? AND status = 'doing'`, now, email).rowsWritten) this.pushAcks(`email = ? AND ts = ?`, email, now);
     return this.setStatus(taskId, status);
   }
 
@@ -1291,7 +1299,7 @@ export class Book extends DurableObject<Env> {
         const id = Number(m.id);
         if (!this.sql.exec(`SELECT 1 FROM messages WHERE id = ? AND author = ?`, id, email).toArray().length) return;
         this.sql.exec(`INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, 'você', 'dismissed', ?) ON CONFLICT DO UPDATE SET status = 'dismissed', ts = excluded.ts`, id, `h:${email}`, email, Date.now());
-        return void this.broadcast({ t: "acks", acks: this.acksList() });
+        return void this.pushAcks(`msg_id = ? AND agent = ?`, id, `h:${email}`);
       }
       case "reminder.enable":
         return void (await this.reminderEnable(this.get("book_id") ?? "", String(m.id ?? ""), !!m.on));

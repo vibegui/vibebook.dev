@@ -2367,6 +2367,11 @@ function onEvent(ev, id) {
       return;
     }
     case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); renderWorking(); return;
+    case "ackRows": { // just the rows that changed: replace by message + agent
+      const key = (a) => `${a.msg_id}|${a.agent ?? a.email}`, fresh = new Map(ev.acks.map((a) => [key(a), a]));
+      S.acks = [...ev.acks, ...(S.acks || []).filter((a) => !fresh.has(key(a)))];
+      renderReceipts(); renderSide(); renderWorking(); return;
+    }
     case "poll":
       S.polls = { ...S.polls, [ev.poll.id]: ev.poll };
       document.querySelectorAll(`.poll[data-poll="${ev.poll.id}"]`).forEach((el) => { el.outerHTML = pollHtml(ev.poll.id); });
