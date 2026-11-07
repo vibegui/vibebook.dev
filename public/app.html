@@ -732,11 +732,22 @@
     .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
     .chathead { z-index: 21; background: var(--bg); }
     .book > .side { z-index: 22; }
-    .book > .doc, .book.nodoc > .doc { top: var(--headH, 60px); height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - max(96px, var(--vvh, 100dvh) * .2)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - var(--headH, 60px) - 48px)); }
+    /* The toolbar under the header (docPeek) IS the doc sheet's tab bar: it stays on top while the sheet is open
+       (the sheet's own tabs are hidden) and the sheet hangs right under it. */
+    .book > .doc, .book.nodoc > .doc { top: calc(var(--headH, 60px) + var(--peekH, 44px)); height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px) - max(96px, var(--vvh, 100dvh) * .2)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - var(--headH, 60px) - var(--peekH, 44px) - 48px)); }
     .book[data-sheet="doc"] > .doc { transform: none; } /* after the line above, also when .nodoc */
-    .book[data-sheet="doc"] > .sheetDim { top: var(--headH, 60px); }
+    .book[data-sheet="doc"] > .sheetDim { top: calc(var(--headH, 60px) + var(--peekH, 44px)); }
     .doc > .sheetGrab { order: 99; flex: none; border-radius: 0 0 18px 18px; }
-    .docPeek { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: none; margin: 0 8px; padding: 8px 14px 5px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; background: var(--bg); color: var(--mute); font-size: 13px; text-align: left; touch-action: none; }
+    .doc header .ptabs { display: none; }
+    .doc header { height: auto; min-height: 0; padding: 8px 16px 0; justify-content: flex-end; border-bottom: 0; }
+    .docPeek { position: relative; z-index: 21; display: flex; flex-direction: column; align-items: stretch; gap: 2px; flex: none; margin: 0 8px; padding: 4px 6px 5px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; background: var(--bg); color: var(--mute); font-size: 13px; touch-action: none; }
+    .book[data-sheet="doc"] .docPeek { border-radius: 0; border-bottom-color: transparent; margin: 0; padding-left: 14px; padding-right: 14px; }
+    .peekRow { display: flex; align-items: center; gap: 2px; min-width: 0; }
+    .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
+    .peekRow button small { font-size: 11px; font-weight: 600; }
+    .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
+    .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
+    .book[data-sheet="doc"] .docPeek .grab { visibility: hidden; }
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
     #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
@@ -1318,6 +1329,7 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Documento e arquivos da sala": "Room doc and files",
   "Ligado": "On",
   "ligado": "on",
   "Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu Claude: “todo dia às 8h, me manda o resumo do que mudou”.": "No reminders yet. Click New reminder, or ask your Claude: “every day at 8am, send me a summary of what changed”.",
@@ -2249,7 +2261,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <button type="button" class="docPeek" id="docPeek" aria-label="${t("Abrir documento")}"><span id="peekTxt"></span><i class="grab"></i></button>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2297,8 +2309,19 @@ function renderBook() {
   </dialog>`;
   const book = $app.querySelector(".book");
   // The doc sheet hangs right under the room header, whose height varies (safe area, wrapped title).
-  new ResizeObserver(([e]) => document.documentElement.style.setProperty("--headH", `${Math.round(e.target.getBoundingClientRect().height)}px`)).observe(book.querySelector(".chathead"));
-  sheetDrag(document.getElementById("docPeek"), "doc", true);
+  const headObs = new ResizeObserver(() => {
+    const h = book.querySelector(".chathead").getBoundingClientRect().height, p = document.getElementById("docPeek")?.getBoundingClientRect().height || 0;
+    document.documentElement.style.setProperty("--headH", `${Math.round(h)}px`);
+    document.documentElement.style.setProperty("--peekH", `${Math.round(p)}px`);
+  });
+  headObs.observe(book.querySelector(".chathead")); headObs.observe(document.getElementById("docPeek"));
+  // Phones: the toolbar under the header is the doc sheet's own tab bar. A tab opens the sheet on it; the open tab
+  // again closes it. Dragging the bar down opens the doc too.
+  sheetDrag(document.getElementById("docPeek"), "doc", true, (e) => {
+    const pane = e.target.closest("[data-pane]")?.dataset.pane || "doc";
+    if (book.dataset.sheet === "doc" && book.dataset.pane === pane) return closeSheet();
+    setPane(pane); openSheet("doc");
+  });
   sheetDrag(document.getElementById("docGrab"), "doc", false);
   document.getElementById("sheetDim").onclick = () => closeSheet();
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
@@ -2464,6 +2487,7 @@ function renderBook() {
   // Right panel: Documento / Arquivos
   const setPane = (pane) => {
     $app.querySelector(".doc").dataset.pane = pane;
+    $app.querySelector(".book").dataset.pane = pane; // the phone's toolbar marks the open tab
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     if (pane === "files") renderFiles();
     if (pane === "decisions") renderDecisions();
@@ -3000,7 +3024,10 @@ function renderPeek() {
   const text = (ep ? S.docs?.[ep] : S.doc) || "";
   const title = text.match(/^#\s+(.+)$/m)?.[1].replace(/[*_`]/g, "").trim() || (epic ? epic.title : bookTitle());
   const n = epic?.tasks.length || 0, d = n && epic.tasks.filter((x) => x.done).length;
-  el.innerHTML = `${icon("doc", 15)}<b>Doc</b><span class="pt">· ${esc(title)}</span>${n ? `<small>${t("{d}/{n} tarefas", { d, n })}</small>` : ""}`;
+  el.innerHTML = `${icon("doc", 15)}<b>Doc</b><span class="pt">· ${esc(title)}</span>${n ? `<small>${d}/${n}</small>` : ""}`;
+  const nf = S.files?.length || 0, bad = (S.reminders || []).filter((r) => r.error).length;
+  document.getElementById("peekFiles").textContent = nf ? String(nf) : "";
+  document.getElementById("peekRem").textContent = bad ? "⚠" : "";
 }
 // Phones (≤900px): the sidebar ("side": threads, people) and the doc are sheets that drop from the top over the chat. Opening one
 // pushes a history entry so Back closes it (like the file viewer); picking a thread reuses that entry for its URL.
@@ -3027,10 +3054,10 @@ function sheetPop() {
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open]")) closeSheet(); });
 // Drag a sheet by its handle (or the peek bar): it follows the finger, and lets go open or closed past a quarter.
 // A tap (no drag) is a plain click: opens from the peek bar, closes from the handle.
-function sheetDrag(handle, which, opening) {
+function sheetDrag(handle, which, opening, onTap) {
   if (!handle) return;
   let dragged = false;
-  handle.onclick = () => { if (dragged) { dragged = false; return; } opening ? openSheet(which) : closeSheet(); };
+  handle.onclick = (e) => { if (dragged) { dragged = false; return; } onTap ? onTap(e) : opening ? openSheet(which) : closeSheet(); };
   handle.onpointerdown = (e) => {
     const bk = $app.querySelector(".book"), el = bk?.querySelector(which === "doc" ? ".doc" : ".side"), dim = document.getElementById("sheetDim");
     if (!el || !ROOM_PHONE.matches) return;
@@ -3398,6 +3425,7 @@ function renderApps() {
 let remEdit = null; // null = form closed; { name, text } = new or editing
 function renderReminders() {
   const el = document.getElementById("remPane"); if (!el) return;
+  renderPeek();
   const f0 = document.getElementById("remForm"); // keep what's being typed when the list changes underneath
   if (f0 && remEdit) remEdit = { ...remEdit, name: f0.name.value, text: f0.text.value };
   const list = S.reminders ?? [];
@@ -3437,6 +3465,7 @@ function renderReminders() {
 
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
+  renderPeek();
   document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
