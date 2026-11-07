@@ -476,7 +476,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
   const room = async () => {
     const id = str(a.room_id) || me.room || "";
     if (me.room && id !== me.room) throw new Error(`this sandbox's login only reaches room ${me.room}`);
-    if (!id || !(await isMember(db, id, me.email))) throw new Error(`room not found or you're not a member: ${id || "(empty)"}. Call inbox for the list.`);
+    if (!id || !(await memberCached(db, id, me.email))) throw new Error(`room not found or you're not a member: ${id || "(empty)"}. Call inbox for the list.`);
     return id;
   };
   const unread = (only = "") => unreadRooms(db, me.email, me.agent, me.room || only);
@@ -851,6 +851,27 @@ function choicesOf(a: Args) {
   return { options, multi: a.multi === true };
 }
 
+// Per-isolate memory, so a listener's call every ≤50s doesn't pay D1 round trips for what can't have changed:
+// an agent id's owner never changes; seen_at/model/repo/room-seen writes at most once a minute each.
+const agentOwner = new Map<string, string>();
+const lastWrite = new Map<string, number>();
+const due = (key: string, ms = 60_000) => {
+  const now = Date.now();
+  if ((lastWrite.get(key) ?? 0) > now - ms) return false;
+  if (lastWrite.size > 20_000) lastWrite.clear();
+  lastWrite.set(key, now);
+  return true;
+};
+// Membership, remembered 30s per isolate (positive answers only): a removed member's agent keeps the room ≤30s.
+const memberSeen = new Map<string, number>();
+async function memberCached(db: D1Database, id: string, email: string) {
+  const k = `${id}|${email}`;
+  if ((memberSeen.get(k) ?? 0) > Date.now() - 30_000) return true;
+  if (!(await isMember(db, id, email))) return false;
+  if (memberSeen.size > 20_000) memberSeen.clear();
+  memberSeen.set(k, Date.now());
+  return true;
+}
 export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });
   const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;
@@ -862,11 +883,15 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   // don't keep sessions fall back to one agent per person and client.
   let sid = body.method === "initialize" ? `s_${crypto.randomUUID().replace(/-/g, "")}` : (request.headers.get("mcp-session-id") ?? "");
   if (sid && body.method !== "initialize") {
-    const owner = await env.DB.prepare(`SELECT email FROM agents WHERE id = ?`).bind(sid).first<{ email: string }>();
-    if (owner && owner.email !== props.email) sid = "";
+    const owner = agentOwner.get(sid) ?? (await env.DB.prepare(`SELECT email FROM agents WHERE id = ?`).bind(sid).first<{ email: string }>())?.email;
+    if (owner && owner !== props.email) sid = "";
   }
   const agentId = /^s_[a-f0-9]{32}$/.test(sid) ? sid : `c_${props.email}|${props.client}`;
-  await ensureAgent(env.DB, agentId, props.email, props.client);
+  if (agentOwner.get(agentId) !== props.email) {
+    await ensureAgent(env.DB, agentId, props.email, props.client);
+    if (agentOwner.size > 20_000) agentOwner.clear();
+    agentOwner.set(agentId, props.email);
+  }
   // This grant was used now (written at most every 5 min per grant): the app lists connections with their last use.
   if (props.gid) ctx.waitUntil(env.DB.prepare(`INSERT INTO grant_seen (gid, ts) VALUES (?, ?) ON CONFLICT(gid) DO UPDATE SET ts = excluded.ts WHERE excluded.ts > grant_seen.ts + 300000`).bind(props.gid, Date.now()).run().catch(() => {}));
   const me: Me = { ...props, agent: agentId };
@@ -885,12 +910,13 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
       return null;
     }
   })();
-  ctx.waitUntil(
-    (cx
-      ? env.DB.prepare(`UPDATE agents SET seen_at = ?, ctx_tokens = ?, ctx_window = ?, ctx_at = ?, ctx_limits = ? WHERE id = ?`).bind(Date.now(), ctxTokens, +cx[2], Date.now(), limits, agentId)
-      : env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId)
-    ).run(),
-  );
+  if (due(`seen:${agentId}`))
+    ctx.waitUntil(
+      (cx
+        ? env.DB.prepare(`UPDATE agents SET seen_at = ?, ctx_tokens = ?, ctx_window = ?, ctx_at = ?, ctx_limits = ? WHERE id = ?`).bind(Date.now(), ctxTokens, +cx[2], Date.now(), limits, agentId)
+        : env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId)
+      ).run(),
+    );
   let result: unknown;
   switch (body.method) {
     case "initialize":
@@ -920,9 +946,9 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
         const out = await call(String(p.name), args, env, ctx, me, origin);
         const model = typeof args.model === "string" ? args.model.trim().slice(0, 40) : "";
         const repo = typeof args.repo === "string" ? args.repo.trim().slice(0, 40) : "";
-        if (model || repo) ctx.waitUntil(env.DB.prepare(`UPDATE agents SET model = coalesce(?, model), repo = coalesce(?, repo) WHERE id = ?`).bind(model || null, repo || null, agentId).run());
+        if ((model || repo) && due(`mr:${agentId}:${model}:${repo}`, 600_000)) ctx.waitUntil(env.DB.prepare(`UPDATE agents SET model = coalesce(?, model), repo = coalesce(?, repo) WHERE id = ?`).bind(model || null, repo || null, agentId).run());
         // This session touched this room: it shows under its person in the room's Pessoas for the next hour.
-        if (typeof args.room_id === "string") ctx.waitUntil(env.DB.prepare(`UPDATE agent_reads SET seen_at = ? WHERE agent = ? AND book_id = ?`).bind(Date.now(), agentId, args.room_id).run());
+        if (typeof args.room_id === "string" && due(`room:${agentId}:${args.room_id}`)) ctx.waitUntil(env.DB.prepare(`UPDATE agent_reads SET seen_at = ? WHERE agent = ? AND book_id = ?`).bind(Date.now(), agentId, args.room_id).run());
         ok = !(out && typeof out === "object" && (out as { ok?: boolean }).ok === false);
         // get_file hands back MCP content parts (an image) instead of JSON.
         const parts = out && typeof out === "object" ? (out as { __content?: unknown[] }).__content : undefined;

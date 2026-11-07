@@ -390,20 +390,39 @@ app.post("/api/books/:id/icon", async (c) => {
     return c.json({ error: (e as Error).message }, 400);
   }
 });
+// Versioned URLs (?v=) never change: after the access check, the edge cache (Cache API) answers instead of R2.
+async function edgeCached(c: Context<Ctx>, load: () => Promise<Response | null>) {
+  const url = new URL(c.req.url);
+  if (!url.searchParams.get("v")) return (await load()) ?? c.notFound(); // unversioned: could change, not cached
+  const key = new Request(url.toString());
+  const hit = await caches.default.match(key);
+  const res = hit ?? (await load());
+  if (!res) return c.notFound();
+  if (!hit) {
+    const stored = new Response(res.clone().body, res);
+    stored.headers.set("cache-control", "public, max-age=31536000, immutable");
+    c.executionCtx.waitUntil(caches.default.put(key, stored));
+  }
+  const out = new Response(res.body, res);
+  out.headers.set("cache-control", "private, max-age=31536000, immutable");
+  return out;
+}
 app.get("/api/books/:id/icon", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
-  const obj = await c.env.FILES.get(`icons/${id}`);
-  if (!obj) return c.notFound();
-  return new Response(obj.body, { headers: { ...fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "icon"), "cache-control": "private, max-age=31536000, immutable" } });
+  return edgeCached(c, async () => {
+    const obj = await c.env.FILES.get(`icons/${id}`);
+    return obj && new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "icon") });
+  });
 });
 
 // Signed-in people only; the URL carries ?v=<version>, so it caches for good.
-app.get("/api/avatar/:email", async (c) => {
-  const obj = await c.env.FILES.get(`avatars/${c.req.param("email").toLowerCase()}`);
-  if (!obj) return c.notFound();
-  return new Response(obj.body, { headers: { ...fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "avatar"), "cache-control": "private, max-age=31536000, immutable" } });
-});
+app.get("/api/avatar/:email", (c) =>
+  edgeCached(c, async () => {
+    const obj = await c.env.FILES.get(`avatars/${c.req.param("email").toLowerCase()}`);
+    return obj && new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "image/png", "avatar") });
+  }),
+);
 
 // Archive is per person: the room leaves your list (and your agent's inbox) and lands in /archived.
 // Everyone else keeps it; restoring brings it back. Nothing is deleted.
