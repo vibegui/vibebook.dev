@@ -891,6 +891,7 @@ const EN = {
   "um Claude está trabalhando aqui": "a Claude is working here",
   "1 coisa esperando você": "1 thing waiting on you",
   "{n} coisas esperando você": "{n} things waiting on you",
+  "Voltar pra sala principal": "Back to the main thread",
   "Seus vibebooks": "Your vibebooks",
   "{theme} (clique pra trocar)": "{theme} (click to change)",
   "Tema: {theme}": "Theme: {theme}",
@@ -2862,6 +2863,18 @@ function renderTasks() {
   wireChev();
   // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
   document.getElementById("roomName").onclick = () => (ROOM_PHONE.matches ? openSheet("side") : renameThread());
+  // Phone ←: inside an epic (or a suggestion) it goes back to the room's main thread; in the main thread, home.
+  const back = $app.querySelector(".phHome");
+  if (back) {
+    const inThread = thread !== "main";
+    back.title = back.ariaLabel = inThread ? t("Voltar pra sala principal") : t("Seus vibebooks");
+    back.onclick = (e) => {
+      if (thread === "main") return;
+      e.preventDefault(); e.stopPropagation();
+      thread = "main"; docRoom = false; boardEpic = null;
+      renderSide(); renderChat(); renderKanban(); renderDoc();
+    };
+  }
   head.querySelector(".thPick").onclick = (e) => { if (ROOM_PHONE.matches && !e.target.closest(".thChev")) openSheet("side"); };
   renderPeek();
   el.style.display = epic ? "" : "none";
