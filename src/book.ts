@@ -756,6 +756,7 @@ export class Book extends DurableObject<Env> {
         title: e.title,
         archived: e.archived || undefined,
         from_message_id: e.from_msg ?? undefined,
+        prod: e.prod ?? undefined,
         doc: (this.get(`doc:${e.id}`) ?? "").slice(0, 8_000) || undefined,
         vibe_notes: e.flags,
         tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due, vibe_notes: t.flags })),
