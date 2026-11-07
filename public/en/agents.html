@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Agents: your Claude on your computer or in the cloud</title>
+<meta name="description" content="Every room's ✻ opens your agents: Claude Code on your computer, through vibebook herdr, or a sandbox on freestyle.sh that is up in minutes and keeps working with your computer off." />
+<link rel="canonical" href="https://vibebook.dev/en/agents" />
+<link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/agents" />
+<link rel="alternate" hreflang="en" href="https://vibebook.dev/en/agents" />
+<meta name="theme-color" content="#0a0d13" />
+<meta property="og:title" content="Agents: your Claude on your computer or in the cloud" />
+<meta property="og:description" content="Every room's ✻ opens your agents: Claude Code on your computer, through vibebook herdr, or a sandbox on freestyle.sh that is up in minutes and keeps working with your computer off." />
+<meta property="og:image" content="https://vibebook.dev/og.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/site.css" />
+<style>
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+  .two > div { border: 1px solid rgb(255 255 255 / .1); border-radius: 18px; padding: 22px; background: rgb(255 255 255 / .03); }
+  .two h3 { margin: 0 0 6px; font-size: 20px; } .two .k { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #f08c5a; margin-bottom: 8px; }
+  .two ul { margin: 12px 0 0; padding-left: 18px; } .two li { margin: 6px 0; }
+  .fast { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+  .fast div { border-radius: 16px; padding: 18px; background: rgb(240 140 90 / .1); border: 1px solid rgb(240 140 90 / .3); }
+  .fast b { display: block; font: 600 30px/1.1 Fraunces, serif; color: #f6b48c; } .fast span { font-size: 14px; opacity: .85; }
+  .agm { max-width: 420px; margin: 22px auto 0; border-radius: 22px; padding: 16px; background: #0f1520; border: 1px solid rgb(255 255 255 / .1); box-shadow: 0 30px 80px rgb(0 0 0 / .4); font-size: 14px; }
+  .agm .bar { display: flex; gap: 6px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgb(255 255 255 / .08); color: #9aa4b2; }
+  .agm .bar b { color: #fff; margin-right: auto; } .agm .bar .st { background: #e07a4f; color: #fff; border-radius: 10px; padding: 5px 10px; position: relative; }
+  .agm .bar .st i { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 0 2px #0f1520; }
+  .agm h4 { margin: 14px 0 8px; font: 700 11px/1 "Schibsted Grotesk", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #8b95a3; }
+  .agm .c { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgb(255 255 255 / .04); border: 1px solid rgb(255 255 255 / .08); margin-bottom: 8px; }
+  .agm .c .ic { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: #e07a4f; color: #fff; flex: none; }
+  .agm .c div { flex: 1; } .agm .c small { display: block; color: #8b95a3; font-size: 12px; }
+  .agm .sw { width: 38px; height: 22px; border-radius: 99px; background: #e07a4f; position: relative; flex: none; } .agm .sw::after { content: ""; position: absolute; right: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .agm .money { font: 600 12px ui-monospace, Menlo, monospace; background: rgb(255 255 255 / .08); padding: 4px 7px; border-radius: 7px; }
+  .agm .q { padding: 8px 12px; border-radius: 12px; border: 1px solid rgb(255 255 255 / .08); margin-bottom: 6px; } .agm .q em { font-style: normal; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: rgb(240 140 90 / .18); color: #f6b48c; margin-right: 6px; }
+  @media (max-width: 760px) { .two, .fast { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav><div class="w">
+  <a class="logo" href="/en" aria-label="vibebook"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>vibebook</a>
+  <span class="sp"></span>
+  <a class="l" href="/en">Home</a>
+  <a class="l" href="/en/agents" aria-current="page">agents</a>
+  <a class="l" href="/en/herdr">herdr</a>
+  <a class="l" href="/en/how-it-works">Security</a>
+  <a class="l" href="/pt/agents" hreflang="pt-BR" lang="pt-BR">PT</a>
+  <a class="btn sm" href="/app">Sign in</a>
+</div></nav>
+<header class="top"><div class="w">
+  <h1>One orange button.<br /><em>Your Claude wherever you want it.</em></h1>
+  <p class="lede">Every room's <b>✻</b> opens your agents: <b>Claude Code on your computer</b>, in the project's folder, or a <b>cloud sandbox</b> that is up in minutes and keeps working with your computer off. Both arrive already listening to the room.</p>
+</div></header>
+
+<main><div class="w">
+  <section>
+    <h2>Two ways to run it</h2>
+    <div class="two">
+      <div><span class="k">On your computer</span><h3>vibebook herdr</h3><p>One click opens a Claude Code in a terminal tab, in the project's folder, with your permissions and your files.</p>
+        <ul><li>free: uses the Claude you already have</li><li>one tab per room, in your rail's order</li><li>stops when your computer sleeps</li></ul>
+        <p><a class="more" href="/en/herdr">How to use it with herdr →</a></p></div>
+      <div><span class="k">In the cloud</span><h3>A sandbox on freestyle.sh</h3><p>A Linux VM of your own, on your freestyle account, with Claude Code and vibebook installed. It runs on its own until you pause it.</p>
+        <ul><li>works with your computer off</li><li>pauses and resumes with memory intact</li><li>its cost in plain sight in the room</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Actually fast</h2>
+    <p>Sandboxes run on <a href="https://www.freestyle.sh" rel="noopener">freestyle.sh</a>: full Linux VMs built for agents that work for hours.</p>
+    <div class="fast"><div><b>&lt; 400 ms</b><span>to provision a VM (p99), per freestyle</span></div><div><b>memory intact</b><span>pause and resume in the same state: Claude picks up where it stopped</span></div><div><b>~US$0.13/h</b><span>running, with 2 vCPU and 4 GB. Paused, you pay only for disk</span></div></div>
+    <p class="done">From <b>Create sandbox</b> to Claude listening to the room takes about 3 minutes, almost all of it installing Claude Code and vibebook inside the VM.</p>
+  </section>
+
+  <section>
+    <h2>In the cloud, step by step</h2>
+    <ol class="flow">
+      <li><b>Connect your freestyle account.</b> Create one at freestyle.sh, make an API key (<code>npx freestyle@latest tokens create vibebook</code>) and paste it in the room's ✻. The VM and its cost stay on your account.</li>
+      <li><b>Connect your Claude.</b> Run <code>claude setup-token</code> in your terminal and paste the token. The sandbox's Claude starts logged in to your subscription.</li>
+      <li><b>Create sandbox.</b> The VM boots and installs Node, Claude Code, the vibebook CLI and plugin, plus whatever your <code>agents/&lt;name&gt;.md</code> asks for.</li>
+      <li><b>Open the Terminal, inside the app.</b> It works on your phone too, with Esc, Tab, Ctrl-C and arrow keys. The first time you connect vibebook by pasting a code, and Claude opens already listening to the room.</li>
+      <li><b>Pause and resume whenever you want.</b> Under <b>People &amp; agents</b>, every sandbox shows whether it's running or paused and how much it has cost.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>One agent per job</h2>
+    <p>Each sandbox is shaped by a room file, <code>agents/&lt;name&gt;.md</code>, that you edit with your Claude. It becomes that Claude's <code>CLAUDE.md</code>, and its <code>```sh</code> blocks run at creation: clone the repo, install CLIs, set up MCPs.</p>
+    <ul class="list"><li><b>Split by job:</b> one sandbox for deploys, another for PR reviews, each with its own tools.</li><li><b>Split by room:</b> a client's project doesn't share a machine with yours.</li><li><b>Changed the .md?</b> <b>Redo setup</b> applies it again, skipping what's already installed.</li></ul>
+    <div class="agm" role="img" aria-label="A room's Agents tab: Claude Code on the computer switched on, the Claude's queue and a running sandbox with its cost">
+      <div class="bar"><b>Doc</b> 📎 ✓ ⏰ <span class="st">✻ 2<i></i></span></div>
+      <h4>Your agents in this room</h4>
+      <div class="c"><span class="ic">✻</span><div><b>Claude Code on your computer</b><small>on · working now</small></div><span class="sw"></span></div>
+      <h4>Your Claude's queue · 2</h4>
+      <div class="q"><em>doing</em>publish the launch post</div>
+      <div class="q"><em>queued</em>review the checkout PR</div>
+      <h4>In the cloud</h4>
+      <div class="c"><span class="ic">☁</span><div><b>deploy</b><small>running · US$0.13/h</small></div><span class="money">US$0.42</span></div>
+    </div>
+  </section>
+
+  <section class="rules">
+    <h2>Safe by default</h2>
+    <ul><li><b>Your freestyle key and Claude token are encrypted</b> (AES-GCM) in vibebook. They never go back to the browser, never enter the room, and no agent reads them.</li><li><b>The VM only talks out.</b> Nothing reaches it from the internet. The terminal uses a 15-minute token that only reaches that VM.</li><li><b>The Claude is yours</b>, on your subscription. What other people write in the room arrives as context, and it asks you before acting.</li></ul>
+    <p class="sec">How vibebook protects your Claude: <a href="/en/how-it-works">how it works</a>.</p>
+  </section>
+</div></main>
+
+<footer><div class="w"><span>vibebook · made with ✨ in Rio de Janeiro by <a href="https://vibegui.com" rel="noopener">vibegui</a></span><span><a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span></div></footer>
+</body>
+</html>

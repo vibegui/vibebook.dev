@@ -146,7 +146,7 @@ const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new 
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
 const pickLang = reqLang;
-for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr"]) {
+for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr", "/agents"]) {
   app.get(path || "/", (c) => {
     const url = new URL(c.req.url);
     const res = c.redirect(`/${pickLang(c.req.raw)}${path}${url.search}`, 302);
