@@ -1392,6 +1392,7 @@ function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if 
 setInterval(() => {
   if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
   api("/api/me").then((me) => {
+    keepMe(me);
     const before = JSON.stringify(waitsIn());
     myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher();
     if (S && JSON.stringify(waitsIn()) !== before) { renderSide(); renderChat(true); }
@@ -1586,10 +1587,24 @@ document.addEventListener("click", (e) => {
 });
 
 // ---------------- home ----------------
+// The last /api/me (any page fetches it): going back home draws it at once, then the fresh one replaces it only if
+// something changed, keeping what you were typing in the ask box.
+let meCache = null, meJson = "";
+const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); };
 async function home() {
   document.title = "vibebook";
   setFavicon(null);
+  if (meCache) homeWith(meCache);
   const me = await api("/api/me");
+  if (/^\/(b|login|archived)\b/.test(location.pathname)) return keepMe(me); // left home while it loaded
+  const changed = JSON.stringify(me) !== meJson;
+  keepMe(me);
+  if (!changed && $app.querySelector("#ask")) return;
+  const typed = document.getElementById("askText")?.value;
+  homeWith(me);
+  if (typed) { const ta = document.getElementById("askText"); if (ta) ta.value = typed; }
+}
+function homeWith(me) {
   myBooks = me.books; myWaits = me.waits || []; renderSwitcher();
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
@@ -1961,7 +1976,7 @@ function openBook(id) {
   S = null;
   liveState = false;
   attached = [];
-  api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
+  api("/api/me").then((me) => { keepMe(me); friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
   const cached = roomCache.get(id);
   if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
