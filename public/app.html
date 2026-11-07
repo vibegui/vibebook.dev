@@ -2555,6 +2555,10 @@ function renderBook() {
   // Attachments: paste, drop or 📎. Upload right away; send once all are done.
   const tray = document.getElementById("tray");
   const sendBtn = document.getElementById("sendBtn");
+  // Phones: the tap would first blur the textarea, the keyboard closes, the composer moves and the click misses the
+  // button (a second tap needed). Send on touchend instead, without letting the textarea lose focus.
+  sendBtn.addEventListener("touchend", (e) => { if (sendBtn.disabled) return; e.preventDefault(); document.getElementById("composer").requestSubmit(); });
+  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
   const renderTray = () => {
     tray.innerHTML = attached.map((p, i) => `<div class="pend ${!p.meta && !p.error ? "up" : ""} ${p.error ? "err" : ""}" title="${esc(p.error || p.file.name)}">
       ${p.url ? `<img src="${p.url}" alt="">` : `${icon("file", 22)}<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
