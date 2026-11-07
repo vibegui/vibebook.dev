@@ -109,6 +109,16 @@ const migrate = (db: D1Database) =>
 
 
 const app = new Hono<Ctx>();
+// A request to the Studio site without our cookies (the session never leaves this Worker) and without its set-cookies
+// back. Authorization stays: it's Studio's own token for the site's admin endpoints.
+async function toSite(site: Fetcher, req: Request) {
+  const fwd = new Request(req);
+  fwd.headers.delete("cookie");
+  const res = await site.fetch(fwd);
+  const out = new Response(res.body, res);
+  out.headers.delete("set-cookie");
+  return out;
+}
 const knownUsers = new Set<string>();
 
 app.use("*", async (c, next) => {
@@ -121,12 +131,14 @@ app.use("*", async (c, next) => {
 //   cross-site, is refused: the session cookie is SameSite=Lax already, this is the second lock (also for /ws, /yjs).
 // - Pages that act with your session (the app, login, OAuth consent, mail links) can't be framed by anyone,
 //   so no site can overlay an invisible "Permitir" on the consent page (clickjacking).
+// The Studio site's paths never see the session cookie (toSite), so Studio's own origin may call them.
+const CROSS_OK = /^\/(deco|_serverFn|_site)\//;
 const NO_FRAME = /^\/(app|archived|login|b\/|authorize|auth\/|mail\/)/;
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
   const origin = c.req.header("origin");
   const writes = !["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.header("upgrade")?.toLowerCase() === "websocket";
-  if (writes && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
+  if (writes && !CROSS_OK.test(url.pathname) && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
     return c.json({ error: "cross-site request refused" }, 403);
   await next();
   if (NO_FRAME.test(url.pathname) && c.res.status !== 101) {
@@ -164,14 +176,26 @@ for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr", "/agents
     app.get(`/${lang}${path}`, async (c) => {
       // Every page here is static (public/pt.html, public/en.html, public/<lang>/*.html). The Studio site (site/,
       // binding SITE) no longer serves the home since the Nov 2026 landing; its /_site, /deco routes stay below.
-      const asset = await c.env.ASSETS.fetch(c.req.raw);
+      // The home comes from the Studio-editable site (site/); if it's down, the static copy in public/ answers.
+      const fromSite = !path && c.env.SITE ? await toSite(c.env.SITE, c.req.raw).catch(() => null) : null;
+      const asset = fromSite && fromSite.status < 500 ? fromSite : await c.env.ASSETS.fetch(c.req.raw);
       const res = new Response(asset.body, asset);
       res.headers.append("set-cookie", `${LANG_COOKIE}=${lang}; Max-Age=31536000; Path=/; SameSite=Lax`);
       return pageview(c, res);
     });
 }
-// The stale Studio site (/_site, /deco, /_serverFn) is no longer forwarded: its unauthenticated /deco/render rendered
-// query-string HTML on this origin, with the session cookie (Nov 2026 review). Serve it from its own origin if needed again.
+// The site's files (/_site) and Studio's endpoints (/deco/meta, /deco/render, /deco/invoke, /_serverFn). Safe on this
+// origin because (Nov 2026 review): the site never gets the session cookie (toSite strips it), its sections render
+// props only as text, and Studio's preview (/deco/render, props from the URL) answers in a CSP sandbox: an opaque
+// origin that can't read vibebook.dev's cookies or call its APIs even if a prop got through.
+for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
+  app.all(prefix, async (c) => {
+    if (!c.env.SITE) return c.notFound();
+    const res = await toSite(c.env.SITE, c.req.raw);
+    if (c.req.path.startsWith("/_site/")) res.headers.set("access-control-allow-origin", "*"); // the sandboxed preview loads them cross-origin
+    else if ((res.headers.get("content-type") ?? "").includes("text/html")) res.headers.set("content-security-policy", "sandbox allow-scripts allow-forms allow-popups allow-modals");
+    return res;
+  });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
 app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
 app.get("/app", async (c) => {
