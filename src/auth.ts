@@ -134,7 +134,11 @@ auth.post("/email/verify", async (c) => {
   const email = (body.email ?? "").trim().toLowerCase();
   const code = (body.code ?? "").replace(/\D/g, "");
   const en = reqLang(c.req.raw) === "en";
-  const row = await c.env.DB.prepare(`SELECT hash, expires_at, attempts FROM login_codes WHERE email = ?`).bind(email).first<{
+  const ip = c.req.header("cf-connecting-ip") ?? "local";
+  const lim = await Promise.all([c.env.LOGIN_LIMIT.limit({ key: `verify-ip:${ip}` }), c.env.LOGIN_LIMIT.limit({ key: `verify:${email}` })]);
+  if (lim.some((r) => !r.success)) return c.json({ error: en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto." }, 429);
+  // Count the attempt before comparing, atomically: parallel guesses can't all read "attempts < 5".
+  const row = await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ? RETURNING hash, expires_at, attempts - 1 AS attempts`).bind(email).first<{
     hash: string;
     expires_at: number;
     attempts: number;
@@ -143,7 +147,6 @@ auth.post("/email/verify", async (c) => {
     return c.json({ error: en ? "Too many wrong codes. Wait 10 minutes and ask for a new one." : "Muitas tentativas erradas. Espera 10 minutos e pede um código novo." }, 429);
   if (!row || row.expires_at < Date.now()) return c.json({ error: en ? "Code expired. Ask for a new one." : "Código expirado. Pede um novo." }, 400);
   if (!safeEqual(row.hash, await codeHash(c.env, email, code))) {
-    await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ?`).bind(email).run();
     return c.json({ error: en ? "Wrong code." : "Código errado." }, 400);
   }
   await c.env.DB.prepare(`DELETE FROM login_codes WHERE email = ?`).bind(email).run();

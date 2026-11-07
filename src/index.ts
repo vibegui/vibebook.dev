@@ -119,16 +119,14 @@ app.use("*", async (c, next) => {
 // Cross-site guard + anti-framing, before any route.
 // - A state-changing request (or a WebSocket upgrade) whose Origin is another site, or that the browser marks
 //   cross-site, is refused: the session cookie is SameSite=Lax already, this is the second lock (also for /ws, /yjs).
-//   The Studio-editable site (/deco, /_serverFn, /_site) is called from Studio's own origin and keeps its own auth.
 // - Pages that act with your session (the app, login, OAuth consent, mail links) can't be framed by anyone,
 //   so no site can overlay an invisible "Permitir" on the consent page (clickjacking).
-const CROSS_OK = /^\/(deco|_serverFn|_site)\//;
 const NO_FRAME = /^\/(app|archived|login|b\/|authorize|auth\/|mail\/)/;
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
   const origin = c.req.header("origin");
   const writes = !["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.header("upgrade")?.toLowerCase() === "websocket";
-  if (writes && !CROSS_OK.test(url.pathname) && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
+  if (writes && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
     return c.json({ error: "cross-site request refused" }, 403);
   await next();
   if (NO_FRAME.test(url.pathname) && c.res.status !== 101) {
@@ -172,9 +170,8 @@ for (const path of ["", "/demo", "/connect", "/how-it-works", "/herdr", "/agents
       return pageview(c, res);
     });
 }
-// The site's own files (built JS) and the Studio admin endpoints (/deco/meta, /deco/render, …).
-for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
-  app.all(prefix, (c) => (c.env.SITE ? c.env.SITE.fetch(c.req.raw) : c.notFound()));
+// The stale Studio site (/_site, /deco, /_serverFn) is no longer forwarded: its unauthenticated /deco/render rendered
+// query-string HTML on this origin, with the session cookie (Nov 2026 review). Serve it from its own origin if needed again.
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
 app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
 app.get("/app", async (c) => {

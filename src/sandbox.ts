@@ -149,10 +149,11 @@ async function writeClaudeEnv(env: Env, key: string, email: string, vmId: string
 type Row = { id: string; email: string; book_id: string; name: string; vm_id: string; identity_id: string | null; ready: number; created_at: number };
 const MAX_PER_ROOM = 3;
 
-/** agents/<name>.md from the room's files (the newest with that name), or the template, stored the first time. */
+/** agents/<name>.md from the room's files (the newest with that name written by this person: its sh blocks run in their
+ * VM next to their tokens, so another member's upload of the same name must never be picked), or the template. */
 export async function agentFile(env: Env, bookId: string, email: string, name: string, title: string, origin: string) {
   const path = `agents/${name}.md`;
-  const f = (await bookStub(env, bookId).files()).find((x: { name: string }) => x.name === path);
+  const f = (await bookStub(env, bookId).files()).find((x: { name: string; author: string }) => x.name === path && x.author === email);
   const obj = f && (await env.FILES.get(`${bookId}/${f.id}`));
   if (obj) return obj.text();
   const md = defaultAgentMd(title, `${origin}/b/${bookId}`);

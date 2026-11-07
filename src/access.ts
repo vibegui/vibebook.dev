@@ -90,7 +90,7 @@ b.onclick = ask;${o.auto ? "\nask();" : ""}
 export function filePage(o: { id: string; path: string; signedIn: boolean; lang?: Lang }) {
   const t = T[o.lang ?? "pt"];
   const body = o.signedIn
-    ? `<p class="k">${t.fileK}</p><h1>${t.fileInH}</h1><p>${t.fileInP}</p><a class="btn" href="/b/${o.id}?pedir=1">${t.fileInBtn}</a>`
+    ? `<p class="k">${t.fileK}</p><h1>${t.fileInH}</h1><p>${t.fileInP}</p><a class="btn" href="/b/${encodeURIComponent(o.id)}?pedir=1">${t.fileInBtn}</a>`
     : `<p class="k">${t.fileK}</p><h1>${t.fileOutH}</h1><p>${t.fileOutP}</p><a class="btn" href="/login?next=${encodeURIComponent(o.path)}">${t.fileOutBtn}</a>`;
   const ad = `<div class="ad"><b>${t.adH}</b><p>${t.adP}</p><a href="/app">${t.adA}</a></div>`;
   return cardPage(`<title>vibebook</title>`, body + ad, "", o.lang);
