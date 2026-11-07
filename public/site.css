@@ -91,3 +91,38 @@ p.done { color: var(--soft); }
 .rh .on i { font-style: normal; color: var(--orange); }
 .rh .on code { background: none; border: 0; border-left: 1px solid var(--line2); border-radius: 0; padding: 0 0 0 8px; font-size: 12px; color: var(--mute); }
 @media (max-width: 640px) { .rh .ic { display: none; } .rh { flex-wrap: wrap; gap: 8px; } .rh b { flex-basis: 100%; } .shots figure { min-width: 0; } .shots code { overflow-wrap: anywhere; } }
+/* persona pages */
+.pz-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; width: min(1120px, 100% - 48px); }
+.kick { display: inline-block; font-size: 14px; color: var(--mute); border: 1px solid var(--line2); border-radius: 999px; padding: 5px 14px; margin-bottom: 22px; }
+.pz-feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.pz-feats div { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 4px; }
+.pz-feats b { color: var(--ink); font-weight: 600; } .pz-feats span { color: var(--mute); font-size: 14.5px; }
+.pz-others { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pz-others a { display: grid; gap: 4px; padding: 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); text-decoration: none; }
+.pz-others a:hover { border-color: var(--line2); }
+.pz-others b { color: var(--ink); } .pz-others span { color: var(--mute); font-size: 14.5px; }
+@media (max-width: 860px) { .pz-hero, .pz-feats, .pz-others { grid-template-columns: 1fr; } }
+/* persona room mock (also used by the landing's persona tabs) */
+.mk { background: var(--panel); border: 1px solid var(--line2); border-radius: 18px; overflow: hidden; box-shadow: 0 40px 90px -40px #000, 0 0 70px -30px rgb(91 147 255 / .3); text-align: left; }
+.mk-top { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.mk-top b { font: 600 18px var(--serif); font-variation-settings: "SOFT" 100; }
+.mk-ri { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font: 11px Caprasimo, serif; color: #fff; flex: none; }
+.mk-feed { padding: 16px 18px; display: grid; gap: 14px; }
+.mk-m { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.45; }
+.mk-m .av { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 11px var(--sans); color: #fff; flex: none; position: relative; }
+.mk-m .av.ag { background: #3a2418; color: var(--orange); font-size: 15px; }
+.mk-m .av.ag sup { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; font: 600 7.5px/14px var(--sans); text-align: center; color: #fff; border: 1.5px solid var(--panel); }
+.mk-m .av.vibe { background: #1b2a4a; color: var(--sun); font-size: 13px; }
+.mk-n { font-size: 12px; color: var(--mute); margin-bottom: 3px; }
+.mk-x { color: var(--soft); }
+.mk-x b { color: var(--ink); font-weight: 600; } .mk-x .at { color: var(--sun); }
+.mk-m.agent .mk-x { background: #1c1612; border: 1px solid #33261c; padding: 8px 12px; border-radius: 4px 14px 14px 14px; color: #ead9cb; }
+.mk-m.vibe .mk-x { background: #121c30; border: 1px solid #1f2d4a; padding: 8px 12px; border-radius: 4px 14px 14px 14px; color: #d4def2; }
+.mk-m.done .mk-x { background: #0f2219; border-color: #1d4532; color: #c9eedc; }
+.mk-m.done .mk-x::before { content: "✓"; color: var(--green); font-weight: 700; margin-right: 6px; }
+.mk-ch { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.mk-ch span { padding: 6px 11px; border: 1px solid var(--line2); border-radius: 10px; font-size: 13px; color: var(--mute); }
+.mk-ch span.on { border-color: var(--blue); color: var(--ink); background: rgb(91 147 255 / .12); }
+.mk-dec { margin-top: 8px; display: inline-block; padding: 6px 10px; border-radius: 9px; background: #121c30; border: 1px solid #1f2d4a; color: #d4def2; font-size: 12.5px; }
+.mk-dec b { color: var(--blue); }
+.mk-comp { margin: 0 18px 16px; height: 38px; border: 1px solid var(--line2); border-radius: 11px; display: flex; align-items: center; padding: 0 12px; color: var(--dim); font-size: 13.5px; }
