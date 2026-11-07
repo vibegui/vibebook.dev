@@ -92,6 +92,16 @@ function openBrowser(url) {
     spawn(cmd, args, { stdio: "ignore", detached: true }).unref();
   } catch {}
 }
+async function loginFromFile(path) {
+  const f = readJson(path, null);
+  if (!f?.code)
+    return die(`no login in ${path}`);
+  try {
+    rmSync(path);
+  } catch {}
+  await finishLogin(f.origin, f.redirect, f.verifier, "", "", async () => "", { client_id: f.client_id, code: f.code });
+  return f.origin;
+}
 async function login(origin, paste = false) {
   const verifier = b64url(randomBytes(32));
   const challenge = b64url(createHash("sha256").update(verifier).digest());
@@ -133,7 +143,9 @@ ${url}
     return got.finally(() => (clearTimeout(timer), server.close()));
   });
 }
-async function finishLogin(origin, redirect, verifier, challenge, state, getCode) {
+async function finishLogin(origin, redirect, verifier, challenge, state, getCode, preset) {
+  if (preset)
+    return exchange(origin, redirect, verifier, preset.client_id, preset.code);
   const reg = await fetch(`${origin}/oauth/register`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -146,6 +158,9 @@ async function finishLogin(origin, redirect, verifier, challenge, state, getCode
   const code = await getCode(url);
   if (!code)
     die("no code");
+  return exchange(origin, redirect, verifier, client_id, code);
+}
+async function exchange(origin, redirect, verifier, client_id, code) {
   const tok = await fetch(`${origin}/oauth/token`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -695,6 +710,13 @@ async function main() {
   switch (cmd) {
     case "login": {
       const origin = (flag("origin") ?? DEFAULT_ORIGIN).replace(/\/$/, "");
+      const file = flag("code-file");
+      if (file) {
+        const o = await loginFromFile(file);
+        process.stdout.write(`Conectado a ${o}.
+`);
+        return;
+      }
       await login(origin, !!flags.paste);
       process.stdout.write(`Conectado a ${origin}. Toda sessão do Claude nesta máquina usa este login.
 `);

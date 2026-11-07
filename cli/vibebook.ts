@@ -97,6 +97,15 @@ function openBrowser(url: string) {
     spawn(cmd, args, { stdio: "ignore", detached: true }).unref();
   } catch {}
 }
+// --code-file (a cloud sandbox vibebook created): the server already authorized this machine for its person and left
+// {origin, client_id, code, verifier, redirect} in a 0600 file; the CLI redeems it with PKCE and deletes the file.
+async function loginFromFile(path: string) {
+  const f = readJson<{ origin: string; client_id: string; code: string; verifier: string; redirect: string } | null>(path, null);
+  if (!f?.code) return die(`no login in ${path}`);
+  try { rmSync(path); } catch {}
+  await finishLogin(f.origin, f.redirect, f.verifier, "", "", async () => "", { client_id: f.client_id, code: f.code });
+  return f.origin;
+}
 // --paste (a machine whose loopback the browser can't reach: a cloud sandbox, SSH): the consent page redirects to
 // <origin>/oauth/code, which shows the code, and the person pastes it here.
 async function login(origin: string, paste = false) {
@@ -130,7 +139,8 @@ async function login(origin: string, paste = false) {
     return got.finally(() => (clearTimeout(timer), server.close()));
   });
 }
-async function finishLogin(origin: string, redirect: string, verifier: string, challenge: string, state: string, getCode: (url: string) => Promise<string>) {
+async function finishLogin(origin: string, redirect: string, verifier: string, challenge: string, state: string, getCode: (url: string) => Promise<string>, preset?: { client_id: string; code: string }) {
+  if (preset) return exchange(origin, redirect, verifier, preset.client_id, preset.code);
   const reg = await fetch(`${origin}/oauth/register`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -141,6 +151,9 @@ async function finishLogin(origin: string, redirect: string, verifier: string, c
   const url = `${origin}/authorize?${new URLSearchParams({ response_type: "code", client_id, redirect_uri: redirect, code_challenge: challenge, code_challenge_method: "S256", state, scope: "rooms offline_access", resource: `${origin}/mcp` })}`;
   const code = await getCode(url);
   if (!code) die("no code");
+  return exchange(origin, redirect, verifier, client_id, code);
+}
+async function exchange(origin: string, redirect: string, verifier: string, client_id: string, code: string) {
   const tok = await fetch(`${origin}/oauth/token`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -674,6 +687,8 @@ async function main() {
   switch (cmd) {
     case "login": {
       const origin = (flag("origin") ?? DEFAULT_ORIGIN).replace(/\/$/, "");
+      const file = flag("code-file");
+      if (file) { const o = await loginFromFile(file); process.stdout.write(`Conectado a ${o}.\n`); return; }
       await login(origin, !!flags.paste);
       process.stdout.write(`Conectado a ${origin}. Toda sessão do Claude nesta máquina usa este login.\n`);
       return;

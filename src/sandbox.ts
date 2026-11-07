@@ -88,6 +88,9 @@ export PATH="$HOME/.local/bin:$HOME/.vibebook/bin:$PATH"
 grep -q '.vibebook/bin' "$HOME/.bashrc" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$HOME/.vibebook/bin:$PATH"' >> "$HOME/.bashrc"
 claude plugin marketplace add vibegui/vibebook.dev || true
 claude plugin install vibebook@vibebook || true
+# vibebook login, already authorized by the server for the person who created this sandbox (code + PKCE verifier in
+# a 0600 file the CLI redeems and deletes). An older sandbox without it falls back to login --paste in the terminal.
+if [ -f /tmp/vibebook-login.json ]; then vibebook login --code-file /tmp/vibebook-login.json || echo "vibebook login failed"; fi
 # The person's Claude token (written by vibebook to /tmp, never echoed): Claude Code starts logged in.
 if [ -f /tmp/vibebook-env ]; then install -m 600 /tmp/vibebook-env "$HOME/.vibebook-env"; rm -f /tmp/vibebook-env; fi
 grep -q vibebook-env "$HOME/.bashrc" 2>/dev/null || echo '[ -f "$HOME/.vibebook-env" ] && . "$HOME/.vibebook-env"' >> "$HOME/.bashrc"
@@ -99,18 +102,45 @@ grep -qx .vibebook .git/info/exclude 2>/dev/null || echo .vibebook >> .git/info/
 :
 ${blocks}
 ) || echo "agents .md setup failed"
+# Claude Code: no first-run onboarding and the folder already trusted, so it can start on its own.
+node -e 'const f=require("os").homedir()+"/.claude.json",fs=require("fs");let j={};try{j=JSON.parse(fs.readFileSync(f,"utf8"))}catch{}j.hasCompletedOnboarding=true;j.projects=j.projects||{};const p=process.argv[1];j.projects[p]={...(j.projects[p]||{}),hasTrustDialogAccepted:true,hasCompletedProjectOnboarding:true};fs.writeFileSync(f,JSON.stringify(j,null,2))' "$HOME/${o.folder}" || true
 cat > "$HOME/.vibebook-start" <<'EOS'
 [ -f "$HOME/.vibebook-env" ] && . "$HOME/.vibebook-env"
+export PATH="$HOME/.local/bin:$HOME/.vibebook/bin:$PATH"
 cd "$HOME/${o.folder}"
 vibebook status 2>/dev/null | grep -q '"logged_in": true' || vibebook login --paste
 claude "/vibebook:listen"
+exec bash -l
 EOS
+# Claude runs in tmux session "claude" from now on; the app's terminal attaches to it.
+tmux has-session -t claude 2>/dev/null || tmux new-session -d -s claude -x 160 -y 48 -c "$HOME/${o.folder}" "bash -l $HOME/.vibebook-start"
 touch "$HOME/.vibebook-setup-done"
 `;
 }
 
 // Fully detached (own session, no stdin/stdout), so it outlives the exec call that starts it.
 const RUN_SETUP = "(setsid nohup bash /tmp/vibebook-setup.sh </dev/null >/dev/null 2>&1 &) ; sleep 1; echo started";
+/** Authorizes this sandbox's vibebook CLI for its person, server-side (no browser): a public client with the code page
+ * as redirect, a grant completed for them, and the code + PKCE verifier written to the VM for the CLI to redeem. */
+async function writeVibebookLogin(env: Env, key: string, email: string, vmId: string, origin: string) {
+  const oauth = env.OAUTH_PROVIDER;
+  const redirect = `${origin}/oauth/code`;
+  const client = await oauth.createClient({ clientName: "vibebook sandbox", redirectUris: [redirect], tokenEndpointAuthMethod: "none", grantTypes: ["authorization_code", "refresh_token"], responseTypes: ["code"] });
+  const rnd = (n: number) => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(n)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const verifier = rnd(32);
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(verifier))))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const gid = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  const { redirectTo } = await oauth.completeAuthorization({
+    request: { responseType: "code", clientId: client.clientId, redirectUri: redirect, scope: ["rooms", "offline_access"], state: "sandbox", codeChallenge: challenge, codeChallengeMethod: "S256", resource: `${origin}/mcp` },
+    userId: email,
+    metadata: { client: "vibebook sandbox", at: Date.now(), gid },
+    scope: ["rooms", "offline_access"],
+    props: { email, client: "vibebook sandbox", gid },
+  });
+  const code = new URL(redirectTo).searchParams.get("code");
+  if (!code) throw new Error("could not authorize the sandbox's vibebook login");
+  await fs(key, "PUT", `/v5/vms/${vmId}/fs/write`, { path: "/tmp/vibebook-login.json", content: JSON.stringify({ origin, client_id: client.clientId, code, verifier, redirect }), mode: 384 });
+}
 /** Hands the person's Claude token to the VM (if they connected one), as a 0600 file the setup moves into $HOME. */
 async function writeClaudeEnv(env: Env, key: string, email: string, vmId: string) {
   const tok = await loadKey(env, email, "claude_tokens").catch(() => null);
@@ -150,6 +180,7 @@ export async function createSandbox(env: Env, email: string, bookId: string, raw
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: bookId, folder: name, md, origin }), mode: 493 });
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
   await writeClaudeEnv(env, k, email, vm.id);
+  await writeVibebookLogin(env, k, email, vm.id, origin);
   await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
   const sid = crypto.randomUUID().slice(0, 8);
   await env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at, state, checked_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?, 'running', ?)`).bind(sid, email, bookId, name, vm.id, Date.now(), Date.now()).run();
@@ -269,6 +300,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
       await writeClaudeEnv(c.env, k, r.email, r.vm_id);
+      await writeVibebookLogin(c.env, k, r.email, r.vm_id, origin);
       // Runs it in the foreground (up to ~4.5 min) so the answer says what happened: a syntax check first, then the
       // setup, then the log's last lines (also shown in the card).
       const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
@@ -308,7 +340,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       const t = await fs<{ token: string }>(k, "POST", `/v5/identities/${ident}/tokens`, { expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() });
       // The first time it waits for the setup, logs in to vibebook (paste) and starts Claude listening; slug
       // "claude" makes every later open reattach to that same session (bash takes over if Claude exits).
-      const exec = `bash -lc 'while [ ! -f ~/.vibebook-setup-done ]; do echo "Preparando o sandbox... $(tail -n 1 ~/vibebook-setup.log 2>/dev/null | cut -c1-80)"; sleep 5; done; . ~/.vibebook-start; exec bash -l'`;
+      const exec = `bash -lc 'while [ ! -f ~/.vibebook-setup-done ]; do echo "Preparando o sandbox... $(tail -n 1 ~/vibebook-setup.log 2>/dev/null | cut -c1-80)"; sleep 5; done; exec tmux new-session -A -s claude -c ~ "bash -l ~/.vibebook-start"'`;
       return c.json({ token: t.token, url: `${API.replace(/^http/, "ws")}/v5/vms/${r.vm_id}/pty?slug=claude&exec=${encodeURIComponent(exec)}` });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 502);
@@ -319,7 +351,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
 // ---- for agents (MCP sandboxes / sandbox_exec in src/agent.ts): a person's Claude works on that person's own
 // sandboxes with the key that stays on the server. Output is redacted (tokens, keys) before it reaches the agent.
 export const redact = (s: string) =>
-  s.replace(/sk-ant-[A-Za-z0-9_.-]{10,}/g, "sk-ant-…[redacted]").replace(/(CLAUDE_CODE_OAUTH_TOKEN|FREESTYLE_API_KEY|API_KEY|TOKEN|SECRET)=\S+/gi, "$1=[redacted]");
+  s.replace(/sk-ant-[A-Za-z0-9_.-]{10,}/g, "sk-ant-…[redacted]").replace(/"(access_token|refresh_token|code|verifier)"\s*:\s*"[^"]*"/g, '"$1":"[redacted]"').replace(/(CLAUDE_CODE_OAUTH_TOKEN|FREESTYLE_API_KEY|API_KEY|TOKEN|SECRET)=\S+/gi, "$1=[redacted]");
 export async function agentSandboxes(env: Env, email: string) {
   useEnv(env);
   const k = await loadKey(env, email).catch(() => null);
