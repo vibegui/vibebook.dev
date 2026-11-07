@@ -326,6 +326,7 @@
   .epicName:hover { background: var(--bg); }
   #threadTitle { display: flex; align-items: center; gap: 6px; min-width: 5.5em; }
   .thPick { display: contents; }
+  .waitIcon { display: none; }
   .thMark { display: none !important; }
   #threadTitle .x { font-size: 14px; opacity: .5; }
   #threadTitle .x:hover { opacity: 1; }
@@ -713,6 +714,8 @@
     .chathead #goClaude { display: none !important; }
     .chathead > button { padding-left: 7px; padding-right: 7px; height: 36px; }
     .chathead #threadTitle { padding-top: 0; } /* the title button, ← and the icons share one 36px line */
+    .chathead h2 .waitChip { display: none !important; }
+    .chathead .waitIcon { display: inline-flex; align-items: center; gap: 2px; align-self: center; flex: none; height: 28px; padding: 0 8px 0 6px; border: 0; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 13px/1 "Schibsted Grotesk", system-ui, sans-serif; }
     .chathead #threadTitle { display: flex; flex-wrap: wrap; } /* flex, not grid: Safari sized the grid column to almost nothing */
     .chathead #epicArch, .chathead #epicDel { display: none; } /* in the sheet's top on phones (#sideArch, #sideDel) */
     .thPick { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 5px 4px 5px 6px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / .08); cursor: pointer; }
@@ -2845,9 +2848,15 @@ function renderTasks() {
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
   const w = Object.entries(waiting).sort((a, b) => b[1] - a[1]);
   // Each person in the chip opens the list of what's waiting on them; a task opens its epic.
+  // Phones: the chip would take a second line; a small ⏳ n in the top bar instead (you if anything waits on you, else
+  // whoever has the most), same list on tap.
+  const bar = head.closest(".chathead");
+  bar.querySelector(".waitIcon")?.remove();
   if (w.length) {
+    const [who, n] = w.find(([o]) => o === S.me) ?? w[0];
+    bar.querySelector("[data-bell]")?.insertAdjacentHTML("beforebegin", `<button type="button" class="waitIcon" data-wait="${esc(who)}" title="${t("Esperando {who}", { who: esc(who === S.me ? t("você") : name(who)) })}: ${n}" aria-label="${t("Esperando {who}", { who: esc(who === S.me ? t("você") : name(who)) })}: ${n}">⏳<b>${n}</b></button>`);
     head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ ${t("esperando")} ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="${t("Ver as tasks abertas")}">${esc(o === S.me ? t("você") : name(o))} ${n}</button>`).join(" · ")}</span>`);
-    head.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
+    bar.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
       ev.stopPropagation();
       const open = document.querySelector(".waitPop");
       if (open) { const same = open.dataset.who === b.dataset.wait; open.remove(); if (same) return; }
