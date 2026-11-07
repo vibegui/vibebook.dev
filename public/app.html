@@ -348,6 +348,7 @@
   .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
+  .chathead #toggleBoard .lbl, .chathead #toggleDoc .lbl, .chathead #myClaude { display: none !important; }
   #toggleBoard .kN { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 11px/18px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
   .kbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .kbar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -570,7 +571,11 @@
   .ptabs button.sel { color: var(--ink); background: var(--hover); }
   .ptabs .ptDoc { color: var(--ink); }
   .chathead #myClaude { display: none !important; } /* the doc toolbar's ✻ opens Agents */
-  .ptabs .ptAgents { margin-left: auto; background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; border-radius: 10px; }
+  .ptabs .ptAgents { margin-left: auto; margin-right: 6px; background: var(--claude); color: #fff; border-radius: 10px; }
+  .peekAgents, .ptAgents { width: 34px; height: 34px; padding: 0 !important; display: grid !important; place-items: center; flex: none; }
+  .peekAgents svg, .ptAgents svg { display: block; }
+  .peekAgents .qN, .ptAgents .qN { position: absolute; right: -6px; bottom: -6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--bg); color: var(--claude); box-shadow: 0 0 0 1.5px var(--claude); font: 700 10px/16px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
+  .peekAgents .qN:empty, .ptAgents .qN:empty { display: none; }
   .ptabs .ptAgents.sel, .ptabs .ptAgents:hover { background: var(--claude); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); }
   .doc header .seg { display: none; } /* reading/editing: the bar at the doc's foot */
   .ptabs small { font: 600 12px "Schibsted Grotesk", sans-serif; color: var(--mute); margin-left: 4px; }
@@ -590,6 +595,7 @@
   .agCard > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .agCard small { color: var(--mute); font-size: 12.5px; }
   .agIcon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--warm-line); color: var(--claude); font-size: 20px; flex: none; }
   .agCard.on .agIcon { background: var(--claude); color: #fff; }
+  .agCard .agGo { flex: none; width: 34px; height: 34px; padding: 0; display: grid; place-items: center; border-radius: 10px; }
   .agSwitch { position: relative; width: 46px; height: 28px; flex: none; } .agSwitch input { position: absolute; opacity: 0; inset: 0; margin: 0; }
   .agSwitch i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
   .agSwitch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s; }
@@ -597,6 +603,7 @@
   .qDot { display: none; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px var(--bg); }
   [data-q="idle"] .qDot { display: block; background: oklch(0.7 0.17 150); }
   [data-q="busy"] .qDot { display: block; background: #fbbf24; animation: qPulse 1.6s ease-in-out infinite; }
+  [data-q="blocked"] .qDot { display: block; width: 12px; height: 12px; background: #ef4444; animation: qPulse 1s ease-in-out infinite; }
   @keyframes qPulse { 50% { transform: scale(1.35); } }
   .peekAgents, .ptAgents { position: relative; } .qN { font-size: 11px; font-weight: 700; }
   .queue { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; } /* minmax: a long message ellipsizes instead of widening the pane */
@@ -845,8 +852,7 @@
     #peekTxt small { flex: none; font-size: 12px; }
     .chathead #myClaude { display: none !important; } /* in the toolbar below on phones */
     .chathead #toggleBoard { flex: none; align-self: center; height: 32px; padding: 0 8px; gap: 4px; } .chathead #toggleBoard .lbl { display: none; }
-    .peekRow .peekAgents { background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; margin-left: 2px; border-radius: 10px; }
-    .peekRow .peekAgents small { font-size: 11px; }
+    .peekRow .peekAgents { background: var(--claude); color: #fff; width: 40px; height: 40px; margin-left: 2px; border-radius: 10px; }
     .book[data-sheet="doc"][data-pane="agents"] .peekRow .peekAgents { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); background: var(--claude); color: #fff; }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
@@ -861,7 +867,6 @@
     /* The ▾ (and an epic's ✓ 🗑) stay on the title's line: a grid where only the name shrinks (ellipsis); the
        "esperando…" chip takes the line below. */
     /* Room for the title: ↗ (raise this room's Claude on the computer) means nothing on a phone; the other icons are tighter. */
-    .chathead #goClaude { display: none !important; }
     .chathead > button { padding-left: 7px; padding-right: 7px; height: 36px; }
     .chathead #threadTitle { padding-top: 0; } /* the title button, ← and the icons share one 36px line */
     .chathead h2 .waitChip { display: none !important; }
@@ -1439,6 +1444,7 @@ const EN = {
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "seu Claude no sandbox": "your Claude in the sandbox",
   "Quadro de tarefas": "Task board",
+  "Seu Claude espera você no terminal": "Your Claude is waiting for you in the terminal",
   "feito": "done",
   "Lista": "List",
   "Todos os épicos": "All epics",
@@ -1625,6 +1631,8 @@ const ICONS = {
 const icon = (n, size = 16) => `<svg class="i" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const SW_LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/></svg>`;
 const SW_SEARCH = icon("search", 18);
+// The ✻ of the Agents buttons, drawn (the glyph sat off center): six round-capped spokes around the exact middle.
+const STAR = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.6" stroke-linecap="round">${[0, 60, 120].map((a) => `<line x1="12" y1="3.5" x2="12" y2="20.5" transform="rotate(${a} 12 12)"/>`).join("")}</g></svg>`;
 const SW_PLUS = icon("plus", 18);
 // Phones: the room is as tall as what's visible (the iOS keyboard shrinks the visual viewport, not 100dvh),
 // and iOS's habit of scrolling the whole page to show a focused input is undone (in a room only: the home is a
@@ -2446,8 +2454,8 @@ function renderBook() {
   <div class="book ${railMode ? "rail" : ""}">
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2472,7 +2480,7 @@ function renderBook() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2920,11 +2928,6 @@ function renderMyClaude() {
     : on
     ? t("Seu Claude está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada).")
     : t("Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina."));
-  // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
-  const go = document.getElementById("goClaude");
-  go.hidden = true;
-  if (on) herdrPing().then((rooms) => { go.hidden = !rooms?.includes(S.id); });
-  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
   // The banner counts a Claude of yours that's busy here (read/posted in the last 30 min) as present, not only a listening one.
   renderClaudeBar(on, live || roomAgents.list.some((a) => a.email === S.me && Date.now() - a.seen_at < 30 * 60e3));
   b.onclick = () => document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" }));
@@ -2946,9 +2949,11 @@ function renderAgentsPane(on, live, path, w) {
   // your Claude is around with nothing queued, orange + count while something waits on it.
   const q = myQueue(), around = live || mine.some((a) => Date.now() - a.seen_at < 30 * 60e3);
   document.querySelectorAll(".peekAgents, .ptAgents").forEach((b) => {
-    b.dataset.q = q.length ? "busy" : around ? "idle" : "";
+    // Stopped at a permission prompt in its terminal: a red, pulsing dot and the prompt in the title.
+    const stuck = q.find((x) => x.st === "blocked");
+    b.dataset.q = stuck ? "blocked" : q.length ? "busy" : around ? "idle" : "";
     b.querySelector(".qN").textContent = q.length ? String(q.length) : "";
-    b.title = q.length ? t("Fila do seu Claude: {n}", { n: q.length }) : around ? t("Seu Claude está livre") : "Agents";
+    b.title = stuck ? t("Seu Claude espera você no terminal") : q.length ? t("Fila do seu Claude: {n}", { n: q.length }) : around ? t("Seu Claude está livre") : "Agents";
   });
   document.getElementById("docPeek")?.classList.toggle("agLive", live);
   // The rest is the pane itself: drawn only while it's open (renderSide calls this on every change).
@@ -2956,6 +2961,7 @@ function renderAgentsPane(on, live, path, w) {
   el.innerHTML = `<h4>${t("Seus agents nesta sala")}</h4>
     <div class="agCard${on ? " on" : ""}"><span class="agIcon">✻</span><div><b>${t("Claude Code no seu computador")}</b>
       <small>${on ? (live ? t("ligado · ouvindo esta sala") : mine.some((a) => Date.now() - a.seen_at < 30 * 60e3) ? t("ligado · trabalhando agora") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
+      <button type="button" class="ghost agGo" id="agGo" hidden title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}">${icon("external", 16)}</button>
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
     <h4>${t("Fila do seu Claude")} <small>${q.length || ""}</small></h4>
@@ -2968,6 +2974,10 @@ function renderAgentsPane(on, live, path, w) {
     ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
+  // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
+  const go = document.getElementById("agGo");
+  if (on) herdrPing().then((rooms) => { if (go.isConnected) go.hidden = !rooms?.includes(S.id); });
+  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
   el.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (ROOM_PHONE.matches) closeSheet(); goToMsg(Number(b.dataset.goto)); });
   el.querySelectorAll("[data-dismiss]").forEach((b) => b.onclick = () => send({ t: "ack.dismiss", id: Number(b.dataset.dismiss) }));
   document.getElementById("qMore")?.addEventListener("click", () => { qOpen = !qOpen; renderMyClaude(); });
@@ -3218,7 +3228,7 @@ function renderSide() {
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
-      ${(() => { const arch = S.epics.filter((e) => e.archived); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
+      ${(() => { const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0); const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
@@ -3481,24 +3491,6 @@ function renderTasks() {
   kb.querySelector(".kN")?.remove();
   if (mineN) kb.insertAdjacentHTML("beforeend", `<b class="kN" title="${t("Esperando você")}: ${mineN}">${mineN}</b>`);
   kb.title = mineN ? `${t("Quadro de tarefas")} · ${t("Esperando você")}: ${mineN}` : t("Quadro de tarefas (kanban)");
-  if (w.length) {
-    head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ ${t("esperando")} ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="${t("Ver as tasks abertas")}">${esc(o === S.me ? t("você") : name(o))} ${n}</button>`).join(" · ")}</span>`);
-    bar.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
-      ev.stopPropagation();
-      const open = document.querySelector(".waitPop");
-      if (open) { const same = open.dataset.who === b.dataset.wait; open.remove(); if (same) return; }
-      const items = [...S.epics, { id: "main", title: bookTitle(), tasks: S.roomTasks || [] }].flatMap((e) => e.tasks.filter((t) => !t.done && t.owner === b.dataset.wait).map((t) => ({ t, e })));
-      const pop = document.createElement("div");
-      pop.className = "waitPop"; pop.dataset.who = b.dataset.wait;
-      pop.innerHTML = `<b>${t("Esperando {who}", { who: esc(b.dataset.wait === S.me ? t("você") : name(b.dataset.wait)) })}</b>${items.map(({ t: tk, e }) => `<button type="button" data-goto="${e.id}"><span>${esc(tk.title)}</span><small>${esc(e.title)}${e.archived ? ` · ${t("arquivado")}` : ""} · ${tk.status === "review" ? t("esperando OK") : tk.status === "doing" ? t("fazendo") : t("a fazer")}</small></button>`).join("")}`;
-      b.closest(".chathead").append(pop);
-      pop.querySelectorAll("[data-goto]").forEach((x) => (x.onclick = () => {
-        pop.remove(); thread = x.dataset.goto; boardEpic = thread === "main" ? null : thread; docRoom = false;
-        renderSide(); renderChat(); renderKanban(); renderDoc();
-      }));
-      setTimeout(() => document.addEventListener("click", function off(e2) { if (!pop.contains(e2.target)) { pop.remove(); document.removeEventListener("click", off); } }));
-    }));
-  }
   wireChev();
   // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
   document.getElementById("roomName").onclick = () => (ROOM_PHONE.matches ? openSheet("side") : renameThread());
