@@ -3343,6 +3343,12 @@ function toast(html) {
 
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
 const LANES = [["todo", t("A fazer")], ["doing", t("Fazendo")], ["review", t("Esperando OK")], ["done", t("Feito")]];
+// The task card's order (display only; the doc keeps its own): waiting on you first, then the rest as written, done last.
+const shownOrder = (tasks) => {
+  const waits = (tk) => myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`);
+  const rank = (tk) => (tk.done ? 2 : waits(tk) ? 0 : 1);
+  return tasks.map((tk, i) => ({ tk, i })).sort((a, b) => rank(a.tk) - rank(b.tk) || a.i - b.i).map((x) => x.tk);
+};
 let boardEpic = null;
 // The phone's full-screen board closes when you open an epic from it; the desktop's lives in the doc panel and stays.
 const leaveBoard = () => { if ($app.querySelector(".book.boardview")) document.getElementById("toggleBoard").click(); };
@@ -3528,7 +3534,7 @@ function renderTasks() {
   if (epic) document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
   if (epic) document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
   const nDone = list.tasks.filter((t) => t.done).length;
-  el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${list.tasks.length}</small><i><span style="width:${list.tasks.length ? Math.round((nDone / list.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(list.flags)}${list.tasks.map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
+  el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${list.tasks.length}</small><i><span style="width:${list.tasks.length ? Math.round((nDone / list.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(list.flags)}${shownOrder(list.tasks).map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
       <input type="checkbox" ${tk.done ? "checked" : ""} aria-label="${t("Feita")}" /><span class="tt" title="${t("Clique para editar")}">${esc(tk.title)}${vibeNotes(tk.flags)}</span>
       <select class="towner ${tk.owner ? "set" : ""}" data-owner="${tk.id}" aria-label="${t("Responsável")}"><option value="">${t("sem dono")}</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${tk.owner === e ? "selected" : ""}>${esc(e === S.me ? t("você") : name(e))}</option>`).join("")}</select>
       <button type="button" class="due ${tk.due ? "set" : ""}" data-due="${tk.id}" title="${t("Prazo")}">${icon("calendar", 13)}${tk.due ? ` ${esc(tk.due)}` : ""}</button>
