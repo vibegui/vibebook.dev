@@ -487,6 +487,21 @@ async function herdrSync(agent, tools) {
         e.deaf_since ??= Date.now();
       if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60000)
         e.listening = false;
+      const inWs = panes.filter((x) => x.workspace_id === e.workspace);
+      if (inWs.length && !inWs.some((x) => x.agent === "claude") && Date.now() - (e.prompted_at ?? 0) > 2 * 60000) {
+        e.prompted_at = Date.now();
+        e.listening = true;
+        delete e.deaf_since;
+        writePrivate(HERDR, map);
+        try {
+          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "60000", "--", ...e.session ? ["--resume", e.session] : [], "/vibebook:listen");
+          log(`${title}: o Claude tinha fechado, abri outro em ${e.folder ?? "sua pasta"}`);
+        } catch (err) {
+          const m = err.message;
+          log(/timed out waiting for agent startup/.test(m) ? `${title}: o Claude tinha fechado, abrindo outro (demorou pra subir)` : `${title}: o Claude tinha fechado e não consegui abrir outro (${m.slice(0, 120)})`);
+        }
+        continue;
+      }
       const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
       const cs = cp?.agent_session?.value;
       const cx0 = cs ? sessionContext(cs) : undefined;

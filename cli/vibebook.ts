@@ -461,6 +461,23 @@ async function herdrSync(agent: string, tools: Tool[]) {
       if (!deaf.has(room)) delete e.deaf_since;
       else e.deaf_since ??= Date.now();
       if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60_000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60_000) e.listening = false;
+      // Its Claude exited (the pane is back at a shell): start a new one there. Typing the listen prompt into zsh did
+      // nothing and the room stayed "abrindo" forever. Two minutes of grace after a start, while Claude boots.
+      const inWs = panes.filter((x) => x.workspace_id === e.workspace);
+      if (inWs.length && !inWs.some((x) => x.agent === "claude") && Date.now() - (e.prompted_at ?? 0) > 2 * 60_000) {
+        e.prompted_at = Date.now();
+        e.listening = true;
+        delete e.deaf_since;
+        writePrivate(HERDR, map);
+        try {
+          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "60000", "--", ...(e.session ? ["--resume", e.session] : []), "/vibebook:listen");
+          log(`${title}: o Claude tinha fechado, abri outro em ${e.folder ?? "sua pasta"}`);
+        } catch (err) {
+          const m = (err as Error).message;
+          log(/timed out waiting for agent startup/.test(m) ? `${title}: o Claude tinha fechado, abrindo outro (demorou pra subir)` : `${title}: o Claude tinha fechado e não consegui abrir outro (${m.slice(0, 120)})`);
+        }
+        continue;
+      }
       // Context nearly full: /compact it while it's free (a background listener survives it), at most every 15 min.
       // Nothing else gets typed this round.
       const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
