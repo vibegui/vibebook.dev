@@ -1423,6 +1423,9 @@ const EN = {
   "sandbox na nuvem rodando": "cloud sandbox running",
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "seu Claude no sandbox": "your Claude in the sandbox",
+  "Sair de todos os aparelhos": "Sign out everywhere",
+  "Sai em todos os navegadores e celulares onde você entrou": "Signs you out of every browser and phone you signed in on",
+  "Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus Claudes conectados continuam.": "Sign out everywhere? Every browser and phone you signed in on will ask you to log in again, this one too. Your connected Claudes stay.",
   "remover": "remove",
   "Conecte seu Claude": "Connect your Claude",
   "Salvando…": "Saving…",
@@ -1870,6 +1873,7 @@ function homeWith(me) {
       <button class="ghost homeTheme" id="homeTheme" aria-label="${t("Tema")}">${THEMES[theme()].icon}</button>
       ${langSwitch()}
       <button class="ghost" id="logout">${t("Sair")}</button>
+      <button class="ghost" id="logoutAll" title="${t("Sai em todos os navegadores e celulares onde você entrou")}">${t("Sair de todos os aparelhos")}</button>
     </header>
     <div id="setupCard"></div>
     <section class="waits" id="waits"${me.waits?.length ? "" : " hidden"}></section>
@@ -1970,6 +1974,7 @@ function phoneHome(me) {
       <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}">${icon("x")}</button></div>`).join("")}
     <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
     <button class="ghost pdOut" id="logout">${t("Sair")}</button>
+    <button class="ghost pdOut" id="logoutAll">${t("Sair de todos os aparelhos")}</button>
   </dialog>
   <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />`;
   const d = document.getElementById("pDrawer");
@@ -1997,6 +2002,10 @@ function wireHome(me) {
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
+  document.getElementById("logoutAll").onclick = async () => {
+    if (!confirm(t("Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus Claudes conectados continuam."))) return;
+    await fetch("/auth/logout-all", { method: "POST" }); location.href = "/login";
+  };
   document.getElementById("new").onclick = () => newRoom();
   document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
     if (!confirm(t("Remover {email} dos seus amigos? Os vibebooks em comum continuam.", { email: b.dataset.unfriend }))) return;

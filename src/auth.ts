@@ -38,10 +38,21 @@ export async function sessionEmail(c: Context<any>): Promise<string | null> {
   if (!payload || !sig || !safeEqual(sig, await hmac(env.SESSION_SECRET, payload))) return null;
   try {
     const { email, iat } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return typeof email === "string" && Date.now() - iat < MAX_AGE * 1000 ? email : null;
+    if (typeof email !== "string" || Date.now() - iat >= MAX_AGE * 1000) return null;
+    // "Sair de todos os aparelhos" sets users.session_after: older cookies stop working (within a minute per server).
+    return iat > (await sessionAfter(env, email)) ? email : null;
   } catch {
     return null;
   }
+}
+const afterSeen = new Map<string, { after: number; at: number }>();
+async function sessionAfter(env: Env, email: string) {
+  const hit = afterSeen.get(email);
+  if (hit && hit.at > Date.now() - 60_000) return hit.after;
+  const row = await env.DB.prepare(`SELECT session_after FROM users WHERE email = ?`).bind(email).first<{ session_after: number | null }>().catch(() => null);
+  if (afterSeen.size > 20_000) afterSeen.clear();
+  afterSeen.set(email, { after: row?.session_after ?? 0, at: Date.now() });
+  return row?.session_after ?? 0;
 }
 
 async function startSession(c: Context<{ Bindings: Env }>, email: string) {
@@ -229,6 +240,17 @@ auth.get("/invite", async (c) => {
 
 auth.post("/logout", (c) => {
   deleteCookie(c, COOKIE, { path: "/" });
+  return c.json({ ok: true });
+});
+// Every browser signed in as you (phone, laptop, a stolen cookie) is signed out; your Claudes' logins are separate.
+auth.post("/logout-all", async (c) => {
+  if (!sameOrigin(c)) return c.json({ error: "bad origin" }, 403);
+  const email = await sessionEmail(c);
+  if (!email) return c.json({ error: "unauthenticated" }, 401);
+  await c.env.DB.prepare(`UPDATE users SET session_after = ? WHERE email = ?`).bind(Date.now(), email).run();
+  afterSeen.delete(email);
+  deleteCookie(c, COOKIE, { path: "/" });
+  c.executionCtx.waitUntil(track(c.env, "logout_all", { user: email }));
   return c.json({ ok: true });
 });
 
