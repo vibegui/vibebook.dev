@@ -3950,6 +3950,14 @@ function scrollDown(force) {
     if (el.scrollTop < 150 && !stick) loadOlder();
   };
   pinRO.observe(el); // the chat itself shrinks too (connect card, keyboard, composer growing): stay at the bottom
+  // Rows that aren't messages (receipts, acks, the end mark, "working") land after the scroll too: watch every child,
+  // and pin when one is added (opening a room stopped ~150px short of the bottom).
+  el._mo ??= new MutationObserver((muts) => {
+    for (const m of muts) m.addedNodes.forEach((n) => n.nodeType === 1 && pinRO.observe(n));
+    if (stick) el.scrollTop = el.scrollHeight;
+  });
+  el._mo.observe(el, { childList: true });
+  for (const c of el.children) pinRO.observe(c);
   if (force) stick = true;
   if (force || el.scrollHeight - el.scrollTop - el.clientHeight < 200) el.scrollTop = el.scrollHeight;
 }
