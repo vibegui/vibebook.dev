@@ -466,20 +466,26 @@ export async function receipt(env: Env, me: Me, bookId: string) {
 }
 
 export type Me = AgentProps & { agent: string };
+// Tools a room-scoped (sandbox) grant can't call: they reach other rooms, the person's machine or their sandboxes.
+const ROOM_SCOPED_DENY = new Set(["claude_rooms", "switch_claude", "create_room", "notify_url", "sandboxes", "sandbox_create", "sandbox_setup", "sandbox_exec", "sandbox_power", "metrics"]);
 
 async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: Me, origin: string): Promise<unknown> {
   const db = env.DB;
+  // A cloud sandbox's grant (props.room) reaches only its own room: a compromised VM can't read the person's other rooms.
+  if (me.room && ROOM_SCOPED_DENY.has(name)) throw new Error(`${name} isn't available to a sandbox's agent (its login is limited to room ${me.room})`);
   const room = async () => {
-    const id = str(a.room_id);
+    const id = str(a.room_id) || me.room || "";
+    if (me.room && id !== me.room) throw new Error(`this sandbox's login only reaches room ${me.room}`);
     if (!id || !(await isMember(db, id, me.email))) throw new Error(`room not found or you're not a member: ${id || "(empty)"}. Call inbox for the list.`);
     return id;
   };
-  const unread = (only = "") => unreadRooms(db, me.email, me.agent, only);
+  const unread = (only = "") => unreadRooms(db, me.email, me.agent, me.room || only);
   switch (name) {
     case "wait_for_messages": {
       // ponytail: polls D1 every 3s for one person (≤17 light reads per call); a per-person DO with push is the upgrade.
       const timeout = Math.min(Math.max(Number(a.timeout_seconds) || 25, 5), 50);
-      const only = str(a.room_id);
+      const only = me.room || str(a.room_id);
+      if (me.room && a.room_id && str(a.room_id) !== me.room) throw new Error(`this sandbox's login only reaches room ${me.room}`);
       if (only && !(await isMember(db, only, me.email))) throw new Error(`not a member of ${only}`);
       ctx.waitUntil(db.prepare(`UPDATE agents SET listening_at = ?, listen_room = ? WHERE id = ?`).bind(Date.now(), only || null, me.agent).run());
       const deadline = Date.now() + timeout * 1000;
@@ -494,7 +500,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       }
     }
     case "pending": {
-      const id = a.room_id ? await room() : undefined;
+      const id = a.room_id || me.room ? await room() : undefined;
       const rows = await waitsFor(db, me.email, id);
       return {
         you_act_for: me.email,
@@ -583,9 +589,9 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
           `SELECT b.id, b.title, b.updated_at, coalesce(b.last_msg_id, 0) AS last_id, coalesce(c.last_id, 0) AS seen
            FROM members m JOIN books b ON b.id = m.book_id
            LEFT JOIN agent_reads c ON c.agent = ? AND c.book_id = b.id
-           WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC LIMIT 50`,
+           WHERE m.email = ? AND m.archived_at IS NULL AND (?3 = '' OR b.id = ?3) ORDER BY b.updated_at DESC LIMIT 50`,
         )
-        .bind(me.agent, me.email)
+        .bind(me.agent, me.email, me.room ?? "")
         .all<{ id: string; title: string; updated_at: number; last_id: number; seen: number }>();
       return {
         you_act_for: me.email,

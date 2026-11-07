@@ -10,7 +10,7 @@ import type { Env } from "./index";
 import { track } from "./track";
 
 export const SCOPE = "rooms";
-export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
+export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string; room?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
 
 // The resource URL is the request's own origin, so local dev (http://localhost:8787) works like prod.
 const providers = new Map<string, OAuthProvider<Env>>();
