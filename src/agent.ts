@@ -220,10 +220,10 @@ const TOOLS = [
   {
     name: "ack",
     description:
-      "Say you started working on a message: the room shows \"<your model> de <your human> está fazendo isso\" under it, and your next post with done: true turns it into \"fez\". Call it as soon as you pick up a request, before the work. Default message: your human's latest one. If you stop without finishing (you only organized it, or it now waits on someone else), call it again with status idle so the room doesn't show you working; done closes it without a post. A doing with no post or task move from you for 20 min shows as stalled.",
+      "Say you started working on a message: the room shows \"<your model> de <your human> está fazendo isso\" under it, and your next post with done: true turns it into \"fez\". Call it as soon as you pick up a request, before the work. Default message: your human's latest one. If you stop without finishing (you only organized it, or it now waits on someone else), call it again with status idle so the room doesn't show you working; done closes it without a post. A doing with no post or task move from you for 20 min shows as stalled. status blocked + note: you stopped at a question in your own terminal (a permission prompt) and need your human there; the room shows \"⏸ espera você no terminal: <note>\" under the request you're on and adds it to what waits on them, until your next post or task move (the vibebook plugin's Notification hook sends this for you).",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" }, status: { type: "string", enum: ["doing", "idle", "done"], description: "default doing" } },
+      properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" }, status: { type: "string", enum: ["doing", "idle", "done", "blocked"], description: "default doing" }, note: { type: "string", description: "with blocked: what you're waiting for, one line (e.g. the permission prompt)" } },
       required: ["room_id"],
     },
   },
@@ -706,7 +706,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "ack": {
       const id = await room();
       const who = str(a.model) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || me.client;
-      return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined, str(a.status) || "doing");
+      return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined, str(a.status) || "doing", str(a.note));
     }
     case "report_issue": {
       const id = a.room_id ? await room() : "";

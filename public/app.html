@@ -439,6 +439,7 @@
   .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
   .ack.doing { background: var(--ai-bg); color: var(--accent); }
   .ack.idle { background: var(--line, #eee); color: var(--mute); font-weight: 500; }
+  .ack.blocked { display: inline-block; background: var(--wait-bg); color: var(--wait-ink); white-space: normal; line-height: 1.4; padding: 5px 12px; border-radius: 12px; } .ack.blocked b { font-weight: 600; }
   .ack.did { background: var(--ok-bg); color: var(--ok-ink); }
   .ack .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
   @keyframes ackspin { to { transform: rotate(360deg); } }
@@ -1374,6 +1375,7 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "{who} espera você no terminal": "{who} is waiting for you in the terminal",
   "Na nuvem": "In the cloud",
   "carregando…": "loading…",
   "Conecte sua conta do freestyle.sh": "Connect your freestyle.sh account",
@@ -3758,13 +3760,14 @@ function renderReceipts() {
     const doing = k.status === "doing" && Date.now() - k.ts < 20 * 60e3;
     const who = t("{via} de {who}", { via: esc(k.who), who: esc(name(k.email)) });
     let html;
-    if (doing) html = `<span class="spin"></span>${t("{who} está fazendo isso", { who })} · ${ago(k.ts)}`;
+    if (k.status === "blocked") html = `⏸ ${t("{who} espera você no terminal", { who })}${k.note ? `: <b>${esc(k.note)}</b>` : ""} · ${ago(k.ts)}`;
+    else if (doing) html = `<span class="spin"></span>${t("{who} está fazendo isso", { who })} · ${ago(k.ts)}`;
     else if (k.status === "done") html = `✓ ${t("{who} fez isso", { who })}`;
     else {
       const owners = [...new Set((S.epics || []).filter((e) => e.from_msg === k.msg_id && !e.archived).flatMap((e) => e.tasks.filter((t) => t.status !== "done" && t.owner).map((t) => name(t.owner))))];
       html = owners.length ? `⏳ ${t("aguardando {who}", { who: owners.map(esc).join(", ") })}` : `${t("{who} parou", { who })} · ${ago(k.ts)}`;
     }
-    body.insertAdjacentHTML("beforeend", `<div class="ack ${doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${html}</div>`);
+    body.insertAdjacentHTML("beforeend", `<div class="ack ${k.status === "blocked" ? "blocked" : doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${html}</div>`);
   }
   // One compact line per message: each agent once (✓✓ read, ✓ delivered), full name on hover; an agent that
   // acked the message shows its ack instead.
