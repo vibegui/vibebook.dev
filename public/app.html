@@ -759,7 +759,25 @@
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
     #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #peekTxt small { flex: none; font-size: 12px; }
-    .chathead #toggleBoard { display: none; } /* in the toolbar below on phones */
+    .chathead #toggleBoard, .chathead #myClaude { display: none !important; } /* in the toolbar below on phones */
+    .peekRow .peekAgents { background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; margin-left: 2px; border-radius: 10px; }
+    .peekRow .peekAgents small { font-size: 11px; }
+    .book[data-sheet="doc"][data-pane="agents"] .peekRow .peekAgents { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); background: var(--claude); color: #fff; }
+    .doc[data-pane="agents"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="agents"]) .agentsPane { display: none; }
+    .agentsPane { flex: 1; overflow: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .agentsPane h4 { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); }
+    .agCard { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+    .agCard > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .agCard small { color: var(--mute); font-size: 12.5px; }
+    .agIcon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--warm-line); color: var(--claude); font-size: 20px; flex: none; }
+    .agCard.on .agIcon { background: var(--claude); color: #fff; }
+    .agSwitch { position: relative; width: 46px; height: 28px; flex: none; } .agSwitch input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+    .agSwitch i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
+    .agSwitch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s; }
+    .agSwitch input:checked + i { background: var(--claude); } .agSwitch input:checked + i::after { transform: translateX(18px); }
+    .agNote { margin: 0; font-size: 12.5px; color: var(--mute); }
+    .agList .agentRow { padding-left: 0; }
+    .agNew { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 14px; background: none; color: var(--mute); font-weight: 600; }
+    .agNew small { flex-basis: 100%; text-align: center; font-weight: 400; font-size: 12px; }
     .peekRow #peekBoard.on { background: var(--hover); color: var(--ink); }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
@@ -1337,6 +1355,16 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Seus agents nesta sala": "Your agents in this room",
+  "Claude Code no seu computador": "Claude Code on your computer",
+  "ligado · ouvindo esta sala": "on · listening to this room",
+  "ligado · ainda não está ouvindo": "on · not listening yet",
+  "desligado": "off",
+  "pasta nova": "new folder",
+  "Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.": "Opens (or closes) a Claude Code of yours for this room through vibebook herdr, on your machine.",
+  "Conectados": "Connected",
+  "Criar sandbox": "Create sandbox",
+  "em breve: um Claude na nuvem (freestyle.sh), sem deixar o computador ligado": "coming soon: a Claude in the cloud (freestyle.sh), without leaving your computer on",
   "Pronto": "Done",
   "Documento e arquivos da sala": "Room doc and files",
   "Ligado": "On",
@@ -2270,7 +2298,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<small id="peekAg"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2304,6 +2332,7 @@ function renderBook() {
       <div class="decPane" id="decPane"></div>
       <div class="appsPane" id="appsPane"></div>
       <div class="remPane" id="remPane"></div>
+      <div class="agentsPane" id="agentsPane"></div>
     </section>
     <div class="sheetDim" id="sheetDim"></div>
   </div>
@@ -2739,13 +2768,32 @@ function renderMyClaude() {
   go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
   // The banner counts a Claude of yours that's busy here (read/posted in the last 30 min) as present, not only a listening one.
   renderClaudeBar(on, live || roomAgents.list.some((a) => a.email === S.me && Date.now() - a.seen_at < 30 * 60e3));
-  b.onclick = async () => {
-    const next = !roomAgents.claudeOn;
-    roomAgents.claudeOn = next;
-    if (next) claudeAsked[S.id] = Date.now();
-    renderMyClaude();
-    await api(`/api/books/${S.id}/claude`, { on: next }).catch(() => { roomAgents.claudeOn = !next; renderMyClaude(); });
-  };
+  b.onclick = toggleClaude;
+  renderAgentsPane(on, live, path, w);
+}
+async function toggleClaude() {
+  const next = !roomAgents.claudeOn;
+  roomAgents.claudeOn = next;
+  if (next) claudeAsked[S.id] = Date.now();
+  renderMyClaude();
+  await api(`/api/books/${S.id}/claude`, { on: next }).catch(() => { roomAgents.claudeOn = !next; renderMyClaude(); });
+}
+// Phones: the orange ✻ in the doc toolbar opens "Agents": your Claude Code on your computer for this room (the same
+// switch as the header's ✻ on desktop), every Claude of yours connected here, and (next) cloud sandboxes.
+function renderAgentsPane(on, live, path, w) {
+  const el = document.getElementById("agentsPane"); if (!el) return;
+  const mine = roomAgents.list.filter((a) => a.email === S.me);
+  const n = mine.filter((a) => a.listening).length;
+  const badge = document.getElementById("peekAg"); if (badge) badge.textContent = n ? String(n) : "";
+  document.getElementById("docPeek")?.classList.toggle("agLive", live);
+  el.innerHTML = `<h4>${t("Seus agents nesta sala")}</h4>
+    <div class="agCard${on ? " on" : ""}"><span class="agIcon">✻</span><div><b>${t("Claude Code no seu computador")}</b>
+      <small>${on ? (live ? t("ligado · ouvindo esta sala") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
+      <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
+    <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
+    ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
+    <button class="agNew" disabled>${icon("plus", 16)} ${t("Criar sandbox")}<small>${t("em breve: um Claude na nuvem (freestyle.sh), sem deixar o computador ligado")}</small></button>`;
+  document.getElementById("agToggle").onchange = toggleClaude;
 }
 // Pinned over the messages: your Claude isn't in this room → one click to turn it on; then "opening…" until it listens
 // (polling every 5s), a short ✓, and gone. × hides the offer for this room (localStorage).
