@@ -372,6 +372,17 @@ export async function agentSandboxes(env: Env, email: string) {
   }));
   return { connected: true, sandboxes: out };
 }
+export async function agentSandboxPower(env: Env, email: string, sid: string, action: "pause" | "start") {
+  useEnv(env);
+  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
+  const k = await loadKey(env, email).catch(() => null);
+  if (!k) throw new Error("your human's freestyle.sh isn't connected");
+  await fs(k, "POST", `/v5/vms/${r.vm_id}/${action}`);
+  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  await env.DB.prepare(`UPDATE sandboxes SET state = ?, checked_at = ? WHERE id = ?`).bind(vm.state, Date.now(), r.id).run();
+  return { sandbox_id: r.id, state: vm.state };
+}
 export async function agentSandboxExec(env: Env, email: string, sid: string, command: string, timeoutS = 60) {
   useEnv(env);
   const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;

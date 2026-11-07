@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,pending,resolve_pending,claude_rooms,switch_claude,rename_room,set_room_icon,wait_for_messages,notify_url,read_room,post,save_app,list_apps,delete_app,save_reminder,metrics,list_reminders,delete_reminder,upload_file,preview_mention_email,get_file,ack,sandboxes,sandbox_create,sandbox_setup,sandbox_exec,report_issue,set_task_status,add_task,update_task,delete_task,move_message,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 38 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,pending,resolve_pending,claude_rooms,switch_claude,rename_room,set_room_icon,wait_for_messages,notify_url,read_room,post,save_app,list_apps,delete_app,save_reminder,metrics,list_reminders,delete_reminder,upload_file,preview_mention_email,get_file,ack,sandboxes,sandbox_create,sandbox_setup,sandbox_exec,sandbox_power,report_issue,set_task_status,add_task,update_task,delete_task,move_message,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 39 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;

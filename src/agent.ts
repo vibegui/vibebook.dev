@@ -7,7 +7,7 @@ import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
 import { growthReport, productReport } from "./reports";
-import { agentSandboxes, agentSandboxExec, createSandbox, redoSetup } from "./sandbox";
+import { agentSandboxes, agentSandboxExec, agentSandboxPower, createSandbox, redoSetup } from "./sandbox";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 import { findSecret } from "./secrets";
@@ -250,6 +250,15 @@ const TOOLS = [
       type: "object",
       properties: { sandbox_id: { type: "string" }, command: { type: "string" }, timeout_seconds: { type: "number", description: "default 60, max 280" }, model: { type: "string" } },
       required: ["sandbox_id", "command"],
+    },
+  },
+  {
+    name: "sandbox_power",
+    description: "Pause or start one of your human's sandboxes (same as Pausar/Retomar in the app). Paused keeps its memory and disk and bills only the disk; start brings it back with the Claude inside where it was. Only when your human asked.",
+    inputSchema: {
+      type: "object",
+      properties: { sandbox_id: { type: "string" }, action: { type: "string", enum: ["pause", "start"] }, model: { type: "string" } },
+      required: ["sandbox_id", "action"],
     },
   },
   {
@@ -749,6 +758,11 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const out = await agentSandboxExec(env, me.email, str(a.sandbox_id), str(a.command), Number(a.timeout_seconds) || 60);
       ctx.waitUntil(track(env, "sandbox_exec", { user: me.email, dims: { client: me.client, exit: out.exit_code ?? -1 } }));
       return out;
+    }
+    case "sandbox_power": {
+      const action = str(a.action) === "start" ? "start" : "pause";
+      ctx.waitUntil(track(env, `sandbox_${action}`, { user: me.email, dims: { client: me.client } }));
+      return agentSandboxPower(env, me.email, str(a.sandbox_id), action);
     }
     case "report_issue": {
       const id = a.room_id ? await room() : "";
