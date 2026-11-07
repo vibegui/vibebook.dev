@@ -82,6 +82,10 @@ const SCHEMA = [
   // (a task of theirs in review, rewritten by the room's epicsChanged).
   `CREATE TABLE IF NOT EXISTS waits (book_id TEXT, ref TEXT, email TEXT, thread TEXT, topic TEXT, author TEXT, text TEXT, ts INTEGER, PRIMARY KEY (book_id, ref, email))`,
   `CREATE INDEX IF NOT EXISTS waits_email ON waits (email, ts)`,
+  // members' PK is (book_id, email): "my rooms" (/api/me, unreadRooms every 3s per listener) needs email first.
+  `CREATE INDEX IF NOT EXISTS members_email ON members (email)`,
+  `CREATE INDEX IF NOT EXISTS agents_email ON agents (email)`,
+  `CREATE INDEX IF NOT EXISTS sandboxes_book ON sandboxes (book_id)`,
   // Someone opened a room link without access and asked to join (/b/<id> → "Pedir acesso"). A member approves (=
   // invite) or declines (denied = 1, kept so the same person can't keep asking).
   `CREATE TABLE IF NOT EXISTS access_requests (book_id TEXT, email TEXT, ts INTEGER, denied INTEGER DEFAULT 0, PRIMARY KEY (book_id, email))`,
@@ -92,13 +96,16 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
+// Columns added after launch; ALTER fails harmlessly once they exist.
+const ALTERS = [`ALTER TABLE sandboxes ADD COLUMN state TEXT`, `ALTER TABLE sandboxes ADD COLUMN run_s INTEGER`, `ALTER TABLE sandboxes ADD COLUMN rate REAL`, `ALTER TABLE sandboxes ADD COLUMN disk_rate REAL`, `ALTER TABLE sandboxes ADD COLUMN checked_at INTEGER`, `ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`, `ALTER TABLE books ADD COLUMN icon INTEGER`, `ALTER TABLE books ADD COLUMN busy_until INTEGER`, `ALTER TABLE members ADD COLUMN opened_at INTEGER`, `ALTER TABLE users ADD COLUMN lang TEXT`, `ALTER TABLE agents ADD COLUMN ctx_tokens INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_window INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_at INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_limits TEXT`];
+// Only when the schema text changed since the last run (a cold isolate used to send ~60 DDL writes to the primary).
+const schemaKey = (alters: string[]) => { let h = 0; for (const ch of [...SCHEMA, ...alters].join(";")) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0; return String(h); };
 export const ensureSchema = (db: D1Database) =>
-  (schemaReady ??= db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
-    // Columns added after launch; ALTER fails harmlessly once they exist.
-    Promise.all(
-      [`ALTER TABLE sandboxes ADD COLUMN state TEXT`, `ALTER TABLE sandboxes ADD COLUMN run_s INTEGER`, `ALTER TABLE sandboxes ADD COLUMN rate REAL`, `ALTER TABLE sandboxes ADD COLUMN disk_rate REAL`, `ALTER TABLE sandboxes ADD COLUMN checked_at INTEGER`, `ALTER TABLE users ADD COLUMN name TEXT`, `ALTER TABLE books ADD COLUMN last_msg_id INTEGER`, `ALTER TABLE members ADD COLUMN archived_at INTEGER`, `ALTER TABLE books ADD COLUMN epics TEXT`, `ALTER TABLE books ADD COLUMN last_human_id INTEGER`, `ALTER TABLE books ADD COLUMN last_agent_id INTEGER`, `ALTER TABLE agents ADD COLUMN listening_at INTEGER`, `ALTER TABLE agents ADD COLUMN listen_room TEXT`, `ALTER TABLE agents ADD COLUMN repo TEXT`, `ALTER TABLE agent_reads ADD COLUMN seen_at INTEGER`, `ALTER TABLE users ADD COLUMN avatar INTEGER`, `ALTER TABLE users ADD COLUMN mention_mail INTEGER`, `ALTER TABLE members ADD COLUMN claude_on INTEGER`, `ALTER TABLE members ADD COLUMN position INTEGER`, `ALTER TABLE members ADD COLUMN tint TEXT`, `ALTER TABLE books ADD COLUMN icon INTEGER`, `ALTER TABLE books ADD COLUMN busy_until INTEGER`, `ALTER TABLE members ADD COLUMN opened_at INTEGER`, `ALTER TABLE users ADD COLUMN lang TEXT`, `ALTER TABLE agents ADD COLUMN ctx_tokens INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_window INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_at INTEGER`, `ALTER TABLE agents ADD COLUMN ctx_limits TEXT`].map((q) => db.prepare(q).run().catch(() => {})),
-    ),
-  ));
+  (schemaReady ??= db.prepare(`SELECT v FROM schema_v WHERE k = 'main'`).first<{ v: string }>().catch(() => null).then((row) => row?.v === schemaKey(ALTERS) ? undefined : migrate(db)));
+const migrate = (db: D1Database) =>
+  db.batch(SCHEMA.map((s) => db.prepare(s))).then(() =>
+    Promise.all(ALTERS.map((q) => db.prepare(q).run().catch(() => {}))),
+  ).then(() => db.batch([db.prepare(`CREATE TABLE IF NOT EXISTS schema_v (k TEXT PRIMARY KEY, v TEXT)`), db.prepare(`INSERT OR REPLACE INTO schema_v (k, v) VALUES ('main', ?)`).bind(schemaKey(ALTERS))]));
 
 
 const app = new Hono<Ctx>();
@@ -142,7 +149,8 @@ const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) =>
 };
 
 // App shell: /login is public; /app and /b/* bounce to /login without a session.
-const shell = (c: { env: Env; req: { url: string } }) => c.env.ASSETS.fetch(new URL("/app", c.req.url));
+// Passes the browser's If-None-Match along, so the app shell can come back as a 304.
+const shell = (c: { env: Env; req: { url: string; raw: Request } }) => c.env.ASSETS.fetch(new Request(new URL("/app", c.req.url), c.req.raw));
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
@@ -314,7 +322,8 @@ app.get("/api/dev/as", (c) => {
 app.get("/api/me", async (c) => {
   const email = c.get("email");
   const db = c.env.DB;
-  const books = await db
+  // One round trip's worth: the four reads run together.
+  const [books, friends, me, waits] = await Promise.all([db
     .prepare(
       `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, b.icon, b.busy_until, m.position, m.tint, m.opened_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
          coalesce(r.last_id, 0) AS read_id,
@@ -325,8 +334,7 @@ app.get("/api/me", async (c) => {
        WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC`,
     )
     .bind(email)
-    .all();
-  const friends = await db
+    .all(), db
     .prepare(
       `SELECT f.b AS email, u.name, u.avatar, u.email IS NOT NULL AS joined,
          (SELECT count(*) FROM members x JOIN members y ON x.book_id = y.book_id
@@ -335,12 +343,13 @@ app.get("/api/me", async (c) => {
        WHERE f.a = ? ORDER BY shared DESC, f.b`,
     )
     .bind(email)
-    .all();
-  const me = await db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>();
+    .all(),
+    db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>(),
+    waitsFor(db, email)]);
   // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
   const lang = cookieLang(c.req.raw) ?? (me?.lang ? null : reqLang(c.req.raw));
   if (me && lang && lang !== me.lang) c.executionCtx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
-  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits: await waitsFor(db, email) });
+  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits });
 });
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
@@ -416,9 +425,9 @@ app.get("/api/archived", async (c) => {
 // The agents of this room's members: model/client, last seen, and whether they're listening to this room now.
 app.get("/api/books/:id/agents", async (c) => {
   const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
   const now = Date.now();
-  const r = await c.env.DB.prepare(
+  // In parallel; your own members row is also the membership check.
+  const [r, mine, sbx] = await Promise.all([c.env.DB.prepare(
     // Only the sessions connected to this room: listening to it (or to all their rooms), or that read/posted here in the last hour.
     `SELECT a.id, a.email, coalesce(a.model, a.client) AS who, a.repo, a.seen_at, a.listening_at, a.listen_room, a.ctx_tokens, a.ctx_window, a.ctx_at, a.ctx_limits
      FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?1
@@ -427,10 +436,11 @@ app.get("/api/books/:id/agents", async (c) => {
      ORDER BY a.seen_at DESC LIMIT 40`,
   )
     .bind(id, now - 120_000, now - 3600_000)
-    .all<{ id: string; email: string; who: string; repo: string | null; seen_at: number; listening_at: number | null; listen_room: string | null; ctx_tokens: number | null; ctx_window: number | null; ctx_at: number | null; ctx_limits: string | null }>();
-  const mine = await c.env.DB.prepare(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`).bind(id, c.get("email")).first<{ claude_on: number | null }>();
+    .all<{ id: string; email: string; who: string; repo: string | null; seen_at: number; listening_at: number | null; listen_room: string | null; ctx_tokens: number | null; ctx_window: number | null; ctx_at: number | null; ctx_limits: string | null }>(),
+  c.env.DB.prepare(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`).bind(id, c.get("email")).first<{ claude_on: number | null }>(),
   // Everyone's cloud sandboxes in this room, as last seen by their owner's list (src/sandbox.ts): they cost money.
-  const sbx = await c.env.DB.prepare(`SELECT id, email, name, state, run_s, rate, disk_rate, checked_at, created_at FROM sandboxes WHERE book_id = ? ORDER BY created_at`).bind(id).all();
+  c.env.DB.prepare(`SELECT id, email, name, state, run_s, rate, disk_rate, checked_at, created_at FROM sandboxes WHERE book_id = ? ORDER BY created_at`).bind(id).all()]);
+  if (!mine) return c.json({ error: "forbidden" }, 403);
   return c.json({
     claude_on: !!mine?.claude_on,
     sandboxes: sbx.results,
