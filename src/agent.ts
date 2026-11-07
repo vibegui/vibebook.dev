@@ -249,6 +249,15 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, task_id: { type: "string" } }, required: ["room_id", "task_id"] },
   },
   {
+    name: "move_message",
+    description: "Move a message your human (or you) wrote to another thread: \"main\" or an epic id. For a request posted in the wrong thread.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, message_id: { type: "number" }, thread: { type: "string", description: "\"main\" or an epic id" } },
+      required: ["room_id", "message_id", "thread"],
+    },
+  },
+  {
     name: "update_epic",
     description: "Rename an epic and/or archive it (archived: true; mark_done: true also closes its open tasks, for when it's all delivered) or bring it back (archived: false). An epic whose tasks are all done archives itself.",
     inputSchema: {
@@ -655,6 +664,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       if (!str(a.why)) throw new Error("why is required: one sentence on what the epic delivers and why (it opens the epic's doc)");
+      if (Array.isArray(a.tasks) && a.tasks.some((t) => typeof t !== "string")) throw new Error("tasks must be strings (task titles)");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
       const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent);
       return out;
@@ -663,6 +673,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "update_task":
     case "delete_task":
     case "update_epic":
+    case "move_message":
     case "update_doc": {
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
@@ -739,9 +750,20 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   // how full each Claude's context is. Anything else is ignored.
   const cx = request.headers.get("x-vibebook-context")?.match(/^(\d{1,8})\/(\d{5,8})$/);
   const ctxTokens = cx ? Math.min(+cx[1], +cx[2]) : null;
+  // With the CLI's statusline wrapper, also the plan's limits: {five_hour|seven_day: {p: % used, r: reset epoch s}}.
+  const limits = (() => {
+    try {
+      const j = JSON.parse(request.headers.get("x-vibebook-limits") ?? "");
+      const out: Record<string, { p: number; r: number }> = {};
+      for (const k of ["five_hour", "seven_day"]) if (Number.isFinite(j?.[k]?.p) && Number.isFinite(j?.[k]?.r)) out[k] = { p: Math.max(0, Math.min(100, Math.round(j[k].p))), r: Math.round(j[k].r) };
+      return Object.keys(out).length ? JSON.stringify(out) : null;
+    } catch {
+      return null;
+    }
+  })();
   ctx.waitUntil(
     (cx
-      ? env.DB.prepare(`UPDATE agents SET seen_at = ?, ctx_tokens = ?, ctx_window = ?, ctx_at = ? WHERE id = ?`).bind(Date.now(), ctxTokens, +cx[2], Date.now(), agentId)
+      ? env.DB.prepare(`UPDATE agents SET seen_at = ?, ctx_tokens = ?, ctx_window = ?, ctx_at = ?, ctx_limits = ? WHERE id = ?`).bind(Date.now(), ctxTokens, +cx[2], Date.now(), limits, agentId)
       : env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId)
     ).run(),
   );

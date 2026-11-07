@@ -208,10 +208,43 @@ function sessionContext(sid: string): { tokens: number; window: number } | undef
     }
   } catch {}
 }
-/** Sent with every call made from inside Claude Code, so the room can show this Claude's context bar. */
+// Claude Code hands its statusLine command what the transcript lacks: the model's context window and the plan's
+// limits (5-hour and weekly, % used + reset). `vibebook statusline [your command]` keeps them per session in
+// ~/.vibebook/status/<session>.json, then runs your command with the same input (its output is the statusline).
+const STATUS = join(HOME, "status");
+type Status = { window?: number; limits?: Record<string, { p: number; r: number }>; at: number };
+function statusline() {
+  const input = readFileSync(0);
+  try {
+    const j = JSON.parse(input.toString());
+    if (/^[\w-]{8,80}$/.test(j.session_id ?? "")) {
+      const limits: Status["limits"] = {};
+      for (const k of ["five_hour", "seven_day"]) {
+        const l = j.rate_limits?.[k];
+        if (typeof l?.used_percentage === "number") limits[k] = { p: Math.round(l.used_percentage), r: Number(l.resets_at) || 0 };
+      }
+      mkdirSync(STATUS, { recursive: true });
+      writeFileSync(join(STATUS, `${j.session_id}.json`), JSON.stringify({ window: Number(j.context_window?.context_window_size) || undefined, limits, at: Date.now() } satisfies Status));
+    }
+  } catch {}
+  const rest = process.argv.slice(process.argv.indexOf("statusline") + 1).join(" ").trim();
+  if (rest) process.stdout.write(execSync(rest, { input, stdio: ["pipe", "pipe", "ignore"] }));
+}
+const sessionStatus = (sid: string): Status | undefined => {
+  if (!/^[\w-]{8,80}$/.test(sid)) return;
+  const s = readJson<Status | null>(join(STATUS, `${sid}.json`), null);
+  return s && Date.now() - s.at < 6 * 3600_000 ? s : undefined;
+};
+/** Sent with every call made from inside Claude Code, so the room can show this Claude's context bar (and, with
+ *  the statusline wrapper, the plan's limits on hover). */
 const myContext = (): Record<string, string> => {
-  const c = process.env.CLAUDE_CODE_SESSION_ID ? sessionContext(process.env.CLAUDE_CODE_SESSION_ID) : undefined;
-  return c ? { "x-vibebook-context": `${c.tokens}/${c.window}` } : {};
+  const sid = process.env.CLAUDE_CODE_SESSION_ID;
+  const c = sid ? sessionContext(sid) : undefined;
+  if (!sid || !c) return {};
+  const st = sessionStatus(sid);
+  const h: Record<string, string> = { "x-vibebook-context": `${c.tokens}/${st?.window ?? c.window}` };
+  if (st?.limits && Object.keys(st.limits).length) h["x-vibebook-limits"] = JSON.stringify(st.limits);
+  return h;
 };
 
 // ---- MCP over the CLI's session ----
@@ -394,7 +427,9 @@ async function herdrSync(agent: string, tools: Tool[]) {
       // Context nearly full: /compact it while it's free (a background listener survives it), at most every 15 min.
       // Nothing else gets typed this round.
       const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
-      const cx = cp?.agent_session?.value ? sessionContext(cp.agent_session.value) : undefined;
+      const cs = cp?.agent_session?.value;
+      const cx0 = cs ? sessionContext(cs) : undefined;
+      const cx = cx0 && cs ? { ...cx0, window: sessionStatus(cs)?.window ?? cx0.window } : undefined;
       if (cp && cx && cx.tokens >= cx.window * COMPACT_AT && (cp.agent_status === "idle" || cp.agent_status === "done") && Date.now() - (e.compacted_at ?? 0) > 15 * 60_000) {
         try {
           herdr("agent", "prompt", cp.pane_id, "/compact");
@@ -523,12 +558,15 @@ const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for yo
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>]
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
+  vibebook statusline [command]  as Claude Code's statusLine: keeps the session's context window and plan
+                                 limits for the room, then runs your own statusline command (if any) with the same input
   vibebook update                install the latest version
 
 Options: --model "Claude Opus 5.5" (or VIBEBOOK_MODEL) names the agent in the room; --origin for a local server.`;
 
 async function main() {
   const cmd = flags.version ? "version" : pos[0];
+  if (cmd === "statusline") return statusline();
   const root = repoRoot();
   const agent = agentId(root);
   switch (cmd) {

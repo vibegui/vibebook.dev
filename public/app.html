@@ -250,11 +250,19 @@
   .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
   .agentRow small { margin-left: auto; font-size: 11px; }
   /* How full this Claude's context is (from the CLI inside Claude Code): a hairline under the row. */
-  .agentRow:has(.ctx) { position: relative; padding-bottom: 9px; }
+  .agentRow:has(.ctx) { position: relative; padding-bottom: 9px; overflow: visible; }
+  .agentRow:has(.ctx) .fn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .agentRow .ctx { position: absolute; left: 48px; right: 8px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
   .agentRow .ctx::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: 2px; background: oklch(0.68 0.15 150); }
   .agentRow .ctx.mid::before { background: oklch(0.78 0.15 85); }
   .agentRow .ctx.hot::before { background: oklch(0.62 0.2 28); }
+  /* Hover card: context + the plan's limits, each a bar like the row's. */
+  .agentRow .ctip { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: 0 12px 30px -12px rgb(0 0 0 / .35); color: var(--ink); font-size: 12px; }
+  .agentRow:hover .ctip { display: grid; gap: 9px; }
+  .ctip .l { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .ctip .l b { font-weight: 600; }
+  .ctip .l span { color: var(--mute); white-space: nowrap; }
+  .ctip .ctx { position: relative; left: 0; right: 0; bottom: 0; display: block; }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
   .arch summary::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 8px 2px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; } .arch[open] summary::before { transform: rotate(45deg); }
   .thread.archived { opacity: .6; }
@@ -1072,7 +1080,10 @@ const EN = {
   "O vibebook herdr não está rodando nesta máquina.": "vibebook herdr isn't running on this machine.",
   "em {repo}": "in {repo}",
   "ouvindo todas as salas agora": "listening to every room now",
-  "Contexto: {p}% ({used} de {max})": "Context: {p}% ({used} of {max})",
+  "{p}% · reseta {at}": "{p}% · resets {at}",
+  "Contexto": "Context",
+  "Sessão de 5h": "5-hour session",
+  "Semana": "Week",
   "ouvindo esta sala agora": "listening to this room now",
   "visto há {ago}": "seen {ago} ago",
   "está trabalhando nisso": "is working on this",
@@ -1924,6 +1935,7 @@ function onEvent(ev, id) {
       if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
       return;
     }
+    case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
     case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide();
       if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
@@ -2489,17 +2501,31 @@ function renderMyClaude() {
 const kTok = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`);
 /** The context bar under a Claude: green, yellow from 60%, red from 80% (the runner compacts a free Claude at 75%). */
 const ctxPct = (c) => Math.min(100, Math.round((c.tokens / c.window) * 100));
+/** Hover text of a Claude's row: context, then the plan's limits. */
+const ctxTip = (c) => {
+  const p = ctxPct(c);
+  const bar = (v, warn = 60, hot = 80) => `<i class="ctx ${v >= hot ? "hot" : v >= warn ? "mid" : ""}" style="--p:${v}%"></i>`;
+  const item = (label, v, right) => `<div><div class="l"><b>${label}</b><span>${right}</span></div>${bar(v)}</div>`;
+  const lims = ["five_hour", "seven_day"].map((k) => {
+    const l = c.limits?.[k];
+    if (!l || l.r * 1000 < Date.now()) return "";
+    const d = new Date(l.r * 1000), hm = d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
+    const at = k === "five_hour" ? hm : `${d.toLocaleDateString(LOCALE, { weekday: "short" }).replace(".", "")} ${hm}`;
+    return item(k === "five_hour" ? t("Sessão de 5h") : t("Semana"), l.p, t("{p}% · reseta {at}", { p: l.p, at }));
+  });
+  return `<div class="ctip">${item(t("Contexto"), p, `${p}% · ${kTok(c.tokens)}/${kTok(c.window)}`)}${lims.join("")}</div>`;
+};
 const ctxBar = (c) => {
   if (!c) return "";
   const p = ctxPct(c);
-  return `<i class="ctx ${p >= 80 ? "hot" : p >= 60 ? "mid" : ""}" style="--p:${p}%" title="${t("Contexto: {p}% ({used} de {max})", { p, used: kTok(c.tokens), max: kTok(c.window) })}"></i>`;
+  return `<i class="ctx ${p >= 80 ? "hot" : p >= 60 ? "mid" : ""}" style="--p:${p}%"></i>`;
 };
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}</div>`).join("");
+    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.

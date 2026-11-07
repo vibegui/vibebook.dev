@@ -218,9 +218,42 @@ function sessionContext(sid) {
     }
   } catch {}
 }
+var STATUS = join(HOME, "status");
+function statusline() {
+  const input = readFileSync(0);
+  try {
+    const j = JSON.parse(input.toString());
+    if (/^[\w-]{8,80}$/.test(j.session_id ?? "")) {
+      const limits = {};
+      for (const k of ["five_hour", "seven_day"]) {
+        const l = j.rate_limits?.[k];
+        if (typeof l?.used_percentage === "number")
+          limits[k] = { p: Math.round(l.used_percentage), r: Number(l.resets_at) || 0 };
+      }
+      mkdirSync(STATUS, { recursive: true });
+      writeFileSync(join(STATUS, `${j.session_id}.json`), JSON.stringify({ window: Number(j.context_window?.context_window_size) || undefined, limits, at: Date.now() }));
+    }
+  } catch {}
+  const rest = process.argv.slice(process.argv.indexOf("statusline") + 1).join(" ").trim();
+  if (rest)
+    process.stdout.write(execSync(rest, { input, stdio: ["pipe", "pipe", "ignore"] }));
+}
+var sessionStatus = (sid) => {
+  if (!/^[\w-]{8,80}$/.test(sid))
+    return;
+  const s = readJson(join(STATUS, `${sid}.json`), null);
+  return s && Date.now() - s.at < 6 * 3600000 ? s : undefined;
+};
 var myContext = () => {
-  const c = process.env.CLAUDE_CODE_SESSION_ID ? sessionContext(process.env.CLAUDE_CODE_SESSION_ID) : undefined;
-  return c ? { "x-vibebook-context": `${c.tokens}/${c.window}` } : {};
+  const sid = process.env.CLAUDE_CODE_SESSION_ID;
+  const c = sid ? sessionContext(sid) : undefined;
+  if (!sid || !c)
+    return {};
+  const st = sessionStatus(sid);
+  const h = { "x-vibebook-context": `${c.tokens}/${st?.window ?? c.window}` };
+  if (st?.limits && Object.keys(st.limits).length)
+    h["x-vibebook-limits"] = JSON.stringify(st.limits);
+  return h;
 };
 var rpcId = 0;
 async function rpc(method, params, agent) {
@@ -413,7 +446,9 @@ async function herdrSync(agent, tools) {
       if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60000)
         e.listening = false;
       const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
-      const cx = cp?.agent_session?.value ? sessionContext(cp.agent_session.value) : undefined;
+      const cs = cp?.agent_session?.value;
+      const cx0 = cs ? sessionContext(cs) : undefined;
+      const cx = cx0 && cs ? { ...cx0, window: sessionStatus(cs)?.window ?? cx0.window } : undefined;
       if (cp && cx && cx.tokens >= cx.window * COMPACT_AT && (cp.agent_status === "idle" || cp.agent_status === "done") && Date.now() - (e.compacted_at ?? 0) > 15 * 60000) {
         try {
           herdr("agent", "prompt", cp.pane_id, "/compact");
@@ -543,11 +578,15 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>]
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
+  vibebook statusline [command]  as Claude Code's statusLine: keeps the session's context window and plan
+                                 limits for the room, then runs your own statusline command (if any) with the same input
   vibebook update                install the latest version
 
 Options: --model "Claude Opus 5.5" (or VIBEBOOK_MODEL) names the agent in the room; --origin for a local server.`;
 async function main() {
   const cmd = flags.version ? "version" : pos[0];
+  if (cmd === "statusline")
+    return statusline();
   const root = repoRoot();
   const agent = agentId(root);
   switch (cmd) {

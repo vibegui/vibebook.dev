@@ -924,6 +924,15 @@ export class Book extends DurableObject<Env> {
           this.deleteTask(id);
           return { ok: true };
         }
+        case "move_message": {
+          // Your human's (or your own) message to another thread: "main" or an epic. Others' messages stay put.
+          const id = Number(a.message_id);
+          const to = s("thread") === "main" ? "main" : epic(s("thread"));
+          if (!to) return { ok: false, error: "thread must be \"main\" or an epic id" };
+          if (!this.sql.exec(`UPDATE messages SET thread = ? WHERE id = ? AND author = ?`, to, id, email).rowsWritten) return { ok: false, error: "message not found, or not your human's" };
+          this.broadcast({ t: "moved", id, thread: to });
+          return { ok: true };
+        }
         case "update_epic": {
           const e = epic();
           if (!e) return { ok: false, error: "epic not found" };
