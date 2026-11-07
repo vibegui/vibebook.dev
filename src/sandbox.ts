@@ -21,15 +21,17 @@ async function vaultKey(env: Pick<Env, "SESSION_SECRET">) {
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-export async function saveKey(env: Env, email: string, key: string) {
+// Two secrets per person, same vault: their freestyle API key and their Claude subscription token (`claude setup-token`).
+type Vault = "freestyle_keys" | "claude_tokens";
+export async function saveKey(env: Env, email: string, key: string, table: Vault = "freestyle_keys") {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await vaultKey(env), enc.encode(key)));
-  await env.DB.prepare(`INSERT INTO freestyle_keys (email, enc, iv, at) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET enc = excluded.enc, iv = excluded.iv, at = excluded.at`)
+  await env.DB.prepare(`INSERT INTO ${table} (email, enc, iv, at) VALUES (?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET enc = excluded.enc, iv = excluded.iv, at = excluded.at`)
     .bind(email, b64(ct), b64(iv), Date.now())
     .run();
 }
-export async function loadKey(env: Env, email: string) {
-  const r = await env.DB.prepare(`SELECT enc, iv FROM freestyle_keys WHERE email = ?`).bind(email).first<{ enc: string; iv: string }>();
+export async function loadKey(env: Env, email: string, table: Vault = "freestyle_keys") {
+  const r = await env.DB.prepare(`SELECT enc, iv FROM ${table} WHERE email = ?`).bind(email).first<{ enc: string; iv: string }>();
   if (!r) return null;
   const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(r.iv) }, await vaultKey(env), unb64(r.enc));
   return new TextDecoder().decode(pt);
@@ -84,6 +86,9 @@ export PATH="$HOME/.local/bin:$HOME/.vibebook/bin:$PATH"
 grep -q '.vibebook/bin' "$HOME/.bashrc" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$HOME/.vibebook/bin:$PATH"' >> "$HOME/.bashrc"
 claude plugin marketplace add vibegui/vibebook.dev || true
 claude plugin install vibebook@vibebook || true
+# The person's Claude token (written by vibebook to /tmp, never echoed): Claude Code starts logged in.
+if [ -f /tmp/vibebook-env ]; then install -m 600 /tmp/vibebook-env "$HOME/.vibebook-env"; rm -f /tmp/vibebook-env; fi
+grep -q vibebook-env "$HOME/.bashrc" 2>/dev/null || echo '[ -f "$HOME/.vibebook-env" ] && . "$HOME/.vibebook-env"' >> "$HOME/.bashrc"
 mkdir -p "$HOME/${o.folder}" && cd "$HOME/${o.folder}"
 [ -d .git ] || git init -q
 printf 'room_id=%s\\n' ${q(o.roomId)} > .vibebook
@@ -93,6 +98,7 @@ grep -qx .vibebook .git/info/exclude 2>/dev/null || echo .vibebook >> .git/info/
 ${blocks}
 ) || echo "agents .md setup failed"
 cat > "$HOME/.vibebook-start" <<'EOS'
+[ -f "$HOME/.vibebook-env" ] && . "$HOME/.vibebook-env"
 cd "$HOME/${o.folder}"
 vibebook status 2>/dev/null | grep -q '"logged_in": true' || vibebook login --paste
 claude "/vibebook:listen"
@@ -103,6 +109,11 @@ touch "$HOME/.vibebook-setup-done"
 
 // Fully detached (own session, no stdin/stdout), so it outlives the exec call that starts it.
 const RUN_SETUP = "(setsid nohup bash /tmp/vibebook-setup.sh </dev/null >/dev/null 2>&1 &) ; sleep 1; echo started";
+/** Hands the person's Claude token to the VM (if they connected one), as a 0600 file the setup moves into $HOME. */
+async function writeClaudeEnv(env: Env, key: string, email: string, vmId: string) {
+  const tok = await loadKey(env, email, "claude_tokens").catch(() => null);
+  if (tok) await fs(key, "PUT", `/v5/vms/${vmId}/fs/write`, { path: "/tmp/vibebook-env", content: `export CLAUDE_CODE_OAUTH_TOKEN='${tok.replace(/'/g, "")}'\n`, mode: 384 });
+}
 type Row = { id: string; email: string; book_id: string; name: string; vm_id: string; identity_id: string | null; ready: number; created_at: number };
 const MAX_PER_ROOM = 3;
 
@@ -114,6 +125,21 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
   const mine = (c: any, sid: string) => c.env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, c.get("email")).first() as Promise<Row | null>;
 
   app.get("/api/freestyle", async (c: any) => c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(c.get("email")).first()) }));
+  // The person's Claude subscription token (from `claude setup-token` in their own terminal): sandboxes start logged in.
+  app.post("/api/claude-token", async (c: any) => {
+    const email = c.get("email");
+    if (!(await c.env.LOGIN_LIMIT.limit({ key: `ct:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
+    const { token } = await c.req.json().catch(() => ({}));
+    const tok = String(token ?? "").trim();
+    if (!/^sk-ant-[A-Za-z0-9_-]{20,300}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." }, 400);
+    await saveKey(c.env, email, tok, "claude_tokens");
+    c.executionCtx.waitUntil(deps.track(c.env, "claude_token_saved", { user: email }));
+    return c.json({ ok: true });
+  });
+  app.delete("/api/claude-token", async (c: any) => {
+    await c.env.DB.prepare(`DELETE FROM claude_tokens WHERE email = ?`).bind(c.get("email")).run();
+    return c.json({ ok: true });
+  });
   app.post("/api/freestyle", async (c: any) => {
     const email = c.get("email");
     if (!(await c.env.LOGIN_LIMIT.limit({ key: `fs:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
@@ -166,7 +192,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       const cost = ((x.run_s ?? 0) / 3600) * (x.rate ?? 0) + ((Date.now() - r.created_at) / 3600_000) * (x.disk_rate ?? 0);
       return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, error, log, created_at: r.created_at, rate: x.rate ?? 0, cost };
     }));
-    return c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(email).first()), sandboxes: out });
+    return c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(email).first()), claude: !!(await c.env.DB.prepare(`SELECT 1 FROM claude_tokens WHERE email = ?`).bind(email).first()), sandboxes: out });
   });
 
   app.post("/api/books/:id/sandboxes", async (c: any) => {
@@ -192,6 +218,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       });
       await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: id, folder: name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
+      await writeClaudeEnv(c.env, k, email, vm.id);
       await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 502);
@@ -221,6 +248,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       const md = await deps.agentFile(c.env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
+      await writeClaudeEnv(c.env, k, r.email, r.vm_id);
       const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: `cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done && ${RUN_SETUP}`, timeoutMs: 20000 });
       if (!x.stdout?.includes("started")) return c.json({ error: `não consegui iniciar o setup: ${(x.stderr || x.stdout || `código ${x.statusCode}`).slice(0, 200)}` }, 502);
       await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();

@@ -88,6 +88,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
   // Cloud agents (src/sandbox.ts): a person's freestyle.sh API key, AES-GCM encrypted, and their sandboxes per room.
   `CREATE TABLE IF NOT EXISTS freestyle_keys (email TEXT PRIMARY KEY, enc TEXT, iv TEXT, at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS claude_tokens (email TEXT PRIMARY KEY, enc TEXT, iv TEXT, at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;

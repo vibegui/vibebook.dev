@@ -1399,6 +1399,12 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
+  "remover": "remove",
+  "Conecte seu Claude": "Connect your Claude",
+  "Rode claude setup-token no seu terminal e cole o token aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.": "Run claude setup-token in your terminal and paste the token here: the sandbox's Claude starts logged in to your subscription. It's kept encrypted, like the freestyle key. Without it, run /login in the sandbox terminal.",
+  "Salvando…": "Saving…",
+  "Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.": "Remove the Claude token? Sandboxes that already have it stay logged in until you delete them.",
   "sala principal": "main room",
   "épico": "epic",
   "Fila do seu Claude: {n}": "Your Claude's queue: {n}",
@@ -2923,7 +2929,7 @@ async function loadSandboxes() {
   clearTimeout(sbxTimer);
   const r = await fetch(`/api/books/${S.id}/sandboxes`).then((x) => x.json()).catch(() => null);
   if (!r || r.error) return;
-  sbx = { ...sbx, id: S.id, connected: r.connected, list: r.sandboxes };
+  sbx = { ...sbx, id: S.id, connected: r.connected, claude: r.claude, list: r.sandboxes };
   const el = document.getElementById("sbx"); if (el) { el.innerHTML = sbxHtml(); wireSbx(); }
   if (r.sandboxes.some((x) => !x.ready || /ing$/.test(x.state)) && document.querySelector('.doc[data-pane="agents"]')) sbxTimer = setTimeout(loadSandboxes, 5000);
 }
@@ -2933,7 +2939,11 @@ function sbxHtml() {
   if (!sbx.connected) return `<div class="agCard col"><b>${t("Conecte sua conta do freestyle.sh")}</b>
     <small>${t("O sandbox roda na sua conta: crie uma em freestyle.sh e uma API key (npx freestyle@latest tokens create vibebook) e cole aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
     <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${t("API key do freestyle")}" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "key" ? t("Conferindo…") : t("Conectar")}</button></form>${err}</div>`;
-  return `${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
+  const claude = sbx.claude
+    ? `<div class="fsOn">${icon("check", 13)} ${t("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${t("remover")}</button></div>`
+    : `<div class="agCard col"><b>${t("Conecte seu Claude")}</b><small>${t("Rode claude setup-token no seu terminal e cole o token aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
+      <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "ct" ? t("Salvando…") : t("Salvar")}</button></form></div>`;
+  return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
       <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${!x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
       <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${esc(x.id)}">${t("Terminal")}</button>`}
       ${x.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${esc(x.id)}">${t("Pausar")}</button>` : x.state === "paused" || x.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${esc(x.id)}">${t("Retomar")}</button>` : ""}
@@ -2947,6 +2957,8 @@ function wireSbx() {
   const run = async (busy, fn) => { sbx.busy = busy; sbx.err = ""; redraw(); try { const r = await fn(); if (r?.error) sbx.err = r.error; } catch { sbx.err = t("sem conexão"); } sbx.busy = ""; await loadSandboxes(); redraw(); };
   const call = (method, url, body) => fetch(url, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined }).then((x) => x.json());
   document.getElementById("fsForm")?.addEventListener("submit", (e) => { e.preventDefault(); const k = e.target.key.value; run("key", () => call("POST", "/api/freestyle", { key: k })); });
+  document.getElementById("ctForm")?.addEventListener("submit", (e) => { e.preventDefault(); const k = e.target.token.value; run("ct", () => call("POST", "/api/claude-token", { token: k })); });
+  document.getElementById("ctOff")?.addEventListener("click", () => confirm(t("Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.")) && run("ct", () => call("DELETE", "/api/claude-token")));
   document.getElementById("fsOff")?.addEventListener("click", () => confirm(t("Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.")) && run("off", () => call("DELETE", "/api/freestyle")));
   document.getElementById("sbxNew")?.addEventListener("click", () => run("new", () => call("POST", `/api/books/${S.id}/sandboxes`, {})));
   document.querySelectorAll("[data-sbx-act]").forEach((b) => b.onclick = () => run("act", () => call("POST", `/api/sandboxes/${b.dataset.id}/${b.dataset.sbxAct}`)));
