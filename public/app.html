@@ -756,7 +756,8 @@
     .book.boardview .docPeek { display: none; }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
-    .phHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); flex: none; }
+    /* ← centered in the space before the title button (its icon used to sit at the box's left edge). */
+    .chathead .phHome { display: flex; align-items: center; justify-content: center; width: 30px; height: 36px; border-radius: 10px; color: var(--mute); flex: none; }
     .thChev { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0; margin-left: -4px; border: 0; background: none; color: var(--mute); }
     .chathead h2 .epicName { cursor: pointer; }
     .sideTop .phOnly { display: grid; }
