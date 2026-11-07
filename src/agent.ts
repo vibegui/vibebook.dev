@@ -91,7 +91,7 @@ const TOOLS = [
       type: "object",
       properties: {
         room_id: { type: "string" },
-        all: { type: "boolean", description: "true = latest 40 messages even if you already read them" },
+        all: { type: "boolean", description: "true = latest 40 messages even if you already read them, without marking anything read (a look back; new messages stay new for your next read_room and for listen)" },
       },
       required: ["room_id"],
     },
@@ -526,12 +526,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         ? 0
         : ((await db.prepare(`SELECT last_id FROM agent_reads WHERE agent = ? AND book_id = ?`).bind(me.agent, id).first<{ last_id: number }>())?.last_id ?? 0);
       const out = await bookStub(env, id).agentRead(id, seen, me.email);
+      // all: true is a look back (state, ids, the doc): it doesn't mark anything read. Otherwise a lookup made while
+      // working swallowed messages that had just arrived: they were never "new" and listen didn't wake for them.
       await db
         .prepare(
           `INSERT INTO agent_reads (agent, book_id, email, last_id, delivered_id) VALUES (?, ?, ?, ?, ?)
-           ON CONFLICT(agent, book_id) DO UPDATE SET last_id = max(last_id, excluded.last_id), delivered_id = max(coalesce(delivered_id, 0), excluded.last_id)`,
+           ON CONFLICT(agent, book_id) DO UPDATE SET last_id = max(last_id, excluded.last_id), delivered_id = max(coalesce(delivered_id, 0), excluded.delivered_id)`,
         )
-        .bind(me.agent, id, me.email, out.last_id, out.last_id)
+        .bind(me.agent, id, me.email, a.all ? seen : out.last_id, out.last_id)
         .run();
       ctx.waitUntil(receipt(env, me, id));
       return {
