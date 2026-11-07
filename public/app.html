@@ -348,6 +348,21 @@
   .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
+  #toggleBoard .kN { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 11px/18px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
+  .kbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .kbar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .kbar .seg button { border: 0; border-radius: 0; background: none; padding: 6px 12px; font: inherit; font-size: 13px; color: var(--mute); cursor: pointer; }
+  .kbar .seg button.on { background: var(--hover); color: var(--ink); font-weight: 600; }
+  .kbar select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); max-width: 60vw; }
+  .klist { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 14px; }
+  .klist h3 { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--mute); text-transform: none; }
+  .klist h3 .ri { width: 20px; height: 20px; border-radius: 6px; font-size: 9px; display: grid; place-items: center; color: #fff; flex: none; }
+  .klist h3.mine { color: var(--wait-ink); }
+  .krow { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; margin-bottom: 4px; }
+  .krow .kt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .krow .kst { flex: none; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--hover); color: var(--mute); }
+  .krow .kst.review { background: var(--wait-bg); color: var(--wait-ink); } .krow .kst.doing { color: var(--ink); } .krow.done .kt { text-decoration: line-through; color: var(--mute); }
+  .krow .avatar { width: 20px; height: 20px; font-size: 9px; flex: none; }
   #myClaude { white-space: nowrap; }
   #myClaude .where { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); font: 500 11.5px ui-monospace, "SF Mono", Menlo, monospace; color: var(--mute); }
   #myClaude[aria-pressed="true"] { background: color-mix(in oklch, var(--accent) 16%, var(--panel)); border-color: var(--accent); color: var(--ink); }
@@ -828,11 +843,11 @@
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
     #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #peekTxt small { flex: none; font-size: 12px; }
-    .chathead #toggleBoard, .chathead #myClaude { display: none !important; } /* in the toolbar below on phones */
+    .chathead #myClaude { display: none !important; } /* in the toolbar below on phones */
+    .chathead #toggleBoard { flex: none; align-self: center; height: 32px; padding: 0 8px; gap: 4px; } .chathead #toggleBoard .lbl { display: none; }
     .peekRow .peekAgents { background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; margin-left: 2px; border-radius: 10px; }
     .peekRow .peekAgents small { font-size: 11px; }
     .book[data-sheet="doc"][data-pane="agents"] .peekRow .peekAgents { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); background: var(--claude); color: #fff; }
-    .peekRow #peekBoard.on { background: var(--hover); color: var(--ink); }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
     /* ← centered in the space before the title button (its icon used to sit at the box's left edge). */
@@ -1423,6 +1438,12 @@ const EN = {
   "sandbox na nuvem rodando": "cloud sandbox running",
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "seu Claude no sandbox": "your Claude in the sandbox",
+  "Quadro de tarefas": "Task board",
+  "feito": "done",
+  "Lista": "List",
+  "Todos os épicos": "All epics",
+  "Sem épico": "No epic",
+  "Nenhuma tarefa aberta.": "No open tasks.",
   "Sair de todos os aparelhos": "Sign out everywhere",
   "Sai em todos os navegadores e celulares onde você entrou": "Signs you out of every browser and phone you signed in on",
   "Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus Claudes conectados continuam.": "Sign out everywhere? Every browser and phone you signed in on will ask you to log in again, this one too. Your connected Claudes stay.",
@@ -2420,8 +2441,8 @@ function renderBook() {
   <div class="book ${railMode ? "rail" : ""}">
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2480,8 +2501,6 @@ function renderBook() {
   // Phones: the toolbar under the header is the doc sheet's own tab bar. A tab opens the sheet on it; the open tab
   // again closes it. Dragging the bar down opens the doc too.
   sheetDrag(document.getElementById("docPeek"), "doc", true, (e) => {
-    // The board (phones: it lives here, not in the header) swaps the chat for the kanban; the doc sheet closes.
-    if (e.target.closest("[data-act=board]")) { closeSheet(); document.getElementById("toggleBoard").click(); return; }
     const pane = e.target.closest("[data-pane]")?.dataset.pane || "doc";
     if (book.dataset.sheet === "doc" && book.dataset.pane === pane) return closeSheet();
     if (book.classList.contains("boardview")) document.getElementById("toggleBoard").click(); // doc and board: one at a time
@@ -2494,8 +2513,7 @@ function renderBook() {
     book.classList.toggle("boardview", on);
     book.classList.toggle("nodoc", on); // the board wants the width
     document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
-    document.getElementById("peekBoard")?.classList.toggle("on", on);
-    if (on) renderKanban();
+    if (on) { closeSheet(); boardEpic = null; renderKanban(); } // the room's board: every epic, filter inside
   };
   document.getElementById("toggleBoard").onclick = () => setBoard(!book.classList.contains("boardview"));
   // Entering a room always opens chat + doc; the board is one click away.
@@ -3310,13 +3328,30 @@ function renderKanban() {
   const card = (tk) => `<div class="kcard ${tk.status === "done" ? "done" : ""}${tk.status !== "done" && tk.owner === S.me ? " mine" : ""}" draggable="true" tabindex="0" data-k="${tk.id}" data-status="${tk.status}" data-epic="${tk.epic.id}" title="${t("Arraste, ou use ← →. Clique pra abrir o épico.")}">
       <div class="kt">${mentions(esc(tk.title))}</div>${vibeNotes(tk.flags)}
       <div class="km"><span class="kep" style="background:${color(tk.epic.title)}">${esc(tk.epic.title)}</span>${tk.owner ? `${avatar(tk.owner)}<span>${esc(tk.owner === S.me ? t("você") : name(tk.owner))}</span>` : ""}${tk.due ? `<span>${icon("calendar", 12)} ${esc(tk.due)}</span>` : ""}</div></div>`;
-  el.innerHTML = S.epics.length ? `
+  // Quadro (lanes) or Lista (by epic, what waits on you first), remembered per browser; the epic filter is inside.
+  const mode = (() => { try { return localStorage.getItem("vb.boardMode") || "board"; } catch { return "board"; } })();
+  const bar = `<div class="kbar"><span class="seg"><button type="button" data-mode="board" class="${mode === "board" ? "on" : ""}">${icon("board", 14)} ${t("Quadro")}</button><button type="button" data-mode="list" class="${mode === "list" ? "on" : ""}">${t("Lista")}</button></span>
+    <select id="kEpic" aria-label="${t("Épico")}"><option value="">${t("Todos os épicos")}</option>${S.epics.filter((e) => !e.archived || e.id === boardEpic).map((e) => `<option value="${e.id}" ${e.id === boardEpic ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select></div>`;
+  const stLabel = { todo: t("a fazer"), doing: t("fazendo"), review: t("esperando OK"), done: t("feito") };
+  const row = (tk) => `<button type="button" class="krow ${tk.status === "done" ? "done" : ""}" data-k="${tk.id}" data-epic="${tk.epic.id}"><span class="kt">${esc(tk.title)}</span>${tk.owner ? avatar(tk.owner) : ""}<span class="kst ${tk.status}">${stLabel[tk.status] ?? tk.status}</span></button>`;
+  const roomList = { id: "main", title: bookTitle(), tasks: S.roomTasks || [] };
+  const listHtml = () => {
+    const open = (e) => e.tasks.filter((x) => x.status !== "done").map((x) => ({ ...x, epic: e }));
+    const groups = [...(boardEpic ? [] : [roomList]), ...epics].map((e) => ({ e, list: open(e) })).filter((g) => g.list.length);
+    const mine = groups.flatMap((g) => g.list.filter((x) => x.owner === S.me));
+    return `<div class="klist">${mine.length ? `<section><h3 class="mine">⏳ ${t("Esperando você")} · ${mine.length}</h3>${mine.map(row).join("")}</section>` : ""}${groups.map((g) => `<section><h3><span class="ri" style="background:${color(g.e.title)}">${esc(initials(g.e.title))}</span>${esc(g.e.title)} · ${g.list.length}</h3>${g.list.map(row).join("")}</section>`).join("") || `<div class="empty">${t("Nenhuma tarefa aberta.")}</div>`}</div>`;
+  };
+  el.innerHTML = S.epics.length ? bar + (mode === "list" ? listHtml() : `
     <div class="lanes">${LANES.map(([k, label]) => { const list = tasks.filter((t) => t.status === k); return `
       <section class="lane" data-lane="${k}"><h3>${label}<span>${list.length}</span></h3>
         <div class="cards">${list.map(card).join("") || `<div class="kempty">${k === "todo" ? t("Nada a fazer.") : t("Arraste um card pra cá.")}</div>`}</div>
         ${k === "todo" ? `<form class="kadd"><input placeholder="${t("nova tarefa")}" aria-label="${t("Nova tarefa")}" /><button aria-label="${t("Nova tarefa")}">${icon("plus")}</button>${boardEpic ? `<input type="hidden" name="epic" value="${boardEpic}" />` : `<select name="epic" aria-label="${t("Épico")}">${S.epics.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</select>`}</form>` : ""}
-      </section>`; }).join("")}</div>`
+      </section>`; }).join("")}</div>`)
     : `<div class="empty">${t("Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.")}</div>`;
+  el.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => { try { localStorage.setItem("vb.boardMode", b.dataset.mode); } catch {} renderKanban(); }));
+  const sel = document.getElementById("kEpic");
+  if (sel) sel.onchange = () => { boardEpic = sel.value || null; renderKanban(); };
+  el.querySelectorAll(".krow").forEach((r) => (r.onclick = () => { thread = r.dataset.epic; document.getElementById("toggleBoard").click(); renderSide(); renderChat(); renderDoc(); }));
   const move = (id, status) => send({ t: "task.status", id, status });
   el.querySelectorAll(".kcard").forEach((c) => {
     c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
@@ -3436,10 +3471,12 @@ function renderTasks() {
   // Phones: the chip would take a second line; a small ⏳ n in the top bar instead (you if anything waits on you, else
   // whoever has the most), same list on tap.
   const bar = head.closest(".chathead");
-  bar.querySelector(".waitIcon")?.remove();
+  // The board button (the room's tasks) carries how many open tasks are yours; on phones it replaced the ⏳.
+  const mineN = waiting[S.me] || 0, kb = document.getElementById("toggleBoard");
+  kb.querySelector(".kN")?.remove();
+  if (mineN) kb.insertAdjacentHTML("beforeend", `<b class="kN" title="${t("Esperando você")}: ${mineN}">${mineN}</b>`);
+  kb.title = mineN ? `${t("Quadro de tarefas")} · ${t("Esperando você")}: ${mineN}` : t("Quadro de tarefas (kanban)");
   if (w.length) {
-    const [who, n] = w.find(([o]) => o === S.me) ?? w[0];
-    bar.querySelector("[data-bell]")?.insertAdjacentHTML("beforebegin", `<button type="button" class="waitIcon" data-wait="${esc(who)}" title="${t("Esperando {who}", { who: esc(who === S.me ? t("você") : name(who)) })}: ${n}" aria-label="${t("Esperando {who}", { who: esc(who === S.me ? t("você") : name(who)) })}: ${n}">⏳<b>${n}</b></button>`);
     head.insertAdjacentHTML("beforeend", `<span class="waitChip">⏳ ${t("esperando")} ${w.map(([o, n]) => `<button type="button" class="waitWho" data-wait="${esc(o)}" title="${t("Ver as tasks abertas")}">${esc(o === S.me ? t("você") : name(o))} ${n}</button>`).join(" · ")}</span>`);
     bar.querySelectorAll("[data-wait]").forEach((b) => (b.onclick = (ev) => {
       ev.stopPropagation();
