@@ -56,12 +56,21 @@ export function nextRun(c: Cron, tz: string, after: number): number | null {
 }
 
 const DOW = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const DOW_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 /** The common shapes in words ("todo dia às 08:00", "toda segunda às 10:00", "dias úteis às 09:30"); anything else
- * stays as the cron itself. Portuguese, like everything @vibe writes in rooms. */
-export function cronWords(expr: string) {
+ * stays as the cron itself. In the room's language (en = English, else Portuguese). */
+export function cronWords(expr: string, en = false) {
   const [mi, h, d, mo, w] = expr.trim().split(/\s+/);
   if (!/^\d+$/.test(mi ?? "") || !/^\d+$/.test(h ?? "") || mo !== "*") return `cron ${expr.trim()}`;
-  const at = `às ${h.padStart(2, "0")}:${mi.padStart(2, "0")}`;
+  const hm = `${h.padStart(2, "0")}:${mi.padStart(2, "0")}`;
+  if (en) {
+    if (d === "*" && w === "*") return `every day at ${hm}`;
+    if (d === "*" && w === "1-5") return `weekdays at ${hm}`;
+    if (d === "*" && /^[0-7](,[0-7])*$/.test(w)) return `every ${[...new Set(w.split(",").map((x) => DOW_EN[+x % 7]))].join(", ")} at ${hm}`;
+    if (/^\d+$/.test(d) && w === "*") return `every month on day ${d} at ${hm}`;
+    return `cron ${expr.trim()}`;
+  }
+  const at = `às ${hm}`;
   if (d === "*" && w === "*") return `todo dia ${at}`;
   if (d === "*" && (w === "1-5")) return `dias úteis ${at}`;
   if (d === "*" && /^[0-7](,[0-7])*$/.test(w)) {

@@ -21,11 +21,11 @@ type Poll = { id: string; question: string; options: string[]; multi: boolean; c
 const SEED_GOAL = "o que este épico entrega e por quê";
 /** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
 const DOC_GRADE = "_doc";
-const DOC_CHECKS: [string, string, string][] = [
-  ["objetivo", "objetivo vago: o que o projeto entrega, e pra quem?", "O doc diz com clareza o que o projeto entrega e para quem, de um jeito específico (não genérico)?"],
-  ["escopo", "escopo sem limite: o que fica de fora?", "O doc deixa claro o que está dentro e o que está fora do escopo?"],
-  ["sucesso", "sem critério de sucesso: como saber que deu certo?", "O doc diz como saber que deu certo: um resultado, prazo ou número que alguém consiga conferir?"],
-  ["proximos", "sem próximos passos ou donos", "O doc diz quais são os próximos passos ou quem cuida de cada parte?"],
+const DOC_CHECKS: [string, string, string, string][] = [
+  ["objetivo", "objetivo vago: o que o projeto entrega, e pra quem?", "O doc diz com clareza o que o projeto entrega e para quem, de um jeito específico (não genérico)?", "vague goal: what does the project deliver, and for whom?"],
+  ["escopo", "escopo sem limite: o que fica de fora?", "O doc deixa claro o que está dentro e o que está fora do escopo?", "no scope limit: what's left out?"],
+  ["sucesso", "sem critério de sucesso: como saber que deu certo?", "O doc diz como saber que deu certo: um resultado, prazo ou número que alguém consiga conferir?", "no success criterion: how will you know it worked?"],
+  ["proximos", "sem próximos passos ou donos", "O doc diz quais são os próximos passos ou quem cuida de cada parte?", "no next steps or owners"],
 ];
 export const epicDocSeed = (title: string, why = "") =>
   `# ${title}\n\n**Objetivo:** ${why.trim() || `${SEED_GOAL} (edite aqui ou peça pro seu Claude).`}\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`;
@@ -50,6 +50,7 @@ const REMINDER_MIN_GAP_MS = 30 * 60_000; // each fire wakes a Claude: no more th
 export const STATUSES = ["todo", "doing", "review", "done"] as const;
 type Status = (typeof STATUSES)[number];
 const STATUS_LABEL: Record<Status, string> = { todo: "a fazer", doing: "fazendo", review: "esperando OK", done: "feito" };
+const STATUS_LABEL_EN: Record<Status, string> = { todo: "to do", doing: "doing", review: "waiting for OK", done: "done" };
 
 const rid = () => crypto.randomUUID().slice(0, 8);
 /** Cheap change detector (djb2), not crypto. */
@@ -131,7 +132,10 @@ export class Book extends DurableObject<Env> {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done"));
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
-      this.addMessage(e.id, "ai", `✓ ${e.tasks.length === 1 ? "A tarefa" : `Todas as ${e.tasks.length} tarefas`} de **${e.title}** ${e.tasks.length === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done" });
+      const n = e.tasks.length;
+      this.addMessage(e.id, "ai", this.en
+        ? `✓ ${n === 1 ? "The task" : `All ${n} tasks`} of **${e.title}** ${n === 1 ? "is" : "are"} done, so I archived the epic. It stays under Archived, with its doc and conversation; ↩ reopens it.`
+        : `✓ ${n === 1 ? "A tarefa" : `Todas as ${n} tarefas`} de **${e.title}** ${n === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done" });
       // The request it came from: "fazendo isso" turns into "fez isso".
       const from = this.sql.exec(`SELECT from_msg FROM epics WHERE id = ?`, e.id).toArray()[0]?.from_msg;
       if (from) this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE msg_id = ? AND status = 'doing'`, Date.now(), from);
@@ -249,6 +253,7 @@ export class Book extends DurableObject<Env> {
   /** A reminders/<name>.md file was saved: read its schedule and store it (same name = replace). */
   async reminderFile(bookId: string, email: string, name: string, body: string, fileId: string) {
     this.bind(bookId);
+    await this.refreshLang().catch(() => {});
     const old = this.sql.exec<{ id: string; enabled: number | null }>(`SELECT id, enabled FROM reminders WHERE name = ?`, name).toArray()[0];
     if (!old && this.reminders().length >= REMINDERS_MAX) return { ok: false, name, error: `this room already has ${REMINDERS_MAX} reminders; delete one first` };
     let cron: string | null = null, tz = "America/Sao_Paulo", every: string | null = null, error: string | null = null, next: number | null = null;
@@ -266,16 +271,16 @@ export class Book extends DurableObject<Env> {
         prompt: `This file is a recurring reminder: at each run its text is posted in a chat room as a prompt for an AI agent. Find WHEN it should run, as written in the file. Do not invent a schedule: if the file doesn't say, says_when = false.\n\n"""\n${body.slice(0, 4000)}\n"""`,
       });
       this.ctx.waitUntil(track(this.env, "reminder_parse", { user: email, dims: { book: bookId, model: this.env.MODEL_ROUTE, cost: +costOf(usage).toFixed(6) } }));
-      if (!output.says_when || !output.cron.trim()) error = "não diz quando rodar: escreva no arquivo, por exemplo \"todo dia às 8h\" ou \"segundas às 10h\"";
+      if (!output.says_when || !output.cron.trim()) error = this.en ? "doesn't say when to run: write it in the file, e.g. \"every day at 8am\" or \"Mondays at 10am\"" : "não diz quando rodar: escreva no arquivo, por exemplo \"todo dia às 8h\" ou \"segundas às 10h\"";
       else {
-        cron = output.cron.trim(); every = cronWords(cron);
+        cron = output.cron.trim(); every = cronWords(cron, this.en);
         try { new Intl.DateTimeFormat("en", { timeZone: output.timezone }); tz = output.timezone; } catch {} // "local" and friends: keep São Paulo
         const f = this.nextFire(cron, tz);
-        if ("error" in f) error = `não consegui agendar (${f.error}): reescreva quando rodar`;
+        if ("error" in f) error = this.en ? `couldn't schedule it (${f.error}): rewrite when it runs` : `não consegui agendar (${f.error}): reescreva quando rodar`;
         else next = f.next;
       }
     } catch (e) {
-      error = "não consegui ler o arquivo agora; salve de novo em instantes";
+      error = this.en ? "couldn't read the file right now; save it again in a moment" : "não consegui ler o arquivo agora; salve de novo em instantes";
       console.error("reminder parse", String(e));
     }
     const id = old?.id ?? crypto.randomUUID().slice(0, 8);
@@ -319,7 +324,7 @@ export class Book extends DurableObject<Env> {
       for (const r of due) {
         const thread = r.thread === "main" || this.epics().some((e) => e.id === r.thread) ? r.thread : "main";
         // Old set_reminder rows (no file) posted as the person; file reminders are @vibe speaking for them.
-        if (r.name) this.addMessage(thread, "ai", `⏰ **${r.name}** · lembrete de ${(names[r.owner] ?? r.owner.split("@")[0]).split(" ")[0]}\n\n${r.text}`, { tag: "reminder", forWho: r.owner });
+        if (r.name) this.addMessage(thread, "ai", `⏰ **${r.name}** · ${this.en ? "reminder from" : "lembrete de"} ${(names[r.owner] ?? r.owner.split("@")[0]).split(" ")[0]}\n\n${r.text}`, { tag: "reminder", forWho: r.owner });
         else this.addMessage(thread, r.owner, `⏰ Lembrete: ${r.text}`, { tag: "reminder" });
         const f = this.nextFire(r.cron!, r.tz, now);
         if ("next" in f) this.sql.exec(`UPDATE reminders SET next_at = ? WHERE id = ?`, f.next, r.id);
@@ -702,7 +707,7 @@ export class Book extends DurableObject<Env> {
   // new round closes itself too.
   reopenIfArchived(thread: string) {
     if (thread === "main" || !this.sql.exec(`UPDATE epics SET archived = -1 WHERE id = ? AND archived = 1`, thread).rowsWritten) return;
-    this.addMessage(thread, "ai", "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.");
+    this.addMessage(thread, "ai", this.en ? "↩ I reopened this epic to continue. When the new tasks are done, it archives itself again." : "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.");
     this.epicsChanged();
   }
   rearm(epicId: string) {
@@ -767,6 +772,17 @@ export class Book extends DurableObject<Env> {
   // ---- agents (MCP, called over RPC by the Worker after it checked membership) ----
   bind(bookId: string) {
     if (!this.get("book_id")) this.set("book_id", bookId);
+  }
+  /** The room's language = its owner's (users.lang), for what @vibe writes here: notes, nudges, suggestions. */
+  get en() {
+    return this.get("lang") === "en";
+  }
+  async refreshLang() {
+    const id = this.get("book_id");
+    if (!id || Date.now() - Number(this.get("lang_at") ?? 0) < 3600_000) return;
+    const r = await this.env.DB.prepare(`SELECT u.lang FROM books b JOIN users u ON u.email = b.owner WHERE b.id = ?`).bind(id).first<{ lang: string | null }>();
+    this.set("lang", r?.lang === "en" ? "en" : "pt");
+    this.set("lang_at", String(Date.now()));
   }
 
   async agentRead(bookId: string, since = 0, email = "") {
@@ -1075,7 +1091,7 @@ export class Book extends DurableObject<Env> {
       const owner = (await this.env.DB.prepare(`SELECT owner FROM books WHERE id = ?`).bind(this.get("book_id") ?? "").first<{ owner: string }>())?.owner;
       const ownerName = owner ? ((await this.names())[owner] ?? owner.split("@")[0]).split(/\s+/)[0] : "";
       const label = (name ? `${name} (${who})` : who).replace(/[<>\[\]`*_@\p{Cc}]/gu, (ch) => (ch === "@" ? "＠" : ""));
-      this.addMessage("main", "ai", `${ownerName ? `@${ownerName} ` : ""}${label} pediu pra entrar nesta sala. Libere ou recuse em **Pessoas**, na lateral.`);
+      this.addMessage("main", "ai", `${ownerName ? `@${ownerName} ` : ""}${label} ${this.en ? "asked to join this room. Let them in or decline under **People**, in the sidebar." : "pediu pra entrar nesta sala. Libere ou recuse em **Pessoas**, na lateral."}`);
       this.broadcast({ t: "requests", requests: await this.requests() });
       return new Response("ok");
     }
@@ -1271,7 +1287,9 @@ export class Book extends DurableObject<Env> {
         if (now - del.ts >= AFTER) {
           this.set(`nudged:${e.id}`, String(del.id));
           const list = open.map((t) => t.title).slice(0, 5).join("; ");
-          this.addMessage(e.id, "ai", `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`);
+          this.addMessage(e.id, "ai", this.en
+            ? `${at(del.author)}, there was a delivery here, but ${open.length === 1 ? "a task is still open" : `${open.length} tasks are still open`}: ${list}. If it's finished, mark it done (or tell me "all done"); if something's missing, say what.`
+            : `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`);
           continue;
         }
         next = Math.min(next, del.ts + AFTER);
@@ -1282,7 +1300,10 @@ export class Book extends DurableObject<Env> {
       if (now < due) { next = Math.min(next, due); continue; }
       this.set(`stale:${e.id}`, String(now));
       const owners = [...new Set(stuck.map((t) => t.owner!))];
-      this.addMessage(e.id, "ai", `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${stuck.map((t) => `${t.title} (${STATUS_LABEL[t.status]})`).slice(0, 5).join("; ")}. Segue? Se terminou, marca feito; se travou, diz o que falta.`);
+      const items = stuck.map((t) => `${t.title} (${(this.en ? STATUS_LABEL_EN : STATUS_LABEL)[t.status]})`).slice(0, 5).join("; ");
+      this.addMessage(e.id, "ai", this.en
+        ? `${owners.map(at).join(" ")}, nothing new here for over a day: ${items}. Still going? If it's finished, mark it done; if it's stuck, say what's missing.`
+        : `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${items}. Segue? Se terminou, marca feito; se travou, diz o que falta.`);
       next = Math.min(next, now + STALE);
     }
     if (next < Infinity) await this.wakeAt(next);
@@ -1307,7 +1328,7 @@ export class Book extends DurableObject<Env> {
     const docSig = hash(room.slice(0, 4000));
     if (seen.get(DOC_GRADE) !== docSig) {
       let notes: string[] | null = null;
-      if (room.length < 120) notes = ["doc quase vazio: diga o que o projeto entrega, o que fica de fora e como saber que deu certo"];
+      if (room.length < 120) notes = [this.en ? "doc almost empty: say what the project delivers, what's left out and how you'll know it worked" : "doc quase vazio: diga o que o projeto entrega, o que fica de fora e como saber que deu certo"];
       else {
         const q: Record<string, Question> = {};
         for (const [k, , ask] of DOC_CHECKS) q[k] = { type: "noul", instructions: ask };
@@ -1316,7 +1337,7 @@ export class Book extends DurableObject<Env> {
         if (!r) failed = true;
         else {
           cost += r.cost;
-          notes = DOC_CHECKS.filter(([k]) => (r.answers[k]?.noul ?? 1) < 0.35).map(([, note]) => note);
+          notes = DOC_CHECKS.filter(([k]) => (r.answers[k]?.noul ?? 1) < 0.35).map(([, note, , noteEn]) => (this.en ? noteEn : note));
         }
       }
       if (notes) {
@@ -1344,9 +1365,9 @@ export class Book extends DurableObject<Env> {
       cost += r.cost;
       const no = (k: string) => (r.answers[k]?.noul ?? 1) < 0.35;
       const f: Record<string, string[]> = {};
-      if (q.cobre && no("cobre")) f[e.id] = ["as tarefas não cobrem o objetivo do doc"];
+      if (q.cobre && no("cobre")) f[e.id] = [this.en ? "the tasks don't cover the doc's goal" : "as tarefas não cobrem o objetivo do doc"];
       open.forEach((t, i) => {
-        const n = [no(`c${i}`) && "sem critério de pronto", no(`u${i}`) && "parece mais de uma tarefa"].filter(Boolean) as string[];
+        const n = [no(`c${i}`) && (this.en ? "no done criterion" : "sem critério de pronto"), no(`u${i}`) && (this.en ? "looks like more than one task" : "parece mais de uma tarefa")].filter(Boolean) as string[];
         if (n.length) f[t.id] = n;
       });
       this.sql.exec(`INSERT INTO grades (id, sig, flags, ts) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET sig = excluded.sig, flags = excluded.flags, ts = excluded.ts`, e.id, sig, JSON.stringify(f), Date.now());
@@ -1416,6 +1437,7 @@ export class Book extends DurableObject<Env> {
   }
 
   async alarm() {
+    await this.refreshLang().catch(() => {});
     await this.fireReminders().catch((e) => console.error("reminders", String(e)));
     await this.sendDueMail().catch((e) => console.error("mention mail", String(e)));
     await this.housekeep().catch((e) => console.error("housekeep", String(e)));
@@ -1454,6 +1476,7 @@ export class Book extends DurableObject<Env> {
           }),
         }),
         prompt: `Classifique este vibebook (documento compartilhado com chat e épicos).
+Escreva título, resumo e épicos sugeridos (título, por quê, tarefas) no idioma em que a conversa está${this.en ? " (esta sala é em inglês: na dúvida, inglês)" : ""}.
 Pastas que essas pessoas já usam: ${folders.results.map((f) => f.folder).join(", ") || "(nenhuma)"}
 Épicos existentes: ${this.epics().map((e) => e.title).join(", ") || "(nenhum)"}
 Documento:

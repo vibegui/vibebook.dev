@@ -40,5 +40,9 @@ for (const [c, w] of [["0 8 * * *", "todo dia às 08:00"], ["0 10 * * 1", "toda 
   const got = cronWords(c);
   if (got !== w) { fail++; console.log("FAIL words", c, got); } else console.log("ok  ", w);
 }
+for (const [c, w] of [["0 8 * * *", "every day at 08:00"], ["0 10 * * 1,3", "every Monday, Wednesday at 10:00"], ["30 9 * * 1-5", "weekdays at 09:30"]]) {
+  const got = cronWords(c, true);
+  if (got !== w) { fail++; console.log("FAIL words en", c, got); } else console.log("ok  ", w);
+}
 console.log(fail ? `${fail} failed` : "all checks passed");
 process.exit(fail ? 1 : 0);
