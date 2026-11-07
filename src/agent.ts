@@ -60,8 +60,8 @@ const TOOLS = [
   },
   {
     name: "set_room_icon",
-    description: "Set the room's icon (shown on its tile in everyone's rail and as the tab icon), e.g. the favicon of the room's site: pass image_url (public https, PNG/JPEG/WebP/GIF/ICO, no SVG, ≤256KB). clear: true removes it. Only when your human asked for it.",
-    inputSchema: { type: "object", properties: { room_id: { type: "string" }, image_url: { type: "string" }, clear: { type: "boolean" } }, required: ["room_id"] },
+    description: "Set the room's icon (shown on its tile in everyone's rail and as the tab icon), e.g. the favicon of the room's site: pass image_url (public https) or file_id (an image already in this room: the id or the url from read_room's files[]); PNG/JPEG/WebP/GIF/ICO, no SVG, ≤256KB. clear: true removes it. Only when your human asked for it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, image_url: { type: "string" }, file_id: { type: "string" }, clear: { type: "boolean" } }, required: ["room_id"] },
   },
   {
     name: "wait_for_messages",
@@ -479,6 +479,18 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.UPLOAD_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       if (a.clear) return { ok: true, icon: await setRoomIcon(env, id, null) };
+      // An image already in this room: by file_id, or the room's own file URL passed as image_url. Read from R2, no fetch.
+      const own = str(a.file_id) || (str(a.image_url).match(new RegExp(`/api/books/${id}/files/[a-f0-9]+`))?.[0] ?? "");
+      if (own) {
+        const fid = own.replace(/^.*\//, "");
+        if (!/^[a-f0-9]{8,64}$/.test(fid)) throw new Error("file_id is the id from read_room's files[].url (the last part)");
+        const obj = await env.FILES.get(`${id}/${fid}`);
+        if (!obj) throw new Error(`no file ${fid} in room ${id}`);
+        if (obj.size > 256_000) throw new Error(`that file is ${Math.round(obj.size / 1000)}KB; icons are ≤256KB (resize it, e.g. to 128px, and upload it again)`);
+        const v = await setRoomIcon(env, id, { type: obj.httpMetadata?.contentType ?? "", body: await obj.arrayBuffer() });
+        ctx.waitUntil(track(env, "room_icon", { user: me.email, dims: { book: id, set: true, agent: true, file: true } }));
+        return { ok: true, icon: v, url: `${origin}/b/${id}` };
+      }
       const ok = checkUrl(str(a.image_url));
       if ("error" in ok) throw new Error(`image_url: ${ok.error}`);
       const r = await fetch(ok.url, { redirect: "follow", headers: { accept: "image/*" } });
