@@ -227,10 +227,10 @@ const TOOLS = [
   },
   {
     name: "add_task",
-    description: "Add a task to an epic, optionally with an owner (a member's email) and a due date (short text, e.g. \"qua 23h\"). Use it when cleaning up or planning: you organize the room yourself.",
+    description: "Add a task to an epic, or to the room itself with epic_id \"main\" (the room doc's \"## Tarefas\" checklist: pending items that belong to no epic, like a decision waiting on someone), optionally with an owner (a member's email) and a due date (short text, e.g. \"qua 23h\"). Use it when cleaning up or planning: you organize the room yourself. A task in review with an owner shows as waiting on them.",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, epic_id: { type: "string" }, title: { type: "string" }, owner: { type: "string", description: "member email" }, due: { type: "string" } },
+      properties: { room_id: { type: "string" }, epic_id: { type: "string", description: "an epic id, or \"main\" for the room's own tasks" }, title: { type: "string" }, owner: { type: "string", description: "member email" }, due: { type: "string" } },
       required: ["room_id", "epic_id", "title"],
     },
   },

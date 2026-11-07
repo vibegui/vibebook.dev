@@ -98,6 +98,13 @@ export class Book extends DurableObject<Env> {
     const r = this.sql.exec<{ flags: string }>(`SELECT flags FROM grades WHERE id = ?`, DOC_GRADE).toArray()[0];
     return r ? (JSON.parse(r.flags) as string[]) : [];
   }
+  /** The room's own tasks (epic_id "main"): the "## Tarefas" checklist of the room doc, synced like an epic's. */
+  roomTasks() {
+    return this.sql
+      .exec<{ id: string; title: string; done: number; owner: string | null; due: string | null; status: string | null }>(`SELECT id, title, done, owner, due, status FROM tasks WHERE epic_id = 'main' ORDER BY ts`)
+      .toArray()
+      .map((t) => ({ ...t, epic_id: "main", status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
+  }
   epics() {
     // @vibe's grading (grade()): per epic, id → short notes on the epic itself and its tasks.
     const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades WHERE id != ?`, DOC_GRADE).toArray().map((r) => [r.id, JSON.parse(r.flags) as Record<string, string[]>]));
@@ -135,12 +142,13 @@ export class Book extends DurableObject<Env> {
     this.autoArchive();
     this.tasksToDocs();
     const epics = this.epics();
-    this.broadcast({ t: "epics", epics });
+    const roomTasks = this.roomTasks();
+    this.broadcast({ t: "epics", epics, roomTasks });
     const id = this.get("book_id");
     if (!id) return;
     // "Esperando você": a task in review waits on its owner. Rows of tasks that left review, and every wait in an
     // archived epic's thread, go away.
-    const review = epics.filter((e) => !e.archived).flatMap((e) => e.tasks.filter((t) => t.status === "review" && t.owner).map((t) => ({ t, e })));
+    const review = [...epics.filter((e) => !e.archived), { id: "main", title: "sala principal", tasks: roomTasks }].flatMap((e) => e.tasks.filter((t) => t.status === "review" && t.owner).map((t) => ({ t, e })));
     const keep = review.map(({ t }) => `t${t.id}`);
     const gone = epics.filter((e) => e.archived).map((e) => e.id);
     const DB = this.env.DB;
@@ -513,7 +521,7 @@ export class Book extends DurableObject<Env> {
     return id;
   }
   addTask(epicId: string, title: string) {
-    if (!this.sql.exec(`SELECT 1 FROM epics WHERE id = ?`, epicId).toArray().length) return null;
+    if (epicId !== "main" && !this.sql.exec(`SELECT 1 FROM epics WHERE id = ?`, epicId).toArray().length) return null;
     const id = rid();
     this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts) VALUES (?, ?, ?, ?)`, id, epicId, title.slice(0, 300), Date.now());
     this.rearm(epicId);
@@ -606,11 +614,17 @@ export class Book extends DurableObject<Env> {
       const next = renderBlock(cur, e.tasks.map((t) => ({ id: t.id, title: t.title, done: t.status === "done" })));
       if (next !== cur) this.setDoc(next, "tasks", undefined, e.id);
     }
+    // The room doc gets the block only once it has room tasks (or already has the section).
+    const room = this.roomTasks(), doc = this.get("doc") ?? "";
+    if (room.length || parseBlock(doc)) {
+      const next = renderBlock(doc, room.map((t) => ({ id: t.id, title: t.title, done: t.status === "done" })));
+      if (next !== doc) this.setDoc(next, "tasks");
+    }
   }
   /** doc → tasks: someone edited the checklist in an epic's doc; create, rename, tick or delete tasks to match. */
   docToTasks(epic: string, text: string) {
     const parsed = parseBlock(text);
-    const e = this.epics().find((x) => x.id === epic);
+    const e = epic === "main" ? { tasks: this.roomTasks() } : this.epics().find((x) => x.id === epic);
     if (!parsed || !e) return;
     const { update, add, del } = reconcile(parsed, e.tasks.map((t) => ({ id: t.id, title: t.title, done: t.status === "done" })));
     if (!update.length && !add.length && !del.length) return;
@@ -622,7 +636,7 @@ export class Book extends DurableObject<Env> {
     const ts = Date.now();
     add.forEach((a, i) => this.sql.exec(`INSERT INTO tasks (id, epic_id, title, ts, done, status) VALUES (?, ?, ?, ?, ?, ?)`, rid(), epic, a.title.slice(0, 300), ts + i, a.done ? 1 : 0, a.done ? "done" : "todo"));
     for (const id of del) this.sql.exec(`DELETE FROM tasks WHERE id = ?`, id);
-    if (add.length) this.rearm(epic);
+    if (add.length && epic !== "main") this.rearm(epic);
     this.epicsChanged();
   }
   // Continuing a finished epic: a person writing in an archived epic's thread reopens it (kept open, so it doesn't
@@ -640,7 +654,7 @@ export class Book extends DurableObject<Env> {
   setDoc(text: string, by: string, except?: WebSocket, epic?: string) {
     const key = epic ? `doc:${epic}` : "doc";
     this.set(key, text.slice(0, 100_000));
-    if (epic && by !== "tasks") this.docToTasks(epic, this.get(key) ?? "");
+    if (by !== "tasks") this.docToTasks(epic ?? "main", this.get(key) ?? "");
     this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
     if (!epic) this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS)); // @vibe grades the room doc
     // Whoever is co-editing sees @vibe's/agents' (or a non-Yjs client's) change arrive live.
@@ -654,8 +668,8 @@ export class Book extends DurableObject<Env> {
     if (this.get(key) === text) return;
     this.set(key, text.slice(0, 100_000));
     this.broadcast({ t: "doc", text: this.get(key), by: "yjs", epic: epic ?? null });
-    if (epic) this.docToTasks(epic, this.get(key) ?? "");
-    else this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
+    this.docToTasks(epic ?? "main", this.get(key) ?? "");
+    if (!epic) this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
   }
   /** What a fresh co-editing doc starts with: the stored markdown (an epic without one gets its seed); null = no such epic. */
   docSeed(bookId: string, epic?: string): string | null {
@@ -745,6 +759,8 @@ export class Book extends DurableObject<Env> {
         vibe_notes: e.flags,
         tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due, vibe_notes: t.flags })),
       })),
+      // The room's own tasks ("## Tarefas" in the room doc): add_task with epic_id "main".
+      room_tasks: this.roomTasks().map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due })),
       decisions: this.decisions().map((d) => ({ text: d.text, who: d.who, kind: d.kind, at: new Date(d.ts).toISOString() })),
       messages,
       // Reminders your human set that fired in the last 7 days and no agent of theirs closed with ack done yet.
@@ -901,7 +917,7 @@ export class Book extends DurableObject<Env> {
     const out = await (async () => {
       switch (op) {
         case "add_task": {
-          const e = epic();
+          const e = s("epic_id") === "main" ? "main" : epic();
           if (!e) return { ok: false, error: "epic not found" };
           if (!s("title")?.trim()) return { ok: false, error: "title is required" };
           const id = this.addTask(e, s("title")!.trim())!;
@@ -1026,6 +1042,7 @@ export class Book extends DurableObject<Env> {
         docNotes: this.docNotes(),
         docs: this.epicDocs(),
         epics: this.epics(),
+        roomTasks: this.roomTasks(),
         messages: this.messages(),
         // Everything fits in the first load: no thread has older messages to fetch.
         complete: (this.sql.exec(`SELECT count(*) AS n FROM messages`).one().n as number) <= 500,
@@ -1261,7 +1278,7 @@ export class Book extends DurableObject<Env> {
     // The rest in a follow-up pass, unless Jev just failed (then the next change retries: no loop against a down API).
     if (!failed && todo.length > batch.length) this.ctx.waitUntil(this.wakeAt(Date.now() + 5_000));
     if (!changed) return;
-    if (batch.length) this.broadcast({ t: "epics", epics: this.epics() });
+    if (batch.length) this.broadcast({ t: "epics", epics: this.epics(), roomTasks: this.roomTasks() });
     this.ctx.waitUntil(track(this.env, "grade", { dims: { book: this.get("book_id") ?? undefined, epics: batch.length, model: this.env.MODEL_JUDGE, cost: +cost.toFixed(6) } }));
   }
 
