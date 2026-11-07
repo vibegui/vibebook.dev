@@ -699,7 +699,7 @@
   .doc .cm .cm-selectionBackground, .doc .cm .cm-focused .cm-selectionBackground { background: var(--mention-bg) !important; }
   .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
-  @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
+  @media (min-width: 901px) { .docPeek, .docEditBar, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -749,7 +749,9 @@
     .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
     .peekRow button small { font-size: 11px; font-weight: 600; }
     .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
-    .book[data-sheet="doc"][data-pane="doc"] .peekRow #peekEdit.on { background: var(--ink); color: var(--panel); }
+    .doc .docEditBar { display: flex; order: 98; flex: none; align-items: center; justify-content: center; gap: 6px; height: 44px; margin: 0 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 15px; font-weight: 600; }
+    .doc[data-view="edit"] .docEditBar { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+    .doc:not([data-pane="doc"]) .docEditBar { display: none; }
     .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
     .book[data-sheet="doc"] .docPeek .grab { display: none; } /* open: no handle, no empty band under the tabs */
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
@@ -1335,6 +1337,7 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Pronto": "Done",
   "Documento e arquivos da sala": "Room doc and files",
   "Ligado": "On",
   "ligado": "on",
@@ -2267,7 +2270,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" id="peekEdit" data-act="edit" title="${t("Editar")}" aria-label="${t("Editar")}">${icon("pencil", 17)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2289,6 +2292,7 @@ function renderBook() {
       </form>
     </main>
     <section class="doc">
+      <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
       <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button><button type="button" data-pane="reminders">${t("Lembretes")}<small id="remCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
@@ -2326,14 +2330,9 @@ function renderBook() {
   sheetDrag(document.getElementById("docPeek"), "doc", true, (e) => {
     // The board (phones: it lives here, not in the header) swaps the chat for the kanban; the doc sheet closes.
     if (e.target.closest("[data-act=board]")) { closeSheet(); document.getElementById("toggleBoard").click(); return; }
-    // ✎ opens the doc in edit mode, or switches back to reading when it's already editing there.
-    if (e.target.closest("[data-act=edit]")) {
-      const editing = book.dataset.sheet === "doc" && book.dataset.pane === "doc" && docPanel.dataset.view === "edit";
-      setPane("doc"); docPanel.querySelector(`.seg [data-view="${editing ? "preview" : "edit"}"]`)?.click(); openSheet("doc");
-      return;
-    }
     const pane = e.target.closest("[data-pane]")?.dataset.pane || "doc";
     if (book.dataset.sheet === "doc" && book.dataset.pane === pane) return closeSheet();
+    if (book.classList.contains("boardview")) document.getElementById("toggleBoard").click(); // doc and board: one at a time
     setPane(pane); openSheet("doc");
   });
   sheetDrag(document.getElementById("docGrab"), "doc", false);
@@ -2516,9 +2515,12 @@ function renderBook() {
   doc.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { const ep = docEpic(); if (ep) S.docs[ep] = doc.value; else S.doc = doc.value; send({ t: "doc", text: doc.value, epic: ep || undefined }); }, 400); };
   doc.onblur = () => renderDoc();
   const docPanel = $app.querySelector(".doc");
+  // Phones: the doc's foot is "✎ Editar" (reading) or "✓ Pronto" (editing); closing the sheet goes back to reading.
+  function editBar(v) { const b = document.getElementById("docEditBar"); if (b) b.innerHTML = v === "edit" ? `${icon("check", 16)} ${t("Pronto")}` : `${icon("pencil", 16)} ${t("Editar")}`; }
+  document.getElementById("docEditBar").onclick = () => setView(docPanel.dataset.view === "edit" ? "preview" : "edit");
   const setView = (v) => {
     docPanel.dataset.view = v;
-    document.getElementById("peekEdit")?.classList.toggle("on", v === "edit");
+    editBar(v);
     docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === v));
     try { localStorage.setItem("vb.docView", v); } catch {}
     if (v === "edit") { ensureCollab(); (collab || doc).focus(); } else { ensureCollab(); renderDoc(); }
@@ -2526,7 +2528,7 @@ function renderBook() {
   docPanel.querySelectorAll(".seg button").forEach((b) => b.onclick = () => setView(b.dataset.view));
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
-  document.getElementById("peekEdit")?.classList.toggle("on", savedView === "edit");
+  editBar(savedView);
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
   renderSide(); renderChat(); renderDoc(true); renderFiles(); renderApps(); renderReminders(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
   welcome();
@@ -3058,6 +3060,7 @@ function openSheet(which) {
 }
 function closeSheet(pick) {
   const bk = $app.querySelector(".book"); if (!bk?.dataset.sheet) return;
+  bk.querySelector('.doc[data-view="edit"] .seg [data-view="preview"]')?.click(); // closing the doc ends editing
   delete bk.dataset.sheet;
   if (!history.state?.sheet) return;
   if (pick) urlSynced = false; // the next syncUrl replaces the sheet's entry with the picked thread's URL
@@ -3066,6 +3069,7 @@ function closeSheet(pick) {
 function sheetPop() {
   if (sheetSkip) { sheetSkip = false; return true; }
   const bk = $app.querySelector(".book"); if (!bk?.dataset.sheet) return false;
+  bk.querySelector('.doc[data-view="edit"] .seg [data-view="preview"]')?.click();
   delete bk.dataset.sheet;
   return true;
 }
