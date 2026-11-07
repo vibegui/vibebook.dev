@@ -703,8 +703,13 @@
     .chathead h2 .epicName { cursor: pointer; }
     .sideTop .phOnly { display: grid; }
     .sideTop #railToggle { display: none; }
-    .chathead h2 { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 17px; padding-top: 6px; }
+    .chathead h2 { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: minmax(0, max-content) repeat(3, auto) 1fr; justify-content: start; align-items: center; gap: 4px 2px; font-size: 17px; padding-top: 6px; }
     .chathead h2 .epicName { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+    /* The ▾ (and an epic's ✓ 🗑) stay on the title's line: a grid where only the name shrinks (ellipsis); the
+       "esperando…" chip takes the line below. */
+    .chathead #threadTitle { display: grid; }
+    .chathead h2 .waitChip { grid-column: 1 / -1; }
+    .chathead h2 #epicArch, .chathead h2 #epicDel { width: 28px; height: 28px; padding: 0; }
     .chathead h2 .folderChip, #toggleDoc { display: none; }
     .chathead h2 .waitChip { flex-basis: 100%; width: fit-content; max-width: 100%; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
     #toggleBoard { white-space: nowrap; }
