@@ -648,34 +648,51 @@
   .doc .cm .cm-scroller { padding: 16px 8px; font: 14px/1.6 ui-monospace, Menlo, monospace; }
   .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
-  .tabs { display: none; }
+  @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
-    .book, .book.nodoc { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: var(--vvh, 100dvh); }
+    .book, .book.nodoc { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: var(--vvh, 100dvh); }
     .book > .side, .book > .chat, .book > .doc { min-height: 0; }
     html, body { overscroll-behavior: none; }
     .msgs, .side, .preview, .lanes, .lane { overscroll-behavior: contain; }
     .resizer { display: none; }
     /* iOS zooms into inputs under 16px and the page then pans sideways. */
     input, textarea, select { font-size: 16px !important; }
-    .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
-    .tabs button.sel { background: var(--ink); color: var(--bg); }
-    .book > .side, .book > .chat, .book > .doc { display: none; }
-    .book[data-tab="side"] > .side, .book[data-tab="chat"] > .chat, .book[data-tab="doc"] > .doc { display: flex; }
-    /* Room header on phones: title (ellipsis) + bell + board on one line, "esperando…" under the title.
-       The folder chip and the Doc toggle go: the Doc tab above already does that. */
-    .chathead { height: auto; min-height: 52px; padding: 8px 12px 8px 16px; align-items: flex-start; gap: 4px; }
+    /* Phones: the chat fills the screen; the sidebar (thread switcher, people) and the doc are bottom sheets over it.
+       The sheet slides with transform only (no layout shift); book[data-sheet] says which one is open. */
+    .book > .chat { display: flex; }
+    .book > .side, .book > .doc, .book.nodoc > .doc { display: flex; position: fixed; z-index: 20; left: 0; right: 0; top: calc(var(--vvh, 100dvh) * .12); height: calc(var(--vvh, 100dvh) * .88); border: 0; border-radius: 18px 18px 0 0; background: var(--bg); box-shadow: 0 -12px 40px rgb(0 0 0 / .18), inset 0 1px 0 var(--line); transform: translateY(calc(100% + 48px)); visibility: hidden; transition: transform .3s cubic-bezier(.32, .72, 0, 1), visibility 0s .3s; }
+    .book[data-sheet="side"] > .side, .book[data-sheet="doc"] > .doc { transform: none; visibility: visible; transition: transform .3s cubic-bezier(.32, .72, 0, 1); }
+    .book > .sheetDrag { visibility: visible; transition: none; }
+    .doc { overflow: hidden; }
+    .sheetDim { display: block; position: fixed; inset: 0; z-index: 19; background: rgb(0 0 0 / .35); opacity: 0; pointer-events: none; transition: opacity .3s; }
+    .book[data-sheet] > .sheetDim { opacity: 1; pointer-events: auto; }
+    .sheetGrab { display: grid; place-items: center; flex: none; width: 100%; height: 22px; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: transparent; touch-action: none; cursor: grab; }
+    .sheetGrab i, .docPeek .grab { display: block; width: 38px; height: 5px; border-radius: 99px; background: var(--line); }
+    .doc header { height: 48px; padding: 0 16px; }
+    .side .sheetGrab { position: sticky; top: -14px; z-index: 1; margin: -14px -16px -14px; width: calc(100% + 32px); background: var(--bg); }
+    .docPeek { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: none; margin: 0 8px; padding: 5px 14px 8px; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--bg); color: var(--mute); font-size: 13px; text-align: left; touch-action: none; }
+    .docPeek .grab { align-self: center; width: 32px; height: 4px; }
+    #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
+    #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #peekTxt small { flex: none; font-size: 12px; }
+    .docPeek + .composer { border-top-color: transparent; }
+    .book.boardview .docPeek { display: none; }
+    .book.boardview .docPeek + .composer { border-top-color: var(--line); }
+    /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
+    .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
+    .phHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); flex: none; }
+    .thChev { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0; margin-left: -4px; border: 0; background: none; color: var(--mute); }
+    .chathead h2 .epicName { cursor: pointer; }
+    .sideTop .phOnly { display: grid; }
+    .sideTop #railToggle { display: none; }
     .chathead h2 { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 17px; padding-top: 6px; }
     .chathead h2 .epicName { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
     .chathead h2 .folderChip, #toggleDoc { display: none; }
     .chathead h2 .waitChip { flex-basis: 100%; width: fit-content; max-width: 100%; margin-left: 0; overflow: hidden; text-overflow: ellipsis; }
     #toggleBoard { white-space: nowrap; }
-    /* Phones: the rail is gone, so the tab bar carries ← home and a room switcher; tighter gutters, safe areas. */
-    .tabs { align-items: center; padding: max(8px, env(safe-area-inset-top)) 10px 8px; position: sticky; top: 0; z-index: 3; }
-    .tabs button { padding: 6px 12px; }
-    .tabs .tabHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); text-decoration: none; flex: none; }
-    .tabs .tabRooms { margin-left: auto; border: 0; background: none; color: var(--mute); width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
     .msgs { padding: 16px 14px 12px; gap: 16px; }
     .msg { gap: 10px; }
     .composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
@@ -687,10 +704,10 @@
     .home .top { margin-bottom: 20px; gap: 4px; flex-wrap: nowrap; }
     .home .top .me { flex: none; padding: 2px; }
     .home .top .me > span:not(.avatar) { display: none; }
-    /* The Épicos tab is the whole sidebar: full width, never the desktop's compact rail; ← home lives in the tab bar. */
+    /* The switcher sheet is the whole sidebar: full width, never the desktop's compact rail. */
     .book.rail .side, .book .side { padding: 14px 16px 24px; align-items: stretch; gap: 20px; border-right: 0; }
-    .book .side .sideTop { display: none; }
   }
+  @media (max-width: 900px) and (prefers-reduced-motion: reduce) { .book > .side, .book > .doc, .sheetDim { transition: none !important; } }
   /* Phone home (≤720px): top bar, room grid (70%), router box (30%); the rest lives in the ☰ drawer. */
   .phome { display: grid; grid-template-rows: auto minmax(0, 7fr) minmax(0, 3fr); height: var(--vvh, 100dvh); }
   .ptop { display: flex; align-items: center; gap: 8px; padding: max(8px, env(safe-area-inset-top)) 10px 8px; border-bottom: 1px solid var(--line); background: var(--bg); }
@@ -973,7 +990,10 @@ const EN = {
   "Te mencionaram": "You were mentioned",
   "respondendo…": "replying…",
   "anexo": "attachment",
-  "Épicos": "Epics",
+  "Abrir documento": "Open document",
+  "Fechar documento": "Close document",
+  "Renomear": "Rename",
+  "Trocar de conversa": "Switch conversation",
   "Trocar de sala": "Switch room",
   "Ir pro seu Claude desta sala no herdr": "Go to your Claude for this room in herdr",
   "Ir pro seu Claude no herdr": "Go to your Claude in herdr",
@@ -1280,6 +1300,8 @@ const ICONS = {
   arrowRight: `<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`,
   sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>`,
   moon: `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`,
+  chevronDown: `<path d="m6 9 6 6 6-6"/>`,
+  pencil: `<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/>`,
   contrast: `<circle cx="12" cy="12" r="9"/><path d="M12 17a5 5 0 0 0 0-10z" fill="currentColor"/>`,
 };
 const icon = (n, size = 16) => `<svg class="i" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
@@ -1486,7 +1508,7 @@ async function login() {
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
-  if (viewerPop()) return;
+  if (viewerPop() || sheetPop()) return;
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
   if (!m || !S || m[1] !== S.id) return route();
   thread = new URLSearchParams(location.search).get("t") || "main";
@@ -1873,7 +1895,7 @@ function openBook(id) {
   attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
-  $app.innerHTML = `<div class="book skel" data-tab="chat" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
+  $app.innerHTML = `<div class="book skel" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
@@ -2006,15 +2028,15 @@ function notifyMsg(m) {
 function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
-  <div class="book ${railMode ? "rail" : ""}" data-tab="chat">
-    <nav class="tabs"><a class="tabHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><button data-tab="side">${icon("list")} ${t("Épicos")}</button><button data-tab="chat" class="sel">Chat</button><button data-tab="doc">Doc</button><button type="button" class="tabRooms" aria-label="${t("Trocar de sala")}" title="${t("Trocar de sala")}">${SW_SEARCH}</button></nav>
+  <div class="book ${railMode ? "rail" : ""}">
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div>
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
+      <button type="button" class="docPeek" id="docPeek" aria-label="${t("Abrir documento")}"><i class="grab"></i><span id="peekTxt"></span></button>
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
         <div class="replyBar" id="replyBar" hidden></div>
@@ -2032,6 +2054,7 @@ function renderBook() {
       </form>
     </main>
     <section class="doc">
+      <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
       <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
@@ -2042,6 +2065,7 @@ function renderBook() {
       <div class="decPane" id="decPane"></div>
       <div class="appsPane" id="appsPane"></div>
     </section>
+    <div class="sheetDim" id="sheetDim"></div>
   </div>
   <dialog id="pollDlg">
     <h3>${t("Nova votação")}</h3>
@@ -2054,11 +2078,9 @@ function renderBook() {
     </form>
   </dialog>`;
   const book = $app.querySelector(".book");
-  $app.querySelectorAll(".tabs button[data-tab]").forEach((b) => b.onclick = () => {
-    book.dataset.tab = b.dataset.tab;
-    $app.querySelectorAll(".tabs button[data-tab]").forEach((x) => x.classList.toggle("sel", x === b));
-  });
-  $app.querySelector(".tabRooms").onclick = openSwitch;
+  sheetDrag(document.getElementById("docPeek"), "doc", true);
+  sheetDrag(document.getElementById("docGrab"), "doc", false);
+  document.getElementById("sheetDim").onclick = () => closeSheet();
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
   const setBoard = (on) => {
     book.classList.toggle("boardview", on);
@@ -2497,8 +2519,9 @@ function renderSide() {
   if (railMode && window.innerWidth > 900) return renderRail(el);
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `
+    <button type="button" class="sheetGrab" aria-label="${t("Fechar")}"><i></i></button>
     <div>
-      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
+      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${isPre() ? "" : `<button class="iconBtn phOnly" id="sideRename" title="${t("Renomear")}" aria-label="${t("Renomear")}">${icon("pencil", 18)}</button>`}<button class="iconBtn phOnly" id="sideRooms" title="${t("Trocar de sala")}" aria-label="${t("Trocar de sala")}">${SW_SEARCH}</button><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
@@ -2524,9 +2547,12 @@ function renderSide() {
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
+  sheetDrag(el.querySelector(".sheetGrab"), "side", false);
+  el.querySelector("#sideRooms").onclick = openSwitch;
+  el.querySelector("#sideRename")?.addEventListener("click", renameThread);
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
+    closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
-    const book = $app.querySelector(".book"); if (book.dataset.tab === "side") $app.querySelector('.tabs [data-tab="chat"]').click();
   });
   document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
@@ -2644,14 +2670,83 @@ function renderKanban() {
   });
 }
 
+function renameThread() {
+  const epic = S.epics.find((e) => e.id === thread);
+  const cur = epic ? epic.title : bookTitle();
+  const nt = prompt(epic ? t("Nome do épico:") : t("Nome do vibebook:"), cur);
+  if (!nt?.trim() || nt === cur) return;
+  send(epic ? { t: "epic.rename", id: epic.id, title: nt } : { t: "title", title: nt });
+}
+// Phones: the slim bar above the composer that pulls the doc sheet up: "Doc · <title> · d/n tarefas".
+function renderPeek() {
+  const el = document.getElementById("peekTxt"); if (!el || !S) return;
+  const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep);
+  const text = (ep ? S.docs?.[ep] : S.doc) || "";
+  const title = text.match(/^#\s+(.+)$/m)?.[1].replace(/[*_`]/g, "").trim() || (epic ? epic.title : bookTitle());
+  const n = epic?.tasks.length || 0, d = n && epic.tasks.filter((x) => x.done).length;
+  el.innerHTML = `${icon("doc", 15)}<b>Doc</b><span class="pt">· ${esc(title)}</span>${n ? `<small>${t("{d}/{n} tarefas", { d, n })}</small>` : ""}`;
+}
+// Phones (≤900px): the sidebar ("side": threads, people) and the doc are bottom sheets over the chat. Opening one
+// pushes a history entry so Back closes it (like the file viewer); picking a thread reuses that entry for its URL.
+const ROOM_PHONE = matchMedia("(max-width: 900px)");
+let sheetSkip = false;
+function openSheet(which) {
+  const bk = $app.querySelector(".book"); if (!bk || !ROOM_PHONE.matches || bk.dataset.sheet === which) return;
+  if (!bk.dataset.sheet) history.pushState({ sheet: 1 }, "", location.href);
+  bk.dataset.sheet = which;
+}
+function closeSheet(pick) {
+  const bk = $app.querySelector(".book"); if (!bk?.dataset.sheet) return;
+  delete bk.dataset.sheet;
+  if (!history.state?.sheet) return;
+  if (pick) urlSynced = false; // the next syncUrl replaces the sheet's entry with the picked thread's URL
+  else { sheetSkip = true; history.back(); }
+}
+function sheetPop() {
+  if (sheetSkip) { sheetSkip = false; return true; }
+  const bk = $app.querySelector(".book"); if (!bk?.dataset.sheet) return false;
+  delete bk.dataset.sheet;
+  return true;
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open]")) closeSheet(); });
+// Drag a sheet by its handle (or the peek bar): it follows the finger, and lets go open or closed past a quarter.
+// A tap (no drag) is a plain click: opens from the peek bar, closes from the handle.
+function sheetDrag(handle, which, opening) {
+  if (!handle) return;
+  let dragged = false;
+  handle.onclick = () => { if (dragged) { dragged = false; return; } opening ? openSheet(which) : closeSheet(); };
+  handle.onpointerdown = (e) => {
+    const bk = $app.querySelector(".book"), el = bk?.querySelector(which === "doc" ? ".doc" : ".side"), dim = document.getElementById("sheetDim");
+    if (!el || !ROOM_PHONE.matches) return;
+    const y0 = e.clientY, H = el.offsetHeight; let dy = 0, moving = false;
+    dragged = false;
+    handle.setPointerCapture(e.pointerId);
+    handle.onpointermove = (ev) => {
+      dy = ev.clientY - y0;
+      if (!moving && Math.abs(dy) < 6) return;
+      moving = true; el.classList.add("sheetDrag"); dim.style.transition = "none";
+      const y = Math.min(H, Math.max(0, opening ? H + dy : dy));
+      el.style.transform = `translateY(${y}px)`; dim.style.opacity = String(1 - y / H);
+    };
+    handle.onpointerup = handle.onpointercancel = () => {
+      handle.onpointermove = handle.onpointerup = handle.onpointercancel = null;
+      if (!moving) return;
+      dragged = true; setTimeout(() => (dragged = false), 400); // swallow the click that follows the drag
+      el.classList.remove("sheetDrag"); el.style.transform = ""; dim.style.transition = ""; dim.style.opacity = "";
+      if (opening ? -dy > H / 4 : dy <= H / 4) openSheet(which); else closeSheet();
+    };
+  };
+}
 function renderTasks() {
   const el = document.getElementById("tasks"); if (!el) return;
   const epic = S.epics.find((e) => e.id === thread);
   const head = document.getElementById("threadTitle");
-  if (preOf()) { head.innerHTML = `<span class="epicName">${esc(preOf().title)}</span><small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; el.innerHTML = ""; return; }
+  const chev = `<button type="button" class="thChev" aria-label="${t("Trocar de conversa")}" title="${t("Trocar de conversa")}">${icon("chevronDown", 18)}</button>`;
+  const wireChev = () => head.querySelector(".thChev").onclick = () => openSheet("side");
+  if (preOf()) { head.innerHTML = `<span class="epicName" id="roomName">${esc(preOf().title)}</span>${chev}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; wireChev(); document.getElementById("roomName").onclick = () => ROOM_PHONE.matches && openSheet("side"); el.innerHTML = ""; renderPeek(); return; }
   head.innerHTML = epic
-    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span><button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
-    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
+    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span>${chev}<button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
+    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${chev}${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
@@ -2675,12 +2770,10 @@ function renderTasks() {
       setTimeout(() => document.addEventListener("click", function off(e2) { if (!pop.contains(e2.target)) { pop.remove(); document.removeEventListener("click", off); } }));
     }));
   }
-  document.getElementById("roomName").onclick = () => {
-    const cur = epic ? epic.title : bookTitle();
-    const nt = prompt(epic ? t("Nome do épico:") : t("Nome do vibebook:"), cur);
-    if (!nt?.trim() || nt === cur) return;
-    send(epic ? { t: "epic.rename", id: epic.id, title: nt } : { t: "title", title: nt });
-  };
+  wireChev();
+  // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
+  document.getElementById("roomName").onclick = () => (ROOM_PHONE.matches ? openSheet("side") : renameThread());
+  renderPeek();
   el.style.display = epic ? "" : "none";
   if (!epic) return;
   document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
@@ -3158,6 +3251,7 @@ function renderDoc(force) {
   if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep);
+  renderPeek();
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
   if (force || document.activeElement !== doc) doc.value = text;
 }
