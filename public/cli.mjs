@@ -351,6 +351,14 @@ function readData() {
   }
 }
 var COMPACT_AT = Number(process.env.VIBEBOOK_COMPACT_AT) || 0.75;
+function pluginVersion() {
+  try {
+    const j = JSON.parse(readFileSync(join(homedir(), ".claude", "plugins", "installed_plugins.json"), "utf8"));
+    return String((j.plugins ?? j)["vibebook@vibebook"]?.[0]?.version ?? "");
+  } catch {
+    return "";
+  }
+}
 var herdr = (...args) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 var PROJECTS = join(homedir(), "Projects");
 var LISTEN_PROMPT = 'Ouça a sala do vibebook desta pasta: rode `vibebook listen --model "<seu modelo>"` em background (Bash run_in_background); quando ele sair, `vibebook call read_room`, aja nas mensagens from_your_human e volte a ouvir. (Com o plugin, é o /vibebook:listen.)';
@@ -491,8 +499,13 @@ async function herdrSync(agent, tools) {
       if (inWs.length && !inWs.some((x) => x.agent === "claude") && Date.now() - (e.prompted_at ?? 0) > 2 * 60000) {
         e.prompted_at = Date.now();
         e.listening = true;
+        e.plugin_v = pluginVersion();
+        const updating = !!e.restarting_at;
         delete e.deaf_since;
+        delete e.restarting_at;
         writePrivate(HERDR, map);
+        if (updating)
+          log(`${title}: reabrindo o Claude com o plugin ${e.plugin_v} (mesma conversa)`);
         try {
           herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "60000", "--", ...e.session ? ["--resume", e.session] : [], "/vibebook:listen");
           log(`${title}: o Claude tinha fechado, abri outro em ${e.folder ?? "sua pasta"}`);
@@ -500,6 +513,24 @@ async function herdrSync(agent, tools) {
           const m = err.message;
           log(/timed out waiting for agent startup/.test(m) ? `${title}: o Claude tinha fechado, abrindo outro (demorou pra subir)` : `${title}: o Claude tinha fechado e não consegui abrir outro (${m.slice(0, 120)})`);
         }
+        continue;
+      }
+      const pv = pluginVersion();
+      const live0 = inWs.find((x) => x.agent === "claude");
+      if (e.restarting_at && live0 && Date.now() - e.restarting_at > 5 * 60000) {
+        delete e.restarting_at;
+        e.plugin_v = pv;
+        log(`${title}: não consegui reabrir o Claude pra atualizar o plugin; fica pra quando ele reabrir`);
+      }
+      if (pv && live0 && e.plugin_v !== pv && !e.restarting_at && (live0.agent_status === "idle" || live0.agent_status === "done") && live0.agent_session?.value) {
+        e.session = live0.agent_session.value;
+        e.restarting_at = Date.now();
+        e.prompted_at = 0;
+        writePrivate(HERDR, map);
+        try {
+          herdr("agent", "prompt", live0.pane_id, "/exit");
+          log(`${title}: plugin do vibebook atualizado (${e.plugin_v ?? "?"} → ${pv}); fechei o Claude livre pra reabrir com a mesma conversa`);
+        } catch {}
         continue;
       }
       const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
@@ -551,6 +582,7 @@ async function herdrSync(agent, tools) {
     if (e.session)
       args.push("--resume", e.session);
     e.listening = true;
+    e.plugin_v = pluginVersion();
     e.prompted_at = Date.now();
     writePrivate(HERDR, map);
     try {
