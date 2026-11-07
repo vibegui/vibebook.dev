@@ -664,6 +664,10 @@
   .doc.collab[data-view="edit"] textarea { display: none; }
   .doc .cm .cm-editor { flex: 1; outline: none; background: transparent; }
   .doc .cm .cm-scroller { padding: 16px 8px; font: 14px/1.6 ui-monospace, Menlo, monospace; }
+  /* CodeMirror draws its own caret in black: follow the theme (invisible on the dark one otherwise). */
+  .doc .cm .cm-content { caret-color: var(--ink); }
+  .doc .cm .cm-cursor, .doc .cm .cm-dropCursor { border-left-color: var(--ink); border-left-width: 2px; }
+  .doc .cm .cm-selectionBackground, .doc .cm .cm-focused .cm-selectionBackground { background: var(--mention-bg) !important; }
   .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
   @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
