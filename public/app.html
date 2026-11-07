@@ -3509,12 +3509,19 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo 
 // Touch: drag a message right past 60px to reply (it follows the finger, then snaps back).
 let sw = null;
 document.addEventListener("touchstart", (e) => { const m = e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
+// Once the drag reads as horizontal (10px, more sideways than up/down) it's locked: the list stops scrolling until
+// the finger lifts. A drag that starts vertical is a scroll and never becomes a reply.
 document.addEventListener("touchmove", (e) => {
   if (!sw) return;
   const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
-  if (Math.abs(dy) > Math.abs(dx) || dx < 0) { if (sw.dx) sw.m.style.transform = ""; sw.m.classList.remove("swipe"); sw = Math.abs(dy) > 12 ? null : sw; return; }
-  sw.dx = dx; sw.m.classList.add("swipe"); sw.m.style.transform = `translateX(${Math.min(dx, 80)}px)`;
-}, { passive: true });
+  if (!sw.locked) {
+    if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }
+    if (dx < 10 || Math.abs(dx) <= Math.abs(dy)) return;
+    sw.locked = true; sw.m.classList.add("swipe");
+  }
+  e.preventDefault();
+  sw.dx = Math.max(0, dx); sw.m.style.transform = `translateX(${Math.min(sw.dx, 80)}px)`;
+}, { passive: false });
 document.addEventListener("touchend", () => {
   if (!sw) return;
   const { m, dx } = sw; sw = null;
