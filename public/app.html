@@ -838,7 +838,9 @@
   .swDlg input { width: 100%; box-sizing: border-box; border: 0; outline: 0; font: inherit; font-size: 16px; padding: 10px 12px; background: none; }
   .swDlg #swList { display: grid; gap: 2px; max-height: 50vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
   .swDlg #swList a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; text-decoration: none; color: var(--ink); }
-  .swDlg #swList a.sel, .swDlg #swList a:hover { background: var(--panel); }
+  .swDlg #swList a:hover { background: var(--hover); }
+  .swDlg #swList a.sel { background: var(--mention-bg); color: var(--mention-ink); }
+  .swDlg #swList a.sel small { color: inherit; opacity: .75; }
   .swDlg #swList .tile { opacity: 1; width: 26px; height: 26px; font-size: 11px; border-radius: 8px; }
   .swDlg #swList small { margin-left: auto; color: var(--mute); }
   @media (max-width: 900px) { body.has-sw #switcher { display: none; } body.has-sw #app { margin-left: 0; } }
