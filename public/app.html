@@ -345,6 +345,15 @@
   .task.done span { text-decoration: line-through; color: var(--mute); }
   .msgs { flex: 1; overflow: auto; padding: 28px 28px 20px; display: flex; flex-direction: column; gap: 24px; }
   .kanban { display: none; }
+  /* Desktop: the board is a tab of the doc panel (next to Doc) and the chat stays; phones keep the header button. */
+  @media (min-width: 901px) {
+    .chathead #toggleBoard { display: none !important; }
+    .doc[data-pane="board"] :is(.preview, #doc, header .seg, .filesPane) { display: none; }
+    .doc .kanban { display: none; }
+    .doc[data-pane="board"] .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 12px 16px 16px; gap: 12px; overflow: auto; }
+    .doc .lanes { grid-template-columns: repeat(4, minmax(150px, 1fr)); }
+  }
+  .ptBoard .kN { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 10px/16px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
   .book.boardview .tasks, .book.boardview .msgs, .book.boardview .composer, .book.boardview .agentNudge { display: none; }
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
@@ -566,12 +575,12 @@
   /* doc panel tabs + files library */
   .ptabs { display: flex; gap: 2px; flex: 1; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 5px; margin: -5px; } /* room for the ✻ ring */
   .doc header .seg { flex: none; }
-  .ptabs button { border: none; background: none; padding: 0 9px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; gap: 4px; flex: none; font: 600 14px/1 "Schibsted Grotesk", sans-serif; color: var(--mute); white-space: nowrap; }
+  .ptabs button { border: none; background: none; padding: 0 7px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; gap: 4px; flex: none; font: 600 14px/1 "Schibsted Grotesk", sans-serif; color: var(--mute); white-space: nowrap; }
   .ptabs button:hover { background: var(--hover); }
   .ptabs button.sel { color: var(--ink); background: var(--hover); }
   .ptabs .ptDoc { color: var(--ink); }
   .chathead #myClaude { display: none !important; } /* the doc toolbar's ✻ opens Agents */
-  .ptabs .ptAgents { margin-left: auto; margin-right: 6px; background: var(--claude); color: #fff; border-radius: 10px; }
+  .ptabs .ptAgents { margin-left: auto; margin-right: 6px; position: sticky !important; right: 0; z-index: 1; background: var(--claude); color: #fff; border-radius: 10px; }
   .peekAgents, .ptAgents { width: 34px; height: 34px; padding: 0 !important; display: grid !important; place-items: center; flex: none; }
   .peekAgents svg, .ptAgents svg { display: block; }
   .peekAgents .qN, .ptAgents .qN { position: absolute; right: -6px; bottom: -6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--bg); color: var(--claude); box-shadow: 0 0 0 1.5px var(--claude); font: 700 10px/16px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
@@ -2480,7 +2489,7 @@ function renderBook() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${t("Quadro de tarefas")}" aria-label="${t("Quadro de tarefas")}">${icon("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2697,6 +2706,7 @@ function renderBook() {
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
     if (pane === "agents") { renderMyClaude(); loadSandboxes(); }
+    if (pane === "board") { const k = document.getElementById("kanban"), d = $app.querySelector(".doc"); if (k.parentElement !== d) d.append(k); boardEpic = null; renderKanban(); }
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
@@ -3334,9 +3344,11 @@ function toast(html) {
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
 const LANES = [["todo", t("A fazer")], ["doing", t("Fazendo")], ["review", t("Esperando OK")], ["done", t("Feito")]];
 let boardEpic = null;
+// The phone's full-screen board closes when you open an epic from it; the desktop's lives in the doc panel and stays.
+const leaveBoard = () => { if ($app.querySelector(".book.boardview")) document.getElementById("toggleBoard").click(); };
 function renderKanban() {
   const el = document.getElementById("kanban");
-  if (!el || !$app.querySelector(".book.boardview")) return;
+  if (!el || !$app.querySelector(".book.boardview, .doc[data-pane='board']")) return;
   if (boardEpic && !S.epics.some((e) => e.id === boardEpic)) boardEpic = null;
   const epics = S.epics.filter((e) => (boardEpic ? e.id === boardEpic : !e.archived));
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
@@ -3366,12 +3378,12 @@ function renderKanban() {
   el.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => { try { localStorage.setItem("vb.boardMode", b.dataset.mode); } catch {} renderKanban(); }));
   const sel = document.getElementById("kEpic");
   if (sel) sel.onchange = () => { boardEpic = sel.value || null; renderKanban(); };
-  el.querySelectorAll(".krow").forEach((r) => (r.onclick = () => { thread = r.dataset.epic; document.getElementById("toggleBoard").click(); renderSide(); renderChat(); renderDoc(); }));
+  el.querySelectorAll(".krow").forEach((r) => (r.onclick = () => { thread = r.dataset.epic; leaveBoard(); renderSide(); renderChat(); }));
   const move = (id, status) => send({ t: "task.status", id, status });
   el.querySelectorAll(".kcard").forEach((c) => {
     c.ondragstart = (e) => { e.dataTransfer.setData("text/plain", c.dataset.k); c.classList.add("dragging"); };
     c.ondragend = () => c.classList.remove("dragging");
-    c.onclick = () => { thread = c.dataset.epic; document.getElementById("toggleBoard").click(); renderSide(); renderChat(); };
+    c.onclick = () => { thread = c.dataset.epic; leaveBoard(); renderSide(); renderChat(); };
     c.onkeydown = (e) => {
       const i = LANES.findIndex(([k]) => k === c.dataset.status);
       if (e.key === "ArrowRight" && i < LANES.length - 1) move(c.dataset.k, LANES[i + 1][0]);
@@ -3490,6 +3502,7 @@ function renderTasks() {
   const mineN = waiting[S.me] || 0, kb = document.getElementById("toggleBoard");
   kb.querySelector(".kN")?.remove();
   if (mineN) kb.insertAdjacentHTML("beforeend", `<b class="kN" title="${t("Esperando você")}: ${mineN}">${mineN}</b>`);
+  const pk = $app.querySelector(".ptBoard .kN"); if (pk) { pk.hidden = !mineN; pk.textContent = mineN || ""; }
   kb.title = mineN ? `${t("Quadro de tarefas")} · ${t("Esperando você")}: ${mineN}` : t("Quadro de tarefas (kanban)");
   wireChev();
   // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
