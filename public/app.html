@@ -744,14 +744,14 @@
     .doc > .sheetGrab { order: 99; flex: none; border-radius: 0 0 18px 18px; }
     .doc header { display: none; } /* tabs and Ver/Editar live in the toolbar (✎) */
     .docPeek { position: relative; z-index: 21; display: flex; flex-direction: column; align-items: stretch; gap: 2px; flex: none; margin: 0 8px; padding: 4px 6px 5px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; background: var(--bg); color: var(--mute); font-size: 13px; touch-action: none; }
-    .book[data-sheet="doc"] .docPeek { border-radius: 0; border-bottom-color: transparent; margin: 0; padding-left: 14px; padding-right: 14px; }
+    .book[data-sheet="doc"] .docPeek { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; margin: 0; padding: 4px 14px; }
     .peekRow { display: flex; align-items: center; gap: 2px; min-width: 0; }
     .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
     .peekRow button small { font-size: 11px; font-weight: 600; }
     .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
     .book[data-sheet="doc"][data-pane="doc"] .peekRow #peekEdit.on { background: var(--ink); color: var(--panel); }
     .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
-    .book[data-sheet="doc"] .docPeek .grab { visibility: hidden; }
+    .book[data-sheet="doc"] .docPeek .grab { display: none; } /* open: no handle, no empty band under the tabs */
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
     #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
