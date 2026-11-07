@@ -59,6 +59,11 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, on: { type: "boolean" } }, required: ["room_id", "on"] },
   },
   {
+    name: "rename_room",
+    description: "Rename the room (everyone sees the new title; @vibe stops suggesting titles for it). Only when your human asked for it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, title: { type: "string" } }, required: ["room_id", "title"] },
+  },
+  {
     name: "set_room_icon",
     description: "Set the room's icon (shown on its tile in everyone's rail and as the tab icon), e.g. the favicon of the room's site: pass image_url (public https) or file_id (an image already in this room: the id or the url from read_room's files[]); PNG/JPEG/WebP/GIF/ICO, no SVG, ≤256KB. clear: true removes it. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, image_url: { type: "string" }, file_id: { type: "string" }, clear: { type: "boolean" } }, required: ["room_id"] },
@@ -474,6 +479,12 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       await db.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(a.on ? 1 : 0, id, me.email).run();
       ctx.waitUntil(track(env, a.on ? "claude_on" : "claude_off", { user: me.email, dims: { book: id, agent: true } }));
       return { ok: true, room_id: id, on: !!a.on };
+    }
+    case "rename_room": {
+      const id = await room();
+      const out = await bookStub(env, id).renameRoom(id, str(a.title));
+      if (!out.ok) throw new Error(out.error);
+      return { ...out, url: `${origin}/b/${id}` };
     }
     case "set_room_icon": {
       const id = await room();

@@ -982,6 +982,22 @@ export class Book extends DurableObject<Env> {
     if (out.ok) bump();
     return out;
   }
+  /** A daily report (src/reports.ts) posted by @vibe in the main thread. */
+  reportPost(bookId: string, text: string) {
+    this.bind(bookId);
+    this.addMessage("main", "ai", text.slice(0, 8000));
+    return { ok: true };
+  }
+  /** Rename the room (a person in the app, or an agent's rename_room). Locks the title against classify. */
+  async renameRoom(bookId: string, raw: string) {
+    this.bind(bookId);
+    const title = raw.trim().slice(0, 120);
+    if (!title) return { ok: false, error: "title is required" };
+    this.set("title_locked", "1");
+    await this.touch({ title });
+    this.broadcast({ t: "meta", title });
+    return { ok: true, title };
+  }
   agentTask(bookId: string, taskId: string, status: string, email: string) {
     this.bind(bookId);
     // An agent moving an unowned task took it: its human becomes the owner.
@@ -1106,13 +1122,9 @@ export class Book extends DurableObject<Env> {
         const epic = m.epic && this.epics().some((e) => e.id === m.epic) ? String(m.epic) : undefined;
         return this.setDoc(String(m.text ?? ""), email, ws, epic);
       }
-      case "title": {
-        const title = String(m.title ?? "").trim().slice(0, 120);
-        if (!title) return;
-        this.set("title_locked", "1");
-        await this.touch({ title });
-        return this.broadcast({ t: "meta", title });
-      }
+      case "title":
+        await this.renameRoom(this.get("book_id") ?? "", String(m.title ?? ""));
+        return;
       case "epic":
         if (String(m.title ?? "").trim()) this.createEpic(String(m.title).trim());
         return;

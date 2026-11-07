@@ -9,6 +9,7 @@ import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
+import { dailyReports, growthReport, productReport } from "./reports";
 import { validUnsub } from "./mentionmail";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
@@ -37,6 +38,11 @@ export type Env = {
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
   MODEL_ROUTE: string;
+  // Daily reports (src/reports.ts): rooms to post in, and the read-only Cloudflare analytics token (secret).
+  REPORT_GROWTH_ROOM?: string;
+  REPORT_PRODUCT_ROOM?: string;
+  CF_ACCOUNT_ID?: string;
+  CF_ANALYTICS_TOKEN?: string;
   MODEL_FAST: string;
   MODEL_CLASSIFY: string;
   /** Jev decision model for @vibe's grading (src/jev.ts); "off" disables it. */
@@ -271,6 +277,11 @@ app.use("*", async (c, next) => {
 });
 
 
+// Local dev only: the daily reports' text, without waiting for the cron.
+app.get("/api/dev/report", async (c) => {
+  if (!c.env.DEV_EMAIL) return c.notFound();
+  return c.text(c.req.query("which") === "product" ? await productReport(c.env) : await growthReport(c.env));
+});
 app.get("/api/dev/as", (c) => {
   if (!c.env.DEV_EMAIL) return c.notFound();
   const email = c.req.query("email") ?? "";
@@ -655,5 +666,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
     return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
+  },
+  // "0 11 * * *" = 08:00 in São Paulo: the daily growth and product reports (src/reports.ts).
+  scheduled(_ev: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(dailyReports(env));
   },
 } satisfies ExportedHandler<Env>;

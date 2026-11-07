@@ -1,0 +1,181 @@
+// Daily reports, posted by @vibe at 08:00 São Paulo (cron "0 11 * * *"): yesterday vs the 7 days before.
+// - growth (REPORT_GROWTH_ROOM): our own D1 events: visitors, pageviews, the funnel, active people, top pages/sources.
+// - product (REPORT_PRODUCT_ROOM): Cloudflare's GraphQL analytics for the Worker (requests, errors, CPU/wall time,
+//   response bytes) and the zone (requests, bandwidth, cache). Needs CF_ANALYTICS_TOKEN (Account Analytics: Read,
+//   Zone Analytics: Read, Zone: Read); without it the report says so instead of showing numbers.
+// Test people (@test.vibebook.dev) are left out. Check: bun scripts/reports-check.ts (formatting only).
+import type { Env } from "./index";
+import { bookStub } from "./rooms";
+
+const DAY = 86_400_000;
+const BRT = 3 * 3600_000; // São Paulo, no DST since 2019
+const NOT_TEST = `coalesce(user, '') NOT LIKE '%@test.vibebook.dev'`;
+const FUNNEL = [
+  ["pageview", "visitaram o site"],
+  ["login_code_sent", "pediram código de login"],
+  ["signup", "criaram conta"],
+  ["book_created", "criaram uma sala"],
+  ["agent_connected", "conectaram o Claude"],
+] as const;
+
+/** [start, end) of "yesterday" in São Paulo, in ms. */
+export function yesterday(now = Date.now()) {
+  const end = Math.floor((now - BRT) / DAY) * DAY + BRT;
+  return { start: end - DAY, end };
+}
+
+const pct = (a: number, b: number) => (b ? `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%` : "novo");
+/** "12 (+20% vs média 10)" against the daily average of the week before. */
+export const vs = (n: number, weekTotal: number) => {
+  const avg = weekTotal / 7;
+  return avg ? `**${n}** (${pct(n, avg)} vs média ${avg < 10 ? avg.toFixed(1) : Math.round(avg)})` : `**${n}**`;
+};
+export const bytes = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.round(n / 1e3)} KB`);
+const day = (ms: number) => new Date(ms - BRT).toISOString().slice(0, 10);
+
+async function counts(env: Env, start: number, end: number) {
+  const r = await env.DB.prepare(
+    `SELECT name, count(*) AS n, count(DISTINCT coalesce(nullif(visitor, ''), user)) AS v FROM events
+     WHERE name IN (${FUNNEL.map(() => "?").join(",")}) AND ts >= ? AND ts < ? AND ${NOT_TEST} GROUP BY name`,
+  )
+    .bind(...FUNNEL.map((f) => f[0]), start, end)
+    .all<{ name: string; n: number; v: number }>();
+  const active = await env.DB.prepare(
+    `SELECT count(DISTINCT user) AS n FROM events WHERE ts >= ? AND ts < ? AND user != '' AND name != 'login_code_sent' AND ${NOT_TEST}`,
+  )
+    .bind(start, end)
+    .first<{ n: number }>();
+  const by = Object.fromEntries(r.results.map((x) => [x.name, x]));
+  return { by: (k: string) => by[k] ?? { n: 0, v: 0 }, active: active?.n ?? 0 };
+}
+
+export async function growthReport(env: Env, now = Date.now()) {
+  const { start, end } = yesterday(now);
+  const [y, w] = await Promise.all([counts(env, start, end), counts(env, start - 7 * DAY, start)]);
+  const top = async (expr: string, limit: number) =>
+    (
+      await env.DB.prepare(
+        `SELECT ${expr} AS k, count(DISTINCT visitor) AS v FROM events WHERE name = 'pageview' AND ts >= ? AND ts < ? GROUP BY k ORDER BY v DESC LIMIT ${limit}`,
+      )
+        .bind(start, end)
+        .all<{ k: string | null; v: number }>()
+    ).results.filter((x) => x.k);
+  const [pages, rawRefs] = await Promise.all([top("path", 5), top("json_extract(dims, '$.ref')", 100)]);
+  const refs = externalRefs(rawRefs as { k: string; v: number }[]);
+  const pv = y.by("pageview"), pw = w.by("pageview");
+  const funnel = FUNNEL.map(([k, label], i) => {
+    const n = k === "pageview" ? y.by(k).v : y.by(k).n;
+    const prev = i ? (FUNNEL[i - 1][0] === "pageview" ? y.by("pageview").v : y.by(FUNNEL[i - 1][0]).n) : 0;
+    return `${i + 1}. ${n} ${label}${i && prev ? ` (${Math.round((n / prev) * 100)}%)` : ""}`;
+  });
+  return [
+    `**📈 Growth · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)`,
+    "",
+    `- Visitantes: ${vs(pv.v, pw.v)}`,
+    `- Pageviews: ${vs(pv.n, pw.n)}`,
+    `- Pessoas ativas (logadas, qualquer ação): ${vs(y.active, w.active)}`,
+    `- Contas novas: ${vs(y.by("signup").n, w.by("signup").n)} · salas novas: ${vs(y.by("book_created").n, w.by("book_created").n)}`,
+    "",
+    "**Funil de ontem**",
+    ...funnel,
+    pages.length ? `\n**Páginas** ${pages.map((p) => `${p.k} (${p.v})`).join(" · ")}` : "",
+    refs.length ? `**De onde vieram** ${refs.map((p) => `${p.k} (${p.v})`).join(" · ")}` : "",
+  ]
+    .filter((l, i, a) => l !== "" || a[i - 1] !== "")
+    .join("\n");
+}
+
+/** Referrers folded to their host, our own pages left out (that's navigation, not a source). */
+export function externalRefs(rows: { k: string; v: number }[]) {
+  const by = new Map<string, number>();
+  for (const r of rows) {
+    let host = "";
+    try { host = new URL(r.k).hostname.replace(/^www\./, ""); } catch { continue; }
+    if (!host || /(^|\.)vibebook\.dev$|^127\.0\.0\.1$|^localhost$/.test(host)) continue;
+    by.set(host, (by.get(host) ?? 0) + r.v);
+  }
+  return [...by].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => ({ k, v }));
+}
+
+async function cfQuery(env: Env, query: string, variables: Record<string, unknown>) {
+  const r = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+    method: "POST",
+    headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`, "content-type": "application/json" },
+    body: JSON.stringify({ query, variables }),
+  });
+  const j = (await r.json().catch(() => ({}))) as { data?: any; errors?: { message: string }[] };
+  if (!r.ok || j.errors?.length) throw new Error(j.errors?.map((e) => e.message).join("; ") || `HTTP ${r.status}`);
+  return j.data;
+}
+
+const WORKER_Q = `query($acc: string!, $from: Time!, $to: Time!) { viewer { accounts(filter: { accountTag: $acc }) {
+  workersInvocationsAdaptive(limit: 10, filter: { scriptName: "vibebook", datetime_geq: $from, datetime_lt: $to }) {
+    sum { requests errors subrequests responseBodySize } quantiles { cpuTimeP50 cpuTimeP99 wallTimeP50 wallTimeP99 } } } } }`;
+const ZONE_Q = `query($zone: string!, $from: Date!, $to: Date!) { viewer { zones(filter: { zoneTag: $zone }) {
+  httpRequests1dGroups(limit: 10, filter: { date_geq: $from, date_lt: $to }) { dimensions { date } sum { requests bytes cachedBytes threats } uniq { uniques } } } } }`;
+
+export async function productReport(env: Env, now = Date.now()) {
+  const { start, end } = yesterday(now);
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)`;
+  if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números ainda: falta o token de analytics da Cloudflare (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
+  try {
+    const iso = (ms: number) => new Date(ms).toISOString();
+    const worker = async (from: number, to: number) => {
+      const rows = (await cfQuery(env, WORKER_Q, { acc: env.CF_ACCOUNT_ID, from: iso(from), to: iso(to) })).viewer.accounts[0]?.workersInvocationsAdaptive ?? [];
+      const sum = (k: string) => rows.reduce((t: number, r: any) => t + (r.sum?.[k] ?? 0), 0);
+      // Quantiles come per row (status, etc.); the busiest row stands for the day.
+      const q = [...rows].sort((a: any, b: any) => b.sum.requests - a.sum.requests)[0]?.quantiles ?? {};
+      return { requests: sum("requests"), errors: sum("errors"), sub: sum("subrequests"), body: sum("responseBodySize"), q };
+    };
+    const [wy, ww] = await Promise.all([worker(start, end), worker(start - 7 * DAY, start)]);
+    let zone = "";
+    const zid = await zoneId(env);
+    if (zid) {
+      const days = (await cfQuery(env, ZONE_Q, { zone: zid, from: day(start - 7 * DAY + 1), to: day(end + 1) })).viewer.zones[0]?.httpRequests1dGroups ?? [];
+      const yd = days.find((d: any) => d.dimensions.date === day(end - 1));
+      const wk = days.filter((d: any) => d.dimensions.date !== day(end - 1));
+      const tot = (k: string) => wk.reduce((t: number, d: any) => t + (d.sum[k] ?? 0), 0);
+      if (yd) zone = [
+        "",
+        "**Zona vibebook.dev** (tudo que passa pela CF)",
+        `- Requests: ${vs(yd.sum.requests, tot("requests"))} · visitantes únicos ${yd.uniq.uniques}`,
+        `- Banda: **${bytes(yd.sum.bytes)}** (média ${bytes(tot("bytes") / 7)}) · do cache ${yd.sum.bytes ? Math.round((yd.sum.cachedBytes / yd.sum.bytes) * 100) : 0}%`,
+        yd.sum.threats ? `- Ameaças bloqueadas: ${yd.sum.threats}` : "",
+      ].filter(Boolean).join("\n");
+    }
+    const errRate = wy.requests ? ((wy.errors / wy.requests) * 100).toFixed(2) : "0";
+    return [
+      head,
+      "",
+      "**Worker vibebook**",
+      `- Requests: ${vs(wy.requests, ww.requests)}`,
+      `- Erros: ${vs(wy.errors, ww.errors)} (${errRate}% dos requests)`,
+      `- Tempo de parede p50 / p99: **${ms(wy.q.wallTimeP50)} / ${ms(wy.q.wallTimeP99)}** · CPU p50 / p99: ${ms(wy.q.cpuTimeP50)} / ${ms(wy.q.cpuTimeP99)}`,
+      `- Resposta enviada: **${bytes(wy.body)}** (média ${bytes(ww.body / 7)}) · subrequests ${wy.sub}`,
+      zone,
+    ].join("\n");
+  } catch (e) {
+    return `${head}\n\nNão consegui ler a Cloudflare: ${String((e as Error).message).slice(0, 300)}`;
+  }
+}
+// Quantiles come in microseconds.
+const ms = (us?: number) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);
+
+async function zoneId(env: Env) {
+  const r = await fetch("https://api.cloudflare.com/client/v4/zones?name=vibebook.dev", { headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}` } });
+  const j = (await r.json().catch(() => ({}))) as { result?: { id: string }[] };
+  return j.result?.[0]?.id ?? null;
+}
+
+/** The cron: build each report and post it as @vibe in its room's main thread. */
+export async function dailyReports(env: Env) {
+  const jobs: [string | undefined, () => Promise<string>][] = [
+    [env.REPORT_GROWTH_ROOM, () => growthReport(env)],
+    [env.REPORT_PRODUCT_ROOM, () => productReport(env)],
+  ];
+  for (const [room, build] of jobs) {
+    if (!room) continue;
+    const text = await build().catch((e) => `Relatório falhou: ${String((e as Error).message).slice(0, 300)}`);
+    await bookStub(env, room).reportPost(room, text);
+  }
+}

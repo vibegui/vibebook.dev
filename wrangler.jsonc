@@ -32,8 +32,13 @@
     "MODEL_ROUTE": "deepseek/deepseek-v4.1-flash",
     "MODEL_CLASSIFY": "deepseek/deepseek-v4.1-flash",
     "MODEL_FAST": "anthropic/claude-haiku-5.5",
-    "MODEL_JUDGE": "~typesafe/jev-latest"
+    "MODEL_JUDGE": "~typesafe/jev-latest",
+    // Daily reports at 08:00 São Paulo (src/reports.ts). CF_ANALYTICS_TOKEN is a secret (read-only analytics).
+    "REPORT_GROWTH_ROOM": "c635b3ffbf93",
+    "REPORT_PRODUCT_ROOM": "f94aedb83899",
+    "CF_ACCOUNT_ID": "55dd6d847f366735ef6e0f860c7bdc51"
   },
+  "triggers": { "crons": ["0 11 * * *"] },
   // Local dev serves as http://127.0.0.1:8797 (OAuth accepts http only on a loopback IP; :8787 is taken here).
   "dev": { "port": 8797, "host": "127.0.0.1:8797", "upstream_protocol": "http" },
   "observability": { "enabled": true }
