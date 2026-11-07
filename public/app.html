@@ -726,6 +726,9 @@
        it opens from; the doc is a floor under the header: its peek bar sits right below it, it slides down from
        under the header and stops short of the bottom, leaving a strip of the dimmed chat that closes it on tap. */
     .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) * .85); padding-top: max(14px, env(safe-area-inset-top)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
+    /* The room's own row sits where the title button was: tapping the title twice lands on it (not on ← vibebooks,
+       which follows the thread list). */
+    .side > * { order: 2; } .side > .threadsSec { order: 0; } .side > .sideHead { order: 1; }
     .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
     .chathead { z-index: 21; background: var(--bg); }
     .book > .side { z-index: 22; }
@@ -2830,10 +2833,10 @@ function renderSide() {
   const count = (t) => S.messages.filter((m) => m.thread === t).length;
   el.innerHTML = `
     <button type="button" class="sheetGrab" aria-label="${t("Fechar")}"><i></i></button>
-    <div>
+    <div class="sideHead">
       <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${isPre() ? "" : `<button class="iconBtn phOnly" id="sideRename" title="${t("Renomear")}" aria-label="${t("Renomear")}">${icon("pencil", 18)}</button>`}${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn phOnly" id="sideRooms" title="${t("Trocar de sala")}" aria-label="${t("Trocar de sala")}">${SW_SEARCH}</button><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
-    <div class="sec">
+    <div class="sec threadsSec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
