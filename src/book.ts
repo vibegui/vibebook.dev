@@ -785,7 +785,7 @@ export class Book extends DurableObject<Env> {
     this.set("lang_at", String(Date.now()));
   }
 
-  async agentRead(bookId: string, since = 0, email = "") {
+  async agentRead(bookId: string, since = 0, email = "", to: { agents: string[]; me?: string } = { agents: [] }) {
     this.bind(bookId);
     const book = await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
     const names = await this.names();
@@ -794,6 +794,9 @@ export class Book extends DurableObject<Env> {
     const local = email.split("@")[0];
     const mine = new Set([fold((names[email] ?? "").split(/\s+/)[0] ?? ""), fold(local.split(/[._+-]/)[0]), fold(local)].filter(Boolean));
     const mentionsMe = (t: string) => [...t.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((m) => mine.has(fold(m[1])));
+    // @<sandbox name> in your human's message addresses that one agent; the others leave it alone.
+    const toAgents = (t: string) => [...new Set([...t.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].map((m) => fold(m[1])).filter((h) => to.agents.includes(h)))];
+    const forOther = (t: string) => { const a = toAgents(t); return a.length > 0 && !a.includes(to.me ?? ""); };
     // Display names are typed by people: no brackets, quotes or line breaks, so a name can't pose as someone's address.
     const who = (e: string) => (e === "ai" ? "@vibe" : names[e] ? `${names[e].replace(/[<>"@\p{Cc}]/gu, "").slice(0, 40)} <${e}>` : e);
     const epics = this.epics();
@@ -813,6 +816,8 @@ export class Book extends DurableObject<Env> {
         // A reminder file's prompt, posted by @vibe, is the instruction of whoever saved the file.
         from_your_human: !!email && ((m.author === email && m.kind !== "agent") || (m.tag === "reminder" && m.for_who === email)),
         reminder: m.tag === "reminder" || undefined,
+        to_agent: m.author === email && m.kind !== "agent" ? toAgents((m.text as string) ?? "").join(", ") || undefined : undefined,
+        not_for_you: (m.author === email && m.kind !== "agent" && forOther((m.text as string) ?? "")) || undefined,
         reply_to: (m.reply_to as number | null) ?? undefined,
         choices: m.choices ? (JSON.parse(m.choices as string) as { options: string[]; multi: boolean }) : undefined,
         text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
@@ -856,6 +861,7 @@ export class Book extends DurableObject<Env> {
             )
             .toArray()
             .reverse()
+            .filter((m) => !forOther(String(m.text ?? "")))
             .map((m) => ({ message_id: m.id as number, thread: threadName(m.thread as string), text: String(m.text ?? "").slice(0, 300), at: new Date(m.ts as number).toISOString() }))
         : undefined,
       last_id: lastId,

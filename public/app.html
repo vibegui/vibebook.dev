@@ -1422,6 +1422,7 @@ const EN = {
   "mostrar mais {n}": "show {n} more",
   "sandbox na nuvem rodando": "cloud sandbox running",
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
+  "seu Claude no sandbox": "your Claude in the sandbox",
   "remover": "remove",
   "Conecte seu Claude": "Connect your Claude",
   "Salvando…": "Saving…",
@@ -2533,6 +2534,8 @@ function renderBook() {
     atStart = before.length - m[2].length - 1;
     const q = fold(m[2]);
     const people = [...(S.members || []).filter((e) => e !== S.me).map((e) => ({ email: e, handle: handleOf(e), label: name(e) === handleOf(e) ? e : name(e) }))];
+    // Your cloud sandboxes here: @<name> sends the message to that Claude only.
+    if (roomAgents.id === S.id) for (const x of roomAgents.sandboxes || []) if (x.email === S.me) people.push({ email: x.email, handle: x.name, label: t("seu Claude no sandbox") });
     picks = people.filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q)).slice(0, 8);
     pickAt = 0; renderPop();
   };

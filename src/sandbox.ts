@@ -122,7 +122,7 @@ touch "$HOME/.vibebook-setup-done"
 const RUN_SETUP = "(setsid nohup bash /tmp/vibebook-setup.sh </dev/null >/dev/null 2>&1 &) ; sleep 1; echo started";
 /** Authorizes this sandbox's vibebook CLI for its person, server-side (no browser): a public client with the code page
  * as redirect, a grant completed for them, and the code + PKCE verifier written to the VM for the CLI to redeem. */
-async function writeVibebookLogin(env: Env, key: string, email: string, vmId: string, origin: string) {
+async function writeVibebookLogin(env: Env, key: string, email: string, vmId: string, origin: string, sandbox: string) {
   const oauth = env.OAUTH_PROVIDER;
   const redirect = `${origin}/oauth/code`;
   const client = await oauth.createClient({ clientName: "vibebook sandbox", redirectUris: [redirect], tokenEndpointAuthMethod: "none", grantTypes: ["authorization_code", "refresh_token"], responseTypes: ["code"] });
@@ -133,9 +133,9 @@ async function writeVibebookLogin(env: Env, key: string, email: string, vmId: st
   const { redirectTo } = await oauth.completeAuthorization({
     request: { responseType: "code", clientId: client.clientId, redirectUri: redirect, scope: ["rooms", "offline_access"], state: "sandbox", codeChallenge: challenge, codeChallengeMethod: "S256", resource: `${origin}/mcp` },
     userId: email,
-    metadata: { client: "vibebook sandbox", at: Date.now(), gid },
+    metadata: { client: "vibebook sandbox", at: Date.now(), gid, sandbox },
     scope: ["rooms", "offline_access"],
-    props: { email, client: "vibebook sandbox", gid },
+    props: { email, client: "vibebook sandbox", gid, sandbox }, // sandbox: its @handle in the room
   });
   const code = new URL(redirectTo).searchParams.get("code");
   if (!code) throw new Error("could not authorize the sandbox's vibebook login");
@@ -180,7 +180,7 @@ export async function createSandbox(env: Env, email: string, bookId: string, raw
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: bookId, folder: name, md, origin }), mode: 493 });
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
   await writeClaudeEnv(env, k, email, vm.id);
-  await writeVibebookLogin(env, k, email, vm.id, origin);
+  await writeVibebookLogin(env, k, email, vm.id, origin, name);
   await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
   const sid = crypto.randomUUID().slice(0, 8);
   await env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at, state, checked_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?, 'running', ?)`).bind(sid, email, bookId, name, vm.id, Date.now(), Date.now()).run();
@@ -201,7 +201,7 @@ export async function redoSetup(env: Env, email: string, sid: string, origin: st
   await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
   await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
   await writeClaudeEnv(env, k, r.email, r.vm_id);
-  await writeVibebookLogin(env, k, r.email, r.vm_id, origin);
+  await writeVibebookLogin(env, k, r.email, r.vm_id, origin, r.name);
   const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
     command: `mkdir -p ~/${r.name}; cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; tmux kill-session -t claude 2>/dev/null; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
     timeoutMs: 280000,
