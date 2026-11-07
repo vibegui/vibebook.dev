@@ -3285,7 +3285,7 @@ function renderSide() {
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
-      ${(() => { const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0); const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e); return arch.length ? `<details class="arch" ${arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
+      ${(() => { const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0); const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e); return arch.length ? `<details class="arch" ${archOpen || arch.some((e) => e.id === thread) ? "open" : ""}><summary>${t("Arquivados")} (${arch.length})</summary>${arch.map(epicRow).join("")}</details>` : ""; })()}
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
@@ -3396,6 +3396,9 @@ const shownOrder = (tasks) => {
   const rank = (tk) => (tk.done ? 2 : waits(tk) ? 0 : 1);
   return tasks.map((tk, i) => ({ tk, i })).sort((a, b) => rank(a.tk) - rank(b.tk) || a.i - b.i).map((x) => x.tk);
 };
+// "Arquivados" stays the way you left it: the sidebar redraws on every change (and now on every push).
+let archOpen = false;
+document.addEventListener("toggle", (e) => { if (e.target.matches?.("details.arch")) archOpen = e.target.open; }, true);
 let boardEpic = null;
 // The phone's full-screen board closes when you open an epic from it; the desktop's lives in the doc panel and stays.
 const leaveBoard = () => { if ($app.querySelector(".book.boardview")) document.getElementById("toggleBoard").click(); };
