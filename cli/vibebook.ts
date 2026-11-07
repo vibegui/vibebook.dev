@@ -366,7 +366,7 @@ function terminalApp(): string | undefined {
 }
 /** Local endpoint for the app's "↗" button: focus this room's workspace in herdr and raise the terminal. Only the
  *  vibebook origin this machine is logged into may call it (CORS + Private Network Access preflight). */
-function herdrServer() {
+function herdrServer(appMode = false) {
   const allowed = new Set([readJson<Session | null>(SESSION, null)?.origin ?? DEFAULT_ORIGIN, DEFAULT_ORIGIN]);
   const port = Number(process.env.VIBEBOOK_HERDR_PORT || 47321);
   createServer((req, res) => {
@@ -379,8 +379,9 @@ function herdrServer() {
     if (!allowed.has(origin) || req.headers.host !== `127.0.0.1:${port}`) return send(403, { error: "origin" });
     if (req.method === "OPTIONS") return send(204, null);
     const u = new URL(req.url ?? "/", "http://127.0.0.1");
-    const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
-    if (u.pathname === "/ping") return send(200, { ok: true, rooms: Object.keys(map).filter((r) => map[r].workspace) });
+    const map = readJson<Record<string, HerdrRoom & { space?: string }>>(appMode ? HERDR_APP : HERDR, {});
+    const target = (r: string) => (appMode ? map[r]?.space : map[r]?.workspace);
+    if (u.pathname === "/ping") return send(200, { ok: true, rooms: Object.keys(map).filter((r) => target(r)) });
     // Where "Ligar Claude" will open this room: the folder it used before, the one linked by .vibebook, else
     // ~/Projects/<title slug> (how = new when that folder doesn't exist yet). Same rule herdrSync follows.
     if (u.pathname === "/where") {
@@ -391,9 +392,14 @@ function herdrServer() {
       return send(200, { folder, home: homedir(), how });
     }
     if (u.pathname !== "/focus") return send(404, { error: "not found" });
-    const ws = map[u.searchParams.get("room") ?? ""]?.workspace;
+    const ws = target(u.searchParams.get("room") ?? "");
     if (!ws) return send(404, { error: "Nenhum Claude aberto pra essa sala no herdr." });
     try {
+      if (appMode) {
+        happ("do", "space.select", "--id", ws);
+        execFileSync("open", ["-a", "Herdr"]);
+        return send(200, { ok: true });
+      }
       herdr("workspace", "focus", ws);
       const app = terminalApp();
       if (app) execFileSync("open", ["-a", app]);
@@ -499,6 +505,83 @@ async function herdrSync(agent: string, tools: Tool[]) {
   writePrivate(HERDR, map);
   herdrOrder([...on.keys()], map);
 }
+// ---- herdr app (desktop) mode: `vibebook herdr --app` ----
+// Same rooms, as spaces in the Herdr window (herdr-app + herdr-core): one space per room whose Claude is on, in the
+// room's folder, started with `claude "/vibebook:listen"`; a space already open in that folder with a Claude in it is
+// adopted. Off closes only the spaces it maps. Spaces follow the rail's order. ~/.vibebook/herdr-app.json maps them.
+const HERDR_APP = join(HOME, "herdr-app.json");
+type AppSpace = { id: string; name: string; folder: string; tabs: { terminals: { terminal: string; app: string | null; status: string | null }[] }[] };
+const happ = (...args: string[]) => {
+  const r = JSON.parse(execFileSync("herdr-app", args, { stdio: ["ignore", "pipe", "pipe"] }).toString());
+  if (r?.error) throw new Error(r.error);
+  return r;
+};
+const appClaude = (sp: AppSpace) => sp.tabs.flatMap((t) => t.terminals).find((t) => /claude/i.test(t.app ?? ""));
+async function herdrAppSync(agent: string, tools: Tool[]) {
+  const res = await callTool("claude_rooms", {}, agent, tools);
+  const rooms = (JSON.parse(res.content[0]?.text ?? "{}") as { rooms?: { room_id: string; title: string; on: boolean; listening?: boolean }[] }).rooms ?? [];
+  const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
+  const map = readJson<Record<string, HerdrRoom & { space?: string }>>(HERDR_APP, {});
+  let spaces = happ("ls").spaces as AppSpace[];
+  const live = new Set(spaces.map((x) => x.id));
+  const on = new Map(rooms.filter((r) => r.on).map((r) => [r.room_id, r.title]));
+  const log = (m: string) => process.stdout.write(`${new Date().toLocaleTimeString()} ${m}\n`);
+  for (const [room, title] of on) {
+    const e = (map[room] ??= {});
+    if (e.space && live.has(e.space)) {
+      // Same as the terminal mode: nobody listening for 3 minutes and its Claude is free: ask it again (≤ every 5 min).
+      if (!deaf.has(room)) delete e.deaf_since;
+      else e.deaf_since ??= Date.now();
+      const c = appClaude(spaces.find((x) => x.id === e.space) as AppSpace);
+      if (c && e.deaf_since && Date.now() - e.deaf_since > 3 * 60_000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60_000 && (c.status === "idle" || c.status === "done"))
+        try {
+          execFileSync("hc", ["send", c.terminal, LISTEN_PROMPT], { stdio: "ignore" });
+          e.prompted_at = Date.now();
+          log(`${title}: ninguém ouvindo, pedi pro Claude ouvir a sala de novo`);
+        } catch {}
+      continue;
+    }
+    e.folder ??= roomFolder(room, title);
+    linkFolder(e.folder, room);
+    const there = spaces.find((x) => x.folder === e.folder && appClaude(x));
+    if (there) {
+      e.space = there.id;
+      try {
+        happ("do", "space.rename", "--id", there.id, "--name", title.slice(0, 40));
+      } catch {}
+      const c = appClaude(there);
+      if (c && (c.status === "idle" || c.status === "done"))
+        try {
+          execFileSync("hc", ["send", c.terminal, LISTEN_PROMPT], { stdio: "ignore" });
+          e.prompted_at = Date.now();
+        } catch {}
+      log(`${title}: adotei o Claude que já estava em ${e.folder}`);
+      continue;
+    }
+    const r = happ("do", "space.new", "--name", title.slice(0, 40), "--folder", e.folder, "--argv", JSON.stringify(["claude"]), "--task", "/vibebook:listen");
+    e.space = r.space as string;
+    e.prompted_at = Date.now();
+    log(`${title}: abri um Claude em ${e.folder}`);
+  }
+  for (const [room, e] of Object.entries(map)) {
+    if (on.has(room) || !e.space) continue;
+    if (live.has(e.space)) {
+      happ("do", "space.close", "--id", e.space, "--confirmed", "true");
+      log(`${rooms.find((r) => r.room_id === room)?.title ?? room}: Claude desligado, fechei o space`);
+    }
+    delete e.space;
+  }
+  writePrivate(HERDR_APP, map);
+  // The rooms' spaces first, in the rail's order (space.move keeps everything running).
+  spaces = happ("ls").spaces as AppSpace[];
+  const want = [...on.keys()].map((r) => map[r]?.space).filter((x): x is string => !!x && spaces.some((s) => s.id === x));
+  want.forEach((id, i) => {
+    if (spaces[i]?.id === id) return;
+    happ("do", "space.move", "--id", id, "--index", String(i + 1));
+    spaces = happ("ls").spaces as AppSpace[];
+  });
+}
+
 /** Put the rooms' workspaces first, in the person's room order, and the other workspaces after them. herdr can't reorder
  *  workspaces, but a pane can move into a new workspace (appended at the end) with its process alive: so from the
  *  first one out of place, each room's panes move to a fresh workspace, in order. Claude keeps running. */
@@ -558,6 +641,7 @@ const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for yo
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>]
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
+  vibebook herdr --app           the same in the Herdr desktop app: one space per room (not with the terminal one)
   vibebook statusline [command]  as Claude Code's statusLine: keeps the session's context window and plan
                                  limits for the room, then runs your own statusline command (if any) with the same input
   vibebook update                install the latest version
@@ -622,10 +706,12 @@ async function main() {
       }
     }
     case "herdr": {
+      const appMode = !!flags.app;
       try {
-        execFileSync("herdr", ["status"], { stdio: "ignore" });
+        if (appMode) happ("ls");
+        else execFileSync("herdr", ["status"], { stdio: "ignore" });
       } catch {
-        return die("herdr not found or not running (https://herdr.dev)");
+        return die(appMode ? "Herdr (the desktop app) isn't open, or herdr-app isn't installed (https://herdr.dev)" : "herdr not found or not running (https://herdr.dev)");
       }
       // One runner per machine: a second one (the herdr plugin's pane plus a manual `vibebook herdr`) would open every
       // room twice. The pid file is released on exit; a stale one (dead pid) is taken over.
@@ -641,10 +727,10 @@ async function main() {
       process.on("exit", release);
       for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.on(sig, () => process.exit(0));
       const tools = await listTools(agent);
-      if (!flags.once) herdrServer();
+      if (!flags.once) herdrServer(appMode);
       for (;;) {
         try {
-          await herdrSync(agent, tools);
+          await (appMode ? herdrAppSync : herdrSync)(agent, tools);
         } catch (e) {
           process.stderr.write(`vibebook herdr: ${String((e as Error)?.message ?? e)}\n`);
         }
