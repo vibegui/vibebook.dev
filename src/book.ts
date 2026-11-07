@@ -908,7 +908,8 @@ export class Book extends DurableObject<Env> {
 
   // "X está fazendo isso": an agent took a message as work (MCP ack); its next done post marks it done.
   acksList() {
-    return this.sql.exec(`SELECT msg_id, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 50`, Date.now() - 14 * 864e5).toArray();
+    // Enough for every request of the last two weeks: the app's "Fila do seu Claude" counts on seeing each one's ack.
+    return this.sql.exec(`SELECT msg_id, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 500`, Date.now() - 14 * 864e5).toArray();
   }
   agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing", rawNote = "") {
     this.bind(bookId);
@@ -1250,6 +1251,14 @@ export class Book extends DurableObject<Env> {
         return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
       case "reminder.delete":
         return void this.reminderDelete(this.get("book_id") ?? "", String(m.id ?? ""));
+      // The person takes one of their own requests out of their Claude's queue ("já resolvido"): an ack with status
+      // dismissed, which the room doesn't draw and read_room's unacked doesn't list.
+      case "ack.dismiss": {
+        const id = Number(m.id);
+        if (!this.sql.exec(`SELECT 1 FROM messages WHERE id = ? AND author = ?`, id, email).toArray().length) return;
+        this.sql.exec(`INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, 'você', 'dismissed', ?) ON CONFLICT DO UPDATE SET status = 'dismissed', ts = excluded.ts`, id, `h:${email}`, email, Date.now());
+        return void this.broadcast({ t: "acks", acks: this.acksList() });
+      }
       case "reminder.enable":
         return void (await this.reminderEnable(this.get("book_id") ?? "", String(m.id ?? ""), !!m.on));
       case "task.toggle":

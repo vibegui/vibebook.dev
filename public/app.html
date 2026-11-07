@@ -584,12 +584,18 @@
   [data-q="busy"] .qDot { display: block; background: #fbbf24; animation: qPulse 1.6s ease-in-out infinite; }
   @keyframes qPulse { 50% { transform: scale(1.35); } }
   .peekAgents, .ptAgents { position: relative; } .qN { font-size: 11px; font-weight: 700; }
-  .queue { display: grid; gap: 6px; }
-  .qItem { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; }
-  .qItem:hover { border-color: var(--claude); } .qItem small { color: var(--mute); font-size: 11.5px; }
-  .qTx { font-size: 13.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .qSt { justify-self: start; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--hover); color: var(--mute); }
-  .qSt.doing { background: var(--warm-line); color: var(--claude); } .qSt.blocked { background: var(--wait-bg); color: var(--wait-ink); }
+  .queue { display: grid; gap: 2px; }
+  .queue:not(.open) .qRow:nth-child(n+5) { display: none; }
+  .qRow { display: flex; align-items: center; border-radius: 10px; } .qRow:hover { background: var(--hover); }
+  .qGo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 4px 6px 6px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .qGo .avatar { width: 22px; height: 22px; font-size: 10px; flex: none; }
+  .qGo .ri { width: 22px; height: 22px; border-radius: 6px; font-size: 9.5px; flex: none; display: grid; place-items: center; overflow: hidden; }
+  .qTx { flex: 1; min-width: 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qS { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--line); }
+  .qS.doing { background: var(--claude); } .qS.blocked { background: #e3b505; } .qS.queued { background: var(--mute); opacity: .5; }
+  .qX { flex: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--mute); display: grid; place-items: center; opacity: 0; } .qRow:hover .qX, .qX:focus { opacity: 1; }
+  @media (hover: none) { .qX { opacity: .6; } }
+  .qMore { justify-self: start; border: 0; background: none; color: var(--claude); font-size: 12.5px; font-weight: 600; padding: 6px; }
   .agentsPane h4 small { font-size: 12px; color: var(--claude); }
   .agNote { margin: 0; font-size: 12.5px; color: var(--mute); }
   .agList .agentRow { padding-left: 0; }
@@ -1401,6 +1407,10 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "espera você no terminal": "waiting for you in the terminal",
+  "Tirar da fila (já resolvido)": "Take out of the queue (already handled)",
+  "mostrar menos": "show less",
+  "mostrar mais {n}": "show {n} more",
   "sandbox na nuvem rodando": "cloud sandbox running",
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "remover": "remove",
@@ -2898,11 +2908,18 @@ function renderAgentsPane(on, live, path, w) {
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
     <h4>${t("Fila do seu Claude")} <small>${q.length || ""}</small></h4>
-    ${q.length ? `<div class="queue">${q.map((x) => `<button type="button" class="qItem" data-goto="${x.m.id}"><span class="qSt ${x.st}">${x.st === "blocked" ? "⏸ " + t("espera você") : x.st === "doing" ? t("fazendo") : t("na fila")}</span><span class="qTx">${esc(x.m.text.slice(0, 140))}</span><small>${x.m.thread === "main" ? t("sala principal") : esc(S.epics.find((e) => e.id === x.m.thread)?.title ?? t("épico"))} · ${ago(x.m.ts)}</small></button>`).join("")}</div>` : `<p class="agNote">${t("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
+    ${q.length ? `<div class="queue${qOpen ? " open" : ""}">${q.map((x) => {
+      const ep = S.epics.find((e) => e.id === x.m.thread);
+      const mark = ep ? `<span class="ri" style="background:${color(ep.title)};color:#fff" title="${esc(ep.title)}">${esc(initials(ep.title))}</span>` : roomMark("ri");
+      const st = x.st === "blocked" ? t("espera você no terminal") : x.st === "doing" ? t("fazendo") : t("na fila");
+      return `<div class="qRow"><button type="button" class="qGo" data-goto="${x.m.id}" title="${esc(ep ? ep.title : t("sala principal"))} · ${ago(x.m.ts)}">${avatar(S.me)}${mark}<span class="qTx">${esc(x.m.text.replace(/\s+/g, " ").slice(0, 120))}</span><i class="qS ${x.st}" title="${st}"></i></button><button type="button" class="qX" data-dismiss="${x.m.id}" title="${t("Tirar da fila (já resolvido)")}" aria-label="${t("Tirar da fila (já resolvido)")}">${icon("x")}</button></div>`;
+    }).join("")}${q.length > 4 ? `<button type="button" class="qMore" id="qMore">${qOpen ? t("mostrar menos") : t("mostrar mais {n}", { n: q.length - 4 })}</button>` : ""}</div>` : `<p class="agNote">${t("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
     ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
   el.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (ROOM_PHONE.matches) closeSheet(); goToMsg(Number(b.dataset.goto)); });
+  el.querySelectorAll("[data-dismiss]").forEach((b) => b.onclick = () => send({ t: "ack.dismiss", id: Number(b.dataset.dismiss) }));
+  document.getElementById("qMore")?.addEventListener("click", () => { qOpen = !qOpen; renderMyClaude(); });
   wireSbx();
   if (document.querySelector('.doc[data-pane="agents"]')) loadSandboxes();
 }
@@ -2918,11 +2935,12 @@ function sbxRows() {
 }
 // Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
+let qOpen = false; // the queue shows 4 until "mostrar mais"
 function myQueue() {
   const since = Date.now() - 48 * 3600e3, acks = (S.acks || []).filter((k) => k.email === S.me);
   return (S.messages || [])
     .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since)
-    .map((m) => { const a = acks.filter((k) => k.msg_id === m.id); return { m, st: a.some((k) => k.status === "done" || k.status === "idle") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
+    .map((m) => { const a = acks.filter((k) => k.msg_id === m.id); return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
 // Cloud agents (src/sandbox.ts): Claudes in freestyle.sh VMs on the person's own account. The list polls every 5s
@@ -3839,6 +3857,7 @@ function renderReceipts() {
   el.querySelectorAll(".rcpt, .ack").forEach((x) => x.remove());
   const seenAck = new Set();
   for (const k of S.acks || []) {
+    if (k.status === "dismissed") continue; // you took it out of your Claude's queue; nothing to show
     if (seenAck.has(`${k.msg_id}|${k.who}|${k.email}`)) continue;
     seenAck.add(`${k.msg_id}|${k.who}|${k.email}`);
     const body = document.querySelector(`#m${k.msg_id} .body`); if (!body) continue;
