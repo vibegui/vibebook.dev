@@ -10,6 +10,7 @@
 //   person logs in to Claude and to vibebook (`vibebook login --paste`) and starts listening.
 // - Pause keeps memory and processes (freestyle bills only disk while paused); start resumes them.
 import type { Env } from "./index";
+import { bookStub, storeFile } from "./rooms";
 
 let API = "https://api.freestyle.sh"; // FREESTYLE_API overrides it in local dev (a mock)
 const enc = new TextEncoder();
@@ -38,6 +39,7 @@ export async function loadKey(env: Env, email: string, table: Vault = "freestyle
 }
 
 /** One freestyle REST call with the person's key. Throws an Error with freestyle's message. */
+const useEnv = (env: Env) => { if (env.FREESTYLE_API) API = env.FREESTYLE_API; };
 export async function fs<T = any>(key: string, method: string, path: string, body?: unknown): Promise<T> {
   const r = await fetch(`${API}${path}`, {
     method,
@@ -117,9 +119,46 @@ async function writeClaudeEnv(env: Env, key: string, email: string, vmId: string
 type Row = { id: string; email: string; book_id: string; name: string; vm_id: string; identity_id: string | null; ready: number; created_at: number };
 const MAX_PER_ROOM = 3;
 
+/** agents/<name>.md from the room's files (the newest with that name), or the template, stored the first time. */
+export async function agentFile(env: Env, bookId: string, email: string, name: string, title: string, origin: string) {
+  const path = `agents/${name}.md`;
+  const f = (await bookStub(env, bookId).files()).find((x: { name: string }) => x.name === path);
+  const obj = f && (await env.FILES.get(`${bookId}/${f.id}`));
+  if (obj) return obj.text();
+  const md = defaultAgentMd(title, `${origin}/b/${bookId}`);
+  await storeFile(env, bookId, email, "text/markdown", new TextEncoder().encode(md).buffer as ArrayBuffer, path);
+  return md;
+}
+
+/** A new sandbox for this person in this room (the app's Criar sandbox, MCP sandbox_create). Throws a user-facing Error. */
+export async function createSandbox(env: Env, email: string, bookId: string, rawName: string, origin: string) {
+  useEnv(env);
+  const k = await loadKey(env, email).catch(() => null);
+  if (!k) throw new Error("Conecte sua conta do freestyle.sh primeiro.");
+  const n = await env.DB.prepare(`SELECT count(*) AS n FROM sandboxes WHERE book_id = ? AND email = ?`).bind(bookId, email).first<{ n: number }>();
+  if ((n?.n ?? 0) >= MAX_PER_ROOM) throw new Error(`No máximo ${MAX_PER_ROOM} sandboxes seus por sala.`);
+  const book = await env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();
+  const title = String(book?.title ?? "sala");
+  const name = slug(rawName || title);
+  const md = await agentFile(env, bookId, email, name, title, origin);
+  const vm = await fs<{ id: string }>(k, "POST", "/v5/vms", {
+    displayName: `vibebook · ${title}`.slice(0, 60),
+    metadata: { vibebook_room: bookId, vibebook_agent: name },
+    firewall: { rules: [{ action: "allow", source: {}, destination: { public: true } }] },
+    idleTimeoutSeconds: -1,
+  });
+  await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: bookId, folder: name, md, origin }), mode: 493 });
+  await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
+  await writeClaudeEnv(env, k, email, vm.id);
+  await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
+  const sid = crypto.randomUUID().slice(0, 8);
+  await env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at, state, checked_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?, 'running', ?)`).bind(sid, email, bookId, name, vm.id, Date.now(), Date.now()).run();
+  return { id: sid, vm_id: vm.id, name };
+}
+
 /** Routes (all behind the session; rooms checked with isMember). Mounted from index.ts. */
 // biome-ignore lint/suspicious/noExplicitAny: the Hono app's context type lives in index.ts
-export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown>; agentFile: (env: Env, bookId: string, email: string, name: string, title: string, origin: string) => Promise<string> }) {
+export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
   app.use("/api/*", async (c: any, next: () => Promise<void>) => { if (c.env.FREESTYLE_API) API = c.env.FREESTYLE_API; await next(); });
   const key = async (c: any): Promise<string | null> => loadKey(c.env, c.get("email")).catch(() => null);
   const mine = (c: any, sid: string) => c.env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, c.get("email")).first() as Promise<Row | null>;
@@ -199,35 +238,14 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
   app.post("/api/books/:id/sandboxes", async (c: any) => {
     const email = c.get("email"), id = c.req.param("id");
     if (!(await deps.isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-    const k = await key(c);
-    if (!k) return c.json({ error: "Conecte sua conta do freestyle.sh primeiro." }, 400);
-    const n = await c.env.DB.prepare(`SELECT count(*) AS n FROM sandboxes WHERE book_id = ? AND email = ?`).bind(id, email).first();
-    if ((n?.n ?? 0) >= MAX_PER_ROOM) return c.json({ error: `No máximo ${MAX_PER_ROOM} sandboxes seus por sala.` }, 400);
-    const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first();
-    const title = String(book?.title ?? "sala");
-    const { name: raw } = await c.req.json().catch(() => ({}));
-    const name = slug(String(raw || title));
-    const origin = new URL(c.req.url).origin;
-    const md = await deps.agentFile(c.env, id, email, name, title, origin);
-    let vm: { id: string };
+    const { name } = await c.req.json().catch(() => ({}));
     try {
-      vm = await fs(k, "POST", "/v5/vms", {
-        displayName: `vibebook · ${title}`.slice(0, 60),
-        metadata: { vibebook_room: id, vibebook_agent: name },
-        firewall: { rules: [{ action: "allow", source: {}, destination: { public: true } }] },
-        idleTimeoutSeconds: -1,
-      });
-      await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: id, folder: name, md, origin }), mode: 493 });
-      await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
-      await writeClaudeEnv(c.env, k, email, vm.id);
-      await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
+      const r = await createSandbox(c.env, email, id, String(name ?? ""), new URL(c.req.url).origin);
+      c.executionCtx.waitUntil(deps.track(c.env, "sandbox_created", { user: email, dims: { book: id } }));
+      return c.json({ ok: true, ...r });
     } catch (e) {
-      return c.json({ error: (e as Error).message }, 502);
+      return c.json({ error: (e as Error).message }, 400);
     }
-    const sid = crypto.randomUUID().slice(0, 8);
-    await c.env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at, state, checked_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?, 'running', ?)`).bind(sid, email, id, name, vm.id, Date.now(), Date.now()).run();
-    c.executionCtx.waitUntil(deps.track(c.env, "sandbox_created", { user: email, dims: { book: id } }));
-    return c.json({ ok: true, id: sid, vm_id: vm.id, name });
   });
 
   for (const act of ["pause", "start"] as const)
@@ -247,7 +265,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       // A fresh script from the room's current agents/<name>.md (an edited .md, or a fixed setup, applies here).
       const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first();
       const origin = new URL(c.req.url).origin;
-      const md = await deps.agentFile(c.env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
+      const md = await agentFile(c.env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
       await writeClaudeEnv(c.env, k, r.email, r.vm_id);
@@ -303,6 +321,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
 export const redact = (s: string) =>
   s.replace(/sk-ant-[A-Za-z0-9_.-]{10,}/g, "sk-ant-…[redacted]").replace(/(CLAUDE_CODE_OAUTH_TOKEN|FREESTYLE_API_KEY|API_KEY|TOKEN|SECRET)=\S+/gi, "$1=[redacted]");
 export async function agentSandboxes(env: Env, email: string) {
+  useEnv(env);
   const k = await loadKey(env, email).catch(() => null);
   if (!k) return { connected: false, sandboxes: [], note: "your human hasn't connected freestyle.sh (Agents → Na nuvem in a room)" };
   const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE email = ? ORDER BY created_at`).bind(email).all()).results as Row[];
@@ -317,6 +336,7 @@ export async function agentSandboxes(env: Env, email: string) {
   return { connected: true, sandboxes: out };
 }
 export async function agentSandboxExec(env: Env, email: string, sid: string, command: string, timeoutS = 60) {
+  useEnv(env);
   const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
   if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
   const k = await loadKey(env, email).catch(() => null);

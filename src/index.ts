@@ -10,7 +10,7 @@ import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
-import { defaultAgentMd, mountSandbox } from "./sandbox";
+import { mountSandbox } from "./sandbox";
 import { validUnsub } from "./mentionmail";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
@@ -683,19 +683,7 @@ app.get("/ws/:id", async (c) => {
 // Everything else (app, /authorize, /oauth/*, discovery) goes through the OAuth provider to the Hono app.
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
-mountSandbox(app, {
-  isMember,
-  track,
-  agentFile: async (env, bookId, email, name, title, origin) => {
-    const path = `agents/${name}.md`;
-    const f = (await bookStub(env, bookId).files()).find((x: { name: string }) => x.name === path);
-    const obj = f && (await env.FILES.get(`${bookId}/${f.id}`));
-    if (obj) return obj.text();
-    const md = defaultAgentMd(title, `${origin}/b/${bookId}`);
-    await storeFile(env, bookId, email, "text/markdown", new TextEncoder().encode(md).buffer as ArrayBuffer, path);
-    return md;
-  },
-});
+mountSandbox(app, { isMember, track });
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
