@@ -722,19 +722,24 @@
     .sheetGrab { display: grid; place-items: center; flex: none; width: 100%; height: 22px; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: transparent; touch-action: none; cursor: grab; }
     .sheetGrab i, .docPeek .grab { display: block; width: 38px; height: 5px; border-radius: 99px; background: var(--line); }
     .doc header { height: 48px; padding: 0 16px; }
-    /* The thread switcher drops down from the title that opens it (handle at its bottom, drag up to close); the doc
-       still rises from its peek bar above the composer. */
+    /* Both sheets drop from the top, handle at their bottom (drag up to close). The thread switcher covers the header
+       it opens from; the doc is a floor under the header: its peek bar sits right below it, it slides down from
+       under the header and stops short of the bottom, leaving a strip of the dimmed chat that closes it on tap. */
     .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) * .85); padding-top: max(14px, env(safe-area-inset-top)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
     .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
-    .docPeek { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: none; margin: 0 8px; padding: 5px 14px 8px; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--bg); color: var(--mute); font-size: 13px; text-align: left; touch-action: none; }
+    .chathead { z-index: 21; background: var(--bg); }
+    .book > .side { z-index: 22; }
+    .book > .doc, .book.nodoc > .doc { top: var(--headH, 60px); height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - max(96px, var(--vvh, 100dvh) * .2)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - var(--headH, 60px) - 48px)); }
+    .book[data-sheet="doc"] > .doc { transform: none; } /* after the line above, also when .nodoc */
+    .book[data-sheet="doc"] > .sheetDim { top: var(--headH, 60px); }
+    .doc > .sheetGrab { order: 99; flex: none; border-radius: 0 0 18px 18px; }
+    .docPeek { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: none; margin: 0 8px; padding: 8px 14px 5px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; background: var(--bg); color: var(--mute); font-size: 13px; text-align: left; touch-action: none; }
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
     #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
     #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #peekTxt small { flex: none; font-size: 12px; }
-    .docPeek + .composer { border-top-color: transparent; }
     .book.boardview .docPeek { display: none; }
-    .book.boardview .docPeek + .composer { border-top-color: var(--line); }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
     .phHome { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: var(--mute); flex: none; }
@@ -767,6 +772,8 @@
     .msgs { padding: 16px 14px 12px; gap: 16px; }
     .msg { gap: 10px; }
     .composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    /* Typing = the keyboard is up: the home-bar inset under the composer is just a gap above the keys. */
+    .composer:focus-within { padding-bottom: 8px; }
     .composer textarea { scrollbar-width: none; }
     .composer textarea::-webkit-scrollbar { display: none; }
     .agentNudge { margin: 10px 12px 0; } .claudeBar { margin: 8px 12px 0; }
@@ -2239,11 +2246,11 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <button type="button" class="docPeek" id="docPeek" aria-label="${t("Abrir documento")}"><span id="peekTxt"></span><i class="grab"></i></button>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
-      <button type="button" class="docPeek" id="docPeek" aria-label="${t("Abrir documento")}"><i class="grab"></i><span id="peekTxt"></span></button>
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
         <div class="replyBar" id="replyBar" hidden></div>
@@ -2286,6 +2293,8 @@ function renderBook() {
     </form>
   </dialog>`;
   const book = $app.querySelector(".book");
+  // The doc sheet hangs right under the room header, whose height varies (safe area, wrapped title).
+  new ResizeObserver(([e]) => document.documentElement.style.setProperty("--headH", `${Math.round(e.target.getBoundingClientRect().height)}px`)).observe(book.querySelector(".chathead"));
   sheetDrag(document.getElementById("docPeek"), "doc", true);
   sheetDrag(document.getElementById("docGrab"), "doc", false);
   document.getElementById("sheetDim").onclick = () => closeSheet();
@@ -2990,7 +2999,7 @@ function renderPeek() {
   const n = epic?.tasks.length || 0, d = n && epic.tasks.filter((x) => x.done).length;
   el.innerHTML = `${icon("doc", 15)}<b>Doc</b><span class="pt">· ${esc(title)}</span>${n ? `<small>${t("{d}/{n} tarefas", { d, n })}</small>` : ""}`;
 }
-// Phones (≤900px): the sidebar ("side": threads, people) and the doc are bottom sheets over the chat. Opening one
+// Phones (≤900px): the sidebar ("side": threads, people) and the doc are sheets that drop from the top over the chat. Opening one
 // pushes a history entry so Back closes it (like the file viewer); picking a thread reuses that entry for its URL.
 const ROOM_PHONE = matchMedia("(max-width: 900px)");
 let sheetSkip = false;
@@ -3023,7 +3032,7 @@ function sheetDrag(handle, which, opening) {
     const bk = $app.querySelector(".book"), el = bk?.querySelector(which === "doc" ? ".doc" : ".side"), dim = document.getElementById("sheetDim");
     if (!el || !ROOM_PHONE.matches) return;
     const y0 = e.clientY, H = el.offsetHeight; let dy = 0, moving = false;
-    const up = which === "side" ? -1 : 1; // the switcher hangs from the top: dragging it up closes it
+    const up = -1; // both sheets hang from the top: dragging up closes, down opens
     dragged = false;
     handle.setPointerCapture(e.pointerId);
     handle.onpointermove = (ev) => {
