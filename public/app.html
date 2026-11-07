@@ -546,10 +546,15 @@
   .preview .empty { margin: 0; }
   .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
   /* doc panel tabs + files library */
-  .ptabs { display: flex; gap: 12px; flex: 1; align-items: baseline; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .ptabs { display: flex; gap: 2px; flex: 1; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 5px; margin: -5px; } /* room for the ✻ ring */
   .doc header .seg { flex: none; }
-  .ptabs button { border: none; background: none; padding: 0; font-size: 15px; line-height: 1; color: var(--mute); white-space: nowrap; }
-  .ptabs button.sel { color: var(--ink); }
+  .ptabs button { border: none; background: none; padding: 0 9px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; gap: 4px; flex: none; font: 600 14px/1 "Schibsted Grotesk", sans-serif; color: var(--mute); white-space: nowrap; }
+  .ptabs button:hover { background: var(--hover); }
+  .ptabs button.sel { color: var(--ink); background: var(--hover); }
+  .ptabs .ptDoc { color: var(--ink); }
+  .ptabs .ptAgents { margin-left: auto; background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; border-radius: 10px; }
+  .ptabs .ptAgents.sel, .ptabs .ptAgents:hover { background: var(--claude); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); }
+  .doc header .seg { display: none; } /* reading/editing: the bar at the doc's foot */
   .ptabs small { font: 600 12px "Schibsted Grotesk", sans-serif; color: var(--mute); margin-left: 4px; }
   .doc[data-pane="files"] .preview, .doc[data-pane="files"] textarea, .doc[data-pane="files"] .seg { display: none; }
   .doc[data-pane="doc"] .filesPane, .doc:not([data-pane="decisions"]) .decPane { display: none; }
@@ -559,6 +564,32 @@
   .doc[data-pane="reminders"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="reminders"]) .remPane { display: none; }
   .doc.collab[data-view="edit"]:not([data-pane="doc"]) .cm { display: none; }
   .remPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  /* Agents pane (✻) and the doc's Editar/Pronto foot bar: phones and desktop. */
+  .doc[data-pane="agents"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="agents"]) .agentsPane { display: none; }
+  .agentsPane { flex: 1; overflow: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .agentsPane h4 { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); }
+  .agCard { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .agCard > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .agCard small { color: var(--mute); font-size: 12.5px; }
+  .agIcon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--warm-line); color: var(--claude); font-size: 20px; flex: none; }
+  .agCard.on .agIcon { background: var(--claude); color: #fff; }
+  .agSwitch { position: relative; width: 46px; height: 28px; flex: none; } .agSwitch input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+  .agSwitch i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
+  .agSwitch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s; }
+  .agSwitch input:checked + i { background: var(--claude); } .agSwitch input:checked + i::after { transform: translateX(18px); }
+  .agNote { margin: 0; font-size: 12.5px; color: var(--mute); }
+  .agList .agentRow { padding-left: 0; }
+  .agNew { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 14px; background: none; color: var(--mute); font-weight: 600; }
+  .agNew.on { border-style: solid; border-color: var(--claude); color: var(--claude); }
+  .agCard.col { flex-direction: column; align-items: stretch; } .agCard.col > * { width: 100%; }
+  .fsForm { display: flex; gap: 8px; } .fsForm input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+  .agErr { margin: 0; color: var(--red, #d33); font-size: 12.5px; }
+  .sbxActs { display: flex; gap: 4px; flex: none; } .sbxActs button { padding: 6px 9px; font-size: 13px; }
+  .agCard.sbx.running .agIcon { background: var(--claude); color: #fff; }
+  .fsOff { align-self: center; font-size: 12.5px; color: var(--mute); }
+  .agNew small { flex-basis: 100%; text-align: center; font-weight: 400; font-size: 12px; }
+  .doc .docEditBar { display: flex; order: 98; flex: none; align-items: center; justify-content: center; gap: 6px; height: 44px; margin: 0 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 15px; font-weight: 600; }
+  .doc[data-view="edit"] .docEditBar { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .doc:not([data-pane="doc"]) .docEditBar { display: none; }
   .termDlg { width: min(960px, 100vw); height: min(640px, 100dvh); max-width: 100vw; max-height: 100dvh; padding: 0; border: 0; border-radius: 14px; background: #0b0f17; color: #e5e7eb; display: flex; flex-direction: column; }
   .termDlg:not([open]) { display: none; }
   .termDlg header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #ffffff1a; } .termDlg header span { flex: 1; font-size: 12px; color: #9ca3af; } .termDlg header button { color: #e5e7eb; }
@@ -705,7 +736,7 @@
   .doc .cm .cm-selectionBackground, .doc .cm .cm-focused .cm-selectionBackground { background: var(--mention-bg) !important; }
   .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
-  @media (min-width: 901px) { .docPeek, .docEditBar, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
+  @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly { display: none !important; } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -755,9 +786,6 @@
     .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
     .peekRow button small { font-size: 11px; font-weight: 600; }
     .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
-    .doc .docEditBar { display: flex; order: 98; flex: none; align-items: center; justify-content: center; gap: 6px; height: 44px; margin: 0 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 15px; font-weight: 600; }
-    .doc[data-view="edit"] .docEditBar { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-    .doc:not([data-pane="doc"]) .docEditBar { display: none; }
     .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
     .book[data-sheet="doc"] .docPeek .grab { display: none; } /* open: no handle, no empty band under the tabs */
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
@@ -769,28 +797,6 @@
     .peekRow .peekAgents { background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; margin-left: 2px; border-radius: 10px; }
     .peekRow .peekAgents small { font-size: 11px; }
     .book[data-sheet="doc"][data-pane="agents"] .peekRow .peekAgents { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); background: var(--claude); color: #fff; }
-    .doc[data-pane="agents"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="agents"]) .agentsPane { display: none; }
-    .agentsPane { flex: 1; overflow: auto; padding: 18px 16px 24px; display: flex; flex-direction: column; gap: 10px; }
-    .agentsPane h4 { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); }
-    .agCard { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-    .agCard > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .agCard small { color: var(--mute); font-size: 12.5px; }
-    .agIcon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--warm-line); color: var(--claude); font-size: 20px; flex: none; }
-    .agCard.on .agIcon { background: var(--claude); color: #fff; }
-    .agSwitch { position: relative; width: 46px; height: 28px; flex: none; } .agSwitch input { position: absolute; opacity: 0; inset: 0; margin: 0; }
-    .agSwitch i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
-    .agSwitch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s; }
-    .agSwitch input:checked + i { background: var(--claude); } .agSwitch input:checked + i::after { transform: translateX(18px); }
-    .agNote { margin: 0; font-size: 12.5px; color: var(--mute); }
-    .agList .agentRow { padding-left: 0; }
-    .agNew { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 14px; background: none; color: var(--mute); font-weight: 600; }
-    .agNew.on { border-style: solid; border-color: var(--claude); color: var(--claude); }
-    .agCard.col { flex-direction: column; align-items: stretch; } .agCard.col > * { width: 100%; }
-    .fsForm { display: flex; gap: 8px; } .fsForm input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
-    .agErr { margin: 0; color: var(--red, #d33); font-size: 12.5px; }
-    .sbxActs { display: flex; gap: 4px; flex: none; } .sbxActs button { padding: 6px 9px; font-size: 13px; }
-    .agCard.sbx.running .agIcon { background: var(--claude); color: #fff; }
-    .fsOff { align-self: center; font-size: 12.5px; color: var(--mute); }
-    .agNew small { flex-basis: 100%; text-align: center; font-weight: 400; font-size: 12px; }
     .peekRow #peekBoard.on { background: var(--hover); color: var(--ink); }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
@@ -2361,7 +2367,7 @@ function renderBook() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button><button type="button" data-pane="reminders">${t("Lembretes")}<small id="remCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">✻</button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2577,6 +2583,8 @@ function renderBook() {
     if (pane === "agents") loadSandboxes();
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
+  // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
+  document.addEventListener("vb:pane", (e) => { if (!document.body.contains(book)) return; book.classList.remove("nodoc"); setPane(e.detail); });
   setPane("doc");
   const doc = document.getElementById("doc");
   let timer;
@@ -2807,7 +2815,7 @@ function renderMyClaude() {
   go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
   // The banner counts a Claude of yours that's busy here (read/posted in the last 30 min) as present, not only a listening one.
   renderClaudeBar(on, live || roomAgents.list.some((a) => a.email === S.me && Date.now() - a.seen_at < 30 * 60e3));
-  b.onclick = toggleClaude;
+  b.onclick = () => document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" }));
   renderAgentsPane(on, live, path, w);
 }
 async function toggleClaude() {
