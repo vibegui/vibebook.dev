@@ -602,6 +602,9 @@
   .agNew { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 14px; background: none; color: var(--mute); font-weight: 600; }
   .agNew.on { border-style: solid; border-color: var(--claude); color: var(--claude); }
   .agCard.col { flex-direction: column; align-items: stretch; } .agCard.col > * { width: 100%; }
+  .cpCmd, .agCard > .cpCmd { display: flex; flex-direction: row; align-items: center; gap: 8px; padding: 8px 8px 8px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+  .cpCmd code { flex: 1; min-width: 0; font: 12.5px ui-monospace, Menlo, monospace; color: var(--ink); white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+  .cpCmd button { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; font-size: 12.5px; border-radius: 8px; }
   .fsForm { display: flex; gap: 8px; } .fsForm input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
   .agErr { margin: 0; color: var(--red, #d33); font-size: 12.5px; }
   .sbxCard { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
@@ -1408,6 +1411,10 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "O sandbox roda na sua conta do freestyle.sh. Crie uma conta lá e, no seu terminal, gere uma API key:": "The sandbox runs on your freestyle.sh account. Create one there and make an API key in your terminal:",
+  "Cole a key aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.": "Paste the key here. It's kept encrypted in vibebook and never goes to the room or to agents.",
+  "No seu terminal, rode:": "In your terminal, run:",
+  "Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.": "Paste the token (sk-ant-…) here: the sandbox's Claude starts logged in to your subscription. It's kept encrypted, like the freestyle key. Without it, run /login in the sandbox terminal.",
   "Rodando setup… (até 4 min)": "Running setup… (up to 4 min)",
   "espera você no terminal": "waiting for you in the terminal",
   "Tirar da fila (já resolvido)": "Take out of the queue (already handled)",
@@ -1417,7 +1424,6 @@ const EN = {
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "remover": "remove",
   "Conecte seu Claude": "Connect your Claude",
-  "Rode claude setup-token no seu terminal e cole o token aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.": "Run claude setup-token in your terminal and paste the token here: the sandbox's Claude starts logged in to your subscription. It's kept encrypted, like the freestyle key. Without it, run /login in the sandbox terminal.",
   "Salvando…": "Saving…",
   "Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.": "Remove the Claude token? Sandboxes that already have it stay logged in until you delete them.",
   "sala principal": "main room",
@@ -1440,7 +1446,6 @@ const EN = {
   "Na nuvem": "In the cloud",
   "carregando…": "loading…",
   "Conecte sua conta do freestyle.sh": "Connect your freestyle.sh account",
-  "O sandbox roda na sua conta: crie uma em freestyle.sh e uma API key (npx freestyle@latest tokens create vibebook) e cole aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.": "The sandbox runs on your account: create one at freestyle.sh and an API key (npx freestyle@latest tokens create vibebook) and paste it here. It's kept encrypted in vibebook and never goes to the room or to agents.",
   "API key do freestyle": "freestyle API key",
   "Conferindo…": "Checking…",
   "Conectar": "Connect",
@@ -2962,11 +2967,11 @@ function sbxHtml() {
   if (sbx.id !== S?.id || sbx.connected === null) return `<p class="agNote">${t("carregando…")}</p>`;
   const err = sbx.err ? `<p class="agErr">${esc(sbx.err)}</p>` : "";
   if (!sbx.connected) return `<div class="agCard col"><b>${t("Conecte sua conta do freestyle.sh")}</b>
-    <small>${t("O sandbox roda na sua conta: crie uma em freestyle.sh e uma API key (npx freestyle@latest tokens create vibebook) e cole aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
+    <small>${t("O sandbox roda na sua conta do freestyle.sh. Crie uma conta lá e, no seu terminal, gere uma API key:")}</small><div class="cpCmd"><code>npx freestyle@latest tokens create vibebook</code><button type="button" class="ghost" data-cp="npx freestyle@latest tokens create vibebook">${t("Copiar")}</button></div><small>${t("Cole a key aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
     <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${t("API key do freestyle")}" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "key" ? t("Conferindo…") : t("Conectar")}</button></form>${err}</div>`;
   const claude = sbx.claude
     ? `<div class="fsOn">${icon("check", 13)} ${t("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${t("remover")}</button></div>`
-    : `<div class="agCard col"><b>${t("Conecte seu Claude")}</b><small>${t("Rode claude setup-token no seu terminal e cole o token aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
+    : `<div class="agCard col"><b>${t("Conecte seu Claude")}</b><small>${t("No seu terminal, rode:")}</small><div class="cpCmd"><code>claude setup-token</code><button type="button" class="ghost" data-cp="claude setup-token">${t("Copiar")}</button></div><small>${t("Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
       <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "ct" ? t("Salvando…") : t("Salvar")}</button></form></div>`;
   return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
       <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${sbx.logs?.[x.id] ? `<pre class="sbxLog">${esc(sbx.logs[x.id])}</pre>` : !x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
@@ -2982,6 +2987,7 @@ function wireSbx() {
   const run = async (busy, fn) => { sbx.busy = busy; sbx.err = ""; redraw(); try { const r = await fn(); if (r?.error) sbx.err = r.error; } catch { sbx.err = t("sem conexão"); } sbx.busy = ""; await loadSandboxes(); redraw(); };
   const call = (method, url, body) => fetch(url, { method, headers: { "content-type": "application/json" }, body: body ? JSON.stringify(body) : undefined }).then((x) => x.json());
   document.getElementById("fsForm")?.addEventListener("submit", (e) => { e.preventDefault(); const k = e.target.key.value; run("key", () => call("POST", "/api/freestyle", { key: k })); });
+  document.querySelectorAll("[data-cp]").forEach((b) => b.onclick = () => { navigator.clipboard?.writeText(b.dataset.cp); const h = b.innerHTML; b.textContent = "✓"; setTimeout(() => (b.innerHTML = h), 1200); });
   document.getElementById("ctForm")?.addEventListener("submit", (e) => { e.preventDefault(); const k = e.target.token.value; run("ct", () => call("POST", "/api/claude-token", { token: k })); });
   document.getElementById("ctOff")?.addEventListener("click", () => confirm(t("Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.")) && run("ct", () => call("DELETE", "/api/claude-token")));
   document.getElementById("fsOff")?.addEventListener("click", () => confirm(t("Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.")) && run("off", () => call("DELETE", "/api/freestyle")));
