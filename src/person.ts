@@ -2,9 +2,9 @@ import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";
 
 /** One per person (idFromName(email)): the app's push channel for what lives outside an open room (the rail's unread
- * dots and ✻, "esperando você", the room's Claudes and sandboxes). It holds no data: sockets hibernate, and a poke
- * just tells every open tab "this changed, fetch it once" ({t:"me"} → /api/me, {t:"agents", book} → that room's
- * /api/books/:id/agents). Replaces the app's 30s polling. */
+ * dots and ✻, "esperando você", the room's Claudes and sandboxes). Sockets hibernate; a poke tells every open tab
+ * "this changed, fetch it once" ({t:"me"} → /api/me, {t:"agents", book} → that room's /api/books/:id/agents).
+ * It also keeps the last /api/me answer: served from here (no D1) until a {t:"me"} poke marks it stale, or 5 min. */
 export class Person extends DurableObject<Env> {
   async fetch(req: Request) {
     if (req.headers.get("upgrade") === "websocket") {
@@ -12,7 +12,22 @@ export class Person extends DurableObject<Env> {
       this.ctx.acceptWebSocket(server);
       return new Response(null, { status: 101, webSocket: client });
     }
+    const path = new URL(req.url).pathname;
+    if (path === "/me") {
+      // gen: bumped by every {t:"me"} poke, so an answer computed before a change never lands after it.
+      const gen = (await this.ctx.storage.get<number>("gen")) ?? 0;
+      if (req.method === "PUT") {
+        if (Number(req.headers.get("x-gen")) === gen) await this.ctx.storage.put("me", { body: await req.text(), at: Date.now() });
+        return new Response(null, { status: 204 });
+      }
+      const me = await this.ctx.storage.get<{ body: string; at: number }>("me");
+      return me && Date.now() - me.at < 5 * 60e3 ? new Response(me.body, { headers: { "content-type": "application/json" } }) : new Response(null, { status: 404, headers: { "x-gen": String(gen) } });
+    }
     const msg = await req.text();
+    if (msg.includes('"t":"me"')) { // stale: the next /api/me reads D1
+      await this.ctx.storage.delete("me");
+      await this.ctx.storage.put("gen", ((await this.ctx.storage.get<number>("gen")) ?? 0) + 1);
+    }
     for (const ws of this.ctx.getWebSockets()) try { ws.send(msg); } catch {}
     return new Response(null, { status: 204 });
   }

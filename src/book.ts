@@ -1213,6 +1213,7 @@ export class Book extends DurableObject<Env> {
       return new Response("ok");
     }
     if (url.pathname === "/members-changed") {
+      this.pokeMembers();
       const members = await this.members();
       // Kick sockets of anyone no longer a member.
       for (const ws of this.sockets()) if (!members.includes(this.ctx.getTags(ws)[0])) ws.close(4003, "removed");

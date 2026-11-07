@@ -338,6 +338,7 @@ app.use("*", async (c, next) => {
   }
   c.set("email", email);
   await next();
+  if (c.req.method !== "GET" && c.req.path.startsWith("/api/") && c.res.status < 400) c.executionCtx.waitUntil(poke(c.env, [email], { t: "me" }));
 });
 
 
@@ -356,6 +357,10 @@ app.get("/api/dev/as", (c) => {
 app.get("/api/me", async (c) => {
   const email = c.get("email");
   const db = c.env.DB;
+  // Served from your Person DO while nothing changed (rooms, waits and your own writes poke it stale).
+  const person = c.env.PEOPLE.get(c.env.PEOPLE.idFromName(email));
+  const cached = await person.fetch("https://person/me").catch(() => null);
+  if (cached?.ok) return c.json({ ...(await cached.json<Record<string, unknown>>()), v: await currentVersion(c.env, c.req.url), cached: true });
   // One round trip's worth: the four reads run together.
   const [books, friends, me, waits] = await Promise.all([db
     .prepare(
@@ -383,7 +388,10 @@ app.get("/api/me", async (c) => {
   // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
   const lang = cookieLang(c.req.raw) ?? (me?.lang ? null : reqLang(c.req.raw));
   if (me && lang && lang !== me.lang) c.executionCtx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
-  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits, v: await currentVersion(c.env, c.req.url) });
+  const out = { email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits };
+  const gen = cached?.headers.get("x-gen");
+  if (gen) c.executionCtx.waitUntil(person.fetch("https://person/me", { method: "PUT", body: JSON.stringify(out), headers: { "x-gen": gen } }).catch(() => {}));
+  return c.json({ ...out, v: await currentVersion(c.env, c.req.url) });
 });
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
@@ -749,7 +757,8 @@ app.get("/ws/:id", async (c) => {
   if (c.req.header("upgrade") !== "websocket") return c.text("expected websocket", 426);
   if (!(await isMember(c.env.DB, id, c.get("email")))) return c.json({ error: "forbidden" }, 403);
   // When you last opened the room: the phone home lists rooms by it.
-  c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE members SET opened_at = ? WHERE book_id = ? AND email = ?`).bind(Date.now(), id, c.get("email")).run());
+  // When you last opened the room (the phone home's order) and what you've read: your cached /api/me is stale now.
+  c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE members SET opened_at = ? WHERE book_id = ? AND email = ?`).bind(Date.now(), id, c.get("email")).run().then(() => poke(c.env, [c.get("email")], { t: "me" })));
   const req = new Request(`https://book/ws?book=${id}`, c.req.raw);
   req.headers.set("x-email", c.get("email"));
   return bookStub(c.env, id).fetch(req);

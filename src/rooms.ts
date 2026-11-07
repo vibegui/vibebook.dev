@@ -1,3 +1,4 @@
+import { poke } from "./person";
 // Room (vibebook) operations shared by the app API and the agent MCP.
 import type { Lang } from "./lang";
 import { emailHtml, escapeHtml, inviteLink } from "./auth";
@@ -38,6 +39,7 @@ export async function createBook(env: Env, email: string, title?: string) {
 /** Adds `who` to the room, befriends, emails a magic link (rate-limited per inviter) and tells the DO. */
 export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, origin: string, inviter: string, bookId: string, who: string, inviterLang: Lang = "pt") {
   await env.DB.prepare(`INSERT OR IGNORE INTO members (book_id, email) VALUES (?, ?)`).bind(bookId, who).run();
+  ctx.waitUntil(poke(env, [who], { t: "me" })); // the room shows up in their rail at once
   await befriend(env.DB, inviter, who);
   ctx.waitUntil(track(env, "invite_sent", { user: inviter, dims: { book: bookId } }));
   if (!env.DEV_EMAIL && (await env.LOGIN_LIMIT.limit({ key: `invite:${inviter}` })).success) {
