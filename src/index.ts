@@ -312,6 +312,7 @@ app.get("/api/me", async (c) => {
     .prepare(
       `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, b.icon, b.busy_until, m.position, m.tint, m.opened_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
          coalesce(r.last_id, 0) AS read_id,
+         (SELECT count(*) FROM sandboxes s WHERE s.book_id = b.id AND s.state = 'running') AS sandboxes_running,
          (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
        FROM books b JOIN members m ON m.book_id = b.id
        LEFT JOIN human_reads r ON r.email = m.email AND r.book_id = b.id

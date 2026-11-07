@@ -224,7 +224,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       return c.json({ error: (e as Error).message }, 502);
     }
     const sid = crypto.randomUUID().slice(0, 8);
-    await c.env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?)`).bind(sid, email, id, name, vm.id, Date.now()).run();
+    await c.env.DB.prepare(`INSERT INTO sandboxes (id, email, book_id, name, vm_id, identity_id, ready, created_at, state, checked_at) VALUES (?, ?, ?, ?, ?, NULL, 0, ?, 'running', ?)`).bind(sid, email, id, name, vm.id, Date.now(), Date.now()).run();
     c.executionCtx.waitUntil(deps.track(c.env, "sandbox_created", { user: email, dims: { book: id } }));
     return c.json({ ok: true, id: sid, vm_id: vm.id, name });
   });
@@ -234,6 +234,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       const r = await mine(c, c.req.param("sid")), k = await key(c);
       if (!r || !k) return c.json({ error: "not found" }, 404);
       try { await fs(k, "POST", `/v5/vms/${r.vm_id}/${act}`); } catch (e) { return c.json({ error: (e as Error).message }, 502); }
+      await c.env.DB.prepare(`UPDATE sandboxes SET state = ? WHERE id = ?`).bind(act === "pause" ? "paused" : "running", r.id).run(); // the rail's ☁ follows at once
       c.executionCtx.waitUntil(deps.track(c.env, `sandbox_${act}`, { user: r.email, dims: { book: r.book_id } }));
       return c.json({ ok: true });
     });

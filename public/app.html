@@ -970,6 +970,8 @@
   .sw-item:hover .tile, .sw-item.on .tile { opacity: 1; }
   .sw-item:hover .tile { transform: scale(1.05); }
   .sw-item .tw { position: relative; display: block; }
+  .tw.cloud > .tile { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); }
+  .swCloud { position: absolute; left: -7px; top: -7px; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--claude); color: #fff; font-size: 12px; line-height: 1; box-shadow: 0 0 0 2px var(--bg); }
   .swWait { position: absolute; right: -6px; bottom: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; background: #e3b505; color: #1a2130; font: 700 11px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
   .sw-item .dot { position: absolute; right: -3px; top: -3px; width: 11px; height: 11px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--panel); }
   .sw-item .dot.h { background: oklch(0.68 0.17 150); }
@@ -1399,6 +1401,7 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "sandbox na nuvem rodando": "cloud sandbox running",
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "remover": "remove",
   "Conecte seu Claude": "Connect your Claude",
@@ -1637,7 +1640,9 @@ function renderSwitcher() {
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um Claude está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
   const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
-  const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}</span></a>`;
+  // A cloud sandbox running in the room (it costs money): an orange ring and a ☁ on the tile.
+  const cloud = (b) => (b.sandboxes_running ? `<b class="swCloud" title="${t("sandbox na nuvem rodando")}">☁</b>` : "");
+  const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw${b.sandboxes_running ? " cloud" : ""}">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}${cloud(b)}</span></a>`;
   const html = `<a class="sw-item" href="/app" data-nav title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
     ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map(item).join("")}</div>` : item(g.rooms[0])).join("")}
@@ -1922,7 +1927,7 @@ function phoneHome(me) {
       ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${t("Como seus amigos te chamam?")}</b><span class="muted">${t("O pessoal e os Claudes vão te chamar assim.")}</span>
         <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
       <div class="pgrid">
-        ${rooms.map((b) => `<a class="proom" data-nav href="/b/${b.id}"><span class="tw">${tile(b, "xl")}${dot(b)}${waitN(b)}</span><span class="nm">${esc(b.title)}</span></a>`).join("")}
+        ${rooms.map((b) => `<a class="proom" data-nav href="/b/${b.id}"><span class="tw${b.sandboxes_running ? " cloud" : ""}">${tile(b, "xl")}${dot(b)}${waitN(b)}${b.sandboxes_running ? `<b class="swCloud">☁</b>` : ""}</span><span class="nm">${esc(b.title)}</span></a>`).join("")}
         <button class="proom" id="new" type="button"><span class="tile xl pnew">${SW_PLUS}</span><span class="nm">${t("Novo")}</span></button>
       </div>
     </main>
