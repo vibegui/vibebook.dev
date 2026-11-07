@@ -177,6 +177,30 @@ export class Book extends DurableObject<Env> {
       .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg)
       .reverse();
   }
+  /** What a room open sends: the newest 60 messages of main and each open epic (10 of an archived one), plus the
+   * messages each epic came from (origins, apart: they'd break each thread's paging); the rest is paged with "older".
+   * counts = every thread's real total. */
+  roomWindow() {
+    const rows = this.sql
+      .exec(
+        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m)
+         WHERE rn <= (CASE WHEN thread IN (SELECT id FROM epics WHERE archived > 0) THEN 10 ELSE 60 END)
+         ORDER BY id`,
+      )
+      .toArray()
+      .map(({ rn: _rn, ...r }) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+    const have = new Set(rows.map((m) => m.id));
+    const origins = this.sql
+      .exec(`SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL)`)
+      .toArray()
+      .filter((r) => !have.has(r.id as number))
+      .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+    const counts: Record<string, number> = {};
+    for (const r of this.sql.exec(`SELECT thread, count(*) AS n FROM messages GROUP BY thread`).toArray()) counts[r.thread as string] = r.n as number;
+    const sent: Record<string, number> = {};
+    for (const m of rows) sent[m.thread] = (sent[m.thread] ?? 0) + 1;
+    return { messages: rows, origins, counts, countsAt: rows.at(-1)?.id ?? 0, full: Object.keys(counts).filter((t) => (sent[t] ?? 0) >= counts[t]) };
+  }
   /** Decisions and approvals, oldest first: what the room agreed and who said yes. */
   decisions() {
     return this.sql
@@ -1187,9 +1211,9 @@ export class Book extends DurableObject<Env> {
         docs: this.epicDocs(),
         epics: this.epics(),
         roomTasks: this.roomTasks(),
-        messages: this.messages(),
-        // Everything fits in the first load: no thread has older messages to fetch.
-        complete: (this.sql.exec(`SELECT count(*) AS n FROM messages`).one().n as number) <= 500,
+        // The newest of each thread; full = threads sent whole, counts = real totals (the sidebar's numbers).
+        ...this.roomWindow(),
+        complete: false,
         files: this.files(),
         apps: this.apps(),
         reminders: this.reminders(),

@@ -3175,7 +3175,8 @@ function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   if (railMode && window.innerWidth > 900) return renderRail(el);
-  const count = (t) => S.messages.filter((m) => m.thread === t).length;
+  // The room sends each thread's newest messages and its real total (counts, as of message countsAt).
+  const count = (t) => (S.counts ? (S.counts[t] ?? 0) + S.messages.filter((m) => m.thread === t && m.id > (S.countsAt ?? 0)).length : S.messages.filter((m) => m.thread === t).length);
   el.innerHTML = `
     <button type="button" class="sheetGrab" aria-label="${t("Fechar")}"><i></i></button>
     <div class="sideHead">
@@ -3570,8 +3571,9 @@ const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind 
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
 const threadCard = (e) => {
   const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
+  const nReplies = S.counts ? (S.counts[e.id] ?? 0) + replies.filter((x) => x.id > (S.countsAt ?? 0)).length : replies.length;
   const d = e.tasks.filter((t) => t.status === "done").length;
-  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${replies.length === 1 ? t("1 resposta") : t("{n} respostas", { n: replies.length })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
+  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${nReplies === 1 ? t("1 resposta") : t("{n} respostas", { n: nReplies })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
 };
 const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`).join("");
 function refreshThreadCards() {
@@ -3844,17 +3846,17 @@ function renderChat(keep) {
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
   const all = S.messages.filter((m) => m.thread === thread);
   const list = all.slice(-win.n);
-  const more = all.length > list.length || (all.length && !S.complete && !olderDone[S.id + thread]);
+  const more = all.length > list.length || (all.length && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
   el.innerHTML = list.length ? (more ? `<div class="older"><button class="ghost" id="olderBtn">${t("Carregar mensagens anteriores")}</button></div>` : "") + list.map((m, i) => msgHtml(m, i ? list[i - 1] : all[all.length - list.length - 1])).join("")
     : `<div class="empty">${thread === "main" ? t("Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>.") : t("Discussão deste épico. Os Claudes leem as tarefas, o doc e a sala principal.")}</div>`;
   document.getElementById("olderBtn")?.addEventListener("click", loadOlder);
   // A thread starts with the request that opened it (the epic's message in main), like a Slack thread's parent.
-  const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && S.messages.find((x) => x.id === src);
+  const src = S.epics.find((e) => e.id === thread)?.from_msg, srcMsg = src && (S.messages.find((x) => x.id === src) || S.origins?.find((x) => x.id === src));
   if (srcMsg) {
     el.querySelector(".empty")?.classList.add("afterOrigin");
     // Under "Carregar mensagens anteriores" (that button always sits at the very top), above the replies.
-    const n = all.length, older = el.querySelector(".older");
+    const n = S.counts ? (S.counts[thread] ?? 0) + all.filter((m) => m.id > (S.countsAt ?? 0)).length : all.length, older = el.querySelector(".older");
     (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n === 1 ? t("1 resposta") : t("{n} respostas", { n })}</span><button type="button" class="ghost" data-gomain="${src}">${t("ver na sala principal")} ${icon("reply", 13)}</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
@@ -3868,7 +3870,7 @@ function loadOlder() {
   if (olderBusy || isPre()) return;
   const all = S.messages.filter((m) => m.thread === thread);
   if (all.length > win.n) { win.n += WIN; return renderChat(true); }
-  if (S.complete || olderDone[S.id + thread] || !all.length) return;
+  if (S.complete || S.full?.includes(thread) || olderDone[S.id + thread] || !all.length) return;
   olderBusy = true;
   send({ t: "older", thread, before: all[0].id });
 }
