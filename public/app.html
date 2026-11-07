@@ -363,6 +363,7 @@
   .kbar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .kbar .seg button { border: 0; border-radius: 0; background: none; padding: 6px 12px; font: inherit; font-size: 13px; color: var(--mute); cursor: pointer; }
   .kbar .seg button.on { background: var(--hover); color: var(--ink); font-weight: 600; }
+  .kbar .kScope { color: var(--mute); font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kbar select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); max-width: 60vw; }
   .klist { flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start; gap: 14px; }
   .klist h3 { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 8px; color: var(--mute); text-transform: none; }
@@ -860,6 +861,7 @@
     #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #peekTxt small { flex: none; font-size: 12px; }
     .chathead #myClaude { display: none !important; } /* in the toolbar below on phones */
+    .book.boardview .docPeek { display: none; } /* the board takes the screen; the header's picker filters it */
     .chathead #toggleBoard { flex: none; align-self: center; height: 32px; padding: 0 8px; gap: 4px; } .chathead #toggleBoard .lbl { display: none; }
     .peekRow .peekAgents { background: var(--claude); color: #fff; width: 40px; height: 40px; margin-left: 2px; border-radius: 10px; }
     .book[data-sheet="doc"][data-pane="agents"] .peekRow .peekAgents { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); background: var(--claude); color: #fff; }
@@ -2535,7 +2537,7 @@ function renderBook() {
     book.classList.toggle("boardview", on);
     book.classList.toggle("nodoc", on); // the board wants the width
     document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
-    if (on) { closeSheet(); boardEpic = null; renderKanban(); } // the room's board: every epic, filter inside
+    if (on) { closeSheet(); renderKanban(); }
   };
   document.getElementById("toggleBoard").onclick = () => setBoard(!book.classList.contains("boardview"));
   // Entering a room always opens chat + doc; the board is one click away.
@@ -2706,7 +2708,7 @@ function renderBook() {
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
     if (pane === "agents") { renderMyClaude(); loadSandboxes(); }
-    if (pane === "board") { const k = document.getElementById("kanban"), d = $app.querySelector(".doc"); if (k.parentElement !== d) d.append(k); boardEpic = null; renderKanban(); }
+    if (pane === "board") { const k = document.getElementById("kanban"), d = $app.querySelector(".doc"); if (k.parentElement !== d) d.append(k); renderKanban(); }
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
@@ -3355,7 +3357,8 @@ const leaveBoard = () => { if ($app.querySelector(".book.boardview")) document.g
 function renderKanban() {
   const el = document.getElementById("kanban");
   if (!el || !$app.querySelector(".book.boardview, .doc[data-pane='board']")) return;
-  if (boardEpic && !S.epics.some((e) => e.id === boardEpic)) boardEpic = null;
+  // The board follows the thread picked above (the header's picker / the sidebar): the room's main thread = every epic.
+  boardEpic = thread === "main" || isPre() || !S.epics.some((e) => e.id === thread) ? null : thread;
   const epics = S.epics.filter((e) => (boardEpic ? e.id === boardEpic : !e.archived));
   const tasks = epics.flatMap((e) => e.tasks.map((t) => ({ ...t, epic: e })));
   const card = (tk) => `<div class="kcard ${tk.status === "done" ? "done" : ""}${tk.status !== "done" && tk.owner === S.me ? " mine" : ""}" draggable="true" tabindex="0" data-k="${tk.id}" data-status="${tk.status}" data-epic="${tk.epic.id}" title="${t("Arraste, ou use ← →. Clique pra abrir o épico.")}">
@@ -3363,8 +3366,7 @@ function renderKanban() {
       <div class="km"><span class="kep" style="background:${color(tk.epic.title)}">${esc(tk.epic.title)}</span>${tk.owner ? `${avatar(tk.owner)}<span>${esc(tk.owner === S.me ? t("você") : name(tk.owner))}</span>` : ""}${tk.due ? `<span>${icon("calendar", 12)} ${esc(tk.due)}</span>` : ""}</div></div>`;
   // Quadro (lanes) or Lista (by epic, what waits on you first), remembered per browser; the epic filter is inside.
   const mode = (() => { try { return localStorage.getItem("vb.boardMode") || "board"; } catch { return "board"; } })();
-  const bar = `<div class="kbar"><span class="seg"><button type="button" data-mode="board" class="${mode === "board" ? "on" : ""}">${icon("board", 14)} ${t("Quadro")}</button><button type="button" data-mode="list" class="${mode === "list" ? "on" : ""}">${t("Lista")}</button></span>
-    <select id="kEpic" aria-label="${t("Épico")}"><option value="">${t("Todos os épicos")}</option>${S.epics.filter((e) => !e.archived || e.id === boardEpic).map((e) => `<option value="${e.id}" ${e.id === boardEpic ? "selected" : ""}>${esc(e.title)}</option>`).join("")}</select></div>`;
+  const bar = `<div class="kbar"><span class="seg"><button type="button" data-mode="board" class="${mode === "board" ? "on" : ""}">${icon("board", 14)} ${t("Quadro")}</button><button type="button" data-mode="list" class="${mode === "list" ? "on" : ""}">${t("Lista")}</button></span><small class="kScope">${boardEpic ? esc(S.epics.find((e) => e.id === boardEpic)?.title ?? "") : t("Todos os épicos")}</small></div>`;
   const stLabel = { todo: t("a fazer"), doing: t("fazendo"), review: t("esperando OK"), done: t("feito") };
   const row = (tk) => `<button type="button" class="krow ${tk.status === "done" ? "done" : ""}" data-k="${tk.id}" data-epic="${tk.epic.id}"><span class="kt">${esc(tk.title)}</span>${tk.owner ? avatar(tk.owner) : ""}<span class="kst ${tk.status}">${stLabel[tk.status] ?? tk.status}</span></button>`;
   const roomList = { id: "main", title: bookTitle(), tasks: S.roomTasks || [] };
@@ -3382,8 +3384,6 @@ function renderKanban() {
       </section>`; }).join("")}</div>`)
     : `<div class="empty">${t("Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu Claude organizar o projeto em épicos e tarefas.")}</div>`;
   el.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => { try { localStorage.setItem("vb.boardMode", b.dataset.mode); } catch {} renderKanban(); }));
-  const sel = document.getElementById("kEpic");
-  if (sel) sel.onchange = () => { boardEpic = sel.value || null; renderKanban(); };
   el.querySelectorAll(".krow").forEach((r) => (r.onclick = () => { thread = r.dataset.epic; leaveBoard(); renderSide(); renderChat(); }));
   const move = (id, status) => send({ t: "task.status", id, status });
   el.querySelectorAll(".kcard").forEach((c) => {
