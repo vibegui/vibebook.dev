@@ -589,6 +589,7 @@
   .sbxCard { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
   .sbxTop { display: flex; align-items: center; gap: 12px; } .sbxTop > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .sbxTop small { color: var(--mute); font-size: 12.5px; }
   .sbxCard.running .agIcon { background: var(--claude); color: #fff; }
+  .sbxLog { display: block; margin-top: 4px; font: 11.5px/1.35 ui-monospace, Menlo, monospace; color: var(--mute); white-space: pre-wrap; word-break: break-all; }
   .money { flex: none; font: 600 13px/1 ui-monospace, Menlo, monospace; color: var(--ink); padding: 5px 8px; border-radius: 8px; background: var(--hover); }
   .sbxActs { display: flex; gap: 8px; align-items: center; } .sbxActs button { height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px; }
   .sbxActs .del { margin-left: auto; padding: 0 10px; color: var(--mute); }
@@ -1385,6 +1386,8 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Rodar o setup de novo": "Run the setup again",
+  "Refazer setup": "Redo setup",
   "ligado · trabalhando agora": "on · working now",
   "Pessoas e agents": "People & agents",
   "gasto até agora na sua conta do freestyle": "spent so far on your freestyle account",
@@ -2891,9 +2894,10 @@ function sbxHtml() {
     <small>${t("O sandbox roda na sua conta: crie uma em freestyle.sh e uma API key (npx freestyle@latest tokens create vibebook) e cole aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
     <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${t("API key do freestyle")}" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "key" ? t("Conferindo…") : t("Conectar")}</button></form>${err}</div>`;
   return `${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
-      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small></div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
+      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${!x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
       <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${esc(x.id)}">${t("Terminal")}</button>`}
       ${x.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${esc(x.id)}">${t("Pausar")}</button>` : x.state === "paused" || x.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${esc(x.id)}">${t("Retomar")}</button>` : ""}
+      ${!x.ready && x.state === "running" ? `<button class="ghost" data-sbx-act="setup" data-id="${esc(x.id)}" title="${t("Rodar o setup de novo")}">${t("Refazer setup")}</button>` : ""}
       <button class="ghost del" data-sbx-del="${esc(x.id)}" aria-label="${t("Apagar sandbox")}" title="${t("Apagar sandbox")}">${icon("trash", 16)}</button></div></div>`).join("")}
     <button class="agNew on" id="sbxNew" ${sbx.busy ? "disabled" : ""}>${icon("plus", 16)} ${sbx.busy === "new" ? t("Criando…") : t("Criar sandbox")}<small>${t("Um Claude na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.")}</small></button>${err}
     <div class="fsOn">${icon("check", 13)} ${t("freestyle.sh conectado")} · <button type="button" class="ghost" id="fsOff">${t("desconectar")}</button></div>`;

@@ -100,6 +100,8 @@ touch "$HOME/.vibebook-setup-done"
 `;
 }
 
+// Fully detached (own session, no stdin/stdout), so it outlives the exec call that starts it.
+const RUN_SETUP = "(setsid nohup bash /tmp/vibebook-setup.sh </dev/null >/dev/null 2>&1 &) ; sleep 1; echo started";
 type Row = { id: string; email: string; book_id: string; name: string; vm_id: string; identity_id: string | null; ready: number; created_at: number };
 const MAX_PER_ROOM = 3;
 
@@ -137,7 +139,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     const rows = (await c.env.DB.prepare(`SELECT * FROM sandboxes WHERE book_id = ? AND email = ? ORDER BY created_at`).bind(id, email).all()).results as Row[];
     const k = rows.length ? await key(c) : null;
     const out = await Promise.all(rows.map(async (r) => {
-      let state = "unknown", error: string | undefined;
+      let state = "unknown", error: string | undefined, log: string | undefined;
       try {
         if (!k) throw new Error("freestyle desconectado");
         const vm = await fs<{ state: string; totalRunSeconds?: number; resources?: { cpu: number; memory: number; storage: number } }>(k, "GET", `/v5/vms/${r.vm_id}`);
@@ -148,9 +150,10 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
         Object.assign(r, { run_s: vm.totalRunSeconds ?? 0, rate, disk_rate: disk });
         c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, vm.totalRunSeconds ?? 0, rate, disk, Date.now(), r.id).run());
         if (!r.ready && state === "running") {
-          const x = await fs<{ stdout: string | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "test -f ~/.vibebook-setup-done && echo done; tail -n 1 ~/vibebook-setup.log 2>/dev/null", timeoutMs: 10000 });
-          if (x.stdout?.startsWith("done")) { r.ready = 1; await c.env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
-          else error = undefined;
+          const x = await fs<{ stdout: string | null; stderr: string | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "if [ -f ~/.vibebook-setup-done ]; then echo done; elif [ -f ~/vibebook-setup.log ]; then tail -n 2 ~/vibebook-setup.log | cut -c1-160; else echo nolog; fi", timeoutMs: 10000 });
+          const out = (x.stdout ?? "").trim();
+          if (out === "done") { r.ready = 1; await c.env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
+          else log = out === "nolog" ? "o setup não começou (sem log)" : out.split("\n").pop() || (x.stderr ?? "").slice(0, 160);
         }
       } catch (e) {
         error = (e as Error).message;
@@ -158,7 +161,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       }
       const x = r as Row & { run_s?: number; rate?: number; disk_rate?: number };
       const cost = ((x.run_s ?? 0) / 3600) * (x.rate ?? 0) + ((Date.now() - r.created_at) / 3600_000) * (x.disk_rate ?? 0);
-      return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, error, created_at: r.created_at, rate: x.rate ?? 0, cost };
+      return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, error, log, created_at: r.created_at, rate: x.rate ?? 0, cost };
     }));
     return c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(email).first()), sandboxes: out });
   });
@@ -186,7 +189,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       });
       await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: id, folder: name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
-      await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && (nohup bash /tmp/vibebook-setup.sh >/dev/null 2>&1 &)`, timeoutMs: 15000 });
+      await fs(k, "POST", `/v5/vms/${vm.id}/exec-await`, { command: `mkdir -p ~/${name} && cp /tmp/vibebook-CLAUDE.md ~/${name}/CLAUDE.md && ${RUN_SETUP}`, timeoutMs: 15000 });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 502);
     }
@@ -204,6 +207,19 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       c.executionCtx.waitUntil(deps.track(c.env, `sandbox_${act}`, { user: r.email, dims: { book: r.book_id } }));
       return c.json({ ok: true });
     });
+  // Run the setup again (it skips what's already installed): for a sandbox stuck preparing.
+  app.post("/api/sandboxes/:sid/setup", async (c: any) => {
+    const r = await mine(c, c.req.param("sid")), k = await key(c);
+    if (!r || !k) return c.json({ error: "not found" }, 404);
+    try {
+      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: `test -f /tmp/vibebook-setup.sh && rm -f ~/.vibebook-setup-done && ${RUN_SETUP}`, timeoutMs: 20000 });
+      if (!x.stdout?.includes("started")) return c.json({ error: `não consegui iniciar o setup: ${(x.stderr || x.stdout || `código ${x.statusCode}`).slice(0, 200)}` }, 502);
+      await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();
+      return c.json({ ok: true });
+    } catch (e) {
+      return c.json({ error: (e as Error).message }, 502);
+    }
+  });
   app.delete("/api/sandboxes/:sid", async (c: any) => {
     const r = await mine(c, c.req.param("sid")), k = await key(c);
     if (!r) return c.json({ error: "not found" }, 404);
