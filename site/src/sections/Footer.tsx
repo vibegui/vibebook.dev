@@ -1,25 +1,36 @@
-import { Html } from "~/components/ui";
+import type { Link } from "~/components/ui";
 
 export interface Props {
-	/**
-	 * @title Esquerda
-	 * @format rich-text
-	 */
-	left?: string;
-	/**
-	 * @title Direita
-	 * @format rich-text
-	 */
-	right?: string;
+	/** @title Assinatura (antes do link) */
+	credit?: string;
+	/** @title Link da assinatura */
+	creditLink?: Link;
+	/** @title Links */
+	links?: Link[];
 }
 
-export default function Footer({ left, right }: Props) {
+export default function Footer(p: Props) {
 	return (
 		<footer>
-			<div className="wrap">
-				<Html html={left} />
-				<Html html={right} />
+			<div className="w">
+				<span>
+					{p.credit}{" "}
+					{p.creditLink ? (
+						<a href={p.creditLink.href} rel="noopener">
+							{p.creditLink.label}
+						</a>
+					) : null}
+				</span>
+				<span className="sp" />
+				{(p.links ?? []).map((l) => (
+					<a key={l.href} href={l.href}>
+						{l.label}
+					</a>
+				))}
 			</div>
 		</footer>
 	);
 }
+
+// Bundled with the page (not lazy), so hydration never blanks it.
+export const sync = true;

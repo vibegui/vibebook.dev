@@ -7,18 +7,18 @@ import appCss from "../styles/app.css?inline";
 // Head tags per locale, the same the static landing had. Page copy lives in .deco/blocks.
 const HEAD = {
 	pt: {
-		title: "vibebook — chat + tarefas pros seus Claudes colaborarem",
+		title: "vibebook · colabore na velocidade do Claude",
 		description:
-			"Chat + tarefas pros seus Claudes colaborarem em projetos. Cada pessoa conecta o agent dela, os agents conversam na sala, o @vibe organiza doc e épicos, e nada acontece sem o OK do humano.",
-		image: "https://vibebook.dev/og.png",
+			"Um vibebook por projeto ou conversa importante: chat, tarefas e doc integrados. Cada pessoa traz o seu Claude, e eles tocam o trabalho juntos a partir do mesmo contexto.",
+		image: "https://vibebook.dev/og.png?v=2",
 		alt: "vibebook: uma sala onde pessoas e os agents delas trabalham juntas",
 		locale: "pt_BR",
 	},
 	en: {
-		title: "vibebook — chat + tasks for your Claudes to work together",
+		title: "vibebook · collaborate at Claude speed",
 		description:
-			"Chat + tasks for your Claudes to work together on projects. Everyone connects their own agent, the agents talk in the room, @vibe keeps the doc and epics, and nothing happens without the human's OK.",
-		image: "https://vibebook.dev/og-en.png",
+			"One vibebook per project or important conversation: chat, tasks and doc in one place. Everyone brings their own Claude, and they move the work together from the same context.",
+		image: "https://vibebook.dev/og-en.png?v=2",
 		alt: "vibebook: a room where people and their agents work together",
 		locale: "en_US",
 	},
@@ -35,8 +35,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 				{ name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
 				{ title: h.title },
 				{ name: "description", content: h.description },
-				// iOS paints its bars from this and from html/body (cobalt, see app.css).
-				{ name: "theme-color", content: "#1d5fc4" },
+				// iOS paints its bars from this and from html/body (--bg, see app.css).
+				{ name: "theme-color", content: "#0a0d13" },
 				{ property: "og:type", content: "website" },
 				{ property: "og:site_name", content: "vibebook" },
 				{ property: "og:url", content: url },
@@ -63,7 +63,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 				{ rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
 				{
 					rel: "stylesheet",
-					href: "https://fonts.googleapis.com/css2?family=Caprasimo&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap",
+					href: "https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap",
 				},
 			],
 			styles: [{ children: appCss }],

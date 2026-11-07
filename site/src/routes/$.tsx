@@ -13,11 +13,12 @@ export const Route = createFileRoute("/$")({
 	},
 	component: Page,
 	notFoundComponent: () => (
-		<section className="final">
-			<div className="wrap">
-				<h2>Essa página não existe.</h2>
-				<div className="cta-row">
-					<a className="btn btn-sun" href="/pt">
+		<section>
+			<div className="w">
+				<div className="start">
+					<h2>Essa página não existe.</h2>
+					<p />
+					<a className="btn pri" href="/pt">
 						Voltar pro início
 					</a>
 				</div>
