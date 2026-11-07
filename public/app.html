@@ -795,6 +795,9 @@
   .pask .askOut { margin-top: 0; }
   .pdrawer { margin: 0; height: 100dvh; max-height: none; width: min(340px, 86vw); border: 0; border-radius: 0 20px 20px 0; padding: max(18px, env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); overflow: auto; }
   .pdrawer[open] { display: flex; flex-direction: column; gap: 16px; animation: pdIn .18s ease-out; }
+  .pdLock { display: flex; align-items: center; gap: 10px; font-size: 15px; padding: 4px 0; } .pdLock input { width: 18px; height: 18px; }
+  #lockScreen { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: grid; place-content: center; justify-items: center; gap: 14px; padding: 24px; }
+  #lockScreen b { font: 400 28px Caprasimo, serif; } #lockScreen img { border-radius: 16px; } #lockScreen .err { color: var(--mute); font-size: 13px; margin: 0; }
   .pdrawer::backdrop { background: rgb(0 0 0 / .35); }
   @keyframes pdIn { from { transform: translateX(-100%); } }
   @media (prefers-reduced-motion: reduce) { .pdrawer[open] { animation: none; } }
@@ -1146,6 +1149,13 @@ const EN = {
   "Recolher menu": "Collapse menu",
   "novo épico": "new epic",
   "Arquivados": "Archived",
+  "Exigir Face ID ao abrir": "Require Face ID to open",
+  "Pronto: o vibebook pede Face ID ao abrir neste aparelho.": "Done: vibebook asks for Face ID when it opens on this device.",
+  "Face ID desligado neste aparelho.": "Face ID turned off on this device.",
+  "Não deu pra usar o Face ID aqui.": "Couldn't use Face ID here.",
+  "vibebook (trava do app)": "vibebook (app lock)",
+  "Desbloquear com Face ID": "Unlock with Face ID",
+  "Toque pra tentar de novo.": "Tap to try again.",
   "Conecte seu Claude (o card acima diz como)": "Connect your Claude (the card above shows how)",
   "Seu Claude está aqui": "Your Claude is here",
   "Seu Claude está desligado nesta sala": "Your Claude is off in this room",
@@ -1763,6 +1773,7 @@ function phoneHome(me) {
       <a data-nav href="/archived">${t("Arquivo")}</a>
       <div class="pdRow"><button class="ghost" id="homeTheme">${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span></button>${langSwitch()}</div>
       <div class="pdBell"><button class="ghost bell" data-bell></button><span>${t("Notificações")}</span></div>
+      ${window.PublicKeyCredential ? `<label class="pdLock"><input type="checkbox" id="lockToggle" ${lockId() ? "checked" : ""} /> <span>${t("Exigir Face ID ao abrir")}</span></label>` : ""}
     </nav>
     <section class="agentBox" id="agentBox" aria-live="polite"></section>
     <h2>${t("Amigos")} <small>${me.friends.length || ""}</small></h2>
@@ -1781,6 +1792,12 @@ function phoneHome(me) {
   document.getElementById("myName").onclick = () => d.showModal();
   d.querySelector(".pdHead .avatar").onclick = pickPic;
   d.querySelector(".pdBell span").onclick = () => d.querySelector(".pdBell .bell").click();
+  const lt = document.getElementById("lockToggle");
+  if (lt) lt.onchange = async () => {
+    const want = lt.checked;
+    try { await lockSet(want, me.email); toast(want ? t("Pronto: o vibebook pede Face ID ao abrir neste aparelho.") : t("Face ID desligado neste aparelho.")); }
+    catch { lt.checked = !want; toast(t("Não deu pra usar o Face ID aqui.")); }
+  };
   d.querySelector(".pdHead b").onclick = async () => { const n = prompt(t("Seu nome:"), me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
 }
 
@@ -3569,6 +3586,41 @@ function renderDoc(force) {
   if (force || document.activeElement !== doc) doc.value = text;
 }
 
+// Face ID lock (this device): a passkey of the device's own authenticator (user verification required, so Face ID /
+// Touch ID / the device code) gates opening the app and coming back after 5 min away. A local lock like a bank app's,
+// not a login: the server isn't involved and the session works as before. Credential id in localStorage (vb.lock).
+const LOCK_AFTER = 5 * 60e3;
+function lockId() { try { return localStorage.getItem("vb.lock"); } catch { return null; } }
+const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
+const lockVerify = () => navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(lockId()), (c) => c.charCodeAt(0)) }], userVerification: "required", timeout: 60e3 } });
+async function lockSet(on, email) {
+  if (!on) { await lockVerify(); localStorage.removeItem("vb.lock"); return; }
+  const c = await navigator.credentials.create({ publicKey: {
+    challenge: rnd(32), rp: { name: "vibebook" }, user: { id: rnd(16), name: email, displayName: t("vibebook (trava do app)") },
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60e3,
+  } });
+  localStorage.setItem("vb.lock", btoa(String.fromCharCode(...new Uint8Array(c.rawId))));
+}
+function lockScreen() {
+  if (!lockId() || document.getElementById("lockScreen")) return;
+  const el = document.createElement("div");
+  el.id = "lockScreen";
+  el.innerHTML = `<img src="/favicon.svg" alt="" width="64" height="64" /><b>vibebook</b><button class="primary">${t("Desbloquear com Face ID")}</button><p class="err" hidden></p>`;
+  document.body.append(el);
+  const go = async () => {
+    try { await lockVerify(); el.remove(); }
+    catch { const e = el.querySelector(".err"); e.hidden = false; e.textContent = t("Toque pra tentar de novo."); }
+  };
+  el.querySelector("button").onclick = go;
+  go(); // Safari may ask for the tap instead
+}
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else if (hiddenAt && Date.now() - hiddenAt > LOCK_AFTER) lockScreen();
+});
+lockScreen();
 route();
 </script>
 </body>
