@@ -2889,12 +2889,14 @@ function renderTasks() {
   }
   head.querySelector(".thPick").onclick = (e) => { if (ROOM_PHONE.matches && !e.target.closest(".thChev")) openSheet("side"); };
   renderPeek();
-  el.style.display = epic ? "" : "none";
-  if (!epic) return;
-  document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
-  document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
-  const nDone = epic.tasks.filter((t) => t.done).length;
-  el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${epic.tasks.length}</small><i><span style="width:${epic.tasks.length ? Math.round((nDone / epic.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(epic.flags)}${epic.tasks.map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
+  // In the main thread, the room's own tasks (the room doc's "## Tarefas") get the same card.
+  const list = epic || (thread === "main" && S.roomTasks?.length ? { id: "main", tasks: S.roomTasks } : null);
+  el.style.display = list ? "" : "none";
+  if (!list) return;
+  if (epic) document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
+  if (epic) document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
+  const nDone = list.tasks.filter((t) => t.done).length;
+  el.innerHTML = `<div class="thead"><b>${t("Tarefas")}</b><small>${nDone}/${list.tasks.length}</small><i><span style="width:${list.tasks.length ? Math.round((nDone / list.tasks.length) * 100) : 0}%"></span></i></div>${vibeNotes(list.flags)}${list.tasks.map((tk) => `<div class="task ${tk.done ? "done" : ""}${!tk.done && tk.owner === S.me ? " mine" : ""}${myWaits.some((w) => w.book_id === S.id && w.ref === `t${tk.id}`) ? " waitTask" : ""}" data-task="${tk.id}">
       <input type="checkbox" ${tk.done ? "checked" : ""} aria-label="${t("Feita")}" /><span class="tt" title="${t("Clique para editar")}">${esc(tk.title)}${vibeNotes(tk.flags)}</span>
       <select class="towner ${tk.owner ? "set" : ""}" data-owner="${tk.id}" aria-label="${t("Responsável")}"><option value="">${t("sem dono")}</option>${(S.members || []).map((e) => `<option value="${esc(e)}" ${tk.owner === e ? "selected" : ""}>${esc(e === S.me ? t("você") : name(e))}</option>`).join("")}</select>
       <button type="button" class="due ${tk.due ? "set" : ""}" data-due="${tk.id}" title="${t("Prazo")}">${icon("calendar", 13)}${tk.due ? ` ${esc(tk.due)}` : ""}</button>
@@ -2912,7 +2914,7 @@ function renderTasks() {
   el.querySelectorAll("[data-tdel]").forEach((b) => b.onclick = () => send({ t: "task.del", id: b.dataset.tdel }));
   el.querySelectorAll("[data-owner]").forEach((sel) => sel.onchange = () => send({ t: "task.assign", id: sel.dataset.owner, owner: sel.value }));
   el.querySelectorAll("[data-due]").forEach((b) => b.onclick = () => {
-    const cur = epic.tasks.find((t) => t.id === b.dataset.due)?.due || "";
+    const cur = list.tasks.find((t) => t.id === b.dataset.due)?.due || "";
     const v = prompt(t("Prazo (ex.: sex, qua 23h, 06/11). Vazio tira o prazo:"), cur);
     if (v !== null) send({ t: "task.assign", id: b.dataset.due, due: v });
   });
@@ -3373,7 +3375,7 @@ function renderDoc(force) {
   // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.
   if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O Claude de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
-  placeTasks(pv, ep);
+  placeTasks(pv, ep || (thread === "main" && S.roomTasks?.length ? "main" : null));
   renderPeek();
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
   if (force || document.activeElement !== doc) doc.value = text;
