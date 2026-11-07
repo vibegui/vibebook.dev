@@ -173,7 +173,8 @@
   #setupCard { margin: 0 0 22px; }
   .setup { background: var(--ai-bg); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; display: grid; gap: 12px; font-size: 14px; }
   .setup.done { display: flex; gap: 12px; align-items: center; }
-  .setupHead { display: flex; gap: 12px; align-items: flex-start; }
+  .setupHead { display: flex; gap: 12px; align-items: flex-start; position: relative; }
+  .setupX { position: absolute; top: -8px; right: -8px; width: 32px; height: 32px; padding: 0; font-size: 18px; }
   .setupHead > div > b { display: block; font-size: 17px; margin-bottom: 2px; } .setupHead span { color: var(--mute); } .setupHead span b { color: var(--ink, inherit); }
   .setupIcon { font-size: 22px; line-height: 1; color: var(--accent); flex: none; display: inline-grid; place-items: center; }
   .setup.done .setupIcon { color: #1f9d8a; } .setup.done b { display: block; }
@@ -1935,11 +1936,14 @@ function renderWaits() {
 // sentence to paste into Claude Code (it installs the plugin, does the one OAuth step, links the folder and listens),
 // a Copy button, and a live "waiting" that turns green when your Claude shows up. Other clients are folded below.
 let setupPoll = 0;
+let noClaude = false; // no Claude connected at all (from /api/agents): then "Ligar Claude" means nothing yet
 async function connectCard(el, room) {
   clearTimeout(setupPoll);
   if (!el) return;
   const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
   if (!r || !document.body.contains(el)) return;
+  noClaude = !r.agents.length;
+  if (S && el.id === "agentNudge") renderMyClaude();
   if (r.agents.length) {
     if (el.dataset.waiting) {
       el.innerHTML = `<div class="setup done"><span class="setupIcon">${icon("check", 22)}</span><div><b>${t("Seu Claude conectou.")}</b><span>${room ? t("Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar Claude no topo.") : t("Ele já enxerga as suas salas.")}</span></div></div>`;
@@ -1949,13 +1953,17 @@ async function connectCard(el, room) {
     } else { el.innerHTML = ""; el.hidden = true; }
     return;
   }
+  // In a room, × hides this card for good (this browser); the home keeps it.
+  const roomCard = el.id === "agentNudge";
+  let setupOff = false; try { setupOff = localStorage.getItem("vb.setupOff") === "1"; } catch {}
+  if (roomCard && setupOff) { el.innerHTML = ""; el.hidden = true; return; }
   const cmd = `Read ${location.origin}/llms.txt and set up vibebook for this project.${room ? ` Room: ${location.origin}/b/${room}` : ""}`;
   if (!el.dataset.waiting) {
     el.dataset.waiting = "1";
     el.hidden = false;
     const mcp = `${location.origin}/mcp`;
     el.innerHTML = `<div class="setup">
-      <div class="setupHead"><span class="setupIcon">✻</span><div><b>${room ? t("Traga seu Claude pra esta sala") : t("Conecte seu Claude")}</b>
+      <div class="setupHead">${roomCard ? `<button class="ghost setupX" data-setupx aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>` : ""}<span class="setupIcon">✻</span><div><b>${room ? t("Traga seu Claude pra esta sala") : t("Conecte seu Claude")}</b>
         <span>${t("O vibebook funciona com o Claude de cada pessoa: ele lê a sala, conversa com os Claudes dos outros e te pergunta antes de agir. Cole isto no <b>Claude Code</b>, dentro da pasta do projeto:")}</span></div></div>
       <div class="setupCmd"><code>${esc(cmd)}</code><button class="primary" data-copycmd>${t("Copiar")}</button></div>
       <div class="setupFoot"><span class="wait">${t("esperando seu Claude conectar…")}</span>
@@ -1965,6 +1973,8 @@ async function connectCard(el, room) {
           <p><a href="/connect" target="_blank" rel="noopener">${t("Passo a passo completo →")}</a></p>
         </details></div>
     </div>`;
+    const x = el.querySelector("[data-setupx]");
+    if (x) x.onclick = () => { try { localStorage.setItem("vb.setupOff", "1"); } catch {} clearTimeout(setupPoll); el.innerHTML = ""; el.hidden = true; };
     const btn = el.querySelector("[data-copycmd]");
     btn.onclick = async () => { try { await navigator.clipboard.writeText(cmd); btn.textContent = `✓ ${t("Copiado")}`; } catch { btn.textContent = t("Selecione e copie"); } setTimeout(() => (btn.textContent = t("Copiar")), 2500); };
     el.querySelectorAll("[data-copy]").forEach((c) => c.onclick = () => { navigator.clipboard?.writeText(c.textContent); c.classList.add("copied"); });
@@ -2599,7 +2609,7 @@ function renderClaudeBar(on, live) {
   if (!el) return;
   clearTimeout(claudeBarPoll);
   const nudge = document.getElementById("agentNudge");
-  const key = `vb.claudeBar.${S.id}`;
+  const key = "vb.claudeBar.off"; // closed once = not offered again (this browser)
   let off = false; try { off = localStorage.getItem(key) === "off"; } catch {}
   const x = `<button class="ghost" data-x aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>`;
   const set = (cls, html) => {
@@ -2607,7 +2617,7 @@ function renderClaudeBar(on, live) {
     const b = el.querySelector("[data-x]");
     if (b) b.onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; clearTimeout(claudeBarPoll); };
   };
-  if ((nudge && !nudge.hidden) || (live && !claudeWaiting[S.id]) || (off && !claudeAsked[S.id])) { el.hidden = true; return; }
+  if (noClaude || (nudge && !nudge.hidden) || (live && !claudeWaiting[S.id]) || (off && !claudeAsked[S.id])) { el.hidden = true; return; }
   if (live) {
     claudeWaiting[S.id] = false;
     set("ok", `<span class="star">✻</span><span><b>${t("Seu Claude está ouvindo esta sala.")}</b></span>`);
