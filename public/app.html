@@ -789,6 +789,7 @@
   .sw-item.on .pill { opacity: 1; height: 28px; top: 4px; }
   .swBusy { position: absolute; left: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; line-height: 1; transform-origin: 50% 50%; background: var(--panel); color: var(--claude); font: 400 15px/1 system-ui, sans-serif; box-shadow: 0 0 0 2px var(--panel); }
   .swBusy { animation: claudeTurn 3.2s linear infinite; }
+  .sw-item.on .dot { display: none; }
   @media (prefers-reduced-motion: reduce) { .swBusy { animation: none; } }
   .sw-item.dropTo .tile { outline: 2px dashed var(--accent); outline-offset: 2px; }
   .sw-group .sw-item.on .pill { top: 4px; }
@@ -1369,6 +1370,7 @@ setInterval(() => {
   }).catch(() => {});
   loadRoomAgents();
 }, 30_000);
+let swHtml = "";
 function renderSwitcher() {
   const cur = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1];
   const show = !!myBooks && location.pathname !== "/login";
@@ -1378,20 +1380,33 @@ function renderSwitcher() {
   const groups = [];
   for (const b of roomOrder()) { const g = groups.at(-1); if (g && b.tint && g.tint === b.tint) g.rooms.push(b); else groups.push({ tint: b.tint || null, rooms: [b] }); }
   // Green: someone wrote since you last looked; yellow: only agents/@vibe did.
-  const dot = (b) => b.id === cur ? "" : b.last_human_id > b.read_id ? `<b class="dot h" title="${t("mensagens novas")}"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="${t("agents escreveram")}"></b>` : "";
+  const dot = (b) => b.last_human_id > b.read_id ? `<b class="dot h" title="${t("mensagens novas")}"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a" title="${t("agents escreveram")}"></b>` : "";
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um Claude está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
   const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
-  const item = (b) => `<a class="sw-item ${b.id === cur ? "on" : ""}" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"${b.id === cur ? ' aria-current="page"' : ""}><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}</span></a>`;
-  $sw.innerHTML = `<a class="sw-item ${location.pathname === "/app" ? "on" : ""}" href="/app" data-nav title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
+  const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}</span></a>`;
+  const html = `<a class="sw-item" href="/app" data-nav title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${SW_LOGO}</span></a>
     <span class="sw-sep"></span>
     ${groups.map((g) => g.tint ? `<div class="sw-group" data-tint="${g.tint}">${g.rooms.map(item).join("")}</div>` : item(g.rooms[0])).join("")}
     <span class="sw-sp"></span>
     <button class="sw-btn" id="swTheme" title="${t("{theme} (clique pra trocar)", { theme: THEMES[theme()].label })}" aria-label="${t("Tema: {theme}", { theme: THEMES[theme()].label })}">${THEMES[theme()].icon}</button>
     <button class="sw-btn" id="swSearch" title="${t("Ir para um vibebook (⌘K)")}" aria-label="${t("Ir para um vibebook")}">${SW_SEARCH}</button>
     <button class="sw-btn" id="swNew" title="${t("Novo vibebook")}" aria-label="${t("Novo vibebook")}">${SW_PLUS}</button>`;
-  $sw.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+  // The current room is marked on the DOM, not in the HTML: switching rooms only moves the highlight, the rail
+  // (tiles, icons) stays as it is.
+  const mark = () => {
+    $sw.querySelectorAll(".sw-item").forEach((a) => {
+      const on = a.dataset.id ? a.dataset.id === cur : location.pathname === "/app";
+      a.classList.toggle("on", on);
+      on ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current");
+    });
+    $sw.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+  };
+  if (html === swHtml) return mark();
+  swHtml = html;
+  $sw.innerHTML = html;
+  mark();
   // Right-click a room: pick its color (rooms next to each other with the same color form a group).
   $sw.querySelectorAll("[data-drag]").forEach((a) => a.oncontextmenu = (e) => {
     e.preventDefault();
@@ -1472,7 +1487,7 @@ document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.
 function route() {
   renderSwitcher();
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
-  if (ws) { ws.onclose = null; ws.close(); ws = null; }
+  if (ws) { ws.onclose = null; ws.onmessage = null; ws.close(); ws = null; }
   if (location.pathname === "/login") return login();
   if (location.pathname === "/archived") return archivedPage();
   m ? openBook(m[1]) : home();
@@ -1908,19 +1923,25 @@ const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "appli
 const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : "file", size);
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
+// Rooms opened in this tab, as last seen: going back to one draws it at once, then the socket's state refreshes it.
+const roomCache = new Map();
+let liveState = false; // this room's socket sent its state (else a close means no access)
 function openBook(id) {
   thread = pendingThread || new URLSearchParams(location.search).get("t") || "main";
   pendingThread = null;
   urlSynced = false;
   S = null;
+  liveState = false;
   attached = [];
   api("/api/me").then((me) => { friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
-  $app.innerHTML = `<div class="book skel" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
+  const cached = roomCache.get(id);
+  if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
+  else $app.innerHTML = `<div class="book skel" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
-    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (S === null && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (!liveState && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
   };
   connect();
 }
@@ -1932,9 +1953,12 @@ function onEvent(ev, id) {
     case "state": {
       const firstLoad = !S;
       S = { ...ev, id, typing: {} };
+      liveState = true;
+      roomCache.delete(id); roomCache.set(id, S);
+      if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
       loadRoomAgents();
-      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); }
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderDecisions(); renderReceipts(); renderWorking(); }
       return;
     }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
