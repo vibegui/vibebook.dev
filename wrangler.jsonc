@@ -5,6 +5,8 @@
   "main": "src/index.ts",
   "rules": [{ "type": "Text", "globs": ["dist-mcp/*.html"], "fallthrough": true }],
   "compatibility_date": "2026-10-01",
+  // Run next to D1: every request does a few D1 round trips, each ~270ms from Brazil to the primary.
+  "placement": { "mode": "smart" },
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "directory": "public",

@@ -102,6 +102,7 @@ export const ensureSchema = (db: D1Database) =>
 
 
 const app = new Hono<Ctx>();
+const knownUsers = new Set<string>();
 
 app.use("*", async (c, next) => {
   await ensureSchema(c.env.DB);
@@ -284,10 +285,15 @@ app.use("*", async (c, next) => {
     const file = fileLink(c);
     return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json({ error: "unauthenticated" }, 401);
   }
-  const created = await c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`)
-    .bind(email, Date.now())
-    .run();
-  if (created.meta.changes) c.executionCtx.waitUntil(track(c.env, "signup", { user: email }));
+  // The users row once per isolate, off the request path: a D1 write here cost every request a round trip.
+  if (!knownUsers.has(email)) {
+    knownUsers.add(email);
+    c.executionCtx.waitUntil(
+      c.env.DB.prepare(`INSERT OR IGNORE INTO users (email, created_at) VALUES (?, ?)`).bind(email, Date.now()).run()
+        .then((r) => (r.meta.changes ? track(c.env, "signup", { user: email }) : undefined))
+        .catch(() => knownUsers.delete(email)),
+    );
+  }
   c.set("email", email);
   await next();
 });
