@@ -80,7 +80,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["messages", "for_who TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -883,10 +883,13 @@ export class Book extends DurableObject<Env> {
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
   async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false, replyTo?: number, choices?: { options: string[]; multi: boolean }) {
     this.bind(bookId);
+    this.unblock(email);
     const text = raw.trim().slice(0, 4000);
     // embed: the file is HTML the agent posted inline (checked by checkEmbed); the app draws it inside the message.
     const files = (fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : []).map((f) => (embed ? { ...f, embed: true } : f));
     if (!text && !files.length) return { ok: false, error: "empty message" };
+    // No thread given: a reply goes where the message it answers is (an epic's thread), anything else to main.
+    if (!thread) thread = (replyTo && (this.sql.exec(`SELECT thread FROM messages WHERE id = ?`, replyTo).toArray()[0]?.thread as string)) || "main";
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) return { ok: false, error: `unknown thread ${thread}; use "main" or an epic id from read_room` };
     const secret = findSecret([text, ...(choices?.options ?? [])].join("\n"));
     if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}). Never post secrets in a room; send them through a secure channel.` };
@@ -905,25 +908,48 @@ export class Book extends DurableObject<Env> {
 
   // "X está fazendo isso": an agent took a message as work (MCP ack); its next done post marks it done.
   acksList() {
-    return this.sql.exec(`SELECT msg_id, email, who, status, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 50`, Date.now() - 14 * 864e5).toArray();
+    return this.sql.exec(`SELECT msg_id, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 50`, Date.now() - 14 * 864e5).toArray();
   }
-  agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing") {
+  agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing", rawNote = "") {
     this.bind(bookId);
-    // Default: the person's latest own message, in any thread.
+    // Default: the person's latest own message, in any thread; "blocked" goes on the request this agent is on.
     const id =
       (msgId && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, msgId).toArray()[0]?.id) ??
+      (status === "blocked" ? this.sql.exec(`SELECT msg_id FROM acks WHERE agent = ? AND status IN ('doing', 'blocked') ORDER BY ts DESC LIMIT 1`, agent).toArray()[0]?.msg_id : undefined) ??
       this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     if (!id) return { ok: false, error: "no message to acknowledge; pass message_id" };
-    if (!["doing", "done", "idle"].includes(status)) return { ok: false, error: "status is doing, done or idle" };
+    if (!["doing", "done", "idle", "blocked"].includes(status)) return { ok: false, error: "status is doing, done, idle or blocked" };
+    // blocked: the agent stopped at a question in its own terminal (a permission prompt): the room says so under the
+    // request and it's a wait on the person ("esperando você"), until the agent moves again.
+    const note = status === "blocked" ? (findSecret(rawNote) ? "" : rawNote.replace(/\s+/g, " ").trim().slice(0, 200)) : null;
     // The same Claude after a /mcp reconnect is a new session: one ack per person + model per message.
     this.sql.exec(`DELETE FROM acks WHERE msg_id = ? AND email = ? AND who = ? AND agent != ?`, id, email, who.slice(0, 40), agent);
     this.sql.exec(
-      `INSERT INTO acks (msg_id, agent, email, who, status, ts) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET status = excluded.status, who = excluded.who, ts = excluded.ts`,
-      id, agent, email, who.slice(0, 40), status, Date.now(),
+      `INSERT INTO acks (msg_id, agent, email, who, status, note, ts) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET status = excluded.status, note = excluded.note, who = excluded.who, ts = excluded.ts`,
+      id, agent, email, who.slice(0, 40), status, note, Date.now(),
     );
     this.broadcast({ t: "acks", acks: this.acksList() });
     this.ctx.waitUntil(this.markBusy(false));
+    this.ctx.waitUntil(this.blockedWait(email, id as number, status === "blocked" ? note || "uma pergunta no terminal" : null));
     return { ok: true, message_id: id };
+  }
+  /** The "esperando você" row for a blocked agent (ref b<msg>), or its removal (text null). */
+  async blockedWait(email: string, msgId: number, text: string | null) {
+    const bookId = this.get("book_id"); if (!bookId) return;
+    if (text === null) return void (await this.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, `b${msgId}`, email).run());
+    const m = this.sql.exec<{ thread: string }>(`SELECT thread FROM messages WHERE id = ?`, msgId).toArray()[0];
+    const topic = m && m.thread !== "main" ? this.epics().find((e) => e.id === m.thread)?.title ?? "" : "";
+    await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
+      .bind(bookId, `b${msgId}`, email, m?.thread ?? "main", topic, `⏸ Seu Claude espera você no terminal: ${text}`, Date.now())
+      .run();
+  }
+  /** Any move by a person's agent (a post, a task) means it got past the question: blocked acks go back to doing. */
+  unblock(email: string) {
+    const rows = this.sql.exec<{ msg_id: number }>(`SELECT msg_id FROM acks WHERE email = ? AND status = 'blocked'`, email).toArray();
+    if (!rows.length) return;
+    this.sql.exec(`UPDATE acks SET status = 'doing', note = NULL, ts = ? WHERE email = ? AND status = 'blocked'`, Date.now(), email);
+    this.broadcast({ t: "acks", acks: this.acksList() });
+    for (const r of rows) this.ctx.waitUntil(this.blockedWait(email, r.msg_id, null));
   }
   /** books.busy_until for the rail's turning ✻: a live "doing" ack keeps the room busy 20 min after its last
    *  activity, an agent's non-delivery post 3 min; a delivery or a done ack ends it (same rule as the epic's ✻). */

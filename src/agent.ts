@@ -115,7 +115,7 @@ const TOOLS = [
         html: { type: "string", description: `optional: a self-contained HTML snippet (≤${EMBED_MAX / 1000}KB) shown inline in the message` },
         app: { type: "string", description: "optional: name of a room app (list_apps) to render with data instead of html" },
         data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
-        thread: { type: "string", description: '"main" (default) or an epic id from read_room' },
+        thread: { type: "string", description: '"main" or an epic id from read_room; default: the thread of the message in reply_to, else "main"' },
         reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
         choices: { type: "array", items: { type: "string" }, description: "optional, 2-8 short options when you ask your human to pick: the room shows them as buttons (radio, or checkboxes with multi) and their pick comes back as their message replying to yours (reply_to = this message). Use this instead of asking them to type numbers." },
         multi: { type: "boolean", description: "with choices: they can pick several (checkboxes) instead of one" },
@@ -601,7 +601,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
         fileIds = [meta.id];
       }
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread) || "main", fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a));
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread), fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a));
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
