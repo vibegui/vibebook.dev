@@ -4,7 +4,7 @@
 // Built into public/cli.mjs (bun run build:cli); on npm as vibebook.dev (npm i -g vibebook.dev), or installed by https://vibebook.dev/install.sh.
 import { execFileSync, execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -180,13 +180,47 @@ async function session(): Promise<Session> {
   }
 }
 
+// ---- How full a Claude Code session's context is ----
+// The transcript (~/.claude/projects/<folder>/<session>.jsonl) logs each model call's usage: the newest one's input
+// (fresh + cached) is what the context holds now. A /compact after it means "just emptied". The window isn't in the
+// transcript: 1M (Claude 5), or VIBEBOOK_CONTEXT_WINDOW.
+const CTX_WINDOW = Number(process.env.VIBEBOOK_CONTEXT_WINDOW) || 1_000_000;
+function sessionContext(sid: string): { tokens: number; window: number } | undefined {
+  if (!/^[\w-]{8,80}$/.test(sid)) return;
+  try {
+    const root = join(homedir(), ".claude", "projects");
+    const dir = readdirSync(root).find((d) => existsSync(join(root, d, `${sid}.jsonl`)));
+    if (!dir) return;
+    const fd = openSync(join(root, dir, `${sid}.jsonl`), "r");
+    const size = fstatSync(fd).size;
+    const n = Math.min(size, 4 << 20); // the tail is enough: one usage line per model call
+    const buf = Buffer.alloc(n);
+    readSync(fd, buf, 0, n, size - n);
+    closeSync(fd);
+    const lines = buf.toString("utf8").split("\n");
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].includes('"compact_boundary"')) return { tokens: 0, window: CTX_WINDOW };
+      if (!lines[i].includes('"usage"')) continue;
+      try {
+        const u = JSON.parse(lines[i])?.message?.usage;
+        if (u) return { tokens: (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0), window: CTX_WINDOW };
+      } catch {} // the first line of the tail is usually cut
+    }
+  } catch {}
+}
+/** Sent with every call made from inside Claude Code, so the room can show this Claude's context bar. */
+const myContext = (): Record<string, string> => {
+  const c = process.env.CLAUDE_CODE_SESSION_ID ? sessionContext(process.env.CLAUDE_CODE_SESSION_ID) : undefined;
+  return c ? { "x-vibebook-context": `${c.tokens}/${c.window}` } : {};
+};
+
 // ---- MCP over the CLI's session ----
 let rpcId = 0;
 async function rpc(method: string, params: unknown, agent: string): Promise<any> {
   const s = await session();
   const r = await fetch(`${s.origin}/mcp`, {
     method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${s.access_token}`, "mcp-session-id": agent },
+    headers: { "content-type": "application/json", authorization: `Bearer ${s.access_token}`, "mcp-session-id": agent, ...myContext() },
     body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }),
   });
   if (r.status === 401) return die("Session rejected. Ask your human to run, in their own terminal: vibebook login");
@@ -240,7 +274,9 @@ function readData(): Record<string, unknown> {
 // ~/.vibebook/herdr.json = { <room_id>: { folder, workspace?, session? } }. On: find (or adopt) the room's herdr
 // workspace, else create it in the room's folder and start `claude "/vibebook:listen"` there (resuming the last
 // conversation). Off: remember the conversation id and close the workspace. Never touches workspaces it doesn't map.
-type HerdrRoom = { folder?: string; workspace?: string; session?: string; listening?: boolean; prompted_at?: number; deaf_since?: number };
+type HerdrRoom = { folder?: string; workspace?: string; session?: string; listening?: boolean; prompted_at?: number; deaf_since?: number; compacted_at?: number };
+/** Context share at which the runner /compacts a free Claude (VIBEBOOK_COMPACT_AT, 0-1). */
+const COMPACT_AT = Number(process.env.VIBEBOOK_COMPACT_AT) || 0.75;
 type Pane = { pane_id: string; workspace_id: string; tab_id: string; cwd: string; foreground_cwd?: string; agent?: string; agent_status?: string; agent_session?: { value?: string } };
 const herdr = (...args: string[]) => JSON.parse(execFileSync("herdr", args, { stdio: ["ignore", "pipe", "pipe"] }).toString()).result;
 const PROJECTS = join(homedir(), "Projects");
@@ -355,6 +391,18 @@ async function herdrSync(agent: string, tools: Tool[]) {
       if (!deaf.has(room)) delete e.deaf_since;
       else e.deaf_since ??= Date.now();
       if (e.listening && e.deaf_since && Date.now() - e.deaf_since > 3 * 60_000 && Date.now() - (e.prompted_at ?? 0) > 5 * 60_000) e.listening = false;
+      // Context nearly full: /compact it while it's free (a background listener survives it), at most every 15 min.
+      // Nothing else gets typed this round.
+      const cp = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");
+      const cx = cp?.agent_session?.value ? sessionContext(cp.agent_session.value) : undefined;
+      if (cp && cx && cx.tokens >= cx.window * COMPACT_AT && (cp.agent_status === "idle" || cp.agent_status === "done") && Date.now() - (e.compacted_at ?? 0) > 15 * 60_000) {
+        try {
+          herdr("agent", "prompt", cp.pane_id, "/compact");
+          e.compacted_at = Date.now();
+          log(`${title}: contexto em ${Math.round((cx.tokens / cx.window) * 100)}%, mandei /compact`);
+        } catch {}
+        continue;
+      }
       // Adopted while busy: ask it to listen once it's free (a prompt typed into a working Claude would interrupt it).
       if (!e.listening) {
         const p = panes.find((x) => x.workspace_id === e.workspace && x.agent === "claude");

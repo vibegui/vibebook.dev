@@ -249,6 +249,12 @@
   .agentRow .aglyph.on { background: var(--claude); color: #fff; }
   .agentRow .aglyph.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.68 0.17 150); box-shadow: 0 0 0 2px var(--bg); }
   .agentRow small { margin-left: auto; font-size: 11px; }
+  /* How full this Claude's context is (from the CLI inside Claude Code): a hairline under the row. */
+  .agentRow:has(.ctx) { position: relative; padding-bottom: 9px; }
+  .agentRow .ctx { position: absolute; left: 48px; right: 8px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .agentRow .ctx::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: 2px; background: oklch(0.68 0.15 150); }
+  .agentRow .ctx.mid::before { background: oklch(0.78 0.15 85); }
+  .agentRow .ctx.hot::before { background: oklch(0.62 0.2 28); }
   .arch summary { font-size: 12px; color: var(--mute); cursor: pointer; padding: 6px 4px; list-style: none; }
   .arch summary::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 8px 2px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; } .arch[open] summary::before { transform: rotate(45deg); }
   .thread.archived { opacity: .6; }
@@ -1066,6 +1072,7 @@ const EN = {
   "O vibebook herdr não está rodando nesta máquina.": "vibebook herdr isn't running on this machine.",
   "em {repo}": "in {repo}",
   "ouvindo todas as salas agora": "listening to every room now",
+  "Contexto: {p}% ({used} de {max})": "Context: {p}% ({used} of {max})",
   "ouvindo esta sala agora": "listening to this room now",
   "visto há {ago}": "seen {ago} ago",
   "está trabalhando nisso": "is working on this",
@@ -2479,12 +2486,20 @@ function renderMyClaude() {
     await api(`/api/books/${S.id}/claude`, { on: next }).catch(() => { roomAgents.claudeOn = !next; renderMyClaude(); });
   };
 }
+const kTok = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`);
+/** The context bar under a Claude: green, yellow from 60%, red from 80% (the runner compacts a free Claude at 75%). */
+const ctxPct = (c) => Math.min(100, Math.round((c.tokens / c.window) * 100));
+const ctxBar = (c) => {
+  if (!c) return "";
+  const p = ctxPct(c);
+  return `<i class="ctx ${p >= 80 ? "hot" : p >= 60 ? "mid" : ""}" style="--p:${p}%" title="${t("Contexto: {p}% ({used} de {max})", { p, used: kTok(c.tokens), max: kTok(c.window) })}"></i>`;
+};
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}</small></div>`).join("");
+    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.

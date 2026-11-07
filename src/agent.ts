@@ -735,7 +735,16 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   // This grant was used now (written at most every 5 min per grant): the app lists connections with their last use.
   if (props.gid) ctx.waitUntil(env.DB.prepare(`INSERT INTO grant_seen (gid, ts) VALUES (?, ?) ON CONFLICT(gid) DO UPDATE SET ts = excluded.ts WHERE excluded.ts > grant_seen.ts + 300000`).bind(props.gid, Date.now()).run().catch(() => {}));
   const me: Me = { ...props, agent: agentId };
-  ctx.waitUntil(env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId).run());
+  // The CLI reads its Claude Code session's transcript and sends "tokens/window" (x-vibebook-context): the room shows
+  // how full each Claude's context is. Anything else is ignored.
+  const cx = request.headers.get("x-vibebook-context")?.match(/^(\d{1,8})\/(\d{5,8})$/);
+  const ctxTokens = cx ? Math.min(+cx[1], +cx[2]) : null;
+  ctx.waitUntil(
+    (cx
+      ? env.DB.prepare(`UPDATE agents SET seen_at = ?, ctx_tokens = ?, ctx_window = ?, ctx_at = ? WHERE id = ?`).bind(Date.now(), ctxTokens, +cx[2], Date.now(), agentId)
+      : env.DB.prepare(`UPDATE agents SET seen_at = ? WHERE id = ?`).bind(Date.now(), agentId)
+    ).run(),
+  );
   let result: unknown;
   switch (body.method) {
     case "initialize":
