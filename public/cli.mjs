@@ -507,7 +507,7 @@ async function herdrSync(agent, tools) {
         if (updating)
           log(`${title}: reabrindo o Claude com o plugin ${e.plugin_v} (mesma conversa)`);
         try {
-          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "60000", "--", ...e.session ? ["--resume", e.session] : [], "/vibebook:listen");
+          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "15000", "--", ...e.session ? ["--resume", e.session] : [], "/vibebook:listen");
           log(`${title}: o Claude tinha fechado, abri outro em ${e.folder ?? "sua pasta"}`);
         } catch (err) {
           const m = err.message;
@@ -517,6 +517,13 @@ async function herdrSync(agent, tools) {
       }
       const pv = pluginVersion();
       const live0 = inWs.find((x) => x.agent === "claude");
+      if (e.restarting_at && live0 && live0.agent_status === "blocked") {
+        try {
+          const shown = execFileSync("herdr", ["pane", "read", live0.pane_id, "--source", "visible", "--lines", "15"], { stdio: ["ignore", "pipe", "pipe"] }).toString();
+          if (/Background work is running/.test(shown))
+            herdr("agent", "send-keys", live0.pane_id, "Enter");
+        } catch {}
+      }
       if (e.restarting_at && live0 && Date.now() - e.restarting_at > 5 * 60000) {
         delete e.restarting_at;
         e.plugin_v = pv;

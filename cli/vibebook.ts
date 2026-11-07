@@ -484,7 +484,7 @@ async function herdrSync(agent: string, tools: Tool[]) {
         writePrivate(HERDR, map);
         if (updating) log(`${title}: reabrindo o Claude com o plugin ${e.plugin_v} (mesma conversa)`);
         try {
-          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "60000", "--", ...(e.session ? ["--resume", e.session] : []), "/vibebook:listen");
+          herdr("agent", "start", `vb-${room}`, "--kind", "claude", "--pane", inWs[0].pane_id, "--timeout", "15000", "--", ...(e.session ? ["--resume", e.session] : []), "/vibebook:listen");
           log(`${title}: o Claude tinha fechado, abri outro em ${e.folder ?? "sua pasta"}`);
         } catch (err) {
           const m = (err as Error).message;
@@ -496,6 +496,14 @@ async function herdrSync(agent: string, tools: Tool[]) {
       // above reopens it with --resume on the next pass. Never while it works or waits on a prompt.
       const pv = pluginVersion();
       const live0 = inWs.find((x) => x.agent === "claude");
+      // /exit with its listener running asks "Background work is running": option 1 (exit and stop tasks) is selected.
+      // Only that dialog gets an Enter (checked by its text), never a permission prompt.
+      if (e.restarting_at && live0 && live0.agent_status === "blocked") {
+        try {
+          const shown = execFileSync("herdr", ["pane", "read", live0.pane_id, "--source", "visible", "--lines", "15"], { stdio: ["ignore", "pipe", "pipe"] }).toString();
+          if (/Background work is running/.test(shown)) herdr("agent", "send-keys", live0.pane_id, "Enter");
+        } catch {}
+      }
       if (e.restarting_at && live0 && Date.now() - e.restarting_at > 5 * 60_000) {
         // /exit didn't take (it asked something, or got busy): leave this one on the old plugin rather than loop.
         delete e.restarting_at;
