@@ -358,6 +358,21 @@
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
   .chathead #toggleBoard .lbl, .chathead #toggleDoc .lbl, .chathead #myClaude { display: none !important; }
+  .vcard { margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; max-width: 560px; }
+  .vcard .vh { padding: 12px 14px 0; display: grid; gap: 2px; } .vcard .vh b { font: 700 15px/1.3 "Schibsted Grotesk", system-ui, sans-serif; } .vcard .vh small { color: var(--mute); font-size: 12.5px; }
+  .vcard .vb { padding: 10px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+  .vsec { display: grid; gap: 8px; } .vsec h5 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); }
+  .vtx { margin: 0; font-size: 14px; line-height: 1.45; } .vtx.bold { font-weight: 700; } .vtx.muted { color: var(--mute); font-size: 13px; } .vtx.code { font: 12.5px/1.45 ui-monospace, monospace; background: var(--bg); padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; }
+  .vfields { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px 14px; } .vfields dt { font-size: 11.5px; color: var(--mute); } .vfields dd { margin: 0; font-weight: 600; font-size: 14px; }
+  .vtable { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; } .vtable table { border-collapse: collapse; width: 100%; font-size: 13px; } .vtable th, .vtable td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; } .vtable th { color: var(--mute); font-weight: 600; background: var(--bg); } .vtable tr:last-child td { border-bottom: 0; }
+  .vchart { margin: 0; display: grid; gap: 6px; color: var(--accent, #4f7cff); } .vchart figcaption { color: var(--ink); font-size: 13px; font-weight: 600; } .vchart svg { width: 100%; height: 90px; }
+  .vbar { display: grid; grid-template-columns: minmax(60px, 30%) 1fr auto; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); } .vbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mute); } .vbar i { height: 10px; border-radius: 5px; background: var(--claude); min-width: 2px; } .vbar b { font-variant-numeric: tabular-nums; }
+  .vlab { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); }
+  .vhr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; } .vimg { max-width: 100%; border-radius: 10px; display: block; }
+  .vact { display: flex; flex-wrap: wrap; gap: 8px; }
+  .vbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 13.5px/1 "Schibsted Grotesk", system-ui, sans-serif; cursor: pointer; text-decoration: none; }
+  .vbtn.primary { background: var(--claude); border-color: var(--claude); color: #fff; } .vbtn.danger { color: #ef4444; border-color: color-mix(in oklch, #ef4444 50%, transparent); }
+  .vbtn.ro { cursor: default; opacity: .6; } .vbtn.ro.on { opacity: 1; border-color: var(--claude); }
   .vbUpdate { position: fixed; z-index: 90; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--bg); font: 600 13.5px/1.2 "Schibsted Grotesk", system-ui, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / .25); cursor: pointer; white-space: nowrap; }
   #toggleBoard .kN { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 11px/18px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
   .kbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -2358,7 +2373,7 @@ function onEvent(ev, id) {
     }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
     case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide();
-      if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); } notifyMsg(ev.m); return;
+      if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); const vc = q?.card && document.querySelector(`#m${q.id} .vcard`); if (vc) vc.outerHTML = cardHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
       delete S.typing[ev.id];
@@ -3743,6 +3758,52 @@ document.addEventListener("touchend", () => {
 });
 // Choices: an agent asks its human to pick (post with choices). That person sees radio/checkboxes + Enviar; the
 // pick is sent as their message replying to the question, which is also how the block knows it was answered.
+// Native cards (MCP post card, json-render's spec shape, validated by src/card.ts): every string escaped, no HTML.
+// Buttons work like choices: only the person whose Claude asked can press one, and it's posted as their reply.
+function cardHtml(m) {
+  let c; try { c = typeof m.card === "string" ? JSON.parse(m.card) : m.card; } catch { return ""; }
+  if (!c?.elements?.[c.root]) return "";
+  const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
+  const mine = m.kind === "agent" && m.author === S.me && !ans;
+  const txt = (v) => esc(String(v ?? "")).replace(/\n/g, "<br>");
+  const draw = (id, depth = 0) => {
+    const e = c.elements[id]; if (!e || depth > 8) return "";
+    const p = e.props || {}, kids = () => (e.children || []).map((k) => draw(k, depth + 1)).join("");
+    switch (e.type) {
+      case "Card": return `<div class="vcard">${p.title ? `<div class="vh"><b>${txt(p.title)}</b>${p.subtitle ? `<small>${txt(p.subtitle)}</small>` : ""}</div>` : ""}<div class="vb">${kids()}</div></div>`;
+      case "Section": return `<section class="vsec">${p.title ? `<h5>${txt(p.title)}</h5>` : ""}${kids()}</section>`;
+      case "Text": return `<p class="vtx ${esc(p.style || "plain")}">${txt(p.content)}</p>`;
+      case "Fields": return `<dl class="vfields">${kids()}</dl>`;
+      case "Field": return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}</dd></div>`;
+      case "Table": return `<div class="vtable"><table>${p.headers?.length ? `<thead><tr>${p.headers.map((h) => `<th>${txt(h)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(p.rows || []).map((r) => `<tr>${r.map((x) => `<td>${txt(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+      case "Chart": {
+        const d = p.data || [], max = Math.max(...d.map((x) => Math.abs(x.value)), 1);
+        if (p.kind === "line") {
+          const w = 300, h = 90, step = d.length > 1 ? w / (d.length - 1) : 0, min = Math.min(...d.map((x) => x.value), 0), span = max - min || 1;
+          const pts = d.map((x, i) => `${(i * step).toFixed(1)},${(h - ((x.value - min) / span) * h).toFixed(1)}`).join(" ");
+          return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}<svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="vlab"><span>${txt(d[0]?.label)}</span><span>${txt(d.at(-1)?.label)}</span></div></figure>`;
+        }
+        return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}${d.map((x) => `<div class="vbar"><span>${txt(x.label)}</span><i style="width:${Math.round((Math.abs(x.value) / max) * 100)}%"></i><b>${txt(x.value)}</b></div>`).join("")}</figure>`;
+      }
+      case "Divider": return `<hr class="vhr">`;
+      case "Image": return /^\/api\/books\/[a-z0-9]+\/files\/[a-z0-9]+$/.test(p.url) ? `<img class="vimg" src="${esc(p.url)}" alt="${esc(p.alt || "")}" loading="lazy">` : "";
+      case "Actions": return `<div class="vact">${kids()}</div>`;
+      case "Button": {
+        const v = p.value || p.label, picked = ans?.text === v;
+        return mine ? `<button type="button" class="vbtn ${esc(p.style || "")}" data-cardbtn="${m.id}" data-v="${esc(v)}">${txt(p.label)}</button>` : `<span class="vbtn ro ${picked ? "on" : ""}">${picked ? icon("check", 14) : ""}${txt(p.label)}</span>`;
+      }
+      case "LinkButton": return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
+      default: return "";
+    }
+  };
+  return draw(c.root);
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-cardbtn]"); if (!b) return;
+  const q = S.messages.find((x) => x.id === Number(b.dataset.cardbtn));
+  b.closest(".vcard")?.querySelectorAll("[data-cardbtn]").forEach((x) => (x.disabled = true));
+  send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.v, files: [], reply_to: Number(b.dataset.cardbtn) });
+});
 function choiceHtml(m) {
   let c; try { c = JSON.parse(m.choices); } catch { return ""; }
   const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
@@ -3772,7 +3833,7 @@ const msgHtml = (m, prev) => {
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
     <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button>
     <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
-      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.choices ? choiceHtml(m) : ""}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
+      ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.card ? cardHtml(m) : ""}${m.choices ? choiceHtml(m) : ""}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
 };
 

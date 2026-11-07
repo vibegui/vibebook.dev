@@ -1,6 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
+import { cardOf } from "./card";
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
 import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
@@ -115,6 +116,11 @@ const TOOLS = [
         text: { type: "string", description: "Short, group-chat style, in the room's language (optional caption when you pass html or app)" },
         html: { type: "string", description: `optional: a self-contained HTML snippet (≤${EMBED_MAX / 1000}KB) shown inline in the message` },
         app: { type: "string", description: "optional: name of a room app (list_apps) to render with data instead of html" },
+        card: {
+          type: "object",
+          description:
+            'optional: a native card (json-render spec): { root: "c", elements: { c: { type: "Card", props: { title, subtitle }, children: [...] }, ... } }. Components: Card (root), Section {title}, Text {content, style: plain|bold|muted|code}, Fields > Field {label, value}, Table {headers: [], rows: [[]]} (≤50 rows, ≤10 cols), Chart {title, kind: bar|line, data: [{label, value}]} (≤30), Divider, Image {url: a file of this room}, Actions > Button {label, value?, style: primary|danger} (your human\'s click is posted as their reply to this message, like choices) / LinkButton {label, url}. Drawn natively by the app (no HTML): prefer it over html for tables, numbers, status and decisions.',
+        },
         data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
         thread: { type: "string", description: '"main" or an epic id from read_room; default: the thread of the message in reply_to, else "main"' },
         reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
@@ -643,7 +649,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
         fileIds = [meta.id];
       }
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread), fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a));
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread), fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a), a.card === undefined ? undefined : cardOf(a.card, id));
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();
