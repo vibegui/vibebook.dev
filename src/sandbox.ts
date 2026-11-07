@@ -250,10 +250,17 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
       await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
       await writeClaudeEnv(c.env, k, r.email, r.vm_id);
-      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: `cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done && ${RUN_SETUP}`, timeoutMs: 20000 });
-      if (!x.stdout?.includes("started")) return c.json({ error: `não consegui iniciar o setup: ${(x.stderr || x.stdout || `código ${x.statusCode}`).slice(0, 200)}` }, 502);
-      await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();
-      return c.json({ ok: true });
+      // Runs it in the foreground (up to ~4.5 min) so the answer says what happened: a syntax check first, then the
+      // setup, then the log's last lines (also shown in the card).
+      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
+        command: `cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
+        timeoutMs: 280000,
+      });
+      const out = `${x.stdout ?? ""}${x.stderr ?? ""}`.trim();
+      const ready = /\nREADY\n|^READY$/m.test(out);
+      if (ready) await c.env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run();
+      else await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();
+      return c.json({ ok: ready, log: out.slice(-2500), error: ready ? undefined : "o setup não terminou: veja o log no card" });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 502);
     }
