@@ -327,6 +327,15 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     if (k) await fs(k, "DELETE", `/v5/vms/${r.vm_id}`).catch((e) => { if (!/ 404:/.test(e.message)) throw e; });
     if (k && r.identity_id) await fs(k, "DELETE", `/v5/identities/${r.identity_id}`).catch(() => {});
     await c.env.DB.prepare(`DELETE FROM sandboxes WHERE id = ?`).bind(r.id).run();
+    // Its Claude goes too: the vibebook grants made for it are revoked and it leaves "Conectados" (its folder = its name).
+    const { items } = await c.env.OAUTH_PROVIDER.listUserGrants(r.email);
+    for (const g of items) if (g.metadata?.client === "vibebook sandbox" && g.metadata?.sandbox === r.name) await c.env.OAUTH_PROVIDER.revokeGrant(g.id, r.email).catch(() => {});
+    // Kept (receipts point at it), just no longer listening or recently here.
+    const gone = `SELECT id FROM agents WHERE email = ?1 AND client = 'vibebook sandbox' AND repo = ?2`;
+    await c.env.DB.batch([
+      c.env.DB.prepare(`UPDATE agents SET listening_at = NULL WHERE id IN (${gone})`).bind(r.email, r.name),
+      c.env.DB.prepare(`UPDATE agent_reads SET seen_at = 0 WHERE agent IN (${gone})`).bind(r.email, r.name),
+    ]);
     return c.json({ ok: true });
   });
   // A 15-minute token that reaches only this VM's terminal: the browser opens the PTY straight to freestyle.
