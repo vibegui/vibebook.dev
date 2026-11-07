@@ -358,6 +358,7 @@
   .book.boardview .kanban { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 16px 20px 20px; gap: 12px; }
   #toggleBoard[aria-pressed="true"] { background: var(--hover); border-color: var(--line); color: var(--ink); }
   .chathead #toggleBoard .lbl, .chathead #toggleDoc .lbl, .chathead #myClaude { display: none !important; }
+  .vbUpdate { position: fixed; z-index: 90; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom)); display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--bg); font: 600 13.5px/1.2 "Schibsted Grotesk", system-ui, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / .25); cursor: pointer; white-space: nowrap; }
   #toggleBoard .kN { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 11px/18px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
   .kbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .kbar .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -1455,6 +1456,7 @@ const EN = {
   "Claude conectado: sandboxes novos já sobem logados": "Claude connected: new sandboxes start logged in",
   "seu Claude no sandbox": "your Claude in the sandbox",
   "Quadro de tarefas": "Task board",
+  "Nova versão do vibebook · toque pra atualizar": "New vibebook version · tap to update",
   "Seu Claude espera você no terminal": "Your Claude is waiting for you in the terminal",
   "feito": "done",
   "Lista": "List",
@@ -1879,7 +1881,17 @@ document.addEventListener("click", (e) => {
 // The last /api/me (any page fetches it): going back home draws it at once, then the fresh one replaces it only if
 // something changed, keeping what you were typing in the ask box.
 let meCache = null, meJson = "";
-const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); };
+const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); newVersion(me.v); };
+// A newer app is out (this page's <meta name="vb-v"> differs from the server's): a small bar, tap to reload.
+function newVersion(v) {
+  const mine = document.querySelector('meta[name="vb-v"]')?.content;
+  if (!v || !mine || v === mine || document.getElementById("vbUpdate")) return;
+  const b = document.createElement("button");
+  b.id = "vbUpdate"; b.type = "button"; b.className = "vbUpdate";
+  b.innerHTML = `${icon("undo", 15)} ${t("Nova versão do vibebook · toque pra atualizar")}`;
+  b.onclick = () => location.reload();
+  document.body.append(b);
+}
 async function home() {
   document.title = "vibebook";
   setFavicon(null);

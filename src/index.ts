@@ -160,7 +160,16 @@ const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) =>
 
 // App shell: /login is public; /app and /b/* bounce to /login without a session.
 // Passes the browser's If-None-Match along, so the app shell can come back as a 304.
-const shell = (c: { env: Env; req: { url: string; raw: Request } }) => c.env.ASSETS.fetch(new Request(new URL("/app", c.req.url), c.req.raw));
+// The page carries its own version (the asset's etag) in <meta name="vb-v">, and /api/me says the current one: the
+// app shows "Nova versão" when they differ (an installed PWA keeps an old page around for days).
+const shell = async (c: { env: Env; req: { url: string; raw: Request } }) => {
+  const res = await c.env.ASSETS.fetch(new Request(new URL("/app", c.req.url), c.req.raw));
+  const v = res.headers.get("etag");
+  return res.status === 200 && v ? new HTMLRewriter().on("head", { element: (el) => { el.append(`<meta name="vb-v" content="${v.replace(/[^\w-]/g, "")}" />`, { html: true }); } }).transform(res) : res;
+};
+let appVersion: string | undefined; // per isolate = per deploy
+const currentVersion = async (env: Env, url: string) =>
+  (appVersion ??= ((await env.ASSETS.fetch(new Request(new URL("/app", url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, ""));
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
@@ -370,7 +379,7 @@ app.get("/api/me", async (c) => {
   // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
   const lang = cookieLang(c.req.raw) ?? (me?.lang ? null : reqLang(c.req.raw));
   if (me && lang && lang !== me.lang) c.executionCtx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
-  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits });
+  return c.json({ email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits, v: await currentVersion(c.env, c.req.url) });
 });
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
