@@ -579,6 +579,18 @@
   .agSwitch i { position: absolute; inset: 0; border-radius: 99px; background: var(--line); transition: background .2s; pointer-events: none; }
   .agSwitch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .3); transition: transform .2s; }
   .agSwitch input:checked + i { background: var(--claude); } .agSwitch input:checked + i::after { transform: translateX(18px); }
+  .qDot { display: none; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px var(--bg); }
+  [data-q="idle"] .qDot { display: block; background: oklch(0.7 0.17 150); }
+  [data-q="busy"] .qDot { display: block; background: #fbbf24; animation: qPulse 1.6s ease-in-out infinite; }
+  @keyframes qPulse { 50% { transform: scale(1.35); } }
+  .peekAgents, .ptAgents { position: relative; } .qN { font-size: 11px; font-weight: 700; }
+  .queue { display: grid; gap: 6px; }
+  .qItem { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; }
+  .qItem:hover { border-color: var(--claude); } .qItem small { color: var(--mute); font-size: 11.5px; }
+  .qTx { font-size: 13.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .qSt { justify-self: start; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--hover); color: var(--mute); }
+  .qSt.doing { background: var(--warm-line); color: var(--claude); } .qSt.blocked { background: var(--wait-bg); color: var(--wait-ink); }
+  .agentsPane h4 small { font-size: 12px; color: var(--claude); }
   .agNote { margin: 0; font-size: 12.5px; color: var(--mute); }
   .agList .agentRow { padding-left: 0; }
   .agNew { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 6px; margin-top: 8px; padding: 14px; border: 1.5px dashed var(--line); border-radius: 14px; background: none; color: var(--mute); font-weight: 600; }
@@ -1386,6 +1398,15 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "sala principal": "main room",
+  "épico": "epic",
+  "Fila do seu Claude: {n}": "Your Claude's queue: {n}",
+  "Seu Claude está livre": "Your Claude is free",
+  "Fila do seu Claude": "Your Claude's queue",
+  "espera você": "waiting for you",
+  "fazendo": "doing",
+  "na fila": "queued",
+  "Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.": "Nothing queued: everything you asked in this room in the last 48h was done or answered.",
   "Rodar o setup de novo": "Run the setup again",
   "Refazer setup": "Redo setup",
   "ligado · trabalhando agora": "on · working now",
@@ -2361,7 +2382,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<small id="peekAg"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2386,7 +2407,7 @@ function renderBook() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">✻</button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">✻<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2850,17 +2871,26 @@ async function toggleClaude() {
 function renderAgentsPane(on, live, path, w) {
   const el = document.getElementById("agentsPane"); if (!el) return;
   const mine = roomAgents.list.filter((a) => a.email === S.me);
-  const n = mine.filter((a) => a.listening).length;
-  const badge = document.getElementById("peekAg"); if (badge) badge.textContent = n ? String(n) : "";
+  // The queue: what you asked here (any thread, last 48h) that none of your Claudes closed. On the ✻: a green dot when
+  // your Claude is around with nothing queued, orange + count while something waits on it.
+  const q = myQueue(), around = live || mine.some((a) => Date.now() - a.seen_at < 30 * 60e3);
+  document.querySelectorAll(".peekAgents, .ptAgents").forEach((b) => {
+    b.dataset.q = q.length ? "busy" : around ? "idle" : "";
+    b.querySelector(".qN").textContent = q.length ? String(q.length) : "";
+    b.title = q.length ? t("Fila do seu Claude: {n}", { n: q.length }) : around ? t("Seu Claude está livre") : "Agents";
+  });
   document.getElementById("docPeek")?.classList.toggle("agLive", live);
   el.innerHTML = `<h4>${t("Seus agents nesta sala")}</h4>
     <div class="agCard${on ? " on" : ""}"><span class="agIcon">✻</span><div><b>${t("Claude Code no seu computador")}</b>
       <small>${on ? (live ? t("ligado · ouvindo esta sala") : mine.some((a) => Date.now() - a.seen_at < 30 * 60e3) ? t("ligado · trabalhando agora") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
+    <h4>${t("Fila do seu Claude")} <small>${q.length || ""}</small></h4>
+    ${q.length ? `<div class="queue">${q.map((x) => `<button type="button" class="qItem" data-goto="${x.m.id}"><span class="qSt ${x.st}">${x.st === "blocked" ? "⏸ " + t("espera você") : x.st === "doing" ? t("fazendo") : t("na fila")}</span><span class="qTx">${esc(x.m.text.slice(0, 140))}</span><small>${x.m.thread === "main" ? t("sala principal") : esc(S.epics.find((e) => e.id === x.m.thread)?.title ?? t("épico"))} · ${ago(x.m.ts)}</small></button>`).join("")}</div>` : `<p class="agNote">${t("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
     ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
+  el.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (ROOM_PHONE.matches) closeSheet(); goToMsg(Number(b.dataset.goto)); });
   wireSbx();
   if (document.querySelector('.doc[data-pane="agents"]')) loadSandboxes();
 }
@@ -2873,6 +2903,15 @@ function sbxRows() {
   if (roomAgents.id !== S?.id || !roomAgents.sandboxes?.length) return "";
   return roomAgents.sandboxes.map((x) => `<button type="button" class="member sbxRow ${esc(x.state || "")}" data-sbx-open title="${esc(x.name)} · ${t("de {who}", { who: esc(name(x.email)) })}">
     <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name)}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${usd(sbxCost(x))}</span></button>`).join("");
+}
+// Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
+// Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
+function myQueue() {
+  const since = Date.now() - 48 * 3600e3, acks = (S.acks || []).filter((k) => k.email === S.me);
+  return (S.messages || [])
+    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since)
+    .map((m) => { const a = acks.filter((k) => k.msg_id === m.id); return { m, st: a.some((k) => k.status === "done" || k.status === "idle") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
+    .filter((x) => x.st);
 }
 // Cloud agents (src/sandbox.ts): Claudes in freestyle.sh VMs on the person's own account. The list polls every 5s
 // while the Agents pane is open and something is still being prepared or changing state.
