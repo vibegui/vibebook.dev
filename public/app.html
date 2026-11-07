@@ -709,6 +709,9 @@
     .chathead h2 .epicName { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
     /* The ▾ (and an epic's ✓ 🗑) stay on the title's line: a grid where only the name shrinks (ellipsis); the
        "esperando…" chip takes the line below. */
+    /* Room for the title: ↗ (raise this room's Claude on the computer) means nothing on a phone; the other icons are tighter. */
+    .chathead #goClaude { display: none !important; }
+    .chathead > button { padding-left: 7px; padding-right: 7px; }
     .chathead #threadTitle { display: grid; grid-template-columns: minmax(0, max-content) 1fr; }
     .chathead #epicArch, .chathead #epicDel { display: none; } /* in the sheet's top on phones (#sideArch, #sideDel) */
     .thPick { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 4px 5px 6px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / .08); cursor: pointer; }
