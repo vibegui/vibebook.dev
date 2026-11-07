@@ -7,7 +7,7 @@ import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
 import { growthReport, productReport } from "./reports";
-import { agentSandboxes, agentSandboxExec, createSandbox } from "./sandbox";
+import { agentSandboxes, agentSandboxExec, createSandbox, redoSetup } from "./sandbox";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 import { findSecret } from "./secrets";
@@ -237,6 +237,11 @@ const TOOLS = [
     name: "sandbox_create",
     description: "Create a cloud sandbox for your human in a room (same as Agents → Criar sandbox): a freestyle.sh VM on their account, set up from the room's agents/<name>.md in the background (~3 min; check with sandbox_exec 'test -f ~/.vibebook-setup-done && echo READY'). It costs them money while running: only when they asked.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string", description: "default: the room's title as a slug" }, model: { type: "string" } }, required: ["room_id"] },
+  },
+  {
+    name: "sandbox_setup",
+    description: "Run a sandbox's setup again (same as Refazer setup): applies the room's current agents/<name>.md, your human's current Claude token and a fresh vibebook login, then restarts the Claude inside (tmux session claude). Waits up to ~4.5 min and returns the log's last lines.",
+    inputSchema: { type: "object", properties: { sandbox_id: { type: "string" }, model: { type: "string" } }, required: ["sandbox_id"] },
   },
   {
     name: "sandbox_exec",
@@ -734,6 +739,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       ctx.waitUntil(track(env, "sandbox_created", { user: me.email, dims: { book: id, agent: true } }));
       return { ok: true, sandbox_id: r.id, name: r.name };
     }
+    case "sandbox_setup":
+      return redoSetup(env, me.email, str(a.sandbox_id), origin);
     case "sandboxes":
       return agentSandboxes(env, me.email);
     case "sandbox_exec": {

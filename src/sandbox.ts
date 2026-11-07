@@ -187,6 +187,31 @@ export async function createSandbox(env: Env, email: string, bookId: string, raw
   return { id: sid, vm_id: vm.id, name };
 }
 
+/** Runs the setup again from the room's current agents/<name>.md, in the foreground (up to ~4.5 min): fresh vibebook
+ * login and Claude token, a syntax check, the setup, and Claude restarted in tmux. Returns the log's last lines. */
+export async function redoSetup(env: Env, email: string, sid: string, origin: string) {
+  useEnv(env);
+  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  const k = await loadKey(env, email).catch(() => null);
+  if (!r || !k) throw new Error("not found");
+  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  if (vm.state !== "running") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
+  const book = await env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first<{ title: string }>();
+  const md = await agentFile(env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
+  await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
+  await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
+  await writeClaudeEnv(env, k, r.email, r.vm_id);
+  await writeVibebookLogin(env, k, r.email, r.vm_id, origin);
+  const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
+    command: `mkdir -p ~/${r.name}; cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; tmux kill-session -t claude 2>/dev/null; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
+    timeoutMs: 280000,
+  });
+  const out = redact(`${x.stdout ?? ""}${x.stderr ?? ""}`.trim());
+  const ready = /^READY$/m.test(out);
+  await env.DB.prepare(`UPDATE sandboxes SET ready = ? WHERE id = ?`).bind(ready ? 1 : 0, r.id).run();
+  return { ok: ready, log: out.slice(-2500), error: ready ? undefined : "o setup não terminou: veja o log no card" };
+}
+
 /** Routes (all behind the session; rooms checked with isMember). Mounted from index.ts. */
 // biome-ignore lint/suspicious/noExplicitAny: the Hono app's context type lives in index.ts
 export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
@@ -290,28 +315,8 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     });
   // Run the setup again (it skips what's already installed): for a sandbox stuck preparing.
   app.post("/api/sandboxes/:sid/setup", async (c: any) => {
-    const r = await mine(c, c.req.param("sid")), k = await key(c);
-    if (!r || !k) return c.json({ error: "not found" }, 404);
     try {
-      // A fresh script from the room's current agents/<name>.md (an edited .md, or a fixed setup, applies here).
-      const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first();
-      const origin = new URL(c.req.url).origin;
-      const md = await agentFile(c.env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
-      await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
-      await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
-      await writeClaudeEnv(c.env, k, r.email, r.vm_id);
-      await writeVibebookLogin(c.env, k, r.email, r.vm_id, origin);
-      // Runs it in the foreground (up to ~4.5 min) so the answer says what happened: a syntax check first, then the
-      // setup, then the log's last lines (also shown in the card).
-      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
-        command: `cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
-        timeoutMs: 280000,
-      });
-      const out = `${x.stdout ?? ""}${x.stderr ?? ""}`.trim();
-      const ready = /\nREADY\n|^READY$/m.test(out);
-      if (ready) await c.env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run();
-      else await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();
-      return c.json({ ok: ready, log: out.slice(-2500), error: ready ? undefined : "o setup não terminou: veja o log no card" });
+      return c.json(await redoSetup(c.env, c.get("email"), c.req.param("sid"), new URL(c.req.url).origin));
     } catch (e) {
       return c.json({ error: (e as Error).message }, 502);
     }
