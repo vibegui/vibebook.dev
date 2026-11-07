@@ -9,7 +9,7 @@ import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
-import { dailyReports, growthReport, productReport } from "./reports";
+import { growthReport, productReport } from "./reports";
 import { validUnsub } from "./mentionmail";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
@@ -39,8 +39,7 @@ export type Env = {
   GOOGLE_CLIENT_SECRET?: string;
   MODEL_ROUTE: string;
   // Daily reports (src/reports.ts): rooms to post in, and the read-only Cloudflare analytics token (secret).
-  REPORT_GROWTH_ROOM?: string;
-  REPORT_PRODUCT_ROOM?: string;
+  METRICS_ROOMS?: string;
   CF_ACCOUNT_ID?: string;
   CF_ANALYTICS_TOKEN?: string;
   MODEL_FAST: string;
@@ -606,7 +605,7 @@ app.post("/api/books/:id/files", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
   const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!FILE_TYPES.includes(type)) return c.json({ error: "Tipo de arquivo não suportado (imagens, PDF e HTML)." }, 415);
+  if (!FILE_TYPES.includes(type)) return c.json({ error: "Tipo de arquivo não suportado (imagens, PDF, HTML e Markdown)." }, 415);
   if (Number(c.req.header("content-length") ?? 0) > MAX_FILE_BYTES) return c.json({ error: "Arquivo maior que 10MB." }, 413);
   try {
     const meta = await storeFile(c.env, id, email, type, await c.req.arrayBuffer(), decodeURIComponent(c.req.header("x-filename") ?? ""));
@@ -666,9 +665,5 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
     return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
-  },
-  // "0 11 * * *" = 08:00 in São Paulo: the daily growth and product reports (src/reports.ts).
-  scheduled(_ev: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(dailyReports(env));
   },
 } satisfies ExportedHandler<Env>;

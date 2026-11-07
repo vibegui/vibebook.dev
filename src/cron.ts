@@ -54,3 +54,21 @@ export function nextRun(c: Cron, tz: string, after: number): number | null {
   }
   return null;
 }
+
+const DOW = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+/** The common shapes in words ("todo dia às 08:00", "toda segunda às 10:00", "dias úteis às 09:30"); anything else
+ * stays as the cron itself. Portuguese, like everything @vibe writes in rooms. */
+export function cronWords(expr: string) {
+  const [mi, h, d, mo, w] = expr.trim().split(/\s+/);
+  if (!/^\d+$/.test(mi ?? "") || !/^\d+$/.test(h ?? "") || mo !== "*") return `cron ${expr.trim()}`;
+  const at = `às ${h.padStart(2, "0")}:${mi.padStart(2, "0")}`;
+  if (d === "*" && w === "*") return `todo dia ${at}`;
+  if (d === "*" && (w === "1-5")) return `dias úteis ${at}`;
+  if (d === "*" && /^[0-7](,[0-7])*$/.test(w)) {
+    const days = [...new Set(w.split(",").map((x) => DOW[+x % 7]))];
+    const fem = (x: string) => !/^(sábado|domingo)$/.test(x);
+    return days.length === 1 ? `${fem(days[0]) ? "toda" : "todo"} ${days[0]} ${at}` : `${days.join(", ")} ${at}`;
+  }
+  if (/^\d+$/.test(d) && w === "*") return `todo dia ${d} do mês ${at}`;
+  return `cron ${expr.trim()}`;
+}

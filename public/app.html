@@ -556,6 +556,16 @@
   .doc[data-pane="decisions"] .preview, .doc[data-pane="decisions"] textarea, .doc[data-pane="decisions"] .seg, .doc[data-pane="decisions"] .filesPane { display: none; }
   .doc[data-pane="apps"] :is(.preview, textarea, .seg, .filesPane), .doc:not([data-pane="apps"]) .appsPane { display: none; }
   .appsPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  .doc[data-pane="reminders"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="reminders"]) .remPane { display: none; }
+  .doc.collab[data-view="edit"]:not([data-pane="doc"]) .cm { display: none; }
+  .remPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  .remPane .remHead { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; } .remHead p { flex: 1; margin: 0; color: var(--mute); font-size: 13px; line-height: 1.45; }
+  .remForm { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 16px; }
+  .remForm input, .remForm textarea { font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  .remForm textarea { min-height: 120px; resize: vertical; display: block; }
+  .remForm .row { display: flex; gap: 8px; justify-content: flex-end; align-items: center; } .remForm .row .err { flex: 1; }
+  .rem.bad { border-color: var(--red, #d33); } .rem .err, .remForm .err { color: var(--red, #d33); font-size: 12px; }
+  .rem.off { opacity: .55; } .rem label.sw { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--mute); flex: none; }
   .decPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .dec { border-left: 3px solid var(--sun); padding: 2px 0 2px 12px; margin-bottom: 14px; display: flex; gap: 8px; }
   .dec.approval { border-left-color: var(--ok); }
@@ -1088,7 +1098,7 @@ const EN = {
   "opção": "option",
   "cada pessoa pode escolher várias": "each person can pick several",
   "Remover anexo": "Remove attachment",
-  "só imagens (png, jpg, webp, gif), PDF e HTML.": "only images (png, jpg, webp, gif), PDF and HTML.",
+  "só imagens (png, jpg, webp, gif), PDF, HTML e Markdown.": "only images (png, jpg, webp, gif), PDF, HTML and Markdown.",
   "maior que 10MB.": "larger than 10MB.",
   "falhou": "failed",
   "sem conexão": "offline",
@@ -1289,12 +1299,18 @@ const EN = {
   "Lembretes": "Reminders",
   "próximo {when}": "next {when}",
   "de {who}": "by {who}",
-  "épico": "epic",
   "Apagar lembrete": "Delete reminder",
   "Apagar app": "Delete app",
   "Apagar app {name}": "Delete app {name}",
   "Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.": "No apps yet. Apps are HTML message templates (a report card, a chart) that the Claudes save with <code>save_app</code> and reuse with <code>post</code> + <code>app</code>. Ask your Claude: “make an app for the daily report”.",
   "Apagar este lembrete?": "Delete this reminder?",
+  "nome, ex.: relatorio-diario": "name, e.g. daily-report",
+  "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
+  "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
+  "Novo lembrete": "New reminder",
+  "Ligado": "On",
+  "ligado": "on",
+  "Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu Claude: “todo dia às 8h, me manda o resumo do que mudou”.": "No reminders yet. Click New reminder, or ask your Claude: “every day at 8am, send me a summary of what changed”.",
   "Apagar o app {name}? As mensagens já postadas continuam.": "Delete the app {name}? Messages already posted stay.",
   "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.": "Paste an image in the chat (Cmd+V), drag a file in or use the clip. Everything shared in this vibebook lands here.",
   "Carregar mensagens anteriores": "Load earlier messages",
@@ -2064,7 +2080,7 @@ let S = null; // book state
 let thread = "main";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
-const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"];
+const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown"];
 const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : "file", size);
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
@@ -2103,7 +2119,7 @@ function onEvent(ev, id) {
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
       loadRoomAgents();
-      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderDecisions(); renderReceipts(); renderWorking(); }
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
       return;
     }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
@@ -2136,7 +2152,7 @@ function onEvent(ev, id) {
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; renderFiles(); return;
     case "apps": S.apps = ev.apps; renderApps(); return;
-    case "reminders": S.reminders = ev.reminders; renderApps(); return;
+    case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
@@ -2239,7 +2255,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="mentionBtn">${icon("at")} ${t("Mencionar alguém")} <small>@</small></button>
             <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
           </div>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm" multiple hidden />
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md" multiple hidden />
           <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
         </div>
       </form>
@@ -2247,7 +2263,7 @@ function renderBook() {
     <section class="doc">
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" data-pane="doc">Doc</button><button type="button" data-pane="files">${t("Arquivos")}<small id="fileCount"></small></button><button type="button" data-pane="apps">Apps<small id="appCount"></small></button><button type="button" data-pane="decisions">${t("Decisões")}<small id="decCount"></small></button><button type="button" data-pane="reminders">${t("Lembretes")}<small id="remCount"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2255,6 +2271,7 @@ function renderBook() {
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
       <div class="appsPane" id="appsPane"></div>
+      <div class="remPane" id="remPane"></div>
     </section>
     <div class="sheetDim" id="sheetDim"></div>
   </div>
@@ -2355,7 +2372,8 @@ function renderBook() {
   const addFiles = (list) => {
     for (let file of list) {
       if (!file.type && /\.html?$/i.test(file.name)) file = new File([file], file.name, { type: "text/html" });
-      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF e HTML.")}`); continue; }
+      if (!file.type && /\.md$/i.test(file.name)) file = new File([file], file.name, { type: "text/markdown" });
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML e Markdown.")}`); continue; }
       if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: ${t("maior que 10MB.")}`); continue; }
       if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
       const p = { file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null };
@@ -2438,6 +2456,7 @@ function renderBook() {
     if (pane === "files") renderFiles();
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
+    if (pane === "reminders") renderReminders();
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   setPane("doc");
@@ -2456,7 +2475,7 @@ function renderBook() {
   let savedView = "preview"; try { savedView = localStorage.getItem("vb.docView") || "preview"; } catch {}
   docPanel.dataset.view = savedView;
   docPanel.querySelectorAll(".seg button").forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
-  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderApps(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
+  renderSide(); renderChat(); renderDoc(true); renderFiles(); renderApps(); renderReminders(); renderDecisions(); connectCard(document.getElementById("agentNudge"), S.id); renderBells();
   welcome();
   // A shared link to one message (/b/<room>#m123) lands on it.
   if (/^#m\d+$/.test(location.hash)) setTimeout(() => goToMsg(Number(location.hash.slice(2))), 300);
@@ -3351,21 +3370,57 @@ addEventListener("message", (e) => {
 // as their names, served sandboxed by /api/books/:id/apps/:name); click opens it in the viewer.
 function renderApps() {
   const el = document.getElementById("appsPane"); if (!el) return;
-  const n = (S.apps?.length ?? 0) + (S.reminders?.length ?? 0);
+  const n = S.apps?.length ?? 0;
   document.getElementById("appCount").textContent = n ? ` ${n}` : "";
   const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
-  // Reminders (set_reminder) sit on top: each one later posts as the person who set it, so they're listed with ×.
-  const when = (t) => new Date(t).toLocaleString(LOCALE, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  const rem = S.reminders?.length ? `<div class="rems"><h4>${icon("clock", 14)} ${t("Lembretes")}</h4>${S.reminders.map((r) => `
-    <div class="rem"><div><b>${esc(r.text)}</b><small><code>${esc(r.cron)}</code> ${esc(r.tz)} · ${t("próximo {when}", { when: when(r.next_at) })} · ${t("de {who}", { who: esc(name(r.owner)) })}${r.thread !== "main" ? ` · ${esc(S.epics?.find((e) => e.id === r.thread)?.title ?? t("épico"))}` : ""}</small></div>
-      <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">${icon("x")}</button></div>`).join("")}</div>` : "";
-  el.innerHTML = rem + (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
+  el.innerHTML = (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
     <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
       <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
       <button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">${icon("x")}</button></div>`).join("")}</div>`
     : `<div class="empty">${t("Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.")}</div>`);
-  el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar este lembrete?"))) send({ t: "reminder.delete", id: b.dataset.remDel }); });
   el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar o app {name}? As mensagens já postadas continuam.", { name: b.dataset.appDel }))) send({ t: "app.delete", name: b.dataset.appDel }); });
+}
+
+// Reminders: files reminders/<name>.md. @vibe reads when each runs; at that time it posts the text for whoever saved it,
+// and their Claude acts on it. A file that doesn't say when shows its error here until someone fixes it.
+let remEdit = null; // null = form closed; { name, text } = new or editing
+function renderReminders() {
+  const el = document.getElementById("remPane"); if (!el) return;
+  const f0 = document.getElementById("remForm"); // keep what's being typed when the list changes underneath
+  if (f0 && remEdit) remEdit = { ...remEdit, name: f0.name.value, text: f0.text.value };
+  const list = S.reminders ?? [];
+  const bad = list.filter((r) => r.error).length;
+  document.getElementById("remCount").textContent = list.length ? ` ${list.length}${bad ? " ⚠" : ""}` : "";
+  const when = (ms) => new Date(ms).toLocaleString(LOCALE, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const form = remEdit ? `<form class="remForm" id="remForm">
+      <input name="name" maxlength="60" required placeholder="${t("nome, ex.: relatorio-diario")}" value="${esc(remEdit.name)}" ${remEdit.fixed ? "readonly" : ""} />
+      <textarea name="text" required placeholder="${t("Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.")}">${esc(remEdit.text)}</textarea>
+      <div class="row"><span class="err" id="remErr"></span><button type="button" class="ghost" id="remCancel">${t("Cancelar")}</button><button class="primary" id="remSave">${t("Salvar")}</button></div></form>` : "";
+  el.innerHTML = `<div class="remHead"><p>${t("Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.")}</p>${remEdit ? "" : `<button class="primary" id="remNew">${icon("plus", 14)} ${t("Novo lembrete")}</button>`}</div>${form}${list.map((r) => `
+    <div class="rem${r.error ? " bad" : ""}${r.enabled ? "" : " off"}"><div><b>${esc(r.name ? `${r.name}.md` : r.text)}</b>
+      <small>${r.error ? "" : `${esc(r.every || r.cron || "")}${r.enabled && r.next_at ? ` · ${t("próximo {when}", { when: when(r.next_at) })}` : ""} · `}${t("de {who}", { who: esc(name(r.owner)) })}</small>
+      ${r.error ? `<span class="err">⚠ ${esc(r.error)}</span>` : ""}</div>
+      ${r.name ? `<button class="ghost" data-rem-edit="${esc(r.id)}" title="${t("Editar")}" aria-label="${t("Editar")}">${icon("pencil", 14)}</button>` : ""}
+      <label class="sw" title="${t("Ligado")}"><input type="checkbox" data-rem-on="${esc(r.id)}" ${r.enabled ? "checked" : ""} ${r.error ? "disabled" : ""} />${t("ligado")}</label>
+      <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">${icon("x")}</button></div>`).join("")}
+    ${list.length || remEdit ? "" : `<div class="empty">${t("Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu Claude: “todo dia às 8h, me manda o resumo do que mudou”.")}</div>`}`;
+  const open = (r) => { remEdit = r; renderReminders(); document.querySelector("#remForm textarea")?.focus(); };
+  document.getElementById("remNew")?.addEventListener("click", () => open({ name: "", text: "" }));
+  document.getElementById("remCancel")?.addEventListener("click", () => { remEdit = null; renderReminders(); });
+  document.getElementById("remForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.target, nm = f.name.value.trim().replace(/\.md$/i, "").replace(/[\\/]/g, "-"), err = document.getElementById("remErr"), btn = document.getElementById("remSave");
+    btn.disabled = true; err.textContent = "";
+    const r = await fetch(`/api/books/${S.id}/files`, { method: "POST", headers: { "content-type": "text/markdown", "x-filename": encodeURIComponent(`reminders/${nm}.md`) }, body: f.text.value }).catch(() => null);
+    const j = r ? await r.json().catch(() => ({})) : { error: t("sem conexão") };
+    btn.disabled = false;
+    if (!r?.ok) { err.textContent = j.error || t("falhou"); return; }
+    if (j.reminder && !j.reminder.ok) { err.textContent = `⚠ ${j.reminder.error}`; remEdit = { name: nm, text: f.text.value, fixed: true }; return; }
+    remEdit = null; renderReminders();
+  });
+  el.querySelectorAll("[data-rem-edit]").forEach((b) => b.onclick = () => { const r = list.find((x) => x.id === b.dataset.remEdit); if (r) open({ name: r.name, text: r.text, fixed: true }); });
+  el.querySelectorAll("[data-rem-on]").forEach((b) => b.onchange = () => send({ t: "reminder.enable", id: b.dataset.remOn, on: b.checked }));
+  el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar este lembrete?"))) send({ t: "reminder.delete", id: b.dataset.remDel }); });
 }
 
 function renderFiles() {

@@ -1,11 +1,11 @@
-// Daily reports, posted by @vibe at 08:00 São Paulo (cron "0 11 * * *"): yesterday vs the 7 days before.
-// - growth (REPORT_GROWTH_ROOM): our own D1 events: visitors, pageviews, the funnel, active people, top pages/sources.
-// - product (REPORT_PRODUCT_ROOM): Cloudflare's GraphQL analytics for the Worker (requests, errors, CPU/wall time,
+// vibebook's own numbers, yesterday vs the 7 days before, as markdown for the MCP tool `metrics` (METRICS_EMAILS only).
+// The daily posts are room reminders (reminders/*.md in vibebook-growth and vibebook-product) that tell a Claude to call it.
+// - growth: our own D1 events: visitors, pageviews, the funnel, active people, top pages/sources.
+// - product: Cloudflare's GraphQL analytics for the Worker (requests, errors, CPU/wall time,
 //   response bytes) and the zone (requests, bandwidth, cache). Needs CF_ANALYTICS_TOKEN (Account Analytics: Read,
 //   Zone Analytics: Read, Zone: Read); without it the report says so instead of showing numbers.
 // Test people (@test.vibebook.dev) are left out. Check: bun scripts/reports-check.ts (formatting only).
 import type { Env } from "./index";
-import { bookStub } from "./rooms";
 
 const DAY = 86_400_000;
 const BRT = 3 * 3600_000; // São Paulo, no DST since 2019
@@ -165,17 +165,4 @@ async function zoneId(env: Env) {
   const r = await fetch("https://api.cloudflare.com/client/v4/zones?name=vibebook.dev", { headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}` } });
   const j = (await r.json().catch(() => ({}))) as { result?: { id: string }[] };
   return j.result?.[0]?.id ?? null;
-}
-
-/** The cron: build each report and post it as @vibe in its room's main thread. */
-export async function dailyReports(env: Env) {
-  const jobs: [string | undefined, () => Promise<string>][] = [
-    [env.REPORT_GROWTH_ROOM, () => growthReport(env)],
-    [env.REPORT_PRODUCT_ROOM, () => productReport(env)],
-  ];
-  for (const [room, build] of jobs) {
-    if (!room) continue;
-    const text = await build().catch((e) => `Relatório falhou: ${String((e as Error).message).slice(0, 300)}`);
-    await bookStub(env, room).reportPost(room, text);
-  }
 }

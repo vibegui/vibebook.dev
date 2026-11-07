@@ -6,6 +6,7 @@ import type { Env } from "./index";
 import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
+import { growthReport, productReport } from "./reports";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
 
@@ -148,41 +149,44 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id", "name"] },
   },
   {
-    name: "set_reminder",
-    description: "Schedule a recurring reminder in the room for your human (e.g. every weekday at 9h: \"post the day's report\"). At each time it is posted in the room as your human's message (from_your_human: true, text starting with ⏰ Lembrete), so your listen wakes you and you do it; reply in that thread and ack done on that message when finished. If no Claude was listening, it shows up in read_room's due_reminders until an ack done. Only set what your human asked for: the room sees a line announcing it. At most every 30 min, 20 per room.",
+    name: "save_reminder",
+    description: "Save a recurring reminder in the room as the file reminders/<name>.md (same name = replace it). The text says WHEN it runs (\"todo dia às 8h\", \"every Monday 10am\", \"weekdays at 9\") and WHAT to do, written as your human's instruction. @vibe reads the schedule (once every 30 min at most); a text that doesn't say when is saved with an error (returned here and shown in the room's Lembretes tab) until it's fixed. At each run @vibe posts the text in the room for your human (from_your_human: true, reminder: true), so your listen wakes you and you do it; reply in that thread and ack done on that message when finished. If no Claude was listening, it shows up in read_room's due_reminders. People turn reminders on/off in the Lembretes tab.",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
-        cron: { type: "string", description: "5 fields: minute hour day month weekday, e.g. \"0 9 * * 1-5\" (weekdays at 9:00)" },
-        timezone: { type: "string", description: "IANA time zone, default America/Sao_Paulo" },
-        text: { type: "string", description: "what to do when it fires, written as your human's instruction" },
-        thread: { type: "string", description: "\"main\" (default) or an epic id" },
+        name: { type: "string", description: "file name without .md, e.g. \"relatorio-diario\"" },
+        text: { type: "string", description: "the reminder's markdown: when it runs and what to do" },
         model: { type: "string" },
       },
-      required: ["room_id", "cron", "text"],
+      required: ["room_id", "name", "text"],
     },
   },
   {
+    name: "metrics",
+    description: "vibebook's own numbers for yesterday vs the week before, as markdown: \"growth\" (visitors, funnel, sources; from vibebook's analytics) or \"product\" (Worker and zone traffic, errors, latency, bandwidth; from Cloudflare). Only in vibebook's own report rooms (METRICS_ROOMS), for their members.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, which: { type: "string", enum: ["growth", "product"] }, model: { type: "string" } }, required: ["room_id", "which"] },
+  },
+  {
     name: "list_reminders",
-    description: "List the room's reminders (id, cron, timezone, text, thread, owner, next run).",
+    description: "List the room's reminders (id, name, schedule, cron, timezone, text, owner, enabled, error, next run).",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, model: { type: "string" } }, required: ["room_id"] },
   },
   {
     name: "delete_reminder",
-    description: "Delete a room reminder by id (list_reminders).",
+    description: "Delete a room reminder by id or name (list_reminders).",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, id: { type: "string" }, model: { type: "string" } }, required: ["room_id", "id"] },
   },
   {
     name: "upload_file",
-    description: "Attach a file to a room (images, PDF or HTML, up to 10MB), optionally with a message. Pass HTML as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
+    description: "Attach a file to a room (images, PDF, HTML or Markdown, up to 10MB), optionally with a message. Pass HTML as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
         filename: { type: "string", description: 'e.g. "linkedin-report.html"' },
         content_type: { type: "string", enum: FILE_TYPES },
-        text: { type: "string", description: "file content for text/html" },
+        text: { type: "string", description: "file content for text/html and text/markdown" },
         base64: { type: "string", description: "file content for images and PDF" },
         message: { type: "string", description: "optional message posted with the file" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },
@@ -602,19 +606,25 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       return { ok: await bookStub(env, id).appDelete(id, str(a.name)) };
     }
-    case "set_reminder": {
+    case "save_reminder": {
       const id = await room();
-      const text = str(a.text).trim().slice(0, 1000);
-      if (!text) throw new Error("text is required");
-      const r = await bookStub(env, id).reminderSet(id, me.email, { thread: str(a.thread) || "main", text, cron: str(a.cron), tz: str(a.timezone) || "America/Sao_Paulo" });
+      const name = str(a.name).trim().replace(/\.md$/i, "").replace(/[\\/]/g, "-").slice(0, 60);
+      const text = str(a.text).trim().slice(0, 4000);
+      if (!name || !text) throw new Error("name and text are required");
+      const meta = await storeFile(env, id, me.email, "text/markdown", new TextEncoder().encode(text).buffer as ArrayBuffer, `reminders/${name}.md`);
+      const r = meta.reminder!;
       if (r.ok) {
-        // Out in the open: a reminder later speaks as the person, so they see it being set (and can × it in the app).
-        const when = new Date(r.next_at!).toLocaleString("pt-BR", { timeZone: str(a.timezone) || "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
-        const p = await bookStub(env, id).agentPost(id, me.email, `⏰ Lembrete criado (\`${str(a.cron).trim()}\`, ${str(a.timezone) || "America/Sao_Paulo"}): ${text}\nPróximo: ${when}`, str(a.thread) || "main", [], str(a.model));
+        // Out in the open: the room sees what will be posted for this person and when (and can turn it off in Lembretes).
+        const when = new Date(r.next_at!).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+        const p = await bookStub(env, id).agentPost(id, me.email, `⏰ Lembrete \`reminders/${name}.md\` salvo: ${r.every}. Próximo: ${when}.`, "main", [], str(a.model));
         if (p.ok && p.id) await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(p.id, me.agent, id, p.id - 1).run();
-        ctx.waitUntil(track(env, "reminder_set", { user: me.email, dims: { book: id } }));
       }
-      return r;
+      return { ...r, file: `${origin}/api/books/${id}/files/${meta.id}` };
+    }
+    case "metrics": {
+      const id = await room();
+      if (!(env.METRICS_ROOMS ?? "").split(",").map((x) => x.trim()).includes(id)) throw new Error("metrics only works in vibebook's own report rooms");
+      return { markdown: a.which === "product" ? await productReport(env) : await growthReport(env) };
     }
     case "list_reminders": {
       const id = await room();
@@ -633,7 +643,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         if (a.base64.length > (MAX_FILE_BYTES * 4) / 3 + 4) throw new Error("file larger than 10MB");
         const bin = atob(a.base64.replace(/\s+/g, ""));
         body = Uint8Array.from(bin, (ch) => ch.charCodeAt(0)).buffer as ArrayBuffer;
-      } else throw new Error("pass the file as text (HTML) or base64 (images, PDF)");
+      } else throw new Error("pass the file as text (HTML, Markdown) or base64 (images, PDF)");
       const meta = await storeFile(env, id, me.email, type, body, str(a.filename));
       ctx.waitUntil(track(env, "file_uploaded", { user: me.email, dims: { book: id, type, size: meta.size, agent: true } }));
       // Always posted, so the file shows up in the chat where people (and agents) will look for it.
@@ -644,7 +654,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "upload_link": {
       const id = await room();
       const type = str(a.content_type).toLowerCase();
-      if (!FILE_TYPES.includes(type)) throw new Error("images, PDF or HTML only");
+      if (!FILE_TYPES.includes(type)) throw new Error("images, PDF, HTML or Markdown only");
       const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
       await db
         .prepare(`INSERT INTO upload_links (token, email, agent, book_id, filename, type, message, thread, model, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)

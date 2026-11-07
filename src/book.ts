@@ -8,7 +8,7 @@ import type { Env } from "./index";
 import { MAIL_DAY_MAX, MAIL_DELAY_MS, MAIL_GAP_MS, type MailFacts, COPY_PROMPT, mailBody, mentioned, plainCopy, unsubscribeUrl } from "./mentionmail";
 import { docRoomStub } from "./rooms";
 import { findSecret } from "./secrets";
-import { nextRun, parseCron } from "./cron";
+import { cronWords, nextRun, parseCron } from "./cron";
 import { decide, type Question } from "./jev";
 import { track } from "./track";
 
@@ -16,7 +16,7 @@ import { track } from "./track";
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number; embed?: boolean };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
-type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null; choices?: string | null };
+type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null; choices?: string | null; for_who?: string | null };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 const SEED_GOAL = "o que este épico entrega e por quê";
 /** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
@@ -79,7 +79,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["messages", "for_who TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -221,58 +221,114 @@ export class Book extends DurableObject<Env> {
     if (n) this.broadcast({ t: "apps", apps: this.apps() });
     return n > 0;
   }
-  // Reminders: a cron (in a time zone) that posts a message in the room as the person who set it, so their Claude's
-  // listen wakes up and treats it as an instruction (from_your_human). Fired from the alarm; a fire nobody acked done
-  // stays in read_room's due_reminders, so a Claude that was offline runs it when it comes back.
+  // Reminders are files: reminders/<name>.md in the room's files (upload, MCP save_reminder, the app's Lembretes tab).
+  // Saving one makes @vibe read when it should run (one MODEL_ROUTE call: "todo dia às 8h" → cron + zone); a file that
+  // doesn't say is kept with an error the tab shows until it's fixed. At each run @vibe posts the file's text in the
+  // room for whoever saved it (for_who), so their Claude's listen wakes up and treats it as their instruction. A fire
+  // nobody acked done stays in read_room's due_reminders, so a Claude that was offline runs it when it comes back.
   reminders() {
-    return this.sql.exec<{ id: string; thread: string; text: string; cron: string; tz: string; owner: string; next_at: number }>(`SELECT id, thread, text, cron, tz, owner, next_at FROM reminders ORDER BY next_at`).toArray();
+    return this.sql
+      .exec<{ id: string; name: string | null; thread: string; text: string; cron: string | null; tz: string; owner: string; next_at: number | null; enabled: number; error: string | null; every: string | null; file_id: string | null }>(
+        `SELECT id, name, thread, text, cron, tz, owner, next_at, coalesce(enabled, 1) AS enabled, error, every, file_id FROM reminders ORDER BY coalesce(name, text)`,
+      )
+      .toArray();
   }
-  async reminderSet(bookId: string, email: string, r: { thread: string; text: string; cron: string; tz: string }) {
-    this.bind(bookId);
-    if (r.thread !== "main" && !this.epics().some((e) => e.id === r.thread)) return { ok: false, error: `unknown thread ${r.thread}; use "main" or an epic id from read_room` };
-    const secret = findSecret(r.text);
-    if (secret) return { ok: false, error: `blocked: looks like a secret (${secret}).` };
-    let next: number | null;
+  /** cron + zone → the next run, or why it can't be one. */
+  nextFire(cron: string, tz: string, from = Date.now()): { next: number } | { error: string } {
     try {
-      const c = parseCron(r.cron);
-      next = nextRun(c, r.tz, Date.now());
-      const after = next && nextRun(c, r.tz, next);
-      if (after && after - next! < REMINDER_MIN_GAP_MS) return { ok: false, error: `fires too often: at most once every ${REMINDER_MIN_GAP_MS / 60_000} minutes` };
+      const c = parseCron(cron);
+      const next = nextRun(c, tz, from);
+      if (!next) return { error: "that schedule never runs" };
+      const after = nextRun(c, tz, next);
+      if (after && after - next < REMINDER_MIN_GAP_MS) return { error: `runs too often: at most once every ${REMINDER_MIN_GAP_MS / 60_000} minutes` };
+      return { next };
     } catch (e) {
-      return { ok: false, error: e instanceof RangeError ? `unknown timezone ${r.tz}` : String((e as Error).message) };
+      return { error: e instanceof RangeError ? `unknown timezone ${tz}` : String((e as Error).message) };
     }
-    if (!next) return { ok: false, error: "that cron never fires" };
-    if (this.reminders().length >= REMINDERS_MAX) return { ok: false, error: `this room already has ${REMINDERS_MAX} reminders; delete one first` };
-    const id = crypto.randomUUID().slice(0, 8);
-    this.sql.exec(`INSERT INTO reminders (id, thread, text, cron, tz, owner, next_at, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, id, r.thread, r.text, r.cron.trim(), r.tz, email, next, Date.now());
+  }
+  /** A reminders/<name>.md file was saved: read its schedule and store it (same name = replace). */
+  async reminderFile(bookId: string, email: string, name: string, body: string, fileId: string) {
+    this.bind(bookId);
+    const old = this.sql.exec<{ id: string; enabled: number | null }>(`SELECT id, enabled FROM reminders WHERE name = ?`, name).toArray()[0];
+    if (!old && this.reminders().length >= REMINDERS_MAX) return { ok: false, name, error: `this room already has ${REMINDERS_MAX} reminders; delete one first` };
+    let cron: string | null = null, tz = "America/Sao_Paulo", every: string | null = null, error: string | null = null, next: number | null = null;
+    try {
+      const { output, usage } = await generateText({
+        model: this.model(this.env.MODEL_ROUTE, true),
+        temperature: 0,
+        output: Output.object({
+          schema: z.object({
+            says_when: z.boolean().describe("true only if the text says how often or when it should run"),
+            cron: z.string().describe('5-field cron "min hour day month weekday" for that schedule; "" if it does not say'),
+            timezone: z.string().describe("IANA zone the times are in; America/Sao_Paulo unless the text says otherwise"),
+          }),
+        }),
+        prompt: `This file is a recurring reminder: at each run its text is posted in a chat room as a prompt for an AI agent. Find WHEN it should run, as written in the file. Do not invent a schedule: if the file doesn't say, says_when = false.\n\n"""\n${body.slice(0, 4000)}\n"""`,
+      });
+      this.ctx.waitUntil(track(this.env, "reminder_parse", { user: email, dims: { book: bookId, model: this.env.MODEL_ROUTE, cost: +costOf(usage).toFixed(6) } }));
+      if (!output.says_when || !output.cron.trim()) error = "não diz quando rodar: escreva no arquivo, por exemplo \"todo dia às 8h\" ou \"segundas às 10h\"";
+      else {
+        cron = output.cron.trim(); every = cronWords(cron);
+        try { new Intl.DateTimeFormat("en", { timeZone: output.timezone }); tz = output.timezone; } catch {} // "local" and friends: keep São Paulo
+        const f = this.nextFire(cron, tz);
+        if ("error" in f) error = `não consegui agendar (${f.error}): reescreva quando rodar`;
+        else next = f.next;
+      }
+    } catch (e) {
+      error = "não consegui ler o arquivo agora; salve de novo em instantes";
+      console.error("reminder parse", String(e));
+    }
+    const id = old?.id ?? crypto.randomUUID().slice(0, 8);
+    this.sql.exec(
+      `INSERT INTO reminders (id, name, thread, text, cron, tz, owner, next_at, ts, enabled, error, every, file_id) VALUES (?, ?, 'main', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET text = excluded.text, cron = excluded.cron, tz = excluded.tz, owner = excluded.owner, next_at = excluded.next_at, error = excluded.error, every = excluded.every, file_id = excluded.file_id`,
+      id, name, body, cron, tz, email, next, Date.now(), old?.enabled ?? 1, error, every, fileId,
+    );
     this.broadcast({ t: "reminders", reminders: this.reminders() });
-    await this.wakeAt(next);
-    return { ok: true, id, next_at: new Date(next).toISOString() };
+    if (next) await this.wakeAt(next);
+    this.ctx.waitUntil(track(this.env, "reminder_set", { user: email, dims: { book: bookId, ok: !error } }));
+    return error ? { ok: false, name, error } : { ok: true, name, every, cron, timezone: tz, next_at: new Date(next!).toISOString() };
   }
   remindersOf(bookId: string) {
     this.bind(bookId);
-    return this.reminders().map((r) => ({ ...r, next_at: new Date(r.next_at).toISOString() }));
+    return this.reminders().map((r) => ({ ...r, enabled: !!r.enabled, next_at: r.next_at ? new Date(r.next_at).toISOString() : null }));
   }
-  reminderDelete(bookId: string, id: string) {
+  reminderDelete(bookId: string, idOrName: string) {
     this.bind(bookId);
-    const n = this.sql.exec(`DELETE FROM reminders WHERE id = ?`, id).rowsWritten;
+    const n = this.sql.exec(`DELETE FROM reminders WHERE id = ? OR name = ?`, idOrName, idOrName).rowsWritten;
     if (n) this.broadcast({ t: "reminders", reminders: this.reminders() });
     return n > 0;
   }
+  async reminderEnable(bookId: string, idOrName: string, on: boolean) {
+    this.bind(bookId);
+    const r = this.reminders().find((x) => x.id === idOrName || x.name === idOrName);
+    if (!r) return false;
+    // Back on: the next run counts from now, so a paused reminder doesn't fire for the runs it missed.
+    const f = on && r.cron ? this.nextFire(r.cron, r.tz) : null;
+    const next = f && "next" in f ? f.next : r.next_at;
+    this.sql.exec(`UPDATE reminders SET enabled = ?, next_at = ? WHERE id = ?`, on ? 1 : 0, next, r.id);
+    this.broadcast({ t: "reminders", reminders: this.reminders() });
+    if (on && next) await this.wakeAt(next);
+    return true;
+  }
   async fireReminders() {
     const now = Date.now();
-    const due = this.sql.exec<{ id: string; thread: string; text: string; cron: string; tz: string; owner: string }>(`SELECT * FROM reminders WHERE next_at <= ?`, now).toArray();
-    for (const r of due) {
-      const thread = r.thread === "main" || this.epics().some((e) => e.id === r.thread) ? r.thread : "main";
-      this.addMessage(thread, r.owner, `⏰ Lembrete: ${r.text}`, { tag: "reminder" });
-      let next: number | null = null;
-      try { next = nextRun(parseCron(r.cron), r.tz, now); } catch {}
-      if (next) this.sql.exec(`UPDATE reminders SET next_at = ? WHERE id = ?`, next, r.id);
-      else this.sql.exec(`DELETE FROM reminders WHERE id = ?`, r.id);
-      this.ctx.waitUntil(track(this.env, "reminder_fired", { user: r.owner, dims: { book: this.get("book_id") ?? "" } }));
+    const due = this.reminders().filter((r) => r.enabled && r.next_at && r.next_at <= now && r.cron);
+    if (due.length) {
+      const names = await this.names();
+      for (const r of due) {
+        const thread = r.thread === "main" || this.epics().some((e) => e.id === r.thread) ? r.thread : "main";
+        // Old set_reminder rows (no file) posted as the person; file reminders are @vibe speaking for them.
+        if (r.name) this.addMessage(thread, "ai", `⏰ **${r.name}** · lembrete de ${(names[r.owner] ?? r.owner.split("@")[0]).split(" ")[0]}\n\n${r.text}`, { tag: "reminder", forWho: r.owner });
+        else this.addMessage(thread, r.owner, `⏰ Lembrete: ${r.text}`, { tag: "reminder" });
+        const f = this.nextFire(r.cron!, r.tz, now);
+        if ("next" in f) this.sql.exec(`UPDATE reminders SET next_at = ? WHERE id = ?`, f.next, r.id);
+        else this.sql.exec(`UPDATE reminders SET next_at = NULL, error = ? WHERE id = ?`, f.error, r.id);
+        this.ctx.waitUntil(track(this.env, "reminder_fired", { user: r.owner, dims: { book: this.get("book_id") ?? "" } }));
+      }
+      this.broadcast({ t: "reminders", reminders: this.reminders() });
     }
-    if (due.length) this.broadcast({ t: "reminders", reminders: this.reminders() });
-    const next = this.sql.exec<{ t: number | null }>(`SELECT min(next_at) AS t FROM reminders`).one().t;
+    const next = this.sql.exec<{ t: number | null }>(`SELECT min(next_at) AS t FROM reminders WHERE coalesce(enabled, 1) = 1`).one().t;
     if (next) await this.wakeAt(next);
   }
   files(): FileMeta[] {
@@ -361,14 +417,14 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder"; replyTo?: number; choices?: { options: string[]; multi: boolean } } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string } = {}): Msg {
     // A reply points at a message of this room; anything else is dropped rather than refused.
     const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
     const files = extra.files ?? [];
     const id = this.sql
       .exec(
-        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via, tag, reply_to, choices) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        `INSERT INTO messages (thread, author, text, ts, files, poll, kind, via, tag, reply_to, choices, for_who) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         thread,
         author,
         text,
@@ -380,9 +436,10 @@ export class Book extends DurableObject<Env> {
         extra.tag ?? null,
         replyTo,
         extra.choices ? JSON.stringify(extra.choices) : null,
+        extra.forWho ?? null,
       )
       .one().id as number;
-    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null, reply_to: replyTo, choices: extra.choices ? JSON.stringify(extra.choices) : null };
+    const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null, reply_to: replyTo, choices: extra.choices ? JSON.stringify(extra.choices) : null, for_who: extra.forWho ?? null };
     this.broadcast({ t: "msg", m });
     // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
@@ -737,7 +794,8 @@ export class Book extends DurableObject<Env> {
         from: who(m.author as string),
         by_agent: m.kind === "agent",
         mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
-        from_your_human: !!email && m.author === email && m.kind !== "agent",
+        // A reminder file's prompt, posted by @vibe, is the instruction of whoever saved the file.
+        from_your_human: !!email && ((m.author === email && m.kind !== "agent") || (m.tag === "reminder" && m.for_who === email)),
         reminder: m.tag === "reminder" || undefined,
         reply_to: (m.reply_to as number | null) ?? undefined,
         choices: m.choices ? (JSON.parse(m.choices as string) as { options: string[]; multi: boolean }) : undefined,
@@ -768,7 +826,7 @@ export class Book extends DurableObject<Env> {
       // Reminders your human set that fired in the last 7 days and no agent of theirs closed with ack done yet.
       due_reminders: email
         ? this.sql
-            .exec(`SELECT m.id, m.thread, m.text, m.ts FROM messages m WHERE m.tag = 'reminder' AND m.author = ? AND m.ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = m.id AND a.status = 'done') ORDER BY m.id`, email, Date.now() - 7 * 864e5)
+            .exec(`SELECT m.id, m.thread, m.text, m.ts FROM messages m WHERE m.tag = 'reminder' AND (m.author = ? OR m.for_who = ?) AND m.ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = m.id AND a.status = 'done') ORDER BY m.id`, email, email, Date.now() - 7 * 864e5)
             .toArray()
             .map((m) => ({ message_id: m.id as number, thread: threadName(m.thread as string), text: m.text as string, at: new Date(m.ts as number).toISOString() }))
         : undefined,
@@ -982,12 +1040,6 @@ export class Book extends DurableObject<Env> {
     if (out.ok) bump();
     return out;
   }
-  /** A daily report (src/reports.ts) posted by @vibe in the main thread. */
-  reportPost(bookId: string, text: string) {
-    this.bind(bookId);
-    this.addMessage("main", "ai", text.slice(0, 8000));
-    return { ok: true };
-  }
   /** Rename the room (a person in the app, or an agent's rename_room). Locks the title against classify. */
   async renameRoom(bookId: string, raw: string) {
     this.bind(bookId);
@@ -1144,6 +1196,8 @@ export class Book extends DurableObject<Env> {
         return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
       case "reminder.delete":
         return void this.reminderDelete(this.get("book_id") ?? "", String(m.id ?? ""));
+      case "reminder.enable":
+        return void (await this.reminderEnable(this.get("book_id") ?? "", String(m.id ?? ""), !!m.on));
       case "task.toggle":
         return this.setTask(String(m.id));
       case "task.status":

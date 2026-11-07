@@ -1,5 +1,5 @@
 // bun scripts/cron-check.ts
-import { nextRun, parseCron } from "../src/cron";
+import { cronWords, nextRun, parseCron } from "../src/cron";
 
 let fail = 0;
 const eq = (got: number | null, want: string, label: string) => {
@@ -35,6 +35,10 @@ try {
   console.log("FAIL accepted bad tz");
 } catch {
   console.log("ok   rejects bad tz");
+}
+for (const [c, w] of [["0 8 * * *", "todo dia às 08:00"], ["0 10 * * 1", "toda segunda às 10:00"], ["30 9 * * 1-5", "dias úteis às 09:30"], ["0 9 * * 6", "todo sábado às 09:00"], ["0 9 * * 1,3", "segunda, quarta às 09:00"], ["0 7 1 * *", "todo dia 1 do mês às 07:00"], ["*/30 * * * *", "cron */30 * * * *"]]) {
+  const got = cronWords(c);
+  if (got !== w) { fail++; console.log("FAIL words", c, got); } else console.log("ok  ", w);
 }
 console.log(fail ? `${fail} failed` : "all checks passed");
 process.exit(fail ? 1 : 0);
