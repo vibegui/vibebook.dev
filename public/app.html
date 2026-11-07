@@ -479,6 +479,7 @@
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
   .sideTop { display: flex; align-items: center; gap: 8px; }
+  @media (min-width: 901px) { .sideTop { display: none; } } /* desktop: the rail has home and search; no collapsing */
   .sideTop a { flex: 1; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
   .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
   .iconBtn:hover { background: var(--panel); color: var(--ink); }
@@ -553,6 +554,7 @@
   .ptabs button:hover { background: var(--hover); }
   .ptabs button.sel { color: var(--ink); background: var(--hover); }
   .ptabs .ptDoc { color: var(--ink); }
+  .chathead #myClaude { display: none !important; } /* the doc toolbar's ✻ opens Agents */
   .ptabs .ptAgents { margin-left: auto; background: var(--claude); color: #fff; font-size: 17px; padding: 0 12px; border-radius: 10px; }
   .ptabs .ptAgents.sel, .ptabs .ptAgents:hover { background: var(--claude); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--claude); }
   .doc header .seg { display: none; } /* reading/editing: the bar at the doc's foot */
@@ -1383,6 +1385,7 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "ligado · trabalhando agora": "on · working now",
   "Pessoas e agents": "People & agents",
   "gasto até agora na sua conta do freestyle": "spent so far on your freestyle account",
   "freestyle.sh conectado": "freestyle.sh connected",
@@ -2731,7 +2734,7 @@ async function setFavicon(title) {
 }
 
 let railMode = false;
-try { railMode = localStorage.getItem("vb.rail") === "1"; } catch {}
+// The collapsed sidebar is gone (the app's rail of rooms is always on screen): old saved state is ignored.
 
 function toggleRail() {
   railMode = !railMode;
@@ -2849,7 +2852,7 @@ function renderAgentsPane(on, live, path, w) {
   document.getElementById("docPeek")?.classList.toggle("agLive", live);
   el.innerHTML = `<h4>${t("Seus agents nesta sala")}</h4>
     <div class="agCard${on ? " on" : ""}"><span class="agIcon">✻</span><div><b>${t("Claude Code no seu computador")}</b>
-      <small>${on ? (live ? t("ligado · ouvindo esta sala") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
+      <small>${on ? (live ? t("ligado · ouvindo esta sala") : mine.some((a) => Date.now() - a.seen_at < 30 * 60e3) ? t("ligado · trabalhando agora") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
     ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
