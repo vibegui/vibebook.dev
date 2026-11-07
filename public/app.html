@@ -584,9 +584,17 @@
   .agCard.col { flex-direction: column; align-items: stretch; } .agCard.col > * { width: 100%; }
   .fsForm { display: flex; gap: 8px; } .fsForm input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
   .agErr { margin: 0; color: var(--red, #d33); font-size: 12.5px; }
-  .sbxActs { display: flex; gap: 4px; flex: none; } .sbxActs button { padding: 6px 9px; font-size: 13px; }
-  .agCard.sbx.running .agIcon { background: var(--claude); color: #fff; }
-  .fsOff { align-self: center; font-size: 12.5px; color: var(--mute); }
+  .sbxCard { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .sbxTop { display: flex; align-items: center; gap: 12px; } .sbxTop > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .sbxTop small { color: var(--mute); font-size: 12.5px; }
+  .sbxCard.running .agIcon { background: var(--claude); color: #fff; }
+  .money { flex: none; font: 600 13px/1 ui-monospace, Menlo, monospace; color: var(--ink); padding: 5px 8px; border-radius: 8px; background: var(--hover); }
+  .sbxActs { display: flex; gap: 8px; align-items: center; } .sbxActs button { height: 34px; padding: 0 14px; font-size: 14px; border-radius: 10px; }
+  .sbxActs .del { margin-left: auto; padding: 0 10px; color: var(--mute); }
+  .fsOn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12.5px; color: var(--mute); } .fsOn button { padding: 2px 4px; font-size: 12.5px; color: var(--mute); text-decoration: underline; }
+  .sbxRow { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .sbxRow .sbxIco { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--warm-line); color: var(--claude); flex: none; }
+  .sbxRow.running .sbxIco { background: var(--claude); color: #fff; }
+  .sbxRow small { color: var(--mute); font-size: 11.5px; } .sbxRow .money { margin-left: auto; font-size: 11.5px; padding: 3px 6px; }
   .agNew small { flex-basis: 100%; text-align: center; font-weight: 400; font-size: 12px; }
   .doc .docEditBar { display: flex; order: 98; flex: none; align-items: center; justify-content: center; gap: 6px; height: 44px; margin: 0 12px 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); font-size: 15px; font-weight: 600; }
   .doc[data-view="edit"] .docEditBar { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -1375,6 +1383,10 @@ const EN = {
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
   "Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.": "Each reminder is a file <code>reminders/&lt;name&gt;.md</code>: the text says when to run and what to do. At that time @vibe posts the text here and the Claude of whoever saved it does it.",
   "Novo lembrete": "New reminder",
+  "Pessoas e agents": "People & agents",
+  "gasto até agora na sua conta do freestyle": "spent so far on your freestyle account",
+  "freestyle.sh conectado": "freestyle.sh connected",
+  "desconectar": "disconnect",
   "{who} espera você no terminal": "{who} is waiting for you in the terminal",
   "Na nuvem": "In the cloud",
   "carregando…": "loading…",
@@ -1389,7 +1401,6 @@ const EN = {
   "Retomar": "Resume",
   "Apagar sandbox": "Delete sandbox",
   "Um Claude na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.": "A Claude in the cloud for this room, set up by agents/&lt;name&gt;.md in the files. Running costs about US$0.13/hour on your account; paused, only the disk.",
-  "Desconectar freestyle.sh": "Disconnect freestyle.sh",
   "Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.": "Disconnect your freestyle.sh account? The sandboxes stay there, but vibebook can no longer start, pause or open their terminal.",
   "Apagar este sandbox? A VM e tudo que está nela somem do freestyle.sh.": "Delete this sandbox? The VM and everything in it are gone from freestyle.sh.",
   "conectando…": "connecting…",
@@ -2586,6 +2597,7 @@ function renderBook() {
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
+  document.addEventListener("click", (e) => { if (e.target.closest?.("[data-sbx-open]") && document.body.contains(book)) { closeSheet(); document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })); if (ROOM_PHONE.matches) openSheet("doc"); } });
   document.addEventListener("vb:pane", (e) => { if (!document.body.contains(book)) return; book.classList.remove("nodoc"); setPane(e.detail); });
   setPane("doc");
   const doc = document.getElementById("doc");
@@ -2773,7 +2785,7 @@ async function loadRoomAgents() {
   if (!S?.id) return;
   const r = await api(`/api/books/${S.id}/agents`).catch(() => null);
   if (!r) return;
-  roomAgents = { id: S.id, list: r.agents, claudeOn: r.claude_on };
+  roomAgents = { id: S.id, list: r.agents, claudeOn: r.claude_on, sandboxes: r.sandboxes || [] };
   renderMyClaude();
   renderSide();
 }
@@ -2846,6 +2858,16 @@ function renderAgentsPane(on, live, path, w) {
   wireSbx();
   if (document.querySelector('.doc[data-pane="agents"]')) loadSandboxes();
 }
+// What a sandbox has cost so far, in USD: hours running × its rate (+ the time since the last check while it runs),
+// plus disk for its whole life. From the owner's last list refresh; good enough to see money moving.
+const sbxCost = (x) => ((x.run_s || 0) / 3600 + (x.state === "running" && x.checked_at ? (Date.now() - x.checked_at) / 3600e3 : 0)) * (x.rate || 0) + ((Date.now() - x.created_at) / 3600e3) * (x.disk_rate || 0);
+const usd = (n) => `US$${n < 10 ? n.toFixed(2) : Math.round(n)}`.replace(".", LANG === "en" ? "." : ",");
+// "Pessoas e agents": the room's cloud sandboxes come first (they spend money), each with its owner, state and cost.
+function sbxRows() {
+  if (roomAgents.id !== S?.id || !roomAgents.sandboxes?.length) return "";
+  return roomAgents.sandboxes.map((x) => `<button type="button" class="member sbxRow ${esc(x.state || "")}" data-sbx-open title="${esc(x.name)} · ${t("de {who}", { who: esc(name(x.email)) })}">
+    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name)}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${usd(sbxCost(x))}</span></button>`).join("");
+}
 // Cloud agents (src/sandbox.ts): Claudes in freestyle.sh VMs on the person's own account. The list polls every 5s
 // while the Agents pane is open and something is still being prepared or changing state.
 let sbx = { id: null, connected: null, list: [], busy: "", err: "" }, sbxTimer = 0;
@@ -2865,13 +2887,13 @@ function sbxHtml() {
   if (!sbx.connected) return `<div class="agCard col"><b>${t("Conecte sua conta do freestyle.sh")}</b>
     <small>${t("O sandbox roda na sua conta: crie uma em freestyle.sh e uma API key (npx freestyle@latest tokens create vibebook) e cole aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
     <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${t("API key do freestyle")}" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "key" ? t("Conferindo…") : t("Conectar")}</button></form>${err}</div>`;
-  return `${sbx.list.map((x) => `<div class="agCard sbx ${x.state}"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
-      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.error ? ` · ${esc(x.error)}` : ""}</small></div>
-      <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="ghost" data-sbx-term="${esc(x.id)}" title="${t("Terminal")}">${t("Terminal")}</button>`}
+  return `${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
+      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small></div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
+      <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${esc(x.id)}">${t("Terminal")}</button>`}
       ${x.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${esc(x.id)}">${t("Pausar")}</button>` : x.state === "paused" || x.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${esc(x.id)}">${t("Retomar")}</button>` : ""}
-      <button class="ghost" data-sbx-del="${esc(x.id)}" aria-label="${t("Apagar sandbox")}" title="${t("Apagar sandbox")}">${icon("x")}</button></div></div>`).join("")}
+      <button class="ghost del" data-sbx-del="${esc(x.id)}" aria-label="${t("Apagar sandbox")}" title="${t("Apagar sandbox")}">${icon("trash", 16)}</button></div></div>`).join("")}
     <button class="agNew on" id="sbxNew" ${sbx.busy ? "disabled" : ""}>${icon("plus", 16)} ${sbx.busy === "new" ? t("Criando…") : t("Criar sandbox")}<small>${t("Um Claude na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.")}</small></button>${err}
-    <button class="link fsOff" id="fsOff">${t("Desconectar freestyle.sh")}</button>`;
+    <div class="fsOn">${icon("check", 13)} ${t("freestyle.sh conectado")} · <button type="button" class="ghost" id="fsOff">${t("desconectar")}</button></div>`;
 }
 function wireSbx() {
   const redraw = () => { const el = document.getElementById("sbx"); if (el) { el.innerHTML = sbxHtml(); wireSbx(); } };
@@ -3065,7 +3087,8 @@ function renderSide() {
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
       ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">${icon("x")}</button></div>`).join("")}</div>` : ""}
-      <h4>${t("Pessoas")}</h4>
+      <h4>${t("Pessoas e agents")}</h4>
+      ${sbxRows()}
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
         ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><small class="memActs">${t("pendente")} · <button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
         : S.names?.[m] ? `<span class="fn" title="${esc(m)}">${esc(S.names[m])}</span>`

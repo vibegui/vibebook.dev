@@ -140,7 +140,13 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       let state = "unknown", error: string | undefined;
       try {
         if (!k) throw new Error("freestyle desconectado");
-        state = (await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`)).state;
+        const vm = await fs<{ state: string; totalRunSeconds?: number; resources?: { cpu: number; memory: number; storage: number } }>(k, "GET", `/v5/vms/${r.vm_id}`);
+        state = vm.state;
+        // freestyle's list prices (Nov 2026): what this VM has cost so far = hours running × (vCPU + memory) + disk the whole time.
+        const res = vm.resources ?? { cpu: 0, memory: 0, storage: 0 };
+        const rate = res.cpu * 0.04032 + (res.memory / 1024) * 0.0129, disk = (res.storage / 1024) * 0.000086;
+        Object.assign(r, { run_s: vm.totalRunSeconds ?? 0, rate, disk_rate: disk });
+        c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, vm.totalRunSeconds ?? 0, rate, disk, Date.now(), r.id).run());
         if (!r.ready && state === "running") {
           const x = await fs<{ stdout: string | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "test -f ~/.vibebook-setup-done && echo done; tail -n 1 ~/vibebook-setup.log 2>/dev/null", timeoutMs: 10000 });
           if (x.stdout?.startsWith("done")) { r.ready = 1; await c.env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
@@ -150,7 +156,9 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
         error = (e as Error).message;
         if (/ 404:/.test(error)) state = "deleted";
       }
-      return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, error, created_at: r.created_at };
+      const x = r as Row & { run_s?: number; rate?: number; disk_rate?: number };
+      const cost = ((x.run_s ?? 0) / 3600) * (x.rate ?? 0) + ((Date.now() - r.created_at) / 3600_000) * (x.disk_rate ?? 0);
+      return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, error, created_at: r.created_at, rate: x.rate ?? 0, cost };
     }));
     return c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(email).first()), sandboxes: out });
   });
