@@ -730,8 +730,8 @@
        which follows the thread list). */
     .side > * { order: 2; } .side > .threadsSec { order: 0; } .side > .sideHead { order: 1; }
     .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
-    .chathead { z-index: 21; background: var(--bg); }
-    .book > .side { z-index: 22; }
+    .chathead { z-index: 23; background: var(--bg); } /* above the toolbar (21), so its ⏳ list opens over it */
+    .book > .side { z-index: 24; }
     /* The toolbar under the header (docPeek) IS the doc sheet's tab bar: it stays on top while the sheet is open
        (the sheet's own tabs are hidden) and the sheet hangs right under it. */
     .book > .doc, .book.nodoc > .doc { top: calc(var(--headH, 60px) + var(--peekH, 44px)); height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px) - max(96px, var(--vvh, 100dvh) * .2)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - var(--headH, 60px) - var(--peekH, 44px) - 48px)); }
