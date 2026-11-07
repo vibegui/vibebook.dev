@@ -2970,7 +2970,7 @@ async function loadSandboxes() {
   if (!r || r.error) return;
   sbx = { ...sbx, id: S.id, connected: r.connected, claude: r.claude, list: r.sandboxes };
   const el = document.getElementById("sbx"); if (el) { el.innerHTML = sbxHtml(); wireSbx(); }
-  if (r.sandboxes.some((x) => !x.ready || /ing$/.test(x.state)) && document.querySelector('.doc[data-pane="agents"]')) sbxTimer = setTimeout(loadSandboxes, 5000);
+  if (r.sandboxes.some((x) => !x.ready || (x.state !== "running" && /ing$/.test(x.state))) && document.querySelector('.doc[data-pane="agents"]')) sbxTimer = setTimeout(loadSandboxes, 5000);
 }
 function sbxHtml() {
   if (sbx.id !== S?.id || sbx.connected === null) return `<p class="agNote">${t("carregando…")}</p>`;
