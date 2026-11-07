@@ -749,7 +749,7 @@
     .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
     .peekRow button small { font-size: 11px; font-weight: 600; }
     .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
-    .peekRow #peekEdit.on { background: var(--ink); color: var(--panel); }
+    .book[data-sheet="doc"][data-pane="doc"] .peekRow #peekEdit.on { background: var(--ink); color: var(--panel); }
     .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
     .book[data-sheet="doc"] .docPeek .grab { visibility: hidden; }
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
@@ -757,7 +757,8 @@
     #peekTxt b { color: var(--ink); font-weight: 600; flex: none; }
     #peekTxt .pt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #peekTxt small { flex: none; font-size: 12px; }
-    .book.boardview .docPeek { display: none; }
+    .chathead #toggleBoard { display: none; } /* in the toolbar below on phones */
+    .peekRow #peekBoard.on { background: var(--hover); color: var(--ink); }
     /* Room header on phones: ← home, the thread's name as a switcher (▾ opens the sheet), bell + board; "esperando…" under the title. */
     .chathead { height: auto; min-height: 52px; padding: max(8px, env(safe-area-inset-top)) 12px 8px 6px; align-items: flex-start; gap: 4px; }
     /* ← centered in the space before the title button (its icon used to sit at the box's left edge). */
@@ -2266,7 +2267,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="goClaude" title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}" hidden>${icon("external")}</button><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekEdit" data-act="edit" title="${t("Editar")}" aria-label="${t("Editar")}">${icon("pencil", 17)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" id="peekBoard" data-act="board" title="${t("Quadro")}" aria-label="${t("Quadro")}">${icon("board", 18)}</button><button type="button" id="peekEdit" data-act="edit" title="${t("Editar")}" aria-label="${t("Editar")}">${icon("pencil", 17)}</button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2323,6 +2324,8 @@ function renderBook() {
   // Phones: the toolbar under the header is the doc sheet's own tab bar. A tab opens the sheet on it; the open tab
   // again closes it. Dragging the bar down opens the doc too.
   sheetDrag(document.getElementById("docPeek"), "doc", true, (e) => {
+    // The board (phones: it lives here, not in the header) swaps the chat for the kanban; the doc sheet closes.
+    if (e.target.closest("[data-act=board]")) { closeSheet(); document.getElementById("toggleBoard").click(); return; }
     // ✎ opens the doc in edit mode, or switches back to reading when it's already editing there.
     if (e.target.closest("[data-act=edit]")) {
       const editing = book.dataset.sheet === "doc" && book.dataset.pane === "doc" && docPanel.dataset.view === "edit";
@@ -2340,6 +2343,7 @@ function renderBook() {
     book.classList.toggle("boardview", on);
     book.classList.toggle("nodoc", on); // the board wants the width
     document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
+    document.getElementById("peekBoard")?.classList.toggle("on", on);
     if (on) renderKanban();
   };
   document.getElementById("toggleBoard").onclick = () => setBoard(!book.classList.contains("boardview"));
