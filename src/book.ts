@@ -1297,7 +1297,9 @@ export class Book extends DurableObject<Env> {
         const secret = findSecret(text);
         if (secret) return ws.send(JSON.stringify({ t: "blocked", text, reason: secret }));
         this.addMessage(thread, email, text, { files, replyTo: Number(m.reply_to) || undefined });
-        this.reopenIfArchived(thread);
+        // Picking a button (choices or a card's) answers a question; it isn't new work: an archived epic stays archived.
+        const answers = Number(m.reply_to) && this.sql.exec(`SELECT 1 FROM messages WHERE id = ? AND (choices IS NOT NULL OR card IS NOT NULL)`, Number(m.reply_to)).toArray().length;
+        if (!answers) this.reopenIfArchived(thread);
         this.ctx.waitUntil(
           track(this.env, "message", { user: email, dims: { book: this.get("book_id") ?? undefined, thread: thread === "main" ? "main" : "epic", files: files.length || undefined } }),
         );
