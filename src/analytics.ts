@@ -319,6 +319,14 @@ export async function adminOverview(env: Pick<Env, "DB">, daysIn?: number) {
       tools: rank(agentCalls, (e) => str(e.dims.tool) || "(?)", (e) => e.user, 8),
       clients: rank(events.filter((e) => e.name === "agent_call" || e.name === "agent_connected"), (e) => str(e.dims.client) || "(?)", (e) => e.user, 5),
       failures: agentCalls.filter((e) => e.dims.ok === false).length,
+      // Failures agents reported themselves (MCP report_issue): by kind, and the latest ones.
+      issues: {
+        byKind: rank(events.filter((e) => e.name === "agent_issue"), (e) => str(e.dims.kind) || "other", (e) => e.user, 4),
+        latest: events
+          .filter((e) => e.name === "agent_issue")
+          .slice(0, 8)
+          .map((e) => ({ user: e.user, kind: str(e.dims.kind), model: str(e.dims.model), what: str(e.dims.what), day: e.day })),
+      },
       connections: events
         .filter((e) => e.name === "agent_connected") // events come newest first
         .slice(0, 8)

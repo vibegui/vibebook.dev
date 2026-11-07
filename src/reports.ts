@@ -114,10 +114,20 @@ const WORKER_Q = `query($acc: string!, $from: Time!, $to: Time!) { viewer { acco
 const ZONE_Q = `query($zone: string!, $from: Date!, $to: Date!) { viewer { zones(filter: { zoneTag: $zone }) {
   httpRequests1dGroups(limit: 10, filter: { date_geq: $from, date_lt: $to }) { dimensions { date } sum { requests bytes cachedBytes threats } uniq { uniques } } } } }`;
 
+/** Failures agents reported themselves (MCP report_issue), yesterday vs the week before, by kind. */
+async function issuesLine(env: Env, start: number, end: number) {
+  const q = (a: number, b: number) =>
+    env.DB.prepare(`SELECT json_extract(dims, '$.kind') AS k, count(*) AS n FROM events WHERE name = 'agent_issue' AND ts >= ? AND ts < ? AND ${NOT_TEST} GROUP BY k`).bind(a, b).all<{ k: string; n: number }>();
+  const [y, w] = await Promise.all([q(start, end), q(start - 7 * DAY, start)]);
+  const tot = (r: typeof y) => r.results.reduce((t, x) => t + x.n, 0);
+  const kinds = y.results.map((x) => `${x.k} ${x.n}`).join(", ");
+  return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(tot(y), tot(w))}${kinds ? ` · ${kinds}` : ""}`;
+}
+
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)`;
-  if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números ainda: falta o token de analytics da Cloudflare (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}`;
+  if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();
     const worker = async (from: number, to: number) => {

@@ -9,6 +9,7 @@ import { checkUrl } from "./reader";
 import { growthReport, productReport } from "./reports";
 import { EMAIL_RE } from "./auth";
 import { track } from "./track";
+import { findSecret } from "./secrets";
 
 const INSTRUCTIONS = `vibebook: shared rooms where people and their agents work together on projects. Each room has a chat (main thread + one thread per epic), a doc, and epics with tasks. You act for ONE person: the human who connected you. In rooms you appear as "their agent".
 
@@ -30,6 +31,7 @@ Workflow:
 - Screenshots and files on disk go through upload_link (curl the file to the one-time URL), not base64 in upload_file. When you change something people see, post a before and an after screenshot in the room.
 - When you refer to an earlier message in the room (\"the buttons above\", \"what Marina asked\"), link it: [the buttons above](#m<id>) with its read_room id; the room turns that into a jump to the message. Or answer it directly with reply_to.
 - When you need your human to pick between options or say yes/no ("do I do it?", which files to delete, which approach), post the question with choices (a yes/no gets e.g. ["Sim, faz", "Não", "Ajustar antes"]) (and multi: true for several): the room shows buttons and their pick arrives as their message replying to yours. Don't ask them to type numbers.
+- Every message from your human gets an ack (doing when you pick it up, done when finished, idle when it needs nothing from you): read_room lists the ones from the last 48h that none of your human's agents acked as unacked, so nothing you skipped stays hidden. When you notice you failed (you skipped or ignored a message of your human's, a tool call failed and you gave up, you reported something wrong), call report_issue right away with what happened, then fix it and say so in the room.
 - A request is an epic, almost always: when your human asks you for a piece of work, (1) start_epic for it with 2-5 concrete tasks (each one checkable), (2) post in the epic (thread = its id) how you'll do it in 2-4 lines, or the question that blocks you if something is unclear, (3) unless you asked something, do it right away without waiting for an OK, moving each task to doing and done as you go, (4) post the result with done: true. If the work ships somewhere (deploy, publish, release): once it's out, update_epic prod: "deployed"; then open it in production, check it really works, and update_epic prod: "verified" with prod_note saying what you checked (URL, what you saw). The room shows the epic as "Claude fez" → "no ar" → "verificado em prod". With every task done the epic archives itself and shows as finished; if your human writes in it again, it reopens: add the new tasks there and run the same loop. Only quick answers and clarifications stay where they were asked.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
@@ -223,6 +225,21 @@ const TOOLS = [
       type: "object",
       properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the message you're working on (id from read_room); default your human's latest" }, model: { type: "string" }, status: { type: "string", enum: ["doing", "idle", "done"], description: "default doing" } },
       required: ["room_id"],
+    },
+  },
+  {
+    name: "report_issue",
+    description: "Report that you failed, as soon as you notice: you skipped or ignored a message of your human's (kind missed_message, with its message_id), a tool call failed and you gave up (tool_failed), you reported something that wasn't true (wrong_result), or something else went wrong on your side (other). It's recorded for vibebook's team to measure and fix (nothing is posted in the room); then fix it and tell your human in the room.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string", description: "the room it happened in, if any" },
+        kind: { type: "string", enum: ["missed_message", "tool_failed", "wrong_result", "other"] },
+        message_id: { type: "number", description: "the message you missed or got wrong (id from read_room)" },
+        what: { type: "string", description: "one or two lines: what happened and why you think it did; no secrets" },
+        model: { type: "string" },
+      },
+      required: ["kind", "what"],
     },
   },
   {
@@ -690,6 +707,16 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       const who = str(a.model) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || me.client;
       return bookStub(env, id).agentAck(id, me.agent, me.email, who, Number(a.message_id) || undefined, str(a.status) || "doing");
+    }
+    case "report_issue": {
+      const id = a.room_id ? await room() : "";
+      const kind = ["missed_message", "tool_failed", "wrong_result", "other"].includes(str(a.kind)) ? str(a.kind) : "other";
+      const what = str(a.what).trim().slice(0, 500);
+      if (!what) throw new Error("what is required");
+      if (findSecret(what)) throw new Error("blocked: looks like a secret; describe it without the value");
+      const model = str(a.model).slice(0, 40) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || "";
+      ctx.waitUntil(track(env, "agent_issue", { user: me.email, dims: { kind, book: id, message_id: Number(a.message_id) || undefined, model, client: me.client, what } }));
+      return { ok: true, note: "recorded. Now fix it and tell your human in the room what happened." };
     }
     case "set_task_status": {
       const id = await room();

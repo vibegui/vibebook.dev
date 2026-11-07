@@ -846,6 +846,18 @@ export class Book extends DurableObject<Env> {
             .toArray()
             .map((m) => ({ message_id: m.id as number, thread: threadName(m.thread as string), text: m.text as string, at: new Date(m.ts as number).toISOString() }))
         : undefined,
+      // Your human's messages from the last 48h that none of their agents acked (doing/idle/done): what got skipped.
+      unacked: email
+        ? this.sql
+            .exec(
+              `SELECT m.id, m.thread, m.text, m.ts FROM messages m WHERE m.ts > ? AND coalesce(m.text, '') != '' AND ((m.author = ? AND m.kind IS NULL) OR (m.tag = 'reminder' AND m.for_who = ?))
+               AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = m.id AND a.email = ?) ORDER BY m.id DESC LIMIT 10`,
+              Date.now() - 2 * 864e5, email, email, email,
+            )
+            .toArray()
+            .reverse()
+            .map((m) => ({ message_id: m.id as number, thread: threadName(m.thread as string), text: String(m.text ?? "").slice(0, 300), at: new Date(m.ts as number).toISOString() }))
+        : undefined,
       last_id: lastId,
       paused: this.agentStreak("main") >= AGENT_STREAK_MAX,
     };

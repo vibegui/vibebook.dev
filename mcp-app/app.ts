@@ -16,7 +16,7 @@ type Admin = {
   home: { asks: number; people: number; sent: number; failures: number; noFit: number };
   retention: { lastWeek: number; thisWeek: number; back: number; rate: number | null; cohorts: Array<{ week: string; size: number; weeks: Array<number | null> }> };
   together: Array<{ id: string; title: string; people: number; messages: number; agentMessages: number }>;
-  agents: { tools: Row[]; clients: Row[]; failures: number; connections: Array<{ user: string; client: string; day: string }> };
+  agents: { tools: Row[]; clients: Row[]; failures: number; issues?: { byKind: Row[]; latest: Array<{ user: string; kind: string; model: string; what: string; day: string }> }; connections: Array<{ user: string; client: string; day: string }> };
   latestBooks: Array<{ id: string; title: string; owner: string; members: number; messages: number; created_at: number }>;
   logins: Row[];
   users: Array<{ email: string; name: string | null; created_at: number; books: number; last_seen: number | null; agent_at: number | null }>;
@@ -215,6 +215,8 @@ function renderAdmin(d: Admin) {
       ${d.agents.tools.length ? `<div class="rank">${d.agents.tools.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.events)} · ${fmt(r.visitors)} pessoas</span></div>`).join("")}</div>` : `<div class="muted">Nenhum agent chamou o vibebook no período.</div>`}
       <h3 style="margin-top:18px">Clientes</h3>
       ${d.agents.clients.length ? `<div class="rank">${d.agents.clients.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.visitors)} pessoas</span></div>`).join("")}</div>` : `<div class="muted">—</div>`}
+      <h3 style="margin-top:18px">Falhas que os Claudes reportaram <small>report_issue</small></h3>
+      ${d.agents.issues?.byKind.length ? `<div class="rank">${d.agents.issues.byKind.map((r) => `<div class="row"><span>${esc(r.key)}</span><span class="c num">${fmt(r.events)} · ${fmt(r.visitors)} pessoas</span></div>`).join("")}${d.agents.issues.latest.map((i) => `<div class="row"><span>${esc(i.what)}<div class="sub">${esc(i.kind)} · ${esc(i.model)} · ${esc(i.user)}</div></span><span class="c">${esc(i.day)}</span></div>`).join("")}</div>` : `<div class="muted">Nenhuma no período.</div>`}
       <h3 style="margin-top:18px">Conexões recentes</h3>
       ${d.agents.connections.length ? `<div class="rank">${d.agents.connections.map((c) => `<div class="row"><span>${esc(c.user)}<div class="sub">${esc(c.client)}</div></span><span class="c">${esc(c.day)}</span></div>`).join("")}</div>` : `<div class="muted">Ninguém conectou agent no período.</div>`}
     </div>
