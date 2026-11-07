@@ -167,7 +167,7 @@
   .claudeBar { margin: 10px 28px 0; display: flex; line-height: 1.35; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 12px; background: var(--ai-bg); border: 1px solid var(--line); font-size: 13.5px; }
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
-  .claudeBar.ok .star { color: #1f9d8a; } .claudeBar button.primary { white-space: nowrap; }
+  .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary { white-space: nowrap; }
   .book.pre .claudeBar, .book.boardview .claudeBar, .agentNudge:not([hidden]) + .claudeBar { display: none; }
   .agentNudge { margin: 12px 28px 0; } .agentNudge[hidden], #setupCard[hidden] { display: none; }
   #setupCard { margin: 0 0 22px; }
@@ -2579,7 +2579,8 @@ function renderMyClaude() {
   go.hidden = true;
   if (on) herdrPing().then((rooms) => { go.hidden = !rooms?.includes(S.id); });
   go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
-  renderClaudeBar(on, live);
+  // The banner counts a Claude of yours that's busy here (read/posted in the last 30 min) as present, not only a listening one.
+  renderClaudeBar(on, live || roomAgents.list.some((a) => a.email === S.me && Date.now() - a.seen_at < 30 * 60e3));
   b.onclick = async () => {
     const next = !roomAgents.claudeOn;
     roomAgents.claudeOn = next;
@@ -2600,8 +2601,13 @@ function renderClaudeBar(on, live) {
   const nudge = document.getElementById("agentNudge");
   const key = `vb.claudeBar.${S.id}`;
   let off = false; try { off = localStorage.getItem(key) === "off"; } catch {}
-  const set = (cls, html) => { el.className = `claudeBar ${cls}`; el.innerHTML = html; el.hidden = false; };
-  if ((nudge && !nudge.hidden) || (live && !claudeWaiting[S.id])) { el.hidden = true; return; }
+  const x = `<button class="ghost" data-x aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>`;
+  const set = (cls, html) => {
+    el.className = `claudeBar ${cls}`; el.innerHTML = html; el.hidden = false;
+    const b = el.querySelector("[data-x]");
+    if (b) b.onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; clearTimeout(claudeBarPoll); };
+  };
+  if ((nudge && !nudge.hidden) || (live && !claudeWaiting[S.id]) || (off && !claudeAsked[S.id])) { el.hidden = true; return; }
   if (live) {
     claudeWaiting[S.id] = false;
     set("ok", `<span class="star">✻</span><span><b>${t("Seu Claude está ouvindo esta sala.")}</b></span>`);
@@ -2611,15 +2617,13 @@ function renderClaudeBar(on, live) {
   if (on) {
     claudeWaiting[S.id] = true;
     const late = Date.now() - (claudeAsked[S.id] || 0) > 3 * 60e3;
-    set("wait", `<span class="star">✻</span><span><b>${late ? t("Seu Claude ainda não está ouvindo.") : t("Abrindo seu Claude no seu computador…")}</b><small>${late ? t("Confira se o vibebook herdr está rodando no seu computador, ou se o Claude parou numa pergunta lá.") : t("O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.")}</small></span>`);
+    set("wait", `<span class="star">✻</span><span><b>${late ? t("Seu Claude ainda não está ouvindo.") : t("Abrindo seu Claude no seu computador…")}</b><small>${late ? t("Confira se o vibebook herdr está rodando no seu computador, ou se o Claude parou numa pergunta lá.") : t("O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.")}</small></span>${x}`);
     claudeBarPoll = setTimeout(loadRoomAgents, 5000);
     return;
   }
   claudeWaiting[S.id] = false;
-  if (off) { el.hidden = true; return; }
-  set("", `<span class="star">✻</span><span><b>${t("Seu Claude não está nesta sala.")}</b><small>${t("Ele ouve e trabalha aqui, pelo vibebook herdr no seu computador.")}</small></span><button class="primary" data-on>${t("Ligar Claude")}</button><button class="ghost" data-x aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>`);
+  set("", `<span class="star">✻</span><span><b>${t("Seu Claude não está nesta sala.")}</b><small>${t("Ele ouve e trabalha aqui, pelo vibebook herdr no seu computador.")}</small></span><button class="primary" data-on>${t("Ligar Claude")}</button>${x}`);
   el.querySelector("[data-on]").onclick = () => document.getElementById("myClaude")?.click();
-  el.querySelector("[data-x]").onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; };
 }
 const kTok = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`);
 /** The context bar under a Claude: green, yellow from 60%, red from 80% (the runner compacts a free Claude at 75%). */
