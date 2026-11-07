@@ -130,8 +130,9 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     const email = c.get("email");
     if (!(await c.env.LOGIN_LIMIT.limit({ key: `ct:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
     const { token } = await c.req.json().catch(() => ({}));
-    const tok = String(token ?? "").trim();
-    if (!/^sk-ant-[A-Za-z0-9_-]{20,300}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." }, 400);
+    // The terminal wraps the long token over lines: copied, it comes with spaces/newlines in the middle.
+    const tok = String(token ?? "").replace(/\s+/g, "");
+    if (!/^sk-ant-[A-Za-z0-9_.-]{20,2000}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." }, 400);
     await saveKey(c.env, email, tok, "claude_tokens");
     c.executionCtx.waitUntil(deps.track(c.env, "claude_token_saved", { user: email }));
     return c.json({ ok: true });
