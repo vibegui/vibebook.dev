@@ -13,6 +13,17 @@
 //   export const renderJson = false → drop section from ?renderJson (mobile)
 //   export const renderJson = (p)=> → project props for ?renderJson (mobile)
 
+import * as _sync0 from "../src/sections/Hero";
+import * as _sync1 from "../src/sections/Nav";
+import * as _sync2 from "../src/sections/Personas";
+import * as _sync3 from "../src/sections/Trio";
+import * as _sync4 from "../src/sections/Footer";
+import * as _sync5 from "../src/sections/Trust";
+import * as _sync6 from "../src/sections/Rows";
+import * as _sync7 from "../src/sections/Pwa";
+import * as _sync8 from "../src/sections/Rooms";
+import * as _sync9 from "../src/sections/Start";
+
 export interface SectionMetaEntry {
   eager?: boolean;
   neverDefer?: boolean;
@@ -29,9 +40,30 @@ export interface SectionMetaEntry {
 }
 
 export const sectionMeta: Record<string, SectionMetaEntry> = {
+  "site/sections/Hero.tsx": { sync: true },
+  "site/sections/Nav.tsx": { sync: true },
+  "site/sections/Personas.tsx": { sync: true },
+  "site/sections/Trio.tsx": { sync: true },
+  "site/sections/Footer.tsx": { sync: true },
+  "site/sections/Trust.tsx": { sync: true },
+  "site/sections/Rows.tsx": { sync: true },
+  "site/sections/Pwa.tsx": { sync: true },
+  "site/sections/Rooms.tsx": { sync: true },
+  "site/sections/Start.tsx": { sync: true },
 };
 
-export const syncComponents: Record<string, any> = {};
+export const syncComponents: Record<string, any> = {
+  "site/sections/Hero.tsx": _sync0,
+  "site/sections/Nav.tsx": _sync1,
+  "site/sections/Personas.tsx": _sync2,
+  "site/sections/Trio.tsx": _sync3,
+  "site/sections/Footer.tsx": _sync4,
+  "site/sections/Trust.tsx": _sync5,
+  "site/sections/Rows.tsx": _sync6,
+  "site/sections/Pwa.tsx": _sync7,
+  "site/sections/Rooms.tsx": _sync8,
+  "site/sections/Start.tsx": _sync9,
+};
 
 export const loadingFallbacks: Record<string, React.ComponentType<any>> = {};
 
