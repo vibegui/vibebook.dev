@@ -325,6 +325,8 @@
   .epicName { cursor: text; border-radius: 6px; }
   .epicName:hover { background: var(--bg); }
   #threadTitle { display: flex; align-items: center; gap: 6px; min-width: 5.5em; }
+  .thPick { display: contents; }
+  .thMark { display: none !important; }
   #threadTitle .x { font-size: 14px; opacity: .5; }
   #threadTitle .x:hover { opacity: 1; }
   .task.done span { text-decoration: line-through; color: var(--mute); }
@@ -707,7 +709,14 @@
     .chathead h2 .epicName { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
     /* The ▾ (and an epic's ✓ 🗑) stay on the title's line: a grid where only the name shrinks (ellipsis); the
        "esperando…" chip takes the line below. */
-    .chathead #threadTitle { display: grid; }
+    .chathead #threadTitle { display: grid; grid-template-columns: minmax(0, max-content) 1fr; }
+    .chathead #epicArch, .chathead #epicDel { display: none; } /* in the sheet's top on phones (#sideArch, #sideDel) */
+    .thPick { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 4px 5px 6px; border-radius: 12px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / .08); cursor: pointer; }
+    .thPick:active { background: var(--hover); }
+    .thPick .thMark { display: grid !important; width: 26px; height: 26px; flex: none; border-radius: 8px; place-items: center; font: 600 11px/1 system-ui, sans-serif; color: #fff; overflow: hidden; }
+    .thPick .thMark img { width: 100%; height: 100%; object-fit: cover; }
+    .thPick .epicName { font-size: 16px; }
+    .thPick .thChev { margin-left: -4px; width: 22px; }
     .chathead h2 .waitChip { grid-column: 1 / -1; }
     .chathead h2 #epicArch, .chathead h2 #epicDel { width: 28px; height: 28px; padding: 0; }
     .chathead h2 .folderChip, #toggleDoc { display: none; }
@@ -2596,7 +2605,7 @@ function renderSide() {
   el.innerHTML = `
     <button type="button" class="sheetGrab" aria-label="${t("Fechar")}"><i></i></button>
     <div>
-      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${isPre() ? "" : `<button class="iconBtn phOnly" id="sideRename" title="${t("Renomear")}" aria-label="${t("Renomear")}">${icon("pencil", 18)}</button>`}<button class="iconBtn phOnly" id="sideRooms" title="${t("Trocar de sala")}" aria-label="${t("Trocar de sala")}">${SW_SEARCH}</button><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
+      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${isPre() ? "" : `<button class="iconBtn phOnly" id="sideRename" title="${t("Renomear")}" aria-label="${t("Renomear")}">${icon("pencil", 18)}</button>`}${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn phOnly" id="sideRooms" title="${t("Trocar de sala")}" aria-label="${t("Trocar de sala")}">${SW_SEARCH}</button><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
@@ -2625,6 +2634,9 @@ function renderSide() {
   sheetDrag(el.querySelector(".sheetGrab"), "side", false);
   el.querySelector("#sideRooms").onclick = openSwitch;
   el.querySelector("#sideRename")?.addEventListener("click", renameThread);
+  // Same actions as the header's ✓ 🗑 (hidden on phones): close the sheet, then run them.
+  el.querySelector("#sideArch")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicArch")?.click(); });
+  el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
@@ -2818,10 +2830,12 @@ function renderTasks() {
   const head = document.getElementById("threadTitle");
   const chev = `<button type="button" class="thChev" aria-label="${t("Trocar de conversa")}" title="${t("Trocar de conversa")}">${icon("chevronDown", 18)}</button>`;
   const wireChev = () => head.querySelector(".thChev").onclick = () => openSheet("side");
-  if (preOf()) { head.innerHTML = `<span class="epicName" id="roomName">${esc(preOf().title)}</span>${chev}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; wireChev(); document.getElementById("roomName").onclick = () => ROOM_PHONE.matches && openSheet("side"); el.innerHTML = ""; renderPeek(); return; }
+  // On phones the icon + name + ▾ are one raised button, like the selected row in the sheet it opens (.thread.sel).
+  const pick = (mark, name) => `<span class="thPick">${mark.replace('class="ri', 'class="ri thMark')}${name}${chev}</span>`;
+  if (preOf()) { head.innerHTML = `${pick(`<span class="ri">${esc(initials(preOf().title))}</span>`, `<span class="epicName" id="roomName">${esc(preOf().title)}</span>`)}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; wireChev(); document.getElementById("roomName").onclick = () => ROOM_PHONE.matches && openSheet("side"); el.innerHTML = ""; renderPeek(); return; }
   head.innerHTML = epic
-    ? `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span>${chev}<button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
-    : `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>${chev}${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
+    ? `${pick(`<span class="ri" style="background:${color(epic.title)};color:#fff">${esc(initials(epic.title))}</span>`, `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span>`)}<button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
+    : `${pick(roomMark("ri roomIco"), `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>`)}${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
   for (const t of S.epics.flatMap((e) => e.tasks)) if (!t.done && t.owner) waiting[t.owner] = (waiting[t.owner] || 0) + 1;
@@ -2848,6 +2862,7 @@ function renderTasks() {
   wireChev();
   // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
   document.getElementById("roomName").onclick = () => (ROOM_PHONE.matches ? openSheet("side") : renameThread());
+  head.querySelector(".thPick").onclick = (e) => { if (ROOM_PHONE.matches && !e.target.closest(".thChev")) openSheet("side"); };
   renderPeek();
   el.style.display = epic ? "" : "none";
   if (!epic) return;
