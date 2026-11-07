@@ -269,6 +269,11 @@ const TOOLS = [
     },
   },
   {
+    name: "permission_wait",
+    description: "Used by the vibebook plugin's PermissionRequest hook: after posting a permission question with choices [\"Aprovar\", \"Negar\"], wait (≤50s per call) for your human's pick in the room. Returns decision allow | deny, or null if they haven't answered yet.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, message_id: { type: "number" }, timeout_seconds: { type: "number" }, model: { type: "string" } }, required: ["room_id", "message_id"] },
+  },
+  {
     name: "report_issue",
     description: "Report that you failed, as soon as you notice: you skipped or ignored a message of your human's (kind missed_message, with its message_id), a tool call failed and you gave up (tool_failed), you reported something that wasn't true (wrong_result), or something else went wrong on your side (other). It's recorded for vibebook's team to measure and fix (nothing is posted in the room); then fix it and tell your human in the room.",
     inputSchema: {
@@ -502,7 +507,13 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
           ctx.waitUntil(markDelivered(env, me, r.results));
           return { new: r.results.map((b) => ({ room_id: b.id, title: b.title, new_messages: b.n, url: `${origin}/b/${b.id}` })), next: "call read_room on these rooms" };
         }
-        if (Date.now() + 3000 > deadline) return { new: [], waited_seconds: timeout, next: "nothing new; call wait_for_messages again to keep listening" };
+        if (Date.now() + 3000 > deadline) {
+          // Quiet for a while: at most once an hour, your human's open tasks you (their Claude) left halfway.
+          const stalled = due(`stall:${me.agent}`, 3600_000) ? await stalledFor(env, me, only) : [];
+          if (stalled.length)
+            return { new: [], stalled, next: "Nothing new, but these tasks of your human sit open in epics you worked on, quiet for 30+ min. Weigh each: if the next step is yours and needs no answer from anyone, continue it now (ack/start in its epic, report there); if it no longer makes sense, say so in its epic and fix the board (update_task/delete_task); if it waits on a person, move it to review with them as owner. Then listen again." };
+          return { new: [], waited_seconds: timeout, next: "nothing new; call wait_for_messages again to keep listening" };
+        }
         await new Promise((res) => setTimeout(res, 3000));
       }
     }
@@ -777,6 +788,16 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       ctx.waitUntil(track(env, `sandbox_${action}`, { user: me.email, dims: { client: me.client } }));
       return agentSandboxPower(env, me.email, str(a.sandbox_id), action);
     }
+    case "permission_wait": {
+      const id = await room();
+      const deadline = Date.now() + Math.min(Math.max(Number(a.timeout_seconds) || 45, 1), 50) * 1000;
+      for (;;) {
+        const text = await bookStub(env, id).answerTo(id, Number(a.message_id), me.email);
+        if (text) return { decision: /^\s*(aprovar|aprovo|sim|yes|allow|approve|ok)\b/i.test(text) ? "allow" : "deny", text };
+        if (Date.now() + 2000 > deadline) return { decision: null };
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
     case "report_issue": {
       const id = a.room_id ? await room() : "";
       const kind = ["missed_message", "tool_failed", "wrong_result", "other"].includes(str(a.kind)) ? str(a.kind) : "other";
@@ -878,6 +899,13 @@ async function memberCached(db: D1Database, id: string, email: string) {
   if (memberSeen.size > 20_000) memberSeen.clear();
   memberSeen.set(k, Date.now());
   return true;
+}
+async function stalledFor(env: Env, me: Me, only: string) {
+  const rooms = only
+    ? [only]
+    : (await env.DB.prepare(`SELECT m.book_id FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC LIMIT 10`).bind(me.email).all<{ book_id: string }>()).results.map((r) => r.book_id);
+  const out = await Promise.all(rooms.map(async (id) => (await bookStub(env, id).stalledTasks(id, me.email)).map((t) => ({ room_id: id, ...t }))));
+  return out.flat().slice(0, 10);
 }
 export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });

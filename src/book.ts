@@ -430,6 +430,26 @@ export class Book extends DurableObject<Env> {
       .all<{ email: string; avatar: number }>();
     return Object.fromEntries(r.results.map((x) => [x.email, x.avatar]));
   }
+  /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
+  answerTo(bookId: string, msgId: number, email: string) {
+    this.bind(bookId);
+    return (this.sql.exec<{ text: string }>(`SELECT text FROM messages WHERE reply_to = ? AND author = ? AND kind IS NULL ORDER BY id LIMIT 1`, msgId, email).toArray()[0]?.text as string | undefined) ?? null;
+  }
+  /** Open tasks of this person in epics their Claude worked on, quiet for 30+ min: what a listening Claude is reminded
+   * of (wait_for_messages) to weigh whether to carry on. Tasks meant for the person themself (no agent post of theirs
+   * in that epic) are left out. */
+  stalledTasks(bookId: string, email: string) {
+    this.bind(bookId);
+    const quiet = Date.now() - 30 * 60e3;
+    return this.epics()
+      .filter((e) => !e.archived)
+      .flatMap((e) => {
+        const act = this.sql.exec<{ last: number | null; mine: number }>(`SELECT max(ts) AS last, sum(kind = 'agent' AND author = ?) AS mine FROM messages WHERE thread = ?`, email, e.id).one();
+        if (!act.mine || (act.last ?? 0) > quiet) return [];
+        return e.tasks.filter((t) => t.owner === email && t.status !== "done" && t.status !== "review").map((t) => ({ epic_id: e.id, epic: e.title, task_id: t.id, task: t.title, status: t.status, quiet_since: new Date(act.last ?? 0).toISOString() }));
+      })
+      .slice(0, 8);
+  }
   /** The members' open apps refetch what they see outside this room (rail, waits): src/person.ts. */
   pokeMembers() {
     this.ctx.waitUntil(this.members().then((m) => poke(this.env, m, { t: "me", book: this.get("book_id") ?? undefined })).catch(() => {}));

@@ -743,7 +743,14 @@ async function main() {
       for (;;) {
         try {
           const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...(room ? { room_id: room } : {}) }, agent, tools);
-          const out = JSON.parse(res.content[0]?.text ?? "{}") as { new?: { room_id: string; title: string; new_messages: number; url?: string }[] };
+          const out = JSON.parse(res.content[0]?.text ?? "{}") as { new?: { room_id: string; title: string; new_messages: number; url?: string }[]; stalled?: { room_id: string; epic: string; task: string; status: string }[]; next?: string };
+          if (out.stalled?.length) {
+            // Nothing new for a while, but tasks of your human sit half done: wake up and weigh them (≤1 an hour).
+            const one = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+            process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}\n`);
+            for (const s of out.stalled) process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})\n`);
+            return;
+          }
           if (out.new?.length) {
             // The title is written by room members: one line, no quotes (it lands in the agent's context as output).
             const title = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);

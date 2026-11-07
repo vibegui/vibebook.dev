@@ -777,6 +777,15 @@ async function main() {
         try {
           const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...room ? { room_id: room } : {} }, agent, tools);
           const out = JSON.parse(res.content[0]?.text ?? "{}");
+          if (out.stalled?.length) {
+            const one = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+            process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}
+`);
+            for (const s of out.stalled)
+              process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})
+`);
+            return;
+          }
           if (out.new?.length) {
             const title = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
             for (const r of out.new)
