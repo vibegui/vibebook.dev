@@ -3592,13 +3592,13 @@ function renderDoc(force) {
 const LOCK_AFTER = 5 * 60e3;
 function lockId() { try { return localStorage.getItem("vb.lock"); } catch { return null; } }
 const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
-const lockVerify = () => navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(lockId()), (c) => c.charCodeAt(0)) }], userVerification: "required", timeout: 60e3 } });
+const lockVerify = () => navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(lockId()), (c) => c.charCodeAt(0)) }], userVerification: "required", hints: ["client-device"], timeout: 60e3 } });
 async function lockSet(on, email) {
   if (!on) { await lockVerify(); localStorage.removeItem("vb.lock"); return; }
   const c = await navigator.credentials.create({ publicKey: {
     challenge: rnd(32), rp: { name: "vibebook" }, user: { id: rnd(16), name: email, displayName: t("vibebook (trava do app)") },
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60e3,
+    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, hints: ["client-device"], timeout: 60e3,
   } });
   localStorage.setItem("vb.lock", btoa(String.fromCharCode(...new Uint8Array(c.rawId))));
 }
@@ -3612,8 +3612,8 @@ function lockScreen() {
     try { await lockVerify(); el.remove(); }
     catch { const e = el.querySelector(".err"); e.hidden = false; e.textContent = t("Toque pra tentar de novo."); }
   };
+  // No automatic attempt: iOS wants the tap, and an untapped call surfaced "não é possível usar a chave de acesso".
   el.querySelector("button").onclick = go;
-  go(); // Safari may ask for the tap instead
 }
 let hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
