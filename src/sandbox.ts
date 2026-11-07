@@ -1,3 +1,4 @@
+import { pokeRoom } from "./person";
 // Cloud agents: a Claude Code that lives in a freestyle.sh VM instead of on someone's computer.
 // - The person connects their own freestyle account by pasting an API key in the app (POST /api/freestyle). It's
 //   checked against freestyle, then kept AES-GCM encrypted in D1 (key derived from SESSION_SECRET); it never goes to
@@ -215,6 +216,8 @@ export async function redoSetup(env: Env, email: string, sid: string, origin: st
 
 /** Routes (all behind the session; rooms checked with isMember). Mounted from index.ts. */
 // biome-ignore lint/suspicious/noExplicitAny: the Hono app's context type lives in index.ts
+// A sandbox appeared, changed state or went away: the room's Pessoas and everyone's rail (☁) follow, no polling.
+const roomChanged = (env: Env, book: string) => Promise.all([pokeRoom(env, book, { t: "agents", book }), pokeRoom(env, book, { t: "me" })]);
 export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
   app.use("/api/*", async (c: any, next: () => Promise<void>) => { if (c.env.FREESTYLE_API) API = c.env.FREESTYLE_API; await next(); });
   const key = async (c: any): Promise<string | null> => loadKey(c.env, c.get("email")).catch(() => null);
@@ -299,6 +302,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     try {
       const r = await createSandbox(c.env, email, id, String(name ?? ""), new URL(c.req.url).origin);
       c.executionCtx.waitUntil(deps.track(c.env, "sandbox_created", { user: email, dims: { book: id } }));
+      c.executionCtx.waitUntil(roomChanged(c.env, id));
       return c.json({ ok: true, ...r });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 400);
@@ -312,6 +316,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       try { await fs(k, "POST", `/v5/vms/${r.vm_id}/${act}`); } catch (e) { return c.json({ error: (e as Error).message }, 502); }
       await c.env.DB.prepare(`UPDATE sandboxes SET state = ? WHERE id = ?`).bind(act === "pause" ? "paused" : "running", r.id).run(); // the rail's ☁ follows at once
       c.executionCtx.waitUntil(deps.track(c.env, `sandbox_${act}`, { user: r.email, dims: { book: r.book_id } }));
+      c.executionCtx.waitUntil(roomChanged(c.env, r.book_id));
       return c.json({ ok: true });
     });
   // Run the setup again (it skips what's already installed): for a sandbox stuck preparing.
@@ -328,6 +333,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     if (k) await fs(k, "DELETE", `/v5/vms/${r.vm_id}`).catch((e) => { if (!/ 404:/.test(e.message)) throw e; });
     if (k && r.identity_id) await fs(k, "DELETE", `/v5/identities/${r.identity_id}`).catch(() => {});
     await c.env.DB.prepare(`DELETE FROM sandboxes WHERE id = ?`).bind(r.id).run();
+    c.executionCtx.waitUntil(roomChanged(c.env, r.book_id));
     // Its Claude goes too: the vibebook grants made for it are revoked and it leaves "Conectados" (its folder = its name).
     const { items } = await c.env.OAUTH_PROVIDER.listUserGrants(r.email);
     for (const g of items) if (g.metadata?.client === "vibebook sandbox" && g.metadata?.sandbox === r.name) await c.env.OAUTH_PROVIDER.revokeGrant(g.id, r.email).catch(() => {});

@@ -16,6 +16,8 @@ import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
+export { Person } from "./person";
+import { markListening, poke, pokeRoom } from "./person";
 export { DocRoom } from "./docroom";
 
 export type Env = {
@@ -24,6 +26,8 @@ export type Env = {
   /** The landing as a deco Studio site (site/, Worker vibebook-site). Missing or failing: the static page in public/. */
   SITE?: Fetcher;
   BOOK: DurableObjectNamespace<Book>;
+  /** The app's push channel per person (src/person.ts). */
+  PEOPLE: DurableObjectNamespace;
   DOC_ROOMS: DurableObjectNamespace<import("./docroom").DocRoom>;
   OAUTH_KV: KVNamespace;
   OAUTH_PROVIDER: OAuthHelpers;
@@ -275,7 +279,7 @@ app.get("/api/notify", async (c) => {
   const onlyRoom = /^[a-z0-9]{6,32}$/.test(c.req.query("room") ?? "") ? (c.req.query("room") as string) : "";
   const origin = new URL(c.req.url).origin;
   // Presence: this agent is listening (to one room, or to all of its person's rooms when listen_room is null).
-  c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE agents SET listening_at = ?, listen_room = ?, seen_at = ? WHERE id = ?`).bind(Date.now(), onlyRoom || null, Date.now(), row.agent).run());
+  c.executionCtx.waitUntil(markListening(c.env, row.agent, row.email, onlyRoom, true));
   const deadline = Date.now() + 50_000;
   for (;;) {
     // ponytail: D1 every 3s per listener, same as wait_for_messages; a per-person DO with push is the upgrade.
@@ -387,6 +391,7 @@ app.post("/api/waits/resolve", async (c) => {
   const { book_id, ref } = await c.req.json<{ book_id?: string; ref?: string }>().catch(() => ({}) as { book_id?: string; ref?: string });
   if (!book_id || !ref?.startsWith("m")) return c.json({ error: "bad request" }, 400);
   await c.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(book_id, ref, c.get("email")).run();
+  c.executionCtx.waitUntil(poke(c.env, [c.get("email")], { t: "me" })); // your other tabs and devices
   c.executionCtx.waitUntil(track(c.env, "wait_resolved", { user: c.get("email"), dims: { book: book_id } }));
   return c.json({ ok: true });
 });
@@ -544,6 +549,7 @@ app.post("/api/books/:id/claude", async (c) => {
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
   const { on } = await c.req.json<{ on?: boolean }>().catch(() => ({ on: false }));
   await c.env.DB.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(on ? 1 : 0, id, email).run();
+  c.executionCtx.waitUntil(poke(c.env, [email], { t: "agents", book: id }));
   c.executionCtx.waitUntil(track(c.env, on ? "claude_on" : "claude_off", { user: email, dims: { book: id } }));
   return c.json({ ok: true, claude_on: !!on });
 });
@@ -733,6 +739,11 @@ app.get("/yjs/:name", async (c) => {
   return room.fetch(new Request(`https://doc/rooms/${encodeURIComponent(docRoomName(id, epic || undefined))}`, c.req.raw));
 });
 
+// The app's own channel (one per person): "something you see changed, fetch it once" instead of polling.
+app.get("/ws-me", async (c) => {
+  if (c.req.header("upgrade") !== "websocket") return c.text("expected websocket", 426);
+  return c.env.PEOPLE.get(c.env.PEOPLE.idFromName(c.get("email"))).fetch(c.req.raw);
+});
 app.get("/ws/:id", async (c) => {
   const id = c.req.param("id");
   if (c.req.header("upgrade") !== "websocket") return c.text("expected websocket", 426);

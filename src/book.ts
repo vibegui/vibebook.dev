@@ -1,4 +1,5 @@
 import { type Card, cardText } from "./card";
+import { poke } from "./person";
 import { parseBlock, reconcile, renderBlock } from "./taskblock";
 import { asLang, type Lang } from "./lang";
 import { DurableObject } from "cloudflare:workers";
@@ -164,7 +165,7 @@ export class Book extends DurableObject<Env> {
         DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref LIKE 't%' AND ref NOT IN (SELECT value FROM json_each(?))`).bind(id, JSON.stringify(keep)),
         DB.prepare(`DELETE FROM waits WHERE book_id = ? AND thread IN (SELECT value FROM json_each(?))`).bind(id, JSON.stringify(gone)),
         ...review.map(({ t, e }) => DB.prepare(`INSERT OR IGNORE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`).bind(id, `t${t.id}`, t.owner, e.id, e.title, t.title, Date.now())),
-      ]).catch((e) => console.error("waits sync", String(e))),
+      ]).then(() => this.pokeMembers()).catch((e) => console.error("waits sync", String(e))),
     );
     // Something changed on the board: @vibe grades it again (debounced, on the alarm).
     this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
@@ -428,6 +429,10 @@ export class Book extends DurableObject<Env> {
       .bind(id)
       .all<{ email: string; avatar: number }>();
     return Object.fromEntries(r.results.map((x) => [x.email, x.avatar]));
+  }
+  /** The members' open apps refetch what they see outside this room (rail, waits): src/person.ts. */
+  pokeMembers() {
+    this.ctx.waitUntil(this.members().then((m) => poke(this.env, m, { t: "me", book: this.get("book_id") ?? undefined })).catch(() => {}));
   }
   async members(): Promise<string[]> {
     const id = this.get("book_id");
@@ -781,6 +786,7 @@ export class Book extends DurableObject<Env> {
     )
       .bind(Date.now(), fields.title ?? null, fields.folder ?? null, fields.summary ?? null, fields.lastId ?? null, fields.human ?? null, fields.agent ?? null, id)
       .run();
+    this.pokeMembers();
   }
   /** What each person has seen in this room (the app's unread dots): everyone with the room open, up to `upto`. */
   async markRead(emails: string[], upto: number) {
@@ -976,12 +982,17 @@ export class Book extends DurableObject<Env> {
   /** The "esperando você" row for a blocked agent (ref b<msg>), or its removal (text null). */
   async blockedWait(email: string, msgId: number, text: string | null) {
     const bookId = this.get("book_id"); if (!bookId) return;
-    if (text === null) return void (await this.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, `b${msgId}`, email).run());
+    if (text === null) {
+      const r = await this.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, `b${msgId}`, email).run();
+      if (r.meta.changes) await poke(this.env, [email], { t: "me" });
+      return;
+    }
     const m = this.sql.exec<{ thread: string }>(`SELECT thread FROM messages WHERE id = ?`, msgId).toArray()[0];
     const topic = m && m.thread !== "main" ? this.epics().find((e) => e.id === m.thread)?.title ?? "" : "";
     await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
       .bind(bookId, `b${msgId}`, email, m?.thread ?? "main", topic, `⏸ Seu Claude espera você no terminal: ${text}`, Date.now())
       .run();
+    await poke(this.env, [email], { t: "me" });
   }
   /** Any move by a person's agent (a post, a task) means it got past the question: blocked acks go back to doing. */
   unblock(email: string) {
@@ -1000,6 +1011,8 @@ export class Book extends DurableObject<Env> {
     const doing = this.sql.exec<{ t: number | null }>(`SELECT max(ts) AS t FROM acks WHERE status = 'doing'`).toArray()[0]?.t ?? 0;
     const until = Math.max(doing ? doing + 20 * 60e3 : 0, agentPosted ? Date.now() + 3 * 60e3 : 0);
     await this.env.DB.prepare(`UPDATE books SET busy_until = ? WHERE id = ?`).bind(until > Date.now() ? until : null, id).run();
+    const busy = until > Date.now() ? "1" : "0";
+    if (this.get("busy") !== busy) { this.set("busy", busy); this.pokeMembers(); }
   }
 
   // "Delivered to / read by": each connected agent's cursor in this room (written by src/agent.ts from D1).
@@ -1521,6 +1534,7 @@ export class Book extends DurableObject<Env> {
           ...open.filter((_, i) => yes(`r${i}`, 0.6)).map((w) => DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, w.ref, m.author)),
           DB.prepare(`SELECT 1`),
         ]);
+        this.pokeMembers();
       }
       this.set("waits_at_id", String(m.id));
     }

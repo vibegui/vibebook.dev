@@ -2,6 +2,7 @@
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import { cardOf } from "./card";
+import { markListening } from "./person";
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
 import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
@@ -493,7 +494,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const only = me.room || str(a.room_id);
       if (me.room && a.room_id && str(a.room_id) !== me.room) throw new Error(`this sandbox's login only reaches room ${me.room}`);
       if (only && !(await isMember(db, only, me.email))) throw new Error(`not a member of ${only}`);
-      ctx.waitUntil(db.prepare(`UPDATE agents SET listening_at = ?, listen_room = ? WHERE id = ?`).bind(Date.now(), only || null, me.agent).run());
+      ctx.waitUntil(markListening(env, me.agent, me.email, only));
       const deadline = Date.now() + timeout * 1000;
       for (;;) {
         const r = await unread(only);

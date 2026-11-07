@@ -1693,16 +1693,34 @@ const tile = (b, size) => iconUrl(b)
   : `<span class="tile ${size}" style="background:${coverColor(b.title)}">${esc(initials(b.title))}</span>`;
 // The room you're in is read up to its newest message (the server marks it too); refresh the rail every 30s.
 function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if (mine && upto > mine.read_id) mine.read_id = upto; }
-setInterval(() => {
-  if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
+// No polling: the person's channel (/ws-me, src/person.ts) says when something outside the open room changed
+// ({t:"me"}: rail, waits, version; {t:"agents", book}: that room's Claudes and sandboxes) and the app fetches it once.
+// Coming back to the tab refreshes once too (a phone drops sockets in the background).
+function refreshMe() {
+  if (!document.body.classList.contains("has-sw")) return;
   api("/api/me").then((me) => {
     keepMe(me);
     const before = JSON.stringify(waitsIn());
     myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher();
     if (S && JSON.stringify(waitsIn()) !== before) { renderSide(); renderChat(true); }
   }).catch(() => {});
-  loadRoomAgents();
-}, 30_000);
+}
+let meWs = null, meWsTry = 0, meT = 0, agT = 0;
+function connectMe() {
+  if (meWs && meWs.readyState <= 1) return;
+  meWs = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws-me`);
+  meWs.onopen = () => { meWsTry = 0; };
+  meWs.onmessage = (e) => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    if (m.t === "me") { clearTimeout(meT); meT = setTimeout(refreshMe, 600); }
+    if ((m.t === "agents" && (m.book === "*" || m.book === S?.id)) || (m.t === "me" && m.book && m.book === S?.id)) { clearTimeout(agT); agT = setTimeout(loadRoomAgents, 600); }
+  };
+  meWs.onclose = () => { meWs = null; if (document.visibilityState === "visible") setTimeout(connectMe, Math.min(30_000, 1000 * 2 ** meWsTry++)); };
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !document.body.classList.contains("has-sw")) return;
+  refreshMe(); loadRoomAgents(); connectMe();
+});
 let swHtml = "";
 function renderSwitcher() {
   const cur = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1];
@@ -1896,7 +1914,7 @@ document.addEventListener("click", (e) => {
 // The last /api/me (any page fetches it): going back home draws it at once, then the fresh one replaces it only if
 // something changed, keeping what you were typing in the ask box.
 let meCache = null, meJson = "";
-const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); newVersion(me.v); };
+const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); newVersion(me.v); connectMe(); };
 // A newer app is out (this page's <meta name="vb-v"> differs from the server's): a small bar, tap to reload.
 function newVersion(v) {
   const mine = document.querySelector('meta[name="vb-v"]')?.content;
@@ -3162,7 +3180,8 @@ function renderClaudeBar(on, live) {
     claudeWaiting[S.id] = true;
     const late = Date.now() - (claudeAsked[S.id] || 0) > 3 * 60e3;
     set("wait", `<span class="star">✻</span><span><b>${late ? t("Seu Claude ainda não está ouvindo.") : t("Abrindo seu Claude no seu computador…")}</b><small>${late ? t("Confira se o vibebook herdr está rodando no seu computador, ou se o Claude parou numa pergunta lá.") : t("O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.")}</small></span>${x}`);
-    claudeBarPoll = setTimeout(loadRoomAgents, 5000);
+    // Its first listen pokes this room (src/person.ts markListening): no polling. One local redraw at 3 min for "late".
+    if (!late) claudeBarPoll = setTimeout(renderMyClaude, 3 * 60e3 - (Date.now() - (claudeAsked[S.id] || 0)) + 500);
     return;
   }
   claudeWaiting[S.id] = false;
@@ -3186,7 +3205,6 @@ function renderStart(el, on, here, key) {
   </ul></span><button class="ghost" data-x aria-label="${t("Fechar")}" title="${t("Fechar")}">×</button>`;
   el.querySelector("[data-on]")?.addEventListener("click", () => document.getElementById("myClaude")?.click());
   el.querySelector("[data-x]").onclick = () => { try { localStorage.setItem(key, "off"); } catch {} el.hidden = true; clearTimeout(claudeBarPoll); };
-  if (!noClaude && !here) claudeBarPoll = setTimeout(loadRoomAgents, 5000);
 }
 const kTok = (n) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`);
 /** The context bar under a Claude: green, yellow from 60%, red from 80% (the runner compacts a free Claude at 75%). */

@@ -286,7 +286,13 @@ check((await m.tool("read_room", { room_id: room })).out?.messages?.some((x: { f
 // One agent reporting progress alone never pauses, however many posts in a row.
 await fetch(`${BASE}/api/books/${room}/post`, { method: "POST", headers: { "content-type": "application/json", cookie: `dev_as=${encodeURIComponent(gui)}` }, body: JSON.stringify({ text: "manda os updates aqui" }) });
 let solo = true;
-for (let i = 0; i < 8; i++) { const r = await g.tool("post", { room_id: room, text: `progresso ${i}` }); if (!r.out?.ok) console.log("post", i, JSON.stringify(r).slice(0, 200)); solo &&= !!r.out?.ok; }
+for (let i = 0; i < 8; i++) {
+  let r = await g.tool("post", { room_id: room, text: `progresso ${i}` });
+  // The script itself posts ~30 times a minute as this person: wait out AGENT_LIMIT (that's not the pause under test).
+  if (/rate limited/.test(String(r.error ?? ""))) { await new Promise((ok) => setTimeout(ok, 61_000)); r = await g.tool("post", { room_id: room, text: `progresso ${i}` }); }
+  if (!r.out?.ok) console.log("post", i, JSON.stringify(r).slice(0, 200));
+  solo &&= !!r.out?.ok;
+}
 check(solo, "one agent posting 8 updates in a row is not paused");
 
 // Two agents ping-pong: the thread pauses at 6 in a row with no human.
