@@ -3594,11 +3594,13 @@ function lockId() { try { return localStorage.getItem("vb.lock"); } catch { retu
 const rnd = (n) => crypto.getRandomValues(new Uint8Array(n));
 const lockVerify = () => navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: Uint8Array.from(atob(lockId()), (c) => c.charCodeAt(0)) }], userVerification: "required", hints: ["client-device"], timeout: 60e3 } });
 async function lockSet(on, email) {
-  if (!on) { await lockVerify(); localStorage.removeItem("vb.lock"); return; }
+  if (!on) { localStorage.removeItem("vb.lock"); return; } // you're already in (unlocked): no second check
   const c = await navigator.credentials.create({ publicKey: {
     challenge: rnd(32), rp: { name: "vibebook" }, user: { id: rnd(16), name: email, displayName: t("vibebook (trava do app)") },
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, hints: ["client-device"], timeout: 60e3,
+    // Discoverable (resident) so iOS lists it by itself, from iCloud or 1Password; a non-discoverable one in 1Password
+    // didn't show up ("não há chaves-senha salvas para este site") until picked by hand.
+    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "required", requireResidentKey: true }, hints: ["client-device"], timeout: 60e3,
   } });
   localStorage.setItem("vb.lock", btoa(String.fromCharCode(...new Uint8Array(c.rawId))));
 }
