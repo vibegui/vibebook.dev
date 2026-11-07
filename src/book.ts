@@ -1166,7 +1166,11 @@ export class Book extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server, [email]);
     if (this.autoArchive()) this.epicsChanged();
     this.ctx.waitUntil(this.markRead([email], (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0));
-    const book = await this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first();
+    // The D1 reads in parallel (each is a round trip): opening a room waited on six of them in a row.
+    const [book, members, pending, requests, names, avatars] = await Promise.all([
+      this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first(),
+      this.members(), this.pending(), this.requests(), this.names(), this.avatars(),
+    ]);
     server.send(
       JSON.stringify({
         t: "state",
@@ -1186,11 +1190,11 @@ export class Book extends DurableObject<Env> {
         polls: this.polls(),
         decisions: this.decisions(),
         suggestions: this.suggestions(),
-        members: await this.members(),
-        pending: await this.pending(),
-        requests: await this.requests(),
-        names: await this.names(),
-        avatars: await this.avatars(),
+        members,
+        pending,
+        requests,
+        names,
+        avatars,
         online: this.online(),
         receipts: this.receiptsList(),
         acks: this.acksList(),

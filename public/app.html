@@ -2649,12 +2649,15 @@ function renderBook() {
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
-    if (pane === "agents") loadSandboxes();
+    if (pane === "agents") { renderMyClaude(); loadSandboxes(); }
   };
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
-  document.addEventListener("click", (e) => { if (e.target.closest?.("[data-sbx-open]") && document.body.contains(book)) { closeSheet(); document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })); if (ROOM_PHONE.matches) openSheet("doc"); } });
-  document.addEventListener("vb:pane", (e) => { if (!document.body.contains(book)) return; book.classList.remove("nodoc"); setPane(e.detail); });
+  // One pair of document listeners for the room on screen (replaced, not piled up, as rooms open).
+  document.removeEventListener("click", roomDocClick); document.removeEventListener("vb:pane", roomDocPane);
+  roomDocClick = (e) => { if (e.target.closest?.("[data-sbx-open]") && document.body.contains(book)) { closeSheet(); document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })); if (ROOM_PHONE.matches) openSheet("doc"); } };
+  roomDocPane = (e) => { if (!document.body.contains(book)) return; book.classList.remove("nodoc"); setPane(e.detail); };
+  document.addEventListener("click", roomDocClick); document.addEventListener("vb:pane", roomDocPane);
   setPane("doc");
   const doc = document.getElementById("doc");
   let timer;
@@ -2909,6 +2912,8 @@ function renderAgentsPane(on, live, path, w) {
     b.title = q.length ? t("Fila do seu Claude: {n}", { n: q.length }) : around ? t("Seu Claude está livre") : "Agents";
   });
   document.getElementById("docPeek")?.classList.toggle("agLive", live);
+  // The rest is the pane itself: drawn only while it's open (renderSide calls this on every change).
+  if (!document.querySelector('.doc[data-pane="agents"]')) { el.innerHTML = ""; return; }
   el.innerHTML = `<h4>${t("Seus agents nesta sala")}</h4>
     <div class="agCard${on ? " on" : ""}"><span class="agIcon">✻</span><div><b>${t("Claude Code no seu computador")}</b>
       <small>${on ? (live ? t("ligado · ouvindo esta sala") : mine.some((a) => Date.now() - a.seen_at < 30 * 60e3) ? t("ligado · trabalhando agora") : t("ligado · ainda não está ouvindo")) : t("desligado")}${path ? ` · ${esc(path.replace(/^~\/Projects\//, ""))}${w?.how === "new" ? ` (${t("pasta nova")})` : ""}` : ""}</small></div>
@@ -2928,7 +2933,6 @@ function renderAgentsPane(on, live, path, w) {
   el.querySelectorAll("[data-dismiss]").forEach((b) => b.onclick = () => send({ t: "ack.dismiss", id: Number(b.dataset.dismiss) }));
   document.getElementById("qMore")?.addEventListener("click", () => { qOpen = !qOpen; renderMyClaude(); });
   wireSbx();
-  if (document.querySelector('.doc[data-pane="agents"]')) loadSandboxes();
 }
 // What a sandbox has cost so far, in USD: hours running × its rate (+ the time since the last check while it runs),
 // plus disk for its whole life. From the owner's last list refresh; good enough to see money moving.
@@ -2943,11 +2947,13 @@ function sbxRows() {
 // Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
 let qOpen = false; // the queue shows 4 until "mostrar mais"
+let roomDocClick = () => {}, roomDocPane = () => {};
 function myQueue() {
-  const since = Date.now() - 48 * 3600e3, acks = (S.acks || []).filter((k) => k.email === S.me);
+  const since = Date.now() - 48 * 3600e3, byMsg = new Map();
+  for (const k of S.acks || []) if (k.email === S.me) (byMsg.get(k.msg_id) ?? byMsg.set(k.msg_id, []).get(k.msg_id)).push(k);
   return (S.messages || [])
     .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since)
-    .map((m) => { const a = acks.filter((k) => k.msg_id === m.id); return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
+    .map((m) => { const a = byMsg.get(m.id) || []; return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
 // Cloud agents (src/sandbox.ts): Claudes in freestyle.sh VMs on the person's own account. The list polls every 5s
