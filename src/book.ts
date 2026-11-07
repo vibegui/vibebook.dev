@@ -910,7 +910,7 @@ export class Book extends DurableObject<Env> {
             .exec(
               `SELECT m.id, m.thread, m.text, m.ts FROM messages m WHERE m.ts > ? AND coalesce(m.text, '') != '' AND ((m.author = ? AND m.kind IS NULL) OR (m.tag = 'reminder' AND m.for_who = ?))
                AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = m.id AND a.email = ?)
-               AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = m.reply_to AND (q.choices IS NOT NULL OR q.card IS NOT NULL)) ORDER BY m.id DESC LIMIT 10`,
+               AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = m.reply_to AND q.text LIKE '⏸ Seu Claude pede permissão%') ORDER BY m.id DESC LIMIT 10`,
               Date.now() - 2 * 864e5, email, email, email,
             )
             .toArray()

@@ -3054,11 +3054,13 @@ function sbxRows() {
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
 let qOpen = false; // the queue shows 4 until "mostrar mais"
 let roomDocClick = () => {}, roomDocPane = () => {};
+// The plugin's PermissionRequest hook posts this (claude-plugin/hooks/permission.sh); the pick goes to the hook, not to a Claude's queue.
+const isPermAsk = (q) => q.kind === "agent" && /^\u23f8/.test(q.text || "") && /"options":\["Aprovar","Negar"\]/.test(q.choices || "");
 function myQueue() {
   const since = Date.now() - 48 * 3600e3, byMsg = new Map();
   for (const k of S.acks || []) if (k.email === S.me) (byMsg.get(k.msg_id) ?? byMsg.set(k.msg_id, []).get(k.msg_id)).push(k);
   return (S.messages || [])
-    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !S.messages.some((q) => q.id === m.reply_to && (q.choices || q.card))) // a button pick answers, it isn't a request
+    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !S.messages.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
     .map((m) => { const a = byMsg.get(m.id) || []; return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
