@@ -89,6 +89,7 @@ mkdir -p "$HOME/${o.folder}" && cd "$HOME/${o.folder}"
 printf 'room_id=%s\\n' ${q(o.roomId)} > .vibebook
 grep -qx .vibebook .git/info/exclude 2>/dev/null || echo .vibebook >> .git/info/exclude
 (
+:
 ${blocks}
 ) || echo "agents .md setup failed"
 cat > "$HOME/.vibebook-start" <<'EOS'
@@ -142,13 +143,15 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
       let state = "unknown", error: string | undefined, log: string | undefined;
       try {
         if (!k) throw new Error("freestyle desconectado");
-        const vm = await fs<{ state: string; totalRunSeconds?: number; resources?: { cpu: number; memory: number; storage: number } }>(k, "GET", `/v5/vms/${r.vm_id}`);
+        const vm = await fs<{ state: string; totalRunSeconds?: number; updatedAt?: string; resources?: { cpu: number; memory: number; storage: number } }>(k, "GET", `/v5/vms/${r.vm_id}`);
+        // totalRunSeconds counts finished runs; a running VM adds the current one (since its last state change).
+        if (vm.state === "running" && vm.updatedAt) vm.totalRunSeconds = (vm.totalRunSeconds ?? 0) + Math.max(0, (Date.now() - Date.parse(vm.updatedAt)) / 1000);
         state = vm.state;
         // freestyle's list prices (Nov 2026): what this VM has cost so far = hours running × (vCPU + memory) + disk the whole time.
         const res = vm.resources ?? { cpu: 0, memory: 0, storage: 0 };
         const rate = res.cpu * 0.04032 + (res.memory / 1024) * 0.0129, disk = (res.storage / 1024) * 0.000086;
         Object.assign(r, { run_s: vm.totalRunSeconds ?? 0, rate, disk_rate: disk });
-        c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, vm.totalRunSeconds ?? 0, rate, disk, Date.now(), r.id).run());
+        c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, Math.round(vm.totalRunSeconds ?? 0), rate, disk, Date.now(), r.id).run());
         if (!r.ready && state === "running") {
           const x = await fs<{ stdout: string | null; stderr: string | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "if [ -f ~/.vibebook-setup-done ]; then echo done; elif [ -f ~/vibebook-setup.log ]; then tail -n 2 ~/vibebook-setup.log | cut -c1-160; else echo nolog; fi", timeoutMs: 10000 });
           const out = (x.stdout ?? "").trim();
@@ -212,7 +215,13 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
     const r = await mine(c, c.req.param("sid")), k = await key(c);
     if (!r || !k) return c.json({ error: "not found" }, 404);
     try {
-      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: `test -f /tmp/vibebook-setup.sh && rm -f ~/.vibebook-setup-done && ${RUN_SETUP}`, timeoutMs: 20000 });
+      // A fresh script from the room's current agents/<name>.md (an edited .md, or a fixed setup, applies here).
+      const book = await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first();
+      const origin = new URL(c.req.url).origin;
+      const md = await deps.agentFile(c.env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
+      await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
+      await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
+      const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: `cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done && ${RUN_SETUP}`, timeoutMs: 20000 });
       if (!x.stdout?.includes("started")) return c.json({ error: `não consegui iniciar o setup: ${(x.stderr || x.stdout || `código ${x.statusCode}`).slice(0, 200)}` }, 502);
       await c.env.DB.prepare(`UPDATE sandboxes SET ready = 0 WHERE id = ?`).bind(r.id).run();
       return c.json({ ok: true });
