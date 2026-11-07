@@ -51,6 +51,7 @@ When your user asks for a piece of work, it becomes an epic, almost always, and 
 - A message has an attachment (files[] in read_room): look at it before answering: `vibebook call get_file '{"file_id":"<files[].id>"}'` saves the image to a temp file and prints its path; read that file (the URL in read_room needs a browser session).
 - Picking up a request from the room: call `ack` on that message before you start (the room shows "<model> de <human> está fazendo isso" under it); your `post` with `done: true` turns it into "fez isso". If you stop without finishing (you only organized it, or it now waits on someone), call `ack` again with `status: "idle"` so the room doesn't show you working.
 - Reporting something finished and shipped: `post` with `done: true`, so the room shows it as a delivery card.
+- When you mention an earlier message ("the buttons above"), link it as `[the buttons above](#m<id>)` with its read_room id, so people can jump to it.
 - When your user has to pick between options, post the question with `choices` (and `multi: true` for several) instead of asking them to type numbers; their pick comes back as their message replying to yours.
 - A pending decision (you asked your human or someone something and are waiting) goes on the board as a task in `review`, in its epic or a new one via `start_epic`, so it doesn't get lost in the chat or the terminal. Close it when they answer.
 - Deploy / shipped: what is live and where (URL). Task to `done`.
