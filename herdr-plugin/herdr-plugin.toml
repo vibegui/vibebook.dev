@@ -1,0 +1,40 @@
+id = "vibebook"
+name = "vibebook"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Your vibebook rooms as herdr workspaces: one Claude Code per room, in the room's folder, listening. Switch it on or off from the room's ✻ button on vibebook.dev."
+platforms = ["linux", "macos"]
+
+# Installs the vibebook CLI (~/.vibebook) when it's missing. Login stays yours: run `vibebook login` once.
+[[build]]
+command = ["sh", "install-cli.sh"]
+
+# When herdr starts: open the runner tab (skipped if a runner is already going).
+[[startup]]
+command = ["sh", "start.sh"]
+
+# The runner: `vibebook herdr`, keeping one workspace per room that has Claude switched on.
+[[panes]]
+id = "runner"
+title = "vibebook"
+placement = "tab"
+command = ["sh", "runner.sh"]
+
+[[actions]]
+id = "start"
+title = "vibebook: start the room runner"
+contexts = ["workspace"]
+command = ["sh", "start.sh"]
+
+[[actions]]
+id = "open-room"
+title = "vibebook: open this room's Claude"
+contexts = ["workspace"]
+command = ["sh", "open-room.sh"]
+
+# Ctrl+click a room link (https://vibebook.dev/b/<id>) in any terminal: jump to that room's workspace.
+[[link_handlers]]
+id = "room-link"
+title = "Open the room's Claude"
+pattern = "^https://vibebook\\.dev/b/[a-z0-9]+"
+action = "open-room"

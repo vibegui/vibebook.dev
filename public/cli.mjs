@@ -3,7 +3,7 @@
 // cli/vibebook.ts
 import { execFileSync, execSync, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
@@ -571,6 +571,28 @@ async function main() {
       } catch {
         return die("herdr not found or not running (https://herdr.dev)");
       }
+      const lock = join(HOME, "herdr.pid");
+      const other = Number(existsSync(lock) ? readFileSync(lock, "utf8") : 0);
+      if (other && other !== process.pid) {
+        let alive = true;
+        try {
+          process.kill(other, 0);
+        } catch {
+          alive = false;
+        }
+        if (alive)
+          return die(`vibebook herdr is already running (pid ${other}); one per machine is enough`);
+      }
+      writeFileSync(lock, String(process.pid));
+      const release = () => {
+        try {
+          if (Number(readFileSync(lock, "utf8")) === process.pid)
+            unlinkSync(lock);
+        } catch {}
+      };
+      process.on("exit", release);
+      for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"])
+        process.on(sig, () => process.exit(0));
       const tools = await listTools(agent);
       if (!flags.once)
         herdrServer();
