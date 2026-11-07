@@ -115,7 +115,8 @@ export async function storeFile(env: Env, bookId: string, email: string, type: s
   }
   if (!(await env.UPLOAD_LIMIT.limit({ key: email })).success) throw new Error("Muitos uploads. Espera um minuto.");
   const rem = type === "text/markdown" ? REMINDER_FILE.exec(rawName.trim()) : null;
-  const name = rem ? `reminders/${rem[1].trim()}.md` : (rawName || `arquivo.${{ "text/html": "html", "text/markdown": "md" }[type] ?? type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
+  const agentMd = type === "text/markdown" ? /^agents\/([^\\/\u0000-\u001f]{1,60})\.md$/i.exec(rawName.trim()) : null; // a sandbox's CLAUDE.md (src/sandbox.ts)
+  const name = rem ? `reminders/${rem[1].trim()}.md` : agentMd ? `agents/${agentMd[1].trim()}.md` : (rawName || `arquivo.${{ "text/html": "html", "text/markdown": "md" }[type] ?? type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
   const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
   await env.FILES.put(`${bookId}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
   await bookStub(env, bookId).fetch(`https://book/file?book=${bookId}`, { method: "POST", body: JSON.stringify(meta) });

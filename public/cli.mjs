@@ -92,10 +92,21 @@ function openBrowser(url) {
     spawn(cmd, args, { stdio: "ignore", detached: true }).unref();
   } catch {}
 }
-async function login(origin) {
+async function login(origin, paste = false) {
   const verifier = b64url(randomBytes(32));
   const challenge = b64url(createHash("sha256").update(verifier).digest());
   const state = b64url(randomBytes(16));
+  if (paste)
+    return finishLogin(origin, `${origin}/oauth/code`, verifier, challenge, state, async (url) => {
+      process.stderr.write(`Abra este link no navegador, autorize e cole aqui o código que aparecer:
+
+${url}
+
+Código: `);
+      const line = await new Promise((res) => process.stdin.once("data", (d) => res(String(d))));
+      process.stdin.pause();
+      return line.trim();
+    });
   let resolveCode;
   let rejectCode;
   const got = new Promise((res, rej) => (resolveCode = res, rejectCode = rej));
@@ -113,7 +124,16 @@ async function login(origin) {
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   const port = server.address().port;
-  const redirect = `http://127.0.0.1:${port}/callback`;
+  return finishLogin(origin, `http://127.0.0.1:${port}/callback`, verifier, challenge, state, async (url) => {
+    process.stderr.write(`Abrindo o navegador para conectar. Se não abrir, acesse:
+${url}
+`);
+    openBrowser(url);
+    const timer = setTimeout(() => rejectCode(new Error("timed out after 5 minutes")), 5 * 60000);
+    return got.finally(() => (clearTimeout(timer), server.close()));
+  });
+}
+async function finishLogin(origin, redirect, verifier, challenge, state, getCode) {
   const reg = await fetch(`${origin}/oauth/register`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -123,12 +143,9 @@ async function login(origin) {
     die(`could not register with ${origin}: ${reg.status} ${await reg.text()}`);
   const { client_id } = await reg.json();
   const url = `${origin}/authorize?${new URLSearchParams({ response_type: "code", client_id, redirect_uri: redirect, code_challenge: challenge, code_challenge_method: "S256", state, scope: "rooms offline_access", resource: `${origin}/mcp` })}`;
-  process.stderr.write(`Abrindo o navegador para conectar. Se não abrir, acesse:
-${url}
-`);
-  openBrowser(url);
-  const timer = setTimeout(() => rejectCode(new Error("timed out after 5 minutes")), 5 * 60000);
-  const code = await got.finally(() => (clearTimeout(timer), server.close()));
+  const code = await getCode(url);
+  if (!code)
+    die("no code");
   const tok = await fetch(`${origin}/oauth/token`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -678,7 +695,7 @@ async function main() {
   switch (cmd) {
     case "login": {
       const origin = (flag("origin") ?? DEFAULT_ORIGIN).replace(/\/$/, "");
-      await login(origin);
+      await login(origin, !!flags.paste);
       process.stdout.write(`Conectado a ${origin}. Toda sessão do Claude nesta máquina usa este login.
 `);
       return;

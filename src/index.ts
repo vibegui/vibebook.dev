@@ -10,6 +10,7 @@ import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
+import { defaultAgentMd, mountSandbox } from "./sandbox";
 import { validUnsub } from "./mentionmail";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
@@ -40,6 +41,7 @@ export type Env = {
   MODEL_ROUTE: string;
   // Daily reports (src/reports.ts): rooms to post in, and the read-only Cloudflare analytics token (secret).
   METRICS_ROOMS?: string;
+  FREESTYLE_API?: string; // local dev only: a mock of api.freestyle.sh
   CF_ACCOUNT_ID?: string;
   CF_ANALYTICS_TOKEN?: string;
   MODEL_FAST: string;
@@ -84,6 +86,9 @@ const SCHEMA = [
   // invite) or declines (denied = 1, kept so the same person can't keep asking).
   `CREATE TABLE IF NOT EXISTS access_requests (book_id TEXT, email TEXT, ts INTEGER, denied INTEGER DEFAULT 0, PRIMARY KEY (book_id, email))`,
   `CREATE TABLE IF NOT EXISTS human_reads (email TEXT, book_id TEXT, last_id INTEGER, PRIMARY KEY (email, book_id))`,
+  // Cloud agents (src/sandbox.ts): a person's freestyle.sh API key, AES-GCM encrypted, and their sandboxes per room.
+  `CREATE TABLE IF NOT EXISTS freestyle_keys (email TEXT PRIMARY KEY, enc TEXT, iv TEXT, at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 export const ensureSchema = (db: D1Database) =>
@@ -255,6 +260,17 @@ app.get("/mail/:onoff{off|on}", async (c) => {
   c.executionCtx.waitUntil(track(c.env, on ? "mention_mail_on" : "mention_mail_off", { user: email }));
   const back = `/mail/${on ? "off" : "on"}?e=${encodeURIComponent(email)}&s=${encodeURIComponent(c.req.query("s") ?? "")}`;
   return c.html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>vibebook</title><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:460px;margin:60px auto;padding:0 20px;color:#1a2130"><h1 style="font-size:22px">${on ? "Emails de menção ligados." : "Pronto, sem emails de menção."}</h1><p>${on ? "Quando alguém te mencionar e você não vir em 5 minutos, chega um email." : "Você continua vendo as menções no vibebook."}</p><p><a href="${back}">${on ? "Desligar de novo" : "Mudei de ideia, quero os emails"}</a> · <a href="/app">Abrir o vibebook</a></p></body>`);
+});
+
+// `vibebook login --paste` (a cloud sandbox, an SSH box): the consent page lands here and shows the code to paste
+// into that terminal. Public: the code alone is useless without the CLI's PKCE verifier.
+app.get("/oauth/code", (c) => {
+  const code = (c.req.query("code") ?? "").slice(0, 500);
+  const esc = (x: string) => x.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  return c.html(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>vibebook · código</title>
+<body style="font:16px system-ui;padding:32px;max-width:560px;margin:auto;color-scheme:light dark">${code
+    ? `<h2>Cole este código no terminal</h2><pre id="c" style="white-space:pre-wrap;word-break:break-all;padding:14px;border:1px solid #8884;border-radius:10px;font-size:15px">${esc(code)}</pre><button onclick="navigator.clipboard.writeText(document.getElementById('c').textContent).then(()=>this.textContent='Copiado ✓')" style="font:inherit;padding:10px 16px;border-radius:10px">Copiar</button>`
+    : `<h2>Sem código</h2><p>${esc(c.req.query("error_description") ?? c.req.query("error") ?? "Volte ao terminal e rode vibebook login --paste de novo.")}</p>`}</body>`);
 });
 
 // A file link opened in a browser tab (not fetched by the app): the room id, so it gets a page instead of JSON.
@@ -660,6 +676,22 @@ app.get("/ws/:id", async (c) => {
 
 // /mcp serves two things: the admin MCP (static bearer MCP_AUTH_TOKEN) and the agents' MCP behind OAuth.
 // Everything else (app, /authorize, /oauth/*, discovery) goes through the OAuth provider to the Hono app.
+// Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
+// room's files so people (and their Claudes) edit it there; created with a template the first time.
+mountSandbox(app, {
+  isMember,
+  track,
+  agentFile: async (env, bookId, email, name, title, origin) => {
+    const path = `agents/${name}.md`;
+    const f = (await bookStub(env, bookId).files()).find((x: { name: string }) => x.name === path);
+    const obj = f && (await env.FILES.get(`${bookId}/${f.id}`));
+    if (obj) return obj.text();
+    const md = defaultAgentMd(title, `${origin}/b/${bookId}`);
+    await storeFile(env, bookId, email, "text/markdown", new TextEncoder().encode(md).buffer as ArrayBuffer, path);
+    return md;
+  },
+});
+
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
