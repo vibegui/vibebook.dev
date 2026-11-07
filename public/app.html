@@ -576,6 +576,10 @@
 
   /* embeds: HTML an agent posted inline */
   .embedBox { width: min(560px, 100%); display: grid; gap: 8px; }
+  .embedWrap { position: relative; }
+  .embedOpen { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: rgb(0 0 0 / .55); color: #fff; backdrop-filter: blur(6px); opacity: .85; text-decoration: none; }
+  .embedOpen:hover { opacity: 1; }
+  .embedWrap.clipped::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 36px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .18)); pointer-events: none; }
   .atts:has(.embedBox) { display: block; }
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
@@ -1213,6 +1217,7 @@ const EN = {
   "Épico concluído": "Epic done",
   "Escreva aqui pra continuar: ele reabre.": "Write here to keep going: it reopens.",
   "votação": "poll",
+  "Abrir em tela cheia": "Open full screen",
   "Ver a mensagem respondida": "See the message being replied to",
   "mensagem anterior": "earlier message",
   "Respondendo a <b>{who}</b>": "Replying to <b>{who}</b>",
@@ -1319,6 +1324,7 @@ let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting 
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
   search: `<circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4-4"/>`,
+  expand: `<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>`,
   plus: `<path d="M5 12h14"/><path d="M12 5v14"/>`,
   x: `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`,
   check: `<path d="M20 6 9 17l-5-5"/>`,
@@ -2989,7 +2995,7 @@ document.addEventListener("click", (e) => {
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
-  ? `<div class="embedBox"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div>`
+  ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe><a class="embedOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 15)}</a></div></div>`
   : f.type.startsWith("image/")
   ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
   : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}>${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
@@ -3152,7 +3158,12 @@ addEventListener("message", (e) => {
   if (!d || d.vbEmbed !== 1) return;
   const fr = [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
   if (!fr) return;
-  if (typeof d.h === "number") fr.style.height = `${Math.min(Math.max(Math.ceil(d.h) + 2, 40), 900)}px`; // +2: the frame's border
+  // Capped (420px, or 55% of a phone's screen): taller embeds scroll inside and ⤢ opens them full screen.
+  if (typeof d.h === "number") {
+    const cap = Math.min(420, Math.round(innerHeight * 0.55)), h = Math.max(Math.ceil(d.h) + 2, 40); // +2: the frame's border
+    fr.style.height = `${Math.min(h, cap)}px`;
+    fr.closest(".embedWrap")?.classList.toggle("clipped", h > cap);
+  }
   if (typeof d.send === "string" && d.send.trim() && S) {
     const box = fr.parentElement;
     box.querySelector(".embedAsk")?.remove();
