@@ -349,8 +349,10 @@
   }
   @media (max-width: 760px) {
     .hero { padding-top: 56px; } section { padding: 84px 0; }
-    .shot { grid-template-columns: minmax(0, 1fr); height: auto; } .rail { display: none; } .feed { height: 420px; } .doc { border-left: 0; border-top: 1px solid var(--line); min-height: 230px; }
-    .chat .top { flex-wrap: wrap; } .chat .top .pills { margin-left: 0; }
+    /* fixed heights on phones: the animated room never pushes the page (no layout shift) */
+    .shot { grid-template-columns: minmax(0, 1fr); height: auto; } .rail { display: none; } .feed { height: 400px; flex: none; }
+    .doc { border-left: 0; border-top: 1px solid var(--line); height: 270px; overflow: hidden; }
+    .chat .top { height: 56px; flex-wrap: nowrap; overflow: hidden; } .chat .top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; } .chat .top .pills { flex: none; }
     .trio, .row, .rooms, .vs, .three { grid-template-columns: 1fr; }
     .trio > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
     .trio > div { padding-bottom: 24px; }
