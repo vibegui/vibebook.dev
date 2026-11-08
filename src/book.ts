@@ -82,7 +82,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["messages", "card TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["messages", "card TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["epics", "pos INTEGER"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -118,7 +118,7 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
     return this.sql
-      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null }>(`SELECT id, title, archived, from_msg, prod FROM epics ORDER BY ts`)
+      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null }>(`SELECT id, title, archived, from_msg, prod FROM epics ORDER BY pos IS NULL, pos, ts`)
       .toArray()
       .map((e) => {
         const f = flags[e.id] ?? {};
@@ -1367,6 +1367,10 @@ export class Book extends DurableObject<Env> {
         return this.deleteEpic(String(m.id));
       case "epic.archive":
         return this.archiveEpic(String(m.id), m.archived !== false);
+      case "epic.order": // the sidebar's drag: the room's epics in this order (shared); epics left out keep theirs, new ones go last
+        if (!Array.isArray(m.ids)) return;
+        m.ids.slice(0, 500).forEach((id: unknown, i: number) => this.sql.exec(`UPDATE epics SET pos = ? WHERE id = ?`, i, String(id)));
+        return this.epicsChanged();
       case "poll.create": {
         const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
         if (thread && Array.isArray(m.options)) this.createPoll(thread, email, String(m.question ?? ""), m.options.map(String), !!m.multi);
