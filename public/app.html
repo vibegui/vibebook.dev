@@ -636,14 +636,14 @@
   .preview .empty { margin: 0; }
   .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
   /* doc panel tabs + files library */
-  .ptabs { display: flex; gap: 2px; flex: 1; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 5px; margin: -5px; } /* room for the ✻ ring */
+  .ptabs { display: flex; gap: 2px; flex: 1; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 10px 8px; margin: -10px -8px; position: relative; z-index: 2; } /* room for the ✻ ring and its count badge (the scroller clips both ways); above the panel body, which otherwise paints over the badge */
   .doc header .seg { flex: none; }
   .ptabs button { border: none; background: none; padding: 0 7px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; gap: 4px; flex: none; font: 600 14px/1 "Schibsted Grotesk", sans-serif; color: var(--mute); white-space: nowrap; }
   .ptabs button:hover { background: var(--hover); }
   .ptabs button.sel { color: var(--ink); background: var(--hover); }
   .ptabs .ptDoc { color: var(--ink); }
   .chathead #myClaude { display: none !important; } /* the doc toolbar's ✻ opens Agents */
-  .ptabs .ptAgents { margin-left: auto; margin-right: 6px; position: sticky !important; right: 0; z-index: 1; background: var(--claude); color: #fff; border-radius: 10px; }
+  .ptabs .ptAgents { margin-left: auto; margin-right: 6px; position: sticky !important; right: 6px; z-index: 1; background: var(--claude); color: #fff; border-radius: 10px; }
   .peekAgents, .ptAgents { width: 34px; height: 34px; padding: 0 !important; display: grid !important; place-items: center; flex: none; }
   .peekAgents svg, .ptAgents svg { display: block; }
   .peekAgents .qN, .ptAgents .qN { position: absolute; right: -6px; bottom: -6px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--bg); color: var(--claude); box-shadow: 0 0 0 1.5px var(--claude); font: 700 10px/16px "Schibsted Grotesk", system-ui, sans-serif; text-align: center; }
