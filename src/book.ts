@@ -402,6 +402,21 @@ export class Book extends DurableObject<Env> {
     const covered = (t: string) => { const w = words(t); return epicWords.some((e) => [...w].filter((x) => e.has(x)).length >= Math.max(1, Math.ceil(Math.min(w.size, e.size) / 2))); };
     return (JSON.parse(this.get("suggestions") ?? "[]") as Suggestion[]).filter((x) => x.title?.trim() && !have.has(epicKey(x.title)) && !covered(x.title));
   }
+  /** The one gate for epic suggestions (@vibe's classify and agents' suggest_epic): one Jev call asks, for each,
+   * whether an epic of this room, open or archived, already does it (by goal, not by name), and drops those.
+   * Re-run over the stored ones on each pass, so a suggestion that became an epic since goes away. Jev down = kept
+   * (it's only a suggestion; the word filter in suggestions() still applies). */
+  async keepNewSuggestions(list: Suggestion[]): Promise<Suggestion[]> {
+    if (!list.length) return list;
+    const goal = (id: string) => (this.get(`doc:${id}`) ?? "").match(/\*\*Objetivo:\*\*\s*([^\n]*)/)?.[1]?.slice(0, 160) ?? "";
+    const epics = this.epics().map((e) => `- ${e.archived ? "[feito/arquivado] " : "[aberto] "}${e.title}${goal(e.id) ? `: ${goal(e.id)}` : ""}`).join("\n").slice(0, 9000);
+    const q: Record<string, Question> = {};
+    list.forEach((s, i) => (q[`s${i}`] = { type: "noul", instructions: `O épico proposto "${s.title.slice(0, 200)}" (${(s.why ?? "").slice(0, 300)}) já foi feito ou está sendo feito por algum dos épicos desta sala? Responda sim se um deles já cobre o mesmo objetivo, mesmo com outro nome ou escopo um pouco diferente.` }));
+    const r = await decide(this.env, { epicos_da_sala: epics || "(nenhum)" }, q);
+    if (!r) return list;
+    this.ctx.waitUntil(track(this.env, "suggest_check", { dims: { book: this.get("book_id") ?? undefined, n: list.length, model: this.env.MODEL_JUDGE, cost: +r.cost.toFixed(6) } }));
+    return list.filter((_, i) => (r.answers[`s${i}`]?.noul ?? 0) < 0.5);
+  }
   // Invited but never signed in.
   async pending(): Promise<string[]> {
     const id = this.get("book_id");
@@ -1149,7 +1164,9 @@ export class Book extends DurableObject<Env> {
           const title = s("title")?.trim().slice(0, 200);
           if (!title) return { ok: false, error: "title is required" };
           const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map((t) => String(t).trim().slice(0, 300)).filter(Boolean).slice(0, 8);
-          const list = [...this.suggestions().filter((x) => epicKey(x.title) !== epicKey(title)), { title, tasks, why: s("why")?.trim().slice(0, 300) || undefined }].slice(-8);
+          const mine = { title, tasks, why: s("why")?.trim().slice(0, 300) || undefined };
+          if (!(await this.keepNewSuggestions([mine])).length) return { ok: false, error: "an epic of this room (open or archived) already covers this; look at read_room epics and continue that one instead" };
+          const list = [...this.suggestions().filter((x) => epicKey(x.title) !== epicKey(title)), mine].slice(-8);
           this.set("suggestions", JSON.stringify(list));
           this.broadcast({ t: "suggestions", suggestions: this.suggestions() });
           return { ok: true, suggestions: this.suggestions().length };
@@ -1680,7 +1697,7 @@ ${transcript}`,
       const summary = output.summary.replace(/\s+/g, " ").trim().slice(0, 180);
       await this.touch({ title, folder: output.folder, summary });
       const existing = new Set([...this.epics().map((e) => epicKey(e.title)), ...this.suggestions().map((s) => epicKey(s.title))]);
-      const suggestions = [...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(epicKey(s.title)))].slice(-5);
+      const suggestions = await this.keepNewSuggestions([...this.suggestions(), ...output.suggested_epics.filter((s) => !existing.has(epicKey(s.title)))].slice(-5));
       this.set("suggestions", JSON.stringify(suggestions));
       this.broadcast({ t: "meta", title, folder: output.folder, summary });
       this.broadcast({ t: "suggestions", suggestions: this.suggestions() });
