@@ -245,6 +245,12 @@
   .newRoom .ri { background: transparent; color: var(--mute); font-size: 16px; font-weight: 400; box-shadow: inset 0 0 0 1.5px var(--line); }
   .newRoom input { flex: 1; min-width: 0; border: none; background: transparent; padding: 4px 0; }
   .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+  /* In the epic list: "novo épico" looks like the suggestions under it (dashed), only beefier; no heading over them. */
+  .epList .newRoom { margin-top: 6px; padding: 10px; border: 2px dashed var(--line); color: var(--ink); }
+  .epList .newRoom .ri { box-shadow: none; border: 2px dashed currentColor; color: var(--accent); }
+  .epList .newRoom input { font-weight: 600; } .epList .newRoom input::placeholder { color: var(--ink); opacity: .75; }
+  .epList .newRoom:focus-within { border-style: solid; border-color: var(--accent); box-shadow: none; }
+  .epList .newRoom + .thread.pre { margin-top: 6px; } .epList .thread.pre + .thread.pre { margin-top: 4px; }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
   .docCrumb { display: flex; align-items: center; gap: 4px; padding: 10px 20px 0; font-size: 12.5px; color: var(--mute); }
@@ -3363,11 +3369,10 @@ function renderSide() {
         // archived list scrolls inside (.epList.arch).
         return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
       <div class="epList${showArch ? " arch" : ""}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
-      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>`}</div>`;
+      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>${S.suggestions.map((s, i) => `
+      <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
       })()}
     </div>
-    ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
-      <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}</div>` : ""}
     <div class="sec">
       ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">${icon("x")}</button></div>`).join("")}</div>` : ""}
       <h4>${t("Pessoas e agents")}</h4>
