@@ -17,7 +17,7 @@ import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, 
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 export { Person } from "./person";
-import { markListening, poke, pokeRoom } from "./person";
+import { LISTEN_FRESH, markListening, poke, pokeRoom } from "./person";
 export { DocRoom } from "./docroom";
 
 export type Env = {
@@ -497,7 +497,7 @@ app.get("/api/books/:id/agents", async (c) => {
      WHERE substr(a.id, 1, 2) != 'n_' AND (((a.listen_room = ?1 OR a.listen_room IS NULL) AND a.listening_at > ?2) OR r.seen_at > ?3)
      ORDER BY a.seen_at DESC LIMIT 40`,
   )
-    .bind(id, now - 120_000, now - 3600_000)
+    .bind(id, now - LISTEN_FRESH, now - 3600_000)
     .all<{ id: string; email: string; who: string; repo: string | null; seen_at: number; listening_at: number | null; listen_room: string | null; ctx_tokens: number | null; ctx_window: number | null; ctx_at: number | null; ctx_limits: string | null }>(),
   c.env.DB.prepare(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`).bind(id, c.get("email")).first<{ claude_on: number | null }>(),
   // Everyone's cloud sandboxes in this room, as last seen by their owner's list (src/sandbox.ts): they cost money.
@@ -512,7 +512,7 @@ app.get("/api/books/:id/agents", async (c) => {
       repo: a.repo,
       seen_at: a.seen_at,
       // A listener long-polls every ≤50s; 2 minutes of silence means it stopped.
-      listening: !!a.listening_at && now - a.listening_at < 120_000 && (a.listen_room === id || !a.listen_room),
+      listening: !!a.listening_at && now - a.listening_at < LISTEN_FRESH && (a.listen_room === id || !a.listen_room),
       all_rooms: !a.listen_room,
       // How full its context was at its last call (only from the CLI inside Claude Code); older than 1h = unknown.
       context: a.ctx_tokens != null && a.ctx_window && now - (a.ctx_at ?? 0) < 3600_000 ? { tokens: a.ctx_tokens, window: a.ctx_window, at: a.ctx_at, limits: a.ctx_limits ? JSON.parse(a.ctx_limits) : null } : null,

@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.2.0";
+var VERSION = "1.4.0";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -755,6 +755,123 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
   vibebook update                install the latest version
 
 Options: --model "Claude Opus 5.5" (or VIBEBOOK_MODEL) names the agent in the room; --origin for a local server.`;
+var HUB = join(HOME, "hub.json");
+var hubPort = () => {
+  const h = readJson(HUB, null);
+  if (!h)
+    return null;
+  try {
+    process.kill(h.pid, 0);
+    return h.port;
+  } catch {
+    return null;
+  }
+};
+async function ensureHub() {
+  if (typeof WebSocket === "undefined" || process.env.VIBEBOOK_NO_HUB)
+    return null;
+  let port = hubPort();
+  if (port)
+    return port;
+  spawn(process.execPath, [process.argv[1], "hub"], { detached: true, stdio: "ignore", env: process.env }).unref();
+  for (let i = 0;i < 50 && !port; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    port = hubPort();
+  }
+  return port;
+}
+async function hub() {
+  if (hubPort())
+    return;
+  let gen = 0, allGen = 0, lastUse = Date.now(), backoff = 1000;
+  const books = new Map;
+  const waiters = new Set;
+  const seen = (book) => book === "*" ? gen : Math.max(books.get(book) ?? 0, allGen);
+  const bump = (book) => {
+    gen++;
+    if (book)
+      books.set(book, gen);
+    else
+      allGen = gen;
+    for (const w of [...waiters])
+      if (!book || w.book === "*" || w.book === book) {
+        waiters.delete(w);
+        w.done();
+      }
+  };
+  const server = createServer((req, res) => {
+    lastUse = Date.now();
+    const u = new URL(req.url ?? "/", "http://hub");
+    const book = u.searchParams.get("book") || "*", since = Number(u.searchParams.get("since") ?? -1);
+    const answer = (timeout = false) => {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ gen, timeout }));
+    };
+    if (seen(book) > since)
+      return answer();
+    const w = { book, done: () => {
+      clearTimeout(timer);
+      answer();
+    } };
+    const timer = setTimeout(() => {
+      waiters.delete(w);
+      answer(true);
+    }, 50000);
+    waiters.add(w);
+    req.on("close", () => {
+      if (waiters.delete(w))
+        clearTimeout(timer);
+    });
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  writePrivate(HUB, { pid: process.pid, port: server.address().port });
+  const quit = () => {
+    try {
+      if (readJson(HUB, null)?.pid === process.pid)
+        unlinkSync(HUB);
+    } catch {}
+    process.exit(0);
+  };
+  process.on("SIGTERM", quit).on("SIGINT", quit);
+  setInterval(() => {
+    if (!waiters.size && Date.now() - lastUse > 15 * 60000)
+      quit();
+  }, 60000);
+  let sock = null, ping;
+  const connect = async () => {
+    const s = await session();
+    const ws = new WebSocket(`${s.origin.replace(/^http/, "ws")}/mcp`, { headers: { authorization: `Bearer ${s.access_token}` } });
+    sock = ws;
+    let closed = false;
+    const again = () => {
+      if (closed)
+        return;
+      closed = true;
+      clearInterval(ping);
+      setTimeout(() => connect().catch(again), backoff);
+      backoff = Math.min(backoff * 2, 60000);
+    };
+    ws.onopen = () => {
+      backoff = 1000;
+      bump();
+      ping = setInterval(() => {
+        try {
+          ws.send("ping");
+        } catch {}
+      }, 45000);
+    };
+    ws.onmessage = (e) => {
+      try {
+        const m = JSON.parse(String(e.data));
+        if (m.t === "me" && m.book)
+          bump(m.book);
+      } catch {}
+    };
+    ws.onclose = again;
+    ws.onerror = again;
+  };
+  await connect().catch(() => setTimeout(() => connect().catch(() => {}), backoff));
+}
 async function main() {
   const cmd = flags.version ? "version" : pos[0];
   if (cmd === "statusline")
@@ -809,29 +926,57 @@ async function main() {
       printResult(await callTool(pos[1], readData(), agent));
       return;
     }
+    case "hub":
+      return hub();
     case "listen": {
       const room = flag("room") ?? roomHere(root);
       const tools = await listTools(agent);
+      const check = async (timeout) => {
+        const res = await callTool("wait_for_messages", { timeout_seconds: timeout, ...room ? { room_id: room } : {} }, agent, tools);
+        const out = JSON.parse(res.content[0]?.text ?? "{}");
+        if (out.stalled?.length) {
+          const one = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+          process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}
+`);
+          for (const s of out.stalled)
+            process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})
+`);
+          return true;
+        }
+        if (out.new?.length) {
+          const title = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+          for (const r of out.new)
+            process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}
+`);
+          return true;
+        }
+        return false;
+      };
+      const port = await ensureHub();
+      if (port) {
+        const wait = async (since) => await (await fetch(`http://127.0.0.1:${port}/wait?book=${room ?? "*"}&since=${since}`)).json();
+        try {
+          let since = (await wait(-1)).gen, last = 0, woke = true;
+          for (;; ) {
+            if (woke || Date.now() - last > 10 * 60000) {
+              try {
+                if (await check(0))
+                  return;
+              } catch {
+                await new Promise((r2) => setTimeout(r2, 15000));
+              }
+              last = Date.now();
+            }
+            const r = await wait(since);
+            woke = !r.timeout && r.gen > since;
+            since = r.gen;
+          }
+        } catch {}
+      }
       for (;; ) {
         try {
-          const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...room ? { room_id: room } : {} }, agent, tools);
-          const out = JSON.parse(res.content[0]?.text ?? "{}");
-          if (out.stalled?.length) {
-            const one = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
-            process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}
-`);
-            for (const s of out.stalled)
-              process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})
-`);
+          if (await check(50))
             return;
-          }
-          if (out.new?.length) {
-            const title = (t) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-            for (const r of out.new)
-              process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}
-`);
-            return;
-          }
         } catch (e) {
           await new Promise((r) => setTimeout(r, 15000));
         }

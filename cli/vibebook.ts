@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.2.0";
+const VERSION = "1.4.0";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -740,6 +740,71 @@ const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for yo
 
 Options: --model "Claude Opus 5.5" (or VIBEBOOK_MODEL) names the agent in the room; --origin for a local server.`;
 
+// ---- The hub: one WebSocket per machine for every listening Claude ----
+// `vibebook listen` used to long-poll the server (a request every 50s, D1 checked every 3s, per Claude). Now the first
+// listener starts `vibebook hub` (detached, one per machine: ~/.vibebook/hub.json), which keeps one hibernating socket
+// on the person's channel and serves the local listeners: GET 127.0.0.1:<port>/wait?book=<room|*>&since=<gen> answers
+// as soon as a message lands in that room (the server's {t:"me", book} poke), else after 50s. A listener then checks the
+// server once (wait_for_messages timeout 0), and anyway every 10 min (missed pokes, presence, stalled tasks). Node
+// without WebSocket (<22), or no hub: the old long-poll.
+const HUB = join(HOME, "hub.json");
+const hubPort = () => {
+  const h = readJson<{ pid: number; port: number } | null>(HUB, null);
+  if (!h) return null;
+  try { process.kill(h.pid, 0); return h.port; } catch { return null; }
+};
+async function ensureHub(): Promise<number | null> {
+  if (typeof WebSocket === "undefined" || process.env.VIBEBOOK_NO_HUB) return null;
+  let port = hubPort();
+  if (port) return port;
+  spawn(process.execPath, [process.argv[1], "hub"], { detached: true, stdio: "ignore", env: process.env }).unref();
+  for (let i = 0; i < 50 && !port; i++) { await new Promise((r) => setTimeout(r, 100)); port = hubPort(); }
+  return port;
+}
+async function hub() {
+  if (hubPort()) return; // one per machine
+  let gen = 0, allGen = 0, lastUse = Date.now(), backoff = 1000;
+  const books = new Map<string, number>();
+  const waiters = new Set<{ book: string; done: () => void }>();
+  const seen = (book: string) => (book === "*" ? gen : Math.max(books.get(book) ?? 0, allGen));
+  const bump = (book?: string) => {
+    gen++;
+    if (book) books.set(book, gen); else allGen = gen;
+    for (const w of [...waiters]) if (!book || w.book === "*" || w.book === book) { waiters.delete(w); w.done(); }
+  };
+  const server = createServer((req, res) => {
+    lastUse = Date.now();
+    const u = new URL(req.url ?? "/", "http://hub");
+    const book = u.searchParams.get("book") || "*", since = Number(u.searchParams.get("since") ?? -1);
+    const answer = (timeout = false) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ gen, timeout })); };
+    if (seen(book) > since) return answer();
+    const w = { book, done: () => { clearTimeout(timer); answer(); } };
+    const timer = setTimeout(() => { waiters.delete(w); answer(true); }, 50_000);
+    waiters.add(w);
+    req.on("close", () => { if (waiters.delete(w)) clearTimeout(timer); });
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  writePrivate(HUB, { pid: process.pid, port: (server.address() as { port: number }).port });
+  const quit = () => { try { if (readJson<{ pid: number } | null>(HUB, null)?.pid === process.pid) unlinkSync(HUB); } catch {} process.exit(0); };
+  process.on("SIGTERM", quit).on("SIGINT", quit);
+  // Nobody listening for 15 min: go away (the next listener starts a fresh one).
+  setInterval(() => { if (!waiters.size && Date.now() - lastUse > 15 * 60_000) quit(); }, 60_000);
+  let sock: WebSocket | null = null, ping: ReturnType<typeof setInterval> | undefined;
+  const connect = async () => {
+    const s = await session();
+    const ws = new (WebSocket as any)(`${s.origin.replace(/^http/, "ws")}/mcp`, { headers: { authorization: `Bearer ${s.access_token}` } }) as WebSocket;
+    sock = ws;
+    let closed = false;
+    const again = () => { if (closed) return; closed = true; clearInterval(ping); setTimeout(() => connect().catch(again), backoff); backoff = Math.min(backoff * 2, 60_000); };
+    ws.onopen = () => { backoff = 1000; bump(); ping = setInterval(() => { try { ws.send("ping"); } catch {} }, 45_000); }; // (re)connected: everyone checks once
+    ws.onmessage = (e) => { try { const m = JSON.parse(String(e.data)); if (m.t === "me" && m.book) bump(m.book); } catch {} };
+    ws.onclose = again;
+    ws.onerror = again;
+  };
+  await connect().catch(() => setTimeout(() => connect().catch(() => {}), backoff));
+  void sock;
+}
+
 async function main() {
   const cmd = flags.version ? "version" : pos[0];
   if (cmd === "statusline") return statusline();
@@ -779,28 +844,51 @@ async function main() {
       printResult(await callTool(pos[1], readData(), agent));
       return;
     }
+    case "hub":
+      return hub();
     case "listen": {
       // One-shot: returns when a room has messages this agent hasn't read (run it in the background and start it
       // again after handling). Network trouble waits and retries; only a rejected session stops it.
       const room = flag("room") ?? roomHere(root);
       const tools = await listTools(agent);
+      // One server check: prints what woke us and says so (true), else false.
+      const check = async (timeout: number) => {
+        const res = await callTool("wait_for_messages", { timeout_seconds: timeout, ...(room ? { room_id: room } : {}) }, agent, tools);
+        const out = JSON.parse(res.content[0]?.text ?? "{}") as { new?: { room_id: string; title: string; new_messages: number; url?: string }[]; stalled?: { room_id: string; epic: string; task: string; status: string }[]; next?: string };
+        if (out.stalled?.length) {
+          // Nothing new for a while, but tasks of your human sit half done: wake up and weigh them (≤1 an hour).
+          const one = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+          process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}\n`);
+          for (const s of out.stalled) process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})\n`);
+          return true;
+        }
+        if (out.new?.length) {
+          // The title is written by room members: one line, no quotes (it lands in the agent's context as output).
+          const title = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+          for (const r of out.new) process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}\n`);
+          return true;
+        }
+        return false;
+      };
+      const port = await ensureHub();
+      if (port) {
+        const wait = async (since: number) => (await (await fetch(`http://127.0.0.1:${port}/wait?book=${room ?? "*"}&since=${since}`)).json()) as { gen: number; timeout: boolean };
+        try {
+          let since = (await wait(-1)).gen, last = 0, woke = true;
+          for (;;) {
+            if (woke || Date.now() - last > 10 * 60_000) {
+              try { if (await check(0)) return; } catch { await new Promise((r) => setTimeout(r, 15_000)); }
+              last = Date.now();
+            }
+            const r = await wait(since);
+            woke = !r.timeout && r.gen > since;
+            since = r.gen;
+          }
+        } catch {} // the hub went away: long-poll below
+      }
       for (;;) {
         try {
-          const res = await callTool("wait_for_messages", { timeout_seconds: 50, ...(room ? { room_id: room } : {}) }, agent, tools);
-          const out = JSON.parse(res.content[0]?.text ?? "{}") as { new?: { room_id: string; title: string; new_messages: number; url?: string }[]; stalled?: { room_id: string; epic: string; task: string; status: string }[]; next?: string };
-          if (out.stalled?.length) {
-            // Nothing new for a while, but tasks of your human sit half done: wake up and weigh them (≤1 an hour).
-            const one = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80);
-            process.stdout.write(`vibebook: tarefas suas paradas (${out.stalled.length}). ${(out.next ?? "").replace(/[\p{Cc}`]/gu, " ").slice(0, 700)}\n`);
-            for (const s of out.stalled) process.stdout.write(`- room_id=${s.room_id} épico "${one(s.epic)}": ${one(s.task)} (${s.status})\n`);
-            return;
-          }
-          if (out.new?.length) {
-            // The title is written by room members: one line, no quotes (it lands in the agent's context as output).
-            const title = (t: string) => (t ?? "").replace(/[\p{Cc}"`]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-            for (const r of out.new) process.stdout.write(`vibebook: ${r.new_messages} nova(s) em "${title(r.title)}" room_id=${r.room_id}\n`);
-            return;
-          }
+          if (await check(50)) return;
         } catch (e) {
           await new Promise((r) => setTimeout(r, 15_000));
         }

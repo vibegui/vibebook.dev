@@ -6,6 +6,11 @@ import type { Env } from "./index";
  * "this changed, fetch it once" ({t:"me"} → /api/me, {t:"agents", book} → that room's /api/books/:id/agents).
  * It also keeps the last /api/me answer: served from here (no D1) until a {t:"me"} poke marks it stale, or 5 min. */
 export class Person extends DurableObject<Env> {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    // The CLI hub's keepalive (every 45s): answered without waking the object, so an idle socket stays free.
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
   async fetch(req: Request) {
     if (req.headers.get("upgrade") === "websocket") {
       const [client, server] = Object.values(new WebSocketPair());
@@ -50,11 +55,14 @@ export async function pokeRoom(env: Env, bookId: string, msg: Parameters<typeof 
   return poke(env, r.results.map((x) => x.email), msg);
 }
 
+/** How recent a listener's last call must be to count as listening: the CLI's hub checks in at least every 10 min
+ * (a long-poll listener every 50s). */
+export const LISTEN_FRESH = 12 * 60_000;
 /** A listener's long-poll call: presence for the room's Pessoas. Its first call after a gap (started listening) pokes
  * the room's apps so "ouvindo" and "Abrindo seu Claude…" update without polling. */
 export async function markListening(env: Env, agent: string, email: string, room: string, seen = false) {
   const now = Date.now();
   const was = await env.DB.prepare(`SELECT listening_at FROM agents WHERE id = ?`).bind(agent).first<{ listening_at: number | null }>();
   await env.DB.prepare(`UPDATE agents SET listening_at = ?, listen_room = ?${seen ? ", seen_at = ?1" : ""} WHERE id = ?`).bind(now, room || null, agent).run();
-  if (!was?.listening_at || now - was.listening_at > 120_000) await (room ? pokeRoom(env, room, { t: "agents", book: room }) : poke(env, [email], { t: "agents", book: "*" }));
+  if (!was?.listening_at || now - was.listening_at > LISTEN_FRESH) await (room ? pokeRoom(env, room, { t: "agents", book: room }) : poke(env, [email], { t: "agents", book: "*" }));
 }

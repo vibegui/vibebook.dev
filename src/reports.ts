@@ -159,6 +159,7 @@ export async function productReport(env: Env, now = Date.now()) {
         `- Banda: **${bytes(yd.sum.bytes)}** (média ${bytes(tot("bytes") / 7)}) · do cache ${yd.sum.bytes ? Math.round((yd.sum.cachedBytes / yd.sum.bytes) * 100) : 0}%`,
         yd.sum.threats ? `- Ameaças bloqueadas: ${yd.sum.threats}` : "",
       ].filter(Boolean).join("\n");
+      zone += await kindLines(env, zid, start, end, now).catch((e) => `\n\n(requests por tipo indisponíveis: ${String((e as Error).message).slice(0, 120)})`);
     }
     const errRate = wy.requests ? ((wy.errors / wy.requests) * 100).toFixed(2) : "0";
     return [
@@ -174,6 +175,25 @@ export async function productReport(env: Env, now = Date.now()) {
   } catch (e) {
     return `${head}\n\nNão consegui ler a Cloudflare: ${String((e as Error).message).slice(0, 300)}`;
   }
+}
+// Requests by kind in a window (zone, adaptive): the Claudes' MCP (/mcp: long-polls and tool calls), the app's API and
+// sockets, and everything else (pages, assets). Per hour, so yesterday and the last hour compare.
+const KIND_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zones(filter: { zoneTag: $zone }) {
+  all: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to }) { count }
+  mcp: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to, clientRequestPath: "/mcp" }) { count }
+  api: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to, clientRequestPath_like: "/api/%" }) { count }
+  ws: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to, clientRequestPath_like: "/ws%" }) { count } } } }`;
+async function kinds(env: Env, zone: string, from: number, to: number) {
+  const z = (await cfQuery(env, KIND_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
+  const n = (k: string) => z[k]?.[0]?.count ?? 0;
+  const h = (to - from) / 3600_000;
+  const per = (x: number) => Math.round(x / h);
+  return { mcp: per(n("mcp")), app: per(n("api") + n("ws")), other: per(n("all") - n("mcp") - n("api") - n("ws")) };
+}
+async function kindLines(env: Env, zone: string, start: number, end: number, now: number) {
+  const [y, last] = await Promise.all([kinds(env, zone, start, end), kinds(env, zone, now - 3600_000, now)]);
+  const row = (k: { mcp: number; app: number; other: number }) => `Claudes (/mcp) **${k.mcp}** · app (/api, /ws) ${k.app} · páginas e o resto ${k.other}`;
+  return ["", "**Requests por hora, por tipo**", `- Ontem (média): ${row(y)}`, `- Última hora: ${row(last)}`].join("\n");
 }
 // Quantiles come in microseconds.
 const ms = (us?: number) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);

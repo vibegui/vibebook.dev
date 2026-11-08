@@ -2,7 +2,7 @@
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import { cardOf } from "./card";
-import { markListening } from "./person";
+import { LISTEN_FRESH, markListening } from "./person";
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
 import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
@@ -509,7 +509,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
   switch (name) {
     case "wait_for_messages": {
       // ponytail: polls D1 every 3s for one person (≤17 light reads per call); a per-person DO with push is the upgrade.
-      const timeout = Math.min(Math.max(Number(a.timeout_seconds) || 25, 5), 50);
+      // 0 = one check and back (the CLI's hub already waited for a poke); else a long-poll of 5-50s.
+      const timeout = a.timeout_seconds === 0 ? 0 : Math.min(Math.max(Number(a.timeout_seconds) || 25, 5), 50);
       const only = me.room || str(a.room_id);
       if (me.room && a.room_id && str(a.room_id) !== me.room) throw new Error(`this sandbox's login only reaches room ${me.room}`);
       if (only && !(await isMember(db, only, me.email))) throw new Error(`not a member of ${only}`);
@@ -558,12 +559,12 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "claude_rooms": {
       const r = await db
         .prepare(
-          // listening = one of this person's agents waited on this room (or on all rooms) in the last 2 minutes, so the
+          // listening = one of this person's agents waited on this room (or on all rooms) lately (LISTEN_FRESH), so the
           // runner can tell a Claude whose listener died from one that's fine.
           `SELECT b.id, b.title, m.claude_on, EXISTS (SELECT 1 FROM agents a WHERE a.email = m.email AND a.listening_at > ? AND (a.listen_room = b.id OR a.listen_room IS NULL)) AS listening
            FROM members m JOIN books b ON b.id = m.book_id WHERE m.email = ? AND m.claude_on IS NOT NULL AND m.archived_at IS NULL ORDER BY m.position IS NULL, m.position, b.created_at`,
         )
-        .bind(Date.now() - 120_000, me.email)
+        .bind(Date.now() - LISTEN_FRESH, me.email)
         .all<{ id: string; title: string; claude_on: number; listening: number }>();
       return { rooms: r.results.map((b) => ({ room_id: b.id, title: b.title, url: `${origin}/b/${b.id}`, on: !!b.claude_on, listening: !!b.listening })) };
     }
@@ -929,6 +930,9 @@ async function stalledFor(env: Env, me: Me, only: string) {
   return out.flat().slice(0, 10);
 }
 export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {
+  // The CLI's hub (one per machine) listens here instead of long-polling: a hibernating socket on the person's
+  // channel (src/person.ts), which says {t:"me", book} on every message in their rooms. Same token as the MCP.
+  if (request.headers.get("upgrade") === "websocket") return env.PEOPLE.get(env.PEOPLE.idFromName(props.email.toLowerCase())).fetch(request);
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });
   const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;
   if (!body || body.jsonrpc !== "2.0" || !body.method) return rpcError(null, -32600, "Invalid Request", 400);
