@@ -325,6 +325,8 @@
   /* Pending invites and access requests: the email gets the whole row (wrapping, never cut) and the actions go under it. */
   .member .fnCol { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .member .fnCol .fn { font-weight: 500; }
+  .member .fnRow { display: flex; align-items: center; gap: 6px; min-width: 0; } .member .fnRow .fn { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .member .pendTag { flex: none; font-size: 10.5px; line-height: 1; padding: 3px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--mute); }
   .member .memActs { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .member .memActs { color: var(--mute); font-size: 11.5px; } .member .memActs .resend { padding: 0 2px; font-size: 11.5px; }
   .x { font-size: 18px; line-height: 1; padding: 4px 6px; color: var(--mute); flex: none; display: inline-grid; place-items: center; border-radius: 8px; }
@@ -3458,7 +3460,7 @@ function renderSide() {
       <h4>${t("Pessoas e agents")}</h4>
       ${sbxRows()}
       ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
-        ? `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><small class="memActs">${t("pendente")} · <button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
+        ? `<div class="fnCol"><span class="fnRow"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><span class="pendTag" title="${t("Convidada(o), ainda não entrou")}">${t("pendente")}</span></span><small class="memActs"><button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
         : S.names?.[m] ? `<span class="fn" title="${esc(m)}">${esc(S.names[m])}</span>`
         : `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(m.split("@")[0])}</span><small class="memActs">@${esc(m.split("@")[1] ?? "")}</small></div>`}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
