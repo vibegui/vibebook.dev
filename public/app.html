@@ -839,8 +839,9 @@
   .epTabs button b { font-weight: 600; opacity: .7; margin-left: 2px; }
   .epTabs button.on { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
   /* Stable height: the taller of the two lists, capped; it scrolls inside. */
-  .epList.fixed { height: min(calc(var(--rows) * var(--rowH, 36px)), 40vh); overflow-y: auto; overscroll-behavior: contain; }
-  @media (max-width: 900px) { .epList.fixed { --rowH: 46px; height: min(calc(var(--rows) * var(--rowH)), 42vh); } }
+  /* The tabs never move (they sit right under the room's row); a long archived list scrolls inside instead of
+     pushing everything down. */
+  .epList.arch { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -866,12 +867,12 @@
     /* Both sheets drop from the top, handle at their bottom (drag up to close). The thread switcher covers the header
        it opens from; the doc is a floor under the header: its peek bar sits right below it, it slides down from
        under the header and stops short of the bottom, leaving a strip of the dimmed chat that closes it on tap. */
-    .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) * .85); padding-top: max(14px, env(safe-area-inset-top)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
+    .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) - max(96px, var(--vvh, 100dvh) * .2)); padding-top: max(14px, env(safe-area-inset-top)); padding-bottom: 0; border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
     /* The room's own row sits where the title button was: tapping the title twice lands on it (not on ← vibebooks,
        which follows the thread list). */
     .side > * { order: 2; } .side > .roomStrip { order: -1; } .side > .threadsSec { order: 0; } .side > .sideHead { order: 1; }
     .sideTop > a[data-nav] { display: none; } /* the room strip on top has the way back */
-    .roomStrip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0 0 10px; margin-bottom: -14px; border-bottom: 1px solid var(--line); position: sticky; top: -14px; z-index: 2; background: var(--bg); } /* stays put while the list scrolls */
+    .roomStrip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0 0 10px; margin-bottom: -10px; border-bottom: 1px solid var(--line); }
     .roomStrip button { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; display: grid; justify-items: center; gap: 5px; min-width: 0; color: var(--ink); font-size: 12px; }
     .roomStrip .tw { position: relative; display: block; }
     .roomStrip .dot { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--bg); }
@@ -883,7 +884,7 @@
     .roomStrip a > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .roomStrip .tile.md { width: 46px; height: 46px; border-radius: 13px; font-size: 17px; opacity: 1; }
     .roomStrip .rsAll .tile { background: var(--panel); color: var(--mute); border: 1px solid var(--line); }
-    .side .sheetGrab { order: 99; position: sticky; bottom: -14px; z-index: 1; margin: 6px -16px -14px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); }
+    .side .sheetGrab { order: 99; position: sticky; bottom: -24px; z-index: 1; margin: 6px -16px -24px; padding: 10px 0 36px; width: calc(100% + 32px); flex: none; border-radius: 0 0 18px 18px; background: var(--bg); box-shadow: 0 -10px 12px -6px var(--bg); } /* solid to the sheet's edge: nothing shows under it */
     .chathead { z-index: 23; background: var(--bg); } /* above the toolbar (21), so its ⏳ list opens over it */
     .book > .side { z-index: 24; }
     /* The toolbar under the header (docPeek) IS the doc sheet's tab bar: it stays on top while the sheet is open
@@ -3358,10 +3359,10 @@ function renderSide() {
         const open = S.epics.filter((e) => !e.archived);
         const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e);
         const showArch = archOpen && arch.length;
-        // Open and archived epics are two tabs over one list of a stable height (the taller of the two, capped):
-        // switching never moves the tabs or what's under the list.
+        // Open and archived epics are two tabs right under the room's row, so switching never moves them; a long
+        // archived list scrolls inside (.epList.arch).
         return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
-      <div class="epList${arch.length ? " fixed" : ""}" style="--rows:${Math.max(open.length + 1, arch.length)}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
+      <div class="epList${showArch ? " arch" : ""}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
       <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>`}</div>`;
       })()}
     </div>
