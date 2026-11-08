@@ -113,10 +113,15 @@
   .hello .primary { padding: 12px 18px; border-radius: 999px; }
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 48px; align-items: start; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; gap: 40px; } }
-  .folder + .folder { margin-top: 40px; }
-  .folder h2 { font-size: 22px; margin: 0 0 16px; display: flex; align-items: baseline; gap: 8px; }
-  .folder h2 small { font: 600 13px "Schibsted Grotesk", sans-serif; color: var(--mute); }
   .cards { display: grid; gap: 14px; }
+  .cardBox { display: grid; }
+  .waits.cw { margin: -14px 0 0; padding: 18px 16px 4px; border-radius: 0 0 16px 16px; border-top: 0; }
+  .waits.cw h3 { margin: 0 0 2px; font: 600 12px "Schibsted Grotesk", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); } .waits.cw h3 small { margin-left: 4px; }
+  .waits.cw li a { padding: 7px 0; font-size: 13.5px; }
+  .waits.cw details > summary { cursor: pointer; padding: 7px 0 9px; font-size: 13px; color: var(--accent); list-style: none; }
+  .waits.cw details > summary::-webkit-details-marker { display: none; }
+  .waits.cw details[open] > summary { display: none; }
+  .waitTot { color: #e3b505; font-weight: 600; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
     display: flex; min-height: 112px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
   .card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px oklch(0.25 0.08 250 / .45); }
@@ -1461,6 +1466,8 @@ const EN = {
   "Cancelar convite": "Cancel invite",
   "Remover do vibebook": "Remove from vibebook",
   "Seus amigos": "Your friends",
+  "{n} esperando você": "{n} waiting on you",
+  "+{n} mais": "+{n} more",
   "{n} offline": "{n} offline",
   "Adicionar {email}": "Add {email}",
   "convidar por email": "invite by email",
@@ -2063,10 +2070,6 @@ function homeWith(me) {
   myBooks = me.books; myWaits = me.waits || []; renderSwitcher();
   knownNames = Object.fromEntries(me.friends.filter((f) => f.name).map((f) => [f.email, f.name]));
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
-  const OTHER = t("Outros");
-  const byFolder = {};
-  for (const b of me.books) (byFolder[b.folder || OTHER] ??= []).push(b);
-  const folders = Object.keys(byFolder).sort((a, b) => (a === OTHER) - (b === OTHER) || a.localeCompare(b));
   const first = (me.name || "").split(" ")[0];
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   if (PHONE.matches) return phoneHome(me);
@@ -2086,7 +2089,6 @@ function homeWith(me) {
       <div class="pfOut"><button class="primary" id="logout">${t("Sair")}</button><button class="ghost" id="logoutAll" title="${t("Sai em todos os navegadores e celulares onde você entrou")}">${t("Sair de todos os aparelhos")}</button></div>
     </dialog>
     <div id="setupCard"></div>
-    <section class="waits" id="waits"${me.waits?.length ? "" : " hidden"}></section>
     <form class="ask" id="ask">
       <label for="askText">${t("O que você quer resolver?")}</label>
       <div class="askRow"><textarea id="askText" rows="2" maxlength="2000" placeholder="${t("Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.")}"></textarea><button class="primary" id="askBtn">${t("Achar a sala →")}</button></div>
@@ -2100,17 +2102,14 @@ function homeWith(me) {
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />
     <div class="hello">
       <div class="helloText"><h1>${first ? t("Oi, {name}", { name: esc(first) }) : t("Seus vibebooks")}</h1>
-        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, t("amigo"), t("amigos"))} · <a class="archLink" data-nav href="/archived">${t("Arquivo")}</a></p></div>
+        <p>${plural(me.books.length, "vibebook", "vibebooks")} · ${plural(me.friends.length, t("amigo"), t("amigos"))} · <a class="archLink" data-nav href="/archived">${t("Arquivo")}</a><span id="waitN"></span></p></div>
       <button class="primary" id="new">${icon("plus")} ${t("Novo vibebook")}</button>
     </div>
     <div class="grid">
       <main>
         ${me.books.length ? "" : `<div class="empty">${t("Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu Claude ao lado.")}</div>`}
-        ${folders.map((f) => `
-          <section class="folder">
-            <h2>${esc(f)} <small>${byFolder[f].length}</small></h2>
-            <div class="cards">${byFolder[f].map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
-              <a class="card" data-nav href="/b/${b.id}">
+        <div class="cards">${roomOrder().map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
+              <div class="cardBox"><a class="card" data-nav href="/b/${b.id}">
                 <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="${t("Arquivar")}" aria-label="${t("Arquivar {title}", { title: esc(b.title) })}">${icon("archive")}</button>
                 <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
                 <div class="info">
@@ -2118,9 +2117,8 @@ function homeWith(me) {
                   <div class="sum">${esc(b.summary || t("Ainda sem resumo. O @vibe escreve um quando a conversa andar."))}</div>
                   <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span>${ago(b.updated_at)}</span></div>
                 </div>
-              </a>`; }).join("")}
-            </div>
-          </section>`).join("")}
+              </a><div class="waits cw" data-cw="${b.id}" hidden></div></div>`; }).join("")}
+        </div>
       </main>
       <aside class="friends">
         <section class="agentBox" id="agentBox" aria-live="polite"></section>
@@ -2415,21 +2413,30 @@ async function renderAgents(again) {
 
 // "Esperando você": what people (or their Claudes) asked of you and you haven't answered yet, across your rooms, and
 // your tasks in review. @vibe finds them with Jev on the room's alarm; ✓ takes an ask off (answered elsewhere).
+// Desktop home: each room's card lists its own waits (3, then "+N"), the total sits in the greeting line;
+// the phone home has no cards, so its menu keeps the one list.
 function renderWaits() {
-  const el = document.getElementById("waits");
-  if (!el) return;
-  el.hidden = !myWaits.length;
-  if (!myWaits.length) return;
   const who = (w) => (w.author_name || w.author.split("@")[0]).split(" ")[0];
   const href = (w) => `/b/${w.book_id}${w.thread === "main" ? "" : `?t=${encodeURIComponent(w.thread)}`}`;
-  el.innerHTML = `<h2>${t("Esperando você")} <small>${myWaits.length}</small></h2>
-    <ul>${myWaits.map((w, i) => `<li>
-      <a data-nav href="${href(w)}" data-wait-open="${i}">${tile(myBooks.find((b) => b.id === w.book_id) || { id: w.book_id, title: w.room }, "sm")}
-        <span class="wt"><small>${esc(w.room)}${w.topic ? ` › ${esc(w.topic)}` : ""} · ${ago(w.ts)}</small>
+  const li = (w, inCard) => { const i = myWaits.indexOf(w); return `<li>
+      <a data-nav href="${href(w)}" data-wait-open="${i}">${inCard ? "" : tile(myBooks.find((b) => b.id === w.book_id) || { id: w.book_id, title: w.room }, "sm")}
+        <span class="wt"><small>${inCard ? "" : `${esc(w.room)}${w.topic ? " › " : ""}`}${w.topic ? esc(w.topic) : inCard ? t("sala principal") : ""} · ${ago(w.ts)}</small>
         ${w.ref.startsWith("t") ? `<b>${t("Tarefa sua esperando OK:")}</b> ${esc(w.text)}` : `<b>${esc(who(w))}:</b> ${esc(w.text.length > 160 ? `${w.text.slice(0, 158)}…` : w.text)}`}</span></a>
       ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check")}</button>` : ""}
-    </li>`).join("")}</ul>`;
-  el.querySelectorAll("[data-wait-done]").forEach((b) => b.onclick = () => {
+    </li>`; };
+  const n = document.getElementById("waitN");
+  if (n) n.innerHTML = myWaits.length ? ` · <b class="waitTot">${t("{n} esperando você", { n: myWaits.length })}</b>` : "";
+  document.querySelectorAll("[data-cw]").forEach((c) => {
+    const ws = myWaits.filter((w) => w.book_id === c.dataset.cw);
+    c.hidden = !ws.length;
+    c.innerHTML = ws.length ? `<h3>${t("Esperando você")} <small>${ws.length}</small></h3><ul>${ws.slice(0, 3).map((w) => li(w, true)).join("")}</ul>${ws.length > 3 ? `<details><summary>${t("+{n} mais", { n: ws.length - 3 })}</summary><ul>${ws.slice(3).map((w) => li(w, true)).join("")}</ul></details>` : ""}` : "";
+  });
+  const el = document.getElementById("waits");
+  if (el) {
+    el.hidden = !myWaits.length;
+    el.innerHTML = myWaits.length ? `<h2>${t("Esperando você")} <small>${myWaits.length}</small></h2><ul>${myWaits.map((w) => li(w, false)).join("")}</ul>` : "";
+  }
+  document.querySelectorAll("[data-wait-done]").forEach((b) => b.onclick = () => {
     const w = myWaits[Number(b.dataset.waitDone)];
     myWaits = myWaits.filter((x) => x !== w);
     renderWaits(); renderSwitcher();
