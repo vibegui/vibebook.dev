@@ -2901,7 +2901,21 @@ async function setFavicon(title) {
   const link = document.querySelector('link[rel="icon"]');
   if (!title) { link.type = "image/svg+xml"; link.href = "/favicon.svg"; return; }
   const own = iconUrl(myBooks?.find((b) => b.id === S?.id));
-  if (own) { link.type = "image/png"; link.href = own; return; }
+  // The room's own icon goes in rounded like the generated one: a square image (or one with a white backdrop)
+  // otherwise shows white corners on a dark tab bar.
+  if (own) {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas"); c.width = c.height = 64;
+      const g = c.getContext("2d");
+      g.beginPath(); g.roundRect(0, 0, 64, 64, 16); g.clip();
+      g.drawImage(img, -1, -1, 66, 66); // 1px bleed: no light fringe from the image's own edge
+      link.type = "image/png"; link.href = c.toDataURL("image/png");
+    };
+    img.onerror = () => { link.type = "image/png"; link.href = own; };
+    img.src = own;
+    return;
+  }
   await document.fonts?.load?.('400 40px Caprasimo').catch(() => {});
   const c = document.createElement("canvas"); c.width = c.height = 64;
   const g = c.getContext("2d");
