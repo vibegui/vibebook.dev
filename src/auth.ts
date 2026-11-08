@@ -238,9 +238,12 @@ auth.get("/invite", async (c) => {
   return c.redirect(safeNext(next));
 });
 
-auth.post("/logout", (c) => {
+auth.post("/logout", async (c) => {
   deleteCookie(c, COOKIE, { path: "/" });
-  return c.json({ ok: true });
+  // A form post (the consent page's "Not you?") signs out and goes back to the login with where it came from.
+  if (!c.req.header("content-type")?.includes("form")) return c.json({ ok: true });
+  const next = safeNext(String((await c.req.parseBody()).next ?? ""));
+  return c.redirect(`/login?next=${encodeURIComponent(next)}`, 303);
 });
 // Every browser signed in as you (phone, laptop, a stolen cookie) is signed out; your Claudes' logins are separate.
 auth.post("/logout-all", async (c) => {

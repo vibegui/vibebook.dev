@@ -53,6 +53,7 @@ const T = {
     local: "Isso manda o acesso para um app no seu computador. Continue só se você acabou de pedir pra conectar.",
     allow: "Permitir",
     deny: "Cancelar",
+    other: "Não é você? Entrar com outro email",
     expired: "Esse pedido expirou ou já foi usado. Volte ao seu agent e tente conectar de novo.",
   },
   en: {
@@ -66,6 +67,7 @@ const T = {
     local: "This sends access to an app on your computer. Continue only if you just asked to connect.",
     allow: "Allow",
     deny: "Cancel",
+    other: "Not you? Sign in with another email",
     expired: "This request expired or was already used. Go back to your agent and connect again.",
   },
 };
@@ -85,9 +87,10 @@ const page = (title: string, body: string) => `<!doctype html><html><head><meta 
   button { font: 700 15px/1 inherit; font-family: inherit; border: 0; border-radius: 999px; padding: 13px 22px; cursor: pointer; }
   .yes { background: oklch(0.9 0.16 98); color: oklch(0.2 0.06 250); box-shadow: 0 4px 0 oklch(0.72 0.14 90); }
   .no { background: transparent; box-shadow: inset 0 0 0 2px oklch(0.91 0.01 245); }
+  .other { margin-top: 14px; } .other button { background: none; padding: 0; font: 600 14px/1.4 inherit; font-family: inherit; color: oklch(0.45 0.13 250); text-decoration: underline; }
 </style></head><body><div class="card">${body}</div></body></html>`;
 
-const consentHtml = (t: (typeof T)[Lang], d: ConsentDescription & { redirectIsLoopback?: boolean }, me: string, handle: string) => {
+const consentHtml = (t: (typeof T)[Lang], d: ConsentDescription & { redirectIsLoopback?: boolean }, me: string, handle: string, here: string) => {
   const name = escapeHtml(d.clientName);
   return page(
     t.title(name),
@@ -98,7 +101,8 @@ const consentHtml = (t: (typeof T)[Lang], d: ConsentDescription & { redirectIsLo
 <p class="muted">${d.clientDomain ? t.from(escapeHtml(d.clientDomain)) : t.self} ${t.goes(escapeHtml(d.redirectHost))}</p>
 ${d.redirectIsLoopback ? `<p class="warn">${t.local}</p>` : ""}
 <form method="post"><input type="hidden" name="handle" value="${escapeHtml(handle)}">
-<div class="row"><button class="yes" name="decision" value="approve">${t.allow}</button><button class="no" name="decision" value="deny">${t.deny}</button></div></form>`,
+<div class="row"><button class="yes" name="decision" value="approve">${t.allow}</button><button class="no" name="decision" value="deny">${t.deny}</button></div></form>
+<form class="other" method="post" action="/auth/logout"><input type="hidden" name="next" value="${escapeHtml(here)}"><button>${t.other}</button></form>`,
   );
 };
 
@@ -123,7 +127,7 @@ connect.get("/authorize", async (c) => {
     const details = await oauth.describeConsent(request);
     const consent = await oauth.beginConsent(request);
     consent.headers.set("content-type", "text/html; charset=utf-8");
-    return new Response(consentHtml(T[lang(c)], details, email, consent.handle), { headers: consent.headers });
+    return new Response(consentHtml(T[lang(c)], details, email, consent.handle, url.pathname + url.search), { headers: consent.headers });
   } catch (e) {
     return fail(c, e);
   }
