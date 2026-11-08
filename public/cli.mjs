@@ -746,7 +746,7 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
   vibebook call <tool> ['{json}' | -d @file | -d @-]
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
-  vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>]
+  vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>] ['{"thread":"<epic>"}']
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
   vibebook herdr --app           the same in the Herdr desktop app: one space per room (not with the terminal one)
@@ -899,6 +899,17 @@ async function main() {
         args.message = flag("message");
       if (flag("thread"))
         args.thread = flag("thread");
+      if (pos[2]) {
+        let j;
+        try {
+          j = JSON.parse(pos[2]);
+        } catch {
+          return die(`not JSON: ${pos[2]}`);
+        }
+        for (const k of ["thread", "message", "room_id"])
+          if (j[k] != null)
+            args[k] = j[k];
+      }
       const res = await callTool("upload_link", args, agent);
       const link = JSON.parse(res.content[0]?.text ?? "{}");
       if (!link.url)

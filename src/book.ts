@@ -130,8 +130,14 @@ export class Book extends DurableObject<Env> {
   // room + epic with one query instead of calling every room's DO.
   // Curation: an epic whose tasks are all done archives itself and says so in its thread. archived = -1 means
   // someone reopened it by hand, so it stays open.
+  // An epic a Claude worked in closes only with proof: its delivery (done card) and a screenshot in the thread.
+  // Without them it stays open and housekeep asks for it. Epics only people worked in close on their ticks alone.
+  unproven(id: string) {
+    const has = (where: string) => this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND ${where} LIMIT 1`, id).toArray().length > 0;
+    return has(`kind = 'agent'`) && !(has(`kind = 'agent' AND tag = 'done'`) && has(`files LIKE '%"type":"image/%'`));
+  }
   autoArchive() {
-    const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done"));
+    const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done") && !this.unproven(e.id));
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
       const n = e.tasks.length;
@@ -961,6 +967,8 @@ export class Book extends DurableObject<Env> {
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined, replyTo, choices, card });
+    // The delivery or its screenshot may be the proof an epic with every task done was waiting for.
+    if (thread !== "main" && (done || files.some((f) => f.type.startsWith("image/"))) && this.autoArchive()) this.epicsChanged();
     // A done post closes the person's doing acks; any other post is activity that keeps them live (the app greys
     // out a "doing" with no activity for 20 min).
     const now = Date.now();
@@ -1417,8 +1425,18 @@ export class Book extends DurableObject<Env> {
     for (const e of this.epics()) {
       if (e.archived) continue;
       const open = e.tasks.filter((t) => t.status !== "done");
-      if (!open.length) continue;
       const last = this.sql.exec<{ ts: number }>(`SELECT max(ts) AS ts FROM messages WHERE thread = ?`, e.id).one().ts ?? 0;
+      // Every task done but no proof yet (autoArchive): once per epic, ask the Claude's human for the delivery.
+      if (!open.length) {
+        if (!e.tasks.length || !this.unproven(e.id) || this.get(`proof:${e.id}`) || now - last > 14 * 864e5) continue;
+        if (now - last < AFTER) { next = Math.min(next, last + AFTER); continue; }
+        this.set(`proof:${e.id}`, String(now));
+        const who = this.sql.exec<{ author: string }>(`SELECT author FROM messages WHERE thread = ? AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).one().author;
+        this.addMessage(e.id, "ai", this.en
+          ? `${at(who)}, every task here is done, but the epic closes only with proof: a delivery (done) with a screenshot and what was tested. Post it and I'll archive it.`
+          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) com print e o que foi testado. Posta que eu arquivo.`);
+        continue;
+      }
       const del = this.sql.exec<{ id: number; author: string; ts: number }>(`SELECT id, author, ts FROM messages WHERE thread = ? AND tag = 'done' AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).toArray()[0];
       if (now - last > 14 * 864e5) continue; // a dead epic isn't nagged back to life
       if (del && now - del.ts < 2 * 864e5 && Number(this.get(`nudged:${e.id}`) ?? 0) < del.id) {
@@ -1491,6 +1509,7 @@ export class Book extends DurableObject<Env> {
       const q: Record<string, Question> = {};
       // Without a goal written down there is nothing to compare the tasks with.
       if (doc.length > 80 && !doc.includes(SEED_GOAL)) q.cobre = { type: "noul", instructions: "As tarefas listadas, juntas, entregam o objetivo do épico descrito no doc? Responda não se falta algum passo importante para o objetivo estar cumprido." };
+      q.verifica = { type: "noul", instructions: "Alguma das tarefas confere que o resultado funcionou: um teste, um print, uma checagem em produção ou o OK de uma pessoa?" };
       open.forEach((t, i) => {
         q[`c${i}`] = { type: "noul", instructions: `A tarefa "${t.title.slice(0, 200)}" deixa claro o que é estar pronta, de um jeito que alguém consiga conferir?` };
         q[`u${i}`] = { type: "noul", instructions: `A tarefa "${t.title.slice(0, 200)}" é uma coisa só, e não várias tarefas diferentes juntas?` };
@@ -1503,7 +1522,8 @@ export class Book extends DurableObject<Env> {
       cost += r.cost;
       const no = (k: string) => (r.answers[k]?.noul ?? 1) < 0.35;
       const f: Record<string, string[]> = {};
-      if (q.cobre && no("cobre")) f[e.id] = [this.en ? "the tasks don't cover the doc's goal" : "as tarefas não cobrem o objetivo do doc"];
+      const ep = [q.cobre && no("cobre") && (this.en ? "the tasks don't cover the doc's goal" : "as tarefas não cobrem o objetivo do doc"), no("verifica") && (this.en ? "no verification: add a task that checks it works" : "sem verificação: falta tarefa que confira que funcionou")].filter(Boolean) as string[];
+      if (ep.length) f[e.id] = ep;
       open.forEach((t, i) => {
         const n = [no(`c${i}`) && (this.en ? "no done criterion" : "sem critério de pronto"), no(`u${i}`) && (this.en ? "looks like more than one task" : "parece mais de uma tarefa")].filter(Boolean) as string[];
         if (n.length) f[t.id] = n;
