@@ -249,7 +249,7 @@
   .epList .newRoom { margin-top: 6px; padding: 10px; border: 2px dashed var(--line); color: var(--ink); }
   /* A text field with its action on the right: + submits (and focuses the field when it's empty). */
   .epList .newRoom { cursor: text; }
-  .epList .newRoom .ri { box-shadow: none; border: 0; background: var(--accent); color: #fff; cursor: pointer; flex: none; }
+  .epList .newRoom .ri { box-shadow: none; border: 0; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; line-height: 0; background: var(--accent); color: #fff; cursor: pointer; flex: none; } /* a button: iOS pads it, which pushed the + off center */
   .epList .newRoom input { font-weight: 500; padding: 6px 2px; } .epList .newRoom input::placeholder { color: var(--mute); opacity: 1; }
   .epList .newRoom:focus-within { border-style: solid; border-color: var(--accent); box-shadow: none; }
   .epList .newRoom + .thread.pre { margin-top: 6px; } .epList .thread.pre + .thread.pre { margin-top: 4px; }
