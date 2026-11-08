@@ -833,9 +833,14 @@
   .doc .cm .cm-ySelectionInfo { font: 600 11px/1.2 system-ui, sans-serif; padding: 2px 5px; border-radius: 4px; opacity: 1; }
 
   @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly, .roomStrip { display: none !important; } }
-  .archNav { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 10px; margin-top: 4px; border: 0; background: none; color: var(--mute); font: inherit; font-size: 13px; cursor: pointer; border-radius: 10px; text-align: left; }
-  .archNav:hover { background: var(--panel); color: var(--ink); }
-  .archNav span { flex: 1; } .archNav.back { color: var(--ink); font-weight: 600; margin: 0 0 4px; }
+  @media (min-width: 901px) { .rowEdit { display: none !important; } }
+  .epTabs { display: flex; gap: 4px; margin: 6px 0 4px; padding: 3px; border-radius: 10px; background: var(--panel); }
+  .epTabs button { flex: 1; border: 0; background: none; padding: 6px 8px; border-radius: 8px; font: inherit; font-size: 13px; color: var(--mute); cursor: pointer; }
+  .epTabs button b { font-weight: 600; opacity: .7; margin-left: 2px; }
+  .epTabs button.on { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+  /* Stable height: the taller of the two lists, capped; it scrolls inside. */
+  .epList.fixed { height: min(calc(var(--rows) * var(--rowH, 36px)), 40vh); overflow-y: auto; overscroll-behavior: contain; }
+  @media (max-width: 900px) { .epList.fixed { --rowH: 46px; height: min(calc(var(--rows) * var(--rowH)), 42vh); } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -866,7 +871,14 @@
        which follows the thread list). */
     .side > * { order: 2; } .side > .roomStrip { order: -1; } .side > .threadsSec { order: 0; } .side > .sideHead { order: 1; }
     .sideTop > a[data-nav] { display: none; } /* the room strip on top has the way back */
-    .roomStrip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 0 12px; margin-bottom: 8px; border-bottom: 1px solid var(--line); position: sticky; top: -14px; z-index: 2; background: var(--bg); } /* stays put while the list scrolls */
+    .roomStrip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0 0 10px; margin-bottom: -14px; border-bottom: 1px solid var(--line); position: sticky; top: -14px; z-index: 2; background: var(--bg); } /* stays put while the list scrolls */
+    .roomStrip button { border: 0; background: none; padding: 0; font: inherit; cursor: pointer; display: grid; justify-items: center; gap: 5px; min-width: 0; color: var(--ink); font-size: 12px; }
+    .roomStrip .tw { position: relative; display: block; }
+    .roomStrip .dot { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2.5px var(--bg); }
+    .roomStrip .dot.h { background: oklch(0.68 0.17 150); } .roomStrip .dot.a { background: oklch(0.85 0.16 90); }
+    .roomStrip .swWait { box-shadow: 0 0 0 2px var(--bg); }
+    .roomStrip .swBusy { position: absolute; left: -4px; bottom: -4px; }
+    .rowEdit { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--line); font-size: 12px; color: var(--mute); flex: none; }
     .roomStrip a { display: grid; justify-items: center; gap: 5px; min-width: 0; color: var(--ink); text-decoration: none; font-size: 12px; }
     .roomStrip a > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .roomStrip .tile.md { width: 46px; height: 46px; border-radius: 13px; font-size: 17px; opacity: 1; }
@@ -1336,6 +1348,9 @@ const EN = {
   "Outro": "Other",
   "escolha e envie pela caixa de mensagem": "pick, then send from the message box",
   "Todos": "All",
+  "Épicos": "Epics",
+  "editar": "edit",
+  "Buscar": "Search",
   "Exigir Face ID ao abrir": "Require Face ID to open",
   "Pronto: o vibebook pede Face ID ao abrir neste aparelho.": "Done: vibebook asks for Face ID when it opens on this device.",
   "Face ID desligado neste aparelho.": "Face ID turned off on this device.",
@@ -3334,18 +3349,20 @@ function renderSide() {
     <button type="button" class="sheetGrab" aria-label="${t("Fechar")}"><i></i></button>
     ${roomStrip()}
     <div class="sideHead">
-      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${isPre() ? "" : `<button class="iconBtn phOnly" id="sideRename" title="${t("Renomear")}" aria-label="${t("Renomear")}">${icon("pencil", 18)}</button>`}${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn phOnly" id="sideRooms" title="${t("Trocar de sala")}" aria-label="${t("Trocar de sala")}">${SW_SEARCH}</button><button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
+      <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec threadsSec">
-      <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${waitPill("main")}<span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
+        const open = S.epics.filter((e) => !e.archived);
         const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e);
-        // Archived is its own list, in place of the open epics (← back), not a fold that pushes everything down.
-        if (archOpen && arch.length) return `<button type="button" class="archNav back" id="archBack">${icon("back")}<span>${t("Arquivados")} (${arch.length})</span></button>${arch.map(epicRow).join("")}`;
-        return `${S.epics.filter((e) => !e.archived).map(epicRow).join("")}
-      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>
-      ${arch.length ? `<button type="button" class="archNav" id="archGo"><span>${t("Arquivados")} (${arch.length})</span><b>›</b></button>` : ""}`;
+        const showArch = archOpen && arch.length;
+        // Open and archived epics are two tabs over one list of a stable height (the taller of the two, capped):
+        // switching never moves the tabs or what's under the list.
+        return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
+      <div class="epList${arch.length ? " fixed" : ""}" style="--rows:${Math.max(open.length + 1, arch.length)}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
+      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>`}</div>`;
       })()}
     </div>
     ${S.suggestions.length ? `<div class="sec"><h4>✦ ${t("@vibe sugere")}</h4>${S.suggestions.map((s, i) => `
@@ -3367,16 +3384,16 @@ function renderSide() {
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
-  el.querySelector("#archGo")?.addEventListener("click", () => { archOpen = true; renderSide(); });
-  el.querySelector("#archBack")?.addEventListener("click", () => { archOpen = false; renderSide(); });
+  el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
   sheetDrag(el.querySelector(".sheetGrab"), "side", false);
-  el.querySelector("#sideRooms").onclick = openSwitch;
-  el.querySelector("#sideRename")?.addEventListener("click", renameThread);
+  el.querySelector("#sideRooms")?.addEventListener("click", openSwitch);
+  // The root row's "editar" chip renames the room; it sits inside the row's button, so it stops the row's click.
+  el.querySelector("#sideRename")?.addEventListener("click", (e) => { e.stopPropagation(); renameThread(); });
   // Same actions as the header's ✓ 🗑 (hidden on phones): close the sheet, then run them.
   el.querySelector("#sideArch")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicArch")?.click(); });
   el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
   // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
-  el.querySelectorAll(".threadsSec > .thread[data-thread]:not([data-thread='main']):not(.pre)").forEach((b) => {
+  el.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((b) => {
     b.draggable = true;
     b.ondragstart = (e) => { e.dataTransfer.setData("text/vb-epic", b.dataset.thread); e.dataTransfer.effectAllowed = "move"; b.classList.add("dragging"); };
     b.ondragend = () => b.classList.remove("dragging");
@@ -3484,7 +3501,11 @@ let archOpen = false;
 // Phones: the last rooms you opened (besides this one) as tiles, then "all", always at the top of the thread sheet.
 function roomStrip() {
   const recent = [...(myBooks || [])].filter((b) => b.id !== S?.id && !b.archived_at).sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0)).slice(0, 3);
-  return `<nav class="roomStrip" aria-label="${t("Seus vibebooks")}">${recent.map((b) => `<a data-nav href="/b/${b.id}" title="${esc(b.title)}">${tile(b, "md")}<span>${esc(b.title)}</span></a>`).join("")}<a data-nav href="/app" class="rsAll"><span class="tile md">${icon("grid", 20)}</span><span>${t("Todos")}</span></a></nav>`;
+  const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
+  const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy">✻</b>` : "");
+  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait">${n}</b>` : ""; };
+  // "Todos" sits on the left (where ← goes back), search on the right.
+  return `<nav class="roomStrip" aria-label="${t("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${icon("grid", 20)}</span><span>${t("Todos")}</span></a>${recent.map((b) => `<a data-nav href="/b/${b.id}" title="${esc(b.title)}"><span class="tw">${tile(b, "md")}${dot(b)}${busy(b)}${waitN(b)}</span><span>${esc(b.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - recent.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${t("Trocar de sala")}"><span class="tile md">${SW_SEARCH}</span><span>${t("Buscar")}</span></button></nav>`;
 }
 let boardEpic = null;
 // The phone's full-screen board closes when you open an epic from it; the desktop's lives in the doc panel and stays.
