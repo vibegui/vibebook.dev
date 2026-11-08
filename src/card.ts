@@ -78,7 +78,9 @@ const CATALOG: Record<string, { props: (p: Record<string, unknown>, room: string
       return { label, value: short(p.value, "Button.value"), style: p.style === "primary" || p.style === "danger" ? p.style : undefined };
     },
   },
-  LinkButton: { props: (p) => ({ label: short(p.label, "LinkButton.label") ?? "Abrir", url: httpUrl(p.url, "LinkButton.url") }) },
+  // url: an http(s) link (new tab), or a place in the room: "#m<id>" a message, "#e<epic id>" an epic's thread,
+  // "#doc" / "#doc:<epic id>" the room's or an epic's doc.
+  LinkButton: { props: (p) => ({ label: short(p.label, "LinkButton.label") ?? "Abrir", url: /^#(m\d{1,9}|e[a-z0-9]{4,16}|doc(:[a-z0-9]{4,16})?)$/.test(String(p.url ?? "")) ? String(p.url) : httpUrl(p.url, "LinkButton.url (http(s), or #m<message id>, #e<epic id>, #doc, #doc:<epic id>)") }) },
 };
 export const CARD_TYPES = Object.keys(CATALOG);
 

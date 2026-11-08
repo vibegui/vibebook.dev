@@ -9,5 +9,8 @@ const assert = (c: unknown, m: string) => { if (!c) { console.error("FAIL", m); 
   bad({ root: "c", elements: { c: { type: "Card", children: ["i"] }, i: { type: "Image", props: { url: "https://evil.example/p.gif" } } } }, /file of this room/);
   bad({ root: "c", elements: { c: { type: "Card", children: ["a"] }, a: { type: "Actions", children: ["t"] }, t: { type: "Text", props: { content: "x" } } } }, /can't be inside/);
   bad({ root: "c", elements: { c: { type: "Card", children: ["l"] }, l: { type: "LinkButton", props: { label: "x", url: "javascript:alert(1)" } } } }, /http/);
+  // Places in the room: a message, an epic, the doc; anything else that starts with # is refused.
+  for (const url of ["#m42", "#ee21aabee", "#doc", "#doc:e21aabee"]) cardOf({ root: "c", elements: { c: { type: "Card", children: ["l"] }, l: { type: "LinkButton", props: { label: "ir", url } } } }, "r1");
+  bad({ root: "c", elements: { c: { type: "Card", children: ["l"] }, l: { type: "LinkButton", props: { label: "x", url: "#x<script>" } } } }, /http/);
   console.log("card checks passed");
 

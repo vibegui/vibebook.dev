@@ -1357,6 +1357,7 @@ const EN = {
   "Outro": "Other",
   "escolha e envie pela caixa de mensagem": "pick, then send from the message box",
   "Todos": "All",
+  "Esse épico não existe mais nesta sala.": "That epic is no longer in this room.",
   "Novo épico: escreva o título…": "New epic: type its title…",
   "Épicos": "Epics",
   "editar": "edit",
@@ -3932,12 +3933,24 @@ function cardHtml(m) {
         const v = p.value || p.label, picked = ans?.text === v;
         return mine ? `<button type="button" class="vbtn ${esc(p.style || "")}" data-cardbtn="${m.id}" data-v="${esc(v)}">${txt(p.label)}</button>` : `<span class="vbtn ro ${picked ? "on" : ""}">${picked ? icon("check", 14) : ""}${txt(p.label)}</span>`;
       }
-      case "LinkButton": return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
+      case "LinkButton":
+        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?)$/.test(p.url || "")) return `<button type="button" class="vbtn link" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
+        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
       default: return "";
     }
   };
   return draw(c.root);
 }
+// A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
+function cardGo(to) {
+  if (to.startsWith("#m")) return goToMsg(Number(to.slice(2)));
+  const epic = to.startsWith("#e") ? to.slice(2) : to.split(":")[1];
+  const target = epic && S.epics.some((x) => x.id === epic) ? epic : epic ? null : thread;
+  if (!target) return toast(t("Esse épico não existe mais nesta sala."));
+  if (target !== thread) { thread = target; docRoom = false; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc(); }
+  if (to.startsWith("#doc")) { document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })); if (ROOM_PHONE.matches) openSheet("doc"); }
+}
+document.addEventListener("click", (e) => { const g = e.target.closest("[data-cardgo]"); if (g) cardGo(g.dataset.cardgo); });
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-cardbtn]"); if (!b) return;
   const q = S.messages.find((x) => x.id === Number(b.dataset.cardbtn));
