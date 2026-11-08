@@ -554,7 +554,7 @@
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
   .sideTop { display: flex; align-items: center; gap: 8px; }
-  @media (min-width: 901px) { .sideTop { display: none; } } /* desktop: the rail has home and search; no collapsing */
+  @media (min-width: 901px) { .sideTop, .side > .sideHead { display: none; } .book:not(.rail) > .side { padding-top: 14px; } } /* desktop: the rail has home and search; no collapsing (an empty head would still take a gap) */
   .sideTop a { flex: 1; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
   .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
   .iconBtn:hover { background: var(--panel); color: var(--ink); }
@@ -854,7 +854,7 @@
 
   @media (min-width: 901px) { .docPeek, .sheetGrab, .sheetDim, .phHome, .thChev, .sideTop .phOnly, .roomStrip { display: none !important; } }
   @media (min-width: 901px) { .rowEdit { display: none !important; } }
-  .epTabs { display: flex; gap: 4px; margin: 6px 0 4px; padding: 3px; border-radius: 10px; background: var(--panel); }
+  .epTabs { display: flex; gap: 4px; margin: 6px -10px 4px; padding: 3px; border-radius: 10px; background: var(--panel); }
   .epTabs button { flex: 1; border: 0; background: none; padding: 6px 8px; border-radius: 8px; font: inherit; font-size: 13px; color: var(--mute); cursor: pointer; }
   .epTabs button b { font-weight: 600; opacity: .7; margin-left: 2px; }
   .epTabs button.on { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
