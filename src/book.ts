@@ -130,14 +130,15 @@ export class Book extends DurableObject<Env> {
   // room + epic with one query instead of calling every room's DO.
   // Curation: an epic whose tasks are all done archives itself and says so in its thread. archived = -1 means
   // someone reopened it by hand, so it stays open.
-  // An epic a Claude worked in closes only with proof: its delivery (done card) and a screenshot in the thread.
-  // Without them it stays open and housekeep asks for it. Epics only people worked in close on their ticks alone.
+  // An epic a Claude worked in closes only with proof: its delivery (done card) saying what it tested. A screenshot is
+  // asked for when there's something to see, not required (a doc or a script has no screen). Without the delivery it
+  // stays open and housekeep asks for it. Epics only people worked in close on their ticks alone.
   unproven(id: string) {
     // A reopened epic needs proof of the new round: only what came after @vibe's last archive note counts.
     const since = this.sql.exec<{ id: number | null }>(`SELECT max(id) AS id FROM messages WHERE thread = ? AND author = 'ai' AND tag = 'done'`, id).one().id ?? 0;
     const has = (where: string) => this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND id > ? AND ${where} LIMIT 1`, id, since).toArray().length > 0;
     const agentEver = this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND kind = 'agent' LIMIT 1`, id).toArray().length > 0;
-    return agentEver && !(has(`kind = 'agent' AND tag = 'done'`) && has(`files LIKE '%"type":"image/%'`));
+    return agentEver && !has(`kind = 'agent' AND tag = 'done'`);
   }
   autoArchive() {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done") && !this.unproven(e.id));
@@ -1478,8 +1479,8 @@ export class Book extends DurableObject<Env> {
         this.set(`proof:${e.id}`, String(now));
         const who = this.sql.exec<{ author: string }>(`SELECT author FROM messages WHERE thread = ? AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).one().author;
         this.addMessage(e.id, "ai", this.en
-          ? `${at(who)}, every task here is done, but the epic closes only with proof: a delivery (done) with a screenshot and what was tested. Post it and I'll archive it.`
-          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) com print e o que foi testado. Posta que eu arquivo.`);
+          ? `${at(who)}, every task here is done, but the epic closes only with proof: a delivery (done) saying what was tested, with a screenshot when there's something to see. Post it and I'll archive it.`
+          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) dizendo o que foi testado, com print quando tem algo pra ver. Posta que eu arquivo.`);
         continue;
       }
       const del = this.sql.exec<{ id: number; author: string; ts: number }>(`SELECT id, author, ts FROM messages WHERE thread = ? AND tag = 'done' AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).toArray()[0];
