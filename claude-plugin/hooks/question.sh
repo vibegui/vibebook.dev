@@ -19,7 +19,7 @@ let d = ""; process.stdin.on("data", (c) => (d += c)).on("end", () => {
   for (const q of qs) {
     const opts = (q.options || []).map((o) => String(o.label ?? o).slice(0, 120)).filter(Boolean).slice(0, 8);
     const notes = (q.options || []).filter((o) => o.description).map((o) => `- **${o.label}**: ${String(o.description).slice(0, 200)}`).join("\n");
-    const text = `❓ Seu Claude pergunta${q.header ? ` · **${String(q.header).slice(0, 40)}**` : ""}\n${String(q.question || "").slice(0, 600)}${notes ? `\n\n${notes}` : ""}\n\n_Escolha abaixo ou responda esta mensagem com outra coisa._`;
+    const text = `❓ Seu Claude pergunta${q.header ? ` · **${String(q.header).slice(0, 40)}**` : ""}\n${String(q.question || "").slice(0, 600)}${notes ? `\n\n${notes}` : ""}`;
     const post = call("post", opts.length >= 2 ? { text, choices: opts, multi: !!q.multiSelect } : { text });
     if (!post.ok || !post.id) return;
     let answer = null;

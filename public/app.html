@@ -469,7 +469,8 @@
   .choice button { padding: 7px 16px; }
   .choice.ro .opt, .choice.done .opt { cursor: default; color: var(--mute); }
   .choice.done .opt.on { color: var(--ink); border-color: var(--ok-ink, var(--accent)); }
-  .choice small { color: var(--mute); font-size: 12.5px; }
+  .choice small { color: var(--mute); font-size: 12.5px; flex-basis: 100%; }
+  .choice .opt.oth { border-style: dashed; }
   .replyBar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--mute); padding: 4px 4px 4px 10px; border-left: 3px solid var(--accent); min-width: 0; }
   .replyBar[hidden] { display: none; }
   .replyBar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1332,6 +1333,8 @@ const EN = {
   "Recolher menu": "Collapse menu",
   "novo épico": "new epic",
   "Arquivados": "Archived",
+  "Outro": "Other",
+  "escolha e envie pela caixa de mensagem": "pick, then send from the message box",
   "Todos": "All",
   "Exigir Face ID ao abrir": "Require Face ID to open",
   "Pronto: o vibebook pede Face ID ao abrir neste aparelho.": "Done: vibebook asks for Face ID when it opens on this device.",
@@ -3912,23 +3915,26 @@ document.addEventListener("click", (e) => {
 function choiceHtml(m) {
   let c; try { c = JSON.parse(m.choices); } catch { return ""; }
   const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
+  const other = !isPermAsk(m); // "Outro": your own words (not for Aprovar/Negar)
   if (ans) {
     const picked = new Set(ans.text.split(" · "));
-    return `<div class="choice done">${c.options.map((o) => `<span class="opt ${picked.has(o) ? "on" : ""}">${picked.has(o) ? icon("check", 14) : ""}${esc(o)}</span>`).join("")}</div>`;
+    const own = other && !c.options.some((o) => picked.has(o));
+    return `<div class="choice done">${c.options.map((o) => `<span class="opt ${picked.has(o) ? "on" : ""}">${picked.has(o) ? icon("check", 14) : ""}${esc(o)}</span>`).join("")}${own ? `<span class="opt on">${icon("check", 14)}${t("Outro")}</span>` : ""}</div>`;
   }
+  // Picking fills your message box (as a reply to the question); you can edit it and send with the composer's Enviar.
   if (m.kind === "agent" && m.author === S.me)
-    return `<form class="choice" data-choice="${m.id}">${c.options.map((o, i) => `<label class="opt"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="${esc(o)}" ${!c.multi && !i ? "" : ""} />${esc(o)}</label>`).join("")}<button class="primary" type="submit" disabled>${t("Enviar")}</button></form>`;
+    return `<form class="choice" data-choice="${m.id}" data-multi="${c.multi ? 1 : ""}">${c.options.map((o) => `<label class="opt"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="${esc(o)}" />${esc(o)}</label>`).join("")}${other ? `<label class="opt oth"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="" data-other="1" />${t("Outro")}…</label>` : ""}<small>${t("escolha e envie pela caixa de mensagem")}</small></form>`;
   return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
 }
-document.addEventListener("change", (e) => { const f = e.target.closest("form.choice"); if (f) f.querySelector("button").disabled = !f.querySelector("input:checked"); });
-document.addEventListener("submit", (e) => {
+document.addEventListener("change", (e) => {
   const f = e.target.closest("form.choice"); if (!f) return;
-  e.preventDefault();
-  const picked = [...f.querySelectorAll("input:checked")].map((i) => i.value);
-  if (!picked.length) return;
-  const q = S.messages.find((x) => x.id === Number(f.dataset.choice));
-  send({ t: "msg", thread: q?.thread ?? thread, text: picked.join(" · "), files: [], reply_to: Number(f.dataset.choice) });
-  f.querySelector("button").disabled = true;
+  const box = document.getElementById("input"); if (!box) return;
+  // "Outro" clears the box for your own words (and, single choice, unpicks the others).
+  if (e.target.dataset.other) { if (e.target.checked) { if (!f.dataset.multi) f.querySelectorAll("input").forEach((i) => (i.checked = i === e.target)); box.value = ""; } }
+  else box.value = [...f.querySelectorAll("input:checked:not([data-other])")].map((i) => i.value).join(" · ");
+  startReply(Number(f.dataset.choice));
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+  box.focus();
 });
 const msgHtml = (m, prev) => {
   const cont = continues(prev, m);
