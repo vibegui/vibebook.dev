@@ -247,8 +247,10 @@
   .newRoom:focus-within { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
   /* In the epic list: "novo épico" looks like the suggestions under it (dashed), only beefier; no heading over them. */
   .epList .newRoom { margin-top: 6px; padding: 10px; border: 2px dashed var(--line); color: var(--ink); }
-  .epList .newRoom .ri { box-shadow: none; border: 2px dashed currentColor; color: var(--accent); }
-  .epList .newRoom input { font-weight: 600; } .epList .newRoom input::placeholder { color: var(--ink); opacity: .75; }
+  /* A text field with its action on the right: + submits (and focuses the field when it's empty). */
+  .epList .newRoom { cursor: text; }
+  .epList .newRoom .ri { box-shadow: none; border: 0; background: var(--accent); color: #fff; cursor: pointer; flex: none; }
+  .epList .newRoom input { font-weight: 500; padding: 6px 2px; } .epList .newRoom input::placeholder { color: var(--mute); opacity: 1; }
   .epList .newRoom:focus-within { border-style: solid; border-color: var(--accent); box-shadow: none; }
   .epList .newRoom + .thread.pre { margin-top: 6px; } .epList .thread.pre + .thread.pre { margin-top: 4px; }
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
@@ -1355,6 +1357,7 @@ const EN = {
   "Outro": "Other",
   "escolha e envie pela caixa de mensagem": "pick, then send from the message box",
   "Todos": "All",
+  "Novo épico: escreva o título…": "New epic: type its title…",
   "Épicos": "Epics",
   "editar": "edit",
   "Buscar": "Search",
@@ -3369,7 +3372,7 @@ function renderSide() {
         // archived list scrolls inside (.epList.arch).
         return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
       <div class="epList${showArch ? " arch" : ""}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
-      <form id="newEpic" class="newRoom"><span class="ri">${icon("plus")}</span><input placeholder="${t("novo épico")}" aria-label="${t("Novo épico")}" /></form>${S.suggestions.map((s, i) => `
+      <form id="newEpic" class="newRoom"><input placeholder="${t("Novo épico: escreva o título…")}" aria-label="${t("Novo épico")}" enterkeyhint="done" /><button class="ri" aria-label="${t("Criar épico")}">${icon("plus")}</button></form>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
       })()}
     </div>
@@ -3422,7 +3425,9 @@ function renderSide() {
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   });
-  document.getElementById("newEpic").onsubmit = (e) => { e.preventDefault(); send({ t: "epic", title: e.target[0].value }); e.target.reset(); };
+  // The form is absent on the Arquivados tab. Empty title: the + just puts you in the field.
+  const ne = document.getElementById("newEpic");
+  if (ne) ne.onsubmit = (e) => { e.preventDefault(); const v = e.target[0].value.trim(); if (!v) return e.target[0].focus(); send({ t: "epic", title: v }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
     if (!confirm((S.pending || []).includes(who) ? t("Cancelar o convite de {email}?", { email: who }) : t("Remover {email} deste vibebook?", { email: who }))) return;
