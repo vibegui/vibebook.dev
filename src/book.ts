@@ -1393,8 +1393,15 @@ export class Book extends DurableObject<Env> {
         const [picked] = s.splice(Number(m.i), 1);
         if (!picked) return;
         this.set("suggestions", JSON.stringify(s));
-        if (m.accept) this.createEpic(picked.title, picked.tasks, [], picked.why ?? "");
-        return this.broadcast({ t: "suggestions", suggestions: s });
+        this.broadcast({ t: "suggestions", suggestions: s });
+        if (!m.accept) return;
+        // Accepting is the person asking for it: the request goes into the new epic's thread as their message, so
+        // their listening Claude wakes up and starts (an epic alone wakes no one).
+        const id = this.createEpic(picked.title, picked.tasks, [], picked.why ?? "");
+        this.addMessage(id, email, this.en
+          ? `Go ahead with this epic: “${picked.title}”. The goal is in its doc; keep to this thread.`
+          : `Pode começar este épico: “${picked.title}”. O objetivo está no doc; segue nesta thread.`);
+        return this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
       }
     }
   }
