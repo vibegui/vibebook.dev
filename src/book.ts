@@ -1142,6 +1142,23 @@ export class Book extends DurableObject<Env> {
           this.deleteTask(id);
           return { ok: true };
         }
+        case "suggest_epic": {
+          const title = s("title")?.trim().slice(0, 200);
+          if (!title) return { ok: false, error: "title is required" };
+          const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map((t) => String(t).trim().slice(0, 300)).filter(Boolean).slice(0, 8);
+          const list = [...this.suggestions().filter((x) => epicKey(x.title) !== epicKey(title)), { title, tasks, why: s("why")?.trim().slice(0, 300) || undefined }].slice(-8);
+          this.set("suggestions", JSON.stringify(list));
+          this.broadcast({ t: "suggestions", suggestions: this.suggestions() });
+          return { ok: true, suggestions: this.suggestions().length };
+        }
+        case "delete_epic": {
+          const e = epic();
+          if (!e) return { ok: false, error: "epic not found" };
+          if (this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND author != 'ai' LIMIT 1`, e).toArray().length)
+            return { ok: false, error: "people or agents wrote in this epic's thread: archive it instead (update_epic archived: true)" };
+          this.deleteEpic(e);
+          return { ok: true };
+        }
         case "move_message": {
           // Your human's (or your own) message to another thread: "main" or an epic. Others' messages stay put.
           const id = Number(a.message_id);
@@ -1395,12 +1412,13 @@ export class Book extends DurableObject<Env> {
         this.set("suggestions", JSON.stringify(s));
         this.broadcast({ t: "suggestions", suggestions: s });
         if (!m.accept) return;
-        // Accepting is the person asking for it: the request goes into the new epic's thread as their message, so
-        // their listening Claude wakes up and starts (an epic alone wakes no one).
-        const id = this.createEpic(picked.title, picked.tasks, [], picked.why ?? "");
-        this.addMessage(id, email, this.en
-          ? `Go ahead with this epic: “${picked.title}”. The goal is in its doc; keep to this thread.`
-          : `Pode começar este épico: “${picked.title}”. O objetivo está no doc; segue nesta thread.`);
+        // Accepting is the person asking their Claude for it, not the epic itself: the suggestion may be stale, so it
+        // goes into the main thread as their request (their listening Claude wakes), and the Claude checks, sharpens
+        // and creates the epic from that message.
+        const tasks = picked.tasks.length ? `\n${this.en ? "Suggested tasks" : "Tarefas sugeridas"}:\n${picked.tasks.map((t) => `- ${t}`).join("\n")}` : "";
+        this.addMessage("main", email, this.en
+          ? `I accept this epic suggestion: “${picked.title}”.${picked.why ? ` ${picked.why}` : ""}${tasks}\n\nIt may be stale: check what still makes sense, update it, improve the doc and tasks, and create the epic for me.`
+          : `Aceito esta sugestão de épico: “${picked.title}”.${picked.why ? ` ${picked.why}` : ""}${tasks}\n\nPode estar velha: confere o que ainda faz sentido, atualiza, melhora o doc e as tarefas e cria o épico pra mim.`);
         return this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
       }
     }

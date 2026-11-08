@@ -1289,6 +1289,8 @@ const EN = {
   "Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo.": "It saw this in the conversation and thinks it's worth an epic, with the tasks below.",
   "Tarefas propostas": "Proposed tasks",
   "Criar épico": "Create epic",
+  "Pedir pro meu Claude": "Ask my Claude",
+  "Vira um pedido seu na sala: seu Claude confere se ainda faz sentido, ajusta o doc e as tarefas e cria o épico.": "It becomes your request in the room: your Claude checks it still makes sense, adjusts the doc and tasks and creates the epic.",
   "Descartar": "Dismiss",
   "a pasta onde ele já abriu antes": "the folder where it opened before",
   "ligada a esta sala pelo arquivo .vibebook": "linked to this room by its .vibebook file",
@@ -2422,7 +2424,6 @@ function onEvent(ev, id) {
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : t("pensando ({mode})", { mode: modeLabel[ev.mode] })}…</span>`; return; }
     case "epics": S.epics = ev.epics; if (ev.roomTasks) S.roomTasks = ev.roomTasks;
-      if (pendingEpic) { const made = S.epics.findLast((e) => e.title === pendingEpic); if (made) { thread = made.id; boardEpic = made.id; pendingEpic = null; renderChat(); } }
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
     case "docNotes": S.docNotes = ev.notes; renderDoc(); return;
     case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
@@ -2962,7 +2963,6 @@ function renderRail(el) {
 // A pre-epic: one of @vibe's suggestions, opened in the main panel like an epic, to create or discard.
 const isPre = () => thread.startsWith("pre:");
 const preOf = () => (isPre() ? S.suggestions[Number(thread.slice(4))] : null);
-let pendingEpic = null; // title of a suggestion just accepted: open it once the epic exists
 let skipFrom = null; // index of a suggestion just discarded: show the next one
 function renderPre(el) {
   const s = preOf(); if (!s) { thread = "main"; return renderChat(); }
@@ -2971,10 +2971,12 @@ function renderPre(el) {
     <h3>${esc(s.title)}</h3>
     <p class="${s.why ? "" : "muted"}">${esc(s.why || t("Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo."))}</p>
     ${s.tasks.length ? `<h4>${t("Tarefas propostas")}</h4><ul>${s.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-    <div class="row"><button class="primary" id="preAccept">${t("Criar épico")}</button><button class="ghost" id="preSkip">${t("Descartar")}</button></div>
+    <div class="row"><button class="primary" id="preAccept">${t("Pedir pro meu Claude")}</button><button class="ghost" id="preSkip">${t("Descartar")}</button></div>
+    <p class="muted">${t("Vira um pedido seu na sala: seu Claude confere se ainda faz sentido, ajusta o doc e as tarefas e cria o épico.")}</p>
   </div>`;
   const i = Number(thread.slice(4));
-  el.querySelector("#preAccept").onclick = () => { pendingEpic = s.title; send({ t: "suggestion", i, accept: true }); };
+  // Accepting posts the suggestion as your request in the main thread (the server writes it); your Claude makes the epic.
+  el.querySelector("#preAccept").onclick = () => { send({ t: "suggestion", i, accept: true }); thread = "main"; renderChat(); };
   el.querySelector("#preSkip").onclick = () => { skipFrom = i; send({ t: "suggestion", i }); };
 }
 

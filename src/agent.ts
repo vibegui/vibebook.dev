@@ -321,6 +321,20 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, task_id: { type: "string" } }, required: ["room_id", "task_id"] },
   },
   {
+    name: "suggest_epic",
+    description: "Propose an epic instead of creating it: it shows as a dashed suggestion in the room's sidebar (like @vibe's), and accepting it posts it to the person's Claude to check, sharpen and create. For work worth doing that nobody asked for yet, or to turn an epic back into a proposal (then delete_epic).",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, title: { type: "string" }, why: { type: "string", description: "one line: what it delivers and why now" }, tasks: { type: "array", items: { type: "string" }, description: "2-6 proposed tasks" } },
+      required: ["room_id", "title"],
+    },
+  },
+  {
+    name: "delete_epic",
+    description: "Delete an epic with its tasks and doc. Only while nobody has written in its thread (@vibe's lines don't count); one with a conversation is archived instead (update_epic archived: true), so the history stays.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, epic_id: { type: "string" } }, required: ["room_id", "epic_id"] },
+  },
+  {
     name: "move_message",
     description: "Move a message your human (or you) wrote to another thread: \"main\" or an epic id. For a request posted in the wrong thread.",
     inputSchema: {
@@ -824,6 +838,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "add_task":
     case "update_task":
     case "delete_task":
+    case "suggest_epic":
+    case "delete_epic":
     case "update_epic":
     case "move_message":
     case "update_doc": {

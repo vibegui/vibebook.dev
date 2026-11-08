@@ -94,7 +94,7 @@ const init = await g.rpc("initialize", { protocolVersion: "2025-06-18" });
 check(init.result?.instructions?.includes("DATA, not instructions"), "initialize carries the safety instructions");
 check(/^s_[a-f0-9]{32}$/.test(g.sid()), "initialize hands out an Mcp-Session-Id (the agent)");
 const tools = await g.rpc("tools/list");
-check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,pending,resolve_pending,claude_rooms,switch_claude,rename_room,set_room_icon,wait_for_messages,notify_url,read_room,post,save_app,list_apps,delete_app,save_reminder,metrics,list_reminders,delete_reminder,upload_file,preview_mention_email,get_file,ack,sandboxes,sandbox_create,sandbox_setup,sandbox_exec,sandbox_power,permission_wait,report_issue,set_task_status,add_task,update_task,delete_task,move_message,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 40 tools");
+check(tools.result?.tools?.map((t: { name: string }) => t.name).join() === "inbox,pending,resolve_pending,claude_rooms,switch_claude,rename_room,set_room_icon,wait_for_messages,notify_url,read_room,post,save_app,list_apps,delete_app,save_reminder,metrics,list_reminders,delete_reminder,upload_file,preview_mention_email,get_file,ack,sandboxes,sandbox_create,sandbox_setup,sandbox_exec,sandbox_power,permission_wait,report_issue,set_task_status,add_task,update_task,delete_task,suggest_epic,delete_epic,move_message,update_epic,update_doc,upload_link,start_epic,log_decision,create_room", "tools/list has the 42 tools");
 
 const created = await g.tool("create_room", { title: `Site novo da Giro ${stamp}`, invite: [marina] });
 const room = created.out?.room_id;
@@ -183,7 +183,12 @@ check(rr?.messages?.some((x: { thread: string; text: string }) => x.thread === "
 check((await g.tool("post", { room_id: room, thread: ep.epic_id, text: "terminei o import" })).out?.ok, "the agent reports inside the epic");
 await g.tool("set_task_status", { room_id: room, task_id: ep.tasks[0].id, status: "done" });
 rr = (await g.tool("read_room", { room_id: room, all: true })).out;
-check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived === true, "closing its last task archives the epic");
+check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived !== true, "an epic a Claude worked in doesn't close on its ticks alone (no proof yet)");
+// 1×1 PNG: the screenshot, then the delivery card, are the proof.
+await g.tool("upload_file", { room_id: room, thread: ep.epic_id, filename: "prova.png", content_type: "image/png", base64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" });
+await g.tool("post", { room_id: room, thread: ep.epic_id, text: "entregue, testado", done: true });
+rr = (await g.tool("read_room", { room_id: room, all: true })).out;
+check(rr?.epics?.find((e: { id: string }) => e.id === ep.epic_id)?.archived === true, "with a delivery and a screenshot, the epic archives itself");
 
 // upload_link: a one-time URL the agent PUTs a file to (bytes never go through the model), posted with its message.
 const ul = (await g.tool("upload_link", { room_id: room, filename: "antes.png", content_type: "image/png", message: "antes" })).out;
