@@ -482,22 +482,22 @@
   .prodMark { font-size: 11px; margin-left: 4px; flex: none; } .prodMark.ok { color: var(--ok-ink); font-weight: 700; }
   .msg .hhmm { font-size: 12px; color: var(--mute); opacity: 0; margin-left: 6px; }
   .msg:hover .hhmm { opacity: 1; }
-  .rcpt { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--mute); margin-top: 4px; }
-  .rcpt .rd { color: var(--accent); }
   .origin .replies { display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; font-size: 12px; color: var(--mute); }
   .origin .replies::after { content: ""; flex: 1; height: 1px; background: var(--line); order: 1; }
   .origin .replies [data-gomain] { order: 2; font-size: 12px; color: var(--mute); padding: 2px 6px; }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 50; max-width: min(460px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 12px; background: var(--ink); color: var(--panel); font-size: 13.5px; line-height: 1.45; box-shadow: 0 8px 30px rgb(0 0 0 / 0.18); }
   .older { display: flex; justify-content: center; padding: 8px 0 14px; }
   .older button { font-size: 13px; color: var(--mute); }
-  .ack { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; margin-top: 6px; padding: 3px 10px; border-radius: 999px; }
-  .ack.doing { background: var(--ai-bg); color: var(--accent); }
-  .ack.idle { background: var(--line, #eee); color: var(--mute); font-weight: 500; }
-  .ack.blocked { display: inline-block; background: var(--wait-bg); color: var(--wait-ink); white-space: normal; line-height: 1.4; padding: 5px 12px; border-radius: 12px; } .ack.blocked b { font-weight: 600; }
-  .ack.did { background: var(--ok-bg); color: var(--ok-ink); }
-  .ack .spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
+  .mfoot { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-top: 6px; font-size: 12px; line-height: 1.5; color: var(--mute); }
+  .mfoot .ms { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .mfoot .ms > i { font-style: normal; width: 12px; text-align: center; flex: none; }
+  .mfoot .ms time { color: var(--mute); }
+  .mfoot .doing { color: var(--accent); } .mfoot .did { color: var(--ok-ink); } .mfoot .wait > i { color: var(--wait-ink); }
+  .mfoot .need { flex-basis: 100%; color: var(--wait-ink); background: var(--wait-bg); padding: 5px 10px; border-radius: 10px; } .mfoot .need b { font-weight: 600; }
+  .mfoot .mr { display: inline-flex; flex-wrap: wrap; gap: 2px 10px; } .mfoot .mr .rd { color: var(--accent); }
+  .mfoot .spin { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
   @keyframes ackspin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .ack .spin { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .mfoot .spin { animation: none; } }
   .msg.cont { margin-top: -20px; }
   .msg.cont > .avatar { visibility: hidden; }
   .msg.cont .who { display: none; }
@@ -3256,8 +3256,8 @@ const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
-  return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(a.who + a.repo) && seen.add(a.who + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(a.who), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(a.who.replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
+  return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo)).slice(0, 3)
+    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
 // thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
@@ -4074,46 +4074,49 @@ function loadOlder() {
   olderBusy = true;
   send({ t: "older", thread, before: all[0].id });
 }
-// Receipts: under the newest message each connected agent has read (or been told about)
-// in this thread, skipping its own person's agent posts.
+// One status footer per message (.mfoot), the same line for every state: what Claudes are doing about it (acks) first,
+// then who has read it (receipts). Color only says the state; only ⏸ (a Claude needs you in its terminal) stands out.
+// Model ids read the same everywhere (prettyModel).
+const prettyModel = (s) => String(s ?? "").replace(/^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i, (_, f, a, b) => `Claude ${f[0].toUpperCase()}${f.slice(1)} ${a}.${b}`);
 function renderReceipts() {
   const el = document.getElementById("msgs"); if (!el) return;
-  el.querySelectorAll(".rcpt, .ack").forEach((x) => x.remove());
+  el.querySelectorAll(".mfoot").forEach((x) => x.remove());
+  const foot = {}; // msg id → { st: [html], rd: [html] }
+  const at = (id) => (foot[id] ??= { st: [], rd: [] });
+  const via = (k) => t("{via} de {who}", { via: esc(prettyModel(k.who)), who: esc(name(k.email)) });
   const seenAck = new Set();
   for (const k of S.acks || []) {
     if (k.status === "dismissed") continue; // you took it out of your Claude's queue; nothing to show
-    if (seenAck.has(`${k.msg_id}|${k.who}|${k.email}`)) continue;
-    seenAck.add(`${k.msg_id}|${k.who}|${k.email}`);
-    const body = document.querySelector(`#m${k.msg_id} .body`); if (!body) continue;
+    const key = `${k.msg_id}|${k.who}|${k.email}`;
+    if (seenAck.has(key)) continue;
+    seenAck.add(key);
     // "doing" is live only while the agent shows activity (post / task move bumps ts); 20 min quiet or idle =
     // nobody is on it now: say who the epic waits on (owners of its open tasks) instead of a spinner.
     const doing = k.status === "doing" && Date.now() - k.ts < 20 * 60e3;
-    const who = t("{via} de {who}", { via: esc(k.who), who: esc(name(k.email)) });
-    let html;
-    if (k.status === "blocked") html = `⏸ ${t("{who} espera você no terminal", { who })}${k.note ? `: <b>${esc(k.note)}</b>` : ""} · ${ago(k.ts)}`;
-    else if (doing) html = `<span class="spin"></span>${t("{who} está fazendo isso", { who })} · ${ago(k.ts)}`;
-    else if (k.status === "done") html = `✓ ${t("{who} fez isso", { who })}`;
+    const who = via(k), when = `<time title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${ago(k.ts)}</time>`;
+    let cls, ico, txt;
+    if (k.status === "blocked") { cls = "need"; ico = "⏸"; txt = `${t("{who} espera você no terminal", { who })}${k.note ? `: <b>${esc(k.note)}</b>` : ""} · ${when}`; }
+    else if (doing) { cls = "doing"; ico = `<span class="spin"></span>`; txt = `${t("{who} está fazendo isso", { who })} · ${when}`; }
+    else if (k.status === "done") { cls = "did"; ico = "✓"; txt = t("{who} fez isso", { who }); }
     else {
       const owners = [...new Set((S.epics || []).filter((e) => e.from_msg === k.msg_id && !e.archived).flatMap((e) => e.tasks.filter((t) => t.status !== "done" && t.owner).map((t) => name(t.owner))))];
-      html = owners.length ? `⏳ ${t("aguardando {who}", { who: owners.map(esc).join(", ") })}` : `${t("{who} parou", { who })} · ${ago(k.ts)}`;
+      if (owners.length) { cls = "wait"; ico = "⏳"; txt = t("aguardando {who}", { who: owners.map(esc).join(", ") }); }
+      else { cls = "idle"; ico = "–"; txt = `${t("{who} parou", { who })} · ${when}`; }
     }
-    body.insertAdjacentHTML("beforeend", `<div class="ack ${k.status === "blocked" ? "blocked" : doing ? "doing" : k.status === "done" ? "did" : "idle"}" title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${html}</div>`);
+    at(k.msg_id).st.push(`<span class="ms ${cls}"><i>${ico}</i><span>${txt}</span></span>`);
   }
-  // One compact line per message: each agent once (✓✓ read, ✓ delivered), full name on hover; an agent that
-  // acked the message shows its ack instead.
+  // Receipts: each agent once, at the newest message it reached (✓✓ read, ✓ only delivered), full name on hover;
+  // an agent that acked the message shows its ack instead. Its own person's agent posts don't count.
   const list = S.messages.filter((m) => m.thread === thread);
-  const acked = new Set((S.acks || []).map((k) => `${k.msg_id}|${k.who}|${k.email}`));
-  const at = {};
-  // Each agent once, at the newest message it reached: ✓✓ if it read that far, ✓ if only delivered.
   for (const r of S.receipts || []) {
     const m = list.findLast((x) => x.id <= Math.max(r.read, r.delivered) && !(x.kind === "agent" && x.author === r.email));
-    if (!m || acked.has(`${m.id}|${r.who}|${r.email}`)) continue;
-    (at[m.id] ??= new Map()).set(`${r.who}|${r.email}`, { r, read: r.read >= m.id });
+    if (!m || seenAck.has(`${m.id}|${r.who}|${r.email}`)) continue;
+    const read = r.read >= m.id, who = via(r);
+    at(m.id).rd.push(`<span class="${read ? "rd" : ""}" title="${read ? t("lido por {who}", { who }) : t("entregue, ainda não lido por {who}", { who })}">${read ? "✓✓" : "✓"} ${esc(prettyModel(r.who))}</span>`);
   }
-  for (const [id, g] of Object.entries(at)) {
+  for (const [id, f] of Object.entries(foot)) {
     const body = document.querySelector(`#m${id} .body`); if (!body) continue;
-    const chips = [...g.values()].map(({ r, read }) => `<span class="${read ? "rd" : ""}" title="${read ? t("lido por {who}", { who: t("{via} de {who}", { via: esc(r.who), who: esc(name(r.email)) }) }) : t("entregue, ainda não lido por {who}", { who: t("{via} de {who}", { via: esc(r.who), who: esc(name(r.email)) }) })}">${read ? "✓✓" : "✓"} ${esc(r.who)}</span>`);
-    body.insertAdjacentHTML("beforeend", `<div class="rcpt">${chips.join("")}</div>`);
+    body.insertAdjacentHTML("beforeend", `<div class="mfoot">${f.st.join("")}${f.rd.length ? `<span class="mr">${f.rd.join("")}</span>` : ""}</div>`);
   }
 }
 function appendMsg(m) {
