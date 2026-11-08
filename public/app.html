@@ -114,13 +114,32 @@
   .grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 48px; align-items: start; }
   @media (max-width: 860px) { .grid { grid-template-columns: 1fr; gap: 40px; } }
   .cards { display: grid; gap: 14px; }
-  .cardBox { display: grid; }
-  .waits.cw { margin: -14px 0 0; padding: 18px 16px 4px; border-radius: 0 0 16px 16px; border-top: 0; }
-  .waits.cw h3 { margin: 0 0 2px; font: 600 12px "Schibsted Grotesk", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); } .waits.cw h3 small { margin-left: 4px; }
-  .waits.cw li a { padding: 7px 0; font-size: 13.5px; }
-  .waits.cw details > summary { cursor: pointer; padding: 7px 0 9px; font-size: 13px; color: var(--accent); list-style: none; }
-  .waits.cw details > summary::-webkit-details-marker { display: none; }
-  .waits.cw details[open] > summary { display: none; }
+  /* A home card = the room (cover + info) and, under a hairline, what in it waits on you. */
+  .cardBox { display: grid; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
+  .cardBox:hover { transform: translateY(-3px); box-shadow: 0 14px 30px -18px oklch(0.25 0.08 250 / .45); }
+  .cardBox > .card { border: 0; border-radius: 0; background: none; } .cardBox > .card:hover { transform: none; box-shadow: none; }
+  .cover.hasIcon { align-items: center; justify-content: center; padding: 18px; background: color-mix(in oklch, var(--line) 45%, var(--panel)); box-shadow: none; }
+  .cover.hasIcon img { width: 72px; height: 72px; border-radius: 18px; object-fit: cover; }
+  .cw { border-top: 1px solid var(--line); padding: 6px 16px 8px 140px; }
+  @media (max-width: 560px) { .cw { padding-left: 16px; } }
+  .cw ul { list-style: none; margin: 0; padding: 0; }
+  .cw li { display: flex; align-items: center; gap: 8px; border-top: 1px solid color-mix(in oklch, var(--line) 60%, transparent); }
+  .cw li:first-child { border-top: 0; }
+  .cw li a { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; color: inherit; text-decoration: none; }
+  .cw li a:hover .wTx { color: var(--accent); }
+  .cw .wIc { flex: none; width: 30px; height: 30px; display: grid; place-items: center; margin-top: 1px; }
+  .cw .wIc .avatar { width: 30px; height: 30px; font-size: 12px; }
+  .cw .wIc.task { border-radius: 50%; background: color-mix(in oklch, #e3b505 18%, transparent); color: #e3b505; }
+  .cw .wt { min-width: 0; display: grid; gap: 3px; overflow-wrap: anywhere; }
+  .cw .wTx { font-size: 15.5px; line-height: 1.4; }
+  .cw .wt small { font-size: 13px; color: var(--mute); }
+  .cw li .ghost { flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center; color: var(--mute); }
+  .cw li .ghost:hover { color: var(--ink); background: var(--hover); }
+  .cw details > summary { cursor: pointer; padding: 6px 0 10px 42px; font-size: 14px; font-weight: 500; color: var(--accent); list-style: none; }
+  .cw details > summary::-webkit-details-marker { display: none; }
+  .cw details[open] > summary { display: none; }
+  .card .meta .wc { margin-left: auto; margin-right: 12px; }
+  .wChip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #e3b505; background: color-mix(in oklch, #e3b505 14%, transparent); }
   .waitTot { color: #e3b505; font-weight: 600; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit;
     display: flex; min-height: 112px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s cubic-bezier(.22,1,.36,1); }
@@ -1466,6 +1485,8 @@ const EN = {
   "Cancelar convite": "Cancel invite",
   "Remover do vibebook": "Remove from vibebook",
   "Seus amigos": "Your friends",
+  "sua tarefa esperando OK": "your task waiting for OK",
+  "{who} pediu": "{who} asked",
   "{n} esperando você": "{n} waiting on you",
   "+{n} mais": "+{n} more",
   "{n} offline": "{n} offline",
@@ -2111,13 +2132,13 @@ function homeWith(me) {
         <div class="cards">${roomOrder().map((b) => { const people = (b.members || "").split(",").filter(Boolean); return `
               <div class="cardBox"><a class="card" data-nav href="/b/${b.id}">
                 <button type="button" class="arch" data-archive="${b.id}" data-title="${esc(b.title)}" title="${t("Arquivar")}" aria-label="${t("Arquivar {title}", { title: esc(b.title) })}">${icon("archive")}</button>
-                <div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>
+                ${iconUrl(b) ? `<div class="cover hasIcon"><img src="${iconUrl(b)}" alt="" loading="lazy"></div>` : `<div class="cover" style="background-color:${coverColor(b.title)}"><span>${esc(initials(b.title))}</span></div>`}
                 <div class="info">
                   <b>${esc(b.title)}</b>
                   <div class="sum">${esc(b.summary || t("Ainda sem resumo. O @vibe escreve um quando a conversa andar."))}</div>
-                  <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span>${ago(b.updated_at)}</span></div>
+                  <div class="meta"><div class="stack">${people.slice(0, 5).map((e) => avatar(e)).join("")}</div><span class="wc" data-wc="${b.id}"></span><span>${ago(b.updated_at)}</span></div>
                 </div>
-              </a><div class="waits cw" data-cw="${b.id}" hidden></div></div>`; }).join("")}
+              </a><div class="cw" data-cw="${b.id}" hidden></div></div>`; }).join("")}
         </div>
       </main>
       <aside class="friends">
@@ -2426,10 +2447,19 @@ function renderWaits() {
     </li>`; };
   const n = document.getElementById("waitN");
   if (n) n.innerHTML = myWaits.length ? ` · <b class="waitTot">${t("{n} esperando você", { n: myWaits.length })}</b>` : "";
+  // In a card: the asker's avatar (or a ✓ for your task in review), the ask itself, then where and when.
+  const row = (w) => { const i = myWaits.indexOf(w), task = w.ref.startsWith("t"); return `<li>
+      <a data-nav href="${href(w)}" data-wait-open="${i}"><span class="wIc${task ? " task" : ""}">${task ? icon("check", 16) : avatar(w.author)}</span>
+        <span class="wt"><span class="wTx">${esc(w.text.length > 200 ? `${w.text.slice(0, 198)}…` : w.text)}</span>
+        <small>${task ? t("sua tarefa esperando OK") : t("{who} pediu", { who: esc(who(w)) })} · ${w.topic ? esc(w.topic) : t("sala principal")} · ${ago(w.ts)}</small></span></a>
+      ${w.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check")}</button>` : ""}
+    </li>`; };
   document.querySelectorAll("[data-cw]").forEach((c) => {
     const ws = myWaits.filter((w) => w.book_id === c.dataset.cw);
     c.hidden = !ws.length;
-    c.innerHTML = ws.length ? `<h3>${t("Esperando você")} <small>${ws.length}</small></h3><ul>${ws.slice(0, 3).map((w) => li(w, true)).join("")}</ul>${ws.length > 3 ? `<details><summary>${t("+{n} mais", { n: ws.length - 3 })}</summary><ul>${ws.slice(3).map((w) => li(w, true)).join("")}</ul></details>` : ""}` : "";
+    c.innerHTML = ws.length ? `<ul>${ws.slice(0, 3).map(row).join("")}</ul>${ws.length > 3 ? `<details><summary>${t("+{n} mais", { n: ws.length - 3 })}</summary><ul>${ws.slice(3).map(row).join("")}</ul></details>` : ""}` : "";
+    const wc = document.querySelector(`[data-wc="${c.dataset.cw}"]`);
+    if (wc) wc.innerHTML = ws.length ? `<b class="wChip">${t("{n} esperando você", { n: ws.length })}</b>` : "";
   });
   const el = document.getElementById("waits");
   if (el) {
