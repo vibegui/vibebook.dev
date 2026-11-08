@@ -249,7 +249,8 @@
   .epList .newRoom { margin-top: 6px; padding: 10px; border: 2px dashed var(--line); color: var(--ink); }
   /* A text field with its action on the right: + submits (and focuses the field when it's empty). */
   .epList .newRoom { cursor: text; }
-  .epList .newRoom .ri { box-shadow: none; border: 0; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; line-height: 0; background: var(--accent); color: #fff; cursor: pointer; flex: none; } /* a button: iOS pads it, which pushed the + off center */
+  .epList .newRoom .ri { box-shadow: none; border: 0; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; line-height: 0; background: var(--accent); color: #fff; cursor: pointer; flex: none; display: flex; align-items: center; justify-content: center; } /* a button: iOS pads it and won't center it as a grid, which pushed the + off center */
+  .epList .newRoom .ri svg { display: block; vertical-align: 0; margin: 0; }
   .epList .newRoom input { font-weight: 500; padding: 6px 2px; } .epList .newRoom input::placeholder { color: var(--mute); opacity: 1; }
   .epList .newRoom:focus-within { border-style: solid; border-color: var(--accent); box-shadow: none; }
   .epList .newRoom + .thread.pre { margin-top: 6px; } .epList .thread.pre + .thread.pre { margin-top: 4px; }
@@ -876,6 +877,8 @@
        it opens from; the doc is a floor under the header: its peek bar sits right below it, it slides down from
        under the header and stops short of the bottom, leaving a strip of the dimmed chat that closes it on tap. */
     .book > .side { top: 0; height: auto; max-height: calc(var(--vvh, 100dvh) - max(96px, var(--vvh, 100dvh) * .2)); padding-top: max(14px, env(safe-area-inset-top)); padding-bottom: 0; border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - 48px)); }
+    /* Typing in the sheet (new epic, invite): the keyboard already takes the bottom, so no dimmed gap under it. */
+    .book > .side:focus-within { max-height: var(--vvh, 100dvh); }
     /* The room's own row sits where the title button was: tapping the title twice lands on it (not on ← vibebooks,
        which follows the thread list). */
     .side > * { order: 2; } .side > .roomStrip { order: -1; } .side > .threadsSec { order: 0; } .side > .sideHead { order: 1; }
@@ -3428,6 +3431,8 @@ function renderSide() {
   });
   // The form is absent on the Arquivados tab. Empty title: the + just puts you in the field.
   const ne = document.getElementById("newEpic");
+  // Phones: once the keyboard is up (the visible viewport shrinks), bring the field to the middle of the sheet.
+  ne?.querySelector("input").addEventListener("focus", (e) => setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 350));
   if (ne) ne.onsubmit = (e) => { e.preventDefault(); const v = e.target[0].value.trim(); if (!v) return e.target[0].focus(); send({ t: "epic", title: v }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
