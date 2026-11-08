@@ -35,6 +35,7 @@ const ALLOW = [
   "**Objetivo:** o que este épico entrega", // epic doc seed, same text as epicDocSeed in src/book.ts
   'const STOP = new Set(["e", "de", "do"', // stop words for initials (data, not UI)
   'replace(/[^\\p{L}\\p{N} ]/gu', // regex
+  "const ghChips = (h) =>", // regex over link HTML
   'LANG === "en" ? "en-US" : "pt-BR"', // locale names
   'document.documentElement.lang = LANG === "en" ? "en" : "pt-BR"',
   'aria-label="Idioma / Language"', // the switch speaks both

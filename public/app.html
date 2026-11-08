@@ -450,6 +450,10 @@
   .msg .rbtn:hover { color: var(--ink); }
   @media (hover: none) { .msg .rbtn { display: none; } }
   .msg .quote { display: block; max-width: 100%; margin: 0 0 4px; padding: 2px 10px; border: 0; border-left: 3px solid var(--line); border-radius: 0; background: none; font: inherit; font-size: 12.5px; color: var(--mute); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .msg .txt a.ghchip, .preview a.ghchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px 1px 2px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
+  .msg .txt a.ghchip:hover, .preview a.ghchip:hover { border-color: var(--mute); }
+  .msg .txt a.ghchip svg, .preview a.ghchip svg { width: 18px; height: 18px; flex: none; padding: 2px; border-radius: 50%; background: var(--ink); color: var(--bg); }
+  .msg .txt a.ghchip span, .preview a.ghchip span { overflow: hidden; text-overflow: ellipsis; }
   .msg .txt a.mlink { color: var(--accent); text-decoration: none; border-bottom: 1px dashed currentColor; }
   .msg .quote:hover { color: var(--ink); border-left-color: var(--accent); }
   .msg.flash { animation: msgflash 1.6s ease-out; }
@@ -1606,11 +1610,21 @@ const mentions = (h) => h.replace(/(^|[\s(>])@([\p{L}\p{N}._-]+)/gu, (all, pre, 
   const who = mentionTarget(tag);
   return who ? `${pre}<span class="mention${who === S?.me ? " me" : ""}" title="${esc(who === "ai" ? "@vibe" : who)}">@${tag}</span>` : all;
 });
-const linkify = (h) => h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`);
+// GitHub links (repo, PR, issue, commit) become a chip: round logo + "owner/repo #882" (or @sha7); a link with its own text keeps it.
+const GH_LOGO = `<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>`;
+const ghChips = (h) => h.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(pull|issues|commit)\/(\w+))?\/?(?:[?#][^"]*)?"([^>]*)>([\s\S]*?)<\/a>/g, (all, pre, owner, repo, kind, ref, post, text) => {
+  if (/^(orgs|settings|features|marketplace|sponsors|apps|topics)$/.test(owner)) return all;
+  const href = all.match(/href="([^"]*)"/)[1];
+  const label = kind === "commit" ? `${owner}/${repo}@${ref.slice(0, 7)}` : kind ? `${owner}/${repo} #${ref}` : `${owner}/${repo}`;
+  const own = text.replace(/<[^>]*>/g, "").trim();
+  const shown = !own || own === href || /^https?:\/\//.test(own) ? esc(label) : text;
+  return `<a ${pre}href="${href}"${post} class="ghchip" title="${esc(label)}">${GH_LOGO}<span>${shown}</span></a>`;
+});
+const linkify = (h) => ghChips(h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`));
 // Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
 // No <img>: files go as attachments, and a remote image would be a tracker.
-const md = (s) => DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
-  .replace(/<a (?!href="#m\d+")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"');
+const md = (s) => ghChips(DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
+  .replace(/<a (?!href="#m\d+")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"'));
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
