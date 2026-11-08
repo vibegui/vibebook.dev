@@ -325,6 +325,11 @@
   /* Pending invites and access requests: the email gets the whole row (wrapping, never cut) and the actions go under it. */
   .member .fnCol { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .member .fnCol .fn { font-weight: 500; }
+  details.memMore > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; font-size: 12px; color: var(--mute); }
+  details.memMore > summary::-webkit-details-marker { display: none; }
+  details.memMore > summary::before { content: "▸"; font-size: 10px; transition: transform .15s; }
+  details.memMore[open] > summary::before { transform: rotate(90deg); }
+  details.memMore > summary:hover { color: var(--ink); }
   .member .fnRow { display: flex; align-items: center; gap: 6px; min-width: 0; } .member .fnRow .fn { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .member .pendTag { flex: none; font-size: 10.5px; line-height: 1; padding: 3px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--mute); }
   .member .memActs { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1456,6 +1461,7 @@ const EN = {
   "Cancelar convite": "Cancel invite",
   "Remover do vibebook": "Remove from vibebook",
   "Seus amigos": "Your friends",
+  "{n} offline": "{n} offline",
   "Adicionar {email}": "Add {email}",
   "convidar por email": "invite by email",
   "Cancelar o convite de {email}?": "Cancel {email}'s invite?",
@@ -3459,19 +3465,24 @@ function renderSide() {
       ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">${icon("x")}</button></div>`).join("")}</div>` : ""}
       <h4>${t("Pessoas e agents")}</h4>
       ${sbxRows()}
-      ${S.members.map((m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
+      ${(() => { const row = (m) => `<div class="member">${avatar(m, S.online.includes(m))} ${(S.pending || []).includes(m)
         ? `<div class="fnCol"><span class="fnRow"><span class="fn" title="${esc(m)}">${esc(S.names?.[m] || m.split("@")[0])}</span><span class="pendTag" title="${t("Convidada(o), ainda não entrou")}">${t("pendente")}</span></span><small class="memActs"><button class="ghost resend" data-copyinv="${esc(m)}" title="${t("Copiar a mensagem de convite (link da sala + setup do Claude) para mandar no WhatsApp")}">${t("copiar")}</button> · <button class="ghost resend" data-resend="${esc(m)}" title="${t("Convidada(o), ainda não entrou")}">${t("reenviar")}</button></small></div>`
         : S.names?.[m] ? `<span class="fn" title="${esc(m)}">${esc(S.names[m])}</span>`
         : `<div class="fnCol"><span class="fn" title="${esc(m)}">${esc(m.split("@")[0])}</span><small class="memActs">@${esc(m.split("@")[1] ?? "")}</small></div>`}${
         m !== S.book?.owner && ((S.pending || []).includes(m) || S.me === S.book?.owner)
-        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="${t("Remover {email}", { email: esc(m) })}" title="${(S.pending || []).includes(m) ? t("Cancelar convite") : t("Remover do vibebook")}">${icon("x")}</button>` : ""}</div>${agentRows(m)}`).join("")}
-      ${(() => { const add = friends.filter((f) => !S.members.includes(f)); return add.length ? `
-        <div style="margin-top:10px;font-size:12px" class="muted">${t("Seus amigos")}</div>
-        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="${t("Adicionar {email}", { email: esc(f) })}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>${icon("plus")}</b></button>`).join("")}` : ""; })()}
+        ? `<button class="ghost x" data-remove="${esc(m)}" aria-label="${t("Remover {email}", { email: esc(m) })}" title="${(S.pending || []).includes(m) ? t("Cancelar convite") : t("Remover do vibebook")}">${icon("x")}</button>` : ""}</div>${agentRows(m)}`;
+        // Online people (and you) stay in view; everyone else folds into "N offline", closed by default.
+        const on = S.members.filter((m) => m === S.me || S.online.includes(m)), off = S.members.filter((m) => !on.includes(m));
+        return on.map(row).join("") + (off.length ? `<details class="memMore" data-fold="off"${foldOpen.off ? " open" : ""}><summary>${t("{n} offline", { n: off.length })}</summary>${off.map(row).join("")}</details>` : ""); })()}
+      ${(() => { const add = friends.filter((f) => !S.members.includes(f)); const open = foldOpen.friends ?? S.members.length <= 1; return add.length ? `
+        <details class="memMore" data-fold="friends"${open ? " open" : ""}><summary>${t("Seus amigos")} · ${add.length}</summary>
+        ${add.map((f) => `<button class="friendAdd" data-add="${esc(f)}" title="${t("Adicionar {email}", { email: esc(f) })}">${avatar(f)}<span class="fn">${esc(name(f))}</span><b>${icon("plus")}</b></button>`).join("")}</details>` : ""; })()}
       <form class="row" id="invite" style="margin-top:8px"><input type="email" required placeholder="${t("convidar por email")}" list="friendList" autocomplete="off" /><button aria-label="${t("convidar por email")}">${icon("plus")}</button></form>
       <datalist id="friendList">${friends.filter((f) => !S.members.includes(f)).map((f) => `<option value="${esc(f)}">`).join("")}</datalist>
     </div>`;
   el.querySelector("#railToggle").onclick = toggleRail;
+  // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
+  el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.addEventListener("click", () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open)));
   el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
   sheetDrag(el.querySelector(".sheetGrab"), "side", false);
   el.querySelector("#sideRooms")?.addEventListener("click", openSwitch);
@@ -3590,6 +3601,8 @@ const shownOrder = (tasks) => {
 };
 // "Arquivados" is a view that replaces the epic list; it stays the way you left it across redraws.
 let archOpen = false;
+// People's folds ("N offline", friends) keep their state across redraws; friends start open in a room with only you.
+const foldOpen = { off: false, friends: null };
 // Phones: the last rooms you opened (besides this one) as tiles, then "all", always at the top of the thread sheet.
 function roomStrip() {
   const recent = [...(myBooks || [])].filter((b) => b.id !== S?.id && !b.archived_at).sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0)).slice(0, 3);
