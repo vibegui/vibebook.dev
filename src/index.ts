@@ -356,6 +356,14 @@ app.get("/api/dev/as", (c) => {
   return c.redirect("/");
 });
 
+// How you sign in (the profile): per method, the last login and how many, from your own login events (user, ts index).
+app.get("/api/me/logins", async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT COALESCE(json_extract(dims, '$.method'), 'email') AS method, MAX(ts) AS last, COUNT(*) AS n FROM events WHERE user = ? AND name = 'login' GROUP BY 1`,
+  ).bind(c.get("email")).all();
+  return c.json({ logins: results, providers: { google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET) } });
+});
+
 app.get("/api/me", async (c) => {
   const email = c.get("email");
   const db = c.env.DB;

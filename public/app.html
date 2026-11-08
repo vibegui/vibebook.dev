@@ -1030,6 +1030,18 @@
   .pask .askOut[hidden] { display: none; }
   .pdBell { cursor: pointer; padding-left: 0 !important; } .pdBell .bell { padding: 0 8px; }
   .pdOut { margin-top: auto; align-self: flex-start; color: var(--mute); }
+  .pdOut.pdOutAll { margin-top: -10px; font-size: 13px; }
+  dialog.profile { width: min(400px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 18px; padding: 22px; background: var(--panel); color: var(--ink); display: none; gap: 18px; }
+  dialog.profile[open] { display: grid; } dialog.profile::backdrop { background: rgb(0 0 0 / .35); }
+  dialog.profile .pfX { position: absolute; top: 10px; right: 10px; }
+  .logins h3 { font: 600 12px "Schibsted Grotesk", sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); margin: 0 0 6px; }
+  .lgRow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .lgRow:first-child { border-top: 0; }
+  .lgRow > span:nth-child(2) { flex: 1; display: grid; } .lgRow b { font-weight: 500; font-size: 14.5px; } .lgRow small { color: var(--mute); font-size: 12.5px; }
+  .lgIc { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--bg); color: var(--ink); flex: none; } .lgIc svg { width: 16px; height: 16px; }
+  .lgRow:not(.on) .lgIc { opacity: .55; } .lgOk { color: var(--ok, #22a06b); display: grid; }
+  .lgNote { margin: 6px 0 0; font-size: 12.5px; color: var(--mute); line-height: 1.4; }
+  .pfOut { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .pfOut .ghost { font-size: 13px; color: var(--mute); }
   .homeTheme { display: none; }
   @media (max-width: 900px) { .homeTheme { display: grid; place-items: center; padding: 6px 8px; } }
   /* login */
@@ -1264,6 +1276,14 @@ const EN = {
   "Claude Code só com o conector:": "Claude Code with just the connector:",
   "Passo a passo completo →": "Full step-by-step →",
   "Copiado": "Copied",
+  "Como você entra": "How you sign in",
+  "Seu perfil: email, como você entra, sair": "Your profile: email, how you sign in, sign out",
+  "Google e GitHub entram na conta do email deles: se for outro email, vira outra conta.": "Google and GitHub sign in to the account of their email: a different email is a different account.",
+  "último {d} · {n}×": "last {d} · {n}×",
+  "Código por email": "Email code",
+  "sempre funciona": "always works",
+  "ainda não usou": "not used yet",
+  "Link de convite": "Invite link",
   "Essa mensagem não tem texto pra copiar.": "This message has no text to copy.",
   "O navegador pediu um toque pra copiar.": "The browser wants a tap to copy.",
   "Copiar o texto desta mensagem": "Copy this message's text",
@@ -2046,13 +2066,17 @@ function homeWith(me) {
   <div class="home">
     <header class="top">
       <div class="brand"><a href="/">vibebook</a></div>
-      <button class="me" id="myName" title="${t("Mudar seu nome")}">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
+      <button class="me" id="myName" title="${t("Seu perfil: email, como você entra, sair")}">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
       <button class="ghost bell" data-bell></button>
       <button class="ghost homeTheme" id="homeTheme" aria-label="${t("Tema")}">${THEMES[theme()].icon}</button>
       ${langSwitch()}
-      <button class="ghost" id="logout">${t("Sair")}</button>
-      <button class="ghost" id="logoutAll" title="${t("Sai em todos os navegadores e celulares onde você entrou")}">${t("Sair de todos os aparelhos")}</button>
     </header>
+    <dialog class="profile" id="profileDlg">
+      <button class="ghost x pfX" aria-label="${t("Fechar")}">${icon("x")}</button>
+      <div class="pdHead">${avatar(me.email)}<div><b title="${t("Mudar seu nome")}">${esc(me.name || t("Seu nome"))}</b><small>${esc(me.email)}</small></div></div>
+      ${loginsSec()}
+      <div class="pfOut"><button class="primary" id="logout">${t("Sair")}</button><button class="ghost" id="logoutAll" title="${t("Sai em todos os navegadores e celulares onde você entrou")}">${t("Sair de todos os aparelhos")}</button></div>
+    </dialog>
     <div id="setupCard"></div>
     <section class="waits" id="waits"${me.waits?.length ? "" : " hidden"}></section>
     <form class="ask" id="ask">
@@ -2139,6 +2163,7 @@ function phoneHome(me) {
   </div>
   <dialog class="pdrawer" id="pDrawer">
     <div class="pdHead">${avatar(me.email)}<div><b>${esc(me.name || t("Seu nome"))}</b><small>${esc(me.email)}</small></div></div>
+    ${loginsSec()}
     <section class="waits" id="waits"${myWaits.length ? "" : " hidden"}></section>
     <nav class="pdNav">
       <a data-nav href="/archived">${t("Arquivo")}</a>
@@ -2152,7 +2177,7 @@ function phoneHome(me) {
       <button class="ghost x" data-unfriend="${esc(f.email)}" aria-label="${t("Remover {email} dos amigos", { email: esc(f.email) })}">${icon("x")}</button></div>`).join("")}
     <form class="invite" id="addFriend"><input type="email" required placeholder="${t("email do amigo")}" aria-label="${t("Email do amigo")}" /><button>${t("Convidar")}</button></form>
     <button class="ghost pdOut" id="logout">${t("Sair")}</button>
-    <button class="ghost pdOut" id="logoutAll">${t("Sair de todos os aparelhos")}</button>
+    <button class="ghost pdOut pdOutAll" id="logoutAll">${t("Sair de todos os aparelhos")}</button>
   </dialog>
   <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />`;
   const d = document.getElementById("pDrawer");
@@ -2173,9 +2198,31 @@ function phoneHome(me) {
   d.querySelector(".pdHead b").onclick = async () => { const n = prompt(t("Seu nome:"), me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
 }
 
+// Profile: how you sign in. Email codes always work; Google/GitHub show when the server has them, with your last use.
+const loginsSec = () => `<section class="logins"><h3>${t("Como você entra")}</h3><div id="loginRows"></div><p class="lgNote">${t("Google e GitHub entram na conta do email deles: se for outro email, vira outra conta.")}</p></section>`;
+async function fillLogins() {
+  const el = document.getElementById("loginRows"); if (!el) return;
+  let r; try { r = await (await fetch("/api/me/logins")).json(); } catch { return; }
+  const by = Object.fromEntries((r.logins || []).map((l) => [l.method, l]));
+  const when = (l) => l ? t("último {d} · {n}×", { d: new Date(l.last).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" }), n: l.n }) : null;
+  const row = (ic, label, l, idle) => `<div class="lgRow${l ? " on" : ""}"><span class="lgIc">${ic}</span><span><b>${label}</b><small>${when(l) ?? idle}</small></span>${l ? `<i class="lgOk">${icon("check", 14)}</i>` : ""}</div>`;
+  el.innerHTML = [
+    row(icon("at", 16), t("Código por email"), by.email, t("sempre funciona")),
+    r.providers?.google || by.google ? row(GOOGLE_ICON, "Google", by.google, t("ainda não usou")) : "",
+    r.providers?.github || by.github ? row(GH_LOGO.replace("<svg ", '<svg width="16" height="16" '), "GitHub", by.github, t("ainda não usou")) : "",
+    by.invite ? row(icon("reply", 16), t("Link de convite"), by.invite) : "",
+  ].join("");
+}
 function wireHome(me) {
   const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
-  document.getElementById("myName").onclick = (e) => e.target.closest(".avatar") ? pickPic() : saveName(prompt(t("Seu nome:"), me.name || ""));
+  const pf = document.getElementById("profileDlg");
+  document.getElementById("myName").onclick = () => pf ? pf.showModal() : null;
+  if (pf) {
+    pf.onclick = (e) => { if (e.target === pf || e.target.closest(".pfX")) pf.close(); };
+    pf.querySelector(".pdHead .avatar").onclick = pickPic;
+    pf.querySelector(".pdHead b").onclick = () => saveName(prompt(t("Seu nome:"), me.name || ""));
+  }
+  fillLogins();
   document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
