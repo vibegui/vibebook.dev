@@ -440,8 +440,11 @@ export class Book extends DurableObject<Env> {
    * in that epic) are left out. */
   stalledTasks(bookId: string, email: string) {
     this.bind(bookId);
+    // At most once an hour per person and room, across isolates (the Worker's in-memory throttle isn't shared).
+    const key = `stall:${email}`;
+    if (Number(this.get(key) ?? 0) > Date.now() - 3600_000) return [];
     const quiet = Date.now() - 30 * 60e3;
-    return this.epics()
+    const out = this.epics()
       .filter((e) => !e.archived)
       .flatMap((e) => {
         const act = this.sql.exec<{ last: number | null; mine: number }>(`SELECT max(ts) AS last, sum(kind = 'agent' AND author = ?) AS mine FROM messages WHERE thread = ?`, email, e.id).one();
@@ -449,6 +452,8 @@ export class Book extends DurableObject<Env> {
         return e.tasks.filter((t) => t.owner === email && t.status !== "done" && t.status !== "review").map((t) => ({ epic_id: e.id, epic: e.title, task_id: t.id, task: t.title, status: t.status, quiet_since: new Date(act.last ?? 0).toISOString() }));
       })
       .slice(0, 8);
+    if (out.length) this.set(key, String(Date.now()));
+    return out;
   }
   /** The members' open apps refetch what they see outside this room (rail, waits): src/person.ts. */
   pokeMembers() {
