@@ -453,11 +453,12 @@
   @media (max-width: 900px) { .lanes { grid-template-columns: repeat(4, 78vw); scroll-snap-type: x mandatory; } .lane { scroll-snap-align: start; } }
   .msg { display: flex; gap: 14px; max-width: 760px; position: relative; margin: 0 -10px; padding: 6px 10px; border-radius: 12px; }
   .msg:hover { background: color-mix(in oklch, var(--line) 30%, transparent); }
-  /* Reply: ↩ floats over the message's top-right corner on hover (absolute: nothing moves); touch screens swipe instead. */
-  .msg .rbtn { position: absolute; top: 4px; right: 8px; z-index: 1; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; font-size: 12.5px; color: var(--mute); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / .08); opacity: 0; pointer-events: none; }
-  .msg:hover .rbtn, .msg .rbtn:focus-visible { opacity: 1; pointer-events: auto; }
+  /* Reply / copy: float over the message's top-right corner on hover (absolute: nothing moves); touch screens swipe instead. */
+  .msg .mact { position: absolute; top: 4px; right: 8px; z-index: 1; display: flex; gap: 4px; opacity: 0; pointer-events: none; }
+  .msg:hover .mact, .msg .mact:focus-within { opacity: 1; pointer-events: auto; }
+  .msg .rbtn { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; font-size: 12.5px; color: var(--mute); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / .08); }
   .msg .rbtn:hover { color: var(--ink); }
-  @media (hover: none) { .msg .rbtn { display: none; } }
+  @media (hover: none) { .msg .mact { display: none; } }
   .msg .quote { display: block; max-width: 100%; margin: 0 0 4px; padding: 2px 10px; border: 0; border-left: 3px solid var(--line); border-radius: 0; background: none; font: inherit; font-size: 12.5px; color: var(--mute); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .threadsSec > .thread.dragging { opacity: .4; }
   .threadsSec > .thread.dropAbove { box-shadow: inset 0 2px 0 var(--accent); }
@@ -1258,6 +1259,8 @@ const EN = {
   "Claude Code só com o conector:": "Claude Code with just the connector:",
   "Passo a passo completo →": "Full step-by-step →",
   "Copiado": "Copied",
+  "Copiar o texto desta mensagem": "Copy this message's text",
+  "Não deu pra copiar: selecione o texto e copie.": "Couldn't copy: select the text and copy it.",
   "Selecione e copie": "Select and copy",
   "Carregando": "Loading",
   "Você foi removido deste vibebook.": "You were removed from this vibebook.",
@@ -1721,6 +1724,7 @@ const ICONS = {
   archive: `<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>`,
   undo: `<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>`,
   reply: `<path d="m9 17-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>`,
+  copy: `<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>`,
   bell: `<path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"/>`,
   bellOff: `<path d="M10.27 21a2 2 0 0 0 3.46 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.67C4.59 13.96 6 12.5 6 8a6 6 0 0 1 .26-1.74"/><path d="m2 2 20 20"/><path d="M8.67 3.01A6 6 0 0 1 18 8c0 2.69.77 4.65 1.71 6.05"/>`,
   camera: `<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>`,
@@ -3514,10 +3518,10 @@ function copyInvite(email, sent = true) {
     () => toast(t("Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.", { email: esc(email) })),
   );
 }
-function toast(html) {
+function toast(html, ms = 7000) {
   document.querySelector(".toast")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="toast" role="status">${html}</div>`);
-  const t = document.querySelector(".toast"); setTimeout(() => t.remove(), 7000);
+  const t = document.querySelector(".toast"); setTimeout(() => t.remove(), ms);
 }
 
 // Kanban over every epic's tasks. Drag between lanes, or focus a card and use ←/→. Click opens the epic's chat.
@@ -3872,6 +3876,13 @@ function renderReply() {
   if (replyTo) bar.innerHTML = `<span>${icon("reply", 13)} ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">${icon("x")}</button>`;
   document.getElementById("replyX")?.addEventListener("click", () => { replyTo = null; renderReply(); });
 }
+// Copy: the message's text as written (markdown included); a file-only message copies its file names.
+function copyMsg(id) {
+  const m = S.messages.find((x) => x.id === id); if (!m) return;
+  const txt = m.text || m.files?.map((f) => f.name).join("\n") || "";
+  if (!txt) return;
+  navigator.clipboard?.writeText(txt).then(() => { toast(`✓ ${t("Copiado")}`, 1600); navigator.vibrate?.(15); }, () => toast(t("Não deu pra copiar: selecione o texto e copie.")));
+}
 function startReply(id) {
   replyTo = S.messages.find((x) => x.id === id) ?? null;
   renderReply();
@@ -3880,6 +3891,8 @@ function startReply(id) {
 document.addEventListener("click", (ev) => {
   const r = ev.target.closest("[data-reply]");
   if (r) return startReply(Number(r.dataset.reply));
+  const cp = ev.target.closest("[data-copymsg]");
+  if (cp) return copyMsg(Number(cp.dataset.copymsg));
   const ml = ev.target.closest("a.mlink[data-msg]");
   if (ml) { ev.preventDefault(); return goToMsg(Number(ml.dataset.msg)); }
   const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
@@ -3895,9 +3908,9 @@ function goToMsg(id) {
   el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo && document.activeElement?.id === "input") { replyTo = null; renderReply(); } });
-// Touch: drag a message right past 60px to reply (it follows the finger, then snaps back).
+// Touch: drag a message right past 60px to reply, left past 60px to copy (it follows the finger, then snaps back).
 let sw = null;
-document.addEventListener("touchstart", (e) => { const m = e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
+document.addEventListener("touchstart", (e) => { const m = !e.target.closest("pre, table, .embedBox") && e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
 // Once the drag reads as horizontal (10px, more sideways than up/down) it's locked: the list stops scrolling until
 // the finger lifts. A drag that starts vertical is a scroll and never becomes a reply.
 document.addEventListener("touchmove", (e) => {
@@ -3905,17 +3918,18 @@ document.addEventListener("touchmove", (e) => {
   const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
   if (!sw.locked) {
     if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }
-    if (dx < 10 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (Math.abs(dx) < 10 || Math.abs(dx) <= Math.abs(dy)) return;
     sw.locked = true; sw.m.classList.add("swipe");
   }
   e.preventDefault();
-  sw.dx = Math.max(0, dx); sw.m.style.transform = `translateX(${Math.min(sw.dx, 80)}px)`;
+  sw.dx = dx; sw.m.style.transform = `translateX(${Math.max(-80, Math.min(dx, 80))}px)`;
 }, { passive: false });
 document.addEventListener("touchend", () => {
   if (!sw) return;
   const { m, dx } = sw; sw = null;
   m.classList.remove("swipe"); m.style.transform = "";
   if (dx > 60) startReply(Number(m.id.slice(1)));
+  else if (dx < -60) copyMsg(Number(m.id.slice(1)));
 });
 // Choices: an agent asks its human to pick (post with choices). That person sees radio/checkboxes + Enviar; the
 // pick is sent as their message replying to the question, which is also how the block knows it was answered.
@@ -4026,7 +4040,7 @@ const msgHtml = (m, prev) => {
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
-    <button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button>
+    <span class="mact"><button type="button" class="rbtn" data-copymsg="${m.id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>
     <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.card ? cardHtml(m) : ""}${m.choices ? choiceHtml(m) : ""}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
