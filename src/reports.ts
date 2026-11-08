@@ -124,9 +124,16 @@ async function issuesLine(env: Env, start: number, end: number) {
   return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(tot(y), tot(w))}${kinds ? ` · ${kinds}` : ""}`;
 }
 
+/** Claudes stuck in the terminal (permission, question, plan) that asked in the room, and how many the room answered. */
+async function unblockLine(env: Env, start: number, end: number) {
+  const r = await env.DB.prepare(`SELECT name, count(*) AS n FROM events WHERE name IN ('terminal_ask', 'terminal_answered') AND ts >= ? AND ts < ? AND ${NOT_TEST} GROUP BY name`).bind(start, end).all<{ name: string; n: number }>();
+  const n = (k: string) => r.results.find((x) => x.name === k)?.n ?? 0;
+  return n("terminal_ask") ? `\n- Travas do terminal levadas pra sala (permissão, pergunta, plano): **${n("terminal_ask")}**, resolvidas pela sala ${n("terminal_answered")}; o resto caiu no terminal` : "";
+}
+
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}${await unblockLine(env, start, end).catch(() => "")}`;
   if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();

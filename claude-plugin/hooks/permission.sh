@@ -12,6 +12,8 @@ let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
   let j={};try{j=JSON.parse(d)}catch{}
   const tool=String(j.tool_name||"uma ferramenta"), i=j.tool_input||{};
   const what=String(i.command||i.description||i.file_path||i.url||i.subject||i.to||JSON.stringify(i)).replace(/\s+/g," ").slice(0,220);
+  // A plan to approve (ExitPlanMode) shows as the plan itself, not a cut JSON.
+  if(tool==="ExitPlanMode"&&i.plan){process.stdout.write(JSON.stringify({text:"⏸ Seu Claude quer seguir com este plano:\n\n"+String(i.plan).slice(0,3000),choices:["Aprovar","Negar"]}));return}
   process.stdout.write(JSON.stringify({text:"⏸ Seu Claude pede permissão: **"+tool+"**\n`"+what.replace(/`/g,"ʼ")+"`",choices:["Aprovar","Negar"]}));
 })') || exit 0
 id=$(vibebook call post "$q" 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.ok&&j.id)process.stdout.write(String(j.id))}catch{}})')

@@ -663,6 +663,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "post": {
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
+      // The plugin's hooks (permission.sh, question.sh) bring a Claude stuck in the terminal to the room with these openers.
+      if (/^(⏸ Seu Claude (pede permissão|quer seguir)|❓ Seu Claude pergunta)/.test(str(a.text))) ctx.waitUntil(track(env, "terminal_ask", { user: me.email, dims: { book: id } }));
       let fileIds: string[] = [];
       if (a.html || a.app) {
         let html = str(a.html);
@@ -807,7 +809,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const deadline = Date.now() + Math.min(Math.max(Number(a.timeout_seconds) || 45, 1), 50) * 1000;
       for (;;) {
         const text = await bookStub(env, id).answerTo(id, Number(a.message_id), me.email);
-        if (text) return { decision: /^\s*(aprovar|aprovo|sim|yes|allow|approve|ok)\b/i.test(text) ? "allow" : "deny", text };
+        if (text) {
+          ctx.waitUntil(track(env, "terminal_answered", { user: me.email, dims: { book: id } }));
+          return { decision: /^\s*(aprovar|aprovo|sim|yes|allow|approve|ok)\b/i.test(text) ? "allow" : "deny", text };
+        }
         if (Date.now() + 2000 > deadline) return { decision: null };
         await new Promise((r) => setTimeout(r, 2000));
       }
