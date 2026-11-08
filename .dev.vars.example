@@ -4,6 +4,8 @@ SESSION_SECRET=
 # Optional: Google sign-in (OAuth client, redirect URI <origin>/auth/google/callback)
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 # Local only: skips login; identity from the dev_as cookie (or this default).
 DEV_EMAIL=you@example.com
 MCP_AUTH_TOKEN=

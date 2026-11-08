@@ -42,6 +42,8 @@ export type Env = {
   PUBLIC_ORIGIN?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
   MODEL_ROUTE: string;
   // Daily reports (src/reports.ts): rooms to post in, and the read-only Cloudflare analytics token (secret).
   METRICS_ROOMS?: string;

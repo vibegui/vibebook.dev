@@ -90,7 +90,7 @@ export async function identify(c: Context<any>): Promise<string | null> {
 
 export const auth = new Hono<{ Bindings: Env }>();
 
-auth.get("/providers", (c) => c.json({ google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), email: true }));
+auth.get("/providers", (c) => c.json({ google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET), email: true }));
 
 auth.post("/email/start", async (c) => {
   if (!sameOrigin(c)) return c.json({ error: "bad origin" }, 403);
@@ -261,6 +261,53 @@ export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.c
 
 // Every vibebook email: centered table layout (Gmail/Outlook ignore most CSS), the real logo as a PNG (no SVG in
 // mail clients), brand blue, Caprasimo-like title with safe fallbacks, white card on the app's background.
+// GitHub, same shape as Google: state in a cookie, code for a token, then only the account's primary verified email.
+auth.get("/github/start", async (c) => {
+  if (!c.env.GITHUB_CLIENT_ID) return c.redirect("/login");
+  const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
+  setCookie(c, "vb_oauth", `${state}|${safeNext(c.req.query("next"))}`, { httpOnly: true, secure: true, sameSite: "Lax", path: "/auth", maxAge: 600 });
+  const url = new URL("https://github.com/login/oauth/authorize");
+  url.search = new URLSearchParams({
+    client_id: c.env.GITHUB_CLIENT_ID,
+    redirect_uri: `${new URL(c.req.url).origin}/auth/github/callback`,
+    scope: "read:user user:email",
+    state,
+    allow_signup: "true",
+  }).toString();
+  return c.redirect(url.toString());
+});
+
+auth.get("/github/callback", async (c) => {
+  const [state, next] = (getCookie(c, "vb_oauth") ?? "").split("|");
+  deleteCookie(c, "vb_oauth", { path: "/auth" });
+  if (!state || state !== c.req.query("state") || !c.req.query("code")) return c.redirect("/login?error=github");
+  const tok = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+    body: new URLSearchParams({
+      code: c.req.query("code")!,
+      client_id: c.env.GITHUB_CLIENT_ID!,
+      client_secret: c.env.GITHUB_CLIENT_SECRET!,
+      redirect_uri: `${new URL(c.req.url).origin}/auth/github/callback`,
+    }),
+  }).then((r) => r.json<{ access_token?: string }>()).catch(() => ({}) as { access_token?: string });
+  if (!tok.access_token) return c.redirect("/login?error=github");
+  const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok.access_token}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
+  const emails = await gh("/user/emails").then((r) => (r.ok ? r.json<{ email: string; primary: boolean; verified: boolean }[]>() : [])).catch(() => []);
+  const email = emails.find((e) => e.primary && e.verified)?.email;
+  if (!email) return c.redirect("/login?error=github");
+  await startSession(c, email);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: email.toLowerCase(), dims: { method: "github" } }));
+  const user = await gh("/user").then((r) => (r.ok ? r.json<{ name?: string; login?: string }>() : {}) as Promise<{ name?: string; login?: string }>).catch(() => ({}) as { name?: string; login?: string });
+  const gname = (user.name || user.login || "").trim().slice(0, 60);
+  if (gname)
+    await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
+      .bind(email.toLowerCase(), Date.now(), gname)
+      .run()
+      .catch(() => {});
+  return c.redirect(safeNext(next));
+});
+
 export const emailHtml = (title: string, body: string) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="color-scheme" content="light"><link href="https://fonts.googleapis.com/css2?family=Caprasimo&display=swap" rel="stylesheet"></head>
 <body style="margin:0;padding:0;background:#eef3fa">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef3fa"><tr><td align="center" style="padding:32px 16px">

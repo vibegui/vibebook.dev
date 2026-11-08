@@ -1036,7 +1036,8 @@
   .login input { padding: 12px 14px; font-size: 16px; }
   .login .code { font-size: 28px; letter-spacing: .4em; text-align: center; font-weight: 700; }
   .login button { padding: 12px 16px; font-size: 16px; }
-  .login .google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; }
+  .login .google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; color: var(--ink); }
+  .login a.google + a.google { margin-top: 10px; }
   .login .or { display: flex; align-items: center; gap: 12px; color: var(--mute); font-size: 13px; margin: 18px 0; }
   .login .or::before, .login .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   .login .err { color: oklch(0.5 0.2 25); font-size: 14px; min-height: 1.2em; margin: 4px 0 0; }
@@ -1162,6 +1163,8 @@ const EN = {
   "Nada com esse nome.": "Nothing by that name.",
   "Entrar": "Sign in",
   "Seus vibebooks e seus amigos te esperando.": "Your vibebooks and your friends are waiting.",
+  "Continuar com GitHub": "Continue with GitHub",
+  "Não deu certo com o GitHub (precisa de um email principal verificado). Tenta com email.": "That didn't work with GitHub (it needs a verified primary email). Try email.",
   "Continuar com Google": "Continue with Google",
   "ou com email": "or with email",
   "Seu email": "Your email",
@@ -1942,7 +1945,7 @@ async function login() {
       ${step === "email" ? `
         <h1>${t("Entrar")}</h1>
         <p>${t("Seus vibebooks e seus amigos te esperando.")}</p>
-        ${providers.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(next)}" style="text-decoration:none"><button type="button" class="google">${GOOGLE_ICON} ${t("Continuar com Google")}</button></a><div class="or">${t("ou com email")}</div>` : ""}
+        ${providers.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(next)}" style="text-decoration:none"><button type="button" class="google">${GOOGLE_ICON} ${t("Continuar com Google")}</button></a>` : ""}${providers.github ? `<a class="google" href="/auth/github/start?next=${encodeURIComponent(next)}" style="text-decoration:none"><button type="button" class="google">${GH_LOGO.replace("<svg ", "<svg width=\"18\" height=\"18\" ")} ${t("Continuar com GitHub")}</button></a>` : ""}${providers.google || providers.github ? `<div class="or">${t("ou com email")}</div>` : ""}
         <form id="f"><label class="muted" for="email" style="font-size:14px">${t("Seu email")}</label>
           <input id="email" type="email" autocomplete="email" required placeholder="${t("voce@gmail.com")}" value="${esc(email)}" />
           <button class="primary" id="go">${t("Mandar código")}</button>
@@ -1972,7 +1975,7 @@ async function login() {
     };
     if (step === "code") document.getElementById("code").oninput = (e) => { if (e.target.value.replace(/\D/g, "").length === 6) f.requestSubmit(); };
   };
-  view("email", q.get("error") === "google" ? t("Não deu certo com o Google. Tenta com email.") : "");
+  view("email", q.get("error") === "google" ? t("Não deu certo com o Google. Tenta com email.") : q.get("error") === "github" ? t("Não deu certo com o GitHub (precisa de um email principal verificado). Tenta com email.") : "");
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
