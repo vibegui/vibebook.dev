@@ -133,8 +133,11 @@ export class Book extends DurableObject<Env> {
   // An epic a Claude worked in closes only with proof: its delivery (done card) and a screenshot in the thread.
   // Without them it stays open and housekeep asks for it. Epics only people worked in close on their ticks alone.
   unproven(id: string) {
-    const has = (where: string) => this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND ${where} LIMIT 1`, id).toArray().length > 0;
-    return has(`kind = 'agent'`) && !(has(`kind = 'agent' AND tag = 'done'`) && has(`files LIKE '%"type":"image/%'`));
+    // A reopened epic needs proof of the new round: only what came after @vibe's last archive note counts.
+    const since = this.sql.exec<{ id: number | null }>(`SELECT max(id) AS id FROM messages WHERE thread = ? AND author = 'ai' AND tag = 'done'`, id).one().id ?? 0;
+    const has = (where: string) => this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND id > ? AND ${where} LIMIT 1`, id, since).toArray().length > 0;
+    const agentEver = this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND kind = 'agent' LIMIT 1`, id).toArray().length > 0;
+    return agentEver && !(has(`kind = 'agent' AND tag = 'done'`) && has(`files LIKE '%"type":"image/%'`));
   }
   autoArchive() {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done") && !this.unproven(e.id));
