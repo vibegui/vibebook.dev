@@ -124,7 +124,11 @@ async function issuesLine(env: Env, start: number, end: number) {
     let d: { kind?: string; model?: string; what?: string } = {};
     try {
       d = JSON.parse(x.dims);
-    } catch {}
+    } catch {
+      // Rows from before fitDims: the JSON was cut at 512 chars. Take what's there.
+      const f = (k: string) => new RegExp(`"${k}":"((?:[^"\\\\]|\\\\.)*)`).exec(x.dims)?.[1]?.replace(/\\(.)/g, "$1");
+      d = { kind: f("kind"), model: f("model"), what: f("what") ? `${f("what")}…` : undefined };
+    }
     return { ts: x.ts, kind: d.kind || "other", model: d.model, what: d.what ?? "" };
   });
   const y = rows.filter((x) => x.ts >= start && x.ts < end);

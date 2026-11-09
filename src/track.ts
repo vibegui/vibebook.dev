@@ -13,6 +13,22 @@ export interface TrackOpts {
   dims?: Dims;
 }
 
+/** dims as JSON in ≤512 chars, always valid: the longest string is shortened (by code point) until it fits.
+ *  Slicing the JSON itself left rows SQLite's json_extract refuses ("malformed JSON"), e.g. report_issue's 500-char `what`. */
+export function fitDims(dims: Record<string, unknown>, max = 512) {
+  const d = { ...dims };
+  let s = JSON.stringify(d);
+  while (s.length > max) {
+    const k = Object.keys(d).filter((x) => typeof d[x] === "string").sort((a, b) => String(d[b]).length - String(d[a]).length)[0];
+    if (!k) return null;
+    const cps = Array.from(String(d[k]));
+    d[k] = cps.slice(0, Math.max(0, cps.length - Math.max(2, Math.floor((s.length - max) / 2)))).join("") + "…"; // ≥ half the excess: an emoji is 2 chars of JSON
+    if (cps.length <= 1) delete d[k];
+    s = JSON.stringify(d);
+  }
+  return s;
+}
+
 export async function track(env: Pick<Env, "DB">, name: string, opts: TrackOpts = {}): Promise<void> {
   try {
     const dims = opts.dims ? Object.fromEntries(Object.entries(opts.dims).filter(([, v]) => v !== undefined)) : null;
@@ -23,7 +39,7 @@ export async function track(env: Pick<Env, "DB">, name: string, opts: TrackOpts 
         opts.visitor ?? null,
         opts.country ?? null,
         opts.user ?? null,
-        dims ? JSON.stringify(dims).slice(0, 512) : null,
+        dims ? fitDims(dims) : null,
         Date.now(),
       )
       .run();

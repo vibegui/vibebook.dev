@@ -1047,9 +1047,9 @@ async function main() {
       if (!file || !existsSync(file))
         return die("usage: vibebook upload <file> [--message ..] [--thread ..]");
       const ext = file.toLowerCase().split(".").pop() ?? "";
-      const type = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html" }[ext];
+      const type = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html", md: "text/markdown" }[ext];
       if (!type)
-        return die("only png, jpg, webp, gif, pdf or html");
+        return die("only png, jpg, webp, gif, pdf, html or md");
       const args = { filename: basename(file), content_type: type };
       if (flag("room"))
         args.room_id = flag("room");

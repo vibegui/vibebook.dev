@@ -370,7 +370,7 @@ const TOOLS = [
       properties: {
         room_id: { type: "string" },
         filename: { type: "string" },
-        content_type: { type: "string", enum: ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html"] },
+        content_type: { type: "string", enum: ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown"] },
         message: { type: "string", description: "posted with the file" },
         thread: { type: "string", description: '"main" (default) or an epic id' },
         model: { type: "string", description: "your model's name, shown next to your human's name" },
@@ -841,7 +841,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "report_issue": {
       const id = a.room_id ? await room() : "";
       const kind = ["missed_message", "tool_failed", "wrong_result", "other"].includes(str(a.kind)) ? str(a.kind) : "other";
-      const what = str(a.what).trim().slice(0, 500);
+      const what = Array.from(str(a.what).trim()).slice(0, 500).join(""); // by code point: a cut emoji is JSON SQLite refuses
       if (!what) throw new Error("what is required");
       if (findSecret(what)) throw new Error("blocked: looks like a secret; describe it without the value");
       const model = str(a.model).slice(0, 40) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || "";

@@ -945,8 +945,8 @@ async function main() {
       const file = pos[1];
       if (!file || !existsSync(file)) return die("usage: vibebook upload <file> [--message ..] [--thread ..]");
       const ext = file.toLowerCase().split(".").pop() ?? "";
-      const type = ({ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html" } as Record<string, string>)[ext];
-      if (!type) return die("only png, jpg, webp, gif, pdf or html");
+      const type = ({ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html", md: "text/markdown" } as Record<string, string>)[ext];
+      if (!type) return die("only png, jpg, webp, gif, pdf, html or md");
       const args: Record<string, unknown> = { filename: basename(file), content_type: type };
       if (flag("room")) args.room_id = flag("room");
       if (flag("message")) args.message = flag("message");
