@@ -345,10 +345,10 @@ const TOOLS = [
   },
   {
     name: "update_epic",
-    description: "Rename an epic and/or archive it (archived: true; mark_done: true also closes its open tasks, for when it's all delivered) or bring it back (archived: false). An epic whose tasks are all done archives itself (one an agent worked in also needs a done delivery saying what was tested in its thread). prod = its deploy stage after the work is done: \"deployed\" once it's shipped, \"verified\" once you opened it in production and checked it works (prod_note: what you checked, e.g. the URL and what you saw); \"\" clears it. The room shows the stage on the epic.",
+    description: "Rename an epic, set its owner (owner: a member's email, \"\" clears) and/or archive it (archived: true; mark_done: true also closes its open tasks, for when it's all delivered) or bring it back (archived: false). An epic whose tasks are all done archives itself (one an agent worked in also needs a done delivery saying what was tested in its thread). prod = its deploy stage after the work is done: \"deployed\" once it's shipped, \"verified\" once you opened it in production and checked it works (prod_note: what you checked, e.g. the URL and what you saw); \"\" clears it. The room shows the stage on the epic.",
     inputSchema: {
       type: "object",
-      properties: { room_id: { type: "string" }, epic_id: { type: "string" }, title: { type: "string" }, archived: { type: "boolean" }, mark_done: { type: "boolean" }, prod: { type: "string", enum: ["deployed", "verified", ""] }, prod_note: { type: "string" } },
+      properties: { room_id: { type: "string" }, epic_id: { type: "string" }, title: { type: "string" }, archived: { type: "boolean" }, mark_done: { type: "boolean" }, prod: { type: "string", enum: ["deployed", "verified", ""] }, prod_note: { type: "string" }, owner: { type: "string", description: "the epic's owner: a member's email (their avatar becomes the epic's icon); \"\" clears it" } },
       required: ["room_id", "epic_id"],
     },
   },
@@ -391,6 +391,7 @@ const TOOLS = [
         tasks: { type: "array", items: { type: "string" }, maxItems: 12, description: "optional; default is one task named like the epic" },
         model: { type: "string", description: "your model's name, shown next to your human's name" },
         from_message_id: { type: "number", description: "the main-thread message this request came from; default: your human's latest message there" },
+        owner: { type: "string", description: "who owns the epic: a member's email (their avatar becomes its icon). Default: your human. Pick someone else when the request names them or it's clearly theirs." },
       },
       required: ["room_id", "title", "why"],
     },
@@ -857,7 +858,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       if (!str(a.why)) throw new Error("why is required: one sentence on what the epic delivers and why (it opens the epic's doc)");
       if (Array.isArray(a.tasks) && a.tasks.some((t) => typeof t !== "string")) throw new Error("tasks must be strings (task titles)");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
-      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent);
+      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent, str(a.owner));
       return out;
     }
     case "add_task":

@@ -254,6 +254,18 @@
   .side .title { font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
   .side .folderTag { font-size: 12px; color: var(--mute); }
   .sec h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .ri.epOwner { border-radius: 50%; overflow: hidden; color: #fff; font-size: 10.5px; }
+  .ri.epOwner img, .rbOwner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  [data-epowner] { cursor: pointer; }
+  [data-epowner]:hover { box-shadow: 0 0 0 2px var(--accent); }
+  .rbOwner { position: absolute; inset: 3px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 11px; }
+  .ownMenu { position: fixed; z-index: 1000; min-width: 210px; max-height: 60vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px -12px rgb(0 0 0 / .35); }
+  .ownMenu p { margin: 4px 8px 6px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .ownMenu button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 7px 8px; border-radius: 8px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+  .ownMenu button:hover, .ownMenu button:focus-visible { background: var(--hover); outline: none; }
+  .ownMenu button span:nth-child(2) { flex: 1; }
+  .ownMenu .avatar { width: 24px; height: 24px; font-size: 10px; }
+  .ownMenu .avatar.none { background: var(--hover); color: var(--mute); }
   .pinsSec h4 { display: flex; align-items: center; justify-content: space-between; }
   .pinPlus { padding: 2px 4px; color: var(--mute); }
   .pinRow { position: relative; }
@@ -1197,6 +1209,11 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Dono: {who}": "Owner: {who}",
+  "clique pra trocar": "click to change",
+  "Sem dono · clique pra escolher": "No owner · click to pick one",
+  "Dono do épico": "Epic owner",
+  "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
   "Desafixar": "Unpin",
@@ -3155,7 +3172,7 @@ function renderRail(el) {
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
         <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
-          ${esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
+          ${e.owner ? `<span class="rbOwner">${ownerPic(e.owner)}</span>` : esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">${icon("plus", 18)}</button>
     </div>
     <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${t("{n} pedindo pra entrar", { n: S.requests.length })}" aria-label="${t("{n} pedindo pra entrar", { n: S.requests.length })}">+${S.requests.length}</button>` : ""}${S.members.slice(0, 8).map((m) => avatar(m, S.online.includes(m))).join("")}</div>`;
@@ -3268,7 +3285,7 @@ function renderAgentsPane(on, live, path, w) {
     <h4>${t("Fila do seu Claude")} <small>${q.length || ""}</small></h4>
     ${q.length ? `<div class="queue${qOpen ? " open" : ""}">${q.map((x) => {
       const ep = S.epics.find((e) => e.id === x.m.thread);
-      const mark = ep ? `<span class="ri" style="background:${color(ep.title)};color:#fff" title="${esc(ep.title)}">${esc(initials(ep.title))}</span>` : roomMark("ri");
+      const mark = ep ? epicIco(ep) : roomMark("ri");
       const st = x.st === "blocked" ? t("espera você no terminal") : x.st === "doing" ? t("fazendo") : t("na fila");
       return `<div class="qRow"><button type="button" class="qGo" data-goto="${x.m.id}" title="${esc(ep ? ep.title : t("sala principal"))} · ${ago(x.m.ts)}">${avatar(S.me)}${mark}<span class="qTx">${esc(x.m.text.replace(/\s+/g, " ").slice(0, 120))}</span><i class="qS ${x.st}" title="${st}"></i></button><button type="button" class="qX" data-dismiss="${x.m.id}" title="${t("Tirar da fila (já resolvido)")}" aria-label="${t("Tirar da fila (já resolvido)")}">${icon("x")}</button></div>`;
     }).join("")}${q.length > 4 ? `<button type="button" class="qMore" id="qMore">${qOpen ? t("mostrar menos") : t("mostrar mais {n}", { n: q.length - 4 })}</button>` : ""}</div>` : `<p class="agNote">${t("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
@@ -3512,9 +3529,32 @@ const waitPill = (th) => { const n = waitsIn(th).length; return n ? `<b class="w
 const prodMark = (e) => !e.prod ? "" : e.prod.stage === "verified"
   ? `<span class="prodMark ok" title="${esc(t("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>`
   : `<span class="prodMark" title="${t("No ar, falta verificar em prod")}">🚀</span>`;
+// An epic's icon: its owner's face when it has one (a person of the room), else the title's colored initials.
+const ownerPic = (email) => { const v = S?.avatars?.[email] ?? avatarV[email]; return v ? `<img src="/api/avatar/${encodeURIComponent(email)}?v=${v}" alt="" loading="lazy" />` : esc(name(email).slice(0, 2).toUpperCase()); };
+const epicIco = (e, pick) => e.owner
+  ? `<span class="ri epOwner" style="background:${color(e.owner)}" ${pick ? `data-epowner="${e.id}" role="button" tabindex="0" ` : ""}title="${esc(t("Dono: {who}", { who: name(e.owner) }))}${pick ? ` · ${t("clique pra trocar")}` : ""}">${ownerPic(e.owner)}</span>`
+  : `<span class="ri" style="background:${color(e.title)};color:#fff" ${pick ? `data-epowner="${e.id}" role="button" tabindex="0" title="${t("Sem dono · clique pra escolher")}"` : ""}>${esc(initials(e.title))}</span>`;
+// Click an epic's icon: pick its owner among the room's people (or none). WS epic.owner.
+function ownerMenu(anchor, id) {
+  document.getElementById("ownMenu")?.remove();
+  const ep = S.epics.find((e) => e.id === id); if (!ep) return;
+  const m = document.createElement("div");
+  m.id = "ownMenu"; m.className = "ownMenu"; m.setAttribute("role", "menu");
+  m.innerHTML = `<p>${t("Dono do épico")}</p>${S.members.map((x) => `<button type="button" role="menuitemradio" aria-checked="${ep.owner === x}" data-own="${esc(x)}">${avatar(x)}<span>${esc(name(x))}</span>${ep.owner === x ? icon("check", 14) : ""}</button>`).join("")}<button type="button" role="menuitemradio" aria-checked="${!ep.owner}" data-own=""><span class="avatar none">–</span><span>${t("Sem dono")}</span>${ep.owner ? "" : icon("check", 14)}</button>`;
+  document.body.append(m);
+  const r = anchor.getBoundingClientRect();
+  m.style.left = `${Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8))}px`;
+  m.style.top = `${r.bottom + 6 + m.offsetHeight > innerHeight ? Math.max(8, r.top - m.offsetHeight - 6) : r.bottom + 6}px`;
+  const close = () => { m.remove(); removeEventListener("pointerdown", out, true); removeEventListener("keydown", esc_); };
+  const out = (e) => { if (!m.contains(e.target)) close(); };
+  const esc_ = (e) => { if (e.key === "Escape") close(); };
+  setTimeout(() => { addEventListener("pointerdown", out, true); addEventListener("keydown", esc_); });
+  m.querySelectorAll("[data-own]").forEach((b) => b.onclick = () => { send({ t: "epic.owner", id, owner: b.dataset.own }); close(); });
+  m.querySelector("button")?.focus();
+}
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
-          <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
+          ${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 // Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
 const pinHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
@@ -3600,6 +3640,11 @@ function renderSide() {
   el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.addEventListener("click", () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open)));
   el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
   wirePins(el);
+  el.querySelectorAll("[data-epowner]").forEach((b) => {
+    const go = (ev) => { ev.preventDefault(); ev.stopPropagation(); ownerMenu(b, b.dataset.epowner); };
+    b.addEventListener("click", go);
+    b.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") go(ev); });
+  });
   sheetDrag(el.querySelector(".sheetGrab"), "side", false);
   el.querySelector("#sideRooms")?.addEventListener("click", openSwitch);
   // The root row's "editar" chip renames the room; it sits inside the row's button, so it stops the row's click.
@@ -4012,7 +4057,7 @@ const threadCard = (e) => {
   const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
   const nReplies = S.counts ? (S.counts[e.id] ?? 0) + replies.filter((x) => x.id > (S.countsAt ?? 0)).length : replies.length;
   const d = e.tasks.filter((t) => t.status === "done").length;
-  return `<span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${nReplies === 1 ? t("1 resposta") : t("{n} respostas", { n: nReplies })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
+  return `${epicIco(e)}<span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${nReplies === 1 ? t("1 resposta") : t("{n} respostas", { n: nReplies })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
 };
 const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`).join("");
 function refreshThreadCards() {

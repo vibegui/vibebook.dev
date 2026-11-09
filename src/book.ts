@@ -83,7 +83,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS pins (id TEXT PRIMARY KEY, kind TEXT, ref TEXT, title TEXT, author TEXT, ts INTEGER, UNIQUE (kind, ref));
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
-    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["messages", "card TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["epics", "pos INTEGER"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
+    for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["messages", "card TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["epics", "pos INTEGER"], ["epics", "owner TEXT"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
       try {
         this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${col}`);
       } catch {}
@@ -132,7 +132,7 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
     return this.sql
-      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null }>(`SELECT id, title, archived, from_msg, prod FROM epics ORDER BY pos IS NULL, pos, ts`)
+      .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null; owner: string | null }>(`SELECT id, title, archived, from_msg, prod, owner FROM epics ORDER BY pos IS NULL, pos, ts`)
       .toArray()
       .map((e) => {
         const f = flags[e.id] ?? {};
@@ -936,6 +936,7 @@ export class Book extends DurableObject<Env> {
         archived: e.archived || undefined,
         from_message_id: e.from_msg ?? undefined,
         prod: e.prod ?? undefined,
+        owner: e.owner ? who(e.owner) : undefined,
         doc: (this.get(`doc:${e.id}`) ?? "").slice(0, 8_000) || undefined,
         vibe_notes: e.flags,
         tasks: e.tasks.map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due, vibe_notes: t.flags })),
@@ -1168,8 +1169,21 @@ export class Book extends DurableObject<Env> {
 
   // A request becomes its own thread: an epic with the request as its first task(s) and a seeded doc, plus one
   // line in the main thread pointing at it. The discussion and the "done" happen inside the epic.
-  agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number, agent = "") {
+  /** An epic's owner: one person of the room (their avatar is the epic's icon), or "" for none. */
+  async setEpicOwner(id: string, owner: string) {
+    const o = owner.trim().toLowerCase();
+    const members = await this.members();
+    if (o && !members.includes(o)) return { ok: false as const, error: `owner must be a member email: ${members.join(", ")}` };
+    if (!this.sql.exec(`UPDATE epics SET owner = ? WHERE id = ?`, o || null, id).rowsWritten) return { ok: false as const, error: "epic not found" };
+    this.epicsChanged();
+    return { ok: true as const };
+  }
+  async agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number, agent = "", owner = "") {
     this.bind(bookId);
+    // Owner: the one asked for when it's a member, else whoever the agent works for (they asked for it).
+    const members = await this.members();
+    const own = members.includes(owner.trim().toLowerCase()) ? owner.trim().toLowerCase() : email.toLowerCase();
+    if (owner && own !== owner.trim().toLowerCase()) return { ok: false, error: `owner must be a member email: ${members.join(", ")}` };
     const t = title.trim().slice(0, 200);
     if (!t) return { ok: false, error: "title is required" };
     // The request it came from: the one given, else the person's latest own message, in any thread (an epic can
@@ -1179,6 +1193,8 @@ export class Book extends DurableObject<Env> {
       this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
     // The agent took the work, so its human owns the tasks (self-assign).
     const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12).map((title) => ({ title, owner: email })), [email.toLowerCase()], why);
+    this.sql.exec(`UPDATE epics SET owner = ? WHERE id = ?`, own, id);
+    if (!src) this.epicsChanged();
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
       this.epicsChanged();
@@ -1255,6 +1271,10 @@ export class Book extends DurableObject<Env> {
           if (!e) return { ok: false, error: "epic not found" };
           if (s("title")) this.renameEpic(e, s("title")!);
           if (typeof a.archived === "boolean") this.archiveEpic(e, a.archived, a.archived && a.mark_done === true);
+          if (typeof a.owner === "string") {
+            const r = await this.setEpicOwner(e, a.owner);
+            if (!r.ok) return r;
+          }
           if (a.prod !== undefined) {
             const stage = s("prod");
             if (stage && stage !== "deployed" && stage !== "verified") return { ok: false, error: "prod is deployed, verified or empty (clears it)" };
@@ -1432,8 +1452,14 @@ export class Book extends DurableObject<Env> {
         await this.renameRoom(this.get("book_id") ?? "", String(m.title ?? ""));
         return;
       case "epic":
-        if (String(m.title ?? "").trim()) this.createEpic(String(m.title).trim());
+        if (String(m.title ?? "").trim()) {
+          const id = this.createEpic(String(m.title).trim());
+          this.sql.exec(`UPDATE epics SET owner = ? WHERE id = ?`, email, id);
+          this.epicsChanged();
+        }
         return;
+      case "epic.owner":
+        return void this.setEpicOwner(String(m.id ?? ""), String(m.owner ?? ""));
       case "task.add":
         if (String(m.title ?? "").trim()) this.addTask(String(m.epic), String(m.title).trim());
         return;
