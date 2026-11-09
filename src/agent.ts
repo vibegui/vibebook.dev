@@ -409,6 +409,25 @@ const TOOLS = [
     },
   },
   {
+    name: "pin",
+    description: "Pin something to the room's sidebar, above the people, for everyone: a link (the live site, the landing page, the repo, a dashboard), or an app or file of this room. Use it for what the room needs at hand all the time, not for one-off links (those go in a message). Pinning the same thing again only renames it. ≤20 per room.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        room_id: { type: "string" },
+        kind: { type: "string", enum: ["link", "app", "file"] },
+        ref: { type: "string", description: "link: the http(s) URL; app: the app's name; file: the file id" },
+        title: { type: "string", description: "short label shown in the sidebar (default: the site's domain, the app's name or the file's name)" },
+      },
+      required: ["room_id", "kind", "ref"],
+    },
+  },
+  {
+    name: "unpin",
+    description: "Remove a pin from the room's sidebar (its id from read_room.pins, or a pinned link's URL).",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, id: { type: "string" } }, required: ["room_id", "id"] },
+  },
+  {
     name: "create_room",
     description: "Create a room for a project and invite people by email (they get a sign-in link). Only when your human asked for it. Then don't leave it empty: read the project (README, AGENTS.md/CLAUDE.md, recent commits, open issues), write the room's doc with update_doc (what it delivers and for whom, what's in and out of scope, how we'll know it worked, next steps and who owns what), and start 2–4 epics (start_epic) for the work ahead, each with a few tasks that say when they're done. @vibe grades the doc (doc_notes) and the epics and tasks (vibe_notes) within a minute: read_room again and sharpen what it flagged before telling your human the room is ready.",
     inputSchema: {
@@ -852,6 +871,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       return bookStub(env, id).agentEdit(id, me.email, name, a);
+    }
+    case "pin": {
+      const id = await room();
+      return bookStub(env, id).agentPin(id, me.email, str(a.kind), str(a.ref), str(a.title));
+    }
+    case "unpin": {
+      const id = await room();
+      return bookStub(env, id).agentUnpin(id, str(a.id));
     }
     case "log_decision": {
       const id = await room();

@@ -254,6 +254,26 @@
   .side .title { font-size: 20px; border: none; background: transparent; padding: 2px 0; width: 100%; }
   .side .folderTag { font-size: 12px; color: var(--mute); }
   .sec h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .pinsSec h4 { display: flex; align-items: center; justify-content: space-between; }
+  .pinPlus { padding: 2px 4px; color: var(--mute); }
+  .pinRow { position: relative; }
+  .pinRow .thread.pin { text-decoration: none; color: inherit; padding-right: 30px; }
+  .thread.pin .rt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+  .thread.pin .rt small { color: var(--mute); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pinIco { color: #fff; font-weight: 700; font-size: 12px; }
+  .pinIco.app { background: var(--hover); color: var(--mute); }
+  .pinRow .x { position: absolute; right: 4px; top: 50%; translate: 0 -50%; opacity: 0; padding: 4px; }
+  .pinRow:hover .x, .pinRow .x:focus-visible { opacity: 1; }
+  @media (hover: none) { .pinRow .x { opacity: .6; } }
+  .pinEmpty { display: flex; align-items: center; gap: 8px; width: 100%; border: 1.5px dashed var(--line); border-radius: 10px; background: none; color: var(--mute); padding: 9px 10px; font-size: 13px; text-align: left; cursor: pointer; }
+  .pinEmpty:hover { color: var(--ink); border-color: var(--mute); }
+  .pinForm { display: grid; gap: 6px; }
+  .pinForm input { width: 100%; }
+  .pinForm .row { display: flex; justify-content: flex-end; gap: 6px; }
+  .pinBtn { position: absolute; top: 6px; right: 6px; padding: 5px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); opacity: 0; }
+  .ftile:hover .pinBtn, .acard:hover .pinBtn, .pinBtn.on, .pinBtn:focus-visible { opacity: 1; }
+  .pinBtn.on { color: var(--accent); }
+  @media (hover: none) { .pinBtn { opacity: .8; } }
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
   .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
   .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); flex: none; font-variant-numeric: tabular-nums; }
@@ -782,7 +802,7 @@
   .waitPop small { color: var(--mute); font-size: 12px; }
   .filesPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
   .fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; }
-  .ftile { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
+  .ftile { position: relative; display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: inherit; min-width: 0; }
   .ftile .thumb { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; color: var(--mute); }
   .ftile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s cubic-bezier(.22,1,.36,1); }
   .ftile:hover img { transform: scale(1.04); }
@@ -1176,6 +1196,19 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "app da sala": "room app",
+  "arquivo": "file",
+  "Desafixar": "Unpin",
+  "Desafixar {name}": "Unpin {name}",
+  "Fixados": "Pinned",
+  "Fixar um link": "Pin a link",
+  "Cole um link (site, repo, painel…)": "Paste a link (site, repo, dashboard…)",
+  "Link pra fixar": "Link to pin",
+  "Nome (opcional)": "Name (optional)",
+  "Nome": "Name",
+  "Fixar": "Pin",
+  "Fixe o site, o repo ou um app da sala": "Pin the site, the repo or a room app",
+  "Fixar na lateral": "Pin to the sidebar",
   "{via} de {who}": "{who}'s {via}",
   "O Claude de quem pegar a tarefa também vê isso.": "Whoever's Claude picks up the task sees this too.",
   "agora": "now",
@@ -1770,6 +1803,7 @@ const ICONS = {
   search: `<circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4-4"/>`,
   expand: `<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>`,
   plus: `<path d="M5 12h14"/><path d="M12 5v14"/>`,
+  pin: `<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>`,
   x: `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`,
   check: `<path d="M20 6 9 17l-5-5"/>`,
   menu: `<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>`,
@@ -2613,6 +2647,8 @@ function onEvent(ev, id) {
     case "apps": S.apps = ev.apps; renderApps(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
+    case "pins": S.pins = ev.pins; renderSide(); renderFiles(); renderApps(); return;
+    case "error": toast(esc(ev.error || t("falhou"))); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
       olderBusy = false;
@@ -3479,6 +3515,38 @@ const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = 
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           <span class="ri" style="background:${color(e.title)};color:#fff">${esc(initials(e.title))}</span><span class="rt">${esc(e.title)}</span>
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
+// Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
+const pinHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+let pinAdding = false;
+function pinsSec() {
+  const pins = S.pins || [];
+  const row = (p) => {
+    let href, attrs = "", label = p.title, sub = "", ico;
+    if (p.kind === "link") { href = p.ref; attrs = `target="_blank" rel="noopener"`; sub = pinHost(p.ref); label ||= sub; ico = `<span class="ri pinIco" style="background:${color(sub)}">${esc(sub[0]?.toUpperCase() || "↗")}</span>`; }
+    else if (p.kind === "app") { href = `/api/books/${S.id}/apps/${encodeURIComponent(p.ref)}`; attrs = `data-view="frame" data-name="${esc(p.ref)}"`; label ||= p.ref; sub = t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
+    else { const f = (S.files || []).find((x) => x.id === p.ref); if (!f) return ""; href = fileUrl(f); attrs = `target="_blank" rel="noopener" ${viewAttrs(f)}`; label ||= f.name; sub = t("arquivo"); ico = `<span class="ri pinIco app">${icon("file", 14)}</span>`; }
+    return `<div class="pinRow"><a class="thread pin" href="${esc(href)}" ${attrs} title="${esc(label)}${p.kind === "link" ? ` · ${esc(p.ref)}` : ""}">${ico}<span class="rt">${esc(label)}<small>${esc(sub)}</small></span></a><button type="button" class="ghost x" data-unpin="${esc(p.id)}" title="${t("Desafixar")}" aria-label="${t("Desafixar {name}", { name: esc(label) })}">${icon("x", 14)}</button></div>`;
+  };
+  return `<div class="sec pinsSec"><h4>${t("Fixados")}${pinAdding ? "" : `<button type="button" class="ghost pinPlus" id="pinPlus" title="${t("Fixar um link")}" aria-label="${t("Fixar um link")}">${icon("plus", 14)}</button>`}</h4>
+      ${pins.map(row).join("")}
+      ${pinAdding ? `<form id="pinForm" class="pinForm"><input name="url" required placeholder="${t("Cole um link (site, repo, painel…)")}" aria-label="${t("Link pra fixar")}" enterkeyhint="done" /><input name="title" maxlength="80" placeholder="${t("Nome (opcional)")}" aria-label="${t("Nome")}" /><div class="row"><button type="button" class="ghost" id="pinCancel">${t("Cancelar")}</button><button class="primary">${t("Fixar")}</button></div></form>`
+        : pins.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${icon("pin", 14)} ${t("Fixe o site, o repo ou um app da sala")}</button>`}
+    </div>`;
+}
+function wirePins(el) {
+  const open = () => { pinAdding = true; renderSide(); document.querySelector("#pinForm [name=url]")?.focus(); };
+  el.querySelector("#pinPlus")?.addEventListener("click", open);
+  el.querySelector("#pinEmpty")?.addEventListener("click", open);
+  el.querySelector("#pinCancel")?.addEventListener("click", () => { pinAdding = false; renderSide(); });
+  el.querySelector("#pinForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = e.target, url = f.url.value.trim();
+    if (!url) return;
+    send({ t: "pin.add", kind: "link", ref: url, title: f.title.value.trim() });
+    pinAdding = false; renderSide();
+  });
+  el.querySelectorAll("[data-unpin]").forEach((b) => b.onclick = () => send({ t: "pin.del", id: b.dataset.unpin }));
+}
 function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
@@ -3506,6 +3574,7 @@ function renderSide() {
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
       })()}
     </div>
+    ${pinsSec()}
     <div class="sec">
       ${(S.requests || []).length ? `<div class="asks"><h4>${t("Pedindo pra entrar")}</h4>${S.requests.map((r) => `<div class="member reqRow">${avatar(r.email)} <div class="fnCol"><span class="fn" title="${esc(r.email)} · ${t("pediu {ago}", { ago: ago(r.ts) })}">${esc(r.name || r.email.split("@")[0])}</span><small class="memActs">${t("pediu {ago}", { ago: ago(r.ts) })} · <button class="ghost resend okAsk" data-ask="${esc(r.email)}" data-ok="1" title="${t("Liberar: entra na sala e recebe o link por email")}">${t("liberar")}</button></small></div><button class="ghost x" data-ask="${esc(r.email)}" data-ok="" aria-label="${t("Recusar {email}", { email: esc(r.email) })}" title="${t("Recusar")}">${icon("x")}</button></div>`).join("")}</div>` : ""}
       <h4>${t("Pessoas e agents")}</h4>
@@ -3529,6 +3598,7 @@ function renderSide() {
   // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
   el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.addEventListener("click", () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open)));
   el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
+  wirePins(el);
   sheetDrag(el.querySelector(".sheetGrab"), "side", false);
   el.querySelector("#sideRooms")?.addEventListener("click", openSwitch);
   // The root row's "editar" chip renames the room; it sits inside the row's button, so it stops the row's click.
@@ -4223,8 +4293,9 @@ function renderApps() {
   el.innerHTML = (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
     <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
       <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
-      <button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">${icon("x")}</button></div>`).join("")}</div>`
+      ${pinToggle("app", a.name)}<button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">${icon("x")}</button></div>`).join("")}</div>`
     : `<div class="empty">${t("Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.")}</div>`);
+  wirePinToggles(el);
   el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar o app {name}? As mensagens já postadas continuam.", { name: b.dataset.appDel }))) send({ t: "app.delete", name: b.dataset.appDel }); });
 }
 
@@ -4278,8 +4349,19 @@ function renderFiles() {
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f, 30)}</div>
-      <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small></a>`).join("")}</div>`
+      <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small>${pinToggle("file", f.id)}</a>`).join("")}</div>`
     : `<div class="empty">${t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")}</div>`;
+  wirePinToggles(el);
+}
+// 📌 on a file tile or app card: pins it to the sidebar (or unpins).
+const pinOf = (kind, ref) => (S.pins || []).find((p) => p.kind === kind && p.ref === ref);
+const pinToggle = (kind, ref) => { const on = !!pinOf(kind, ref); return `<button type="button" class="ghost pinBtn${on ? " on" : ""}" data-pin-kind="${kind}" data-pin-ref="${esc(ref)}" title="${on ? t("Desafixar") : t("Fixar na lateral")}" aria-label="${on ? t("Desafixar") : t("Fixar na lateral")}" aria-pressed="${on}">${icon("pin", 14)}</button>`; };
+function wirePinToggles(el) {
+  el.querySelectorAll("[data-pin-kind]").forEach((b) => b.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const p = pinOf(b.dataset.pinKind, b.dataset.pinRef);
+    send(p ? { t: "pin.del", id: p.id } : { t: "pin.add", kind: b.dataset.pinKind, ref: b.dataset.pinRef });
+  });
 }
 
 // Sliding window: a thread renders its newest WIN messages; scrolling near the top shows WIN more, first from

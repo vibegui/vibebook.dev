@@ -80,6 +80,7 @@ export class Book extends DurableObject<Env> {
       CREATE TABLE IF NOT EXISTS acks (msg_id INTEGER, agent TEXT, email TEXT, who TEXT, status TEXT, ts INTEGER, PRIMARY KEY (msg_id, agent));
       CREATE TABLE IF NOT EXISTS mail_q (email TEXT, msg_id INTEGER, due INTEGER, PRIMARY KEY (email, msg_id));
       CREATE TABLE IF NOT EXISTS grades (id TEXT PRIMARY KEY, sig TEXT, flags TEXT, ts INTEGER);
+      CREATE TABLE IF NOT EXISTS pins (id TEXT PRIMARY KEY, kind TEXT, ref TEXT, title TEXT, author TEXT, ts INTEGER, UNIQUE (kind, ref));
     `);
     // Columns added after launch; ALTER fails harmlessly once they exist.
     for (const [table, col] of [["messages", "files TEXT"], ["messages", "poll TEXT"], ["messages", "kind TEXT"], ["messages", "via TEXT"], ["messages", "tag TEXT"], ["messages", "reply_to INTEGER"], ["messages", "choices TEXT"], ["messages", "card TEXT"], ["tasks", "owner TEXT"], ["tasks", "due TEXT"], ["tasks", "status TEXT"], ["epics", "archived INTEGER"], ["epics", "from_msg INTEGER"], ["epics", "prod TEXT"], ["epics", "pos INTEGER"], ["messages", "for_who TEXT"], ["acks", "note TEXT"], ["reminders", "name TEXT"], ["reminders", "enabled INTEGER DEFAULT 1"], ["reminders", "error TEXT"], ["reminders", "every TEXT"], ["reminders", "file_id TEXT"]]) {
@@ -942,6 +943,7 @@ export class Book extends DurableObject<Env> {
       // The room's own tasks ("## Tarefas" in the room doc): add_task with epic_id "main".
       room_tasks: this.roomTasks().map((t) => ({ id: t.id, title: t.title, status: t.status, done: !!t.done, owner: t.owner ? who(t.owner) : null, due: t.due })),
       decisions: this.decisions().map((d) => ({ text: d.text, who: d.who, kind: d.kind, at: new Date(d.ts).toISOString() })),
+      pins: this.pins().map((p) => ({ id: p.id, kind: p.kind, ref: p.ref, title: p.title })),
       messages,
       // Reminders your human set that fired in the last 7 days and no agent of theirs closed with ack done yet.
       due_reminders: email
@@ -1097,6 +1099,49 @@ export class Book extends DurableObject<Env> {
     this.broadcast({ t: "receipts", receipts: this.receiptsList() });
   }
 
+  // Pinned: what's always at hand in the room (the live site, the landing, the repo, an app or file of the room),
+  // shared by everyone, in the sidebar above the people. ≤20; a link is http(s) only; an app or file must exist here.
+  pins() {
+    return this.sql.exec<{ id: string; kind: string; ref: string; title: string; author: string; ts: number }>(`SELECT * FROM pins ORDER BY ts`).toArray();
+  }
+  pinAdd(author: string, kind: string, ref: string, title = ""): { ok: true; id: string } | { ok: false; error: string } {
+    ref = ref.trim().slice(0, 2000);
+    title = title.trim().slice(0, 80);
+    if (kind === "link") {
+      let u: URL;
+      try { u = new URL(/^[a-z]+:\/\//i.test(ref) ? ref : `https://${ref}`); } catch { return { ok: false, error: "not a valid URL" }; }
+      if (u.protocol !== "https:" && u.protocol !== "http:") return { ok: false, error: "only http(s) links" };
+      ref = u.href;
+    } else if (kind === "app") {
+      if (!this.sql.exec(`SELECT 1 FROM apps WHERE name = ?`, ref).toArray().length) return { ok: false, error: `no app named ${ref} in this room` };
+    } else if (kind === "file") {
+      if (!this.sql.exec(`SELECT 1 FROM files WHERE id = ?`, ref).toArray().length) return { ok: false, error: `no file ${ref} in this room` };
+    } else return { ok: false, error: "kind must be link, app or file" };
+    const secret = findSecret(`${ref} ${title}`);
+    if (secret) return { ok: false, error: `blocked: looks like a secret (${secret})` };
+    const had = this.sql.exec<{ id: string }>(`SELECT id FROM pins WHERE kind = ? AND ref = ?`, kind, ref).toArray()[0];
+    if (had) {
+      if (title) this.sql.exec(`UPDATE pins SET title = ? WHERE id = ?`, title, had.id);
+    } else {
+      if ((this.sql.exec(`SELECT count(*) AS n FROM pins`).one().n as number) >= 20) return { ok: false, error: "20 pins max: unpin one first" };
+      this.sql.exec(`INSERT INTO pins (id, kind, ref, title, author, ts) VALUES (?, ?, ?, ?, ?, ?)`, crypto.randomUUID().slice(0, 8), kind, ref, title, author, Date.now());
+    }
+    this.broadcast({ t: "pins", pins: this.pins() });
+    return { ok: true, id: had?.id ?? (this.sql.exec<{ id: string }>(`SELECT id FROM pins WHERE kind = ? AND ref = ?`, kind, ref).one().id) };
+  }
+  pinDel(id: string) {
+    const n = this.sql.exec(`DELETE FROM pins WHERE id = ? OR (kind = 'link' AND ref = ?)`, id, id).rowsWritten;
+    if (n) this.broadcast({ t: "pins", pins: this.pins() });
+    return n ? { ok: true } : { ok: false, error: `no pin ${id}` };
+  }
+  agentPin(bookId: string, email: string, kind: string, ref: string, title?: string) {
+    this.bind(bookId);
+    return this.pinAdd(email, kind, ref, title);
+  }
+  agentUnpin(bookId: string, id: string) {
+    this.bind(bookId);
+    return this.pinDel(id);
+  }
   async agentDecision(bookId: string, email: string, text: string, kind: "decision" | "approval") {
     this.bind(bookId);
     const names = await this.names();
@@ -1331,6 +1376,7 @@ export class Book extends DurableObject<Env> {
         reminders: this.reminders(),
         polls: this.polls(),
         decisions: this.decisions(),
+        pins: this.pins(),
         suggestions: this.suggestions(),
         members,
         pending,
@@ -1400,6 +1446,13 @@ export class Book extends DurableObject<Env> {
           .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
         return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: rows.slice(0, 100).reverse(), more: rows.length > 100 }));
       }
+      case "pin.add": {
+        const r = this.pinAdd(email, String(m.kind ?? ""), String(m.ref ?? ""), String(m.title ?? ""));
+        if (!r.ok) ws.send(JSON.stringify({ t: "error", error: r.error }));
+        return;
+      }
+      case "pin.del":
+        return void this.pinDel(String(m.id ?? ""));
       case "app.delete":
         return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
       case "reminder.delete":
