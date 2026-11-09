@@ -1221,29 +1221,31 @@ export class Book extends DurableObject<Env> {
     this.epicsChanged();
     return { ok: true as const };
   }
-  async agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number, agent = "", owner = "") {
+  async agentEpic(bookId: string, email: string, title: string, why = "", tasks: string[] = [], via = "", fromMsg?: number, agent = "", owner = "", backlog = false) {
     this.bind(bookId);
     // Owner: the one asked for when it's a member, else whoever the agent works for (they asked for it).
     const members = await this.members();
-    const own = members.includes(owner.trim().toLowerCase()) ? owner.trim().toLowerCase() : email.toLowerCase();
+    // Backlog (kept for later, nobody on it yet): no owner unless one is given.
+    const own = members.includes(owner.trim().toLowerCase()) ? owner.trim().toLowerCase() : backlog ? null : email.toLowerCase();
     if (owner && own !== owner.trim().toLowerCase()) return { ok: false, error: `owner must be a member email: ${members.join(", ")}` };
     const t = title.trim().slice(0, 200);
     if (!t) return { ok: false, error: "title is required" };
     // The request it came from: the one given, else the person's latest own message, in any thread (an epic can
     // branch out of another epic's thread). The app draws the epic as a thread card under that message.
+    // A backlog epic only links a request it was given (not the latest message: 36 of them would all hang there).
     const src =
       (fromMsg && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, fromMsg).toArray()[0]?.id) ??
-      this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id;
+      (backlog ? undefined : this.sql.exec(`SELECT id FROM messages WHERE author = ? AND kind IS NULL ORDER BY id DESC LIMIT 1`, email).toArray()[0]?.id);
     // The agent took the work, so its human owns the tasks (self-assign).
-    const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12).map((title) => ({ title, owner: email })), [email.toLowerCase()], why);
+    const id = this.createEpic(t, (tasks.length ? tasks : [t]).slice(0, 12).map((title) => ({ title, owner: backlog ? undefined : email })), [email.toLowerCase()], why);
     this.sql.exec(`UPDATE epics SET owner = ? WHERE id = ?`, own, id);
     if (!src) this.epicsChanged();
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
       this.epicsChanged();
       // Opening an epic for a request is taking it: the request shows "X está fazendo isso".
-      if (agent) this.agentAck(bookId, agent, email, via || "agent", Number(src));
-    } else this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
+      if (agent && !backlog) this.agentAck(bookId, agent, email, via || "agent", Number(src));
+    } else if (!backlog) this.addMessage("main", email, `↳ virou o épico **${t}**: a conversa e o andamento seguem lá.`, { kind: "agent", via: via || undefined });
     const epic = this.epics().find((e) => e.id === id);
     return { ok: true, epic_id: id, thread: id, tasks: epic?.tasks.map((x) => ({ id: x.id, title: x.title, status: x.status })) ?? [] };
   }

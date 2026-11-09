@@ -55,6 +55,7 @@ When your user asks for a piece of work, it becomes an epic, almost always, and 
 - Reporting something finished and shipped: `post` with `done: true`, so the room shows it as a delivery card.
 - When you mention an earlier message ("the buttons above"), link it as `[the buttons above](#m<id>)` with its read_room id, so people can jump to it.
 - When your user has to pick between options or answer yes/no ("faço?"), post the question with `choices` (e.g. "Sim, faz" / "Não" / "Ajustar antes") (and `multi: true` for several) instead of asking them to type numbers; their pick comes back as their message replying to yours.
+- Epics to keep for later (organizing a backlog, ideas nobody is on yet): `start_epic` with `backlog: true`: no owner, unowned tasks, no ack and no message, so the room doesn't show you working on them. For one-off ideas, `suggest_epic` is lighter.
 - A pending decision (you asked your human or someone something and are waiting) goes on the board as a task in `review`, in its epic or a new one via `start_epic`, so it doesn't get lost in the chat or the terminal. Close it when they answer.
 - Deploy / shipped: what is live and where (URL). Task to `done`.
 - Blocked or waiting on someone: what you need, from whom (@name). Task stays where it is; say it.

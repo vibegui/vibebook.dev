@@ -397,6 +397,7 @@ const TOOLS = [
         model: { type: "string", description: "your model's name, shown next to your human's name" },
         from_message_id: { type: "number", description: "the main-thread message this request came from; default: your human's latest message there" },
         owner: { type: "string", description: "who owns the epic: a member's email (their avatar becomes its icon). Default: your human. Pick someone else when the request names them or it's clearly theirs." },
+        backlog: { type: "boolean", description: "true = an epic to keep for later, not work you're taking now (e.g. organizing a backlog): no owner unless you pass one, tasks unowned, no ack on the request, no message in the main thread, so the room doesn't show you working on it" },
       },
       required: ["room_id", "title", "why"],
     },
@@ -877,7 +878,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       if (!str(a.why)) throw new Error("why is required: one sentence on what the epic delivers and why (it opens the epic's doc)");
       if (Array.isArray(a.tasks) && a.tasks.some((t) => typeof t !== "string")) throw new Error("tasks must be strings (task titles)");
       const tasks = (Array.isArray(a.tasks) ? a.tasks : []).map(str).filter(Boolean);
-      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent, str(a.owner));
+      const out = await bookStub(env, id).agentEpic(id, me.email, str(a.title), str(a.why), tasks, str(a.model) || ((await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who ?? ""), Number(a.from_message_id) || undefined, me.agent, str(a.owner), a.backlog === true);
       return out;
     }
     case "add_task":
