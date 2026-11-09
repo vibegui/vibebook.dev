@@ -131,9 +131,17 @@ async function unblockLine(env: Env, start: number, end: number) {
   return n("terminal_ask") ? `\n- Travas do terminal levadas pra sala (permissão, pergunta, plano): **${n("terminal_ask")}**, resolvidas pela sala ${n("terminal_answered")}; o resto caiu no terminal` : "";
 }
 
+/** Opening a room (the WS state): how many, average size, and the fattest one with its biggest fields. */
+async function wsStateLine(env: Env, start: number, end: number) {
+  const r = await env.DB.prepare(`SELECT count(*) AS n, avg(json_extract(dims, '$.bytes')) AS avg, max(json_extract(dims, '$.bytes')) AS mx FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ?`).bind(start, end).first<{ n: number; avg: number; mx: number }>();
+  if (!r?.n) return "";
+  const big = await env.DB.prepare(`SELECT json_extract(dims, '$.book') AS book, json_extract(dims, '$.top') AS top FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? ORDER BY json_extract(dims, '$.bytes') DESC LIMIT 1`).bind(start, end).first<{ book: string; top: string }>();
+  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})`;
+}
+
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}${await unblockLine(env, start, end).catch(() => "")}`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}`;
   if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();

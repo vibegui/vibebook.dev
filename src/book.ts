@@ -1298,8 +1298,7 @@ export class Book extends DurableObject<Env> {
       this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first(),
       this.members(), this.pending(), this.requests(), this.names(), this.avatars(),
     ]);
-    server.send(
-      JSON.stringify({
+    const state: Record<string, unknown> = {
         t: "state",
         me: email,
         book,
@@ -1325,8 +1324,13 @@ export class Book extends DurableObject<Env> {
         online: this.online(),
         receipts: this.receiptsList(),
         acks: this.acksList(),
-      }),
-    );
+      };
+    const body = JSON.stringify(state);
+    server.send(body);
+    // What opening a room costs on the wire (the biggest share of the zone's bandwidth in Nov 2026): total + the 3
+    // fattest fields, read by the product report.
+    const top = Object.entries(state).map(([k, v]) => [k, JSON.stringify(v)?.length ?? 0] as const).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    this.ctx.waitUntil(track(this.env, "ws_state", { user: email, dims: { book: bookId, bytes: body.length, top: top.map(([k, n]) => `${k} ${Math.round(n / 1000)}k`).join(", ") } }));
     this.broadcast({ t: "online", online: this.online() });
     return new Response(null, { status: 101, webSocket: client });
   }
