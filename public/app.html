@@ -629,10 +629,15 @@
   .iconBtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: none; background: transparent; border-radius: 10px; color: var(--mute); flex: none; }
   .iconBtn:hover { background: var(--panel); color: var(--ink); }
   .iconBtn svg { width: 20px; height: 20px; }
-  .skel { animation: skelIn .2s .2s both; }
   .skel i { display: block; height: 12px; margin: 0 0 14px; border-radius: 6px; background: var(--line); width: 70%; animation: skelPulse 1.2s ease-in-out infinite alternate; }
   .skel i.s { width: 45%; }
-  .skel main, .skel section { padding: 28px 24px; }
+  .skel .thread i { flex: 1; margin: 0; height: 10px; }
+  .skel .sk { background: var(--line); box-shadow: none; animation: skelPulse 1.2s ease-in-out infinite alternate; }
+  .skel .skMsg > div { flex: 1; padding-top: 4px; }
+  .skel .skMsg i { height: 10px; margin-bottom: 10px; }
+  .skel .msgs { justify-content: flex-end; }
+  .skel .skDoc { padding: 28px 24px; }
+  .skel .chathead h2 .thPick { display: inline-flex; align-items: center; gap: 8px; }
   .skel section { border-left: 1px solid var(--line); }
   @keyframes skelIn { from { opacity: 0; } }
   @keyframes skelPulse { to { opacity: .45; } }
@@ -2591,6 +2596,23 @@ let pendingThread = null; // set by the home composer so the room opens on the c
 // Rooms opened in this tab, as last seen: going back to one draws it at once, then the socket's state refreshes it.
 const roomCache = new Map();
 let liveState = false; // this room's socket sent its state (else a close means no access)
+// First visit to a room: draw its real frame at once with what the home already knows (name, icon, color), and
+// placeholders shaped like the sidebar, the messages, the composer and the doc, so nothing jumps when the state lands.
+function roomSkeleton(id) {
+  const b = (myBooks || meCache?.books || []).find((x) => x.id === id);
+  const title = b?.title || "";
+  document.title = `${title || "vibebook"} · vibebook`;
+  const u = iconUrl(b);
+  const mark = (cls) => u ? `<span class="${cls} hasIcon"><img src="${u}" alt=""></span>` : title ? `<span class="${cls}" style="background:${coverColor(title)}">${esc(initials(title))}</span>` : `<span class="${cls}"></span>`;
+  const row = (w) => `<div class="thread"><span class="ri sk"></span><i style="width:${w}%"></i></div>`;
+  const msg = (a, b2) => `<div class="msg skMsg"><span class="avatar sk"></span><div><i style="width:${a}px"></i><i class="s" style="width:${b2}%"></i></div></div>`;
+  return `<div class="book skel ${railMode ? "rail" : ""}" aria-busy="true" aria-label="${t("Carregando")}">
+    <aside class="side"><div class="sec threadsSec"><div class="thread sel">${mark("ri roomIco")}<span class="rt">${esc(title)}</span></div>${row(70)}${row(55)}${row(62)}</div></aside>
+    <main class="chat"><div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"><span class="thPick">${mark("ri roomIco phOnly")}<span>${esc(title)}</span></span></h2></div>
+      <div class="msgs">${msg(90, 60)}${msg(120, 45)}${msg(70, 70)}${msg(110, 35)}</div>
+      <form class="composer" onsubmit="return false"><div class="row"><textarea rows="1" disabled placeholder="${t("Mensagem…")}"></textarea><button class="primary" disabled style="opacity:.5">${t("Enviar")}</button></div></form></main>
+    <section class="doc"><div class="skDoc"><i style="width:40%"></i><i></i><i class="s"></i><i></i><i class="s"></i></div></section></div>`;
+}
 function openBook(id) {
   thread = pendingThread || new URLSearchParams(location.search).get("t") || "main";
   pendingThread = null;
@@ -2602,7 +2624,7 @@ function openBook(id) {
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
   const cached = roomCache.get(id);
   if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
-  else $app.innerHTML = `<div class="book skel" aria-busy="true" aria-label="${t("Carregando")}"><aside class="side"><i></i><i class="s"></i><i class="s"></i></aside><main class="chat"><i></i><i class="s"></i><i></i></main><section class="doc"><i></i><i class="s"></i></section></div>`;
+  else $app.innerHTML = roomSkeleton(id);
   const connect = () => {
     ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
