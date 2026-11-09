@@ -2979,6 +2979,9 @@ function renderBook() {
   const plusBtn = document.getElementById("plusBtn"), plusMenu = document.getElementById("plusMenu");
   const togglePlus = (open = plusMenu.hidden) => { plusMenu.hidden = !open; plusBtn.setAttribute("aria-expanded", String(open)); };
   plusBtn.onclick = (e) => { e.stopPropagation(); togglePlus(); };
+  // Phone, keyboard up: the tap used to blur the box, the keyboard dropped, the composer moved down under the finger
+  // and the click landed elsewhere (a second tap needed). Keeping the focus keeps the keyboard and the button in place.
+  plusBtn.onmousedown = plusBtn.onpointerdown = (e) => { if (document.activeElement?.id === "input") e.preventDefault(); };
   plusMenu.onclick = () => togglePlus(false);
   plusMenu.closest("main").addEventListener("click", (e) => { if (!plusMenu.hidden && !plusMenu.contains(e.target)) togglePlus(false); });
   plusMenu.onkeydown = (e) => { if (e.key === "Escape") { togglePlus(false); plusBtn.focus(); } };
