@@ -6,10 +6,6 @@
   "manifest": {
     "blocks": {
       "sections": {
-        "site/sections/Footer.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-          "namespace": "site"
-        },
         "site/sections/Hero.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
           "namespace": "site"
@@ -22,6 +18,22 @@
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QZXJzb25hcy50c3g=",
           "namespace": "site"
         },
+        "site/sections/Trio.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+          "namespace": "site"
+        },
+        "site/sections/Footer.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+          "namespace": "site"
+        },
+        "site/sections/Trust.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+          "namespace": "site"
+        },
+        "site/sections/Rows.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+          "namespace": "site"
+        },
         "site/sections/Pwa.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
           "namespace": "site"
@@ -30,20 +42,8 @@
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb29tcy50c3g=",
           "namespace": "site"
         },
-        "site/sections/Rows.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-          "namespace": "site"
-        },
         "site/sections/Start.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
-          "namespace": "site"
-        },
-        "site/sections/Trio.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-          "namespace": "site"
-        },
-        "site/sections/Trust.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
           "namespace": "site"
         },
         "website/sections/Rendering/Lazy.tsx": {
@@ -1020,10 +1020,6 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
               },
@@ -1036,6 +1032,22 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
               },
@@ -1044,20 +1056,8 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
               }
             ]
           }
@@ -1334,10 +1334,6 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
                     },
@@ -1350,6 +1346,22 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
                     },
@@ -1358,20 +1370,8 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
                     }
                   ]
                 }
@@ -1409,10 +1409,6 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
               },
@@ -1425,6 +1421,22 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
               },
@@ -1433,20 +1445,8 @@
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-              },
-              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1480,10 +1480,6 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
                     },
@@ -1496,6 +1492,22 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
                     },
@@ -1504,20 +1516,8 @@
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-                    },
-                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1581,10 +1581,6 @@
                                 "$ref": "#/definitions/Resolvable"
                               },
                               {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                              },
-                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
                               },
@@ -1597,6 +1593,22 @@
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
                               },
                               {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+                              },
+                              {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+                              },
+                              {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+                              },
+                              {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+                              },
+                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
                               },
@@ -1605,20 +1617,8 @@
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
                               },
                               {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-                              },
-                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-                              },
-                              {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-                              },
-                              {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
                               },
                               {
                                 "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -1735,80 +1735,6 @@
               "website/flags/multivariate/image.ts"
             ],
             "default": "website/flags/multivariate/image.ts"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props": {
-        "type": "object",
-        "properties": {
-          "credit": {
-            "type": "string",
-            "nullable": true,
-            "title": "Assinatura (antes do link)"
-          },
-          "creditLink": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Link da assinatura"
-          },
-          "links": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string",
-                  "title": "Texto"
-                },
-                "href": {
-                  "type": "string",
-                  "title": "Link"
-                }
-              },
-              "required": [
-                "label",
-                "href"
-              ],
-              "titleBy": "label"
-            },
-            "nullable": true,
-            "title": "Links"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4": {
-        "title": "site/sections/Footer.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Footer.tsx"
-            ],
-            "default": "site/sections/Footer.tsx"
           }
         }
       },
@@ -2107,6 +2033,326 @@
           }
         }
       },
+      "c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "title": "Âncora (id)"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título"
+          },
+          "text": {
+            "type": "string",
+            "nullable": true,
+            "title": "Texto"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "sub": {
+                  "type": "string",
+                  "nullable": true,
+                  "title": "Complemento (itálico)"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Colunas"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==": {
+        "title": "site/sections/Trio.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Trio.tsx"
+            ],
+            "default": "site/sections/Trio.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props": {
+        "type": "object",
+        "properties": {
+          "credit": {
+            "type": "string",
+            "nullable": true,
+            "title": "Assinatura (antes do link)"
+          },
+          "creditLink": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Link da assinatura"
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "title": "Texto"
+                },
+                "href": {
+                  "type": "string",
+                  "title": "Link"
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ],
+              "titleBy": "label"
+            },
+            "nullable": true,
+            "title": "Links"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4": {
+        "title": "site/sections/Footer.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Footer.tsx"
+            ],
+            "default": "site/sections/Footer.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Colunas"
+          },
+          "more": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Link abaixo"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=": {
+        "title": "site/sections/Trust.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Trust.tsx"
+            ],
+            "default": "site/sections/Trust.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "text": {
+                  "type": "string",
+                  "nullable": true,
+                  "title": "Texto (**negrito** e `código` permitidos)"
+                },
+                "points": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "nullable": true,
+                  "title": "Pontos (`código` permitido)"
+                },
+                "more": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "title": "Texto"
+                    },
+                    "href": {
+                      "type": "string",
+                      "title": "Link"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ],
+                  "titleBy": "label",
+                  "nullable": true,
+                  "title": "Link abaixo"
+                },
+                "visual": {
+                  "type": "string",
+                  "enum": [
+                    "crew",
+                    "waits",
+                    "doc",
+                    "herdr",
+                    "agents"
+                  ],
+                  "title": "Ilustração"
+                },
+                "flip": {
+                  "type": "boolean",
+                  "nullable": true,
+                  "title": "Ilustração à esquerda"
+                }
+              },
+              "required": [
+                "title",
+                "visual"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Linhas (texto + ilustração)"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "pt",
+              "en"
+            ],
+            "nullable": true,
+            "title": "Idioma das ilustrações"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==": {
+        "title": "site/sections/Rows.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Rows.tsx"
+            ],
+            "default": "site/sections/Rows.tsx"
+          }
+        }
+      },
       "c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props": {
         "type": "object",
         "properties": {
@@ -2233,109 +2479,6 @@
           }
         }
       },
-      "c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props": {
-        "type": "object",
-        "properties": {
-          "rows": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "text": {
-                  "type": "string",
-                  "nullable": true,
-                  "title": "Texto (**negrito** e `código` permitidos)"
-                },
-                "points": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "nullable": true,
-                  "title": "Pontos (`código` permitido)"
-                },
-                "more": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string",
-                      "title": "Texto"
-                    },
-                    "href": {
-                      "type": "string",
-                      "title": "Link"
-                    }
-                  },
-                  "required": [
-                    "label",
-                    "href"
-                  ],
-                  "titleBy": "label",
-                  "nullable": true,
-                  "title": "Link abaixo"
-                },
-                "visual": {
-                  "type": "string",
-                  "enum": [
-                    "crew",
-                    "waits",
-                    "doc",
-                    "herdr",
-                    "agents"
-                  ],
-                  "title": "Ilustração"
-                },
-                "flip": {
-                  "type": "boolean",
-                  "nullable": true,
-                  "title": "Ilustração à esquerda"
-                }
-              },
-              "required": [
-                "title",
-                "visual"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Linhas (texto + ilustração)"
-          },
-          "lang": {
-            "type": "string",
-            "enum": [
-              "pt",
-              "en"
-            ],
-            "nullable": true,
-            "title": "Idioma das ilustrações"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==": {
-        "title": "site/sections/Rows.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Rows.tsx"
-            ],
-            "default": "site/sections/Rows.tsx"
-          }
-        }
-      },
       "c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props": {
         "type": "object",
         "properties": {
@@ -2417,158 +2560,11 @@
           }
         }
       },
-      "c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true,
-            "title": "Âncora (id)"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título"
-          },
-          "text": {
-            "type": "string",
-            "nullable": true,
-            "title": "Texto"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "sub": {
-                  "type": "string",
-                  "nullable": true,
-                  "title": "Complemento (itálico)"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                }
-              },
-              "required": [
-                "title",
-                "text"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Colunas"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==": {
-        "title": "site/sections/Trio.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Trio.tsx"
-            ],
-            "default": "site/sections/Trio.tsx"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                }
-              },
-              "required": [
-                "title",
-                "text"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Colunas"
-          },
-          "more": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Link abaixo"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=": {
-        "title": "site/sections/Trust.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Trust.tsx"
-            ],
-            "default": "site/sections/Trust.tsx"
-          }
-        }
-      },
       "__SECTION_REF__": {
         "title": "Section",
         "anyOf": [
           {
             "$ref": "#/definitions/Resolvable"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
@@ -2583,6 +2579,22 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
           },
@@ -2591,20 +2603,8 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-          },
-          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="
@@ -2634,10 +2634,6 @@
             "$ref": "#/definitions/Resolvable"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-          },
-          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
           },
@@ -2650,6 +2646,22 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BlcnNvbmFzLnRzeA==@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Qd2EudHN4",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1B3YS50c3g=@Props"
           },
@@ -2658,20 +2670,8 @@
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvb21zLnRzeA==@Props"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Sb3dzLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1Jvd3MudHN4@Props"
-          },
-          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGFydC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1N0YXJ0LnRzeA==@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcmlvLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RyaW8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9UcnVzdC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1RydXN0LnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/d2Vic2l0ZS9zZWN0aW9ucy9SZW5kZXJpbmcvTGF6eS50c3g="

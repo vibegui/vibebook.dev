@@ -148,7 +148,7 @@ async function wsStateLine(env: Env, start: number, end: number) {
 
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch(() => "")}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch((e) => `- Falhas reportadas pelos Claudes: não consegui ler (${String((e as Error)?.message ?? e).slice(0, 160)})`)}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}`;
   if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();
