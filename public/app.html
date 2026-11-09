@@ -2584,6 +2584,14 @@ function onEvent(ev, id) {
       scrollDown(); return;
     }
     case "typing": { S.typing[ev.id] = ev.mode; const m = S.messages.find((x) => x.id === ev.id); const el = document.getElementById(`m${ev.id}`); if (el && !m?.text) el.querySelector(".txt").innerHTML = `<span class="typing">${ev.note ? esc(ev.note) : t("pensando ({mode})", { mode: modeLabel[ev.mode] })}…</span>`; return; }
+    case "epicsPatch": {
+      // Only the epics that changed + the order; anything we don't have (shouldn't happen) means resync.
+      const have = new Map(S.epics.map((e) => [e.id, e]));
+      for (const e of ev.changed) have.set(e.id, e);
+      if (ev.order.some((i) => !have.has(i))) { ws?.close(); return; }
+      ev.epics = ev.order.map((i) => have.get(i));
+    }
+    // falls through
     case "epics": S.epics = ev.epics; if (ev.roomTasks) S.roomTasks = ev.roomTasks;
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
     case "docNotes": S.docNotes = ev.notes; renderDoc(); return;

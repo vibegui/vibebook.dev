@@ -108,6 +108,19 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((t) => ({ ...t, epic_id: "main", status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
   }
+  /** Only the epics that changed since the last push, plus the order. The whole list (every archived epic with its
+   * tasks) went out on each task move, ~64 KB per open tab in the product room: the biggest share of /ws bandwidth.
+   * What the sockets last got is a hash per epic in meta `epics_sent` (the DO hibernates between pushes; the sockets
+   * don't). No record yet = the whole list. */
+  pushEpics(epics: ReturnType<Book["epics"]>, roomTasks: unknown) {
+    const h = (x: string) => { let a = 5381; for (let i = 0; i < x.length; i++) a = (a * 33 + x.charCodeAt(i)) | 0; return (a >>> 0).toString(36) + x.length.toString(36); };
+    const now: Record<string, string> = Object.fromEntries(epics.map((e) => [e.id, h(JSON.stringify(e))]));
+    const raw = this.get("epics_sent");
+    this.set("epics_sent", JSON.stringify(now));
+    if (!raw) return this.broadcast({ t: "epics", epics, roomTasks });
+    const prev = JSON.parse(raw) as Record<string, string>;
+    this.broadcast({ t: "epicsPatch", changed: epics.filter((e) => prev[e.id] !== now[e.id]), order: epics.map((e) => e.id), roomTasks });
+  }
   epics() {
     // @vibe's grading (grade()): per epic, id → short notes on the epic itself and its tasks.
     const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades WHERE id != ?`, DOC_GRADE).toArray().map((r) => [r.id, JSON.parse(r.flags) as Record<string, string[]>]));
@@ -160,7 +173,7 @@ export class Book extends DurableObject<Env> {
     this.tasksToDocs();
     const epics = this.epics();
     const roomTasks = this.roomTasks();
-    this.broadcast({ t: "epics", epics, roomTasks });
+    this.pushEpics(epics, roomTasks);
     const id = this.get("book_id");
     if (!id) return;
     // "Esperando você": a task in review waits on its owner. Rows of tasks that left review, and every wait in an
@@ -1587,7 +1600,7 @@ export class Book extends DurableObject<Env> {
     // The rest in a follow-up pass, unless Jev just failed (then the next change retries: no loop against a down API).
     if (!failed && todo.length > batch.length) this.ctx.waitUntil(this.wakeAt(Date.now() + 5_000));
     if (!changed) return;
-    if (batch.length) this.broadcast({ t: "epics", epics: this.epics(), roomTasks: this.roomTasks() });
+    if (batch.length) this.pushEpics(this.epics(), this.roomTasks());
     this.ctx.waitUntil(track(this.env, "grade", { dims: { book: this.get("book_id") ?? undefined, epics: batch.length, model: this.env.MODEL_JUDGE, cost: +cost.toFixed(6) } }));
   }
 
