@@ -13,8 +13,13 @@ var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
 var DEFAULT_ORIGIN = "https://vibebook.dev";
 var HERDR = join(HOME, "herdr.json");
+var jsonErrors = false;
 var die = (msg, code = 1) => {
-  process.stderr.write(`${msg}
+  if (jsonErrors)
+    process.stdout.write(`${JSON.stringify({ ok: false, error: msg })}
+`);
+  else
+    process.stderr.write(`${msg}
 `);
   process.exit(code);
 };
@@ -323,10 +328,17 @@ async function callTool(name, args, agent, tools) {
 }
 var printResult = (res) => {
   for (const c of res.content) {
-    if (c.type === "text")
-      process.stdout.write(`${c.text}
+    if (c.type === "text") {
+      let text = c.text ?? "";
+      if (res.isError)
+        try {
+          JSON.parse(text);
+        } catch {
+          text = JSON.stringify({ ok: false, error: text });
+        }
+      process.stdout.write(`${text}
 `);
-    else if (c.data) {
+    } else if (c.data) {
       const f = join(tmpdir(), `vibebook-${randomBytes(4).toString("hex")}.${(c.mimeType ?? "").split("/")[1] || "bin"}`);
       writeFileSync(f, Buffer.from(c.data, "base64"));
       process.stdout.write(`${c.type} saved to ${f}
@@ -934,6 +946,7 @@ async function main() {
       return;
     }
     case "call": {
+      jsonErrors = true;
       if (!pos[1])
         return die("usage: vibebook call <tool> '{json}'");
       printResult(await callTool(pos[1], readData(), agent));

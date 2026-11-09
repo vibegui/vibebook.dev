@@ -19,8 +19,11 @@ const HERDR = join(HOME, "herdr.json");
 type Session = { origin: string; client_id: string; access_token: string; refresh_token?: string; expires_at: number };
 type Tool = { name: string; description: string; inputSchema: { properties?: Record<string, { description?: string }>; required?: string[] } };
 
+// `vibebook call` answers in JSON even when it fails, so `| jq` shows the error instead of "parse error".
+let jsonErrors = false;
 const die = (msg: string, code = 1): never => {
-  process.stderr.write(`${msg}\n`);
+  if (jsonErrors) process.stdout.write(`${JSON.stringify({ ok: false, error: msg })}\n`);
+  else process.stderr.write(`${msg}\n`);
   process.exit(code);
 };
 const readJson = <T>(f: string, fallback: T): T => {
@@ -306,7 +309,11 @@ async function callTool(name: string, args: Record<string, unknown>, agent: stri
 // Images (get_file) go to a temp file: the agent reads that file instead of getting base64 in its output.
 const printResult = (res: { content: { type: string; text?: string; data?: string; mimeType?: string }[]; isError?: boolean }) => {
   for (const c of res.content) {
-    if (c.type === "text") process.stdout.write(`${c.text}\n`);
+    if (c.type === "text") {
+      let text = c.text ?? "";
+      if (res.isError) try { JSON.parse(text); } catch { text = JSON.stringify({ ok: false, error: text }); }
+      process.stdout.write(`${text}\n`);
+    }
     else if (c.data) {
       const f = join(tmpdir(), `vibebook-${randomBytes(4).toString("hex")}.${(c.mimeType ?? "").split("/")[1] || "bin"}`);
       writeFileSync(f, Buffer.from(c.data, "base64"));
@@ -854,6 +861,7 @@ async function main() {
       return;
     }
     case "call": {
+      jsonErrors = true;
       if (!pos[1]) return die("usage: vibebook call <tool> '{json}'");
       printResult(await callTool(pos[1], readData(), agent));
       return;

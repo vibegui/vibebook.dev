@@ -523,6 +523,9 @@
   .msg .rbtn { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; font-size: 12.5px; color: var(--mute); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / .08); }
   .msg .rbtn:hover { color: var(--ink); }
   @media (hover: none) { .msg .mact { display: none; } }
+  .iss .issAct { float: right; display: inline-flex; gap: 2px; opacity: 0; }
+  .iss:hover .issAct, .iss .issAct:focus-within { opacity: 1; }
+  @media (hover: none) { .iss .issAct { opacity: 1; } }
   .msg .quote { display: block; max-width: 100%; margin: 0 0 4px; padding: 2px 10px; border: 0; border-left: 3px solid var(--line); border-radius: 0; background: none; font: inherit; font-size: 12.5px; color: var(--mute); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .threadsSec > .thread.dragging { opacity: .4; }
   .threadsSec > .thread.dropAbove { box-shadow: inset 0 2px 0 var(--accent); }
@@ -4353,14 +4356,16 @@ function issueHtml(m) {
   const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
   const parts = (x) => { const [h, ...r] = (x.text || "").split("\n\n"); return { head: h.replace(/^⚠\s*/, ""), what: r.join("\n\n") }; };
   const last = parts(all[0]);
-  return `<div class="msg remMsg issueMsg" id="m${m.id}"><div class="body"><details><summary>${icon("alert", 14)}<span class="remT"><b>${all.length > 1 ? t("{n} issues dos Claudes", { n: all.length }) : t("Issue de um Claude")}</b> ${esc(last.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day(m.ts)}</span></summary><div class="txt issueList">${all.map((x) => { const p = parts(x); return `<div class="iss"><small>${day(x.ts)} · ${mentions(md(p.head))}</small><div>${esc(p.what)}</div></div>`; }).join("")}</div></details></div></div>`;
+  return `<div class="msg remMsg issueMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("alert", 14)}<span class="remT"><b>${all.length > 1 ? t("{n} issues dos Claudes", { n: all.length }) : t("Issue de um Claude")}</b> ${esc(last.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day(m.ts)}</span></summary><div class="txt issueList">${all.map((x) => { const p = parts(x); return `<div class="iss"><small>${day(x.ts)} · ${mentions(md(p.head))}<span class="issAct"><button type="button" class="rbtn" data-copymsg="${x.id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 13)}</button><button type="button" class="rbtn" data-reply="${x.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 13)}</button></span></small><div>${esc(p.what)}</div></div>`; }).join("")}</div></details></div></div>`;
 }
 function remHtml(m) {
   const [head, ...rest] = (m.text || "").split("\n\n"), runs = m.runs || [m.ts];
   const h = head.replace(/^⏰\s*/, ""), nm = h.match(/^\*\*(.+?)\*\*\s*(.*)$/);
   const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
-  return `<div class="msg remMsg" id="m${m.id}"><div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details></div></div>`;
+  return `<div class="msg remMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details></div></div>`;
 }
+// Hover actions (Copiar / Responder) shared by messages and the quiet reminder/issue lines.
+const mact = (id) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-reply="${id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>`;
 const msgHtml = (m, prev) => {
   if (m.tag === "reminder") return remHtml(m);
   if (m.tag === "issue") return issueHtml(m);
@@ -4369,7 +4374,7 @@ const msgHtml = (m, prev) => {
   return `
   <div class="msg ${m.author === "ai" ? "ai" : m.kind === "agent" ? "agent" : ""}${m.tag === "done" ? " done" : ""}${cont ? " cont" : ""}${myWaits.some((w) => w.book_id === S?.id && w.ref === `m${m.id}`) ? " waitMsg" : ""}" id="m${m.id}">
     ${m.kind === "agent" ? agentAvatar(m.author, m.via) : avatar(m.author)}${cont ? `<span class="gut" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span>` : ""}
-    <span class="mact"><button type="button" class="rbtn" data-copymsg="${m.id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-reply="${m.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>
+    ${mact(m.id)}
     <div class="body">${m.reply_to ? quoteHtml(m.reply_to) : ""}<div class="who">${m.kind === "agent" ? `${t("{via} de {who}", { via: esc(m.via || "agent"), who: esc(name(m.author)) })} <span class="agentTag" title="${t("Escrito pelo agent (Claude) dessa pessoa, em nome dela")}">agent</span>` : esc(name(m.author))}${m.tag === "done" ? ` <span class="doneTag" title="${t("Reporta algo entregue")}">✓ ${t("entregue")}</span>` : ""} · ${ago(m.ts)}<span class="hhmm" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${hhmm(m.ts)}</span></div>
       ${txt ? `<div class="txt">${txt}</div>` : `<div class="txt" hidden></div>`}${attHtml(m.files)}${m.card ? cardHtml(m) : ""}${m.choices ? choiceHtml(m) : ""}${m.poll ? pollHtml(m.poll) : ""}${threadCards(m.id)}</div>
   </div>`;
