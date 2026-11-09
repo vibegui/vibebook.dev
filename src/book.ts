@@ -498,7 +498,10 @@ export class Book extends DurableObject<Env> {
   }
   broadcast(data: unknown, except?: WebSocket) {
     const s = JSON.stringify(data);
-    for (const ws of this.sockets(except)) ws.send(s);
+    const to = this.sockets(except);
+    for (const ws of to) ws.send(s);
+    // Fat pushes (≥20 KB on the wire across sockets) are logged, so the report can say which kind eats the bandwidth.
+    if (s.length * to.length >= 20_000) this.ctx.waitUntil(track(this.env, "ws_push", { dims: { book: this.get("book_id") ?? "", t: String((data as { t?: string }).t), bytes: s.length * to.length } }));
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----

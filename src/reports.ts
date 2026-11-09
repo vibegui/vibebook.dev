@@ -136,7 +136,9 @@ async function wsStateLine(env: Env, start: number, end: number) {
   const r = await env.DB.prepare(`SELECT count(*) AS n, avg(json_extract(dims, '$.bytes')) AS avg, max(json_extract(dims, '$.bytes')) AS mx FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ?`).bind(start, end).first<{ n: number; avg: number; mx: number }>();
   if (!r?.n) return "";
   const big = await env.DB.prepare(`SELECT json_extract(dims, '$.book') AS book, json_extract(dims, '$.top') AS top FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? ORDER BY json_extract(dims, '$.bytes') DESC LIMIT 1`).bind(start, end).first<{ book: string; top: string }>();
-  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})`;
+  const push = await env.DB.prepare(`SELECT json_extract(dims, '$.t') AS t, count(*) AS n, sum(json_extract(dims, '$.bytes')) AS b FROM events WHERE name = 'ws_push' AND ts >= ? AND ts < ? GROUP BY t ORDER BY b DESC LIMIT 4`).bind(start, end).all<{ t: string; n: number; b: number }>();
+  const pushes = push.results.map((x) => `${x.t} ${bytes(x.b)} (${x.n}×)`).join(" · ");
+  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})${pushes ? `\n- Empurrões grandes pelo WS (≥20 KB): ${pushes}` : ""}`;
 }
 
 export async function productReport(env: Env, now = Date.now()) {
