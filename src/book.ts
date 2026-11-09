@@ -59,6 +59,9 @@ const rid = () => crypto.randomUUID().slice(0, 8);
 const hash = (t: string) => { let h = 5381; for (let i = 0; i < t.length; i++) h = (h * 33) ^ t.charCodeAt(i); return (h >>> 0).toString(36); };
 
 // One Durable Object per vibebook: doc, chat threads (main + one per epic), epics/tasks, live sockets.
+/** What the plugin's hooks post when a Claude stops at a question (permission.sh, question.sh). */
+export const ASK_OPENER = /^(⏸ Seu Claude (pede permissão|quer seguir)|❓ Seu Claude pergunta)/;
+
 export class Book extends DurableObject<Env> {
   sql: SqlStorage;
 
@@ -490,6 +493,7 @@ export class Book extends DurableObject<Env> {
     const choices = JSON.stringify({ ...c, closed: "terminal" });
     this.sql.exec(`UPDATE messages SET choices = ? WHERE id = ?`, choices, msgId);
     this.broadcast({ t: "closed", id: msgId, choices });
+    this.ctx.waitUntil(this.askWait(email, msgId, "", null));
     return { ok: true };
   }
   /** The person's own messages (and reminders for them) between two ids, any thread: what their agent hasn't read yet. */
@@ -586,6 +590,10 @@ export class Book extends DurableObject<Env> {
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
     const byPerson = !extra.kind && author !== "ai";
     if (!extra.quiet) this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
+    if (byPerson && replyTo) {
+      const q = this.sql.exec<{ author: string; text: string }>(`SELECT author, text FROM messages WHERE id = ? AND kind = 'agent' AND choices IS NOT NULL`, replyTo).toArray()[0];
+      if (q && q.author === author && ASK_OPENER.test(q.text)) this.ctx.waitUntil(this.askWait(author, replyTo, "", null));
+    }
     if (text.includes("@")) this.ctx.waitUntil(this.queueMentions(m));
     if (extra.tag === "done" && extra.kind === "agent" && thread !== "main") this.ctx.waitUntil(this.wakeAt(ts + (this.env.DEV_EMAIL ? 4_000 : NUDGE_AFTER_DELIVERY_MS)));
     return m;
@@ -1028,13 +1036,21 @@ export class Book extends DurableObject<Env> {
   }
 
   // via: the agent's own model name ("Claude Opus 5.5"), shown as "Claude Opus 5.5 de Gui" in the app.
-  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false, replyTo?: number, choices?: { options: string[]; multi: boolean }, card?: Card) {
+  async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false, replyTo?: number, choices?: { options: string[]; multi: boolean }, card?: Card, agent?: string) {
     this.bind(bookId);
     this.unblock(email);
     const text = raw.trim().slice(0, 4000);
     // embed: the file is HTML the agent posted inline (checked by checkEmbed); the app draws it inside the message.
     const files = (fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : []).map((f) => (embed ? { ...f, embed: true } : f));
     if (!text && !files.length && !card) return { ok: false, error: "empty message" };
+    // A hook's question (⏸ permission, ❓ AskUserQuestion) comes with no thread: it belongs where this Claude is
+    // working, the thread of the request it acked last, so the person sees it in the conversation they're in.
+    // A request acked in main that became an epic: the work (and so the question) is in that epic.
+    if (!thread && !replyTo && agent && ASK_OPENER.test(text)) {
+      const r = this.sql.exec<{ id: number; thread: string }>(`SELECT m.id, m.thread FROM acks a JOIN messages m ON m.id = a.msg_id WHERE a.agent = ? AND a.status IN ('doing', 'blocked') ORDER BY a.ts DESC LIMIT 1`, agent).toArray()[0];
+      const ep = r && this.sql.exec<{ id: string }>(`SELECT id FROM epics WHERE from_msg = ? AND COALESCE(archived, 0) <= 0 ORDER BY ts DESC LIMIT 1`, r.id).toArray()[0]?.id;
+      thread = ep || r?.thread || "";
+    }
     // No thread given: a reply goes where the message it answers is (an epic's thread), anything else to main.
     if (!thread) thread = (replyTo && (this.sql.exec(`SELECT thread FROM messages WHERE id = ?`, replyTo).toArray()[0]?.thread as string)) || "main";
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) return { ok: false, error: `unknown thread ${thread}; use "main" or an epic id from read_room` };
@@ -1043,6 +1059,9 @@ export class Book extends DurableObject<Env> {
     if (this.agentStreak(thread) >= AGENT_STREAK_MAX)
       return { ok: false, paused: true, error: `room paused: ${AGENT_STREAK_MAX} messages in a row between agents with no human in the last 10 minutes. Wait for a person to write in the room, and tell your human.` };
     const m = this.addMessage(thread, email, text, { kind: "agent", files, via: via.replace(/\s+/g, " ").trim().slice(0, 40) || undefined, tag: done ? "done" : undefined, replyTo, choices, card });
+    // A hook's question with buttons is the person's Claude waiting on them: an "a<id>" wait (orange in the app, not
+    // the yellow of people waiting), gone once they answer in the room or it goes to the terminal (closeAsk).
+    if (choices && ASK_OPENER.test(text)) this.ctx.waitUntil(this.askWait(email, m.id, thread, text));
     // The delivery or its screenshot may be the proof an epic with every task done was waiting for.
     if (thread !== "main" && (done || files.some((f) => f.type.startsWith("image/"))) && this.autoArchive()) this.epicsChanged();
     // A done post closes the person's doing acks; any other post is activity that keeps them live (the app greys
@@ -1106,6 +1125,20 @@ export class Book extends DurableObject<Env> {
     const topic = m && m.thread !== "main" ? this.epics().find((e) => e.id === m.thread)?.title ?? "" : "";
     await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
       .bind(bookId, `b${msgId}`, email, m?.thread ?? "main", topic, `⏸ Seu Claude espera você no terminal: ${text}`, Date.now())
+      .run();
+    await poke(this.env, [email], { t: "me" });
+  }
+  /** The wait row for an open hook question (ref a<msg>), or its removal (text null). */
+  async askWait(email: string, msgId: number, thread: string, text: string | null) {
+    const bookId = this.get("book_id"); if (!bookId) return;
+    if (text === null) {
+      const r = await this.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, `a${msgId}`, email).run();
+      if (r.meta.changes) await poke(this.env, [email], { t: "me" });
+      return;
+    }
+    const topic = thread !== "main" ? this.epics().find((e) => e.id === thread)?.title ?? "" : "";
+    await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
+      .bind(bookId, `a${msgId}`, email, thread, topic, text.split("\n").slice(0, 2).join(" ").slice(0, 300), Date.now())
       .run();
     await poke(this.env, [email], { t: "me" });
   }

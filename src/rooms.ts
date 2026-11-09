@@ -153,8 +153,9 @@ export const waitsFor = async (db: D1Database, email: string, bookId?: string) =
         `SELECT w.book_id, b.title AS room, w.ref, w.thread, w.topic, w.author, u.name AS author_name, w.text, w.ts
          FROM waits w JOIN members m ON m.book_id = w.book_id AND m.email = w.email JOIN books b ON b.id = w.book_id
          LEFT JOIN users u ON u.email = w.author
-         WHERE w.email = ? AND m.archived_at IS NULL AND (?2 IS NULL OR w.book_id = ?2) ORDER BY w.ts DESC LIMIT 60`,
+         WHERE w.email = ? AND m.archived_at IS NULL AND (?2 IS NULL OR w.book_id = ?2)
+           AND NOT (w.ref LIKE 'a%' AND w.ts < ?3) ORDER BY w.ts DESC LIMIT 60`,
       )
-      .bind(email, bookId ?? null)
+      .bind(email, bookId ?? null, Date.now() - 15 * 60e3) // a hook question lives ≤150s; a row it left behind (killed) expires
       .all<{ book_id: string; room: string; ref: string; thread: string; topic: string | null; author: string; author_name: string | null; text: string; ts: number }>()
   ).results;

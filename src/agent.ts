@@ -1,6 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
+import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
 import { LISTEN_FRESH, markListening } from "./person";
 import type { AgentProps } from "./connect";
@@ -691,7 +692,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited: too many agent posts in the last minute. Wait a bit.");
       // The plugin's hooks (permission.sh, question.sh) bring a Claude stuck in the terminal to the room with these openers.
-      if (/^(⏸ Seu Claude (pede permissão|quer seguir)|❓ Seu Claude pergunta)/.test(str(a.text))) ctx.waitUntil(track(env, "terminal_ask", { user: me.email, dims: { book: id } }));
+      if (ASK_OPENER.test(str(a.text))) ctx.waitUntil(track(env, "terminal_ask", { user: me.email, dims: { book: id } }));
       let fileIds: string[] = [];
       if (a.html || a.app) {
         let html = str(a.html);
@@ -705,7 +706,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         fileIds = [meta.id];
       }
       const before = (await db.prepare(`SELECT last_id FROM agent_reads WHERE agent = ? AND book_id = ?`).bind(me.agent, id).first<{ last_id: number }>())?.last_id;
-      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread), fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a), a.card === undefined ? undefined : cardOf(a.card, id));
+      const posted = await bookStub(env, id).agentPost(id, me.email, str(a.text), str(a.thread), fileIds, str(a.model), a.done === true, fileIds.length > 0, Number(a.reply_to) || undefined, choicesOf(a), a.card === undefined ? undefined : cardOf(a.card, id), me.agent);
       // Your own post shouldn't wake you up: if you were caught up, stay caught up.
       if (posted.ok && posted.id)
         await db.prepare(`UPDATE agent_reads SET last_id = ? WHERE agent = ? AND book_id = ? AND last_id >= ?`).bind(posted.id, me.agent, id, posted.id - 1).run();

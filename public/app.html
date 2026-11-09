@@ -189,6 +189,9 @@
   .agentBox .conn b { flex: 1; min-width: 0; } .agentBox .conn small { display: block; color: var(--mute); font-weight: 400; }
   .agentBox .ok { color: #1f9d8a; font-weight: 700; }
   .claudeBar { margin: 10px 28px 0; display: flex; line-height: 1.35; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 12px; background: var(--ai-bg); border: 1px solid var(--line); font-size: 13.5px; }
+  .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
+  .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
+  .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
   .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary { white-space: nowrap; }
@@ -1063,7 +1066,7 @@
     .composer:focus-within { padding-bottom: 8px; }
     .composer textarea { scrollbar-width: none; }
     .composer textarea::-webkit-scrollbar { display: none; }
-    .agentNudge { margin: 10px 12px 0; } .claudeBar { margin: 8px 12px 0; }
+    .agentNudge { margin: 10px 12px 0; } .claudeBar, .askBar { margin: 8px 12px 0; }
     .setupCmd { flex-direction: column; } .setupCmd .primary { padding: 10px; }
     .home { padding: max(14px, env(safe-area-inset-top)) 14px 60px; }
     .home .top { margin-bottom: 20px; gap: 4px; flex-wrap: nowrap; }
@@ -1442,6 +1445,8 @@ const EN = {
   "Decisões": "Decisions",
   "Modo do documento": "Doc mode",
   "Ver": "View",
+  "Seu Claude espera você": "Your Claude is waiting for you",
+  "em {where}": "in {where}",
   "Editar": "Edit",
   "O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.": "The vibebook's doc. Everyone edits it; @vibe keeps it up to date with the decisions.",
   "Nova votação": "New poll",
@@ -1844,6 +1849,9 @@ const api = async (path, body) => {
 const $sw = document.getElementById("switcher");
 let myBooks = null; // from /api/me, newest activity first
 let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting on you for
+// A Claude of yours stopped at a question (a<msg> = its ask in the room, b<msg> = blocked in the terminal): those
+// counts turn orange-red instead of yellow, so "your Claude is stuck" stands out from people waiting.
+const clW = (ws) => (ws.some((w) => /^[ab]\d/.test(w.ref)) ? " cl" : "");
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
   grid: `<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>`,
@@ -1966,7 +1974,7 @@ function renderSwitcher() {
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um Claude está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
-  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
+  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
   // A cloud sandbox running in the room (it costs money): an orange ring and a ☁ on the tile.
   const cloud = (b) => (b.sandboxes_running ? `<b class="swCloud" title="${t("sandbox na nuvem rodando")}">☁</b>` : "");
   const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw${b.sandboxes_running ? " cloud" : ""}">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}${cloud(b)}</span></a>`;
@@ -2246,12 +2254,12 @@ const MENU_ICON = icon("menu", 22);
 function phoneHome(me) {
   const rooms = [...me.books].sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0) || b.updated_at - a.updated_at);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
-  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait">${n}</b>` : ""; };
+  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   $app.innerHTML = `
   <div class="phome">
     <header class="ptop">
-      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait">${myWaits.length}</b>` : ""}</button>
+      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait${clW(myWaits)}">${myWaits.length}</b>` : ""}</button>
       <a class="plogo" href="/"><span class="tile logo">${SW_LOGO}</span>vibebook</a>
       <button class="me" id="myName" aria-label="${t("Seu perfil")}">${avatar(me.email)}</button>
     </header>
@@ -2811,7 +2819,7 @@ function renderBook() {
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
-      <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div>
+      <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div>
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
       <form class="composer" id="composer">
@@ -3579,7 +3587,7 @@ function renderWorking() {
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
-const waitPill = (th) => { const n = waitsIn(th).length; return n ? `<b class="wN" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
+const waitPill = (th) => { const ws = waitsIn(th), n = ws.length; return n ? `<b class="wN${clW(ws)}" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
 // Deploy stage after "Claude fez" (set by agents with update_epic prod): 🚀 no ar, ✓✓ verificado em prod.
 const prodMark = (e) => !e.prod ? "" : e.prod.stage === "verified"
   ? `<span class="prodMark ok" title="${esc(t("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>`
@@ -3643,7 +3651,19 @@ function wirePins(el) {
   });
   el.querySelectorAll("[data-unpin]").forEach((b) => b.onclick = () => send({ t: "pin.del", id: b.dataset.unpin }));
 }
+// Your Claude's open question (a<msg> wait) in another thread of this room: one line on top of whatever thread you're
+// in, so an approval never hides in a conversation you're not looking at. "Ver" jumps to it.
+function renderAskBar() {
+  const el = document.getElementById("askBar"); if (!el) return;
+  const w = waitsIn().find((x) => /^a\d/.test(x.ref) && x.thread !== thread);
+  el.hidden = !w;
+  if (!w) return;
+  const what = (w.text || "").replace(/^(⏸|❓)\s*Seu Claude\s*/, "").replace(/[*`]/g, "").slice(0, 160);
+  el.innerHTML = `<span>⏸ <b>${t("Seu Claude espera você")}</b> ${t("em {where}", { where: esc(w.topic || t("sala principal")) })}: ${esc(what)}</span><button type="button" class="primary" data-askgo="${w.ref.slice(1)}">${t("Ver")}</button>`;
+  el.querySelector("[data-askgo]").onclick = (e) => goToMsg(Number(e.currentTarget.dataset.askgo));
+}
 function renderSide() {
+  renderAskBar();
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   if (railMode && window.innerWidth > 900) return renderRail(el);
@@ -3824,7 +3844,7 @@ function roomStrip() {
   const recent = [...(myBooks || [])].filter((b) => b.id !== S?.id && !b.archived_at).sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0)).slice(0, 3);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy">✻</b>` : "");
-  const waitN = (b) => { const n = myWaits.filter((w) => w.book_id === b.id).length; return n ? `<b class="swWait">${n}</b>` : ""; };
+  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
   // "Todos" sits on the left (where ← goes back), search on the right.
   return `<nav class="roomStrip" aria-label="${t("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${icon("grid", 20)}</span><span>${t("Todos")}</span></a>${recent.map((b) => `<a data-nav href="/b/${b.id}" title="${esc(b.title)}"><span class="tw">${tile(b, "md")}${dot(b)}${busy(b)}${waitN(b)}</span><span>${esc(b.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - recent.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${t("Trocar de sala")}"><span class="tile md">${SW_SEARCH}</span><span>${t("Buscar")}</span></button></nav>`;
 }
@@ -4511,6 +4531,7 @@ function syncUrl() {
   urlSynced = true;
 }
 function renderChat(keep) {
+  renderAskBar();
   syncUrl();
   renderReply();
   renderTasks();
