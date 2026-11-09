@@ -121,7 +121,12 @@ async function issuesLine(env: Env, start: number, end: number) {
   const [y, w] = await Promise.all([q(start, end), q(start - 7 * DAY, start)]);
   const tot = (r: typeof y) => r.results.reduce((t, x) => t + x.n, 0);
   const kinds = y.results.map((x) => `${x.k} ${x.n}`).join(", ");
-  return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(tot(y), tot(w))}${kinds ? ` · ${kinds}` : ""}`;
+  // The latest ones (7 days up to now), so they can be read and turned into work: the text is the Claude's own, secret-filtered.
+  const last = await env.DB.prepare(`SELECT ts, json_extract(dims, '$.kind') AS k, json_extract(dims, '$.model') AS m, json_extract(dims, '$.what') AS w FROM events WHERE name = 'agent_issue' AND ts >= ? AND ts < ? AND ${NOT_TEST} ORDER BY ts DESC LIMIT 10`)
+    .bind(end - 7 * DAY, Date.now())
+    .all<{ ts: number; k: string; m: string | null; w: string | null }>();
+  const items = last.results.map((x) => `\n  - ${day(x.ts)} · ${x.k}${x.m ? ` · ${x.m}` : ""}: ${(x.w ?? "").replace(/\s+/g, " ").slice(0, 220)}`).join("");
+  return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(tot(y), tot(w))}${kinds ? ` · ${kinds}` : ""}${items}`;
 }
 
 /** Claudes stuck in the terminal (permission, question, plan) that asked in the room, and how many the room answered. */
