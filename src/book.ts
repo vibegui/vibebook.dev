@@ -1050,6 +1050,11 @@ export class Book extends DurableObject<Env> {
     const now = Date.now();
     if (this.sql.exec(`UPDATE acks SET status = ?, ts = ? WHERE email = ? AND status = 'doing'`, done ? "done" : "doing", now, email).rowsWritten)
       this.pushAcks(`email = ? AND ts = ?`, email, now);
+    // A reply to the message it acked is the answer when that request didn't become an epic (a short answer, no work
+    // to deliver): it closes that ack, so the room doesn't show "fazendo" forever without a done:true post.
+    if (!done && replyTo && !this.sql.exec(`SELECT 1 FROM epics WHERE from_msg = ?`, replyTo).toArray().length)
+      if (this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE email = ? AND msg_id = ? AND status = 'doing'`, now + 1, email, replyTo).rowsWritten)
+        this.pushAcks(`email = ? AND ts = ?`, email, now + 1);
     this.ctx.waitUntil(track(this.env, "message", { user: email, dims: { book: bookId, thread: thread === "main" ? "main" : "epic", agent: true } }));
     this.ctx.waitUntil(this.markBusy(!done));
     await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
