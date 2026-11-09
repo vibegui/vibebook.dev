@@ -548,6 +548,12 @@
   .choice button { padding: 7px 16px; }
   .choice.ro .opt, .choice.done .opt { cursor: default; color: var(--mute); }
   .choice.closed .opt { opacity: .55; text-decoration: line-through; }
+  .permAsk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+  .permAsk button { min-height: 36px; padding: 0 16px; border-radius: 10px; }
+  .permAsk .pq { font-size: 14px; color: var(--ink); margin-right: 4px; }
+  .permAsk.done { font-size: 13px; color: var(--mute); gap: 6px; }
+  .permAsk.done.ok svg { color: var(--ok); }
+  .permAsk .danger { background: #ef4444; color: #fff; border: 0; }
   .choice.done .opt.on { color: var(--ink); border-color: var(--ok-ink, var(--accent)); }
   .choice small { color: var(--mute); font-size: 12.5px; flex-basis: 100%; }
   .choice .opt.oth { border-style: dashed; }
@@ -1240,6 +1246,13 @@ const EN = {
   "{n} issues dos Claudes": "{n} issues from Claudes",
   "Issue de um Claude": "Issue from a Claude",
   "foi pro terminal": "went to the terminal",
+  "Aprovado por {who}": "Approved by {who}",
+  "Negado por {who}": "Denied by {who}",
+  "Aprovar este pedido?": "Approve this request?",
+  "Aprovar": "Approve",
+  "Negar": "Deny",
+  "Confirmar": "Confirm",
+  "Negar este pedido?": "Deny this request?",
   "{via} de {who}": "{who}'s {via}",
   "O Claude de quem pegar a tarefa também vê isso.": "Whoever's Claude picks up the task sees this too.",
   "agora": "now",
@@ -1859,6 +1872,7 @@ const ICONS = {
   chart: `<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>`,
   trophy: `<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>`,
   clock: `<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>`,
+  terminal: `<path d="m4 17 6-6-6-6"/><path d="M12 19h8"/>`,
   alert: `<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>`,
   paperclip: `<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l8.6-8.6a4 4 0 0 1 5.7 5.7l-8.6 8.6a2 2 0 0 1-2.8-2.8l8.5-8.5"/>`,
   at: `<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>`,
@@ -4272,9 +4286,29 @@ document.addEventListener("click", (e) => {
   b.closest(".vcard")?.querySelectorAll("[data-cardbtn]").forEach((x) => (x.disabled = true));
   send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.v, files: [], reply_to: Number(b.dataset.cardbtn) });
 });
+// A permission ask (Aprovar/Negar from the plugin's hook) is answered in place: the button, then Confirmar (never by
+// accident). The answer is still a message of the person's (that's what the server checks: only their own human
+// message counts), but it isn't drawn in the chat: the ask shows "✓ Aprovado por X" instead.
+const isPermAnswer = (m) => { if (!m?.reply_to || m.kind === "agent") return false; const q = S.messages.find((x) => x.id === m.reply_to); return !!q && isPermAsk(q) && q.author === m.author; };
+function permHtml(m, c, ans) {
+  if (ans) { const ok = /^\s*aprov/i.test(ans.text); return `<div class="permAsk done ${ok ? "ok" : "no"}">${icon(ok ? "check" : "x", 14)} ${ok ? t("Aprovado por {who}", { who: esc(name(ans.author)) }) : t("Negado por {who}", { who: esc(name(ans.author)) })} · ${hhmm(ans.ts)}</div>`; }
+  if (c.closed) return `<div class="permAsk done">${icon("terminal", 14)} ${t("foi pro terminal")}</div>`;
+  if (m.author !== S.me) return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
+  return `<div class="permAsk" data-perm="${m.id}"><button type="button" class="primary" data-pv="Aprovar">${t("Aprovar")}</button><button type="button" class="ghost" data-pv="Negar">${t("Negar")}</button></div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-perm] [data-pv], [data-perm] [data-pconfirm], [data-perm] [data-pcancel]"); if (!b) return;
+  const box = b.closest("[data-perm]"), id = Number(box.dataset.perm);
+  if (b.dataset.pv) { const ok = b.dataset.pv === "Aprovar"; box.innerHTML = `<span class="pq">${ok ? t("Aprovar este pedido?") : t("Negar este pedido?")}</span><button type="button" class="${ok ? "primary" : "danger"}" data-pconfirm="${b.dataset.pv}">${t("Confirmar")}</button><button type="button" class="ghost" data-pcancel="1">${t("Cancelar")}</button>`; box.classList.add("confirm"); return; }
+  if (b.dataset.pcancel) { const m = S.messages.find((x) => x.id === id); if (m) box.outerHTML = choiceHtml(m); return; }
+  const q = S.messages.find((x) => x.id === id);
+  box.querySelectorAll("button").forEach((x) => (x.disabled = true));
+  send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.pconfirm, files: [], reply_to: id });
+});
 function choiceHtml(m) {
   let c; try { c = JSON.parse(m.choices); } catch { return ""; }
   const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
+  if (isPermAsk(m)) return permHtml(m, c, ans);
   const other = !isPermAsk(m); // "Outro": your own words (not for Aprovar/Negar)
   // Went to the terminal (the hook timed out, or the person answered there): no longer pickable here.
   if (!ans && c.closed) return `<div class="choice ro closed">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("foi pro terminal")}</small></div>`;
@@ -4492,7 +4526,7 @@ function renderChat(keep) {
     }, 400);
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
-  const all = S.messages.filter((m) => m.thread === thread);
+  const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m));
   const list = foldReminders(all.slice(-win.n));
   const more = all.length > list.length || (all.length && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
@@ -4569,6 +4603,8 @@ function renderReceipts() {
 }
 function appendMsg(m) {
   const el = document.getElementById("msgs");
+  // An answer to a permission ask: redraw the ask (now "✓ Aprovado por X"), not a new message.
+  if (isPermAnswer(m)) { const q = S.messages.find((x) => x.id === m.reply_to), box = document.querySelector(`#m${m.reply_to} .permAsk, #m${m.reply_to} .choice`); if (q && box) box.outerHTML = choiceHtml(q); return; }
   el.querySelector(".empty")?.remove();
   const list = S.messages.filter((x) => x.thread === m.thread), i = list.indexOf(m), prev = list[i - 1];
   // The same reminder again with nothing in between: redraw the folded line in place of the last one.
