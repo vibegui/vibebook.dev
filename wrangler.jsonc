@@ -42,7 +42,7 @@
     "CF_ACCOUNT_ID": "55dd6d847f366735ef6e0f860c7bdc51"
   },
   // No cron: removes the one the daily reports used (scheduled posts are room reminders now).
-  "triggers": { "crons": [] },
+  "triggers": { "crons": ["0 11,21 * * *"] },
   // Local dev serves as http://127.0.0.1:8797 (OAuth accepts http only on a loopback IP; :8787 is taken here).
   "dev": { "port": 8797, "host": "127.0.0.1:8797", "upstream_protocol": "http" },
   "observability": { "enabled": true }

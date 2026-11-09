@@ -629,15 +629,31 @@ export class Book extends DurableObject<Env> {
         db.prepare(`SELECT name, mention_mail, lang FROM users WHERE email = ?`).bind(to).first<{ name: string | null; mention_mail: number | null; lang: string | null }>(),
         db.prepare(`SELECT count(*) AS n FROM events WHERE name = 'mention_mail' AND ts > ? AND user = ?`).bind(now - 864e5, to).first<{ n: number }>(),
       ]);
-      const unread = ids.filter((i) => i > (read?.last_id ?? 0));
+      // The newest 20: a long-unread queue would overflow SQLite's bound-variable limit in the IN (...) below.
+      const unread = ids.filter((i) => i > (read?.last_id ?? 0)).slice(-20);
       // Read in the app already, opted out, or never signed up (the invite email covers them): nothing to send.
       if (!unread.length || !user || user.mention_mail === 0) { drop(); continue; }
       if ((sentToday?.n ?? 0) >= MAIL_DAY_MAX) { drop(); this.ctx.waitUntil(track(this.env, "mention_mail_skipped", { user: to, dims: { book: bookId, why: "day_cap" } })); continue; }
+      // Only what needs them now goes out at once: a person (not a Claude, not @vibe) asking them something, which
+      // Jev already marked as a wait (findWaits ran on the 30s alarm, well before this 5 min). The rest is held for
+      // the 8h/18h catch-up (src/digest.ts).
+      const asks = new Set(
+        (await db.prepare(`SELECT ref FROM waits WHERE book_id = ? AND email = ? AND ref IN (${unread.map(() => "?").join(",")})`).bind(bookId, to, ...unread.map((i) => `m${i}`)).all<{ ref: string }>()).results.map((r) => r.ref),
+      );
+      const rows = this.sql.exec<{ id: number; thread: string; author: string; kind: string | null; via: string | null; text: string; ts: number }>(`SELECT id, thread, author, kind, via, text, ts FROM messages WHERE id IN (${unread.map(() => "?").join(",")})`, ...unread).toArray();
+      const urgent = rows.filter((r) => !r.kind && r.author !== "ai" && asks.has(`m${r.id}`)).map((r) => r.id);
+      const later = rows.filter((r) => !urgent.includes(r.id));
+      if (later.length) {
+        const names = await this.names();
+        const who = (r: (typeof rows)[number]) => (r.author === "ai" ? "@vibe" : r.kind === "agent" ? `${r.via || "Claude"} de ${names[r.author] ?? r.author.split("@")[0]}` : names[r.author] ?? r.author.split("@")[0]);
+        await db.batch(later.map((r) => db.prepare(`INSERT OR IGNORE INTO digest_items (email, book_id, msg_id, thread, author, text, ts) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(to, bookId, r.id, r.thread, who(r), r.text.slice(0, 500), r.ts)));
+      }
+      if (!urgent.length) { drop(); this.ctx.waitUntil(track(this.env, "mention_mail_skipped", { user: to, dims: { book: bookId, why: "digest", n: later.length } })); continue; }
       const last = Number(this.get(`mailed:${to}`) ?? 0);
       if (now - last < MAIL_GAP_MS) { this.sql.exec(`UPDATE mail_q SET due = ? WHERE email = ?`, last + MAIL_GAP_MS, to); continue; }
       this.set(`mailed:${to}`, String(now));
       drop();
-      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], unread, false, asLang(user.lang)).catch((e) => { console.error("mention mail failed", { to, error: String(e) }); this.ctx.waitUntil(track(this.env, "mention_mail_failed", { user: to, dims: { book: bookId, error: String(e).slice(0, 200) } })); });
+      await this.mentionMail(bookId, to, user.name ?? to.split("@")[0], urgent, false, asLang(user.lang)).catch((e) => { console.error("mention mail failed", { to, error: String(e) }); this.ctx.waitUntil(track(this.env, "mention_mail_failed", { user: to, dims: { book: bookId, error: String(e).slice(0, 200) } })); });
     }
     const next = this.sql.exec<{ d: number | null }>(`SELECT min(due) AS d FROM mail_q`).one().d;
     if (next) await this.wakeAt(next);
@@ -1823,9 +1839,10 @@ export class Book extends DurableObject<Env> {
   async alarm() {
     await this.refreshLang().catch(() => {});
     await this.fireReminders().catch((e) => console.error("reminders", String(e)));
+    // Waits first: a mention e-mail goes out at once only for an ask Jev marked as a wait (sendDueMail).
+    await this.findWaits().catch((e) => console.error("waits", String(e)));
     await this.sendDueMail().catch((e) => console.error("mention mail", String(e)));
     await this.housekeep().catch((e) => console.error("housekeep", String(e)));
-    await this.findWaits().catch((e) => console.error("waits", String(e)));
     await this.grade().catch((e) => console.error("grade", String(e)));
     const since = Number(this.get("classified_at_id") ?? 0);
     // Only people's own messages count: @vibe and agent posts don't make a room "talked about".

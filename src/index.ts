@@ -12,6 +12,7 @@ import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
 import { mountSandbox } from "./sandbox";
 import { validUnsub } from "./mentionmail";
+import { sendDigests } from "./digest";
 import { renderApp, withBridge } from "./embed";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
@@ -90,6 +91,8 @@ const SCHEMA = [
   // (a task of theirs in review, rewritten by the room's epicsChanged).
   `CREATE TABLE IF NOT EXISTS waits (book_id TEXT, ref TEXT, email TEXT, thread TEXT, topic TEXT, author TEXT, text TEXT, ts INTEGER, PRIMARY KEY (book_id, ref, email))`,
   `CREATE INDEX IF NOT EXISTS waits_email ON waits (email, ts)`,
+  // Mentions that didn't need the person right away (src/digest.ts): held for the 8h/18h catch-up e-mail.
+  `CREATE TABLE IF NOT EXISTS digest_items (email TEXT, book_id TEXT, msg_id INTEGER, thread TEXT, author TEXT, text TEXT, ts INTEGER, PRIMARY KEY (email, book_id, msg_id))`,
   // members' PK is (book_id, email): "my rooms" (/api/me, unreadRooms every 3s per listener) needs email first.
   `CREATE INDEX IF NOT EXISTS members_email ON members (email)`,
   `CREATE INDEX IF NOT EXISTS agents_email ON agents (email)`,
@@ -347,6 +350,10 @@ app.use("*", async (c, next) => {
 
 
 // Local dev only: the daily reports' text, without waiting for the cron.
+app.get("/api/dev/digest", async (c) => {
+  if (!c.env.DEV_EMAIL) return c.notFound();
+  return c.json({ sent: await sendDigests(c.env, Date.now(), c.req.query("email") || undefined) });
+});
 app.get("/api/dev/report", async (c) => {
   if (!c.env.DEV_EMAIL) return c.notFound();
   return c.text(c.req.query("which") === "product" ? await productReport(c.env) : await growthReport(c.env));
@@ -787,5 +794,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
     return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
+  },
+  // 11:00 and 21:00 UTC = 8h and 18h in São Paulo: the catch-up e-mail.
+  scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(ensureSchema(env.DB).then(() => sendDigests(env)).catch((e) => console.error("digest", String(e))));
   },
 } satisfies ExportedHandler<Env>;
