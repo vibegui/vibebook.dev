@@ -2796,7 +2796,7 @@ function chime() {
 function notifyMsg(m) {
   const bot = m.kind === "agent" || m.author === "ai";
   // Your own messages never ring; your own Claude's do (it's working for you).
-  if ((m.author === S.me && !bot) || notifyMuted()) return;
+  if ((m.author === S.me && !bot) || m.quiet || notifyMuted()) return; // quiet: @vibe's routine, for the catch-up
   const mentioned = m.text && [...m.text.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((x) => mentionTarget(x[1]) === S.me);
   // Someone else's Claude (or @vibe) rings only when it talks to you: a mention, a reply to your message, or meant for you.
   if (bot && m.author !== S.me && !mentioned && m.for_who !== S.me && S.messages.find((x) => x.id === m.reply_to)?.author !== S.me) return;

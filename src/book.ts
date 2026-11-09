@@ -164,7 +164,7 @@ export class Book extends DurableObject<Env> {
       const n = e.tasks.length;
       this.addMessage(e.id, "ai", this.en
         ? `✓ ${n === 1 ? "The task" : `All ${n} tasks`} of **${e.title}** ${n === 1 ? "is" : "are"} done, so I archived the epic. It stays under Archived, with its doc and conversation; ↩ reopens it.`
-        : `✓ ${n === 1 ? "A tarefa" : `Todas as ${n} tarefas`} de **${e.title}** ${n === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done" });
+        : `✓ ${n === 1 ? "A tarefa" : `Todas as ${n} tarefas`} de **${e.title}** ${n === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done", quiet: true });
       // The request it came from: "fazendo isso" turns into "fez isso".
       const from = this.sql.exec(`SELECT from_msg FROM epics WHERE id = ?`, e.id).toArray()[0]?.from_msg;
       if (from) this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE msg_id = ? AND status = 'doing'`, Date.now(), from);
@@ -585,7 +585,9 @@ export class Book extends DurableObject<Env> {
       )
       .one().id as number;
     const m: Msg = { id, thread, author, text, ts, files, poll: extra.poll ?? null, kind: extra.kind ?? null, via: extra.via ?? null, tag: extra.tag ?? null, reply_to: replyTo, choices: extra.choices ? JSON.stringify(extra.choices) : null, for_who: extra.forWho ?? null, card: extra.card ? JSON.stringify(extra.card) : null };
-    this.broadcast({ t: "msg", m });
+    // quiet: @vibe's routine lines (archived/reopened, nudges, the issue feed): drawn in the thread, but no unread dot,
+    // no listener wake, no chime and no mention e-mail; the morning/evening catch-up carries them.
+    this.broadcast({ t: "msg", m: extra.quiet ? { ...m, quiet: true } : m });
     // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
     const byPerson = !extra.kind && author !== "ai";
@@ -594,7 +596,7 @@ export class Book extends DurableObject<Env> {
       const q = this.sql.exec<{ author: string; text: string }>(`SELECT author, text FROM messages WHERE id = ? AND kind = 'agent' AND choices IS NOT NULL`, replyTo).toArray()[0];
       if (q && q.author === author && ASK_OPENER.test(q.text)) this.ctx.waitUntil(this.askWait(author, replyTo, "", null));
     }
-    if (text.includes("@")) this.ctx.waitUntil(this.queueMentions(m));
+    if (text.includes("@") && !extra.quiet) this.ctx.waitUntil(this.queueMentions(m));
     if (extra.tag === "done" && extra.kind === "agent" && thread !== "main") this.ctx.waitUntil(this.wakeAt(ts + (this.env.DEV_EMAIL ? 4_000 : NUDGE_AFTER_DELIVERY_MS)));
     return m;
   }
@@ -851,7 +853,7 @@ export class Book extends DurableObject<Env> {
   // new round closes itself too.
   reopenIfArchived(thread: string) {
     if (thread === "main" || !this.sql.exec(`UPDATE epics SET archived = -1 WHERE id = ? AND archived = 1`, thread).rowsWritten) return;
-    this.addMessage(thread, "ai", this.en ? "↩ I reopened this epic to continue. When the new tasks are done, it archives itself again." : "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.");
+    this.addMessage(thread, "ai", this.en ? "↩ I reopened this epic to continue. When the new tasks are done, it archives itself again." : "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.", { quiet: true });
     this.epicsChanged();
   }
   rearm(epicId: string) {
@@ -1657,7 +1659,7 @@ export class Book extends DurableObject<Env> {
         const who = this.sql.exec<{ author: string }>(`SELECT author FROM messages WHERE thread = ? AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).one().author;
         this.addMessage(e.id, "ai", this.en
           ? `${at(who)}, every task here is done, but the epic closes only with proof: a delivery (done) saying what was tested, with a screenshot when there's something to see. Post it and I'll archive it.`
-          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) dizendo o que foi testado, com print quando tem algo pra ver. Posta que eu arquivo.`);
+          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) dizendo o que foi testado, com print quando tem algo pra ver. Posta que eu arquivo.`, { quiet: true });
         continue;
       }
       const del = this.sql.exec<{ id: number; author: string; ts: number }>(`SELECT id, author, ts FROM messages WHERE thread = ? AND tag = 'done' AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).toArray()[0];
@@ -1668,7 +1670,7 @@ export class Book extends DurableObject<Env> {
           const list = open.map((t) => t.title).slice(0, 5).join("; ");
           this.addMessage(e.id, "ai", this.en
             ? `${at(del.author)}, there was a delivery here, but ${open.length === 1 ? "a task is still open" : `${open.length} tasks are still open`}: ${list}. If it's finished, mark it done (or tell me "all done"); if something's missing, say what.`
-            : `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`);
+            : `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`, { quiet: true });
           continue;
         }
         next = Math.min(next, del.ts + AFTER);
@@ -1682,7 +1684,7 @@ export class Book extends DurableObject<Env> {
       const items = stuck.map((t) => `${t.title} (${(this.en ? STATUS_LABEL_EN : STATUS_LABEL)[t.status]})`).slice(0, 5).join("; ");
       this.addMessage(e.id, "ai", this.en
         ? `${owners.map(at).join(" ")}, nothing new here for over a day: ${items}. Still going? If it's finished, mark it done; if it's stuck, say what's missing.`
-        : `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${items}. Segue? Se terminou, marca feito; se travou, diz o que falta.`);
+        : `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${items}. Segue? Se terminou, marca feito; se travou, diz o que falta.`, { quiet: true });
       next = Math.min(next, now + STALE);
     }
     if (next < Infinity) await this.wakeAt(next);
