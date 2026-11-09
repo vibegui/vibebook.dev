@@ -492,6 +492,21 @@ export class Book extends DurableObject<Env> {
     this.broadcast({ t: "closed", id: msgId, choices });
     return { ok: true };
   }
+  /** The person's own messages (and reminders for them) between two ids, any thread: what their agent hasn't read yet. */
+  humanSince(bookId: string, email: string, after: number, before: number) {
+    this.bind(bookId);
+    return this.sql
+      .exec<{ id: number; thread: string; text: string }>(
+        `SELECT id, thread, substr(text, 1, 500) AS text FROM messages WHERE id > ? AND id < ? AND coalesce(text, '') != '' AND ((author = ? AND kind IS NULL) OR (tag = 'reminder' AND for_who = ?))
+           AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = messages.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')) ORDER BY id LIMIT 10`,
+        after,
+        before,
+        email,
+        email,
+      )
+      .toArray()
+      .map((m) => ({ ...m, from_your_human: true }));
+  }
   /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
   answerTo(bookId: string, msgId: number, email: string) {
     this.bind(bookId);
