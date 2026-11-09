@@ -274,6 +274,11 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, message_id: { type: "number" }, timeout_seconds: { type: "number" }, model: { type: "string" } }, required: ["room_id", "message_id"] },
   },
   {
+    name: "permission_close",
+    description: "Used by the vibebook plugin's hooks: the permission or question you posted in the room went to the terminal (no answer in the room in time, or your human answered in the terminal). Marks it closed in the room so it doesn't sit there open.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, message_id: { type: "number" }, model: { type: "string" } }, required: ["room_id", "message_id"] },
+  },
+  {
     name: "report_issue",
     description: "Report that you failed, as soon as you notice: you skipped or ignored a message of your human's (kind missed_message, with its message_id), a tool call failed and you gave up (tool_failed), you reported something that wasn't true (wrong_result), or something else went wrong on your side (other). It's recorded for vibebook's team to measure and fix (nothing is posted in the room); then fix it and tell your human in the room.",
     inputSchema: {
@@ -837,6 +842,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         if (Date.now() + 2000 > deadline) return { decision: null };
         await new Promise((r) => setTimeout(r, 2000));
       }
+    }
+    case "permission_close": {
+      const id = await room();
+      return bookStub(env, id).closeAsk(id, Number(a.message_id), me.email);
     }
     case "report_issue": {
       const id = a.room_id ? await room() : "";

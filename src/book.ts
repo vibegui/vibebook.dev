@@ -475,6 +475,23 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     this.addMessage("main", "ai", `⚠ ${head}\n\n${what}`, { tag: "issue", quiet: true });
   }
+  /** A question the plugin's hook asked in the room (permission, AskUserQuestion) that went to the terminal instead:
+   *  the hook timed out or Claude Code ended it because the person answered there. Only that person's agent's own
+   *  question, only while nobody answered it in the room; the app shows it closed. */
+  closeAsk(bookId: string, msgId: number, email: string) {
+    this.bind(bookId);
+    const m = this.sql.exec<{ choices: string | null }>(`SELECT choices FROM messages WHERE id = ? AND author = ? AND kind = 'agent' AND choices IS NOT NULL`, msgId, email).toArray()[0];
+    if (!m?.choices || this.answerTo(bookId, msgId, email) !== null) return { ok: false };
+    let c: Record<string, unknown> = {};
+    try {
+      c = JSON.parse(m.choices);
+    } catch {}
+    if (c.closed) return { ok: true };
+    const choices = JSON.stringify({ ...c, closed: "terminal" });
+    this.sql.exec(`UPDATE messages SET choices = ? WHERE id = ?`, choices, msgId);
+    this.broadcast({ t: "closed", id: msgId, choices });
+    return { ok: true };
+  }
   /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
   answerTo(bookId: string, msgId: number, email: string) {
     this.bind(bookId);

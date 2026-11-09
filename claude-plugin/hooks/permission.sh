@@ -18,6 +18,10 @@ let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
 })') || exit 0
 id=$(vibebook call post "$q" 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.ok&&j.id)process.stdout.write(String(j.id))}catch{}})')
 [ -n "$id" ] || exit 0
+# No answer from the room (timed out, or Claude Code ended this hook because the person answered in the terminal):
+# mark the question closed in the room so it doesn't sit there open.
+close_q() { vibebook call permission_close "{\"message_id\":$id}" >/dev/null 2>&1; }
+trap 'close_q; exit 0' TERM INT HUP
 end=$(( $(date +%s) + ${VIBEBOOK_PERMISSION_WAIT:-120} ))
 while [ "$(date +%s)" -lt "$end" ]; do
   left=$(( end - $(date +%s) )); [ "$left" -gt 45 ] && left=45
@@ -27,4 +31,5 @@ while [ "$(date +%s)" -lt "$end" ]; do
     exit 0
   fi
 done
+close_q
 exit 0
