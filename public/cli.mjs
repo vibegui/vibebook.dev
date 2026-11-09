@@ -481,7 +481,8 @@ async function herdrSync(agent, tools) {
   const rooms = JSON.parse(res.content[0]?.text ?? "{}").rooms ?? [];
   const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
   const map = readJson(HERDR, {});
-  const live = new Set(herdr("workspace", "list").workspaces.map((w) => w.workspace_id));
+  const wsList = herdr("workspace", "list").workspaces;
+  const live = new Set(wsList.map((w) => w.workspace_id));
   const panes = herdr("pane", "list").panes;
   const on = new Map(rooms.filter((r) => r.on).map((r) => [r.room_id, r.title]));
   const log = (m) => process.stdout.write(`${new Date().toLocaleTimeString()} ${m}
@@ -489,6 +490,12 @@ async function herdrSync(agent, tools) {
   for (const [room, title] of on) {
     const e = map[room] ??= {};
     if (e.workspace && live.has(e.workspace)) {
+      const label = wsList.find((w2) => w2.workspace_id === e.workspace)?.label;
+      if (label !== undefined && label !== title.slice(0, 40))
+        try {
+          herdr("workspace", "rename", e.workspace, title.slice(0, 40));
+          log(`${label} → ${title}: renomeei a aba`);
+        } catch {}
       if (!deaf.has(room))
         delete e.deaf_since;
       else
@@ -635,6 +642,12 @@ async function herdrAppSync(agent, tools) {
   for (const [room, title] of on) {
     const e = map[room] ??= {};
     if (e.space && live.has(e.space)) {
+      const name = spaces.find((x) => x.id === e.space)?.name;
+      if (name !== undefined && name !== title.slice(0, 40))
+        try {
+          happ("do", "space.rename", "--id", e.space, "--name", title.slice(0, 40));
+          log(`${name} → ${title}: renomeei o space`);
+        } catch {}
       if (!deaf.has(room))
         delete e.deaf_since;
       else

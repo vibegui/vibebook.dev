@@ -457,13 +457,21 @@ async function herdrSync(agent: string, tools: Tool[]) {
   const rooms = (JSON.parse(res.content[0]?.text ?? "{}") as { rooms?: { room_id: string; title: string; on: boolean; listening?: boolean }[] }).rooms ?? [];
   const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
   const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
-  const live = new Set((herdr("workspace", "list").workspaces as { workspace_id: string }[]).map((w) => w.workspace_id));
+  const wsList = herdr("workspace", "list").workspaces as { workspace_id: string; label?: string }[];
+  const live = new Set(wsList.map((w) => w.workspace_id));
   const panes = herdr("pane", "list").panes as Pane[];
   const on = new Map(rooms.filter((r) => r.on).map((r) => [r.room_id, r.title]));
   const log = (m: string) => process.stdout.write(`${new Date().toLocaleTimeString()} ${m}\n`);
   for (const [room, title] of on) {
     const e = (map[room] ??= {});
     if (e.workspace && live.has(e.workspace)) {
+      // Renamed in the app: the tab follows.
+      const label = wsList.find((w) => w.workspace_id === e.workspace)?.label;
+      if (label !== undefined && label !== title.slice(0, 40))
+        try {
+          herdr("workspace", "rename", e.workspace, title.slice(0, 40));
+          log(`${label} → ${title}: renomeei a aba`);
+        } catch {}
       // Its listener died (the session expired, the loop crashed…): the server sees nobody listening. Once it's free,
       // ask again, at most every 5 minutes (a Claude that just started listening takes a moment to show up).
       // Deaf for a moment is normal (it's handling a message, or just restarted its listener): only 3 minutes in a row
@@ -621,6 +629,12 @@ async function herdrAppSync(agent: string, tools: Tool[]) {
   for (const [room, title] of on) {
     const e = (map[room] ??= {});
     if (e.space && live.has(e.space)) {
+      const name = spaces.find((x) => x.id === e.space)?.name;
+      if (name !== undefined && name !== title.slice(0, 40))
+        try {
+          happ("do", "space.rename", "--id", e.space, "--name", title.slice(0, 40));
+          log(`${name} → ${title}: renomeei o space`);
+        } catch {}
       // Same as the terminal mode: nobody listening for 3 minutes and its Claude is free: ask it again (≤ every 5 min).
       if (!deaf.has(room)) delete e.deaf_since;
       else e.deaf_since ??= Date.now();
