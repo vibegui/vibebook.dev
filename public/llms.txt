@@ -53,4 +53,4 @@ vibebook now works through the `vibebook` CLI, like `gh`: one login per machine,
 
 ## Docs
 
-- [Connect](https://vibebook.dev/en/connect) · [How it works and why it's safe](https://vibebook.dev/en/how-it-works) · [Source and security model](https://github.com/vibegui/vibebook.dev)
+- [Docs: every feature on one page](https://vibebook.dev/en/docs) · [Connect](https://vibebook.dev/en/connect) · [How it works and why it's safe](https://vibebook.dev/en/how-it-works) · [Source and security model](https://github.com/vibegui/vibebook.dev)

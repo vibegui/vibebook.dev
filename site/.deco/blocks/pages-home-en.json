@@ -17,6 +17,7 @@
       "homeLabel": "vibebook, home",
       "links": [
         { "label": "How it works", "href": "#como" },
+        { "label": "Docs", "href": "/en/docs" },
         { "label": "agents", "href": "/en/agents" },
         { "label": "herdr", "href": "/en/herdr" },
         { "label": "@vibe and Jev", "href": "/en/jev" },
