@@ -469,6 +469,12 @@ export class Book extends DurableObject<Env> {
       .all<{ email: string; avatar: number }>();
     return Object.fromEntries(r.results.map((x) => [x.email, x.avatar]));
   }
+  /** A Claude's report_issue, shown in vibebook's product room (ISSUES_ROOM): one @vibe line, tag issue, the app folds
+   *  consecutive ones into one line. Quiet: no unread dot, no inbox bump, so listening Claudes don't wake for it. */
+  issuePost(bookId: string, head: string, what: string) {
+    this.bind(bookId);
+    this.addMessage("main", "ai", `⚠ ${head}\n\n${what}`, { tag: "issue", quiet: true });
+  }
   /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
   answerTo(bookId: string, msgId: number, email: string) {
     this.bind(bookId);
@@ -519,7 +525,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
     // A reply points at a message of this room; anything else is dropped rather than refused.
     const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
@@ -547,7 +553,7 @@ export class Book extends DurableObject<Env> {
     // The D1 index keeps the newest id so the agent inbox is one query, not one DO call per room, and which kind
     // spoke last (people vs agents/@vibe) for the switcher's dots. People here now have seen it.
     const byPerson = !extra.kind && author !== "ai";
-    this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
+    if (!extra.quiet) this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
     if (text.includes("@")) this.ctx.waitUntil(this.queueMentions(m));
     if (extra.tag === "done" && extra.kind === "agent" && thread !== "main") this.ctx.waitUntil(this.wakeAt(ts + (this.env.DEV_EMAIL ? 4_000 : NUDGE_AFTER_DELIVERY_MS)));
     return m;

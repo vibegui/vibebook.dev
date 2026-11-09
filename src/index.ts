@@ -47,6 +47,8 @@ export type Env = {
   MODEL_ROUTE: string;
   // Daily reports (src/reports.ts): rooms to post in, and the read-only Cloudflare analytics token (secret).
   METRICS_ROOMS?: string;
+  /** The room every report_issue is posted in (vibebook-product). */
+  ISSUES_ROOM?: string;
   FREESTYLE_API?: string; // local dev only: a mock of api.freestyle.sh
   CF_ACCOUNT_ID?: string;
   CF_ANALYTICS_TOKEN?: string;

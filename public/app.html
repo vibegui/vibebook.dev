@@ -594,6 +594,10 @@
   .msg.remMsg .txt { white-space: normal; background: var(--ai-bg); padding: 12px 16px; border-radius: 12px; margin: 6px 0 0 10px; font-size: 14px; }
   .msg.remMsg .remRuns { display: block; margin: 6px 0 0 10px; color: var(--mute); font-size: 12px; }
   .msg.remMsg .mfoot { margin: 0 0 0 10px; }
+  .msg.issueMsg summary svg { color: var(--wait-ink); }
+  .msg.issueMsg .issueList { display: grid; gap: 10px; max-height: 360px; overflow: auto; }
+  .msg.issueMsg .iss small { display: block; color: var(--mute); font-size: 12px; } .msg.issueMsg .iss small p { display: inline; margin: 0; }
+  .msg.issueMsg .iss div { white-space: pre-wrap; overflow-wrap: anywhere; }
   @media (max-width: 900px) { .msg.remMsg { padding-left: 0; } }
   .msg .who { font-size: 13px; color: var(--mute); margin-bottom: 3px; }
   .msg .txt { white-space: pre-wrap; word-wrap: break-word; }
@@ -1232,6 +1236,8 @@ const EN = {
   "Fixar": "Pin",
   "Fixar site, repo ou app": "Pin a site, repo or app",
   "Fixar na lateral": "Pin to the sidebar",
+  "{n} issues dos Claudes": "{n} issues from Claudes",
+  "Issue de um Claude": "Issue from a Claude",
   "{via} de {who}": "{who}'s {via}",
   "O Claude de quem pegar a tarefa também vê isso.": "Whoever's Claude picks up the task sees this too.",
   "agora": "now",
@@ -4289,15 +4295,23 @@ document.addEventListener("change", (e) => {
 });
 // Reminders read as one quiet line (⏰ name · whose · time); the same reminder firing again with nothing in between
 // folds into that line ("rodou N×"), so an hourly reminder doesn't fill the room. Click opens its text.
-const remKey = (m) => m?.tag === "reminder" ? (m.text || "").split("\n")[0] : null;
+// The Claudes' report_issue lines (vibebook's product room) fold the same way: consecutive ones are one ⚠ line.
+const remKey = (m) => m?.tag === "reminder" ? (m.text || "").split("\n")[0] : m?.tag === "issue" ? "⚠issue" : null;
 function foldReminders(list) {
   const out = [];
   for (const m of list) {
     const k = remKey(m), p = out[out.length - 1];
-    if (k && remKey(p) === k) out[out.length - 1] = { ...m, runs: [...(p.runs || [p.ts]), m.ts] };
+    if (k && remKey(p) === k) out[out.length - 1] = { ...m, runs: [...(p.runs || [p.ts]), m.ts], group: [...(p.group || [p]), m] };
     else out.push(m);
   }
   return out;
+}
+function issueHtml(m) {
+  const all = (m.group || [m]).slice().reverse(); // newest first
+  const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
+  const parts = (x) => { const [h, ...r] = (x.text || "").split("\n\n"); return { head: h.replace(/^⚠\s*/, ""), what: r.join("\n\n") }; };
+  const last = parts(all[0]);
+  return `<div class="msg remMsg issueMsg" id="m${m.id}"><div class="body"><details><summary>${icon("alert", 14)}<span class="remT"><b>${all.length > 1 ? t("{n} issues dos Claudes", { n: all.length }) : t("Issue de um Claude")}</b> ${esc(last.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day(m.ts)}</span></summary><div class="txt issueList">${all.map((x) => { const p = parts(x); return `<div class="iss"><small>${day(x.ts)} · ${mentions(md(p.head))}</small><div>${esc(p.what)}</div></div>`; }).join("")}</div></details></div></div>`;
 }
 function remHtml(m) {
   const [head, ...rest] = (m.text || "").split("\n\n"), runs = m.runs || [m.ts];
@@ -4307,6 +4321,7 @@ function remHtml(m) {
 }
 const msgHtml = (m, prev) => {
   if (m.tag === "reminder") return remHtml(m);
+  if (m.tag === "issue") return issueHtml(m);
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">${t("pensando…")}</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `

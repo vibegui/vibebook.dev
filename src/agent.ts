@@ -846,6 +846,9 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       if (findSecret(what)) throw new Error("blocked: looks like a secret; describe it without the value");
       const model = str(a.model).slice(0, 40) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || "";
       ctx.waitUntil(track(env, "agent_issue", { user: me.email, dims: { kind, book: id, message_id: Number(a.message_id) || undefined, model, client: me.client, what } }));
+      // Every report also lands in vibebook's product room, so the team sees it (test people left out).
+      if (env.ISSUES_ROOM && !me.email.endsWith("@test.vibebook.dev"))
+        ctx.waitUntil(bookStub(env, env.ISSUES_ROOM).issuePost(env.ISSUES_ROOM, `**${kind}** · ${model || me.client || "Claude"} · ${me.email.split("@")[0]}`, what).catch(() => {}));
       return { ok: true, note: "recorded. Now fix it and tell your human in the room what happened." };
     }
     case "set_task_status": {
