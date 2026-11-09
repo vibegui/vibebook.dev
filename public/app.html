@@ -265,7 +265,8 @@
   .pinRow .x { position: absolute; right: 4px; top: 50%; translate: 0 -50%; opacity: 0; padding: 4px; }
   .pinRow:hover .x, .pinRow .x:focus-visible { opacity: 1; }
   @media (hover: none) { .pinRow .x { opacity: .6; } }
-  .pinEmpty { display: flex; align-items: center; gap: 8px; width: 100%; border: 1.5px dashed var(--line); border-radius: 10px; background: none; color: var(--mute); padding: 9px 10px; font-size: 13px; text-align: left; cursor: pointer; }
+  .pinEmpty { display: flex; align-items: center; gap: 8px; width: 100%; border: 1.5px dashed var(--line); border-radius: 10px; background: none; color: var(--mute); padding: 9px 10px; font-size: 13px; text-align: left; cursor: pointer; white-space: nowrap; }
+  .pinEmpty span { overflow: hidden; text-overflow: ellipsis; } .pinEmpty svg { flex: none; }
   .pinEmpty:hover { color: var(--ink); border-color: var(--mute); }
   .pinForm { display: grid; gap: 6px; }
   .pinForm input { width: 100%; }
@@ -1207,7 +1208,7 @@ const EN = {
   "Nome (opcional)": "Name (optional)",
   "Nome": "Name",
   "Fixar": "Pin",
-  "Fixe o site, o repo ou um app da sala": "Pin the site, the repo or a room app",
+  "Fixar site, repo ou app": "Pin a site, repo or app",
   "Fixar na lateral": "Pin to the sidebar",
   "{via} de {who}": "{who}'s {via}",
   "O Claude de quem pegar a tarefa também vê isso.": "Whoever's Claude picks up the task sees this too.",
@@ -3530,7 +3531,7 @@ function pinsSec() {
   return `<div class="sec pinsSec"><h4>${t("Fixados")}${pinAdding ? "" : `<button type="button" class="ghost pinPlus" id="pinPlus" title="${t("Fixar um link")}" aria-label="${t("Fixar um link")}">${icon("plus", 14)}</button>`}</h4>
       ${pins.map(row).join("")}
       ${pinAdding ? `<form id="pinForm" class="pinForm"><input name="url" required placeholder="${t("Cole um link (site, repo, painel…)")}" aria-label="${t("Link pra fixar")}" enterkeyhint="done" /><input name="title" maxlength="80" placeholder="${t("Nome (opcional)")}" aria-label="${t("Nome")}" /><div class="row"><button type="button" class="ghost" id="pinCancel">${t("Cancelar")}</button><button class="primary">${t("Fixar")}</button></div></form>`
-        : pins.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${icon("pin", 14)} ${t("Fixe o site, o repo ou um app da sala")}</button>`}
+        : pins.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${icon("pin", 14)}<span>${t("Fixar site, repo ou app")}</span></button>`}
     </div>`;
 }
 function wirePins(el) {
