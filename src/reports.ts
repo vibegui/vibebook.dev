@@ -160,6 +160,7 @@ export async function productReport(env: Env, now = Date.now()) {
         yd.sum.threats ? `- Ameaças bloqueadas: ${yd.sum.threats}` : "",
       ].filter(Boolean).join("\n");
       zone += await kindLines(env, zid, start, end, now).catch((e) => `\n\n(requests por tipo indisponíveis: ${String((e as Error).message).slice(0, 120)})`);
+      zone += await bytesLines(env, zid, start, end).catch((e) => `\n\n(banda por rota indisponível: ${String((e as Error).message).slice(0, 120)})`);
     }
     const errRate = wy.requests ? ((wy.errors / wy.requests) * 100).toFixed(2) : "0";
     return [
@@ -194,6 +195,24 @@ async function kindLines(env: Env, zone: string, start: number, end: number, now
   const [y, last] = await Promise.all([kinds(env, zone, start, end), kinds(env, zone, now - 3600_000, now)]);
   const row = (k: { mcp: number; app: number; other: number }) => `Claudes (/mcp) **${k.mcp}** · app (/api, /ws) ${k.app} · páginas e o resto ${k.other}`;
   return ["", "**Requests por hora, por tipo**", `- Ontem (média): ${row(y)}`, `- Última hora: ${row(last)}`].join("\n");
+}
+// Where the bandwidth went: yesterday's paths by bytes sent (ids folded into :id), plus content types, so a spike
+// arrives with its origin instead of a guess.
+const BYTES_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zones(filter: { zoneTag: $zone }) {
+  paths: httpRequestsAdaptiveGroups(limit: 300, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { clientRequestPath } }
+  types: httpRequestsAdaptiveGroups(limit: 6, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { edgeResponseContentTypeName } } } } }`;
+export const foldPath = (p: string) => p.replace(/\/[0-9a-f]{8,}(?=\/|$)/gi, "/:id").replace(/\/avatar\/[^/]+/, "/avatar/:email").replace(/\/upload\/[^/]+/, "/upload/:token");
+async function bytesLines(env: Env, zone: string, from: number, to: number) {
+  const z = (await cfQuery(env, BYTES_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
+  const by = new Map<string, { b: number; n: number }>();
+  for (const r of z.paths ?? []) {
+    const k = foldPath(r.dimensions.clientRequestPath);
+    const o = by.get(k) ?? { b: 0, n: 0 };
+    o.b += r.sum.edgeResponseBytes; o.n += r.count; by.set(k, o);
+  }
+  const top = [...by].sort((a, b) => b[1].b - a[1].b).slice(0, 8);
+  const types = (z.types ?? []).map((r: any) => `${r.dimensions.edgeResponseContentTypeName || "?"} ${bytes(r.sum.edgeResponseBytes)}`).join(" · ");
+  return ["", "", "**Banda por rota** (ontem, top 8)", ...top.map(([k, o]) => `- \`${k}\` **${bytes(o.b)}** · ${o.n} req · ${bytes(o.b / o.n)} cada`), `- Por tipo: ${types}`].join("\n");
 }
 // Quantiles come in microseconds.
 const ms = (us?: number) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);
