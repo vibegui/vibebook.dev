@@ -114,19 +114,29 @@ const WORKER_Q = `query($acc: string!, $from: Time!, $to: Time!) { viewer { acco
 const ZONE_Q = `query($zone: string!, $from: Date!, $to: Date!) { viewer { zones(filter: { zoneTag: $zone }) {
   httpRequests1dGroups(limit: 10, filter: { date_geq: $from, date_lt: $to }) { dimensions { date } sum { requests bytes cachedBytes threats } uniq { uniques } } } } }`;
 
-/** Failures agents reported themselves (MCP report_issue), yesterday vs the week before, by kind. */
+/** Failures agents reported themselves (MCP report_issue): yesterday vs the week before by kind, then the latest texts.
+ *  dims parsed here, not with json_extract: a `what` cut mid-emoji is JSON SQLite refuses (D1 "malformed JSON"). */
 async function issuesLine(env: Env, start: number, end: number) {
-  const q = (a: number, b: number) =>
-    env.DB.prepare(`SELECT json_extract(dims, '$.kind') AS k, count(*) AS n FROM events WHERE name = 'agent_issue' AND ts >= ? AND ts < ? AND ${NOT_TEST} GROUP BY k`).bind(a, b).all<{ k: string; n: number }>();
-  const [y, w] = await Promise.all([q(start, end), q(start - 7 * DAY, start)]);
-  const tot = (r: typeof y) => r.results.reduce((t, x) => t + x.n, 0);
-  const kinds = y.results.map((x) => `${x.k} ${x.n}`).join(", ");
+  const r = await env.DB.prepare(`SELECT ts, dims FROM events WHERE name = 'agent_issue' AND ts >= ? AND ts < ? AND ${NOT_TEST} ORDER BY ts DESC LIMIT 500`)
+    .bind(start - 7 * DAY, Date.now())
+    .all<{ ts: number; dims: string }>();
+  const rows = r.results.map((x) => {
+    let d: { kind?: string; model?: string; what?: string } = {};
+    try {
+      d = JSON.parse(x.dims);
+    } catch {}
+    return { ts: x.ts, kind: d.kind || "other", model: d.model, what: d.what ?? "" };
+  });
+  const y = rows.filter((x) => x.ts >= start && x.ts < end);
+  const w = rows.filter((x) => x.ts < start);
+  const kinds = Object.entries(y.reduce<Record<string, number>>((m, x) => ((m[x.kind] = (m[x.kind] ?? 0) + 1), m), {})).map(([k, n]) => `${k} ${n}`).join(", ");
   // The latest ones (7 days up to now), so they can be read and turned into work: the text is the Claude's own, secret-filtered.
-  const last = await env.DB.prepare(`SELECT ts, json_extract(dims, '$.kind') AS k, json_extract(dims, '$.model') AS m, json_extract(dims, '$.what') AS w FROM events WHERE name = 'agent_issue' AND ts >= ? AND ts < ? AND ${NOT_TEST} ORDER BY ts DESC LIMIT 10`)
-    .bind(end - 7 * DAY, Date.now())
-    .all<{ ts: number; k: string; m: string | null; w: string | null }>();
-  const items = last.results.map((x) => `\n  - ${day(x.ts)} · ${x.k}${x.m ? ` · ${x.m}` : ""}: ${(x.w ?? "").replace(/\s+/g, " ").slice(0, 220)}`).join("");
-  return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(tot(y), tot(w))}${kinds ? ` · ${kinds}` : ""}${items}`;
+  const items = rows
+    .filter((x) => x.ts >= end - 7 * DAY)
+    .slice(0, 10)
+    .map((x) => `\n  - ${day(x.ts)} · ${x.kind}${x.model ? ` · ${x.model}` : ""}: ${x.what.replace(/\s+/g, " ").slice(0, 220)}`)
+    .join("");
+  return `- Falhas reportadas pelos Claudes (\`report_issue\`): ${vs(y.length, w.length)}${kinds ? ` · ${kinds}` : ""}${items}`;
 }
 
 /** Claudes stuck in the terminal (permission, question, plan) that asked in the room, and how many the room answered. */
