@@ -6,28 +6,28 @@
   "manifest": {
     "blocks": {
       "sections": {
-        "site/sections/Hero.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-          "namespace": "site"
-        },
-        "site/sections/Footer.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-          "namespace": "site"
-        },
-        "site/sections/OpenSource.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+        "site/sections/Split.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
           "namespace": "site"
         },
         "site/sections/Final.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
           "namespace": "site"
         },
+        "site/sections/OpenSource.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+          "namespace": "site"
+        },
         "site/sections/Plugin.tsx": {
           "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
           "namespace": "site"
         },
-        "site/sections/Split.tsx": {
-          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+        "site/sections/Hero.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+          "namespace": "site"
+        },
+        "site/sections/Footer.tsx": {
+          "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
           "namespace": "site"
         },
         "site/sections/Steps.tsx": {
@@ -1008,28 +1008,28 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -1310,28 +1310,28 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -1373,28 +1373,28 @@
                 "$ref": "#/definitions/Resolvable"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-              },
-              {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
               },
               {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+              },
+              {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
               },
               {
-                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+              },
+              {
+                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
               },
               {
                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -1432,28 +1432,28 @@
                       "$ref": "#/definitions/Resolvable"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                    },
-                    {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                     },
                     {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                    },
+                    {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
                       "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
                     },
                     {
-                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+                    },
+                    {
+                      "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                      "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
                     },
                     {
                       "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -1521,28 +1521,28 @@
                                 "$ref": "#/definitions/Resolvable"
                               },
                               {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-                              },
-                              {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-                              },
-                              {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
                               },
                               {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
                               },
                               {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+                              },
+                              {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
                                 "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
                               },
                               {
-                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+                              },
+                              {
+                                "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+                                "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
                               },
                               {
                                 "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -1663,6 +1663,465 @@
               "website/flags/multivariate/image.ts"
             ],
             "default": "website/flags/multivariate/image.ts"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "title": "Nome no editor (só pra você achar a seção)"
+          },
+          "variant": {
+            "type": "string",
+            "nullable": true,
+            "title": "Estilo (classe: shape-sec, epics, access, lead, trust ou vazio)"
+          },
+          "id": {
+            "type": "string",
+            "nullable": true,
+            "title": "Âncora (id)"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título",
+            "format": "rich-text"
+          },
+          "paragraphs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "title": "Parágrafos",
+            "format": "rich-text"
+          },
+          "chips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "title": "Selos (pílulas)"
+          },
+          "rails": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string",
+                  "title": "Ícone (um caractere)"
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                }
+              },
+              "required": [
+                "icon",
+                "title",
+                "text"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Lista com ícones"
+          },
+          "cta": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão"
+          },
+          "art": {
+            "type": "string",
+            "nullable": true,
+            "title": "Ilustração à direita (HTML)",
+            "format": "textarea"
+          },
+          "after": {
+            "type": "string",
+            "nullable": true,
+            "title": "Faixa abaixo (HTML, opcional)",
+            "format": "textarea"
+          }
+        },
+        "title": "{{{name}}}"
+      },
+      "c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=": {
+        "title": "site/sections/Split.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Split.tsx"
+            ],
+            "default": "site/sections/Split.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título (parte branca)"
+          },
+          "titleEm": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título (parte amarela)"
+          },
+          "primary": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão principal"
+          },
+          "secondary": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão secundário"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=": {
+        "title": "site/sections/Final.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Final.tsx"
+            ],
+            "default": "site/sections/Final.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título",
+            "format": "rich-text"
+          },
+          "text": {
+            "type": "string",
+            "nullable": true,
+            "title": "Texto"
+          },
+          "bullets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true,
+            "title": "Lista"
+          },
+          "cta": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão (star no GitHub)"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true,
+            "title": "Código à direita (HTML dentro do <code>)",
+            "format": "textarea"
+          }
+        }
+      },
+      "c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==": {
+        "title": "site/sections/OpenSource.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/OpenSource.tsx"
+            ],
+            "default": "site/sections/OpenSource.tsx"
+          }
+        }
+      },
+      "c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props": {
+        "type": "object",
+        "properties": {
+          "kicker": {
+            "type": "string",
+            "nullable": true,
+            "title": "Rótulo"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "title": "Título",
+            "format": "rich-text"
+          },
+          "lede": {
+            "type": "string",
+            "nullable": true,
+            "title": "Texto",
+            "format": "rich-text"
+          },
+          "askLabel": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: rótulo"
+          },
+          "ask": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: a frase pro Claude"
+          },
+          "copyLabel": {
+            "type": "string",
+            "nullable": true,
+            "title": "Card: botão copiar"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "title": "Título"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                },
+                "code": {
+                  "type": "string",
+                  "nullable": true,
+                  "title": "Comando (opcional)"
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "titleBy": "title"
+            },
+            "nullable": true,
+            "title": "Passos (opcional)"
+          },
+          "cta": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "title": "Texto"
+              },
+              "href": {
+                "type": "string",
+                "title": "Link"
+              }
+            },
+            "required": [
+              "label",
+              "href"
+            ],
+            "titleBy": "label",
+            "nullable": true,
+            "title": "Botão"
+          },
+          "cwd": {
+            "type": "string",
+            "nullable": true,
+            "title": "Terminal: pasta do projeto"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "me",
+                    "ok",
+                    "bell",
+                    "ai",
+                    "sep"
+                  ],
+                  "title": "Tipo",
+                  "description": "me = o que você digita; ok = resposta do Claude; bell = aviso da sala; ai = o Claude agindo; sep = separador"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto"
+                }
+              },
+              "required": [
+                "kind",
+                "text"
+              ],
+              "titleBy": "text"
+            },
+            "nullable": true,
+            "title": "Terminal: linhas"
+          },
+          "room": {
+            "type": "string",
+            "nullable": true,
+            "title": "Sala: nome"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "who": {
+                  "type": "string",
+                  "title": "Quem (iniciais no avatar)"
+                },
+                "name": {
+                  "type": "string",
+                  "title": "Nome"
+                },
+                "agent": {
+                  "type": "boolean",
+                  "nullable": true,
+                  "title": "É agent?"
+                },
+                "text": {
+                  "type": "string",
+                  "title": "Texto",
+                  "format": "rich-text"
+                }
+              },
+              "required": [
+                "who",
+                "name",
+                "text"
+              ],
+              "titleBy": "text"
+            },
+            "nullable": true,
+            "title": "Sala: mensagens"
+          },
+          "seen": {
+            "type": "string",
+            "nullable": true,
+            "title": "Sala: rodapé (lido por…)"
+          }
+        },
+        "title": "{{{kicker}}}"
+      },
+      "c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4": {
+        "title": "site/sections/Plugin.tsx",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
+          }
+        ],
+        "required": [
+          "__resolveType"
+        ],
+        "properties": {
+          "__resolveType": {
+            "type": "string",
+            "enum": [
+              "site/sections/Plugin.tsx"
+            ],
+            "default": "site/sections/Plugin.tsx"
           }
         }
       },
@@ -1875,465 +2334,6 @@
           }
         }
       },
-      "c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título",
-            "format": "rich-text"
-          },
-          "text": {
-            "type": "string",
-            "nullable": true,
-            "title": "Texto"
-          },
-          "bullets": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true,
-            "title": "Lista"
-          },
-          "cta": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão (star no GitHub)"
-          },
-          "code": {
-            "type": "string",
-            "nullable": true,
-            "title": "Código à direita (HTML dentro do <code>)",
-            "format": "textarea"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==": {
-        "title": "site/sections/OpenSource.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/OpenSource.tsx"
-            ],
-            "default": "site/sections/OpenSource.tsx"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título (parte branca)"
-          },
-          "titleEm": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título (parte amarela)"
-          },
-          "primary": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão principal"
-          },
-          "secondary": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão secundário"
-          }
-        }
-      },
-      "c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=": {
-        "title": "site/sections/Final.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Final.tsx"
-            ],
-            "default": "site/sections/Final.tsx"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props": {
-        "type": "object",
-        "properties": {
-          "kicker": {
-            "type": "string",
-            "nullable": true,
-            "title": "Rótulo"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título",
-            "format": "rich-text"
-          },
-          "lede": {
-            "type": "string",
-            "nullable": true,
-            "title": "Texto",
-            "format": "rich-text"
-          },
-          "askLabel": {
-            "type": "string",
-            "nullable": true,
-            "title": "Card: rótulo"
-          },
-          "ask": {
-            "type": "string",
-            "nullable": true,
-            "title": "Card: a frase pro Claude"
-          },
-          "copyLabel": {
-            "type": "string",
-            "nullable": true,
-            "title": "Card: botão copiar"
-          },
-          "steps": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                },
-                "code": {
-                  "type": "string",
-                  "nullable": true,
-                  "title": "Comando (opcional)"
-                }
-              },
-              "required": [
-                "title",
-                "text"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Passos (opcional)"
-          },
-          "cta": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão"
-          },
-          "cwd": {
-            "type": "string",
-            "nullable": true,
-            "title": "Terminal: pasta do projeto"
-          },
-          "lines": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "me",
-                    "ok",
-                    "bell",
-                    "ai",
-                    "sep"
-                  ],
-                  "title": "Tipo",
-                  "description": "me = o que você digita; ok = resposta do Claude; bell = aviso da sala; ai = o Claude agindo; sep = separador"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                }
-              },
-              "required": [
-                "kind",
-                "text"
-              ],
-              "titleBy": "text"
-            },
-            "nullable": true,
-            "title": "Terminal: linhas"
-          },
-          "room": {
-            "type": "string",
-            "nullable": true,
-            "title": "Sala: nome"
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "who": {
-                  "type": "string",
-                  "title": "Quem (iniciais no avatar)"
-                },
-                "name": {
-                  "type": "string",
-                  "title": "Nome"
-                },
-                "agent": {
-                  "type": "boolean",
-                  "nullable": true,
-                  "title": "É agent?"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto",
-                  "format": "rich-text"
-                }
-              },
-              "required": [
-                "who",
-                "name",
-                "text"
-              ],
-              "titleBy": "text"
-            },
-            "nullable": true,
-            "title": "Sala: mensagens"
-          },
-          "seen": {
-            "type": "string",
-            "nullable": true,
-            "title": "Sala: rodapé (lido por…)"
-          }
-        },
-        "title": "{{{kicker}}}"
-      },
-      "c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4": {
-        "title": "site/sections/Plugin.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Plugin.tsx"
-            ],
-            "default": "site/sections/Plugin.tsx"
-          }
-        }
-      },
-      "c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "nullable": true,
-            "title": "Nome no editor (só pra você achar a seção)"
-          },
-          "variant": {
-            "type": "string",
-            "nullable": true,
-            "title": "Estilo (classe: shape-sec, epics, access, lead, trust ou vazio)"
-          },
-          "id": {
-            "type": "string",
-            "nullable": true,
-            "title": "Âncora (id)"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true,
-            "title": "Título",
-            "format": "rich-text"
-          },
-          "paragraphs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true,
-            "title": "Parágrafos",
-            "format": "rich-text"
-          },
-          "chips": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true,
-            "title": "Selos (pílulas)"
-          },
-          "rails": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "icon": {
-                  "type": "string",
-                  "title": "Ícone (um caractere)"
-                },
-                "title": {
-                  "type": "string",
-                  "title": "Título"
-                },
-                "text": {
-                  "type": "string",
-                  "title": "Texto"
-                }
-              },
-              "required": [
-                "icon",
-                "title",
-                "text"
-              ],
-              "titleBy": "title"
-            },
-            "nullable": true,
-            "title": "Lista com ícones"
-          },
-          "cta": {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string",
-                "title": "Texto"
-              },
-              "href": {
-                "type": "string",
-                "title": "Link"
-              }
-            },
-            "required": [
-              "label",
-              "href"
-            ],
-            "titleBy": "label",
-            "nullable": true,
-            "title": "Botão"
-          },
-          "art": {
-            "type": "string",
-            "nullable": true,
-            "title": "Ilustração à direita (HTML)",
-            "format": "textarea"
-          },
-          "after": {
-            "type": "string",
-            "nullable": true,
-            "title": "Faixa abaixo (HTML, opcional)",
-            "format": "textarea"
-          }
-        },
-        "title": "{{{name}}}"
-      },
-      "c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=": {
-        "title": "site/sections/Split.tsx",
-        "type": "object",
-        "allOf": [
-          {
-            "$ref": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
-          }
-        ],
-        "required": [
-          "__resolveType"
-        ],
-        "properties": {
-          "__resolveType": {
-            "type": "string",
-            "enum": [
-              "site/sections/Split.tsx"
-            ],
-            "default": "site/sections/Split.tsx"
-          }
-        }
-      },
       "c3JjL3NlY3Rpb25zL1N0ZXBzLnRzeA==@Props": {
         "type": "object",
         "properties": {
@@ -2401,28 +2401,28 @@
             "$ref": "#/definitions/Resolvable"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
@@ -2456,28 +2456,28 @@
             "$ref": "#/definitions/Resolvable"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
-          },
-          {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9GaW5hbC50c3g=",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0ZpbmFsLnRzeA==@Props"
           },
           {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9PcGVuU291cmNlLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL09wZW5Tb3VyY2UudHN4@Props"
+          },
+          {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9QbHVnaW4udHN4",
             "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1BsdWdpbi50c3g=@Props"
           },
           {
-            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TcGxpdC50c3g=",
-            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL1NwbGl0LnRzeA==@Props"
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9IZXJvLnRzeA==",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0hlcm8udHN4@Props"
+          },
+          {
+            "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9Gb290ZXIudHN4",
+            "inputSchema": "#/definitions/c3JjL3NlY3Rpb25zL0Zvb3Rlci50c3g=@Props"
           },
           {
             "$ref": "#/definitions/c2l0ZS9zZWN0aW9ucy9TdGVwcy50c3g=",
