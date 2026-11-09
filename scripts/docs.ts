@@ -120,10 +120,12 @@ const T = {
 const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>`;
 
 const CSS = `
-.dz { display: grid; grid-template-columns: 200px 1fr; gap: 48px; width: min(1080px, 100% - 48px); margin: 0 auto; align-items: start; }
+/* One left edge for logo, header and index: everything on nav's 1120px column. */
+header.top .w { width: min(1120px, 100% - 48px); }
+.dz { display: grid; grid-template-columns: 200px 1fr; gap: 48px; width: min(1120px, 100% - 48px); margin: 0 auto; align-items: start; }
 .dz > * { min-width: 0; }
-.dz-toc { position: sticky; top: 84px; font-size: 14px; }
-.dz-toc p { color: var(--dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; }
+.dz-toc { position: sticky; top: 84px; font-size: 14px; margin-left: -12px; }
+.dz-toc p { padding-left: 12px; color: var(--dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; }
 .dz-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: c; }
 .dz-toc a { display: block; color: var(--mute); text-decoration: none; padding: 6px 10px; border-radius: 9px; border-left: 2px solid transparent; }
 .dz-toc a:hover { color: var(--ink); background: var(--panel); }
@@ -132,6 +134,7 @@ const CSS = `
 .dz-ch h2 { font-size: clamp(28px, 4vw, 38px); }
 .dz-ch .lede2 { color: var(--soft); margin: 10px 0 22px; max-width: 620px; }
 .dz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.dz-grid.steps { grid-template-columns: repeat(3, 1fr); }
 .dz-f { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 16px; display: flex; flex-direction: column; gap: 8px; transition: border-color .2s, transform .2s; }
 .dz-f:hover { border-color: var(--line2); transform: translateY(-2px); }
 .dz-f h3 { font: 600 18px/1.25 var(--sans); letter-spacing: -0.01em; }
@@ -147,8 +150,10 @@ const CSS = `
 .dz-end .btn { margin-top: 18px; }
 header.top .kick { color: var(--sun); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; }
 @media (max-width: 860px) {
-  .dz { grid-template-columns: 1fr; gap: 8px; width: calc(100% - 32px); }
-  .dz-toc { top: 0; z-index: 5; margin: 0 -16px; padding: 10px 16px; background: rgb(10 13 19 / .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .dz { grid-template-columns: 1fr; gap: 8px; width: calc(100% - 48px); }
+  .dz-grid.steps { grid-template-columns: 1fr; }
+  .dz-toc { top: 0; z-index: 5; margin: 0 -24px; padding: 10px 24px; background: rgb(10 13 19 / .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .dz-toc { margin-left: -24px; }
   .dz-toc p { display: none; }
   .dz-toc ol { display: flex; overflow-x: auto; gap: 6px; scrollbar-width: none; }
   .dz-toc a { white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
@@ -176,7 +181,7 @@ function page(lang: "pt" | "en") {
       (ch) => `<section class="dz-ch" id="${ch.id}">
   <h2>${esc(g(ch.t))}</h2>
   <p class="lede2">${esc(g(ch.lede))}</p>
-  <div class="dz-grid">
+  <div class="dz-grid${ch.id === "comecar" ? " steps" : ""}">
 ${ch.feats.map((f) => `    <div class="dz-f"><h3>${esc(g(f.t))}</h3><p>${esc(g(f.d))}</p>${f.ui ? `<div class="dz-ui" aria-hidden="true">${f.ui.map(([k, t]) => `<span${k ? ` class="${k}"` : ""}>${esc(g(t))}</span>`).join("")}</div>` : ""}</div>`).join("\n")}
   </div>
 </section>`,
