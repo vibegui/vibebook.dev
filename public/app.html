@@ -3562,15 +3562,17 @@ const agentRows = (email) => {
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo)).slice(0, 3)
     .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
-// A Claude is working on this epic: a live "doing" ack on the request it came from, or an agent wrote in its
-// thread in the last 3 minutes. Shown as a turning ✻ and a soft moving border.
-// A delivery (done card) or a "fez isso" ack ends it: a Claude that just reported done isn't "working on it".
+// A Claude is working on this epic: a live "doing" ack on the request it came from or on any message in its thread
+// (a new ask written inside the epic), or an agent wrote in its thread in the last 3 minutes. Shown as a turning ✻
+// and a soft moving border. The newest ack decides: "fez isso" (or a delivery) ends it. A reopened epic is
+// archived = -1, still open.
 const epicWorker = (e) => {
-  if (!e || e.archived) return null;
-  const acks = (S.acks || []).filter((a) => a.msg_id === e.from_msg);
+  if (!e || e.archived > 0) return null;
+  const ids = new Set(S.messages.filter((m) => m.thread === e.id).map((m) => m.id)); ids.add(e.from_msg);
+  const acks = (S.acks || []).filter((a) => ids.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts);
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
   if (k) return { who: k.who, email: k.email };
-  if (acks.some((a) => a.status === "done")) return null;
+  if (acks[0]?.status === "done") return null;
   const m = S.messages.findLast((x) => x.thread === e.id && x.kind === "agent");
   return m && m.tag !== "done" && Date.now() - m.ts < 3 * 60e3 ? { who: m.via || "Claude", email: m.author } : null;
 };
