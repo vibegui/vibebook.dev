@@ -1306,6 +1306,11 @@ export class Book extends DurableObject<Env> {
     if (!src) this.epicsChanged();
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
+      // Asked inside an archived epic's thread, the request reopened it; it became its own epic, so the old one goes
+      // back to archived when nothing is open there (else it sat reopened at 5/5 forever).
+      const from = this.sql.exec<{ thread: string }>(`SELECT thread FROM messages WHERE id = ?`, src).toArray()[0]?.thread;
+      if (from && from !== "main" && from !== id && !this.sql.exec(`SELECT 1 FROM tasks WHERE epic_id = ? AND COALESCE(done, 0) = 0`, from).toArray().length)
+        this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ? AND archived = -1`, from);
       this.epicsChanged();
       // Opening an epic for a request is taking it: the request shows "X está fazendo isso".
       if (agent && !backlog) this.agentAck(bookId, agent, email, via || "agent", Number(src));

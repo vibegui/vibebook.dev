@@ -3635,7 +3635,9 @@ const agentRows = (email) => {
 // archived = -1, still open.
 const epicWorker = (e) => {
   if (!e || e.archived > 0) return null;
-  const ids = new Set(allMsgs().filter((m) => m.thread === e.id).map((m) => m.id)); ids.add(e.from_msg);
+  // A message in this thread that became another epic (a branch) is that epic's work, not this one's.
+  const branched = new Set((S.epics || []).filter((x) => x.id !== e.id).map((x) => x.from_msg));
+  const ids = new Set(allMsgs().filter((m) => m.thread === e.id && !branched.has(m.id)).map((m) => m.id)); ids.add(e.from_msg);
   const acks = (S.acks || []).filter((a) => ids.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts);
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
   if (k) return { who: k.who, email: k.email };
