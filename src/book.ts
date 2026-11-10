@@ -561,7 +561,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue" | "notice"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
     // A reply points at a message of this room; anything else is dropped rather than refused.
     const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
@@ -869,7 +869,7 @@ export class Book extends DurableObject<Env> {
   // new round closes itself too.
   reopenIfArchived(thread: string) {
     if (thread === "main" || !this.sql.exec(`UPDATE epics SET archived = -1 WHERE id = ? AND archived = 1`, thread).rowsWritten) return;
-    this.addMessage(thread, "ai", this.en ? "↩ I reopened this epic to continue. When the new tasks are done, it archives itself again." : "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.", { quiet: true });
+    this.addMessage(thread, "ai", this.en ? "↩ I reopened this epic to continue. When the new tasks are done, it archives itself again." : "↩ Reabri este épico pra continuar. Quando as tarefas novas estiverem feitas, ele se arquiva de novo.", { tag: "notice", quiet: true });
     this.epicsChanged();
   }
   rearm(epicId: string) {
@@ -1675,7 +1675,7 @@ export class Book extends DurableObject<Env> {
         const who = this.sql.exec<{ author: string }>(`SELECT author FROM messages WHERE thread = ? AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).one().author;
         this.addMessage(e.id, "ai", this.en
           ? `${at(who)}, every task here is done, but the epic closes only with proof: a delivery (done) saying what was tested, with a screenshot when there's something to see. Post it and I'll archive it.`
-          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) dizendo o que foi testado, com print quando tem algo pra ver. Posta que eu arquivo.`, { quiet: true });
+          : `${at(who)}, as tarefas daqui estão feitas, mas o épico só fecha com prova: uma entrega (done) dizendo o que foi testado, com print quando tem algo pra ver. Posta que eu arquivo.`, { tag: "notice", quiet: true });
         continue;
       }
       const del = this.sql.exec<{ id: number; author: string; ts: number }>(`SELECT id, author, ts FROM messages WHERE thread = ? AND tag = 'done' AND kind = 'agent' ORDER BY id DESC LIMIT 1`, e.id).toArray()[0];
@@ -1686,7 +1686,7 @@ export class Book extends DurableObject<Env> {
           const list = open.map((t) => t.title).slice(0, 5).join("; ");
           this.addMessage(e.id, "ai", this.en
             ? `${at(del.author)}, there was a delivery here, but ${open.length === 1 ? "a task is still open" : `${open.length} tasks are still open`}: ${list}. If it's finished, mark it done (or tell me "all done"); if something's missing, say what.`
-            : `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`, { quiet: true });
+            : `${at(del.author)}, teve entrega aqui, mas ${open.length === 1 ? "segue aberta" : `seguem abertas ${open.length} tarefas`}: ${list}. Se já terminou, marca feito (ou me diz "tudo feito"); se falta algo, diz o quê.`, { tag: "notice", quiet: true });
           continue;
         }
         next = Math.min(next, del.ts + AFTER);
@@ -1700,7 +1700,7 @@ export class Book extends DurableObject<Env> {
       const items = stuck.map((t) => `${t.title} (${(this.en ? STATUS_LABEL_EN : STATUS_LABEL)[t.status]})`).slice(0, 5).join("; ");
       this.addMessage(e.id, "ai", this.en
         ? `${owners.map(at).join(" ")}, nothing new here for over a day: ${items}. Still going? If it's finished, mark it done; if it's stuck, say what's missing.`
-        : `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${items}. Segue? Se terminou, marca feito; se travou, diz o que falta.`, { quiet: true });
+        : `${owners.map(at).join(" ")}, sem novidade aqui há mais de um dia: ${items}. Segue? Se terminou, marca feito; se travou, diz o que falta.`, { tag: "notice", quiet: true });
       next = Math.min(next, now + STALE);
     }
     if (next < Infinity) await this.wakeAt(next);

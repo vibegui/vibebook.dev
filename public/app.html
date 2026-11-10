@@ -607,6 +607,7 @@
   .msg.remMsg .txt { white-space: normal; background: var(--ai-bg); padding: 12px 16px; border-radius: 12px; margin: 6px 0 0 10px; font-size: 14px; }
   .msg.remMsg .remRuns { display: block; margin: 6px 0 0 10px; color: var(--mute); font-size: 12px; }
   .msg.remMsg .mfoot { margin: 0 0 0 10px; }
+  .msg.noticeMsg .vibeMark { flex: none; color: var(--accent); font-size: 13px; line-height: 1; }
   .msg.issueMsg summary svg { color: var(--wait-ink); }
   .msg.issueMsg .issueList { display: grid; gap: 10px; max-height: 360px; overflow: auto; }
   .msg.issueMsg .iss small { display: block; color: var(--mute); font-size: 12px; } .msg.issueMsg .iss small p { display: inline; margin: 0; }
@@ -4384,11 +4385,20 @@ function remHtml(m) {
   const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
   return `<div class="msg remMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details></div></div>`;
 }
+// @vibe's routine lines (archived, reopened, proof ask, nudges) read as one quiet line too; click opens the full text.
+// Older reopen lines have no tag, so they're matched by their opening.
+const isNotice = (m) => m.author === "ai" && (m.tag === "notice" || m.tag === "done" || /^↩ (Reabri|I reopened)/.test(m.text || ""));
+function noticeHtml(m) {
+  const one = (m.text || "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+  const day = new Date(m.ts).toDateString() === new Date().toDateString() ? hhmm(m.ts) : `${new Date(m.ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(m.ts)}`;
+  return `<div class="msg remMsg noticeMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary><span class="vibeMark" aria-hidden="true">✦</span><span class="remT">${mentions(esc(one))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day}</span></summary><div class="txt">${mentions(md(m.text || ""))}</div></details></div></div>`;
+}
 // Hover actions (Copiar / Responder) shared by messages and the quiet reminder/issue lines.
 const mact = (id) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-reply="${id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>`;
 const msgHtml = (m, prev) => {
   if (m.tag === "reminder") return remHtml(m);
   if (m.tag === "issue") return issueHtml(m);
+  if (isNotice(m)) return noticeHtml(m);
   const cont = continues(prev, m);
   const txt = m.author === "ai" ? (m.text ? mentions(md(m.text)) : m.poll ? "" : `<span class="typing">${t("pensando…")}</span>`) : m.text ? mentions(m.kind === "agent" ? md(m.text) : linkify(esc(m.text))) : "";
   return `
