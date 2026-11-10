@@ -14,7 +14,7 @@ import { mountSandbox } from "./sandbox";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
 import { renderApp, withBridge } from "./embed";
-import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, storeFile, waitsFor } from "./rooms";
+import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, searchRooms, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 export { Person } from "./person";
@@ -504,6 +504,16 @@ app.get("/api/archived", async (c) => {
 });
 
 // The agents of this room's members: model/client, last seen, and whether they're listening to this room now.
+// Search everything of yours (⌘K): messages, epics (archived too) and attached files across your rooms.
+app.get("/api/search", async (c) => {
+  const email = c.get("email");
+  const q = (c.req.query("q") ?? "").trim().slice(0, 120);
+  if (q.length < 2) return c.json({ rooms: 0, epics: [], messages: [] });
+  if (!(await c.env.AGENT_LIMIT.limit({ key: `search:${email}` })).success) return c.json({ error: "rate limited" }, 429);
+  const out = await searchRooms(c.env, email, q);
+  c.executionCtx.waitUntil(track(c.env, "search", { user: email, dims: { via: "app", hits: out.messages.length + out.epics.length, rooms: out.rooms } }));
+  return c.json(out);
+});
 app.get("/api/books/:id/agents", async (c) => {
   const id = c.req.param("id");
   const now = Date.now();

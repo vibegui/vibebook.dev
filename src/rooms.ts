@@ -159,3 +159,31 @@ export const waitsFor = async (db: D1Database, email: string, bookId?: string) =
       .bind(email, bookId ?? null, Date.now() - 15 * 60e3) // a hook question lives ≤150s; a row it left behind (killed) expires
       .all<{ book_id: string; room: string; ref: string; thread: string; topic: string | null; author: string; author_name: string | null; text: string; ts: number }>()
   ).results;
+
+// Search across the person's rooms (⌘K and MCP search): the newest-opened 30 rooms, each asked in parallel
+// (Book.search), merged newest first. Worst case per call: 30 DO calls, no network or model call behind them.
+// ponytail: fan-out over rooms; a D1 index of messages if people get hundreds of rooms.
+export async function searchRooms(env: Env, email: string, q: string, room?: string) {
+  const rooms = (
+    await env.DB.prepare(
+      `SELECT b.id, b.title FROM books b JOIN members m ON m.book_id = b.id
+       WHERE m.email = ?1 AND m.archived_at IS NULL AND (?2 IS NULL OR b.id = ?2)
+       ORDER BY coalesce(m.opened_at, 0) DESC, b.updated_at DESC LIMIT 30`,
+    )
+      .bind(email, room ?? null)
+      .all<{ id: string; title: string }>()
+  ).results;
+  const per = await Promise.all(
+    rooms.map(async (r) => {
+      try {
+        const out = await bookStub(env, r.id).search(r.id, q, room ? 20 : 8);
+        return { ...out, room: r };
+      } catch {
+        return { messages: [], epics: [], room: r, failed: true };
+      }
+    }),
+  );
+  const messages = per.flatMap((p) => p.messages.map((m) => ({ ...m, room_id: p.room.id, room: p.room.title }))).sort((a, b) => b.ts - a.ts).slice(0, 30);
+  const epics = per.flatMap((p) => p.epics.map((e) => ({ ...e, room_id: p.room.id, room: p.room.title }))).sort((a, b) => b.ts - a.ts).slice(0, 15);
+  return { rooms: rooms.length, failed: per.filter((p) => "failed" in p).length, epics, messages };
+}

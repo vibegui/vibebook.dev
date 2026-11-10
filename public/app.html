@@ -1221,6 +1221,14 @@
   .swDlg #swList { display: grid; gap: 2px; max-height: 50vh; overflow: auto; border-top: 1px solid var(--line); padding-top: 6px; }
   .swDlg #swList a { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; text-decoration: none; color: var(--ink); }
   .swDlg #swList a:hover { background: var(--hover); }
+  .swDlg .swSec { margin: 8px 10px 2px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mute); }
+  .swDlg .swHint { padding: 8px 10px; margin: 0; font-size: 13px; }
+  .swDlg #swList a[data-hit] { align-items: flex-start; }
+  .swDlg #swList a[data-hit] > span:last-child { display: grid; min-width: 0; gap: 1px; }
+  .swDlg #swList a[data-hit] b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .swDlg #swList a[data-hit] small { margin: 0; text-align: left; color: var(--mute); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .swDlg .hitTxt { font-size: 13.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .swDlg .hitIco { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; background: var(--hover); color: var(--mute); font-size: 13px; margin-top: 1px; }
   .swDlg #swList a.sel { background: var(--mention-bg); color: var(--mention-ink); }
   .swDlg #swList a.sel small { color: inherit; opacity: .75; }
   .swDlg #swList .tile { opacity: 1; width: 26px; height: 26px; font-size: 11px; border-radius: 8px; }
@@ -1533,6 +1541,10 @@ const EN = {
   "Esse épico não existe mais nesta sala.": "That epic is no longer in this room.",
   "Novo épico: escreva o título…": "New epic: type its title…",
   "Épicos": "Epics",
+  "Buscar salas, conversas e arquivos…": "Search rooms, conversations and files…",
+  "Buscando nas conversas…": "Searching conversations…",
+  "Nada nas conversas.": "Nothing in the conversations.",
+  "Nas conversas": "In conversations",
   "editar": "edit",
   "Buscar": "Search",
   "Exigir Face ID ao abrir": "Require Face ID to open",
@@ -2068,22 +2080,59 @@ $sw.addEventListener("mouseleave", () => (swTip.hidden = true));
 $sw.addEventListener("click", () => (swTip.hidden = true));
 // ⌘K / Ctrl+K: type to jump to a room.
 const swDlg = document.getElementById("swDlg"), swQ = document.getElementById("swQ"), swList = document.getElementById("swList");
-$sw.setAttribute("aria-label", t("Seus vibebooks")); swDlg.setAttribute("aria-label", t("Ir para um vibebook")); swQ.placeholder = t("Ir para um vibebook…");
+$sw.setAttribute("aria-label", t("Seus vibebooks")); swDlg.setAttribute("aria-label", t("Ir para um vibebook")); swQ.placeholder = t("Buscar salas, conversas e arquivos…");
 let swPick = 0;
 function renderSwitchList() {
   const q = fold(swQ.value);
   const list = (myBooks || []).filter((b) => !q || fold(b.title).includes(q) || fold(b.folder || "").includes(q)).slice(0, 12);
   swPick = Math.min(swPick, Math.max(0, list.length - 1));
-  swList.innerHTML = list.map((b, i) => `<a href="/b/${b.id}" data-nav class="${i === swPick ? "sel" : ""}" role="option">${tile(b, "")}<span>${esc(b.title)}</span>${b.folder ? `<small>${esc(b.folder)}</small>` : ""}</a>`).join("") || `<p class="muted" style="padding:8px 10px;margin:0">${t("Nada com esse nome.")}</p>`;
+  const hits = swHits && swHits.q === swQ.value.trim() ? swHits : null;
+  swList.innerHTML = (list.map((b, i) => `<a href="/b/${b.id}" data-nav class="${i === swPick ? "sel" : ""}" role="option">${tile(b, "")}<span>${esc(b.title)}</span>${b.folder ? `<small>${esc(b.folder)}</small>` : ""}</a>`).join("") || (hits?.epics.length || hits?.messages.length ? "" : `<p class="muted" style="padding:8px 10px;margin:0">${t("Nada com esse nome.")}</p>`)) + swHitsHtml(hits);
 }
-function openSwitch() { if (!myBooks) return; swQ.value = ""; swPick = 0; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
-swQ.oninput = () => { swPick = 0; renderSwitchList(); };
+// Everything else that matches (⌘K, Nov 2026, "memória do vibebook"): epics (archived too), messages and their files
+// across your rooms, from /api/search (debounced). A hit opens its room on the thread and the message.
+let swHits = null, swTimer = 0;
+const swHitsHtml = (h) => {
+  if (!h) return swQ.value.trim().length >= 2 ? `<p class="muted swHint">${t("Buscando nas conversas…")}</p>` : "";
+  const day = (ts) => new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" });
+  const ep = h.epics.map((e) => `<a href="/b/${e.room_id}?t=${e.id}" data-hit="${e.room_id}|${e.id}|" role="option"><span class="hitIco">${e.archived ? "✓" : "#"}</span><span><b>${esc(e.title)}</b><small>${esc(e.room)}${e.archived ? ` · ${t("arquivado")}` : ""} · ${day(e.ts)}</small></span></a>`).join("");
+  const ms = h.messages.map((m) => `<a href="/b/${m.room_id}${m.thread !== "main" ? `?t=${m.thread}` : ""}#m${m.id}" data-hit="${m.room_id}|${m.thread}|${m.id}" role="option"><span class="hitIco">${m.files.length ? icon("paperclip", 14) : m.by_agent ? "✻" : "“"}</span><span><span class="hitTxt">${esc(m.snippet || m.files.map((f) => f.name).join(", "))}</span><small>${esc(m.room)}${m.topic ? ` › ${esc(m.topic)}` : ""} · ${esc(m.by_agent ? m.via || "Claude" : name(m.author))} · ${day(m.ts)}${m.files.length && m.snippet ? ` · ${esc(m.files.map((f) => f.name).join(", "))}` : ""}</small></span></a>`).join("");
+  if (!ep && !ms) return `<p class="muted swHint">${t("Nada nas conversas.")}</p>`;
+  return `${ep ? `<p class="swSec">${t("Épicos")}</p>${ep}` : ""}${ms ? `<p class="swSec">${t("Nas conversas")}</p>${ms}` : ""}`;
+};
+function swSearch() {
+  clearTimeout(swTimer);
+  const q = swQ.value.trim();
+  if (q.length < 2) { swHits = null; return; }
+  swTimer = setTimeout(async () => {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`).catch(() => null);
+    const j = r?.ok ? await r.json() : null;
+    if (swQ.value.trim() !== q) return;
+    swHits = j ? { q, epics: j.epics || [], messages: j.messages || [] } : { q, epics: [], messages: [] };
+    renderSwitchList();
+  }, 250);
+}
+function openSwitch() { if (!myBooks) return; swQ.value = ""; swPick = 0; swHits = null; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
+swQ.oninput = () => { swPick = 0; swSearch(); renderSwitchList(); };
 swQ.onkeydown = (e) => {
   const n = swList.querySelectorAll("a").length;
   if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); swPick = (swPick + (e.key === "ArrowDown" ? 1 : n - 1)) % Math.max(n, 1); renderSwitchList(); }
   if (e.key === "Enter") { e.preventDefault(); swList.querySelectorAll("a")[swPick]?.click(); }
 };
-swList.onclick = () => swDlg.close();
+swList.onclick = (e) => {
+  const a = e.target.closest("a[data-hit]");
+  swDlg.close();
+  if (!a) return;
+  e.preventDefault();
+  const [room, th, msg] = a.dataset.hit.split("|");
+  history.pushState(null, "", a.getAttribute("href"));
+  route();
+  if (!msg) return;
+  // Wait for the room (cached rooms draw at once, a first visit loads), then land on the message.
+  let n = 0;
+  const land = () => { if (S?.id === room && S.messages?.length) return goToMsg(Number(msg)); if (++n < 25) setTimeout(land, 200); };
+  setTimeout(land, 150);
+};
 swDlg.onclick = (e) => { if (e.target === swDlg) swDlg.close(); };
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && document.body.classList.contains("has-sw")) { e.preventDefault(); swDlg.open ? swDlg.close() : openSwitch(); } });
 

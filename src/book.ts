@@ -1407,6 +1407,39 @@ export class Book extends DurableObject<Env> {
     this.broadcast({ t: "meta", title });
     return { ok: true, title };
   }
+  // Search this room (Nov 2026, "memória do vibebook"): messages by text or attached file name, epics (archived too)
+  // by title or doc. Each term must appear (AND), case-insensitive for ASCII. The caller (/api/search, MCP search)
+  // fans out over the person's rooms.
+  // ponytail: LIKE scan over the room's messages; FTS5 if a room's history makes it slow.
+  search(bookId: string, q: string, limit = 8) {
+    this.bind(bookId);
+    const terms = q.toLowerCase().split(/\s+/).filter((w) => w.length > 1).slice(0, 6);
+    if (!terms.length) return { messages: [], epics: [] };
+    const like = (col: string) => terms.map(() => `lower(${col}) LIKE ? ESCAPE '\\'`).join(" AND ");
+    const args = terms.map((w) => `%${w.replace(/[\\%_]/g, (c) => `\\${c}`)}%`);
+    const titles = new Map(this.sql.exec<{ id: string; title: string }>(`SELECT id, title FROM epics`).toArray().map((e) => [e.id, e.title]));
+    const messages = this.sql
+      .exec<{ id: number; thread: string; author: string; kind: string | null; via: string | null; text: string | null; files: string | null; ts: number }>(
+        `SELECT id, thread, author, kind, via, text, files, ts FROM messages
+         WHERE author != 'ai' AND ((${like("coalesce(text, '')")}) OR (${like("coalesce(files, '')")}))
+         ORDER BY id DESC LIMIT ?`,
+        ...args, ...args, limit,
+      )
+      .toArray()
+      .map((m) => {
+        const text = m.text ?? "", low = text.toLowerCase(), at = Math.max(0, low.indexOf(terms[0]) - 60);
+        const files = (JSON.parse(m.files || "[]") as { id: string; name: string }[]).map((f) => ({ id: f.id, name: f.name }));
+        return { id: m.id, thread: m.thread, topic: m.thread === "main" ? null : titles.get(m.thread) ?? null, author: m.author, by_agent: m.kind === "agent", via: m.via, ts: m.ts, files,
+          snippet: (at ? "…" : "") + text.slice(at, at + 200).replace(/\s+/g, " ") + (text.length > at + 200 ? "…" : "") };
+      });
+    const epics = this.sql
+      .exec<{ id: string; title: string; archived: number | null; ts: number }>(`SELECT id, title, archived, ts FROM epics ORDER BY ts DESC`)
+      .toArray()
+      .filter((e) => { const hay = `${e.title}\n${this.get(`doc:${e.id}`) ?? ""}`.toLowerCase(); return terms.every((w) => hay.includes(w)); })
+      .slice(0, limit)
+      .map((e) => ({ id: e.id, title: e.title, archived: (e.archived ?? 0) > 0, ts: e.ts }));
+    return { messages, epics };
+  }
   agentTask(bookId: string, taskId: string, status: string, email: string) {
     this.bind(bookId);
     // An agent moving an unowned task took it: its human becomes the owner.
