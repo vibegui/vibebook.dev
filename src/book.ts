@@ -159,6 +159,7 @@ export class Book extends DurableObject<Env> {
   }
   autoArchive() {
     const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done") && !this.unproven(e.id));
+    const closed: number[] = [];
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
       const n = e.tasks.length;
@@ -167,9 +168,10 @@ export class Book extends DurableObject<Env> {
         : `✓ ${n === 1 ? "A tarefa" : `Todas as ${n} tarefas`} de **${e.title}** ${n === 1 ? "está feita" : "estão feitas"}, então arquivei o épico. Ele fica em Arquivados, com o doc e a conversa; ↩ reabre.`, { tag: "done", quiet: true });
       // The request it came from: "fazendo isso" turns into "fez isso".
       const from = this.sql.exec(`SELECT from_msg FROM epics WHERE id = ?`, e.id).toArray()[0]?.from_msg;
-      if (from) this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE msg_id = ? AND status = 'doing'`, Date.now(), from);
+      if (from && this.sql.exec(`UPDATE acks SET status = 'done', ts = ? WHERE msg_id = ? AND status = 'doing'`, Date.now(), from).rowsWritten) closed.push(from as number);
     }
-    if (done.length) this.broadcast({ t: "acks", acks: this.acksList() });
+    // Only the acks that changed (the whole list was ~100 KB per tab on every archive, Nov 2026).
+    if (closed.length) this.pushAcks(`msg_id IN (${closed.map(() => "?").join(",")})`, ...closed);
     return done.length > 0;
   }
   epicsChanged() {
@@ -1456,7 +1458,8 @@ export class Book extends DurableObject<Env> {
       const f = (await req.json()) as FileMeta;
       if (!this.get("book_id")) this.set("book_id", url.searchParams.get("book") ?? "");
       this.sql.exec(`INSERT INTO files (id, name, type, size, author, ts) VALUES (?, ?, ?, ?, ?, ?)`, f.id, f.name, f.type, f.size, f.author, f.ts);
-      this.broadcast({ t: "files", files: this.files() });
+      // Just the new file: the whole list went to every tab on each upload (~100 KB each, Nov 2026).
+      this.broadcast({ t: "fileAdd", file: f });
       return new Response("ok");
     }
     if (url.pathname === "/access-requested") {
