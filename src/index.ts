@@ -802,6 +802,13 @@ mountSandbox(app, { isMember, track });
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
+    // Plain http (scanners, mostly) made the OAuth provider throw (its resource URL must be https): every Worker
+    // exception in Nov 2026 was one of these. Send them to https, and drop "//..." paths (no route starts that way).
+    if (url.protocol === "http:" && !/^(127\.0\.0\.1|localhost|\[::1\])$/.test(url.hostname)) {
+      url.protocol = "https:";
+      return Response.redirect(url.toString(), 301);
+    }
+    if (url.pathname.startsWith("//")) return new Response("not found", { status: 404 });
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
     return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
   },
