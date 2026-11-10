@@ -11,10 +11,17 @@ q=$(node -e '
 let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{
   let j={};try{j=JSON.parse(d)}catch{}
   const tool=String(j.tool_name||"uma ferramenta"), i=j.tool_input||{};
-  const what=String(i.command||i.description||i.file_path||i.url||i.subject||i.to||JSON.stringify(i)).replace(/\s+/g," ").slice(0,220);
+  // What it will do: the verb first (action/operation/method: a delete must not show as just a URL), then the
+  // command or path, else every short field as key: value. Bash adds its own description above the command.
+  const one=(v)=>String(v).replace(/\s+/g," ").trim();
+  const verb=one(i.action||i.operation||i.method||i.mode||"");
+  const skip=new Set(["action","operation","method","mode","description","command","file_path"]);
+  const rest=Object.entries(i).filter(([k,v])=>!skip.has(k)&&v!==""&&v!=null&&(typeof v!=="object"||Array.isArray(v)&&v.every(x=>typeof x!=="object"))).map(([k,v])=>k+": "+one(Array.isArray(v)?v.join(", "):v).slice(0,120));
+  const what=one(i.command||i.file_path||rest.join(" · ")||JSON.stringify(i)).slice(0,220);
+  const head=[verb&&"**"+verb.slice(0,40).replace(/\*/g,"")+"**",i.description&&one(i.description).slice(0,160)].filter(Boolean).join(" · ");
   // A plan to approve (ExitPlanMode) shows as the plan itself, not a cut JSON.
   if(tool==="ExitPlanMode"&&i.plan){process.stdout.write(JSON.stringify({text:"⏸ Seu Claude quer seguir com este plano:\n\n"+String(i.plan).slice(0,3000),choices:["Aprovar","Negar"]}));return}
-  process.stdout.write(JSON.stringify({text:"⏸ Seu Claude pede permissão: **"+tool+"**\n`"+what.replace(/`/g,"ʼ")+"`\n\nSó vale a resposta da sua conta logada aqui.",choices:["Aprovar","Negar"]}));
+  process.stdout.write(JSON.stringify({text:"⏸ Seu Claude pede permissão: **"+tool+"**"+(head?" · "+head:"")+"\n`"+what.replace(/`/g,"ʼ")+"`\n\nSó vale a resposta da sua conta logada aqui.",choices:["Aprovar","Negar"]}));
 })') || exit 0
 id=$(vibebook call post "$q" 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.ok&&j.id)process.stdout.write(String(j.id))}catch{}})')
 [ -n "$id" ] || exit 0
