@@ -2719,7 +2719,7 @@ function openBook(id) {
   if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
   else $app.innerHTML = roomSkeleton(id);
   const connect = () => {
-    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}`);
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}`);
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
     ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (!liveState && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
   };
@@ -2734,6 +2734,10 @@ function onEvent(ev, id) {
       const firstLoad = !S;
       S = { ...ev, id, typing: {} };
       liveState = true;
+      // A fresh state has only the open thread in full and only its doc: let other threads and docs load again.
+      olderBusy = false;
+      for (const k of [...fillOf]) if (k.startsWith(id)) fillOf.delete(k);
+      for (const k of [...docAsked]) if (k.startsWith(id)) docAsked.delete(k);
       roomCache.delete(id); roomCache.set(id, S);
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
@@ -2777,8 +2781,8 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; renderFiles(); return;
-    case "fileAdd": S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); return;
+    case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); return;
     case "apps": S.apps = ev.apps; renderApps(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
@@ -2790,7 +2794,7 @@ function onEvent(ev, id) {
       const have = new Set(S.messages.map((m) => m.id));
       S.messages = [...ev.messages.filter((m) => !have.has(m.id)), ...S.messages].sort((a, b) => a.id - b.id);
       if (!ev.more) olderDone[S.id + ev.thread] = true;
-      if (ev.thread === thread) { win.n += ev.messages.length; renderChat(true); }
+      if (ev.thread === thread) { win.n += ev.messages.length; renderChat(!fillOf.delete(S.id + ev.thread)); }
       return;
     }
     case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); renderWorking(); return;
@@ -3118,7 +3122,8 @@ function renderBook() {
     $app.querySelector(".doc").dataset.pane = pane;
     $app.querySelector(".book").dataset.pane = pane; // the phone's toolbar marks the open tab
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
-    if (pane === "files") renderFiles();
+    // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
+    if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
@@ -3444,8 +3449,9 @@ const isPermAsk = (q) => q.kind === "agent" && /^\u23f8/.test(q.text || "") && /
 function myQueue() {
   const since = Date.now() - 48 * 3600e3, byMsg = new Map();
   for (const k of S.acks || []) if (k.email === S.me) (byMsg.get(k.msg_id) ?? byMsg.set(k.msg_id, []).get(k.msg_id)).push(k);
-  return (S.messages || [])
-    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !S.messages.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
+  const msgs = S.messages ? allMsgs() : [];
+  return msgs
+    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !msgs.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
     .map((m) => { const a = byMsg.get(m.id) || []; return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
@@ -3628,7 +3634,7 @@ const agentRows = (email) => {
 // archived = -1, still open.
 const epicWorker = (e) => {
   if (!e || e.archived > 0) return null;
-  const ids = new Set(S.messages.filter((m) => m.thread === e.id).map((m) => m.id)); ids.add(e.from_msg);
+  const ids = new Set(allMsgs().filter((m) => m.thread === e.id).map((m) => m.id)); ids.add(e.from_msg);
   const acks = (S.acks || []).filter((a) => ids.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts);
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3);
   if (k) return { who: k.who, email: k.email };
@@ -3639,7 +3645,7 @@ const epicWorker = (e) => {
 // The main thread's version: a live "doing" ack on one of its messages that didn't become an epic (one that did shows
 // the ✻ on its thread card), unless a newer ack on that message says it's done.
 const mainWorker = () => {
-  const main = new Set(S.messages.filter((m) => m.thread === "main").map((m) => m.id));
+  const main = new Set(allMsgs().filter((m) => m.thread === "main").map((m) => m.id));
   const epicFrom = new Set((S.epics || []).map((e) => e.from_msg));
   const acks = (S.acks || []).filter((a) => main.has(a.msg_id) && !epicFrom.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts);
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3 && acks.find((b) => b.msg_id === a.msg_id && b.who === a.who) === a);
@@ -3995,7 +4001,7 @@ function renderPeek() {
   const n = epic?.tasks.length || 0, d = n && epic.tasks.filter((x) => x.done).length;
   el.innerHTML = `${icon("doc", 15)}<b>Doc</b>${n ? `<small>${d}/${n}</small>` : ""}`;
   el.title = title;
-  const nf = S.files?.length || 0, bad = (S.reminders || []).filter((r) => r.error).length;
+  const nf = S.filesN ?? S.files?.length ?? 0, bad = (S.reminders || []).filter((r) => r.error).length;
   document.getElementById("peekFiles").textContent = nf ? String(nf) : "";
   document.getElementById("peekRem").textContent = bad ? "⚠" : "";
 }
@@ -4584,7 +4590,8 @@ function renderReminders() {
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   renderPeek();
-  document.getElementById("fileCount").textContent = S.files?.length ? ` ${S.files.length}` : "";
+  const nFiles = S.filesN ?? S.files?.length ?? 0;
+  document.getElementById("fileCount").textContent = nFiles ? ` ${nFiles}` : "";
   el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f, 30)}</div>
@@ -4607,6 +4614,10 @@ function wirePinToggles(el) {
 // what the state already has, then from the room (WS "older", 100 at a time) until the start of the thread.
 const WIN = 60;
 let win = { thread: null, n: WIN }, olderDone = {}, olderBusy = false;
+// Threads whose first page is on its way: the room's state carries 60 messages of the thread it opened on and 5 of
+// every other one (Book.roomWindow), so opening another fetches its newest 100 right away and lands at the bottom.
+const fillOf = new Set();
+const allMsgs = () => (S.origins?.length ? [...S.messages, ...S.origins.filter((o) => !S.messages.some((m) => m.id === o.id))] : S.messages);
 // The open thread lives in the URL (/b/<room>?t=<epic>): refresh, back and shared links land on it.
 let urlSynced = false;
 function syncUrl() {
@@ -4641,6 +4652,10 @@ function renderChat(keep) {
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
   const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m));
+  if (liveState && all.length < WIN && !olderBusy && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread] && !fillOf.has(S.id + thread)) {
+    fillOf.add(S.id + thread); olderBusy = true;
+    send({ t: "older", thread, before: all[0]?.id ?? 0 });
+  }
   const list = foldReminders(all.slice(-win.n));
   const more = all.length > list.length || (all.length && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
@@ -4800,12 +4815,15 @@ function placeTasks(pv, ep) {
 }
 // The doc panel follows the open epic (its own doc, a child of the room's); "Sala" in the crumb shows the room's.
 let docRoom = false, docShown = null;
+// Epic docs come one at a time: the room's state carries only the open epic's (Book.epicDocs), the rest on "doc.get".
+const docAsked = new Set();
 const docEpic = () => (!docRoom && !isPre() && S.epics.some((e) => e.id === thread) ? thread : null);
 function renderDoc(force) {
   const doc = document.getElementById("doc"); if (!doc) return;
   S.docs ??= {};
   // Older epics without a doc open with the same start new ones get (epicDocSeed in src/book.ts).
   const ep = docEpic(), epic = ep && S.epics.find((e) => e.id === ep);
+  if (ep && !(ep in S.docs) && !docAsked.has(S.id + ep)) { docAsked.add(S.id + ep); send({ t: "doc.get", epic: ep }); }
   const text = ep ? S.docs[ep] || `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite aqui ou peça pro seu Claude).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : S.doc;
   if (docShown !== (ep || "room")) { force = true; docShown = ep || "room"; }
   ensureCollab();

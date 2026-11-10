@@ -788,7 +788,8 @@ app.get("/ws/:id", async (c) => {
   // When you last opened the room: the phone home lists rooms by it.
   // When you last opened the room (the phone home's order) and what you've read: your cached /api/me is stale now.
   c.executionCtx.waitUntil(c.env.DB.prepare(`UPDATE members SET opened_at = ? WHERE book_id = ? AND email = ?`).bind(Date.now(), id, c.get("email")).run().then(() => poke(c.env, [c.get("email")], { t: "me" })));
-  const req = new Request(`https://book/ws?book=${id}`, c.req.raw);
+  // t = the thread the app opens on: only it comes with its 60 newest messages and its doc (Book.roomWindow).
+  const req = new Request(`https://book/ws?book=${id}&t=${encodeURIComponent(c.req.query("t") ?? "main")}`, c.req.raw);
   req.headers.set("x-email", c.get("email"));
   return bookStub(c.env, id).fetch(req);
 });

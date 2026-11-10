@@ -208,21 +208,28 @@ export class Book extends DurableObject<Env> {
       .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg)
       .reverse();
   }
-  /** What a room open sends: the newest 60 messages of main and each open epic (10 of an archived one), plus the
-   * messages each epic came from (origins, apart: they'd break each thread's paging); the rest is paged with "older".
-   * counts = every thread's real total. */
-  roomWindow() {
+  /** What a room open sends: the newest 60 messages of the open thread and the newest 5 of every other one (enough for
+   * the sidebar, thread cards and the ✻); the app pages the rest with "older" when a thread opens. Apart, in origins
+   * (they'd break each thread's paging): the messages epics came from, the reader's own of the last 48h (Fila do seu
+   * Claude) and the ones with a live ack (the ✻). counts = every thread's real total. Every thread at 60 made the
+   * product room's state 646 KB, sent on each room switch (Nov 2026). */
+  roomWindow(open = "main", me = "") {
     const rows = this.sql
       .exec(
         `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m)
-         WHERE rn <= (CASE WHEN thread IN (SELECT id FROM epics WHERE archived > 0) THEN 10 ELSE 60 END)
+         WHERE rn <= (CASE WHEN thread = ? THEN 60 ELSE 5 END)
          ORDER BY id`,
+        open,
       )
       .toArray()
       .map(({ rn: _rn, ...r }) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
     const have = new Set(rows.map((m) => m.id));
     const origins = this.sql
-      .exec(`SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL)`)
+      .exec(
+        `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL)
+           OR (author = ? AND ts > ?) OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
+        me, Date.now() - 48 * 3600e3,
+      )
       .toArray()
       .filter((r) => !have.has(r.id as number))
       .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
@@ -391,8 +398,8 @@ export class Book extends DurableObject<Env> {
     const next = this.sql.exec<{ t: number | null }>(`SELECT min(next_at) AS t FROM reminders WHERE coalesce(enabled, 1) = 1`).one().t;
     if (next) await this.wakeAt(next);
   }
-  files(): FileMeta[] {
-    return this.sql.exec(`SELECT * FROM files ORDER BY ts DESC`).toArray() as unknown as FileMeta[];
+  files(limit = -1): FileMeta[] {
+    return this.sql.exec(`SELECT * FROM files ORDER BY ts DESC LIMIT ?`, limit).toArray() as unknown as FileMeta[];
   }
   polls(ids?: string[]): Record<string, Poll> {
     const rows = this.sql.exec(`SELECT * FROM polls`).toArray();
@@ -906,7 +913,8 @@ export class Book extends DurableObject<Env> {
     if (!e) return null;
     return this.get(`doc:${epic}`) ?? epicDocSeed(e.title);
   }
-  epicDocs(): Record<string, string> {
+  epicDocs(only?: string): Record<string, string> {
+    if (only !== undefined) return Object.fromEntries(this.sql.exec<{ k: string; v: string }>(`SELECT k, v FROM meta WHERE k = ?`, `doc:${only}`).toArray().map((r) => [r.k.slice(4), r.v]));
     return Object.fromEntries(this.sql.exec<{ k: string; v: string }>(`SELECT k, v FROM meta WHERE k LIKE 'doc:%'`).toArray().map((r) => [r.k.slice(4), r.v]));
   }
   async touch(fields: { title?: string; folder?: string; summary?: string; lastId?: number; human?: number; agent?: number } = {}) {
@@ -1517,13 +1525,16 @@ export class Book extends DurableObject<Env> {
         book,
         doc: this.get("doc") ?? "",
         docNotes: this.docNotes(),
-        docs: this.epicDocs(),
+        // Only the open epic's doc; the app asks for another with "doc.get" when that epic opens (all of them were 70 KB).
+        docs: this.epicDocs(url.searchParams.get("t") || ""),
         epics: this.epics(),
         roomTasks: this.roomTasks(),
         // The newest of each thread; full = threads sent whole, counts = real totals (the sidebar's numbers).
-        ...this.roomWindow(),
+        ...this.roomWindow(url.searchParams.get("t") || "main", email),
         complete: false,
-        files: this.files(),
+        // The newest 12 and the pinned ones; the whole list (~100 KB in the product room) when Arquivos opens ("files.get").
+        files: this.sql.exec(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(),
+        filesN: this.sql.exec<{ n: number }>(`SELECT count(*) AS n FROM files`).one().n,
         apps: this.apps(),
         reminders: this.reminders(),
         polls: this.polls(),
@@ -1576,6 +1587,12 @@ export class Book extends DurableObject<Env> {
         await this.wakeAt(Date.now() + CLASSIFY_DELAY_MS);
         return;
       }
+      case "files.get":
+        return ws.send(JSON.stringify({ t: "files", files: this.files() }));
+      case "doc.get": {
+        const epic = String(m.epic ?? "");
+        return ws.send(JSON.stringify({ t: "doc", epic, text: this.get(`doc:${epic}`) ?? "", fetched: true }));
+      }
       case "doc": {
         const epic = m.epic && this.epics().some((e) => e.id === m.epic) ? String(m.epic) : undefined;
         return this.setDoc(String(m.text ?? ""), email, ws, epic);
@@ -1597,7 +1614,8 @@ export class Book extends DurableObject<Env> {
         return;
       case "older": {
         // Scroll-back: 100 messages of a thread before an id.
-        const before = Number(m.before) || 0;
+        // No id = the newest (a thread opened with nothing of it in the state yet).
+        const before = Number(m.before) || Number.MAX_SAFE_INTEGER;
         const rows = this.sql
           .exec(`SELECT * FROM messages WHERE thread = ? AND id < ? ORDER BY id DESC LIMIT 101`, String(m.thread ?? "main"), before)
           .toArray()
