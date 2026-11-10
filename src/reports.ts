@@ -12,7 +12,7 @@ const BRT = 3 * 3600_000; // São Paulo, no DST since 2019
 const NOT_TEST = `coalesce(user, '') NOT LIKE '%@test.vibebook.dev'`;
 const FUNNEL = [
   ["pageview", "visitaram o site"],
-  ["login_code_sent", "pediram código de login"],
+  ["login", "fizeram login (e-mail, Google, GitHub ou convite)"],
   ["signup", "criaram conta"],
   ["book_created", "criaram uma sala"],
   ["agent_connected", "conectaram o Claude"],
@@ -64,8 +64,10 @@ export async function growthReport(env: Env, now = Date.now()) {
   const refs = externalRefs(rawRefs as { k: string; v: number }[]);
   const pv = y.by("pageview"), pw = w.by("pageview");
   const funnel = FUNNEL.map(([k, label], i) => {
-    const n = k === "pageview" ? y.by(k).v : y.by(k).n;
-    const prev = i ? (FUNNEL[i - 1][0] === "pageview" ? y.by("pageview").v : y.by(FUNNEL[i - 1][0]).n) : 0;
+    // pageview and login count distinct people (one visitor logs in more than once); the rest are one-per-person events
+    const count = (key: string) => (key === "pageview" || key === "login" ? y.by(key).v : y.by(key).n);
+    const n = count(k);
+    const prev = i ? count(FUNNEL[i - 1][0]) : 0;
     return `${i + 1}. ${n} ${label}${i && prev ? ` (${Math.round((n / prev) * 100)}%)` : ""}`;
   });
   return [
