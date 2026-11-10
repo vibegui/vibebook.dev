@@ -299,7 +299,8 @@ async function callTool(name: string, args: Record<string, unknown>, agent: stri
   const props = Object.keys(t.inputSchema.properties ?? {});
   // Fill what this folder already knows: its room, its repo name, the model the agent said it is.
   const root = repoRoot();
-  if (props.includes("room_id") && args.room_id === undefined && roomHere(root)) args.room_id = roomHere(root);
+  // search spans every room by default (its room_id means "only this one"), so the folder's room isn't filled in.
+  if (props.includes("room_id") && args.room_id === undefined && name !== "search" && roomHere(root)) args.room_id = roomHere(root);
   if (props.includes("repo") && args.repo === undefined) args.repo = basename(root);
   const model = flag("model") ?? process.env.VIBEBOOK_MODEL;
   if (props.includes("model") && args.model === undefined && model) args.model = model;

@@ -316,7 +316,7 @@ async function callTool(name, args, agent, tools) {
     return die(`unknown tool ${name}; see: vibebook tools`);
   const props = Object.keys(t.inputSchema.properties ?? {});
   const root = repoRoot();
-  if (props.includes("room_id") && args.room_id === undefined && roomHere(root))
+  if (props.includes("room_id") && args.room_id === undefined && name !== "search" && roomHere(root))
     args.room_id = roomHere(root);
   if (props.includes("repo") && args.repo === undefined)
     args.repo = basename(root);
