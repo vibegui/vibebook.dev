@@ -956,6 +956,19 @@ async function main() {
       return hub();
     case "listen": {
       const room = flag("room") ?? roomHere(root);
+      const parent = process.ppid;
+      setInterval(() => {
+        if (process.ppid !== parent)
+          process.exit(0);
+      }, 20000).unref();
+      for (const [sig, n] of [["SIGHUP", 1], ["SIGINT", 2], ["SIGTERM", 15]])
+        process.on(sig, () => {
+          try {
+            process.stdout.write(`vibebook listen: parado por ${sig} (rode de novo)
+`);
+          } catch {}
+          process.exit(128 + n);
+        });
       const tools = await listTools(agent);
       const check = async (timeout) => {
         const res = await callTool("wait_for_messages", { timeout_seconds: timeout, ...room ? { room_id: room } : {} }, agent, tools);

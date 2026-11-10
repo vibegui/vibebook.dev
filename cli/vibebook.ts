@@ -872,6 +872,13 @@ async function main() {
       // One-shot: returns when a room has messages this agent hasn't read (run it in the background and start it
       // again after handling). Network trouble waits and retries; only a rejected session stops it.
       const room = flag("room") ?? roomHere(root);
+      // The shell that started us (a Claude's background task) can be killed while we wait: then nobody reads our
+      // output, and before this we listened forever as an orphan (33 of them on one machine, Nov 2026), keeping the
+      // agent "ouvindo" in the room. Parent gone: leave. Stopped by a signal: say which, so the Claude knows why.
+      const parent = process.ppid;
+      setInterval(() => { if (process.ppid !== parent) process.exit(0); }, 20_000).unref();
+      for (const [sig, n] of [["SIGHUP", 1], ["SIGINT", 2], ["SIGTERM", 15]] as const)
+        process.on(sig, () => { try { process.stdout.write(`vibebook listen: parado por ${sig} (rode de novo)\n`); } catch {} process.exit(128 + n); });
       const tools = await listTools(agent);
       // One server check: prints what woke us and says so (true), else false.
       const check = async (timeout: number) => {
