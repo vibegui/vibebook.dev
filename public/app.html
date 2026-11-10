@@ -844,6 +844,12 @@
   .ftile:hover img { transform: scale(1.04); }
   .ftile b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .ftile small { font-size: 12px; color: var(--mute); margin-top: -4px; }
+  button.ftile { font: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+  .fdir .thumb { color: var(--accent); }
+  .ftabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ftab { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+  .ftab small { color: var(--mute); margin-left: 2px; } .ftab.on { background: var(--accent); border-color: var(--accent); color: #fff; } .ftab.on small { color: inherit; opacity: .8; }
+  .fcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; } .fcrumb b { display: flex; align-items: center; gap: 6px; }
 
   /* embeds: HTML an agent posted inline */
   .embedBox { width: min(560px, 100%); display: grid; gap: 8px; }
@@ -857,7 +863,8 @@
   .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
   .rems { margin-bottom: 20px; } .rems h4 { margin: 0 0 8px; font-size: 13px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
   .rem { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 8px; }
-  .rem > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .rem small { color: var(--mute); font-size: 12px; }
+  .rem > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .rem.open { align-items: flex-start; } .remBody { cursor: pointer; } .remBody b { display: flex; align-items: center; gap: 4px; }
+  .remText { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font: 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; cursor: text; } .rem small { color: var(--mute); font-size: 12px; }
   .rem button { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none; }
   .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
   .acard { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
@@ -1327,6 +1334,14 @@ const EN = {
   "Algo deu errado. Tenta de novo.": "Something went wrong. Try again.",
   "Não deu certo com o Google. Tenta com email.": "Google sign-in didn't work. Try with email.",
   "Outros": "Other",
+  "Tudo": "All",
+  "{n} versões": "{n} versions",
+  "Imagens": "Images",
+  "Nada aqui.": "Nothing here.",
+  "1 arquivo": "1 file",
+  "{n} arquivos": "{n} files",
+  "Ver o texto": "Show the text",
+  "Esconder o texto": "Hide the text",
   "Mudar seu nome": "Change your name",
   "Tema": "Theme",
   "Sair": "Sign out",
@@ -1916,6 +1931,7 @@ const ICONS = {
   sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>`,
   moon: `<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`,
   chevronDown: `<path d="m6 9 6 6 6-6"/>`,
+  chevronRight: `<path d="m9 18 6-6-6-6"/>`,
   pencil: `<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/><path d="m15 5 4 4"/>`,
   contrast: `<circle cx="12" cy="12" r="9"/><path d="M12 17a5 5 0 0 0 0-10z" fill="currentColor"/>`,
 };
@@ -4550,6 +4566,7 @@ function renderApps() {
 // Reminders: files reminders/<name>.md. @vibe reads when each runs; at that time it posts the text for whoever saved it,
 // and their Claude acts on it. A file that doesn't say when shows its error here until someone fixes it.
 let remEdit = null; // null = form closed; { name, text } = new or editing
+const remOpen = new Set(); // reminders whose text is shown (click the card)
 function renderReminders() {
   const el = document.getElementById("remPane"); if (!el) return;
   renderPeek();
@@ -4564,9 +4581,9 @@ function renderReminders() {
       <textarea name="text" required placeholder="${t("Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.")}">${esc(remEdit.text)}</textarea>
       <div class="row"><span class="err" id="remErr"></span><button type="button" class="ghost" id="remCancel">${t("Cancelar")}</button><button class="primary" id="remSave">${t("Salvar")}</button></div></form>` : "";
   el.innerHTML = `<div class="remHead"><p>${t("Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o Claude de quem salvou faz.")}</p>${remEdit ? "" : `<button class="primary" id="remNew">${icon("plus", 14)} ${t("Novo lembrete")}</button>`}</div>${form}${list.map((r) => `
-    <div class="rem${r.error ? " bad" : ""}${r.enabled ? "" : " off"}"><div><b>${esc(r.name ? `${r.name}.md` : r.text)}</b>
+    <div class="rem${r.error ? " bad" : ""}${r.enabled ? "" : " off"}${remOpen.has(r.id) ? " open" : ""}"><div class="remBody" data-rem-open="${esc(r.id)}" role="button" tabindex="0" title="${remOpen.has(r.id) ? t("Esconder o texto") : t("Ver o texto")}"><b>${icon(remOpen.has(r.id) ? "chevronDown" : "chevronRight", 13)} ${esc(r.name ? `${r.name}.md` : r.text)}</b>
       <small>${r.error ? "" : `${esc(r.every || r.cron || "")}${r.enabled && r.next_at ? ` · ${t("próximo {when}", { when: when(r.next_at) })}` : ""} · `}${t("de {who}", { who: esc(name(r.owner)) })}</small>
-      ${r.error ? `<span class="err">⚠ ${esc(r.error)}</span>` : ""}</div>
+      ${r.error ? `<span class="err">⚠ ${esc(r.error)}</span>` : ""}${remOpen.has(r.id) ? `<pre class="remText">${esc(r.text)}</pre>` : ""}</div>
       ${r.name ? `<button class="ghost" data-rem-edit="${esc(r.id)}" title="${t("Editar")}" aria-label="${t("Editar")}">${icon("pencil", 14)}</button>` : ""}
       <label class="sw" title="${t("Ligado")}"><input type="checkbox" data-rem-on="${esc(r.id)}" ${r.enabled ? "checked" : ""} ${r.error ? "disabled" : ""} />${t("ligado")}</label>
       <button class="ghost" data-rem-del="${esc(r.id)}" title="${t("Apagar lembrete")}" aria-label="${t("Apagar lembrete")}">${icon("x")}</button></div>`).join("")}
@@ -4586,20 +4603,48 @@ function renderReminders() {
     remEdit = null; renderReminders();
   });
   el.querySelectorAll("[data-rem-edit]").forEach((b) => b.onclick = () => { const r = list.find((x) => x.id === b.dataset.remEdit); if (r) open({ name: r.name, text: r.text, fixed: true }); });
+  el.querySelectorAll("[data-rem-open]").forEach((b) => b.onclick = b.onkeydown = (e) => { if (e.type === "keydown" && e.key !== "Enter" || e.target.closest(".remText")) return; const id = b.dataset.remOpen; remOpen.has(id) ? remOpen.delete(id) : remOpen.add(id); renderReminders(); });
   el.querySelectorAll("[data-rem-on]").forEach((b) => b.onchange = () => send({ t: "reminder.enable", id: b.dataset.remOn, on: b.checked }));
   el.querySelectorAll("[data-rem-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar este lembrete?"))) send({ t: "reminder.delete", id: b.dataset.remDel }); });
 }
 
+// Arquivos: type tabs (Tudo, Imagens, Markdown, HTML, PDF, Outros, only kinds present) and folders. A name with "/"
+// (reminders/x.md, agents/y.md) lives in a folder: at the root the folders come first as tiles, a click goes in, ← out.
+let fileKind = "all", fileDir = "";
+const kindOf = (f) => f.type.startsWith("image/") ? "img" : f.type === "text/html" ? "html" : f.type === "application/pdf" ? "pdf" : /\.md$/i.test(f.name) || f.type === "text/markdown" ? "md" : "other";
+const FILE_KINDS = [["all", "Tudo"], ["img", "Imagens"], ["md", "Markdown"], ["html", "HTML"], ["pdf", "PDF"], ["other", "Outros"]];
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   renderPeek();
   const nFiles = S.filesN ?? S.files?.length ?? 0;
   document.getElementById("fileCount").textContent = nFiles ? ` ${nFiles}` : "";
-  el.innerHTML = S.files?.length ? `<div class="fgrid">${S.files.map((f) => `
+  if (!S.files?.length) { el.innerHTML = `<div class="empty">${t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")}</div>`; return; }
+  const n = {}; S.files.forEach((f) => { const k = kindOf(f); n[k] = (n[k] || 0) + 1; }); n.all = S.files.length;
+  if (!n[fileKind]) fileKind = "all";
+  const shown = S.files.filter((f) => fileKind === "all" || kindOf(f) === fileKind);
+  const dirOf = (f) => f.name.includes("/") ? f.name.slice(0, f.name.lastIndexOf("/")) : "";
+  if (fileDir && !shown.some((f) => dirOf(f) === fileDir || dirOf(f).startsWith(fileDir + "/"))) fileDir = "";
+  const pre = fileDir ? fileDir + "/" : "", dirs = new Map();
+  const here = shown.filter((f) => {
+    const d = dirOf(f);
+    if (d === fileDir) return true;
+    if (d.startsWith(pre)) { const sub = d.slice(pre.length).split("/")[0]; dirs.set(sub, (dirs.get(sub) || 0) + 1); }
+    return false;
+  });
+  // Inside a folder a name is one document saved again and again (reminders/x.md): show its newest version once.
+  const vers = {}; if (fileDir) here.forEach((f) => { vers[f.name] = (vers[f.name] || 0) + 1; });
+  const list = fileDir ? here.filter((f, i) => here.findIndex((x) => x.name === f.name) === i) : here;
+  const tabs = FILE_KINDS.filter(([k]) => n[k]).map(([k, l]) => `<button type="button" class="ftab${k === fileKind ? " on" : ""}" data-fkind="${k}">${t(l)} <small>${n[k]}</small></button>`).join("");
+  const crumb = fileDir ? `<div class="fcrumb"><button type="button" class="ghost" data-fdir="${esc(fileDir.includes("/") ? fileDir.slice(0, fileDir.lastIndexOf("/")) : "")}">← ${t("voltar")}</button><b>${icon("folder", 14)} ${esc(fileDir)}/</b></div>` : "";
+  const folders = [...dirs].sort((a, b) => a[0].localeCompare(b[0])).map(([d, c]) => `
+    <button type="button" class="ftile fdir" data-fdir="${esc(pre + d)}"><div class="thumb">${icon("folder", 34)}</div><b>${esc(d)}/</b><small>${c === 1 ? t("1 arquivo") : t("{n} arquivos", { n: c })}</small></button>`).join("");
+  el.innerHTML = `${n.all > 1 ? `<div class="ftabs">${tabs}</div>` : ""}${crumb}<div class="fgrid">${folders}${list.map((f) => `
     <a class="ftile" href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" ${viewAttrs(f)}>
       <div class="thumb">${f.type.startsWith("image/") ? `<img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" />` : fileIcon(f, 30)}</div>
-      <b>${esc(f.name)}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${kb(f.size)}</small>${pinToggle("file", f.id)}</a>`).join("")}</div>`
-    : `<div class="empty">${t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")}</div>`;
+      <b>${esc(f.name.slice(pre.length))}</b><small>${esc(name(f.author))} · ${ago(f.ts)} · ${vers[f.name] > 1 ? t("{n} versões", { n: vers[f.name] }) : kb(f.size)}</small>${pinToggle("file", f.id)}</a>`).join("")}</div>
+    ${!here.length && !dirs.size ? `<div class="empty">${t("Nada aqui.")}</div>` : ""}`;
+  el.querySelectorAll("[data-fkind]").forEach((b) => b.onclick = () => { fileKind = b.dataset.fkind; renderFiles(); });
+  el.querySelectorAll("[data-fdir]").forEach((b) => b.onclick = () => { fileDir = b.dataset.fdir; renderFiles(); el.scrollTop = 0; });
   wirePinToggles(el);
 }
 // 📌 on a file tile or app card: pins it to the sidebar (or unpins).
