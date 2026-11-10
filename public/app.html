@@ -719,6 +719,7 @@
   /* doc panel tabs + files library */
   .ptabs { display: flex; gap: 2px; flex: 1; align-items: center; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 10px 8px; margin: -10px -8px; position: relative; z-index: 2; } /* room for the ✻ ring and its count badge (the scroller clips both ways); above the panel body, which otherwise paints over the badge */
   .doc header .seg { flex: none; }
+  .ptabs button > small:empty { display: none; } /* an empty count would push the icon off center */
   .ptabs button { border: none; background: none; padding: 0 7px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; gap: 4px; flex: none; font: 600 14px/1 "Schibsted Grotesk", sans-serif; color: var(--mute); white-space: nowrap; }
   .ptabs button:hover { background: var(--hover); }
   .ptabs button.sel { color: var(--ink); background: var(--hover); }
@@ -855,7 +856,7 @@
   /* embeds: HTML an agent posted inline */
   .embedBox { width: min(560px, 100%); display: grid; gap: 8px; }
   .embedWrap { position: relative; }
-  .embedOpen { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: rgb(0 0 0 / .55); color: #fff; backdrop-filter: blur(6px); opacity: .85; text-decoration: none; }
+  .embedOpen { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: rgb(0 0 0 / .55); color: #fff; backdrop-filter: blur(6px); opacity: .85; text-decoration: none; }
   .embedOpen:hover { opacity: 1; }
   .embedWrap.clipped::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 36px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .18)); pointer-events: none; }
   .atts:has(.embedBox) { display: block; }
@@ -892,7 +893,7 @@
   .viewer .vbody.table th { color: rgb(255 255 255 / .6); font-weight: 600; position: sticky; top: 0; background: #0c1016; }
   .viewer.noLink header a { display: none; }
   .vtWrap { position: relative; min-width: 0; }
-  .vtOpen { position: absolute; top: 5px; right: 5px; z-index: 1; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--mute); cursor: pointer; padding: 0; opacity: .8; }
+  .vtOpen { position: absolute; top: 5px; right: 5px; z-index: 1; display: grid; place-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--mute); cursor: pointer; padding: 0; opacity: .8; }
   .vtOpen:hover { opacity: 1; color: var(--ink); }
   @media (hover: hover) { .vtWrap:not(:hover) .vtOpen { opacity: 0; } }
   /* attachments */
@@ -1216,7 +1217,7 @@
   .sw-group { width: calc(100% + 12px); margin: 0 -6px; padding: 10px 4px; border-radius: 12px; background: light-dark(oklch(0.2 0.02 250 / .045), oklch(1 0 0 / .05)); display: flex; flex-direction: column; gap: 12px; flex: none; }
   .sw-sep { width: 24px; height: 1px; background: var(--line); flex: none; }
   .sw-sp { flex: 1; }
-  .sw-btn { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: none; color: var(--mute); display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .sw-btn { width: 36px; height: 36px; flex: none; border-radius: 50%; border: 0; background: none; color: var(--mute); display: grid; place-items: center; justify-content: center; /* button:has(> svg.i) makes it flex */ cursor: pointer; padding: 0; }
   .sw-btn:hover { background: var(--line); color: var(--ink); }
   #swTip { position: fixed; left: 74px; transform: translateY(-50%); z-index: 30; max-width: 260px; background: light-dark(oklch(0.2 0.02 250), oklch(0.33 0.015 250)); color: #fff; border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.35; display: grid; gap: 3px; box-shadow: 0 10px 30px -10px rgb(0 0 0 / .4); pointer-events: none; }
   #swTip[hidden] { display: none; }
