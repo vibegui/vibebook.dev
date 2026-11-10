@@ -1860,7 +1860,8 @@ const linkify = (h) => ghChips(h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g,
 // Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
 // No <img>: files go as attachments, and a remote image would be a tracker.
 const md = (s) => ghChips(DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
-  .replace(/<a (?!href="#m\d+")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"'));
+  .replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"')
+  .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"'));
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
@@ -4385,7 +4386,7 @@ function cardGo(to) {
   if (target !== thread) { thread = target; docRoom = false; boardEpic = thread === "main" ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc(); }
   if (to.startsWith("#doc")) { document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })); if (ROOM_PHONE.matches) openSheet("doc"); }
 }
-document.addEventListener("click", (e) => { const g = e.target.closest("[data-cardgo]"); if (g) cardGo(g.dataset.cardgo); });
+document.addEventListener("click", (e) => { const g = e.target.closest("[data-cardgo]"); if (g) { e.preventDefault(); cardGo(g.dataset.cardgo); } });
 // ⤢ on a card table: the table full screen, like an image (wide tables scroll inside the card).
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-vtopen]"); if (!b) return; const tb = b.parentElement.querySelector("table"); if (tb) openViewer(tb, "table", b.closest(".vcard")?.querySelector(".vh b")?.textContent || t("Tabela")); });
 document.addEventListener("click", (e) => {
@@ -4464,7 +4465,7 @@ function remHtml(m) {
   const [head, ...rest] = (m.text || "").split("\n\n"), runs = m.runs || [m.ts];
   const h = head.replace(/^⏰\s*/, ""), nm = h.match(/^\*\*(.+?)\*\*\s*(.*)$/);
   const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
-  return `<div class="msg remMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details></div></div>`;
+  return `<div class="msg remMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details>${(m.group || [m]).map((x) => threadCards(x.id)).join("")}</div></div>`;
 }
 // @vibe's routine lines (archived, reopened, proof ask, nudges) read as one quiet line too; click opens the full text.
 // Older reopen lines have no tag, so they're matched by their opening.
