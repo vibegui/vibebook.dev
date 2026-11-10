@@ -110,7 +110,7 @@ async function cfQuery(env: Env, query: string, variables: Record<string, unknow
 
 const WORKER_Q = `query($acc: string!, $from: Time!, $to: Time!) { viewer { accounts(filter: { accountTag: $acc }) {
   workersInvocationsAdaptive(limit: 10, filter: { scriptName: "vibebook", datetime_geq: $from, datetime_lt: $to }) {
-    sum { requests errors subrequests responseBodySize } quantiles { cpuTimeP50 cpuTimeP99 wallTimeP50 wallTimeP99 } } } } }`;
+    dimensions { status } sum { requests errors subrequests responseBodySize } quantiles { cpuTimeP50 cpuTimeP99 wallTimeP50 wallTimeP99 } } } } }`;
 const ZONE_Q = `query($zone: string!, $from: Date!, $to: Date!) { viewer { zones(filter: { zoneTag: $zone }) {
   httpRequests1dGroups(limit: 10, filter: { date_geq: $from, date_lt: $to }) { dimensions { date } sum { requests bytes cachedBytes threats } uniq { uniques } } } } }`;
 
@@ -157,12 +157,23 @@ async function wsStateLine(env: Env, start: number, end: number) {
   const big = await env.DB.prepare(`SELECT json_extract(dims, '$.book') AS book, json_extract(dims, '$.top') AS top FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? ORDER BY json_extract(dims, '$.bytes') DESC LIMIT 1`).bind(start, end).first<{ book: string; top: string }>();
   const push = await env.DB.prepare(`SELECT json_extract(dims, '$.t') AS t, count(*) AS n, sum(json_extract(dims, '$.bytes')) AS b FROM events WHERE name = 'ws_push' AND ts >= ? AND ts < ? GROUP BY t ORDER BY b DESC LIMIT 4`).bind(start, end).all<{ t: string; n: number; b: number }>();
   const pushes = push.results.map((x) => `${x.t} ${bytes(x.b)} (${x.n}×)`).join(" · ");
-  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})${pushes ? `\n- Empurrões grandes pelo WS (≥20 KB): ${pushes}` : ""}`;
+  // Who opens rooms that often (a phone reconnecting on every wake, a tab left open across deploys…): name only.
+  const who = await env.DB.prepare(`SELECT user, count(*) AS n, sum(json_extract(dims, '$.bytes')) AS b FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? GROUP BY user ORDER BY n DESC LIMIT 3`).bind(start, end).all<{ user: string; n: number; b: number }>();
+  const people = who.results.map((x) => `${(x.user ?? "?").split("@")[0]} ${x.n}× (${bytes(x.b)})`).join(" · ");
+  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})${people ? `\n  - Quem mais abriu: ${people}` : ""}${pushes ? `\n- Empurrões grandes pelo WS (≥20 KB): ${pushes}` : ""}`;
+}
+
+/** The Claudes' tool calls (agent_call) by tool and client: what the /mcp requests are. */
+async function agentCallLine(env: Env, start: number, end: number) {
+  const r = await env.DB.prepare(`SELECT json_extract(dims, '$.tool') AS tool, json_extract(dims, '$.client') AS client, count(*) AS n FROM events WHERE name = 'agent_call' AND ts >= ? AND ts < ? GROUP BY tool, client ORDER BY n DESC LIMIT 6`).bind(start, end).all<{ tool: string; client: string; n: number }>();
+  const total = await env.DB.prepare(`SELECT count(*) AS n FROM events WHERE name = 'agent_call' AND ts >= ? AND ts < ?`).bind(start, end).first<{ n: number }>();
+  if (!total?.n) return "";
+  return `\n- Chamadas de tool dos Claudes (últimas 24h): **${total.n}** · ${r.results.map((x) => `${x.tool}/${x.client || "?"} ${x.n}`).join(" · ")}`;
 }
 
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch((e) => `- Falhas reportadas pelos Claudes: não consegui ler (${String((e as Error)?.message ?? e).slice(0, 160)})`)}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch((e) => `- Falhas reportadas pelos Claudes: não consegui ler (${String((e as Error)?.message ?? e).slice(0, 160)})`)}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}${await agentCallLine(env, now - DAY, now).catch(() => "")}`;
   if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();
@@ -171,7 +182,9 @@ export async function productReport(env: Env, now = Date.now()) {
       const sum = (k: string) => rows.reduce((t: number, r: any) => t + (r.sum?.[k] ?? 0), 0);
       // Quantiles come per row (status, etc.); the busiest row stands for the day.
       const q = [...rows].sort((a: any, b: any) => b.sum.requests - a.sum.requests)[0]?.quantiles ?? {};
-      return { requests: sum("requests"), errors: sum("errors"), sub: sum("subrequests"), body: sum("responseBodySize"), q };
+      // Errors by invocation status: a socket or long-poll the client dropped (clientDisconnected) is not a bug.
+      const byStatus = rows.filter((r: any) => r.sum.errors).sort((a: any, b: any) => b.sum.errors - a.sum.errors).map((r: any) => `${r.dimensions?.status ?? "?"} ${r.sum.errors}`).join(" · ");
+      return { requests: sum("requests"), errors: sum("errors"), sub: sum("subrequests"), body: sum("responseBodySize"), q, byStatus };
     };
     const [wy, ww] = await Promise.all([worker(start, end), worker(start - 7 * DAY, start)]);
     let zone = "";
@@ -197,7 +210,7 @@ export async function productReport(env: Env, now = Date.now()) {
       "",
       "**Worker vibebook**",
       `- Requests: ${vs(wy.requests, ww.requests)}`,
-      `- Erros: ${vs(wy.errors, ww.errors)} (${errRate}% dos requests)`,
+      `- Erros: ${vs(wy.errors, ww.errors)} (${errRate}% dos requests)${wy.byStatus ? ` · ${wy.byStatus}` : ""}`,
       `- Tempo de parede p50 / p99: **${ms(wy.q.wallTimeP50)} / ${ms(wy.q.wallTimeP99)}** · CPU p50 / p99: ${ms(wy.q.cpuTimeP50)} / ${ms(wy.q.cpuTimeP99)}`,
       `- Resposta enviada: **${bytes(wy.body)}** (média ${bytes(ww.body / 7)}) · subrequests ${wy.sub}`,
       zone,
@@ -229,7 +242,8 @@ async function kindLines(env: Env, zone: string, start: number, end: number, now
 // arrives with its origin instead of a guess.
 const BYTES_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zones(filter: { zoneTag: $zone }) {
   paths: httpRequestsAdaptiveGroups(limit: 300, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { clientRequestPath } }
-  types: httpRequestsAdaptiveGroups(limit: 6, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { edgeResponseContentTypeName } } } } }`;
+  types: httpRequestsAdaptiveGroups(limit: 6, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { edgeResponseContentTypeName } }
+  errs: httpRequestsAdaptiveGroups(limit: 50, orderBy: [count_DESC], filter: { datetime_geq: $from, datetime_lt: $to, edgeResponseStatus_geq: 500 }) { count dimensions { clientRequestPath edgeResponseStatus } } } } }`;
 export const foldPath = (p: string) => p.replace(/\/[0-9a-f]{8,}(?=\/|$)/gi, "/:id").replace(/\/avatar\/[^/]+/, "/avatar/:email").replace(/\/upload\/[^/]+/, "/upload/:token");
 async function bytesLines(env: Env, zone: string, from: number, to: number) {
   const z = (await cfQuery(env, BYTES_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
@@ -241,7 +255,10 @@ async function bytesLines(env: Env, zone: string, from: number, to: number) {
   }
   const top = [...by].sort((a, b) => b[1].b - a[1].b).slice(0, 8);
   const types = (z.types ?? []).map((r: any) => `${r.dimensions.edgeResponseContentTypeName || "?"} ${bytes(r.sum.edgeResponseBytes)}`).join(" · ");
-  return ["", "", "**Banda por rota** (ontem, top 8)", ...top.map(([k, o]) => `- \`${k}\` **${bytes(o.b)}** · ${o.n} req · ${bytes(o.b / o.n)} cada`), `- Por tipo: ${types}`].join("\n");
+  const errs = new Map<string, number>();
+  for (const r of z.errs ?? []) { const k = `${r.dimensions.edgeResponseStatus} ${foldPath(r.dimensions.clientRequestPath)}`; errs.set(k, (errs.get(k) ?? 0) + r.count); }
+  const errTop = [...errs].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => `\`${k}\` ${n}`).join(" · ");
+  return ["", "", "**Banda por rota** (ontem, top 8)", ...top.map(([k, o]) => `- \`${k}\` **${bytes(o.b)}** · ${o.n} req · ${bytes(o.b / o.n)} cada`), `- Por tipo: ${types}`, `- 5xx por rota: ${errTop || "nenhum"}`].join("\n");
 }
 // Quantiles come in microseconds.
 const ms = (us?: number) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);
