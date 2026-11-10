@@ -597,6 +597,7 @@
   .msg.cont .gut { position: absolute; left: 10px; top: 9px; width: 34px; text-align: center; font-size: 11px; color: var(--mute); opacity: 0; }
   .msg.cont:hover .gut { opacity: 1; }
   .msg .body { min-width: 0; }
+  .msg .body:has(> .vcard) { flex: 1; } /* a card takes the message column's whole width, not its content's */
   .msg.remMsg { display: block; padding-top: 2px; padding-bottom: 2px; --remIco: 34px; --remBody: 42px; }
   .msg.remMsg summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; font-size: 13px; color: var(--mute); padding: 4px 10px 4px 0; border-radius: 8px; width: fit-content; max-width: 100%; }
   .msg.remMsg summary::-webkit-details-marker { display: none; }
