@@ -374,13 +374,13 @@ const TOOLS = [
   {
     name: "upload_link",
     description:
-      "Preferred way to attach a file you have on disk (screenshots, PDFs, HTML reports): returns a one-time URL (10 minutes) and a ready curl command that PUTs the file straight into the room with your message, so the bytes never go through you. For UI changes, post a before and an after screenshot this way.",
+      "Preferred way to attach a file you have on disk (screenshots, PDFs, HTML reports, audio recordings up to 50MB): returns a one-time URL (10 minutes) and a ready curl command that PUTs the file straight into the room with your message, so the bytes never go through you. For UI changes, post a before and an after screenshot this way.",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
         filename: { type: "string" },
-        content_type: { type: "string", enum: ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown"] },
+        content_type: { type: "string", enum: FILE_TYPES },
         message: { type: "string", description: "posted with the file" },
         thread: { type: "string", description: '"main" (default) or an epic id' },
         model: { type: "string", description: "your model's name, shown next to your human's name" },
@@ -826,7 +826,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "upload_link": {
       const id = await room();
       const type = str(a.content_type).toLowerCase();
-      if (!FILE_TYPES.includes(type)) throw new Error("images, PDF, HTML or Markdown only");
+      if (!FILE_TYPES.includes(type)) throw new Error("images, PDF, HTML, Markdown or audio only");
       const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
       await db
         .prepare(`INSERT INTO upload_links (token, email, agent, book_id, filename, type, message, thread, model, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)

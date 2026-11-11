@@ -938,6 +938,10 @@
   .composer .icon { padding: 5px; color: var(--mute); display: inline-flex; }
   .composer .icon:hover { color: var(--ink); }
   .chat.drop { box-shadow: inset 0 0 0 3px var(--accent); }
+  .audioAtt { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); width: min(360px, 100%); min-width: min(320px, 72vw); }
+  .audioAtt audio { width: 100%; height: 36px; }
+  .audioAtt a { display: flex; gap: 6px; align-items: center; color: var(--mute); text-decoration: none; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .audioAtt a small { margin-left: auto; }
   .atts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
   .atts img { display: block; max-width: min(320px, 100%); max-height: 260px; border-radius: 12px; border: 1px solid var(--line); }
   .fileChip { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: inherit; background: var(--panel); }
@@ -1364,6 +1368,9 @@ const EN = {
   "Algo deu errado. Tenta de novo.": "Something went wrong. Try again.",
   "Não deu certo com o Google. Tenta com email.": "Google sign-in didn't work. Try with email.",
   "Outros": "Other",
+  "Áudios": "Audio",
+  "só imagens (png, jpg, webp, gif), PDF, HTML, Markdown e áudio.": "only images (png, jpg, webp, gif), PDF, HTML, Markdown and audio.",
+  "áudio maior que 50MB.": "audio larger than 50MB.",
   "Tudo": "All",
   "{n} versões": "{n} versions",
   "Imagens": "Images",
@@ -1517,7 +1524,6 @@ const EN = {
   "opção": "option",
   "cada pessoa pode escolher várias": "each person can pick several",
   "Remover anexo": "Remove attachment",
-  "só imagens (png, jpg, webp, gif), PDF, HTML e Markdown.": "only images (png, jpg, webp, gif), PDF, HTML and Markdown.",
   "maior que 10MB.": "larger than 10MB.",
   "falhou": "failed",
   "sem conexão": "offline",
@@ -1964,6 +1970,7 @@ const ICONS = {
   board: `<rect width="18" height="18" x="3" y="3" rx="3"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/>`,
   doc: `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>`,
   file: `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>`,
+  mic: `<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>`,
   globe: `<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>`,
   folder: `<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>`,
   calendar: `<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/>`,
@@ -2756,8 +2763,9 @@ let S = null; // book state
 let thread = "main";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
-const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown"];
-const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : "file", size);
+const AUDIO_EXT = { m4a: "audio/x-m4a", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/aac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", flac: "audio/flac" };
+const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
+const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : f.type.startsWith("audio/") ? "mic" : "file", size);
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
 // Rooms opened in this tab, as last seen: going back to one draws it at once, then the socket's state refreshes it.
@@ -2972,7 +2980,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="mentionBtn">${icon("at")} ${t("Mencionar alguém")} <small>@</small></button>
             <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
           </div>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md" multiple hidden />
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
           <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
         </div>
       </form>
@@ -3112,8 +3120,12 @@ function renderBook() {
     for (let file of list) {
       if (!file.type && /\.html?$/i.test(file.name)) file = new File([file], file.name, { type: "text/html" });
       if (!file.type && /\.md$/i.test(file.name)) file = new File([file], file.name, { type: "text/markdown" });
-      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML e Markdown.")}`); continue; }
-      if (file.size > 10 * 1024 * 1024) { alert(`${file.name}: ${t("maior que 10MB.")}`); continue; }
+      // Recordings often come with no type (or a generic one) from Files/Finder: take it from the extension.
+      const aext = AUDIO_EXT[(/\.(\w+)$/.exec(file.name)?.[1] || "").toLowerCase()];
+      if (aext && !file.type.startsWith("audio/")) file = new File([file], file.name, { type: aext });
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown e áudio.")}`); continue; }
+      const audio = file.type.startsWith("audio/");
+      if (file.size > (audio ? 50 : 10) * 1024 * 1024) { alert(`${file.name}: ${audio ? t("áudio maior que 50MB.") : t("maior que 10MB.")}`); continue; }
       if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
       const p = { file, url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null };
       attached.push(p);
@@ -4262,6 +4274,8 @@ document.addEventListener("click", (e) => {
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
   ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe><a class="embedOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 15)}</a></div></div>`
+  : f.type.startsWith("audio/")
+  ? `<div class="audioAtt"><audio controls preload="metadata" src="${fileUrl(f)}"></audio><a href="${fileUrl(f)}" target="_blank" rel="noopener" download="${esc(f.name)}">${icon("mic", 14)} ${esc(f.name)} <small>${kb(f.size)}</small></a></div>`
   : f.type.startsWith("image/")
   ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
   : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}>${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
@@ -4876,8 +4890,8 @@ function renderReminders() {
 // Arquivos: type tabs (Tudo, Imagens, Markdown, HTML, PDF, Outros, only kinds present) and folders. A name with "/"
 // (reminders/x.md, agents/y.md) lives in a folder: at the root the folders come first as tiles, a click goes in, ← out.
 let fileKind = "all", fileDir = "";
-const kindOf = (f) => f.type.startsWith("image/") ? "img" : f.type === "text/html" ? "html" : f.type === "application/pdf" ? "pdf" : /\.md$/i.test(f.name) || f.type === "text/markdown" ? "md" : "other";
-const FILE_KINDS = [["all", "Tudo"], ["img", "Imagens"], ["md", "Markdown"], ["html", "HTML"], ["pdf", "PDF"], ["other", "Outros"]];
+const kindOf = (f) => f.type.startsWith("image/") ? "img" : f.type.startsWith("audio/") ? "audio" : f.type === "text/html" ? "html" : f.type === "application/pdf" ? "pdf" : /\.md$/i.test(f.name) || f.type === "text/markdown" ? "md" : "other";
+const FILE_KINDS = [["all", "Tudo"], ["img", "Imagens"], ["md", "Markdown"], ["html", "HTML"], ["pdf", "PDF"], ["audio", "Áudios"], ["other", "Outros"]];
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   renderPeek();

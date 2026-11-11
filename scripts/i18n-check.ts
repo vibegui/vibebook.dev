@@ -36,6 +36,7 @@ const ALLOW = [
   'const STOP = new Set(["e", "de", "do"', // stop words for initials (data, not UI)
   'replace(/[^\\p{L}\\p{N} ]/gu', // regex
   "const ghChips = (h) =>", // regex over link HTML
+  "const FILE_KINDS = [", // tab labels, each shown through t() (keys in EN)
   'LANG === "en" ? "en-US" : "pt-BR"', // locale names
   'document.documentElement.lang = LANG === "en" ? "en" : "pt-BR"',
   'aria-label="Idioma / Language"', // the switch speaks both

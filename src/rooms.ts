@@ -99,18 +99,24 @@ export async function setRoomIcon(env: Env, bookId: string, img: { type: string;
   return v;
 }
 
-// Files: images, PDF, HTML and Markdown (no SVG: it can carry script without our sandbox applying to <img>).
+// Files: images, PDF, HTML, Markdown and audio (no SVG: it can carry script without our sandbox applying to <img>).
 // HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
-export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown"];
+// Audio: recordings already made (iPhone's Voice Memos exports .m4a, recorders .mp3/.wav); played with <audio> in the app.
+export const AUDIO_TYPES = ["audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
+export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", ...AUDIO_TYPES];
 /** reminders/<name>.md: a room reminder (Book.reminderFile reads its schedule). */
 export const REMINDER_FILE = /^reminders\/([^\\/\u0000-\u001f]{1,60})\.md$/i;
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+export const maxBytes = (type: string) => (type.startsWith("audio/") ? MAX_AUDIO_BYTES : MAX_FILE_BYTES);
+export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown e áudio).";
+export const sizeError = (type: string) => `Arquivo vazio ou maior que ${maxBytes(type) / 1024 / 1024}MB.`;
 export type StoredFile = { id: string; name: string; type: string; size: number; author: string; ts: number; reminder?: { ok: boolean; name: string; error?: string; every?: string | null; next_at?: string } };
 
 /** Validates and stores one file in R2 + the room's index. Throws an Error whose message is user-facing. */
 export async function storeFile(env: Env, bookId: string, email: string, type: string, body: ArrayBuffer, rawName: string): Promise<StoredFile> {
-  if (!FILE_TYPES.includes(type)) throw new Error("Tipo de arquivo não suportado (imagens, PDF, HTML e Markdown).");
-  if (!body.byteLength || body.byteLength > MAX_FILE_BYTES) throw new Error("Arquivo vazio ou maior que 10MB.");
+  if (!FILE_TYPES.includes(type)) throw new Error(TYPES_ERROR);
+  if (!body.byteLength || body.byteLength > maxBytes(type)) throw new Error(sizeError(type));
   const text = type.startsWith("text/") ? new TextDecoder().decode(body) : "";
   if (text) {
     const secret = findSecret(text);

@@ -15,7 +15,7 @@ import { mountConnections } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
 
-import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, MAX_FILE_BYTES, searchRooms, storeFile, waitsFor } from "./rooms";
+import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, maxBytes, searchRooms, sizeError, TYPES_ERROR, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
 export { Person } from "./person";
@@ -741,8 +741,8 @@ app.post("/api/books/:id/files", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
   const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!FILE_TYPES.includes(type)) return c.json({ error: "Tipo de arquivo não suportado (imagens, PDF, HTML e Markdown)." }, 415);
-  if (Number(c.req.header("content-length") ?? 0) > MAX_FILE_BYTES) return c.json({ error: "Arquivo maior que 10MB." }, 413);
+  if (!FILE_TYPES.includes(type)) return c.json({ error: TYPES_ERROR }, 415);
+  if (Number(c.req.header("content-length") ?? 0) > maxBytes(type)) return c.json({ error: sizeError(type) }, 413);
   try {
     const meta = await storeFile(c.env, id, email, type, await c.req.arrayBuffer(), decodeURIComponent(c.req.header("x-filename") ?? ""));
     c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
@@ -756,9 +756,19 @@ app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, c.get("email"))))
     return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true, lang: reqLang(c.req.raw) }), 403) : c.json({ error: "forbidden" }, 403);
-  const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`);
+  // Range: iOS Safari's <audio> plays only what answers 206 to a byte range (also lets any player seek).
+  const ranged = !!c.req.header("range");
+  const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`, ranged ? { range: c.req.raw.headers } : undefined);
   if (!obj) return c.notFound();
-  return new Response(obj.body, { headers: fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo") });
+  const headers = new Headers(fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo"));
+  headers.set("accept-ranges", "bytes");
+  const r = obj.range as { offset?: number; length?: number; suffix?: number } | undefined;
+  if (!ranged || !r || !("body" in obj)) return new Response("body" in obj ? obj.body : null, { headers });
+  const start = r.suffix !== undefined ? Math.max(0, obj.size - r.suffix) : (r.offset ?? 0);
+  const len = r.suffix !== undefined ? obj.size - start : (r.length ?? obj.size - start);
+  headers.set("content-range", `bytes ${start}-${start + len - 1}/${obj.size}`);
+  headers.set("content-length", String(len));
+  return new Response(obj.body, { status: 206, headers });
 });
 
 // Co-editing a doc (y-websocket): /yjs/<room> or /yjs/<room>~<epic>. Same session cookie as /ws, members only.
