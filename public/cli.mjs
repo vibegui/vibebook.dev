@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.4.0";
+var VERSION = "1.5.0";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -1056,7 +1056,19 @@ async function main() {
       const tools = await listTools(agent);
       if (!flags.once)
         herdrServer(appMode);
+      let pluginAt = 0;
       for (;; ) {
+        if (!flags.once && Date.now() - pluginAt > 3600000 && !process.env.VIBEBOOK_NO_PLUGIN_UPDATE) {
+          pluginAt = Date.now();
+          try {
+            const before = pluginVersion();
+            execFileSync("claude", ["plugin", "marketplace", "update", "vibebook"], { stdio: "ignore", timeout: 120000 });
+            execFileSync("claude", ["plugin", "update", "vibebook@vibebook"], { stdio: "ignore", timeout: 120000 });
+            if (pluginVersion() !== before)
+              process.stdout.write(`${new Date().toLocaleTimeString()} plugin do vibebook ${before || "?"} → ${pluginVersion()}
+`);
+          } catch {}
+        }
         try {
           await (appMode ? herdrAppSync : herdrSync)(agent, tools);
         } catch (e) {

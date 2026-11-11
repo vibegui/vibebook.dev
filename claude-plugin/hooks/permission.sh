@@ -1,7 +1,7 @@
 #!/bin/sh
 # PermissionRequest hook: Claude Code is about to ask for a permission in the terminal. In a repo linked to a vibebook
 # room, ask the person in the room instead (Aprovar / Negar, only they can pick) and hand the answer back to Claude.
-# No answer within VIBEBOOK_PERMISSION_WAIT seconds (default 120), or anything failing: no decision, and the usual
+# No answer within VIBEBOOK_PERMISSION_WAIT seconds (default 600, Gui Nov 2026: time to answer from the phone), or anything failing: no decision, and the usual
 # terminal prompt shows. Only the tool's name and a short summary go to the room; the secret filter refuses the rest.
 command -v vibebook >/dev/null 2>&1 || exit 0
 command -v node >/dev/null 2>&1 || exit 0
@@ -29,7 +29,7 @@ id=$(vibebook call post "$q" 2>/dev/null | node -e 'let d="";process.stdin.on("d
 # mark the question closed in the room so it doesn't sit there open.
 close_q() { vibebook call permission_close "{\"message_id\":$id}" >/dev/null 2>&1; }
 trap 'close_q; exit 0' TERM INT HUP
-end=$(( $(date +%s) + ${VIBEBOOK_PERMISSION_WAIT:-120} ))
+end=$(( $(date +%s) + ${VIBEBOOK_PERMISSION_WAIT:-600} ))
 while [ "$(date +%s)" -lt "$end" ]; do
   left=$(( end - $(date +%s) )); [ "$left" -gt 45 ] && left=45
   d=$(vibebook call permission_wait "{\"message_id\":$id,\"timeout_seconds\":$left}" 2>/dev/null | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.decision)process.stdout.write(j.decision)}catch{}})')

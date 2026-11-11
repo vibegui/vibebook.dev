@@ -2,7 +2,7 @@
 # PreToolUse hook on AskUserQuestion: in a repo linked to a vibebook room, the Claude's questions go to the room as
 # clickable choices (only the person can pick; a typed reply counts as an "other" answer) and the answers come back to
 # Claude as the hook's reason, so it carries on without the terminal. Any question unanswered within
-# VIBEBOOK_QUESTION_WAIT seconds (default 120), or anything failing: no decision, and the terminal asks as usual.
+# VIBEBOOK_QUESTION_WAIT seconds (default 600), or anything failing: no decision, and the terminal asks as usual.
 command -v vibebook >/dev/null 2>&1 || exit 0
 command -v node >/dev/null 2>&1 || exit 0
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
@@ -16,7 +16,7 @@ let d = ""; process.stdin.on("data", (c) => (d += c)).on("end", async () => {
   let j = {}; try { j = JSON.parse(d); } catch {}
   const qs = (j.tool_input?.questions || []).slice(0, 4);
   if (!qs.length) return;
-  const end = Date.now() + (Number(process.env.VIBEBOOK_QUESTION_WAIT) || 120) * 1000;
+  const end = Date.now() + (Number(process.env.VIBEBOOK_QUESTION_WAIT) || 600) * 1000;
   const out = [];
   // A question left unanswered in the room went to the terminal: close it there (also when Claude Code ends this hook).
   let open = null;

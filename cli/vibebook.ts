@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -947,7 +947,19 @@ async function main() {
       for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) process.on(sig, () => process.exit(0));
       const tools = await listTools(agent);
       if (!flags.once) herdrServer(appMode);
+      let pluginAt = 0;
       for (;;) {
+        // Hourly: pull the vibebook plugin's new version (Claude Code doesn't auto-update a third-party marketplace);
+        // the sync below then restarts each free Claude on it, so new hooks reach Claudes that run for days.
+        if (!flags.once && Date.now() - pluginAt > 3600_000 && !process.env.VIBEBOOK_NO_PLUGIN_UPDATE) {
+          pluginAt = Date.now();
+          try {
+            const before = pluginVersion();
+            execFileSync("claude", ["plugin", "marketplace", "update", "vibebook"], { stdio: "ignore", timeout: 120_000 });
+            execFileSync("claude", ["plugin", "update", "vibebook@vibebook"], { stdio: "ignore", timeout: 120_000 });
+            if (pluginVersion() !== before) process.stdout.write(`${new Date().toLocaleTimeString()} plugin do vibebook ${before || "?"} → ${pluginVersion()}\n`);
+          } catch {} // no claude CLI, offline: next hour
+        }
         try {
           await (appMode ? herdrAppSync : herdrSync)(agent, tools);
         } catch (e) {
