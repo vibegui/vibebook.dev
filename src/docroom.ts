@@ -12,6 +12,14 @@ import { bookStub } from "./rooms";
  * @vibe/agent writes flow back in through setText.
  */
 export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
+  // A socket closing threw a bare "close" 3× on 10/11 (hibernatable WebSocket, no stack): name the DO in the log so the
+  // next one says where it came from, and don't let it surface as a Worker exception.
+  async webSocketClose(ws: WebSocket) {
+    try { await super.webSocketClose(ws); } catch (e) { console.error("docroom webSocketClose", String(e)); }
+  }
+  async webSocketError(ws: WebSocket) {
+    try { await super.webSocketError(ws); } catch (e) { console.error("docroom webSocketError", String(e)); }
+  }
   protected async onStart() {
     await super.onStart();
     this.watch();

@@ -1724,7 +1724,11 @@ export class Book extends DurableObject<Env> {
   }
 
   webSocketClose(ws: WebSocket) {
-    this.broadcast({ t: "online", online: this.online().filter((e) => this.sockets(ws).some((s) => this.ctx.getTags(s)[0] === e)) }, ws);
+    try {
+      this.broadcast({ t: "online", online: this.online().filter((e) => this.sockets(ws).some((s) => this.ctx.getTags(s)[0] === e)) }, ws);
+    } catch (e) {
+      console.error("book webSocketClose", String(e)); // see DocRoom.webSocketClose
+    }
   }
 
   // ---- AI ----

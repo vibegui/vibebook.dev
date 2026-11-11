@@ -242,10 +242,13 @@ async function kindLines(env: Env, zone: string, start: number, end: number, now
 }
 // Where the bandwidth went: yesterday's paths by bytes sent (ids folded into :id), plus content types, so a spike
 // arrives with its origin instead of a guess.
+// requestSource "eyeball" = real visitors and Claudes. The Workers' own Cache API calls also land in the zone's
+// analytics (the site's /__deco_cache/*, the cached OAuth client metadata of claude.ai), and a cache miss there reads
+// as a 504: Nov 2026's report listed 49 of those as errors.
 const BYTES_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zones(filter: { zoneTag: $zone }) {
-  paths: httpRequestsAdaptiveGroups(limit: 300, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { clientRequestPath } }
-  types: httpRequestsAdaptiveGroups(limit: 6, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to }) { count sum { edgeResponseBytes } dimensions { edgeResponseContentTypeName } }
-  errs: httpRequestsAdaptiveGroups(limit: 50, orderBy: [count_DESC], filter: { datetime_geq: $from, datetime_lt: $to, edgeResponseStatus_geq: 500 }) { count dimensions { clientRequestPath edgeResponseStatus } } } } }`;
+  paths: httpRequestsAdaptiveGroups(limit: 300, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to, requestSource: "eyeball" }) { count sum { edgeResponseBytes } dimensions { clientRequestPath } }
+  types: httpRequestsAdaptiveGroups(limit: 6, orderBy: [sum_edgeResponseBytes_DESC], filter: { datetime_geq: $from, datetime_lt: $to, requestSource: "eyeball" }) { count sum { edgeResponseBytes } dimensions { edgeResponseContentTypeName } }
+  errs: httpRequestsAdaptiveGroups(limit: 50, orderBy: [count_DESC], filter: { datetime_geq: $from, datetime_lt: $to, edgeResponseStatus_geq: 500, requestSource: "eyeball" }) { count dimensions { clientRequestPath edgeResponseStatus } } } } }`;
 export const foldPath = (p: string) => p.replace(/\/[0-9a-f]{8,}(?=\/|$)/gi, "/:id").replace(/\/avatar\/[^/]+/, "/avatar/:email").replace(/\/upload\/[^/]+/, "/upload/:token");
 async function bytesLines(env: Env, zone: string, from: number, to: number) {
   const z = (await cfQuery(env, BYTES_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
