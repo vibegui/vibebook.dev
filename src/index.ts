@@ -189,7 +189,7 @@ const currentVersion = async (env: Env, url: string) =>
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
 const pickLang = reqLang;
-for (const path of ["", "/demo", "/docs", "/connect", "/how-it-works", "/herdr", "/agents"]) {
+for (const path of ["", "/demo", "/docs", "/changelog", "/connect", "/how-it-works", "/herdr", "/agents"]) {
   app.get(path || "/", (c) => {
     const url = new URL(c.req.url);
     const res = c.redirect(`/${pickLang(c.req.raw)}${path}${url.search}`, 302);

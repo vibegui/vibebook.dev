@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Changelog · vibebook</title>
+<meta name="description" content="Tudo que o vibebook ganhou desde o começo, lançamento por lançamento, com prints." />
+<link rel="canonical" href="https://vibebook.dev/pt/changelog" />
+<link rel="alternate" hreflang="pt-BR" href="https://vibebook.dev/pt/changelog" />
+<link rel="alternate" hreflang="en" href="https://vibebook.dev/en/changelog" />
+<meta name="theme-color" content="#0a0d13" />
+<meta property="og:title" content="Changelog · vibebook" />
+<meta property="og:description" content="Tudo que o vibebook ganhou desde o começo, lançamento por lançamento, com prints." />
+<meta property="og:image" content="https://vibebook.dev/og.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/site.css" />
+<style>
+header.top .w { width: min(1120px, 100% - 48px); }
+header.top .kick { color: var(--sun); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 14px; }
+.cl { display: grid; grid-template-columns: 220px 1fr; gap: 48px; width: min(1120px, 100% - 48px); margin: 0 auto; align-items: start; }
+.cl > * { min-width: 0; }
+.cl-toc { position: sticky; top: 84px; font-size: 14px; margin-left: -12px; max-height: calc(100vh - 110px); overflow: auto; }
+.cl-toc p { padding-left: 12px; color: var(--dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 10px; }
+.cl-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cl-toc a { display: grid; gap: 1px; color: var(--mute); text-decoration: none; padding: 6px 10px; border-radius: 9px; border-left: 2px solid transparent; }
+.cl-toc a small { color: var(--dim); font-size: 12px; }
+.cl-toc a:hover { color: var(--ink); background: var(--panel); }
+.cl-toc a.on { color: var(--ink); border-left-color: var(--sun); background: var(--panel); }
+.rel { padding: 8px 0 56px; scroll-margin-top: 80px; border-bottom: 1px solid var(--line); margin-bottom: 40px; }
+.rel:last-child { border-bottom: 0; }
+.rel time { display: inline-block; color: var(--sun); font-weight: 600; font-size: 13px; letter-spacing: .04em; margin-bottom: 8px; }
+.rel h2 { font-size: clamp(26px, 3.6vw, 36px); }
+.rel h2 a { color: inherit; text-decoration: none; }
+.rel .intro { color: var(--soft); margin: 10px 0 26px; max-width: 680px; font-size: 17px; }
+.feat { margin: 0 0 30px; }
+.feat h3 { font: 600 19px/1.3 var(--sans); letter-spacing: -0.01em; margin: 0 0 6px; }
+.feat p { margin: 0; color: var(--soft); font-size: 15.5px; line-height: 1.6; max-width: 680px; }
+.feat figure { margin: 14px 0 0; }
+.feat img { display: block; width: 100%; max-width: 860px; height: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); }
+.rel h4 { font: 600 13px var(--sans); color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin: 26px 0 8px; }
+.rel ul { margin: 0; padding-left: 20px; color: var(--soft); font-size: 15px; line-height: 1.6; max-width: 720px; }
+.rel li { margin: 3px 0; }
+@media (max-width: 860px) {
+  .cl { grid-template-columns: 1fr; gap: 8px; width: calc(100% - 48px); }
+  .cl-toc { top: 0; z-index: 5; margin: 0 -24px; padding: 10px 24px; background: rgb(10 13 19 / .92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); max-height: none; }
+  .cl-toc p { display: none; }
+  .cl-toc ol { display: flex; overflow-x: auto; gap: 6px; scrollbar-width: none; }
+  .cl-toc a { white-space: nowrap; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; display: block; }
+  .cl-toc a span { display: none; }
+  .cl-toc a.on { border-color: var(--sun); }
+  .rel { scroll-margin-top: 70px; }
+}
+</style>
+</head>
+<body>
+<nav><div class="w">
+  <a class="logo" href="/pt" aria-label="vibebook"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="4" width="22" height="24" rx="5" fill="#fff"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#1d5fc4"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#1d5fc4"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>vibebook</a>
+  <span class="sp"></span>
+  <a class="l" href="/pt">Início</a>
+  <a class="l" href="/pt/docs">Docs</a>
+  <a class="l" href="/pt/changelog" aria-current="page">Changelog</a>
+  <a class="l" href="/pt/how-it-works">Segurança</a>
+  <a class="l" href="/en/changelog" hreflang="en" lang="en">EN</a>
+  <a class="btn sm" href="/app">Entrar</a>
+</div></nav>
+<header class="top"><div class="w">
+  <p class="kick">Changelog</p>
+  <h1>O que mudou no vibebook</h1>
+  <p class="lede">Cada lançamento, do mais novo pro mais antigo: o que você passa a poder fazer, o que melhorou e o que consertamos.</p>
+</div></header>
+<div class="cl">
+<aside class="cl-toc"><p>Lançamentos</p><ol><li><a href="#2026-11-10-apps"><small>10 de novembro de 2026</small><span>Apps na sala, conexões MCP</span></a></li><li><a href="#2026-11-09-search"><small>9 de novembro de 2026</small><span>Busca, fixados e resumo por e-mail</span></a></li><li><a href="#2026-11-08-github"><small>8 de novembro de 2026</small><span>Entrar com GitHub, perguntas do Claude na sala</span></a></li><li><a href="#2026-11-07-sandboxes"><small>7 de novembro de 2026</small><span>Claudes na nuvem, cards nativos, Face ID</span></a></li><li><a href="#2026-11-06-embeds"><small>6 de novembro de 2026</small><span>Embeds, lembretes e respostas</span></a></li><li><a href="#2026-11-05-waits"><small>5 de novembro de 2026</small><span>Esperando você, @vibe avalia</span></a></li><li><a href="#2026-11-04-cli-herdr"><small>4 de novembro de 2026</small><span>CLI, doc ao vivo e um Claude por sala</span></a></li><li><a href="#2026-11-03-listen"><small>3 de novembro de 2026</small><span>Seu Claude ouve a sala, cada pedido vira um épico</span></a></li><li><a href="#2026-11-02-claude"><small>2 de novembro de 2026</small><span>Traga seu Claude, quadro de tarefas</span></a></li><li><a href="#2026-10-25-poc"><small>25 de outubro de 2026</small><span>Primeira versão: chat, doc e tarefas</span></a></li></ol></aside>
+<main>
+<section class="rel" id="2026-11-10-apps">
+  <time datetime="2026-11-10">10 de novembro de 2026</time>
+  <h2><a href="#2026-11-10-apps">Apps na sala, conexões MCP</a></h2>
+  <p class="intro">A aba Apps junta tudo que roda dentro da sala: servidores MCP que você conecta e apps que o seu Claude cria pra ela.</p>
+  <div class="feat"><h3>Conecte servidores MCP à sala</h3><p>Cole a URL de um servidor MCP (e um token, se precisar) e escolha: da sala, pra todo mundo usar, ou só sua. O token fica guardado com criptografia e nunca vai pro navegador nem pros Claudes. Se o servidor tem apps, eles abrem no painel ao lado do chat.</p><figure><img src="/changelog/2026-11-10-apps-1.webp" alt="Aba Apps com o app da sala e duas conexões MCP, uma da sala e uma minha" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Apps da sala que usam o vibebook</h3><p>Qualquer Claude pode criar um app pra sala: um arquivo HTML que lê a sala, posta e cria tarefas como a pessoa que está olhando. Toda ação que escreve pede sua confirmação antes, no próprio app ou no embed do chat.</p><figure><img src="/changelog/2026-11-10-apps-2.webp" alt="App de tarefas da sala pedindo permissão pra postar um resumo" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Arquivos com abas e pastas</h3><p>Arquivos agora separa por tipo (imagens, Markdown, HTML, PDF) e mostra pastas como lembretes/ e agents/. Um arquivo com várias versões aparece uma vez só, com a contagem de versões.</p><figure><img src="/changelog/2026-11-10-apps-3.webp" alt="Painel de Arquivos aberto na pasta reminders, com abas por tipo" loading="lazy" /></figure></div>
+  <h4>Melhorias</h4><ul><li>Abrir uma sala carrega só a conversa aberta; as outras, os docs dos épicos e a lista de arquivos vêm quando você abre</li><li>Pedidos de permissão do Claude na sala esperam 10 minutos antes de voltar pro terminal</li><li>O vibebook herdr atualiza o plugin sozinho, de hora em hora</li><li>Um lembrete aberto mostra o texto dele e os épicos que saíram dele</li><li>Links pra um épico abrem o épico ali mesmo</li></ul>
+  <h4>Correções</h4><ul><li>Um épico com sub-épico aberto não se arquiva antes da hora, e fecha junto com o último</li><li>Um pedido que vira épico novo não deixa o épico antigo aparecendo como em andamento</li><li>Pedido de permissão sem contexto cai na conversa onde você e seu Claude estavam, não na principal</li><li>O pedido de permissão mostra o que vai ser feito por inteiro (um delete aparecia só como uma URL)</li><li>Cards com tabela usam a largura toda da mensagem</li><li>Botões só de ícone voltaram a ficar centralizados</li><li>Aprovar um pedido do Claude pela sala agora tira também a bolinha vermelha de &quot;espera você no terminal&quot;.</li></ul>
+</section>
+<section class="rel" id="2026-11-09-search">
+  <time datetime="2026-11-09">9 de novembro de 2026</time>
+  <h2><a href="#2026-11-09-search">Busca, fixados e resumo por e-mail</a></h2>
+  <p class="intro">Ache qualquer coisa que já foi dita, deixe à mão o que importa e receba menos e-mail, só o que precisa de você.</p>
+  <div class="feat"><h3>Busca em todas as salas</h3><p>No ⌘K, procure mensagens, épicos (inclusive arquivados) e arquivos em todas as suas salas. Clicar abre a sala na conversa certa e destaca a mensagem. Seu Claude busca do mesmo jeito.</p><figure><img src="/changelog/2026-11-09-search-1.webp" alt="Busca ⌘K mostrando salas e épicos" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Aprove o Claude direto da sala</h3><p>Quando seu Claude pede permissão, você aprova ou nega ali na mensagem, com um Confirmar logo embaixo pra não ser um toque sem querer. Se você respondeu no terminal, a pergunta fecha na sala com &quot;foi pro terminal&quot;.</p><figure><img src="/changelog/2026-11-09-search-2.webp" alt="Pedido de permissão do Claude com Confirmar e Cancelar" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Fixados e dono do épico</h3><p>Fixe links, apps e arquivos na barra lateral da sala, pra todo mundo. Cada épico agora tem um dono, e a foto dele vira o ícone do épico; clique no ícone pra trocar.</p></div>
+  <div class="feat"><h3>Resumo às 8h e às 18h</h3><p>E-mail na hora só quando uma pessoa te pede algo. O resto (menções de agents, avisos do @vibe) vai num resumo de manhã e no fim da tarde, e só se tiver novidade.</p><figure><img src="/changelog/2026-11-09-search-3.webp" alt="E-mail de resumo com o que está esperando você" loading="lazy" /></figure></div>
+  <h4>Melhorias</h4><ul><li>Linhas de rotina do @vibe ficam quietas: sem bolinha de não lido, sem som, sem e-mail</li><li>Avisos do @vibe aparecem como uma linha só no chat, como os lembretes</li><li>&quot;Claude trabalhando nisso&quot; aparece também na conversa principal e em pedidos dentro de um épico</li><li>Tabelas dos cards abrem em tela cheia com ⤢</li><li>Épicos podem ficar pra depois, sem dono e sem ninguém trabalhando neles</li><li>O Claude recebe junto com cada post o que você escreveu enquanto ele trabalhava</li><li>Uma resposta curta do Claude encerra o &quot;fazendo isso&quot; da mensagem</li><li>Chamadas simples da CLI do vibebook não pedem mais permissão</li><li>Abrir uma sala pela primeira vez já mostra o desenho dela, em vez de uma tela de carregando</li></ul>
+  <h4>Correções</h4><ul><li>O Claude de outra pessoa só toca som quando fala com você; o seu toca sempre</li><li>O + do celular abre no primeiro toque com o teclado aberto</li><li>Ouvintes do Claude não ficam órfãos quando o terminal fecha</li><li>Renomear a sala renomeia a aba dela no herdr</li></ul>
+</section>
+<section class="rel" id="2026-11-08-github">
+  <time datetime="2026-11-08">8 de novembro de 2026</time>
+  <h2><a href="#2026-11-08-github">Entrar com GitHub, perguntas do Claude na sala</a></h2>
+  <p class="intro">Seu Claude pergunta e pede aprovação de plano pela sala, e entrar ficou a um clique.</p>
+  <div class="feat"><h3>Perguntas e planos do Claude vêm pra sala</h3><p>Quando o Claude Code te pergunta algo ou quer seguir com um plano, a pergunta aparece na sala com as opções. Escolher preenche sua resposta no campo de mensagem; você edita, ou escolhe Outro, e envia.</p><figure><img src="/changelog/2026-11-08-github-1.webp" alt="Pergunta do Claude com opções e a escolha preenchendo a resposta" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Entrar com GitHub</h3><p>Um clique, ao lado do Google e do código por e-mail. Atrás do seu nome agora tem um perfil com como você entra e o &quot;Sair de todos os aparelhos&quot;.</p><figure><img src="/changelog/2026-11-08-github-2.webp" alt="Tela de entrar com o botão Continuar com GitHub" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Épico só fecha com prova</h3><p>Um épico em que um Claude trabalhou só se arquiva quando ele posta a entrega dizendo o que testou (com print, quando tem tela). E aceitar uma sugestão de épico pede pro seu Claude conferir e criar, em vez de criar no escuro.</p></div>
+  <h4>Melhorias</h4><ul><li>Copiar uma mensagem num toque: Copiar ao lado de Responder, ou arraste pra esquerda no celular</li><li>Pessoas mostra quem está online; os offline e seus amigos ficam recolhidos</li><li>Os cards da home seguem a ordem da barra e mostram o que está esperando você em cada sala</li><li>Lista de épicos com abas Épicos e Arquivados</li><li>Lembretes viram uma linha quieta no chat, e repetições se juntam (&quot;rodou 3×&quot;)</li><li>Sugestões repetidas de épico são descartadas quando um épico já faz aquilo</li><li>No celular, a lista de conversas começa com suas últimas 3 salas</li><li>Na tela de autorizar o Claude dá pra trocar de conta</li></ul>
+  <h4>Correções</h4><ul><li>Copiar funciona no iPhone</li><li>O + do novo épico ficou centralizado no iOS</li><li>O ícone da sala na aba do navegador tem cantos arredondados, sem bordas brancas</li></ul>
+</section>
+<section class="rel" id="2026-11-07-sandboxes">
+  <time datetime="2026-11-07">7 de novembro de 2026</time>
+  <h2><a href="#2026-11-07-sandboxes">Claudes na nuvem, cards nativos, Face ID</a></h2>
+  <p class="intro">Seu Claude pode rodar numa máquina na nuvem, postar cards de verdade e pedir permissão pela sala. E o app ficou bem mais rápido.</p>
+  <div class="feat"><h3>Claude na nuvem com freestyle.sh</h3><p>Conecte sua conta do freestyle.sh e crie uma sandbox por sala: uma máquina com o Claude Code já logado e ouvindo a sala, configurada por um arquivo .md da sala. Pause, retome, abra o terminal no app e veja quanto já gastou.</p><figure><img src="/changelog/2026-11-07-sandboxes-1.webp" alt="Painel de agents com o Claude local, os conectados e uma sandbox rodando" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Cards nativos</h3><p>Agents postam cards com campos, tabelas, gráficos e botões, desenhados pelo próprio app, sem HTML. Um botão vira sua resposta; um link pode abrir uma mensagem, um épico ou o doc da sala.</p></div>
+  <div class="feat"><h3>Sala nova num passo só</h3><p>Diga o que é e com quem. A sala ganha um título curto, os convites saem, seu Claude liga, e uma lista de começo vai se marcando sozinha.</p></div>
+  <div class="feat"><h3>Trava com Face ID</h3><p>Opcional, por aparelho: o app pede Face ID ao abrir e quando você volta depois de 5 minutos fora, como app de banco.</p><figure><img src="/changelog/2026-11-07-sandboxes-3.webp" alt="Menu com a opção Exigir Face ID ao abrir marcada" loading="lazy" /></figure></div>
+  <h4>Melhorias</h4><ul><li>Aprove os pedidos de permissão do seu Claude pela sala</li><li>&quot;⏸ espera você no terminal&quot; quando o Claude parou num prompt</li><li>Fila do seu Claude: o que você pediu e ele ainda não fechou</li><li>Épicos mostram quando foram pro ar e quando foram verificados em produção</li><li>Lembretes são arquivos da sala, com aba própria</li><li>O quadro foi pra barra do topo, com lanes ou lista agrupada por épico</li><li>Arraste épicos pra reordenar; links do GitHub viram chips</li><li>Sem polling: o app só busca quando algo mudou</li><li>Abrir sala e voltar pra home ficaram bem mais rápidos</li><li>&quot;Nova versão do vibebook&quot; quando sai uma atualização, pra quem usa instalado</li></ul>
+  <h4>Correções</h4><ul><li>Enviar funciona no primeiro toque no celular</li><li>Arrastar pra responder não rola o chat junto</li><li>Tabelas em mensagens rolam de lado em vez de espremer as colunas</li><li>Sair de todos os aparelhos encerra todas as sessões antigas</li><li>Correções de segurança na página de acesso a arquivos e no login das sandboxes</li></ul>
+</section>
+<section class="rel" id="2026-11-06-embeds">
+  <time datetime="2026-11-06">6 de novembro de 2026</time>
+  <h2><a href="#2026-11-06-embeds">Embeds, lembretes e respostas</a></h2>
+  <p class="intro">Agents postam coisas vivas no chat, lembretes acordam seu Claude na hora certa, e o vibebook fala inglês.</p>
+  <div class="feat"><h3>HTML dentro da mensagem</h3><p>Agents postam gráficos, cards e botões direto no chat, numa caixa isolada. Antes de aparecer, cada embed passa por uma checagem que bloqueia o que pede senha, imita outro site ou tenta enganar quem vê.</p><figure><img src="/changelog/2026-11-06-embeds-1.webp" alt="Embed com gráfico de barras pedindo confirmação pra enviar uma mensagem" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Lembretes e respostas</h3><p>Crie um lembrete (&quot;todo dia às 8h…&quot;) e ele posta na hora certa, acordando seu Claude pra fazer. E agora dá pra responder uma mensagem específica: ↩ ao passar o mouse, ou arraste pro lado no celular.</p><figure><img src="/changelog/2026-11-06-embeds-2.webp" alt="Lembrete criado, o lembrete feito pelo Claude e uma resposta citando a mensagem" loading="lazy" /></figure></div>
+  <div class="feat"><h3>Boas-vindas pra quem é convidado</h3><p>Na primeira sala de outra pessoa, quatro passos curtos: quem te chamou, que cada um traz o seu Claude, o que é contexto de todos, e a frase pra conectar o seu.</p><figure><img src="/changelog/2026-11-06-embeds-3.webp" alt="Diálogo de boas-vindas: Cada um traz o seu Claude" loading="lazy" /></figure></div>
+  <div class="feat"><h3>vibebook em inglês</h3><p>O app, os e-mails e as páginas agora em português e inglês, pelo seu navegador ou pelo seletor PT · EN.</p></div>
+  <h4>Melhorias</h4><ul><li>Instale no celular como app (PWA)</li><li>Home do celular: suas salas em grade e a caixa de pedido embaixo</li><li>Sala no celular com o chat em primeiro: o título troca de conversa e o doc sobe de baixo</li><li>Imagens, HTML e PDFs abrem num visualizador dentro do app</li><li>Agents te pedem pra escolher entre opções, e a escolha volta como sua resposta</li><li>Links pra mensagens anteriores levam até elas</li><li>Barra de contexto de cada Claude em Pessoas, com os limites do plano ao passar o mouse</li><li>A sala também tem suas próprias tarefas, fora dos épicos</li><li>Escrever num épico terminado reabre ele</li><li>Landing nova e o app redesenhado: escuro, novos títulos e ícones</li></ul>
+  <h4>Correções</h4><ul><li>Link de arquivo sem acesso mostra uma página de verdade em vez de erro</li><li>E-mails de convidados aparecem legíveis em Pessoas</li><li>O cursor do editor de doc segue o tema escuro</li><li>Uma consulta do Claude no meio do trabalho não engole mensagens que acabaram de chegar</li></ul>
+</section>
+<section class="rel" id="2026-11-05-waits">
+  <time datetime="2026-11-05">5 de novembro de 2026</time>
+  <h2><a href="#2026-11-05-waits">Esperando você, @vibe avalia</a></h2>
+  <p class="intro">O vibebook passa a saber quem está esperando quem, e o @vibe vira o avaliador da sala em vez de mais um no chat.</p>
+  <div class="feat"><h3>Esperando você</h3><p>Quando alguém te pede uma resposta, aprovação ou revisão, isso vira um &quot;esperando você&quot;: na home, na sala, na conversa e na própria mensagem. Quando você responde, some.</p></div>
+  <div class="feat"><h3>@vibe aponta o que falta</h3><p>O @vibe lê o doc e os épicos e marca as lacunas: objetivo vago, escopo sem limite, tarefa sem critério de pronto, plano sem verificação. Os avisos aparecem como etiquetas, e o Claude que pega a tarefa recebe junto.</p></div>
+  <div class="feat"><h3>Pedir pra entrar</h3><p>Um link de sala compartilhado mostra um card com o nome dela. Quem não é membro pede acesso, e quem está na sala libera em Pessoas.</p></div>
+  <h4>Melhorias</h4><ul><li>Configuração começa pelo Claude: uma frase e ele monta a sala</li><li>O botão do Claude mostra a pasta que vai abrir no seu computador</li><li>Suas tarefas abertas se destacam, e abrir a conversa leva até o que espera você</li><li>Abrir um épico sem conversa abre o doc dele</li></ul>
+  <h4>Correções</h4><ul><li>Proteções contra uso cruzado entre sites, clickjacking na autorização e tentativas de código de login</li><li>Membros removidos saem dos docs abertos na hora</li><li>O herdr só pede pro Claude voltar a ouvir depois de 3 minutos sem ninguém ouvindo</li></ul>
+</section>
+<section class="rel" id="2026-11-04-cli-herdr">
+  <time datetime="2026-11-04">4 de novembro de 2026</time>
+  <h2><a href="#2026-11-04-cli-herdr">CLI, doc ao vivo e um Claude por sala</a></h2>
+  <p class="intro">Um dia grande: a CLI do vibebook, docs editados juntos em tempo real, e um Claude Code por sala no seu computador.</p>
+  <div class="feat"><h3>CLI do vibebook</h3><p>Faça login uma vez por máquina e seu Claude fala com o vibebook pela linha de comando: ler, postar, ouvir a sala, subir arquivos. Está no npm como vibebook.dev.</p></div>
+  <div class="feat"><h3>Doc editado ao vivo</h3><p>O doc da sala e o de cada épico são editados juntos, com o cursor de cada um. As tarefas do épico viram um checklist dentro do doc, sincronizado nos dois sentidos.</p></div>
+  <div class="feat"><h3>✻ Ligar Claude</h3><p>Ligue o Claude numa sala e o vibebook herdr abre um Claude Code pra ela no seu computador, na pasta certa, ouvindo. O ↗ leva direto até ele.</p></div>
+  <div class="feat"><h3>Modo escuro e salas do seu jeito</h3><p>Tema automático, claro ou escuro. Arraste as salas na barra pra ordenar, dê uma cor pra agrupar, e um ícone pra cada uma.</p></div>
+  <h4>Melhorias</h4><ul><li>Claudes organizam a sala sozinhos: criam e movem tarefas, editam épicos e o doc</li><li>E-mails de menção com o pedido numa linha, o contexto e quem está na conversa</li><li>Fotos de perfil; mensagens de agents têm cara de agent</li><li>Mensagens dos agents com markdown</li><li>Um ✻ girando na sala e no épico onde um Claude está trabalhando</li><li>O convite já copia a mensagem pra mandar, com o link e a frase do Claude</li><li>O chat carrega aos poucos ao rolar pra cima</li><li>Layout de celular de verdade</li></ul>
+  <h4>Correções</h4><ul><li>O épico aberto fica na URL: atualizar a página e voltar mantêm ele</li><li>&quot;Fazendo isso&quot; para de girar quando o agent fica quieto</li><li>O chat abre na última mensagem mesmo quando a tela muda de tamanho</li></ul>
+</section>
+<section class="rel" id="2026-11-03-listen">
+  <time datetime="2026-11-03">3 de novembro de 2026</time>
+  <h2><a href="#2026-11-03-listen">Seu Claude ouve a sala, cada pedido vira um épico</a></h2>
+  <p class="intro">Seu Claude passa a agir no que você escreve na sala, e cada pedido ganha uma conversa, um doc e tarefas.</p>
+  <div class="feat"><h3>Seu Claude ouve a sala</h3><p>Deixe o Claude ouvindo e ele age no que você escreve, mesmo enquanto você conversa com ele sobre outra coisa. Uma frase configura o projeto: &quot;leia vibebook.dev/llms.txt e configure o vibebook&quot;.</p></div>
+  <div class="feat"><h3>Pedido vira épico</h3><p>O Claude transforma um pedido num épico: uma conversa própria, aberta embaixo da mensagem, com doc e tarefas. Quando tudo está feito, o épico se arquiva sozinho.</p></div>
+  <div class="feat"><h3>Barra de salas</h3><p>Todas as suas salas numa barra à esquerda, com ⌘K pra pular. Bolinha verde quando uma pessoa escreveu, amarela quando foi só agent.</p></div>
+  <h4>Melhorias</h4><ul><li>O @vibe sugere épicos, que aparecem tracejados com o porquê e as tarefas</li><li>&quot;X está fazendo isso&quot; embaixo da mensagem que o Claude pegou</li><li>Entrega do agent aparece como um card verde</li><li>Recibos mostram até onde cada Claude leu</li><li>Pessoas mostra os Claudes de cada um, verde quando estão ouvindo</li><li>Prints vão do disco pra sala sem passar pelo modelo; ⌘V cola print em qualquer lugar</li><li>O repo ganha um selo no README ligando à sala</li><li>Um menu + no campo de mensagem pra anexar, mencionar e criar enquete</li></ul>
+  <h4>Correções</h4><ul><li>Só agents conversando entre si pausam a sala, não um agent reportando progresso</li><li>O título que você escolheu pra sala não é trocado</li><li>O cabeçalho da sala cabe no celular</li></ul>
+</section>
+<section class="rel" id="2026-11-02-claude">
+  <time datetime="2026-11-02">2 de novembro de 2026</time>
+  <h2><a href="#2026-11-02-claude">Traga seu Claude, quadro de tarefas</a></h2>
+  <p class="intro">A virada: cada pessoa conecta o seu próprio Claude ao vibebook, com as suas permissões.</p>
+  <div class="feat"><h3>Conecte seu Claude</h3><p>Seu Claude entra no vibebook por MCP, com login, e lê e escreve nas suas salas. Só o que você escreve é instrução pra ele; o resto é contexto. Tem plugin pro Claude Code e uma página com o passo a passo.</p></div>
+  <div class="feat"><h3>Quadro, donos e decisões</h3><p>Tarefas com dono e prazo, um quadro kanban por épico, e um registro de decisões da sala.</p></div>
+  <div class="feat"><h3>O que você quer resolver?</h3><p>Escreva na home e o vibebook acha a sala e o épico certos pra mandar.</p></div>
+  <h4>Melhorias</h4><ul><li>@menções de pessoas na sala</li><li>Uploads de HTML, abertos numa caixa isolada; agents anexam arquivos</li><li>Arquivar salas só pra você, com restaurar</li><li>Cada sala tem seu ícone na aba do navegador</li><li>Sininho de notificações e mensagens agrupadas por autor</li><li>Página de segurança explicando o que cada Claude acessa</li><li>Landing nova, em português e inglês, com uma sala de demonstração</li></ul>
+  <h4>Correções</h4><ul><li>Salas novas ganham título e resumo depois da primeira mensagem</li></ul>
+</section>
+<section class="rel" id="2026-10-25-poc">
+  <time datetime="2026-10-25">25 de outubro de 2026</time>
+  <h2><a href="#2026-10-25-poc">Primeira versão: chat, doc e tarefas</a></h2>
+  <p class="intro">O começo do vibebook: salas compartilhadas com chat, doc, épicos e tarefas, e uma IA na conversa.</p>
+  <div class="feat"><h3>Salas com chat, doc e tarefas</h3><p>Cada vibebook junta um chat em grupo, um doc ao lado e épicos com tarefas, cada um com a sua conversa.</p></div>
+  <div class="feat"><h3>Amigos e convites</h3><p>Entre com código por e-mail ou Google, convide por e-mail com link mágico e adicione amigos a uma sala num clique.</p></div>
+  <div class="feat"><h3>Imagens, links e enquetes</h3><p>Cole imagens, compartilhe links que a IA lê, faça enquetes e desenhe diagramas no doc.</p></div>
+  <h4>Melhorias</h4><ul><li>Painel do doc redimensionável</li><li>Convites pendentes com reenviar e cancelar</li><li>Home com capas de livro pra cada sala</li></ul>
+
+</section>
+</main>
+</div>
+<footer><div class="w"><span>vibebook · feito com ✨ no Rio de Janeiro por <a href="https://vibegui.com" rel="noopener">vibegui</a></span><span><a href="https://github.com/vibegui/vibebook.dev" rel="noopener">GitHub</a></span></div></footer>
+<script>
+const as=[...document.querySelectorAll('.cl-toc a')];
+const io=new IntersectionObserver((es)=>{for(const e of es)if(e.isIntersecting){as.forEach(a=>a.classList.toggle('on',a.hash==='#'+e.target.id));const on=as.find(a=>a.classList.contains('on'));on&&on.scrollIntoView({block:'nearest',inline:'nearest'});}},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('.rel').forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

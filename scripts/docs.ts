@@ -216,6 +216,7 @@ ${ch.feats.map((f) => `    <div class="dz-f"><h3>${esc(g(f.t))}</h3><p>${esc(g(f
   <span class="sp"></span>
   <a class="l" href="/${lang}">${g(T.home)}</a>
   <a class="l" href="/${lang}/docs" aria-current="page">Docs</a>
+  <a class="l" href="/${lang}/changelog">Changelog</a>
   <a class="l" href="/${lang}/how-it-works">${g(T.sec)}</a>
   <a class="l" href="/${o}/docs" hreflang="${o}" lang="${o}">${o.toUpperCase()}</a>
   <a class="btn sm" href="/app">${g(T.signin)}</a>

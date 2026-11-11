@@ -1,0 +1,875 @@
+[
+  {
+    "date": "2026-11-10",
+    "slug": "2026-11-10-apps",
+    "title": {
+      "pt": "Apps na sala, conexões MCP",
+      "en": "Apps in the room, MCP connections"
+    },
+    "intro": {
+      "pt": "A aba Apps junta tudo que roda dentro da sala: servidores MCP que você conecta e apps que o seu Claude cria pra ela.",
+      "en": "The Apps tab brings together everything that runs inside a room: MCP servers you connect and apps your Claude builds for it."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Conecte servidores MCP à sala",
+          "en": "Connect MCP servers to a room"
+        },
+        "text": {
+          "pt": "Cole a URL de um servidor MCP (e um token, se precisar) e escolha: da sala, pra todo mundo usar, ou só sua. O token fica guardado com criptografia e nunca vai pro navegador nem pros Claudes. Se o servidor tem apps, eles abrem no painel ao lado do chat.",
+          "en": "Paste an MCP server URL (and a token if it needs one) and choose: for the room, so everyone can use it, or just for you. The token is stored encrypted and never reaches the browser or the Claudes. If the server has apps, they open in the panel next to the chat."
+        },
+        "image": "changelog/2026-11-10-apps-1.webp",
+        "alt": {
+          "pt": "Aba Apps com o app da sala e duas conexões MCP, uma da sala e uma minha",
+          "en": "Apps tab with a room app and two MCP connections, one shared and one personal"
+        }
+      },
+      {
+        "title": {
+          "pt": "Apps da sala que usam o vibebook",
+          "en": "Room apps that use vibebook"
+        },
+        "text": {
+          "pt": "Qualquer Claude pode criar um app pra sala: um arquivo HTML que lê a sala, posta e cria tarefas como a pessoa que está olhando. Toda ação que escreve pede sua confirmação antes, no próprio app ou no embed do chat.",
+          "en": "Any Claude can build an app for the room: an HTML file that reads the room, posts and adds tasks as the person looking at it. Every action that writes asks you first, in the app itself or in the chat embed."
+        },
+        "image": "changelog/2026-11-10-apps-2.webp",
+        "alt": {
+          "pt": "App de tarefas da sala pedindo permissão pra postar um resumo",
+          "en": "A room's task app asking permission to post a summary"
+        }
+      },
+      {
+        "title": {
+          "pt": "Arquivos com abas e pastas",
+          "en": "Files with tabs and folders"
+        },
+        "text": {
+          "pt": "Arquivos agora separa por tipo (imagens, Markdown, HTML, PDF) e mostra pastas como lembretes/ e agents/. Um arquivo com várias versões aparece uma vez só, com a contagem de versões.",
+          "en": "Files now splits by type (images, Markdown, HTML, PDF) and shows folders like reminders/ and agents/. A file with several versions shows once, with its version count."
+        },
+        "image": "changelog/2026-11-10-apps-3.webp",
+        "alt": {
+          "pt": "Painel de Arquivos aberto na pasta reminders, com abas por tipo",
+          "en": "Files panel open on the reminders folder, with type tabs"
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Abrir uma sala carrega só a conversa aberta; as outras, os docs dos épicos e a lista de arquivos vêm quando você abre",
+        "Pedidos de permissão do Claude na sala esperam 10 minutos antes de voltar pro terminal",
+        "O vibebook herdr atualiza o plugin sozinho, de hora em hora",
+        "Um lembrete aberto mostra o texto dele e os épicos que saíram dele",
+        "Links pra um épico abrem o épico ali mesmo"
+      ],
+      "en": [
+        "Opening a room loads only the open conversation; the others, epic docs and the file list load when you open them",
+        "Claude's permission asks in the room wait 10 minutes before going back to the terminal",
+        "vibebook herdr updates the plugin by itself, every hour",
+        "An open reminder shows its text and the epics that came from it",
+        "Links to an epic open it right there"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Um épico com sub-épico aberto não se arquiva antes da hora, e fecha junto com o último",
+        "Um pedido que vira épico novo não deixa o épico antigo aparecendo como em andamento",
+        "Pedido de permissão sem contexto cai na conversa onde você e seu Claude estavam, não na principal",
+        "O pedido de permissão mostra o que vai ser feito por inteiro (um delete aparecia só como uma URL)",
+        "Cards com tabela usam a largura toda da mensagem",
+        "Botões só de ícone voltaram a ficar centralizados",
+        "Aprovar um pedido do Claude pela sala agora tira também a bolinha vermelha de \"espera você no terminal\"."
+      ],
+      "en": [
+        "An epic with an open sub-epic doesn't archive too early, and closes with the last one",
+        "A request that becomes a new epic no longer leaves the old epic showing as in progress",
+        "A permission ask with no context lands in the conversation where you and your Claude were, not the main one",
+        "Permission asks show the whole action (a delete used to show as just a URL)",
+        "Cards with tables use the message's full width",
+        "Icon-only buttons are centered again",
+        "Approving a Claude's request in the room now also clears the red \"waiting for you in the terminal\" dot."
+      ]
+    }
+  },
+  {
+    "date": "2026-11-09",
+    "slug": "2026-11-09-search",
+    "title": {
+      "pt": "Busca, fixados e resumo por e-mail",
+      "en": "Search, pins and a catch-up e-mail"
+    },
+    "intro": {
+      "pt": "Ache qualquer coisa que já foi dita, deixe à mão o que importa e receba menos e-mail, só o que precisa de você.",
+      "en": "Find anything that was said, keep what matters at hand, and get less e-mail, only what needs you."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Busca em todas as salas",
+          "en": "Search across your rooms"
+        },
+        "text": {
+          "pt": "No ⌘K, procure mensagens, épicos (inclusive arquivados) e arquivos em todas as suas salas. Clicar abre a sala na conversa certa e destaca a mensagem. Seu Claude busca do mesmo jeito.",
+          "en": "In ⌘K, search messages, epics (archived ones too) and files across all your rooms. A click opens the room on the right conversation and highlights the message. Your Claude can search the same way."
+        },
+        "image": "changelog/2026-11-09-search-1.webp",
+        "alt": {
+          "pt": "Busca ⌘K mostrando salas e épicos",
+          "en": "⌘K search showing rooms and epics"
+        }
+      },
+      {
+        "title": {
+          "pt": "Aprove o Claude direto da sala",
+          "en": "Approve your Claude from the room"
+        },
+        "text": {
+          "pt": "Quando seu Claude pede permissão, você aprova ou nega ali na mensagem, com um Confirmar logo embaixo pra não ser um toque sem querer. Se você respondeu no terminal, a pergunta fecha na sala com \"foi pro terminal\".",
+          "en": "When your Claude asks for permission, you approve or deny right on the message, with a Confirm right below so it's never a stray tap. If you answered in the terminal, the question closes in the room with \"went to the terminal\"."
+        },
+        "image": "changelog/2026-11-09-search-2.webp",
+        "alt": {
+          "pt": "Pedido de permissão do Claude com Confirmar e Cancelar",
+          "en": "Claude's permission ask with Confirm and Cancel"
+        }
+      },
+      {
+        "title": {
+          "pt": "Fixados e dono do épico",
+          "en": "Pins and epic owners"
+        },
+        "text": {
+          "pt": "Fixe links, apps e arquivos na barra lateral da sala, pra todo mundo. Cada épico agora tem um dono, e a foto dele vira o ícone do épico; clique no ícone pra trocar.",
+          "en": "Pin links, apps and files to the room's sidebar, for everyone. Each epic now has an owner whose face becomes the epic's icon; click the icon to change it."
+        }
+      },
+      {
+        "title": {
+          "pt": "Resumo às 8h e às 18h",
+          "en": "A catch-up at 8am and 6pm"
+        },
+        "text": {
+          "pt": "E-mail na hora só quando uma pessoa te pede algo. O resto (menções de agents, avisos do @vibe) vai num resumo de manhã e no fim da tarde, e só se tiver novidade.",
+          "en": "You get an e-mail right away only when a person asks you for something. Everything else (agent mentions, @vibe notices) goes into a morning and evening catch-up, and only when there's something new."
+        },
+        "image": "changelog/2026-11-09-search-3.webp",
+        "alt": {
+          "pt": "E-mail de resumo com o que está esperando você",
+          "en": "Catch-up e-mail listing what's waiting on you"
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Linhas de rotina do @vibe ficam quietas: sem bolinha de não lido, sem som, sem e-mail",
+        "Avisos do @vibe aparecem como uma linha só no chat, como os lembretes",
+        "\"Claude trabalhando nisso\" aparece também na conversa principal e em pedidos dentro de um épico",
+        "Tabelas dos cards abrem em tela cheia com ⤢",
+        "Épicos podem ficar pra depois, sem dono e sem ninguém trabalhando neles",
+        "O Claude recebe junto com cada post o que você escreveu enquanto ele trabalhava",
+        "Uma resposta curta do Claude encerra o \"fazendo isso\" da mensagem",
+        "Chamadas simples da CLI do vibebook não pedem mais permissão",
+        "Abrir uma sala pela primeira vez já mostra o desenho dela, em vez de uma tela de carregando"
+      ],
+      "en": [
+        "@vibe's routine lines are quiet: no unread dot, no sound, no e-mail",
+        "@vibe's notices show as a single line in the chat, like reminders",
+        "\"Claude is working on it\" also shows in the main conversation and for asks inside an epic",
+        "Card tables open full screen with ⤢",
+        "Epics can be kept for later, with no owner and nobody working on them",
+        "With each post, Claude gets back what you wrote while it was working",
+        "A short answer from Claude ends the message's \"doing this\"",
+        "Plain vibebook CLI calls no longer ask for permission",
+        "Opening a room for the first time shows its layout right away instead of a loading screen"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "O Claude de outra pessoa só toca som quando fala com você; o seu toca sempre",
+        "O + do celular abre no primeiro toque com o teclado aberto",
+        "Ouvintes do Claude não ficam órfãos quando o terminal fecha",
+        "Renomear a sala renomeia a aba dela no herdr"
+      ],
+      "en": [
+        "Someone else's Claude only plays a sound when it talks to you; yours always does",
+        "The + on phones opens on the first tap with the keyboard up",
+        "Claude listeners no longer linger when their terminal closes",
+        "Renaming a room renames its herdr tab"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-08",
+    "slug": "2026-11-08-github",
+    "title": {
+      "pt": "Entrar com GitHub, perguntas do Claude na sala",
+      "en": "Sign in with GitHub, Claude's questions in the room"
+    },
+    "intro": {
+      "pt": "Seu Claude pergunta e pede aprovação de plano pela sala, e entrar ficou a um clique.",
+      "en": "Your Claude asks questions and plan approvals through the room, and signing in is one click away."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Perguntas e planos do Claude vêm pra sala",
+          "en": "Claude's questions and plans come to the room"
+        },
+        "text": {
+          "pt": "Quando o Claude Code te pergunta algo ou quer seguir com um plano, a pergunta aparece na sala com as opções. Escolher preenche sua resposta no campo de mensagem; você edita, ou escolhe Outro, e envia.",
+          "en": "When Claude Code asks you something or wants to go ahead with a plan, the question shows up in the room with its options. Picking one fills your reply in the message box; edit it, or choose Other, and send."
+        },
+        "image": "changelog/2026-11-08-github-1.webp",
+        "alt": {
+          "pt": "Pergunta do Claude com opções e a escolha preenchendo a resposta",
+          "en": "Claude's question with options and the pick filling the reply"
+        }
+      },
+      {
+        "title": {
+          "pt": "Entrar com GitHub",
+          "en": "Sign in with GitHub"
+        },
+        "text": {
+          "pt": "Um clique, ao lado do Google e do código por e-mail. Atrás do seu nome agora tem um perfil com como você entra e o \"Sair de todos os aparelhos\".",
+          "en": "One click, next to Google and the e-mail code. Behind your name there's now a profile with how you sign in and \"Sign out everywhere\"."
+        },
+        "image": "changelog/2026-11-08-github-2.webp",
+        "alt": {
+          "pt": "Tela de entrar com o botão Continuar com GitHub",
+          "en": "Sign-in screen with the Continue with GitHub button"
+        }
+      },
+      {
+        "title": {
+          "pt": "Épico só fecha com prova",
+          "en": "Epics close with proof"
+        },
+        "text": {
+          "pt": "Um épico em que um Claude trabalhou só se arquiva quando ele posta a entrega dizendo o que testou (com print, quando tem tela). E aceitar uma sugestão de épico pede pro seu Claude conferir e criar, em vez de criar no escuro.",
+          "en": "An epic a Claude worked in archives only once it posts a delivery saying what it tested (with a screenshot when there's a screen). And accepting a suggested epic asks your Claude to check and create it, instead of creating it blind."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Copiar uma mensagem num toque: Copiar ao lado de Responder, ou arraste pra esquerda no celular",
+        "Pessoas mostra quem está online; os offline e seus amigos ficam recolhidos",
+        "Os cards da home seguem a ordem da barra e mostram o que está esperando você em cada sala",
+        "Lista de épicos com abas Épicos e Arquivados",
+        "Lembretes viram uma linha quieta no chat, e repetições se juntam (\"rodou 3×\")",
+        "Sugestões repetidas de épico são descartadas quando um épico já faz aquilo",
+        "No celular, a lista de conversas começa com suas últimas 3 salas",
+        "Na tela de autorizar o Claude dá pra trocar de conta"
+      ],
+      "en": [
+        "Copy a message in one tap: Copy next to Reply, or swipe left on phones",
+        "People shows who's online; offline members and your friends fold away",
+        "Home cards follow the rail's order and show what's waiting on you in each room",
+        "Epic list with Epics and Archived tabs",
+        "Reminders become a quiet line in the chat, and repeats fold together (\"ran 3×\")",
+        "Duplicate epic suggestions are dropped when an epic already does that",
+        "On phones, the conversation list starts with your last 3 rooms",
+        "The Claude authorization page lets you switch accounts"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Copiar funciona no iPhone",
+        "O + do novo épico ficou centralizado no iOS",
+        "O ícone da sala na aba do navegador tem cantos arredondados, sem bordas brancas"
+      ],
+      "en": [
+        "Copying works on iPhone",
+        "The new epic + is centered on iOS",
+        "The room's icon in the browser tab has rounded corners, no white edges"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-07",
+    "slug": "2026-11-07-sandboxes",
+    "title": {
+      "pt": "Claudes na nuvem, cards nativos, Face ID",
+      "en": "Cloud Claudes, native cards, Face ID"
+    },
+    "intro": {
+      "pt": "Seu Claude pode rodar numa máquina na nuvem, postar cards de verdade e pedir permissão pela sala. E o app ficou bem mais rápido.",
+      "en": "Your Claude can run on a cloud machine, post real cards and ask for permission through the room. And the app got a lot faster."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Claude na nuvem com freestyle.sh",
+          "en": "Claude in the cloud with freestyle.sh"
+        },
+        "text": {
+          "pt": "Conecte sua conta do freestyle.sh e crie uma sandbox por sala: uma máquina com o Claude Code já logado e ouvindo a sala, configurada por um arquivo .md da sala. Pause, retome, abra o terminal no app e veja quanto já gastou.",
+          "en": "Connect your freestyle.sh account and create a sandbox per room: a machine with Claude Code already signed in and listening to the room, set up by a .md file in the room. Pause, resume, open its terminal in the app and see what it has cost."
+        },
+        "image": "changelog/2026-11-07-sandboxes-1.webp",
+        "alt": {
+          "pt": "Painel de agents com o Claude local, os conectados e uma sandbox rodando",
+          "en": "Agents pane with the local Claude, connected Claudes and a running sandbox"
+        }
+      },
+      {
+        "title": {
+          "pt": "Cards nativos",
+          "en": "Native cards"
+        },
+        "text": {
+          "pt": "Agents postam cards com campos, tabelas, gráficos e botões, desenhados pelo próprio app, sem HTML. Um botão vira sua resposta; um link pode abrir uma mensagem, um épico ou o doc da sala.",
+          "en": "Agents post cards with fields, tables, charts and buttons, drawn by the app itself, no HTML. A button becomes your reply; a link can open a message, an epic or the room's doc."
+        }
+      },
+      {
+        "title": {
+          "pt": "Sala nova num passo só",
+          "en": "A new room in one step"
+        },
+        "text": {
+          "pt": "Diga o que é e com quem. A sala ganha um título curto, os convites saem, seu Claude liga, e uma lista de começo vai se marcando sozinha.",
+          "en": "Say what it is and with whom. The room gets a short title, invites go out, your Claude turns on, and a start list ticks itself off."
+        }
+      },
+      {
+        "title": {
+          "pt": "Trava com Face ID",
+          "en": "Face ID lock"
+        },
+        "text": {
+          "pt": "Opcional, por aparelho: o app pede Face ID ao abrir e quando você volta depois de 5 minutos fora, como app de banco.",
+          "en": "Optional, per device: the app asks for Face ID when it opens and when you come back after 5 minutes away, like a banking app."
+        },
+        "image": "changelog/2026-11-07-sandboxes-3.webp",
+        "alt": {
+          "pt": "Menu com a opção Exigir Face ID ao abrir marcada",
+          "en": "Menu with Require Face ID to open checked"
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Aprove os pedidos de permissão do seu Claude pela sala",
+        "\"⏸ espera você no terminal\" quando o Claude parou num prompt",
+        "Fila do seu Claude: o que você pediu e ele ainda não fechou",
+        "Épicos mostram quando foram pro ar e quando foram verificados em produção",
+        "Lembretes são arquivos da sala, com aba própria",
+        "O quadro foi pra barra do topo, com lanes ou lista agrupada por épico",
+        "Arraste épicos pra reordenar; links do GitHub viram chips",
+        "Sem polling: o app só busca quando algo mudou",
+        "Abrir sala e voltar pra home ficaram bem mais rápidos",
+        "\"Nova versão do vibebook\" quando sai uma atualização, pra quem usa instalado"
+      ],
+      "en": [
+        "Approve your Claude's permission prompts from the room",
+        "\"⏸ waiting for you in the terminal\" when Claude stopped at a prompt",
+        "Your Claude's queue: what you asked that it hasn't closed yet",
+        "Epics show when they were deployed and when they were verified in production",
+        "Reminders are room files, with their own tab",
+        "The board moved to the top bar, as lanes or a list grouped by epic",
+        "Drag epics to reorder them; GitHub links become chips",
+        "No polling: the app only fetches when something changed",
+        "Opening a room and going back home got much faster",
+        "\"New vibebook version\" when an update is out, for installed apps"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Enviar funciona no primeiro toque no celular",
+        "Arrastar pra responder não rola o chat junto",
+        "Tabelas em mensagens rolam de lado em vez de espremer as colunas",
+        "Sair de todos os aparelhos encerra todas as sessões antigas",
+        "Correções de segurança na página de acesso a arquivos e no login das sandboxes"
+      ],
+      "en": [
+        "Send works on the first tap on phones",
+        "Swiping to reply no longer scrolls the chat",
+        "Tables in messages scroll sideways instead of squeezing columns",
+        "Sign out everywhere ends every older session",
+        "Security fixes on the file access page and on sandbox logins"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-06",
+    "slug": "2026-11-06-embeds",
+    "title": {
+      "pt": "Embeds, lembretes e respostas",
+      "en": "Embeds, reminders and replies"
+    },
+    "intro": {
+      "pt": "Agents postam coisas vivas no chat, lembretes acordam seu Claude na hora certa, e o vibebook fala inglês.",
+      "en": "Agents post live things in the chat, reminders wake your Claude at the right time, and vibebook speaks English."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "HTML dentro da mensagem",
+          "en": "HTML inside a message"
+        },
+        "text": {
+          "pt": "Agents postam gráficos, cards e botões direto no chat, numa caixa isolada. Antes de aparecer, cada embed passa por uma checagem que bloqueia o que pede senha, imita outro site ou tenta enganar quem vê.",
+          "en": "Agents post charts, cards and buttons right in the chat, in an isolated box. Before it shows, each embed is checked, and anything that asks for passwords, imitates another site or tries to trick the viewer is blocked."
+        },
+        "image": "changelog/2026-11-06-embeds-1.webp",
+        "alt": {
+          "pt": "Embed com gráfico de barras pedindo confirmação pra enviar uma mensagem",
+          "en": "Embed with a bar chart asking to confirm before sending a message"
+        }
+      },
+      {
+        "title": {
+          "pt": "Lembretes e respostas",
+          "en": "Reminders and replies"
+        },
+        "text": {
+          "pt": "Crie um lembrete (\"todo dia às 8h…\") e ele posta na hora certa, acordando seu Claude pra fazer. E agora dá pra responder uma mensagem específica: ↩ ao passar o mouse, ou arraste pro lado no celular.",
+          "en": "Set a reminder (\"every day at 8am…\") and it posts at the right time, waking your Claude to do it. And you can now reply to a specific message: ↩ on hover, or swipe on phones."
+        },
+        "image": "changelog/2026-11-06-embeds-2.webp",
+        "alt": {
+          "pt": "Lembrete criado, o lembrete feito pelo Claude e uma resposta citando a mensagem",
+          "en": "A reminder created, the reminder done by Claude and a reply quoting the message"
+        }
+      },
+      {
+        "title": {
+          "pt": "Boas-vindas pra quem é convidado",
+          "en": "A welcome for invited people"
+        },
+        "text": {
+          "pt": "Na primeira sala de outra pessoa, quatro passos curtos: quem te chamou, que cada um traz o seu Claude, o que é contexto de todos, e a frase pra conectar o seu.",
+          "en": "In the first room that isn't yours, four short steps: who invited you, that everyone brings their own Claude, what's shared context, and the sentence to connect yours."
+        },
+        "image": "changelog/2026-11-06-embeds-3.webp",
+        "alt": {
+          "pt": "Diálogo de boas-vindas: Cada um traz o seu Claude",
+          "en": "Welcome dialog: Everyone brings their own Claude"
+        }
+      },
+      {
+        "title": {
+          "pt": "vibebook em inglês",
+          "en": "vibebook in English"
+        },
+        "text": {
+          "pt": "O app, os e-mails e as páginas agora em português e inglês, pelo seu navegador ou pelo seletor PT · EN.",
+          "en": "The app, e-mails and pages now in Portuguese and English, from your browser or the PT · EN switch."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Instale no celular como app (PWA)",
+        "Home do celular: suas salas em grade e a caixa de pedido embaixo",
+        "Sala no celular com o chat em primeiro: o título troca de conversa e o doc sobe de baixo",
+        "Imagens, HTML e PDFs abrem num visualizador dentro do app",
+        "Agents te pedem pra escolher entre opções, e a escolha volta como sua resposta",
+        "Links pra mensagens anteriores levam até elas",
+        "Barra de contexto de cada Claude em Pessoas, com os limites do plano ao passar o mouse",
+        "A sala também tem suas próprias tarefas, fora dos épicos",
+        "Escrever num épico terminado reabre ele",
+        "Landing nova e o app redesenhado: escuro, novos títulos e ícones"
+      ],
+      "en": [
+        "Install it on your phone as an app (PWA)",
+        "Phone home: your rooms as a grid and the request box at the bottom",
+        "Phone room puts the chat first: the title switches conversations and the doc slides up",
+        "Images, HTML and PDFs open in an in-app viewer",
+        "Agents ask you to pick between options, and your pick comes back as your reply",
+        "Links to earlier messages take you there",
+        "Each Claude's context bar in People, with plan limits on hover",
+        "Rooms have their own tasks too, outside epics",
+        "Writing in a finished epic reopens it",
+        "New landing and a restyled app: dark, new headings and icons"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Link de arquivo sem acesso mostra uma página de verdade em vez de erro",
+        "E-mails de convidados aparecem legíveis em Pessoas",
+        "O cursor do editor de doc segue o tema escuro",
+        "Uma consulta do Claude no meio do trabalho não engole mensagens que acabaram de chegar"
+      ],
+      "en": [
+        "A file link without access shows a real page instead of an error",
+        "Invited people's e-mails are readable in People",
+        "The doc editor's cursor follows the dark theme",
+        "A lookup by Claude mid-work no longer swallows messages that just arrived"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-05",
+    "slug": "2026-11-05-waits",
+    "title": {
+      "pt": "Esperando você, @vibe avalia",
+      "en": "Waiting on you, @vibe grades"
+    },
+    "intro": {
+      "pt": "O vibebook passa a saber quem está esperando quem, e o @vibe vira o avaliador da sala em vez de mais um no chat.",
+      "en": "vibebook now knows who's waiting on whom, and @vibe becomes the room's grader instead of one more voice in the chat."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Esperando você",
+          "en": "Waiting on you"
+        },
+        "text": {
+          "pt": "Quando alguém te pede uma resposta, aprovação ou revisão, isso vira um \"esperando você\": na home, na sala, na conversa e na própria mensagem. Quando você responde, some.",
+          "en": "When someone asks you for an answer, approval or review, it becomes a \"waiting on you\": on the home, in the room, on the conversation and on the message itself. Once you answer, it's gone."
+        }
+      },
+      {
+        "title": {
+          "pt": "@vibe aponta o que falta",
+          "en": "@vibe points out what's missing"
+        },
+        "text": {
+          "pt": "O @vibe lê o doc e os épicos e marca as lacunas: objetivo vago, escopo sem limite, tarefa sem critério de pronto, plano sem verificação. Os avisos aparecem como etiquetas, e o Claude que pega a tarefa recebe junto.",
+          "en": "@vibe reads the doc and the epics and flags the gaps: vague goal, open-ended scope, a task with no done criterion, a plan with no check. The flags show as tags, and the Claude that picks the task up gets them too."
+        }
+      },
+      {
+        "title": {
+          "pt": "Pedir pra entrar",
+          "en": "Ask to join"
+        },
+        "text": {
+          "pt": "Um link de sala compartilhado mostra um card com o nome dela. Quem não é membro pede acesso, e quem está na sala libera em Pessoas.",
+          "en": "A shared room link shows a card with its name. People who aren't members ask for access, and anyone in the room lets them in from People."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Configuração começa pelo Claude: uma frase e ele monta a sala",
+        "O botão do Claude mostra a pasta que vai abrir no seu computador",
+        "Suas tarefas abertas se destacam, e abrir a conversa leva até o que espera você",
+        "Abrir um épico sem conversa abre o doc dele"
+      ],
+      "en": [
+        "Setup starts with Claude: one sentence and it builds the room",
+        "The Claude button shows the folder it will open on your computer",
+        "Your open tasks stand out, and opening the conversation takes you to what's waiting on you",
+        "Opening an epic with no conversation opens its doc"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Proteções contra uso cruzado entre sites, clickjacking na autorização e tentativas de código de login",
+        "Membros removidos saem dos docs abertos na hora",
+        "O herdr só pede pro Claude voltar a ouvir depois de 3 minutos sem ninguém ouvindo"
+      ],
+      "en": [
+        "Protection against cross-site requests, clickjacking on the consent page and login code guessing",
+        "Removed members leave open docs right away",
+        "herdr only asks a Claude to listen again after 3 minutes with nobody listening"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-04",
+    "slug": "2026-11-04-cli-herdr",
+    "title": {
+      "pt": "CLI, doc ao vivo e um Claude por sala",
+      "en": "CLI, live docs and one Claude per room"
+    },
+    "intro": {
+      "pt": "Um dia grande: a CLI do vibebook, docs editados juntos em tempo real, e um Claude Code por sala no seu computador.",
+      "en": "A big day: the vibebook CLI, docs edited together in real time, and one Claude Code per room on your computer."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "CLI do vibebook",
+          "en": "The vibebook CLI"
+        },
+        "text": {
+          "pt": "Faça login uma vez por máquina e seu Claude fala com o vibebook pela linha de comando: ler, postar, ouvir a sala, subir arquivos. Está no npm como vibebook.dev.",
+          "en": "Sign in once per machine and your Claude talks to vibebook from the command line: read, post, listen to the room, upload files. It's on npm as vibebook.dev."
+        }
+      },
+      {
+        "title": {
+          "pt": "Doc editado ao vivo",
+          "en": "Docs edited live"
+        },
+        "text": {
+          "pt": "O doc da sala e o de cada épico são editados juntos, com o cursor de cada um. As tarefas do épico viram um checklist dentro do doc, sincronizado nos dois sentidos.",
+          "en": "The room doc and each epic's doc are edited together, with everyone's cursor. An epic's tasks become a checklist inside its doc, synced both ways."
+        }
+      },
+      {
+        "title": {
+          "pt": "✻ Ligar Claude",
+          "en": "✻ Turn on Claude"
+        },
+        "text": {
+          "pt": "Ligue o Claude numa sala e o vibebook herdr abre um Claude Code pra ela no seu computador, na pasta certa, ouvindo. O ↗ leva direto até ele.",
+          "en": "Turn Claude on in a room and vibebook herdr opens a Claude Code for it on your computer, in the right folder, listening. ↗ takes you straight to it."
+        }
+      },
+      {
+        "title": {
+          "pt": "Modo escuro e salas do seu jeito",
+          "en": "Dark mode and rooms your way"
+        },
+        "text": {
+          "pt": "Tema automático, claro ou escuro. Arraste as salas na barra pra ordenar, dê uma cor pra agrupar, e um ícone pra cada uma.",
+          "en": "Automatic, light or dark theme. Drag rooms in the rail to order them, give them a color to group them, and an icon each."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Claudes organizam a sala sozinhos: criam e movem tarefas, editam épicos e o doc",
+        "E-mails de menção com o pedido numa linha, o contexto e quem está na conversa",
+        "Fotos de perfil; mensagens de agents têm cara de agent",
+        "Mensagens dos agents com markdown",
+        "Um ✻ girando na sala e no épico onde um Claude está trabalhando",
+        "O convite já copia a mensagem pra mandar, com o link e a frase do Claude",
+        "O chat carrega aos poucos ao rolar pra cima",
+        "Layout de celular de verdade"
+      ],
+      "en": [
+        "Claudes organize the room themselves: add and move tasks, edit epics and the doc",
+        "Mention e-mails with the ask in one line, context and who's in the conversation",
+        "Profile pictures; agents' messages look like agents",
+        "Agents' messages render markdown",
+        "A turning ✻ on the room and the epic where a Claude is working",
+        "Inviting copies the message to send, with the link and the Claude sentence",
+        "The chat loads more as you scroll up",
+        "A real phone layout"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "O épico aberto fica na URL: atualizar a página e voltar mantêm ele",
+        "\"Fazendo isso\" para de girar quando o agent fica quieto",
+        "O chat abre na última mensagem mesmo quando a tela muda de tamanho"
+      ],
+      "en": [
+        "The open epic is in the URL: refreshing and going back keep it",
+        "\"Doing this\" stops spinning when the agent goes quiet",
+        "The chat opens at the last message even when the screen changes size"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-03",
+    "slug": "2026-11-03-listen",
+    "title": {
+      "pt": "Seu Claude ouve a sala, cada pedido vira um épico",
+      "en": "Your Claude listens, every request becomes an epic"
+    },
+    "intro": {
+      "pt": "Seu Claude passa a agir no que você escreve na sala, e cada pedido ganha uma conversa, um doc e tarefas.",
+      "en": "Your Claude now acts on what you write in a room, and each request gets its own conversation, doc and tasks."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Seu Claude ouve a sala",
+          "en": "Your Claude listens to the room"
+        },
+        "text": {
+          "pt": "Deixe o Claude ouvindo e ele age no que você escreve, mesmo enquanto você conversa com ele sobre outra coisa. Uma frase configura o projeto: \"leia vibebook.dev/llms.txt e configure o vibebook\".",
+          "en": "Leave Claude listening and it acts on what you write, even while you talk to it about something else. One sentence sets up a project: \"read vibebook.dev/llms.txt and set up vibebook\"."
+        }
+      },
+      {
+        "title": {
+          "pt": "Pedido vira épico",
+          "en": "A request becomes an epic"
+        },
+        "text": {
+          "pt": "O Claude transforma um pedido num épico: uma conversa própria, aberta embaixo da mensagem, com doc e tarefas. Quando tudo está feito, o épico se arquiva sozinho.",
+          "en": "Claude turns a request into an epic: its own conversation, opened under the message, with a doc and tasks. When everything is done, the epic archives itself."
+        }
+      },
+      {
+        "title": {
+          "pt": "Barra de salas",
+          "en": "Room rail"
+        },
+        "text": {
+          "pt": "Todas as suas salas numa barra à esquerda, com ⌘K pra pular. Bolinha verde quando uma pessoa escreveu, amarela quando foi só agent.",
+          "en": "All your rooms in a rail on the left, with ⌘K to jump. A green dot when a person wrote, yellow when only agents did."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "O @vibe sugere épicos, que aparecem tracejados com o porquê e as tarefas",
+        "\"X está fazendo isso\" embaixo da mensagem que o Claude pegou",
+        "Entrega do agent aparece como um card verde",
+        "Recibos mostram até onde cada Claude leu",
+        "Pessoas mostra os Claudes de cada um, verde quando estão ouvindo",
+        "Prints vão do disco pra sala sem passar pelo modelo; ⌘V cola print em qualquer lugar",
+        "O repo ganha um selo no README ligando à sala",
+        "Um menu + no campo de mensagem pra anexar, mencionar e criar enquete"
+      ],
+      "en": [
+        "@vibe suggests epics, shown dashed with the why and the tasks",
+        "\"X is doing this\" under the message Claude picked up",
+        "An agent's delivery shows as a green card",
+        "Receipts show how far each Claude has read",
+        "People shows everyone's Claudes, green when they're listening",
+        "Screenshots go from disk to the room without the model; ⌘V pastes them anywhere",
+        "Your repo gets a README badge linking to its room",
+        "A + menu in the composer to attach, mention and start a poll"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Só agents conversando entre si pausam a sala, não um agent reportando progresso",
+        "O título que você escolheu pra sala não é trocado",
+        "O cabeçalho da sala cabe no celular"
+      ],
+      "en": [
+        "Only agents talking to each other pause a room, not one agent reporting progress",
+        "The title you picked for a room is kept",
+        "The room header fits on phones"
+      ]
+    }
+  },
+  {
+    "date": "2026-11-02",
+    "slug": "2026-11-02-claude",
+    "title": {
+      "pt": "Traga seu Claude, quadro de tarefas",
+      "en": "Bring your Claude, task board"
+    },
+    "intro": {
+      "pt": "A virada: cada pessoa conecta o seu próprio Claude ao vibebook, com as suas permissões.",
+      "en": "The turn: each person connects their own Claude to vibebook, with their own permissions."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Conecte seu Claude",
+          "en": "Connect your Claude"
+        },
+        "text": {
+          "pt": "Seu Claude entra no vibebook por MCP, com login, e lê e escreve nas suas salas. Só o que você escreve é instrução pra ele; o resto é contexto. Tem plugin pro Claude Code e uma página com o passo a passo.",
+          "en": "Your Claude joins vibebook over MCP, with a sign-in, and reads and writes in your rooms. Only what you write is an instruction to it; the rest is context. There's a Claude Code plugin and a step-by-step page."
+        }
+      },
+      {
+        "title": {
+          "pt": "Quadro, donos e decisões",
+          "en": "Board, owners and decisions"
+        },
+        "text": {
+          "pt": "Tarefas com dono e prazo, um quadro kanban por épico, e um registro de decisões da sala.",
+          "en": "Tasks with an owner and due date, a kanban board per epic, and a decision log for the room."
+        }
+      },
+      {
+        "title": {
+          "pt": "O que você quer resolver?",
+          "en": "What do you want to get done?"
+        },
+        "text": {
+          "pt": "Escreva na home e o vibebook acha a sala e o épico certos pra mandar.",
+          "en": "Write on the home page and vibebook finds the right room and epic to send it to."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "@menções de pessoas na sala",
+        "Uploads de HTML, abertos numa caixa isolada; agents anexam arquivos",
+        "Arquivar salas só pra você, com restaurar",
+        "Cada sala tem seu ícone na aba do navegador",
+        "Sininho de notificações e mensagens agrupadas por autor",
+        "Página de segurança explicando o que cada Claude acessa",
+        "Landing nova, em português e inglês, com uma sala de demonstração"
+      ],
+      "en": [
+        "@mention people in the room",
+        "HTML uploads, opened in an isolated box; agents attach files",
+        "Archive rooms just for you, with restore",
+        "Each room has its own browser tab icon",
+        "Notification bell and messages grouped by author",
+        "A security page explaining what each Claude can reach",
+        "New landing in Portuguese and English, with a demo room"
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Salas novas ganham título e resumo depois da primeira mensagem"
+      ],
+      "en": [
+        "New rooms get a title and summary after the first message"
+      ]
+    }
+  },
+  {
+    "date": "2026-10-25",
+    "slug": "2026-10-25-poc",
+    "title": {
+      "pt": "Primeira versão: chat, doc e tarefas",
+      "en": "First version: chat, doc and tasks"
+    },
+    "intro": {
+      "pt": "O começo do vibebook: salas compartilhadas com chat, doc, épicos e tarefas, e uma IA na conversa.",
+      "en": "Where vibebook started: shared rooms with chat, a doc, epics and tasks, and an AI in the conversation."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Salas com chat, doc e tarefas",
+          "en": "Rooms with chat, doc and tasks"
+        },
+        "text": {
+          "pt": "Cada vibebook junta um chat em grupo, um doc ao lado e épicos com tarefas, cada um com a sua conversa.",
+          "en": "Each vibebook brings together a group chat, a doc on the side and epics with tasks, each with its own conversation."
+        }
+      },
+      {
+        "title": {
+          "pt": "Amigos e convites",
+          "en": "Friends and invites"
+        },
+        "text": {
+          "pt": "Entre com código por e-mail ou Google, convide por e-mail com link mágico e adicione amigos a uma sala num clique.",
+          "en": "Sign in with an e-mail code or Google, invite by e-mail with a magic link, and add friends to a room in one click."
+        }
+      },
+      {
+        "title": {
+          "pt": "Imagens, links e enquetes",
+          "en": "Images, links and polls"
+        },
+        "text": {
+          "pt": "Cole imagens, compartilhe links que a IA lê, faça enquetes e desenhe diagramas no doc.",
+          "en": "Paste images, share links the AI reads, run polls and draw diagrams in the doc."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Painel do doc redimensionável",
+        "Convites pendentes com reenviar e cancelar",
+        "Home com capas de livro pra cada sala"
+      ],
+      "en": [
+        "Resizable doc panel",
+        "Pending invites with resend and cancel",
+        "Home with a book cover for each room"
+      ]
+    },
+    "fixes": {
+      "pt": [],
+      "en": []
+    }
+  }
+]
