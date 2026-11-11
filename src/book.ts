@@ -157,8 +157,30 @@ export class Book extends DurableObject<Env> {
     const agentEver = this.sql.exec(`SELECT 1 FROM messages WHERE thread = ? AND kind = 'agent' LIMIT 1`, id).toArray().length > 0;
     return agentEver && !has(`kind = 'agent' AND tag = 'done'`);
   }
+  /** Parent epic id → how many sub-epics (epics whose request was written in its thread), and how many are open. */
+  kidsOf(skip: Set<string>) {
+    const r = this.sql.exec<{ id: string; p: string; archived: number | null }>(`SELECT c.id, m.thread AS p, c.archived FROM epics c JOIN messages m ON m.id = c.from_msg WHERE m.thread != 'main' AND m.thread != c.id`).toArray();
+    const all = new Map<string, number>(), open = new Map<string, number>(), closing = new Set<string>();
+    for (const k of r) { all.set(k.p, (all.get(k.p) ?? 0) + 1); if (skip.has(k.id)) closing.add(k.p); else if (k.archived !== 1) open.set(k.p, (open.get(k.p) ?? 0) + 1); }
+    return { all, open, closing };
+  }
   autoArchive() {
-    const done = this.epics().filter((e) => !e.archived && !e.kept && e.tasks.length && e.tasks.every((t) => t.status === "done") && !this.unproven(e.id));
+    // An epic with an open sub-epic stays open (Gui, Nov 2026). When its last sub-epic closes, it follows if its own tasks
+    // are done, even reopened by hand (the request that became the sub-epic reopened it) and with no delivery of its
+    // own (the sub-epics' deliveries are the proof). Repeats so a chain of parents closes in one pass.
+    const picked = new Set<string>(), epics = this.epics();
+    for (let more = true; more; ) {
+      more = false;
+      const { all, open, closing } = this.kidsOf(picked);
+      for (const e of epics) {
+        if (picked.has(e.id) || e.archived || open.get(e.id) || !e.tasks.length || !e.tasks.every((t) => t.status === "done")) continue;
+        const parent = (all.get(e.id) ?? 0) > 0;
+        // Reopened by hand: only closes together with its last sub-epic, never by itself.
+        if (e.kept ? !closing.has(e.id) : !parent && this.unproven(e.id)) continue;
+        picked.add(e.id); more = true;
+      }
+    }
+    const done = epics.filter((e) => picked.has(e.id));
     const closed: number[] = [];
     for (const e of done) {
       this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ?`, e.id);
@@ -1306,11 +1328,8 @@ export class Book extends DurableObject<Env> {
     if (!src) this.epicsChanged();
     if (src) {
       this.sql.exec(`UPDATE epics SET from_msg = ? WHERE id = ?`, src, id);
-      // Asked inside an archived epic's thread, the request reopened it; it became its own epic, so the old one goes
-      // back to archived when nothing is open there (else it sat reopened at 5/5 forever).
-      const from = this.sql.exec<{ thread: string }>(`SELECT thread FROM messages WHERE id = ?`, src).toArray()[0]?.thread;
-      if (from && from !== "main" && from !== id && !this.sql.exec(`SELECT 1 FROM tasks WHERE epic_id = ? AND COALESCE(done, 0) = 0`, from).toArray().length)
-        this.sql.exec(`UPDATE epics SET archived = 1 WHERE id = ? AND archived = -1`, from);
+      // Asked inside an epic's thread, the request is a sub-epic of it: the parent stays open until its sub-epics close
+      // (autoArchive archives it then, when its own tasks are done).
       this.epicsChanged();
       // Opening an epic for a request is taking it: the request shows "X está fazendo isso".
       if (agent && !backlog) this.agentAck(bookId, agent, email, via || "agent", Number(src));
