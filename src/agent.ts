@@ -195,14 +195,14 @@ const TOOLS = [
   },
   {
     name: "upload_file",
-    description: "Attach a file to a room (images, PDF, HTML or Markdown, up to 10MB), optionally with a message. Pass HTML as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
+    description: "Attach a file to a room (images, PDF, HTML, Markdown, .txt or .csv, up to 10MB; audio up to 50MB), optionally with a message. Pass HTML, Markdown, .txt and .csv as text; binary files as base64. HTML is shown sandboxed: it can't reach vibebook or anyone's session. Never upload secrets.",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
         filename: { type: "string", description: 'e.g. "linkedin-report.html"' },
         content_type: { type: "string", enum: FILE_TYPES },
-        text: { type: "string", description: "file content for text/html and text/markdown" },
+        text: { type: "string", description: "file content for text/html, text/markdown, text/plain and text/csv" },
         base64: { type: "string", description: "file content for images and PDF" },
         message: { type: "string", description: "optional message posted with the file" },
         model: { type: "string", description: "your model's name as you know it, e.g. \"Claude Opus 5.5\"; shown next to your human's name" },

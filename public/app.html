@@ -1398,7 +1398,7 @@ const EN = {
   "Não deu certo com o Google. Tenta com email.": "Google sign-in didn't work. Try with email.",
   "Outros": "Other",
   "Áudios": "Audio",
-  "só imagens (png, jpg, webp, gif), PDF, HTML, Markdown e áudio.": "only images (png, jpg, webp, gif), PDF, HTML, Markdown and audio.",
+  "só imagens (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv e áudio.": "only images (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv and audio.",
   "áudio maior que 50MB.": "audio larger than 50MB.",
   "Tudo": "All",
   "{n} versões": "{n} versions",
@@ -1418,6 +1418,7 @@ const EN = {
   "mais nova": "newest",
   "Arquivos deste épico": "Files in this epic",
   "Imagens": "Images",
+  "Texto e CSV": "Text and CSV",
   "Nada aqui.": "Nothing here.",
   "1 arquivo": "1 file",
   "{n} arquivos": "{n} files",
@@ -2825,7 +2826,7 @@ let thread = "main";
 let friends = []; // emails of people you already share something with
 let attached = []; // composer attachments: { file, url, meta?, error? }
 const AUDIO_EXT = { m4a: "audio/x-m4a", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/aac", ogg: "audio/ogg", oga: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", flac: "audio/flac" };
-const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
+const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "text/plain", "text/csv", "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
 const fileIcon = (f, size) => icon(f.type === "text/html" ? "globe" : f.type.startsWith("audio/") ? "mic" : "file", size);
 
 let pendingThread = null; // set by the home composer so the room opens on the chosen epic
@@ -3041,7 +3042,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="mentionBtn">${icon("at")} ${t("Mencionar alguém")} <small>@</small></button>
             <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
           </div>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,text/plain,.txt,text/csv,.csv,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
           <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
         </div>
       </form>
@@ -3181,10 +3182,13 @@ function renderBook() {
     for (let file of list) {
       if (!file.type && /\.html?$/i.test(file.name)) file = new File([file], file.name, { type: "text/html" });
       if (!file.type && /\.md$/i.test(file.name)) file = new File([file], file.name, { type: "text/markdown" });
+      // .csv often arrives as application/vnd.ms-excel (Excel on the Mac) or with no type: go by the extension.
+      const text = { txt: "text/plain", csv: "text/csv" }[(/\.(\w+)$/.exec(file.name)?.[1] || "").toLowerCase()];
+      if (text && file.type !== text) file = new File([file], file.name, { type: text });
       // Recordings often come with no type (or a generic one) from Files/Finder: take it from the extension.
       const aext = AUDIO_EXT[(/\.(\w+)$/.exec(file.name)?.[1] || "").toLowerCase()];
       if (aext && !file.type.startsWith("audio/")) file = new File([file], file.name, { type: aext });
-      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown e áudio.")}`); continue; }
+      if (!FILE_TYPES.includes(file.type)) { alert(`${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv e áudio.")}`); continue; }
       const audio = file.type.startsWith("audio/");
       if (file.size > (audio ? 50 : 10) * 1024 * 1024) { alert(`${file.name}: ${audio ? t("áudio maior que 50MB.") : t("maior que 10MB.")}`); continue; }
       if (!file.name || file.name === "image.png") file = new File([file], `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: file.type });
@@ -5022,8 +5026,8 @@ function renderReminders() {
 // Arquivos: type tabs (Tudo, Imagens, Markdown, HTML, PDF, Outros, only kinds present) and folders. A name with "/"
 // (reminders/x.md, agents/y.md) lives in a folder: at the root the folders come first as tiles, a click goes in, ← out.
 let fileKind = "all", fileDir = "";
-const kindOf = (f) => f.type.startsWith("image/") ? "img" : f.type.startsWith("audio/") ? "audio" : f.type === "text/html" ? "html" : f.type === "application/pdf" ? "pdf" : /\.md$/i.test(f.name) || f.type === "text/markdown" ? "md" : "other";
-const FILE_KINDS = [["all", "Tudo"], ["img", "Imagens"], ["md", "Markdown"], ["html", "HTML"], ["pdf", "PDF"], ["audio", "Áudios"], ["other", "Outros"]];
+const kindOf = (f) => f.type.startsWith("image/") ? "img" : f.type.startsWith("audio/") ? "audio" : f.type === "text/html" ? "html" : f.type === "application/pdf" ? "pdf" : /\.md$/i.test(f.name) || f.type === "text/markdown" ? "md" : f.type === "text/plain" || f.type === "text/csv" ? "txt" : "other";
+const FILE_KINDS = [["all", "Tudo"], ["img", "Imagens"], ["md", "Markdown"], ["txt", "Texto e CSV"], ["html", "HTML"], ["pdf", "PDF"], ["audio", "Áudios"], ["other", "Outros"]];
 function renderFiles() {
   const el = document.getElementById("filesPane"); if (!el) return;
   renderPeek();

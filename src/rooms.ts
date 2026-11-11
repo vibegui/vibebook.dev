@@ -99,17 +99,17 @@ export async function setRoomIcon(env: Env, bookId: string, img: { type: string;
   return v;
 }
 
-// Files: images, PDF, HTML, Markdown and audio (no SVG: it can carry script without our sandbox applying to <img>).
+// Files: images, PDF, HTML, Markdown, plain text, CSV and audio (no SVG: it can carry script without our sandbox applying to <img>).
 // HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
 // Audio: recordings already made (iPhone's Voice Memos exports .m4a, recorders .mp3/.wav); played with <audio> in the app.
 export const AUDIO_TYPES = ["audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
-export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", ...AUDIO_TYPES];
+export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "text/plain", "text/csv", ...AUDIO_TYPES];
 /** reminders/<name>.md: a room reminder (Book.reminderFile reads its schedule). */
 export const REMINDER_FILE = /^reminders\/([^\\/\u0000-\u001f]{1,60})\.md$/i;
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 export const maxBytes = (type: string) => (type.startsWith("audio/") ? MAX_AUDIO_BYTES : MAX_FILE_BYTES);
-export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown e áudio).";
+export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown, texto, CSV e áudio).";
 export const sizeError = (type: string) => `Arquivo vazio ou maior que ${maxBytes(type) / 1024 / 1024}MB.`;
 export type StoredFile = { id: string; name: string; type: string; size: number; author: string; ts: number; reminder?: { ok: boolean; name: string; error?: string; every?: string | null; next_at?: string } };
 
@@ -128,7 +128,7 @@ export async function storeFile(env: Env, bookId: string, email: string, type: s
   const appHtml = type === "text/html" ? /^apps\/([\w.-]{1,60})\.html$/i.exec(rawName.trim()) : null; // a room app (Conexões → Esta sala)
   // A room app can ask to post or move tasks as whoever opens it: it passes the same check as HTML posted in a message.
   if (appHtml) await checkEmbed(env, text, email);
-  const name = rem ? `reminders/${rem[1].trim()}.md` : agentMd ? `agents/${agentMd[1].trim()}.md` : appHtml ? `apps/${appHtml[1]}.html` : (rawName || `arquivo.${{ "text/html": "html", "text/markdown": "md" }[type] ?? type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
+  const name = rem ? `reminders/${rem[1].trim()}.md` : agentMd ? `agents/${agentMd[1].trim()}.md` : appHtml ? `apps/${appHtml[1]}.html` : (rawName || `arquivo.${{ "text/html": "html", "text/markdown": "md", "text/plain": "txt", "text/csv": "csv" }[type] ?? type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
   const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
   await env.FILES.put(`${bookId}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });
   await bookStub(env, bookId).fetch(`https://book/file?book=${bookId}`, { method: "POST", body: JSON.stringify(meta) });
@@ -145,7 +145,7 @@ const HTML_CSP =
 const FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
 
 export const fileHeaders = (type: string, name: string) => ({
-  "content-type": FILE_TYPES.includes(type) ? (type === "text/html" ? "text/html; charset=utf-8" : type === "text/markdown" ? "text/plain; charset=utf-8" : type) : "application/octet-stream",
+  "content-type": FILE_TYPES.includes(type) ? (type === "text/html" ? "text/html; charset=utf-8" : type.startsWith("text/") ? "text/plain; charset=utf-8" : type) : "application/octet-stream",
   "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(name)}`,
   "x-content-type-options": "nosniff",
   "content-security-policy": type === "text/html" ? HTML_CSP : FILE_CSP,

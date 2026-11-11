@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.1";
+var VERSION = "1.6.2";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -1173,7 +1173,7 @@ async function main() {
       if (!file || !existsSync(file))
         return die("usage: vibebook upload <file> [--message ..] [--thread ..]");
       const ext = file.toLowerCase().split(".").pop() ?? "";
-      const type = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html", md: "text/markdown", m4a: "audio/x-m4a", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/aac", ogg: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", flac: "audio/flac" }[ext];
+      const type = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", pdf: "application/pdf", html: "text/html", md: "text/markdown", txt: "text/plain", csv: "text/csv", m4a: "audio/x-m4a", mp3: "audio/mpeg", wav: "audio/wav", aac: "audio/aac", ogg: "audio/ogg", opus: "audio/ogg", webm: "audio/webm", flac: "audio/flac" }[ext];
       if (!type)
         return die("only png, jpg, webp, gif, pdf, html, md or audio (m4a, mp3, wav, aac, ogg, webm, flac)");
       const args = { filename: basename(file), content_type: type };
