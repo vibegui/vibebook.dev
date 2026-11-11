@@ -134,13 +134,25 @@ export class Book extends DurableObject<Env> {
       )
       .toArray()
       .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
+    // What each epic produced (Nov 2026: the thread card lists the files of its whole tree): the newest version of each
+    // file name attached in its thread (≤8 names, n = uploads of that name), and the parent epic (its request was
+    // written in the parent's thread), so the app can gather a tree's files without loading every thread.
+    const files = new Map<string, { id: string; name: string; type: string; n: number }[]>();
+    for (const m of this.sql.exec<{ thread: string; files: string }>(`SELECT thread, files FROM messages WHERE files IS NOT NULL AND files != '[]' AND thread != 'main' ORDER BY id DESC`).toArray()) {
+      let fs: { id: string; name: string; type: string }[] = [];
+      try { fs = JSON.parse(m.files); } catch { continue; }
+      const list = files.get(m.thread) ?? [];
+      files.set(m.thread, list);
+      for (const x of fs) { const o = list.find((y) => y.name === x.name); if (o) o.n++; else if (list.length < 8) list.push({ id: x.id, name: x.name, type: x.type, n: 1 }); }
+    }
+    const parent = new Map(this.sql.exec<{ id: string; p: string }>(`SELECT c.id, m.thread AS p FROM epics c JOIN messages m ON m.id = c.from_msg WHERE m.thread != 'main' AND m.thread != c.id`).toArray().map((r) => [r.id, r.p]));
     return this.sql
       .exec<{ id: string; title: string; archived: number | null; from_msg: number | null; prod: string | null; owner: string | null }>(`SELECT id, title, archived, from_msg, prod, owner FROM epics ORDER BY pos IS NULL, pos, ts`)
       .toArray()
       .map((e) => {
         const f = flags[e.id] ?? {};
         // Deploy stage after "Claude fez": { stage: "deployed" | "verified", at, note } set by agents (update_epic prod).
-        return { ...e, prod: e.prod ? (JSON.parse(e.prod) as { stage: string; at: number; note?: string }) : null, archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
+        return { ...e, parent: parent.get(e.id) ?? null, files: files.get(e.id) ?? [], prod: e.prod ? (JSON.parse(e.prod) as { stage: string; at: number; note?: string }) : null, archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
       });
   }
   // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a

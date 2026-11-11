@@ -557,10 +557,12 @@
   .threadsSec > .thread.dragging { opacity: .4; }
   .threadsSec > .thread.dropAbove { box-shadow: inset 0 2px 0 var(--accent); }
   .threadsSec > .thread.dropBelow { box-shadow: inset 0 -2px 0 var(--accent); }
-  .msg .txt a.fchip, .preview a.fchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
-  .msg .txt a.fchip span, .preview a.fchip span { overflow: hidden; text-overflow: ellipsis; }
-  .msg .txt a.fchip small, .preview a.fchip small { color: var(--mute); font-size: 0.85em; }
-  .msg .txt a.fchip:hover, .preview a.fchip:hover { border-color: var(--accent); }
+  .tcFiles small.mute { color: var(--mute); font-size: 12px; }
+  .tcFiles { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; max-width: 520px; align-items: center; }
+  .msg .txt a.fchip, .preview a.fchip, .tcFiles a.fchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
+  .msg .txt a.fchip span, .preview a.fchip span, .tcFiles a.fchip span { overflow: hidden; text-overflow: ellipsis; }
+  .msg .txt a.fchip small, .preview a.fchip small, .tcFiles a.fchip small { color: var(--mute); font-size: 0.85em; }
+  .msg .txt a.fchip:hover, .preview a.fchip:hover, .tcFiles a.fchip:hover { border-color: var(--accent); }
   .msg .txt a.ghchip, .preview a.ghchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px 1px 2px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
   .msg .txt a.ghchip:hover, .preview a.ghchip:hover { border-color: var(--mute); }
   .msg .txt a.ghchip svg, .preview a.ghchip svg { width: 18px; height: 18px; flex: none; padding: 2px; border-radius: 50%; background: var(--ink); color: var(--bg); }
@@ -4407,13 +4409,36 @@ const threadCard = (e) => {
   const d = e.tasks.filter((t) => t.status === "done").length;
   return `${epicIco(e)}<span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${nReplies === 1 ? t("1 resposta") : t("{n} respostas", { n: nReplies })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
 };
-const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`).join("");
+// The files an epic tree produced (the epic and its sub-epics, any depth): what's loaded in the tab first (newest),
+// then what the room says each epic has (epics[].files). Shown under its thread card, so a channel reads as a list of
+// the reports and prints that came out of it.
+function treeFiles(eid) {
+  const kids = new Map();
+  for (const e of S.epics || []) if (e.parent) { if (!kids.has(e.parent)) kids.set(e.parent, []); kids.get(e.parent).push(e.id); }
+  const ids = [eid];
+  for (let i = 0; i < ids.length && ids.length < 60; i++) for (const k of kids.get(ids[i]) || []) if (!ids.includes(k)) ids.push(k);
+  const set = new Set(ids), by = new Map();
+  for (const m of [...S.messages].reverse()) if (set.has(m.thread)) for (const f of m.files || []) { const o = by.get(f.name); if (o) o.seen.add(f.id); else by.set(f.name, { f, seen: new Set([f.id]), n: 0 }); }
+  for (const id of ids) for (const f of S.epics.find((x) => x.id === id)?.files || []) { const o = by.get(f.name); if (o) o.n = Math.max(o.n, f.n, o.seen.size); else by.set(f.name, { f, seen: new Set([f.id]), n: f.n }); }
+  return [...by.values()].map((o) => ({ ...o.f, n: Math.max(o.n, o.seen.size) }));
+}
+const treeFilesHtml = (eid) => {
+  const fs = treeFiles(eid); if (!fs.length) return "";
+  const chips = fs.slice(0, 6).map((f) => `<a class="fchip" href="/api/books/${S.id}/files/${f.id}" title="${esc(f.name)}">${fileIcon(f, 14)}<span>${esc(f.name)}</span>${f.n > 1 ? `<small>v${f.n}</small>` : ""}</a>`).join("");
+  return `<div class="tcFiles" data-files-of="${eid}">${chips}${fs.length > 6 ? `<small class="mute">+${fs.length - 6}</small>` : ""}</div>`;
+};
+const threadCards = (msgId) => (S.epics || []).filter((e) => e.from_msg === msgId).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>${treeFilesHtml(e.id)}`).join("");
 function refreshThreadCards() {
-  document.querySelectorAll(".tcard[data-goepic]").forEach((b) => { const e = S.epics.find((x) => x.id === b.dataset.goepic); if (e) b.innerHTML = threadCard(e); });
+  document.querySelectorAll(".tcard[data-goepic]").forEach((b) => {
+    const e = S.epics.find((x) => x.id === b.dataset.goepic); if (!e) return;
+    b.innerHTML = threadCard(e);
+    const old = b.nextElementSibling?.matches?.(".tcFiles") ? b.nextElementSibling : null, html = treeFilesHtml(e.id);
+    if (old) old.outerHTML = html || ""; else if (html) b.insertAdjacentHTML("afterend", html);
+  });
   // An epic just linked to a message already on screen: draw its card.
   for (const e of S.epics.filter((x) => x.from_msg)) {
     if (document.querySelector(`.tcard[data-goepic="${e.id}"]`)) continue;
-    document.querySelector(`#m${e.from_msg} .body`)?.insertAdjacentHTML("beforeend", `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>`);
+    document.querySelector(`#m${e.from_msg} .body`)?.insertAdjacentHTML("beforeend", `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>${treeFilesHtml(e.id)}`);
   }
 }
 document.addEventListener("click", (ev) => {
