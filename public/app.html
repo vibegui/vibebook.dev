@@ -764,7 +764,8 @@
   .connBar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
   .connBar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .connBar button { flex: none; }
-  .connBar .pinBtn { opacity: 1; }
+  .connBar .pinBtn { position: static; opacity: 1; background: none; border: 0; padding: 6px; display: inline-flex; align-items: center; justify-content: center; } /* next to ↻, not the tiles' floating corner pin */
+  .connBar .pinBtn.on { color: var(--accent); }
   .appAsk[hidden] { display: none !important; }
   .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; }
   .appAsk q { font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; max-height: 120px; overflow: auto; color: var(--ink); }
