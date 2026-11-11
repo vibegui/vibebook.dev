@@ -1,7 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
-import { callTool, getConn, listConns, publicConn } from "./mcpconn";
+import { callTool, createConn, deleteConn, getConn, listConns, publicConn } from "./mcpconn";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
 import { LISTEN_FRESH, markListening } from "./person";
@@ -85,6 +85,16 @@ const TOOLS = [
     name: "connections",
     description: "The room's MCP connections (Conexões tab: remote MCP servers people linked, e.g. Rituals) that your human may use: scope room (everyone's) or me (only your human's), their apps (tools with a UI that open as a tab of the doc panel), their tools (read_only from the server's annotations) and context (what each open app last reported about itself). Tokens stay on vibebook's server.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id"] },
+  },
+  {
+    name: "connect_mcp",
+    description: "Link a remote MCP server (Streamable HTTP URL) to the room, like the Apps tab's Conectar MCP: its tools and apps show up for the room (scope room) or only for your human and their Claudes (scope me). Never put a token in your arguments yourself: run `vibebook connect <url> --token-cmd \"op read op://…\"` (or --token-env / --token-file), which reads the token from the secret store and sends it straight to vibebook, encrypted at rest, never shown to you, the browser or the room. Only when your human asked for it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, url: { type: "string" }, token: { type: "string", description: "filled by `vibebook connect`, never typed by an agent" }, scope: { type: "string", enum: ["room", "me"] }, title: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "url"] },
+  },
+  {
+    name: "disconnect_mcp",
+    description: "Remove one of your human's MCP connections from the room (its apps leave the Apps tab). Only the person who connected it can.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, connection_id: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "connection_id"] },
   },
   {
     name: "app_call",
@@ -620,6 +630,17 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "connections": {
       const id = await room();
       return { connections: (await listConns(env, id, me.email)).map((c) => publicConn(c, me.email)) };
+    }
+    case "connect_mcp": {
+      const id = await room();
+      if (!(await env.LOGIN_LIMIT.limit({ key: `mcp:${me.email}` })).success) throw new Error("rate limited: too many connection attempts in the last minute. Wait a bit.");
+      const c = await createConn(env, id, me.email, { url: a.url, token: a.token, scope: a.scope, title: a.title }, (p) => ctx.waitUntil(p), track);
+      return { ok: true, connection: c, note: "It shows in the room's Apps tab now (people refresh the tab to see it)." };
+    }
+    case "disconnect_mcp": {
+      const id = await room();
+      await deleteConn(env, id, str(a.connection_id), me.email);
+      return { ok: true };
     }
     case "app_call": {
       const id = await room();

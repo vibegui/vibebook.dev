@@ -11,6 +11,7 @@ import type { Env } from "./index";
 import { checkUrl } from "./reader";
 import { findSecret } from "./secrets";
 import { seal, unseal } from "./sandbox";
+import { bookStub } from "./rooms";
 
 export type Conn = { id: string; book_id: string; owner: string; scope: "room" | "me"; url: string; title: string; enc: string | null; iv: string | null; tools: string | null; ctx: string | null; created_at: number };
 type Tool = { name: string; title?: string; description?: string; inputSchema?: unknown; annotations?: { readOnlyHint?: boolean; title?: string }; _meta?: { ui?: { resourceUri?: string; visibility?: string[] }; "ui/resourceUri"?: string } };
@@ -108,6 +109,40 @@ export async function callTool(env: Env, c: Conn, name: string, args: unknown) {
   return rpc(env, c, "tools/call", { name, arguments: args && typeof args === "object" ? args : {} });
 }
 
+/** Links a remote MCP server to a room (the app's Conectar MCP, MCP connect_mcp, `vibebook connect`). Throws a user-facing Error. */
+export async function createConn(env: Env, book: string, email: string, b: { url?: unknown; token?: unknown; scope?: unknown; title?: unknown }, wait: (p: Promise<unknown>) => void, track: (env: Env, name: string, o: object) => Promise<unknown>) {
+  const raw = String(b.url ?? "").trim();
+  // Local dev may point at a loopback MCP (the test server); prod only reaches public hosts.
+  const local = env.DEV_EMAIL && /^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(raw);
+  const ok = local ? { url: raw } : checkUrl(raw);
+  if ("error" in ok) throw new Error(`URL: ${ok.error}`);
+  const token = String(b.token ?? "").replace(/\s+/g, "").replace(/^Bearer/i, "") || null;
+  if (token && token.length > 4000) throw new Error("token longo demais");
+  const n: { n: number } | null = await env.DB.prepare(`SELECT COUNT(*) n FROM mcp_connections WHERE book_id = ?`).bind(book).first();
+  if ((n?.n ?? 0) >= MAX_CONNS) throw new Error(`no máximo ${MAX_CONNS} conexões por sala`);
+  const cid = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const sealed = token ? await seal(env, token) : { enc: null, iv: null };
+  const { session, result } = await init(ok.url, token);
+  sessions.set(cid, session);
+  const title = String(b.title || result?.serverInfo?.title || result?.serverInfo?.name || new URL(ok.url).host).slice(0, 60);
+  const tools = await listTools(env, { id: cid, url: ok.url, ...sealed });
+  const scope = b.scope === "me" ? "me" : "room";
+  await env.DB.prepare(`INSERT INTO mcp_connections (id, book_id, owner, scope, url, title, enc, iv, tools, ctx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)`)
+    .bind(cid, book, email, scope, ok.url, title, sealed.enc, sealed.iv, JSON.stringify(tools), Date.now()).run();
+  wait(track(env, "mcp_connected", { user: email, dims: { book, host: new URL(ok.url).host, scope, tools: tools.length, apps: tools.filter(uiOf).length } }));
+  wait(bookStub(env, book).connsChanged());
+  const row = await getConn(env, book, cid, email);
+  return row && publicConn(row, email);
+}
+export async function deleteConn(env: Env, book: string, cid: string, email: string) {
+  const x = await getConn(env, book, cid, email);
+  if (!x) throw new Error("conexão não encontrada");
+  if (x.owner !== email) throw new Error("só quem conectou pode remover");
+  await env.DB.prepare(`DELETE FROM mcp_connections WHERE id = ?`).bind(x.id).run();
+  sessions.delete(x.id);
+  await bookStub(env, book).connsChanged();
+}
+
 // ---- The app's HTML with its CSP. ----
 const DOMAIN = /^(https?|wss?):\/\/(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{1,5})?$/i;
 const domains = (v: unknown) => (Array.isArray(v) ? v.map(String).filter((d) => DOMAIN.test(d)).slice(0, 20) : []);
@@ -155,41 +190,14 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     const id = c.req.param("id"), email = c.get("email");
     if (!(await c.env.LOGIN_LIMIT.limit({ key: `mcp:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
     const b = await c.req.json().catch(() => ({}));
-    const raw = String(b.url ?? "").trim();
-    // Local dev may point at a loopback MCP (the test server); prod only reaches public hosts.
-    const local = c.env.DEV_EMAIL && /^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(raw);
-    const ok = local ? { url: raw } : checkUrl(raw);
-    if ("error" in ok) return c.json({ error: `URL: ${ok.error}` }, 400);
-    const token = String(b.token ?? "").replace(/\s+/g, "") || null;
-    if (token && token.length > 4000) return c.json({ error: "token longo demais" }, 400);
-    const n: { n: number } | null = await c.env.DB.prepare(`SELECT COUNT(*) n FROM mcp_connections WHERE book_id = ?`).bind(id).first();
-    if ((n?.n ?? 0) >= MAX_CONNS) return c.json({ error: `no máximo ${MAX_CONNS} conexões por sala` }, 400);
-    const cid = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-    const sealed = token ? await seal(c.env, token) : { enc: null, iv: null };
-    const probe = { id: cid, url: ok.url, ...sealed };
-    let tools: Tool[], title: string;
-    try {
-      const { session, result } = await init(ok.url, token);
-      sessions.set(cid, session);
-      title = String(b.title || result?.serverInfo?.title || result?.serverInfo?.name || new URL(ok.url).host).slice(0, 60);
-      tools = await listTools(c.env, probe);
-    } catch (e) { return fail(c, e, 400); }
-    const scope = b.scope === "me" ? "me" : "room";
-    await c.env.DB.prepare(`INSERT INTO mcp_connections (id, book_id, owner, scope, url, title, enc, iv, tools, ctx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)`)
-      .bind(cid, id, email, scope, ok.url, title, sealed.enc, sealed.iv, JSON.stringify(tools), Date.now()).run();
-    c.executionCtx.waitUntil(deps.track(c.env, "mcp_connected", { user: email, dims: { book: id, host: new URL(ok.url).host, scope, tools: tools.length, apps: tools.filter(uiOf).length } }));
-    const row = await getConn(c.env, id, cid, email);
-    return c.json({ ok: true, connection: row && publicConn(row, email) });
+    try { return c.json({ ok: true, connection: await createConn(c.env, id, email, b, (x) => c.executionCtx.waitUntil(x), deps.track) }); }
+    catch (e) { return fail(c, e, 400); }
   });
 
   app.delete("/api/books/:id/connections/:cid", async (c: any) => {
     const no = await guard(c); if (no) return no;
-    const x = await conn(c);
-    if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    if (x.owner !== c.get("email")) return c.json({ error: "só quem conectou pode remover" }, 403);
-    await c.env.DB.prepare(`DELETE FROM mcp_connections WHERE id = ?`).bind(x.id).run();
-    sessions.delete(x.id);
-    return c.json({ ok: true });
+    try { await deleteConn(c.env, c.req.param("id"), c.req.param("cid"), c.get("email")); return c.json({ ok: true }); }
+    catch (e) { return fail(c, e, 400); }
   });
 
   app.post("/api/books/:id/connections/:cid/refresh", async (c: any) => {

@@ -28,6 +28,16 @@
       },
       {
         "title": {
+          "pt": "Peça pro Claude conectar",
+          "en": "Ask your Claude to connect it"
+        },
+        "text": {
+          "pt": "“Pega o token no 1Password, a URL é essa, conecta.” O Claude roda `vibebook connect` e o token vai do seu cofre direto pro vibebook, sem aparecer na tela nem passar pelo modelo. A conexão aparece na aba Apps de todo mundo na hora.",
+          "en": "“Get the token from 1Password, here's the URL, connect it.” Your Claude runs `vibebook connect` and the token goes from your vault straight to vibebook, never shown on screen or passed through the model. The connection shows up in everyone's Apps tab right away."
+        }
+      },
+      {
+        "title": {
           "pt": "Apps da sala que usam o vibebook",
           "en": "Room apps that use vibebook"
         },

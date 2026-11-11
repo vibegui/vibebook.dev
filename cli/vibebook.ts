@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -752,6 +752,9 @@ const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for yo
   vibebook call <tool> ['{json}' | -d @file | -d @-]
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
+  vibebook connect <mcp url> [--token-cmd "op read op://…" | --token-env VAR | --token-file path] [--scope room|me] [--title ..]
+                                 link an MCP server to this folder's room (its apps show in the Apps tab); the token
+                                 goes from your secret store to vibebook without being printed
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>] ['{"thread":"<epic>"}']
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
@@ -991,6 +994,27 @@ async function main() {
       const put = await fetch(link.url, { method: "PUT", headers: { "content-type": type }, body: readFileSync(file) });
       process.stdout.write(`${await put.text()}\n`);
       if (!put.ok) process.exit(1);
+      return;
+    }
+    case "connect": {
+      // Links a remote MCP server to the room. The token comes from a secret store and goes straight to vibebook: the
+      // CLI never prints it, so the Claude running this command never sees it.
+      const url = pos[1];
+      if (!url) return die('usage: vibebook connect <mcp url> [--token-cmd "op read op://Vault/Item/field" | --token-env VAR | --token-file path] [--scope room|me] [--title ..] [--room <id>]');
+      let token = "";
+      if (flag("token-cmd")) {
+        try { token = execSync(flag("token-cmd") as string, { stdio: ["inherit", "pipe", "inherit"] }).toString().trim(); }
+        catch { return die("--token-cmd failed (nothing was sent)"); }
+      } else if (flag("token-env")) token = process.env[flag("token-env") as string] ?? "";
+      else if (flag("token-file")) token = existsSync(flag("token-file") as string) ? readFileSync(flag("token-file") as string, "utf8").trim() : "";
+      if ((flag("token-cmd") || flag("token-env") || flag("token-file")) && !token) return die("the token came back empty (nothing was sent)");
+      const args: Record<string, unknown> = { url, scope: flag("scope") === "me" ? "me" : "room" };
+      if (token) args.token = token;
+      if (flag("title")) args.title = flag("title");
+      if (flag("room")) args.room_id = flag("room");
+      const res = await callTool("connect_mcp", args, agent);
+      process.stdout.write(`${res.content[0]?.text ?? ""}\n`);
+      if (res.isError) process.exit(1);
       return;
     }
     case "update": {

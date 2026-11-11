@@ -1237,6 +1237,8 @@ export class Book extends DurableObject<Env> {
     this.broadcast({ t: "pins", pins: this.pins() });
     return { ok: true, id: had?.id ?? (this.sql.exec<{ id: string }>(`SELECT id FROM pins WHERE kind = ? AND ref = ?`, kind, ref).one().id) };
   }
+  /** The room's MCP connections changed (src/mcpconn.ts): open tabs refetch the Apps tab. */
+  connsChanged() { this.broadcast({ t: "conns" }); }
   pinDel(id: string) {
     const n = this.sql.exec(`DELETE FROM pins WHERE id = ? OR (kind = 'link' AND ref = ?)`, id, id).rowsWritten;
     if (n) this.broadcast({ t: "pins", pins: this.pins() });

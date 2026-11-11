@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.5.0";
+var VERSION = "1.6.0";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -771,6 +771,9 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
   vibebook call <tool> ['{json}' | -d @file | -d @-]
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
+  vibebook connect <mcp url> [--token-cmd "op read op://…" | --token-env VAR | --token-file path] [--scope room|me] [--title ..]
+                                 link an MCP server to this folder's room (its apps show in the Apps tab); the token
+                                 goes from your secret store to vibebook without being printed
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>] ['{"thread":"<epic>"}']
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
@@ -1114,6 +1117,37 @@ async function main() {
       process.stdout.write(`${await put.text()}
 `);
       if (!put.ok)
+        process.exit(1);
+      return;
+    }
+    case "connect": {
+      const url = pos[1];
+      if (!url)
+        return die('usage: vibebook connect <mcp url> [--token-cmd "op read op://Vault/Item/field" | --token-env VAR | --token-file path] [--scope room|me] [--title ..] [--room <id>]');
+      let token = "";
+      if (flag("token-cmd")) {
+        try {
+          token = execSync(flag("token-cmd"), { stdio: ["inherit", "pipe", "inherit"] }).toString().trim();
+        } catch {
+          return die("--token-cmd failed (nothing was sent)");
+        }
+      } else if (flag("token-env"))
+        token = process.env[flag("token-env")] ?? "";
+      else if (flag("token-file"))
+        token = existsSync(flag("token-file")) ? readFileSync(flag("token-file"), "utf8").trim() : "";
+      if ((flag("token-cmd") || flag("token-env") || flag("token-file")) && !token)
+        return die("the token came back empty (nothing was sent)");
+      const args = { url, scope: flag("scope") === "me" ? "me" : "room" };
+      if (token)
+        args.token = token;
+      if (flag("title"))
+        args.title = flag("title");
+      if (flag("room"))
+        args.room_id = flag("room");
+      const res = await callTool("connect_mcp", args, agent);
+      process.stdout.write(`${res.content[0]?.text ?? ""}
+`);
+      if (res.isError)
         process.exit(1);
       return;
     }

@@ -2846,6 +2846,7 @@ function onEvent(ev, id) {
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
+    case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
     case "pins": S.pins = ev.pins; renderSide(); renderFiles(); renderApps(); return;
     case "error": toast(esc(ev.error || t("falhou"))); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
