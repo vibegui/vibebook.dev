@@ -764,6 +764,7 @@
   .connBar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
   .connBar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .connBar button { flex: none; }
+  .connBar .pinBtn { opacity: 1; }
   .appAsk[hidden] { display: none !important; }
   .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; }
   .appAsk q { font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; max-height: 120px; overflow: auto; color: var(--ink); }
@@ -4639,10 +4640,13 @@ function renderConnApp(el) {
     connApp = null; toast(t("Esse app não está nas conexões que você pode usar nesta sala.")); return renderConns();
   }
   const key = `${c.id}/${a.tool}${room ? `@${a.file.id}` : ""}`;
-  if (el.querySelector(".connFrame")?.dataset.app === key) return; // already open
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  const pinRef = room ? a.tool : `${c.id}/${a.tool}`;
+  const bar = el.querySelector(".connBar");
+  if (el.querySelector(".connFrame")?.dataset.app === key) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
+  wirePinToggles(el.querySelector(".connBar"));
   document.getElementById("connReload").onclick = () => { frame.dataset.app = ""; renderConnApp(el); };
   mountApp(frame, c, a);
 }
