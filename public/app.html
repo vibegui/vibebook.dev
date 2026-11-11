@@ -198,12 +198,17 @@
   .viewer .vsel { flex: none; max-width: 46vw; height: 32px; border-radius: 8px; border: 1px solid rgb(255 255 255 / .25); background: rgb(255 255 255 / .08); color: #fff; font: inherit; font-size: 13px; padding: 0 6px; }
   .viewer .vsel option { color: #000; }
   @media (max-width: 900px) { .thFiles { margin: 8px 12px 0; } .thfL { display: none; } }
+  .agConn { display: grid; gap: 6px; margin: 10px 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .agConn small { color: var(--mute); }
+  .agConn code { font-size: 12px; word-break: break-all; background: var(--bg); padding: 8px; border-radius: 8px; }
+  .agConn button { justify-self: start; }
   .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
   .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
   .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
-  .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary { white-space: nowrap; }
+  .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary, .claudeBar [data-on] { white-space: nowrap; flex: none; }
+  @media (max-width: 900px) { .claudeBar [data-on] { display: none; } } /* herdr runs on a computer; the phone gets the prompt */
   .claudeBar.start { align-items: flex-start; } .claudeBar ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
   .claudeBar li { display: flex; gap: 8px; color: var(--mute); } .claudeBar li i { font-style: normal; width: 14px; text-align: center; flex: none; }
   .claudeBar li.ok { color: var(--ink); } .claudeBar li.ok i { color: #1f9d8a; font-weight: 700; } .claudeBar li.wait { color: var(--ink); } .claudeBar li.wait i { color: var(--accent); animation: spin 2.4s linear infinite; }
@@ -1382,6 +1387,12 @@ const EN = {
   "áudio maior que 50MB.": "audio larger than 50MB.",
   "Tudo": "All",
   "{n} versões": "{n} versions",
+  "Conectar seu agente": "Connect your agent",
+  "Copiar prompt": "Copy prompt",
+  "Copiado. Cole no Claude Code, dentro da pasta do projeto.": "Copied. Paste it into Claude Code, inside the project folder.",
+  "Copie e cole no seu Claude Code:": "Copy and paste into your Claude Code:",
+  "Cole o prompt no seu Claude Code: ele instala o plugin e a CLI e entra aqui.": "Paste the prompt into your Claude Code: it installs the plugin and the CLI and joins here.",
+  "Cole no Claude Code (ou outro agente), dentro da pasta do projeto: ele instala o plugin e a CLI e entra nesta sala.": "Paste into Claude Code (or another agent), inside the project folder: it installs the plugin and the CLI and joins this room.",
   "Versão": "Version",
   "mais nova": "newest",
   "Arquivos deste épico": "Files in this epic",
@@ -1720,7 +1731,6 @@ const EN = {
   "Confira se o vibebook herdr está rodando no seu computador, ou se o Claude parou numa pergunta lá.": "Check that vibebook herdr is running on your computer, or whether Claude stopped at a question there.",
   "O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.": "vibebook herdr opens Claude Code in the room's folder; it takes a few seconds.",
   "Seu Claude não está nesta sala.": "Your Claude isn't in this room.",
-  "Ele ouve e trabalha aqui, pelo vibebook herdr no seu computador.": "It listens and works here, through vibebook herdr on your computer.",
   "1 pessoa votou": "1 person voted",
   "{n} pessoas votaram": "{n} people voted",
   "pode escolher várias": "pick several",
@@ -3509,6 +3519,7 @@ function renderAgentsPane(on, live, path, w) {
       <button type="button" class="ghost agGo" id="agGo" hidden title="${t("Ir pro seu Claude desta sala no herdr")}" aria-label="${t("Ir pro seu Claude no herdr")}">${icon("external", 16)}</button>
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${on ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${t("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
+    <div class="agConn"><b>${t("Conectar seu agente")}</b><small>${t("Cole no Claude Code (ou outro agente), dentro da pasta do projeto: ele instala o plugin e a CLI e entra nesta sala.")}</small><code>${esc(connectPrompt())}</code><button type="button" class="primary" id="agConnCopy">${t("Copiar prompt")}</button></div>
     <h4>${t("Fila do seu Claude")} <small>${q.length || ""}</small></h4>
     ${q.length ? `<div class="queue${qOpen ? " open" : ""}">${q.map((x) => {
       const ep = S.epics.find((e) => e.id === x.m.thread);
@@ -3519,6 +3530,7 @@ function renderAgentsPane(on, live, path, w) {
     ${mine.length ? `<h4>${t("Conectados")}</h4><div class="agList">${agentRows(S.me)}</div>` : ""}
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
+  document.getElementById("agConnCopy").onclick = copyConnect;
   // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
   const go = document.getElementById("agGo");
   if (on) herdrPing().then((rooms) => { if (go.isConnected) go.hidden = !rooms?.includes(S.id); });
@@ -3644,6 +3656,13 @@ async function openTerminal(sid, name) {
 const claudeAsked = {};
 let claudeBarPoll = 0;
 const claudeWaiting = {};
+// The one sentence that brings any Claude into this room (installs the plugin + CLI via llms.txt, then links and
+// listens). Offered wherever your Claude isn't here: people whose Claude lives elsewhere never saw the setup card.
+const connectPrompt = () => `Read ${location.origin}/llms.txt and set up vibebook for this project. Room: ${location.origin}/b/${S.id}`;
+function copyConnect() {
+  const txt = connectPrompt();
+  (navigator.clipboard?.writeText(txt) ?? Promise.reject()).then(() => toast(t("Copiado. Cole no Claude Code, dentro da pasta do projeto.")), () => window.prompt(t("Copie e cole no seu Claude Code:"), txt));
+}
 function renderClaudeBar(on, live) {
   const el = document.getElementById("claudeBar");
   if (!el) return;
@@ -3676,8 +3695,9 @@ function renderClaudeBar(on, live) {
     return;
   }
   claudeWaiting[S.id] = false;
-  set("", `<span class="star">✻</span><span><b>${t("Seu Claude não está nesta sala.")}</b><small>${t("Ele ouve e trabalha aqui, pelo vibebook herdr no seu computador.")}</small></span><button class="primary" data-on>${t("Ligar Claude")}</button>${x}`);
+  set("", `<span class="star">✻</span><span><b>${t("Seu Claude não está nesta sala.")}</b><small>${t("Cole o prompt no seu Claude Code: ele instala o plugin e a CLI e entra aqui.")}</small></span><button class="primary" data-conn>${t("Conectar seu agente")}</button><button class="ghost" data-on>${t("Ligar Claude")}</button>${x}`);
   el.querySelector("[data-on]").onclick = () => document.getElementById("myClaude")?.click();
+  el.querySelector("[data-conn]").onclick = copyConnect;
 }
 function renderStart(el, on, here, key) {
   const others = (S.members || []).filter((m) => m !== S.me);

@@ -83,7 +83,10 @@ b.onclick = ask;${o.auto ? "\nask();" : ""}
       : o.state === "asked"
         ? `<script>setInterval(() => fetch("/api/books/${o.id}/access").then((r) => r.json()).then((j) => j.member && location.reload()).catch(() => {}), 15000);</script>`
         : "";
-  return cardPage(roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title), body, script, o.lang);
+  // A Claude handed only the room link fetches this page with no session: tell it the way in (Nov 2026: "se eu só mando o
+  // link da sala, ele não se acha?"). Plain English, small, for agents; people get the button above.
+  const agent = o.state === "missing" ? "" : `<p style="margin-top:28px;font-size:12px;opacity:.6">AI agent reading this? Read ${o.origin}/llms.txt and follow it to set up vibebook (plugin + CLI, one sign-in by your human), then join this room: ${o.origin}/b/${o.id}</p>`;
+  return cardPage(roomMeta(o.origin, o.id, o.state === "missing" ? null : o.title), body + agent, script, o.lang);
 }
 
 /** A file link (/api/books/<id>/files/<fid>) opened in a browser by someone signed out or outside the room. */
