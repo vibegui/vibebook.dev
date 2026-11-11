@@ -946,6 +946,13 @@
   .viewer .vbody.img { padding: 0 12px calc(12px + env(safe-area-inset-bottom)); overflow: auto; }
   .viewer .vbody img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
   .viewer .vbody iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+  .viewer .vbody.text { display: block; overflow: auto; padding: calc(8px * var(--space)) calc(20px * var(--space)) calc(24px + env(safe-area-inset-bottom)); }
+  .viewer .vdoc { max-width: 780px; margin: 0 auto; color: #e8eaed; font-size: 15.5px; line-height: 1.6; }
+  .viewer .vdoc a { color: #8ab4ff; }
+  .viewer .vdoc code, .viewer .vdoc pre { background: rgb(255 255 255 / .07); border-radius: calc(6px * var(--radius)); }
+  .viewer .vdoc pre { padding: calc(10px * var(--space)) calc(12px * var(--space)); overflow: auto; }
+  .viewer pre.vdoc { white-space: pre-wrap; word-break: break-word; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; background: none; }
+  .viewer .vdoc table { border-collapse: collapse; } .viewer .vdoc th, .viewer .vdoc td { border-bottom: 1px solid rgb(255 255 255 / .14); padding: 6px 12px; text-align: left; }
   .viewer .vbody.table { display: block; overflow: auto; padding: 4px 16px calc(16px + env(safe-area-inset-bottom)); }
   .viewer .vbody.table table { border-collapse: collapse; font-size: 15px; margin: 0 auto; }
   .viewer .vbody.table th, .viewer .vbody.table td { padding: 9px 14px; text-align: left; border-bottom: 1px solid rgb(255 255 255 / .14); white-space: nowrap; vertical-align: top; }
@@ -1328,6 +1335,7 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Não consegui abrir este arquivo.": "Couldn't open this file.",
   "Desafixar": "Unpin",
   "Desafixar {name}": "Unpin {name}",
   "Fixados": "Pinned",
@@ -4403,7 +4411,32 @@ function loadViewer(d, url, kind, fname) {
   d.classList.toggle("noLink", kind === "table");
   if (kind === "table") body.replaceChildren(url.cloneNode(true)); // url is the <table> node here
   else if (kind === "img") { const img = new Image(); img.src = url; img.alt = fname; body.replaceChildren(img); }
+  // Text files are drawn here, not in an iframe: a plain-text page in a frame came out blank on the dark viewer
+  // (Nov 2026). Markdown like the agents' messages (sanitized), CSV as a table, the rest as text.
+  else if (/\.(md|markdown|txt|csv)$/i.test(fname) && typeof url === "string") {
+    body.className = "vbody text"; body.replaceChildren();
+    fetch(url).then((r) => (r.ok ? r.text() : Promise.reject(r.status))).then((txt) => {
+      if (d.dataset.fid && !url.endsWith(d.dataset.fid)) return; // another file was opened meanwhile
+      body.innerHTML = /\.(md|markdown)$/i.test(fname) ? `<div class="vdoc md">${md(txt.slice(0, 300_000))}</div>`
+        : /\.csv$/i.test(fname) ? `<div class="vdoc"><table>${csvRows(txt).map((r, i) => `<tr>${r.map((c) => `<${i ? "td" : "th"}>${esc(c)}</${i ? "td" : "th"}>`).join("")}</tr>`).join("")}</table></div>`
+        : `<pre class="vdoc">${esc(txt.slice(0, 300_000))}</pre>`;
+    }).catch(() => { body.innerHTML = `<p class="vdoc">${t("Não consegui abrir este arquivo.")}</p>`; });
+  }
   else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
+}
+// CSV → rows (quotes and "" escapes; ≤2000 rows × 50 columns for the viewer).
+function csvRows(txt) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < txt.length && rows.length < 2000; i++) {
+    const ch = txt[i];
+    if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === "," || ch === ";" && !txt.slice(0, 200).includes(",")) { row.push(cell); cell = ""; }
+    else if (ch === "\n") { row.push(cell.replace(/\r$/, "")); rows.push(row.slice(0, 50)); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row.slice(0, 50)); }
+  return rows;
 }
 let viewerSkip = false;
 // popstate: Back while the viewer is open closes it; the pop that follows our own close is swallowed.
