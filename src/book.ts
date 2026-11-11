@@ -601,7 +601,9 @@ export class Book extends DurableObject<Env> {
     if (!extra.quiet) this.ctx.waitUntil(this.touch({ lastId: id, human: byPerson ? id : undefined, agent: byPerson ? undefined : id }).then(() => this.markRead([...new Set([...this.online(), ...(byPerson ? [author] : [])])], id)));
     if (byPerson && replyTo) {
       const q = this.sql.exec<{ author: string; text: string }>(`SELECT author, text FROM messages WHERE id = ? AND kind = 'agent' AND choices IS NOT NULL`, replyTo).toArray()[0];
-      if (q && q.author === author && ASK_OPENER.test(q.text)) this.ctx.waitUntil(this.askWait(author, replyTo, "", null));
+      // Answered in the room: its wait goes, and so does the "⏸ espera você no terminal" the Notification hook put up
+      // for the same prompt (it stayed red until the Claude's next post, which can be minutes away).
+      if (q && q.author === author && ASK_OPENER.test(q.text)) { this.ctx.waitUntil(this.askWait(author, replyTo, "", null)); this.unblock(author); }
     }
     if (text.includes("@") && !extra.quiet) this.ctx.waitUntil(this.queueMentions(m));
     if (extra.tag === "done" && extra.kind === "agent" && thread !== "main") this.ctx.waitUntil(this.wakeAt(ts + (this.env.DEV_EMAIL ? 4_000 : NUDGE_AFTER_DELIVERY_MS)));
