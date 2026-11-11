@@ -4215,6 +4215,10 @@ const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
 // the PWA meant no way back. Images are an <img>; HTML and PDF an iframe (HTML keeps the server's sandbox CSP and
 // gets sandbox="allow-scripts" here too). Cmd/Ctrl/middle click still opens a tab.
 const viewAttrs = (f) => `data-view="${f.type.startsWith("image/") ? "img" : "frame"}" data-name="${esc(f.name)}"`;
+// The iOS home-screen app keeps same-origin links inside itself, even with target=_blank; x-safari-https:// (iOS 17+)
+// hands the URL to Safari instead. Safari has its own cookies, so a file asks to sign in there once (filePage).
+const IOS_PWA = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+const outside = (u) => IOS_PWA ? `x-safari-${new URL(u, location.href).href}` : u;
 function openViewer(url, kind, fname) {
   let d = document.getElementById("viewer");
   if (!d) {
@@ -4229,7 +4233,7 @@ function openViewer(url, kind, fname) {
     document.body.appendChild(d);
   }
   d.querySelector("header b").textContent = fname;
-  d.querySelector("header a").href = typeof url === "string" ? url : "";
+  d.querySelector("header a").href = typeof url === "string" ? outside(url) : "";
   const body = d.querySelector(".vbody");
   body.className = `vbody ${kind}`;
   d.classList.toggle("noLink", kind === "table");
