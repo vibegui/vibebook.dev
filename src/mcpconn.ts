@@ -33,7 +33,9 @@ export function publicConn(c: Conn, email: string) {
   const tools = toolsOf(c);
   return {
     id: c.id, title: c.title, host: new URL(c.url).host, scope: c.scope, owner: c.owner, mine: c.owner === email, created_at: c.created_at,
-    apps: tools.filter(uiOf).map((t) => ({ tool: t.name, title: t.title || t.annotations?.title || t.name, description: firstLine(t.description) })),
+    // Screens first: tools with a UI only the app calls (visibility ["app"], e.g. autogui's APP_*) are the views meant to
+    // be opened; the rest of the UI tools render a tool result and sit behind "ver todas" in the tab.
+    apps: tools.filter(uiOf).map((t) => ({ tool: t.name, title: t.title || t.annotations?.title || t.name, description: firstLine(t.description), screen: !!t._meta?.ui?.visibility && !t._meta.ui.visibility.includes("model") })).sort((a, b) => Number(b.screen) - Number(a.screen)),
     tools: tools.filter(modelVisible).map((t) => ({ name: t.name, description: firstLine(t.description), read_only: !!t.annotations?.readOnlyHint, app: !!uiOf(t) })),
     context: ctxOf(c),
   };

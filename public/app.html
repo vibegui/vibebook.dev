@@ -761,6 +761,7 @@
   .connApp { display: grid; gap: 2px; text-align: left; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--bg); cursor: pointer; }
   .connApp:hover { background: var(--hover); }
   .connApp span { font-size: 12px; color: var(--mute); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .connMore { justify-self: start; font-size: 13px; }
   .connBar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
   .connBar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .connBar button { flex: none; }
@@ -1731,6 +1732,8 @@ const EN = {
   "O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.": "What the room decides and every approval show up here. The Claudes log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
   "Lembretes": "Reminders",
+  "ver todas ({n})": "see all ({n})",
+  "só as telas": "screens only",
   "Esta sala": "This room",
   "Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu Claude: “faz um app apps/enquete.html pra esta sala”.": "A room app is an HTML file in apps/ that uses the room through its iframe: it reads the doc, tasks and messages, posts and moves tasks (with your OK). Ask your Claude: “make an app apps/poll.html for this room”.",
   "Este app quer {what}, como você:": "This app wants to {what}, as you:",
@@ -4576,7 +4579,7 @@ function renderApps() { if (document.querySelector('.doc[data-pane="apps"]')) re
 // in an opaque-origin iframe; below is the host side of the MCP Apps bridge (ui/initialize, tool-input/result,
 // tools/call, open-link, message, model context). A remote app's tools/call goes to its own server through the Worker;
 // a room app gets vibebook's tools instead (VB_TOOLS), run here as the person looking, writes only after they allow it.
-let conns = null, connsBook = null, connForm = false, connApp = null; // connApp = { cid ("room" for a room app), tool }
+let conns = null, connsBook = null, connForm = false, connApp = null; const connMore = new Set(); // connections whose every UI tool is listed, not only their screens // connApp = { cid ("room" for a room app), tool }
 async function loadConns() {
   const book = S.id;
   try { const r = await api(`/api/books/${book}/connections`); if (S.id === book) { conns = r.connections; connsBook = book; } }
@@ -4612,7 +4615,7 @@ function renderConns() {
       ${rapps.length ? appBtns("room", rapps) : `<small class="mute">${t("Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu Claude: “faz um app apps/enquete.html pra esta sala”.")}</small>`}</div>
     ${conns.map((c) => `<div class="conn"><div class="connTop"><b>${esc(c.title)}</b>${scopeChip(c)}<small>${esc(c.host)} · ${esc(name(c.owner))}</small>
         <button type="button" class="ghost" data-conn-ref="${c.id}" title="${t("Atualizar")}" aria-label="${t("Atualizar")}">↻</button>${c.mine ? `<button type="button" class="ghost" data-conn-del="${c.id}" title="${t("Remover conexão")}" aria-label="${t("Remover conexão")}">${icon("x", 14)}</button>` : ""}</div>
-        ${c.apps.length ? appBtns(c.id, c.apps) : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
+        ${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
   const f = document.getElementById("connForm");
   if (f && keep) for (const [k, v] of Object.entries(keep)) if (f.elements[k] && k !== "scope") f.elements[k].value = v;
   document.getElementById("connAdd")?.addEventListener("click", () => { connForm = true; renderConns(); document.querySelector('#connForm [name="url"]')?.focus(); });
@@ -4623,6 +4626,7 @@ function renderConns() {
     try { await api(`/api/books/${S.id}/connections`, { url: f.url.value.trim(), token: f.token.value, scope: f.scope.value }); connForm = false; conns = null; renderConns(); }
     catch (x) { toast(esc(x.message)); btn.disabled = false; btn.textContent = t("Conectar"); }
   };
+  el.querySelectorAll("[data-conn-more]").forEach((b) => b.onclick = () => { const id = b.dataset.connMore; connMore.has(id) ? connMore.delete(id) : connMore.add(id); renderConns(); });
   el.querySelectorAll("[data-conn-open]").forEach((b) => b.onclick = () => { const [cid, tool] = b.dataset.connOpen.split("/"); connApp = { cid, tool }; renderConns(); });
   el.querySelectorAll("[data-conn-ref]").forEach((b) => b.onclick = async () => { try { await api(`/api/books/${S.id}/connections/${b.dataset.connRef}/refresh`, {}); conns = null; renderConns(); } catch (x) { toast(esc(x.message)); } });
   el.querySelectorAll("[data-conn-del]").forEach((b) => b.onclick = async () => {
