@@ -189,6 +189,15 @@
   .agentBox .conn b { flex: 1; min-width: 0; } .agentBox .conn small { display: block; color: var(--mute); font-weight: 400; }
   .agentBox .ok { color: #1f9d8a; font-weight: 700; }
   .claudeBar { margin: 10px 28px 0; display: flex; line-height: 1.35; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 12px; background: var(--ai-bg); border: 1px solid var(--line); font-size: 13.5px; }
+  .thFiles { display: flex; align-items: center; gap: 6px; margin: 8px 28px 0; overflow-x: auto; scrollbar-width: none; flex: none; }
+  .thFiles a { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: inherit; text-decoration: none; font-size: 13px; white-space: nowrap; flex: none; }
+  .thFiles a span { overflow: hidden; text-overflow: ellipsis; }
+  .thFiles a small { color: var(--mute); font-size: 11px; }
+  .thFiles a:hover { border-color: var(--accent); }
+  .thfL { display: inline-flex; align-items: center; gap: 4px; color: var(--mute); font-size: 12px; white-space: nowrap; flex: none; }
+  .viewer .vsel { flex: none; max-width: 46vw; height: 32px; border-radius: 8px; border: 1px solid rgb(255 255 255 / .25); background: rgb(255 255 255 / .08); color: #fff; font: inherit; font-size: 13px; padding: 0 6px; }
+  .viewer .vsel option { color: #000; }
+  @media (max-width: 900px) { .thFiles { margin: 8px 12px 0; } .thfL { display: none; } }
   .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
   .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
   .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
@@ -1373,6 +1382,9 @@ const EN = {
   "áudio maior que 50MB.": "audio larger than 50MB.",
   "Tudo": "All",
   "{n} versões": "{n} versions",
+  "Versão": "Version",
+  "mais nova": "newest",
+  "Arquivos deste épico": "Files in this epic",
   "Imagens": "Images",
   "Nada aqui.": "Nothing here.",
   "1 arquivo": "1 file",
@@ -2829,7 +2841,7 @@ function onEvent(ev, id) {
     }
     case "closed": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.choices = ev.choices; const el = document.getElementById(`m${m.id}`)?.querySelector(".choice"); if (el) el.outerHTML = choiceHtml(m); } break; }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); } renderSide();
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
       if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); const vc = q?.card && document.querySelector(`#m${q.id} .vcard`); if (vc) vc.outerHTML = cardHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
@@ -2863,8 +2875,8 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); return;
-    case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); return;
+    case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
@@ -2966,7 +2978,7 @@ function renderBook() {
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
-      <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div>
+      <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
       <form class="composer" id="composer">
@@ -4236,24 +4248,46 @@ function openViewer(url, kind, fname) {
   if (!d) {
     d = document.createElement("dialog");
     d.id = "viewer"; d.className = "viewer";
-    d.innerHTML = `<header><b></b><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">${icon("external", 20)}</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 20)}</button></header><div class="vbody"></div>`;
+    d.innerHTML = `<header><b></b><select class="vsel" aria-label="${t("Versão")}" hidden></select><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">${icon("external", 20)}</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 20)}</button></header><div class="vbody"></div>`;
     d.querySelector("button").onclick = () => d.close();
     d.querySelector("header a").onclick = () => d.close();
+    d.querySelector(".vsel").onchange = (e) => { const v = e.target.value; loadViewer(d, `/api/books/${S.id}/files/${v}`, d.dataset.kind, d.dataset.name); };
     d.addEventListener("click", (e) => { if (e.target.classList.contains("vbody")) d.close(); });
     // Closed by ×, Esc or a tap outside: drop the history entry it pushed, so Back doesn't reopen nothing.
     d.addEventListener("close", () => { d.querySelector(".vbody").innerHTML = ""; if (history.state?.viewer) { viewerSkip = true; history.back(); } });
     document.body.appendChild(d);
   }
+  loadViewer(d, url, kind, fname);
+  if (!d.open) history.pushState({ viewer: 1 }, "", location.href); // Back (phone gesture, browser, PWA) closes it
+  d.showModal();
+}
+// Versions of a file = the room's files with the same name (each upload of report.html is one), newest first. The
+// state brings only the newest 12 files: what's loaded shows now, the rest once files.get answers (refreshVersions).
+function fileVersions(name) {
+  const by = new Map();
+  for (const f of S.files || []) if (f.name === name) by.set(f.id, { id: f.id, ts: f.ts });
+  for (const m of allMsgs()) for (const f of m.files || []) if (f.name === name && !by.has(f.id)) by.set(f.id, { id: f.id, ts: m.ts });
+  return [...by.values()].sort((a, b) => b.ts - a.ts);
+}
+function refreshVersions() {
+  const d = document.getElementById("viewer"); if (!d?.open || !d.dataset.name) return;
+  const sel = d.querySelector(".vsel"), vs = fileVersions(d.dataset.name), cur = d.dataset.fid;
+  sel.hidden = vs.length < 2;
+  sel.innerHTML = vs.map((v, i) => `<option value="${v.id}"${v.id === cur ? " selected" : ""}>v${vs.length - i}${i === 0 ? ` · ${t("mais nova")}` : ""} · ${new Date(v.ts).toLocaleString(LOCALE, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</option>`).join("");
+}
+function loadViewer(d, url, kind, fname) {
+  d.dataset.kind = kind; d.dataset.name = typeof url === "string" ? fname : "";
+  d.dataset.fid = typeof url === "string" ? (/\/files\/([0-9a-f]+)/.exec(url)?.[1] ?? "") : "";
   d.querySelector("header b").textContent = fname;
   d.querySelector("header a").href = typeof url === "string" ? outside(url) : "";
+  const vsel = d.querySelector(".vsel"); vsel.hidden = true;
+  if (d.dataset.fid) { refreshVersions(); if (!S.filesAll) send({ t: "files.get" }); }
   const body = d.querySelector(".vbody");
   body.className = `vbody ${kind}`;
   d.classList.toggle("noLink", kind === "table");
   if (kind === "table") body.replaceChildren(url.cloneNode(true)); // url is the <table> node here
   else if (kind === "img") { const img = new Image(); img.src = url; img.alt = fname; body.replaceChildren(img); }
   else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
-  if (!d.open) history.pushState({ viewer: 1 }, "", location.href); // Back (phone gesture, browser, PWA) closes it
-  d.showModal();
 }
 let viewerSkip = false;
 // popstate: Back while the viewer is open closes it; the pop that follows our own close is swallowed.
@@ -4953,8 +4987,22 @@ function syncUrl() {
   if (location.pathname + location.search !== want) history[urlSynced ? "pushState" : "replaceState"](null, "", want);
   urlSynced = true;
 }
+// Inside an epic: what it produced (reports, prints, PDFs), newest version of each name, so a report is one tap away
+// instead of a scroll through the conversation. Built from the thread's loaded messages.
+function renderThreadFiles() {
+  const el = document.getElementById("thFiles"); if (!el) return;
+  const by = new Map();
+  if (thread !== "main" && !isPre()) for (const m of allMsgs()) if (m.thread === thread) for (const f of m.files || []) {
+    const o = by.get(f.name);
+    if (!o) by.set(f.name, { f, ts: m.ts, n: 1 }); else { o.n++; if (m.ts > o.ts) { o.f = f; o.ts = m.ts; } }
+  }
+  const list = [...by.values()].sort((a, b) => b.ts - a.ts).slice(0, 8);
+  el.hidden = !list.length;
+  el.innerHTML = list.length ? `<span class="thfL">${icon("paperclip", 14)} ${t("Arquivos deste épico")}</span>${list.map(({ f, n }) => `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)} title="${esc(f.name)}">${fileIcon(f, 14)}<span>${esc(f.name)}</span>${n > 1 ? `<small>v${n}</small>` : ""}</a>`).join("")}` : "";
+}
 function renderChat(keep) {
   renderAskBar();
+  renderThreadFiles();
   syncUrl();
   renderReply();
   renderTasks();
