@@ -108,6 +108,9 @@ const SCHEMA = [
   // MCP connections (src/mcpconn.ts): a remote MCP server linked to a room, its token AES-GCM encrypted; scope room = every member uses it, me = only its owner.
   `CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, book_id TEXT, owner TEXT, scope TEXT, url TEXT, title TEXT, enc TEXT, iv TEXT, tools TEXT, ctx TEXT, created_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS mcp_conn_book ON mcp_connections (book_id)`,
+  // A write someone else asked to make with a room connection's token: waits for its owner (Aprovar/Negar in the Apps tab).
+  `CREATE TABLE IF NOT EXISTS mcp_pending (id TEXT PRIMARY KEY, book_id TEXT, conn_id TEXT, owner TEXT, requester TEXT, via TEXT, tool TEXT, args TEXT, status TEXT, result TEXT, created_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS mcp_pending_conn ON mcp_pending (conn_id, status)`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;

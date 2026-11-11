@@ -1,7 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
-import { callTool, createConn, deleteConn, getConn, listConns, publicConn } from "./mcpconn";
+import { askOwner, callTool, createConn, deleteConn, getConn, listConns, needsOwner, publicConn } from "./mcpconn";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
 import { LISTEN_FRESH, markListening } from "./person";
@@ -89,7 +89,7 @@ const TOOLS = [
   {
     name: "connect_mcp",
     description: "Link a remote MCP server (Streamable HTTP URL) to the room, like the Apps tab's Conectar MCP: its tools and apps show up for the room (scope room) or only for your human and their Claudes (scope me). Never put a token in your arguments yourself: run `vibebook connect <url> --token-cmd \"op read op://…\"` (or --token-env / --token-file), which reads the token from the secret store and sends it straight to vibebook, encrypted at rest, never shown to you, the browser or the room. Only when your human asked for it.",
-    inputSchema: { type: "object", properties: { room_id: { type: "string" }, url: { type: "string" }, token: { type: "string", description: "filled by `vibebook connect`, never typed by an agent" }, scope: { type: "string", enum: ["room", "me"] }, title: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "url"] },
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, url: { type: "string" }, token: { type: "string", description: "filled by `vibebook connect`, never typed by an agent" }, scope: { type: "string", enum: ["me", "room"], description: "me (default): only your human and their Claudes; room: everyone reads, writes by others wait for your human's OK" }, title: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "url"] },
   },
   {
     name: "disconnect_mcp",
@@ -98,7 +98,7 @@ const TOOLS = [
   },
   {
     name: "app_call",
-    description: "Call a tool on one of the room's MCP connections (see connections) and get its result; the server runs it with the token of whoever connected it. On a room connection someone else owns, only read_only tools: ask its owner for the rest. Changes show up for everyone who has the app open after they refresh it.",
+    description: "Call a tool on one of the room's MCP connections (see connections) and get its result; the server runs it with the token of whoever connected it. On a room connection someone else owns, read_only tools run; any other waits for its owner's OK (they're asked in the room; you get pending: true and nothing runs until they approve). Changes show up for everyone who has the app open after they refresh it.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, connection_id: { type: "string" }, tool: { type: "string" }, arguments: { type: "object" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "connection_id", "tool"] },
   },
   {
@@ -649,8 +649,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       if (!c) throw new Error(`no connection ${str(a.connection_id)} you can use in this room; call connections`);
       const tool = publicConn(c, me.email).tools.find((t) => t.name === str(a.tool));
       if (!tool) throw new Error(`${c.title} has no tool ${str(a.tool)} you can call (app-only tools are the app's)`);
-      // ponytail: someone else's room connection = read-only for other people's Claudes; a ⏸ ask to its owner is the upgrade.
-      if (c.owner !== me.email && !tool.read_only) throw new Error(`${str(a.tool)} changes things in ${c.owner}'s account on ${c.title}; ask them (only read_only tools on someone else's connection)`);
+      // Someone else's room connection: reads run; a write waits for the owner's OK (asked in the room).
+      if (needsOwner(c, me.email, tool.name)) return askOwner(env, c, me.email, "agent", tool.name, a.arguments, str(a.thread) || "main");
       const result = await callTool(env, c, tool.name, a.arguments);
       ctx.waitUntil(track(env, "app_call", { user: me.email, dims: { book: id, host: new URL(c.url).host, tool: tool.name, via: "agent", client: me.client } }));
       return result;

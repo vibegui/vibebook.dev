@@ -77,7 +77,8 @@
         "Fixe na lateral o app de uma conexão MCP, não só os apps da sala: o 📌 fica na barra do app aberto, do lado do ↻.",
         "Uma conexão com muitas tools mostra primeiro as telas dela; o resto fica em \"ver todas\".",
         "A aba Conexões virou parte da aba Apps: uma aba só pra apps da sala e servidores conectados.",
-        "Embeds no chat usam as mesmas tools dos apps (ler a sala, postar, mexer em tarefas), sempre com o seu OK."
+        "Embeds no chat usam as mesmas tools dos apps (ler a sala, postar, mexer em tarefas), sempre com o seu OK.",
+        "Conexão \"da sala\" não empresta mais a sua conta: os outros só leem; uma escrita com o seu token vira um pedido que você aprova ou nega na aba Apps. \"Minha\" virou o padrão."
       ],
       "en": [
         "Opening a room loads only the open conversation; the others, epic docs and the file list load when you open them",
@@ -88,7 +89,8 @@
         "Pin an MCP connection's app to the sidebar, not only room apps: the 📌 sits in the open app's bar, next to ↻.",
         "A connection with many tools shows its screens first; the rest sits behind \"see all\".",
         "The Connections tab is now part of the Apps tab: one tab for room apps and connected servers.",
-        "Chat embeds use the same tools as apps (read the room, post, move tasks), always with your OK."
+        "Chat embeds use the same tools as apps (read the room, post, move tasks), always with your OK.",
+        "A room connection no longer lends out your account: others only read; a write with your token becomes a request you approve or deny in the Apps tab. \"Mine\" is now the default."
       ]
     },
     "fixes": {
@@ -100,7 +102,8 @@
         "Cards com tabela usam a largura toda da mensagem",
         "Botões só de ícone voltaram a ficar centralizados",
         "Aprovar um pedido do Claude pela sala agora tira também a bolinha vermelha de \"espera você no terminal\".",
-        "O breadcrumb do doc não aparece mais em cima de um app aberto."
+        "O breadcrumb do doc não aparece mais em cima de um app aberto.",
+        "Conexão de quem saiu da sala para de funcionar, e um app só abre link depois de você permitir."
       ],
       "en": [
         "An epic with an open sub-epic doesn't archive too early, and closes with the last one",
@@ -110,7 +113,8 @@
         "Cards with tables use the message's full width",
         "Icon-only buttons are centered again",
         "Approving a Claude's request in the room now also clears the red \"waiting for you in the terminal\" dot.",
-        "The doc's breadcrumb no longer shows over an open app."
+        "The doc's breadcrumb no longer shows over an open app.",
+        "A connection stops when its owner leaves the room, and an app only opens a link after you allow it."
       ]
     }
   },

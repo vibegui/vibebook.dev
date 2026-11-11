@@ -481,6 +481,11 @@ export class Book extends DurableObject<Env> {
   }
   /** A Claude's report_issue, shown in vibebook's product room (ISSUES_ROOM): one @vibe line, tag issue, the app folds
    *  consecutive ones into one line. Quiet: no unread dot, no inbox bump, so listening Claudes don't wake for it. */
+  /** A loud line from @vibe (mentions mail and wake listeners), e.g. an MCP write waiting on the connection's owner. */
+  vibePost(bookId: string, thread: string, text: string) {
+    this.bind(bookId);
+    return this.addMessage(thread || "main", "ai", text, {}).id as number;
+  }
   issuePost(bookId: string, head: string, what: string) {
     this.bind(bookId);
     this.addMessage("main", "ai", `⚠ ${head}\n\n${what}`, { tag: "issue", quiet: true });

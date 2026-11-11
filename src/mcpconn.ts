@@ -129,7 +129,7 @@ export async function createConn(env: Env, book: string, email: string, b: { url
   sessions.set(cid, session);
   const title = String(b.title || result?.serverInfo?.title || result?.serverInfo?.name || new URL(ok.url).host).slice(0, 60);
   const tools = await listTools(env, { id: cid, url: ok.url, ...sealed });
-  const scope = b.scope === "me" ? "me" : "room";
+  const scope = b.scope === "room" ? "room" : "me"; // "minha" by default (hybrid model, Nov 2026)
   await env.DB.prepare(`INSERT INTO mcp_connections (id, book_id, owner, scope, url, title, enc, iv, tools, ctx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)`)
     .bind(cid, book, email, scope, ok.url, title, sealed.enc, sealed.iv, JSON.stringify(tools), Date.now()).run();
   wait(track(env, "mcp_connected", { user: email, dims: { book, host: new URL(ok.url).host, scope, tools: tools.length, apps: tools.filter(uiOf).length } }));
@@ -144,6 +144,47 @@ export async function deleteConn(env: Env, book: string, cid: string, email: str
   await env.DB.prepare(`DELETE FROM mcp_connections WHERE id = ?`).bind(x.id).run();
   sessions.delete(x.id);
   await bookStub(env, book).connsChanged();
+}
+
+/** Someone else's room connection: they read freely, but a write with the owner's token waits for the owner. */
+export const needsOwner = (c: Conn, email: string, tool: string) => {
+  if (c.owner === email) return false;
+  const t = toolsOf(c).find((x) => x.name === tool);
+  return !t?.annotations?.readOnlyHint;
+};
+/** Queues that write for the connection's owner and tells them in the room (Aprovar/Negar live in the Apps tab). */
+export async function askOwner(env: Env, c: Conn, requester: string, via: "app" | "agent", tool: string, args: unknown, thread = "main") {
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  const a = JSON.stringify(args && typeof args === "object" ? args : {}).slice(0, 4000);
+  if (findSecret(a)) throw new Error("os argumentos parecem ter um segredo; não guardei o pedido");
+  await env.DB.prepare(`INSERT INTO mcp_pending (id, book_id, conn_id, owner, requester, via, tool, args, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`)
+    .bind(id, c.book_id, c.id, c.owner, requester, via, tool, a, Date.now()).run();
+  const who = requester.split("@")[0], owner = c.owner.split("@")[0];
+  await bookStub(env, c.book_id).vibePost(c.book_id, thread, `🔐 @${owner}, ${who}${via === "agent" ? " (pelo Claude)" : ""} quer usar **${tool}** em **${c.title}** com a sua conta. Aprova ou nega na aba Apps, no card da conexão.`);
+  await bookStub(env, c.book_id).connsChanged();
+  return { pending: true, request_id: id, note: `${tool} changes things with ${c.owner}'s account on ${c.title}: it waits for their OK (they were asked in the room). Nothing ran yet.` };
+}
+export async function pendingFor(env: Env, c: Conn) {
+  const r = await env.DB.prepare(`SELECT id, requester, via, tool, args, created_at FROM mcp_pending WHERE conn_id = ? AND status = 'open' ORDER BY created_at`).bind(c.id).all();
+  return r.results;
+}
+/** The owner's answer: runs the call on approve, and says how it went in the room. */
+export async function decidePending(env: Env, c: Conn, pid: string, email: string, approve: boolean) {
+  if (c.owner !== email) throw new Error("só quem conectou decide");
+  const p = await env.DB.prepare(`SELECT * FROM mcp_pending WHERE id = ? AND conn_id = ? AND status = 'open'`).bind(pid, c.id).first<{ requester: string; tool: string; args: string }>();
+  if (!p) throw new Error("pedido não encontrado ou já decidido");
+  let line: string, result = "";
+  if (approve) {
+    try {
+      const r = await callTool(env, c, p.tool, JSON.parse(p.args || "{}"));
+      result = JSON.stringify(r).slice(0, 4000);
+      line = `✓ @${p.requester.split("@")[0]}, ${email.split("@")[0]} aprovou: **${p.tool}** rodou em ${c.title}${r?.isError ? " e voltou com erro" : ""}.`;
+    } catch (e) { result = String((e as Error).message); line = `✗ @${p.requester.split("@")[0]}, ${p.tool} em ${c.title} foi aprovado mas falhou: ${result.slice(0, 200)}`; }
+  } else line = `@${p.requester.split("@")[0]}, ${email.split("@")[0]} negou **${p.tool}** em ${c.title}.`;
+  await env.DB.prepare(`UPDATE mcp_pending SET status = ?, result = ? WHERE id = ?`).bind(approve ? "done" : "denied", result, pid).run();
+  await bookStub(env, c.book_id).vibePost(c.book_id, "main", line);
+  await bookStub(env, c.book_id).connsChanged();
+  return { ok: true, result: result || undefined };
 }
 
 // ---- The app's HTML with its CSP. ----
@@ -185,7 +226,7 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
   app.get("/api/books/:id/connections", async (c: any) => {
     const no = await guard(c); if (no) return no;
     const email = c.get("email");
-    return c.json({ connections: (await listConns(c.env, c.req.param("id"), email)).map((x) => publicConn(x, email)) });
+    return c.json({ connections: await Promise.all((await listConns(c.env, c.req.param("id"), email)).map(async (x) => ({ ...publicConn(x, email), pending: x.owner === email && x.scope === "room" ? await pendingFor(c.env, x) : [] }))) });
   });
 
   app.post("/api/books/:id/connections", async (c: any) => {
@@ -213,6 +254,15 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     } catch (e) { return fail(c, e); }
   });
 
+  // The owner approves or denies a write someone else asked to make with their token.
+  app.post("/api/books/:id/connections/:cid/pending/:pid", async (c: any) => {
+    const no = await guard(c); if (no) return no;
+    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
+    const b = await c.req.json().catch(() => ({}));
+    try { return c.json(await decidePending(c.env, x, c.req.param("pid"), c.get("email"), b.approve === true)); }
+    catch (e) { return fail(c, e, 400); }
+  });
+
   // The app's HTML for an opaque-origin iframe (the page puts it in srcdoc).
   app.get("/api/books/:id/connections/:cid/ui", async (c: any) => {
     const no = await guard(c); if (no) return no;
@@ -232,6 +282,7 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
     const b = await c.req.json().catch(() => ({}));
     try {
+      if (needsOwner(x, email, String(b.name ?? ""))) return c.json({ result: { isError: true, content: [{ type: "text", text: "Essa ação usa a conta de quem conectou: pedi a aprovação na sala. Nada rodou ainda." }], structuredContent: await askOwner(c.env, x, email, "app", String(b.name ?? ""), b.arguments) } });
       const result = await callTool(c.env, x, String(b.name ?? ""), b.arguments);
       c.executionCtx.waitUntil(deps.track(c.env, "app_call", { user: email, dims: { book: x.book_id, host: new URL(x.url).host, tool: String(b.name), via: "app" } }));
       return c.json({ result });

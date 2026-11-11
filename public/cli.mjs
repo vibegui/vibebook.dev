@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.0";
+var VERSION = "1.6.1";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -771,7 +771,7 @@ var HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for you 
   vibebook call <tool> ['{json}' | -d @file | -d @-]
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
-  vibebook connect <mcp url> [--token-cmd "op read op://…" | --token-env VAR | --token-file path] [--scope room|me] [--title ..]
+  vibebook connect <mcp url> [--token-cmd "op read op://…" | --token-env VAR | --token-file path] [--scope me|room] [--title ..]
                                  link an MCP server to this folder's room (its apps show in the Apps tab); the token
                                  goes from your secret store to vibebook without being printed
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>] ['{"thread":"<epic>"}']
@@ -1137,7 +1137,7 @@ async function main() {
         token = existsSync(flag("token-file")) ? readFileSync(flag("token-file"), "utf8").trim() : "";
       if ((flag("token-cmd") || flag("token-env") || flag("token-file")) && !token)
         return die("the token came back empty (nothing was sent)");
-      const args = { url, scope: flag("scope") === "me" ? "me" : "room" };
+      const args = { url, scope: flag("scope") === "room" ? "room" : "me" };
       if (token)
         args.token = token;
       if (flag("title"))
