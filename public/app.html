@@ -2911,7 +2911,15 @@ function onEvent(ev, id) {
     case "epics": S.epics = ev.epics; if (ev.roomTasks) S.roomTasks = ev.roomTasks;
       if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
     case "docNotes": S.docNotes = ev.notes; renderDoc(); return;
-    case "doc": if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text; renderDoc(); return;
+    case "doc": {
+      // A big epic doc comes as "stale": the tab showing it fetches it, the others drop their copy. Only the doc on
+      // screen is redrawn (each task tick in another epic used to re-render the open doc).
+      const shown = (ev.epic || null) === docEpic();
+      if (ev.stale) { if (shown) send({ t: "doc.get", epic: ev.epic }); else { delete (S.docs ??= {})[ev.epic]; docAsked.delete(S.id + ev.epic); } return; }
+      if (ev.epic) (S.docs ??= {})[ev.epic] = ev.text; else S.doc = ev.text;
+      if (shown || ev.fetched) renderDoc();
+      return;
+    }
     case "meta":
       if (ev.title) { S.book.title = ev.title; const mine = myBooks?.find((b) => b.id === id); if (mine) { mine.title = ev.title; renderSwitcher(); } }
       if (ev.folder) S.book.folder = ev.folder;

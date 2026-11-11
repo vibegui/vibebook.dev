@@ -909,11 +909,17 @@ export class Book extends DurableObject<Env> {
     const key = epic ? `doc:${epic}` : "doc";
     this.set(key, text.slice(0, 100_000));
     if (by !== "tasks") this.docToTasks(epic ?? "main", this.get(key) ?? "");
-    this.broadcast({ t: "doc", text: this.get(key), by, epic: epic ?? null }, except);
+    this.docPush(key, by, epic, except);
     if (!epic) this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS)); // @vibe grades the room doc
     // Whoever is co-editing sees @vibe's/agents' (or a non-Yjs client's) change arrive live.
     const id = this.get("book_id");
     if (id) this.ctx.waitUntil(docRoomStub(this.env, id, epic).setText(this.get(key) ?? "").catch(() => {}));
+  }
+  /** An epic's doc goes to every open tab of the room, but only the tabs showing that epic draw it: past 8 KB they
+   *  get a "stale" note and fetch it with doc.get (a 36-task incident doc went out whole on each tick, Nov 2026). */
+  docPush(key: string, by: string, epic?: string, except?: WebSocket) {
+    const text = this.get(key) ?? "";
+    this.broadcast(epic && text.length > 8_000 ? { t: "doc", epic, by, stale: true } : { t: "doc", text, by, epic: epic ?? null }, except);
   }
   /** The co-editing relay's text, mirrored here (debounced) so @vibe, agents and the preview read it. */
   docFromYjs(bookId: string, text: string, epic?: string) {
@@ -921,7 +927,7 @@ export class Book extends DurableObject<Env> {
     const key = epic ? `doc:${epic}` : "doc";
     if (this.get(key) === text) return;
     this.set(key, text.slice(0, 100_000));
-    this.broadcast({ t: "doc", text: this.get(key), by: "yjs", epic: epic ?? null });
+    this.docPush(key, "yjs", epic);
     this.docToTasks(epic ?? "main", this.get(key) ?? "");
     if (!epic) this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
   }
@@ -1230,12 +1236,15 @@ export class Book extends DurableObject<Env> {
     return this.sql.exec(`SELECT agent, email, who, read, delivered, ts FROM receipts WHERE ts > ? AND substr(agent, 1, 2) != 'n_' ORDER BY ts DESC LIMIT 20`, Date.now() - 14 * 864e5).toArray();
   }
   receipt(r: { agent: string; email: string; who: string; read: number; delivered: number }) {
+    const old = this.sql.exec<{ who: string; read: number; delivered: number }>(`SELECT who, read, delivered FROM receipts WHERE agent = ?`, r.agent).toArray()[0];
+    const same = old && old.who === r.who.slice(0, 40) && old.read >= r.read && old.delivered >= r.delivered;
     this.sql.exec(
       `INSERT INTO receipts (agent, email, who, read, delivered, ts) VALUES (?, ?, ?, ?, ?, ?)
        ON CONFLICT(agent) DO UPDATE SET who = excluded.who, read = max(read, excluded.read), delivered = max(delivered, excluded.delivered), ts = excluded.ts`,
       r.agent, r.email, r.who.slice(0, 40), r.read, r.delivered, Date.now(),
     );
-    this.broadcast({ t: "receipts", receipts: this.receiptsList() });
+    // Every listener's wait/read lands here: push only when a ✓ moves (a busy room sent the same list 1000×/day).
+    if (!same) this.broadcast({ t: "receipts", receipts: this.receiptsList() });
   }
 
   // Pinned: what's always at hand in the room (the live site, the landing, the repo, an app or file of the room),
