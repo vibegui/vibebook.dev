@@ -317,6 +317,7 @@
   .bar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 0 8px 4px; }
   .bar i { display: block; height: 100%; background: var(--ok); }
   .docCrumb { display: flex; align-items: center; gap: 4px; padding: 10px 20px 0; font-size: 12.5px; color: var(--mute); }
+  .doc:not([data-pane="doc"]) .docCrumb { display: none; } /* the doc's "room › epic" crumb means nothing over files, apps… */
   .docCrumb button { border: 0; background: none; padding: 3px 7px; border-radius: 7px; font: inherit; color: var(--mute); cursor: pointer; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .docCrumb button.sel { background: var(--bg); color: var(--ink); font-weight: 600; }
   .tcard { display: flex; align-items: center; gap: 10px; margin-top: 8px; max-width: 420px; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 8px 10px; cursor: pointer; }
@@ -4639,7 +4640,7 @@ function renderConnApp(el) {
   }
   const key = `${c.id}/${a.tool}${room ? `@${a.file.id}` : ""}`;
   if (el.querySelector(".connFrame")?.dataset.app === key) return; // already open
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← ${t("Conexões")}</button><b>${esc(a.title)}</b>${scopeChip(c)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
   document.getElementById("connReload").onclick = () => { frame.dataset.app = ""; renderConnApp(el); };
