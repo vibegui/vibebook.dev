@@ -42,11 +42,12 @@ export function publicConn(c: Conn, email: string) {
 }
 
 export async function listConns(env: Env, book: string, email: string) {
-  const r = await env.DB.prepare(`SELECT * FROM mcp_connections WHERE book_id = ? ORDER BY created_at`).bind(book).all<Conn>();
+  // A connection whose owner left the room stops: nobody keeps using the token of someone who isn't here anymore.
+  const r = await env.DB.prepare(`SELECT c.* FROM mcp_connections c JOIN members m ON m.book_id = c.book_id AND m.email = c.owner WHERE c.book_id = ? ORDER BY c.created_at`).bind(book).all<Conn>();
   return r.results.filter((c) => canUse(c, email));
 }
 export async function getConn(env: Env, book: string, id: string, email: string) {
-  const c = await env.DB.prepare(`SELECT * FROM mcp_connections WHERE id = ? AND book_id = ?`).bind(id, book).first<Conn>();
+  const c = await env.DB.prepare(`SELECT c.* FROM mcp_connections c JOIN members m ON m.book_id = c.book_id AND m.email = c.owner WHERE c.id = ? AND c.book_id = ?`).bind(id, book).first<Conn>();
   return c && canUse(c, email) ? c : null;
 }
 

@@ -1732,6 +1732,7 @@ const EN = {
   "O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.": "What the room decides and every approval show up here. The Claudes log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
   "Lembretes": "Reminders",
+  "abrir um link": "open a link",
   "ver todas ({n})": "see all ({n})",
   "só as telas": "screens only",
   "Esta sala": "This room",
@@ -4756,7 +4757,12 @@ function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remot
         }
         case "tools/list": return ok({ tools: o.call ? [] : VB_TOOLS });
         case "tools/call": return ok(await call(m.params?.name, m.params?.arguments));
-        case "ui/open-link": { const u = String(m.params?.url || ""); if (/^https?:\/\//i.test(u)) window.open(u, "_blank", "noopener"); return ok({}); }
+        case "ui/open-link": { // asked: a link is the one way out for an app with no network (it could carry what it read)
+          const u = String(m.params?.url || "");
+          if (!/^https?:\/\//i.test(u)) return ok({ isError: true });
+          if (!(await ask(t("abrir um link"), u))) return ok({ isError: true });
+          window.open(u, "_blank", "noopener"); return ok({});
+        }
         case "ui/message": { const text = textOf(m.params?.content).trim().slice(0, 4000); return ok(text ? await vbCall("vibebook_post", { text, thread: o.thread ?? thread }, ask) : {}); }
         case "ui/update-model-context": {
           const text = textOf(m.params?.content) || (m.params?.structuredContent ? JSON.stringify(m.params.structuredContent) : "");
