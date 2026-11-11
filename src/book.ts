@@ -1131,6 +1131,17 @@ export class Book extends DurableObject<Env> {
   }
   agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing", rawNote = "") {
     this.bind(bookId);
+    // A message_id that isn't here, or an old one nobody of yours is on, is most likely another room's (the CLI fills
+    // room_id from the folder's .vibebook): an error, not a silent ack (Nov 2026: msg 127 of the wrong room got acked).
+    if (msgId) {
+      const m = this.sql.exec<{ id: number; ts: number }>(`SELECT id, ts FROM messages WHERE id = ?`, msgId).toArray()[0];
+      if (!m) return { ok: false, error: `message ${msgId} is not in room ${bookId}: pass the right room_id` };
+      const known =
+        m.ts > Date.now() - 48 * 3600e3 ||
+        this.sql.exec(`SELECT 1 FROM acks WHERE msg_id = ? AND email = ? LIMIT 1`, msgId, email).toArray().length > 0 ||
+        this.sql.exec(`SELECT 1 FROM epics WHERE from_msg = ? AND COALESCE(archived, 0) <= 0 LIMIT 1`, msgId).toArray().length > 0;
+      if (!known) return { ok: false, error: `message ${msgId} in room ${bookId} is from ${new Date(m.ts).toISOString().slice(0, 10)} and nobody of yours is on it: wrong room? pass room_id` };
+    }
     // Default: the person's latest own message, in any thread; "blocked" goes on the request this agent is on.
     const id =
       (msgId && this.sql.exec(`SELECT id FROM messages WHERE id = ?`, msgId).toArray()[0]?.id) ??
