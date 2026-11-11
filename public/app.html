@@ -553,6 +553,10 @@
   .threadsSec > .thread.dragging { opacity: .4; }
   .threadsSec > .thread.dropAbove { box-shadow: inset 0 2px 0 var(--accent); }
   .threadsSec > .thread.dropBelow { box-shadow: inset 0 -2px 0 var(--accent); }
+  .msg .txt a.fchip, .preview a.fchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
+  .msg .txt a.fchip span, .preview a.fchip span { overflow: hidden; text-overflow: ellipsis; }
+  .msg .txt a.fchip small, .preview a.fchip small { color: var(--mute); font-size: 0.85em; }
+  .msg .txt a.fchip:hover, .preview a.fchip:hover { border-color: var(--accent); }
   .msg .txt a.ghchip, .preview a.ghchip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; vertical-align: -3px; padding: 1px 8px 1px 2px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 0.86em; font-weight: 500; line-height: 1.5; text-decoration: none; white-space: nowrap; }
   .msg .txt a.ghchip:hover, .preview a.ghchip:hover { border-color: var(--mute); }
   .msg .txt a.ghchip svg, .preview a.ghchip svg { width: 18px; height: 18px; flex: none; padding: 2px; border-radius: 50%; background: var(--ink); color: var(--bg); }
@@ -1970,12 +1974,23 @@ const ghChips = (h) => h.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-
   const shown = !own || own === href || /^https?:\/\//.test(own) ? esc(label) : text;
   return `<a ${pre}href="${href}"${post} class="ghchip" title="${esc(label)}">${GH_LOGO}<span>${shown}</span></a>`;
 });
-const linkify = (h) => ghChips(h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`));
+// A link to one of this room's files (an agent's [report.html](…/files/<id>), or pasted) becomes a chip: the type's
+// icon, the file's name and vN when it has versions. A click opens the viewer (the document click handler).
+const fileChips = (h) => h.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\/books\/([0-9a-f]+)\/files\/([0-9a-f]+)"([^>]*)>([\s\S]*?)<\/a>/g, (all, pre, host, room, fid, post, text) => {
+  if (!S?.id || room !== S.id || (host && host !== location.origin)) return all;
+  const f = (S.files || []).find((x) => x.id === fid) || allMsgs().flatMap((x) => x.files || []).find((x) => x.id === fid);
+  const own = text.replace(/<[^>]*>/g, "").trim();
+  const nameOf = f?.name || (own && !/^https?:\/\//.test(own) ? own : "arquivo");
+  const vs = f ? fileVersions(f.name) : [];
+  const n = vs.length > 1 ? vs.length - vs.findIndex((v) => v.id === fid) : 0;
+  return `<a ${pre}href="/api/books/${room}/files/${fid}"${post} class="fchip" title="${esc(nameOf)}">${fileIcon(f || { type: /\.html?$/i.test(nameOf) ? "text/html" : "" }, 14)}<span>${esc(nameOf)}</span>${n ? `<small>v${n}</small>` : ""}</a>`;
+});
+const linkify = (h) => fileChips(ghChips(h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`)));
 // Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
 // No <img>: files go as attachments, and a remote image would be a tracker.
-const md = (s) => ghChips(DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
+const md = (s) => fileChips(ghChips(DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
   .replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"')
-  .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"'));
+  .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"')));
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
