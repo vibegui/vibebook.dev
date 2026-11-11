@@ -4300,10 +4300,18 @@ function viewerPop() {
   return true;
 }
 document.addEventListener("click", (e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
   const a = e.target.closest?.("a[data-view]");
-  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  if (a) { e.preventDefault(); return openViewer(a.getAttribute("href"), a.dataset.view, a.dataset.name || ""); }
+  // A link to one of this room's files written in a message ([report.html](https://vibebook.dev/api/books/<room>/files/<id>))
+  // opens in the viewer too: as a plain link, the home-screen app navigated to the raw file with no bar and no way back.
+  const l = e.target.closest?.("a[href]"); if (!l || !S?.id) return;
+  let u; try { u = new URL(l.getAttribute("href"), location.href); } catch { return; }
+  const m = u.origin === location.origin && new RegExp(`^/api/books/${S.id}/files/([0-9a-f]+)$`).exec(u.pathname);
+  if (!m) return;
+  const f = (S.files || []).find((x) => x.id === m[1]) || allMsgs().flatMap((x) => x.files || []).find((x) => x.id === m[1]);
   e.preventDefault();
-  openViewer(a.getAttribute("href"), a.dataset.view, a.dataset.name || "");
+  openViewer(u.pathname, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || l.textContent.trim() || "arquivo");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
