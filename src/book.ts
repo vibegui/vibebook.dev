@@ -523,12 +523,21 @@ export class Book extends DurableObject<Env> {
     this.ctx.waitUntil(this.askWait(email, msgId, "", null));
     return { ok: true };
   }
+  /** id → { from, text ≤400, files } of the messages these replies answer (one query). */
+  quotes(ids: (number | null | undefined)[], who: (e: string) => string) {
+    const want = [...new Set(ids.filter((x): x is number => !!x))].slice(0, 100);
+    const out = new Map<number, { id: number; from: string; text: string; files?: string[] }>();
+    if (!want.length) return out;
+    for (const q of this.sql.exec(`SELECT id, author, substr(coalesce(text, ''), 1, 400) AS text, files FROM messages WHERE id IN (${want.map(() => "?").join(",")})`, ...want).toArray())
+      out.set(q.id as number, { id: q.id as number, from: who(q.author as string), text: q.text as string, files: q.files ? (JSON.parse(q.files as string) as FileMeta[]).map((f) => f.name) : undefined });
+    return out;
+  }
   /** The person's own messages (and reminders for them) between two ids, any thread: what their agent hasn't read yet. */
   humanSince(bookId: string, email: string, after: number, before: number) {
     this.bind(bookId);
     return this.sql
       .exec<{ id: number; thread: string; text: string }>(
-        `SELECT id, thread, substr(text, 1, 500) AS text FROM messages WHERE id > ? AND id < ? AND coalesce(text, '') != '' AND ((author = ? AND kind IS NULL) OR (tag = 'reminder' AND for_who = ?))
+        `SELECT id, thread, substr(text, 1, 500) AS text, reply_to FROM messages WHERE id > ? AND id < ? AND coalesce(text, '') != '' AND ((author = ? AND kind IS NULL) OR (tag = 'reminder' AND for_who = ?))
            AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = messages.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')) ORDER BY id LIMIT 10`,
         after,
         before,
@@ -536,7 +545,11 @@ export class Book extends DurableObject<Env> {
         email,
       )
       .toArray()
-      .map((m) => ({ ...m, from_your_human: true }));
+      .map((m) => {
+        const { reply_to, ...rest } = m as typeof m & { reply_to: number | null };
+        const q = reply_to ? this.quotes([reply_to], (e) => (e === "ai" ? "@vibe" : e)).get(reply_to) : undefined;
+        return { ...rest, from_your_human: true, ...(q ? { reply_to, reply_quote: q } : {}) };
+      });
   }
   /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
   answerTo(bookId: string, msgId: number, email: string) {
@@ -1003,6 +1016,9 @@ export class Book extends DurableObject<Env> {
     const rows = since
       ? this.sql.exec(`SELECT * FROM messages WHERE id > ? ORDER BY id LIMIT ?`, since, AGENT_READ_MAX).toArray()
       : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT 40`).toArray().reverse();
+    // A reply carries what it answers (author + the start of its text): "@guilherme" alone, replying to a question,
+    // read as an empty mention to the Claude (Nov 2026).
+    const quoted = this.quotes(rows.map((m) => m.reply_to as number | null), who);
     const messages = rows
       .filter((m) => m.text || m.poll || m.files)
       .map((m) => ({
@@ -1018,6 +1034,7 @@ export class Book extends DurableObject<Env> {
         to_agent: m.author === email && m.kind !== "agent" ? toAgents((m.text as string) ?? "").join(", ") || undefined : undefined,
         not_for_you: (m.author === email && m.kind !== "agent" && forOther((m.text as string) ?? "")) || undefined,
         reply_to: (m.reply_to as number | null) ?? undefined,
+        reply_quote: m.reply_to ? quoted.get(m.reply_to as number) : undefined,
         choices: m.choices ? (JSON.parse(m.choices as string) as { options: string[]; multi: boolean }) : undefined,
         card: m.card ? JSON.parse(m.card as string) : undefined,
         text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
