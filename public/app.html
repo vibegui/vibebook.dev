@@ -380,6 +380,8 @@
   .claudeSpin { color: var(--claude); font-size: 15px; line-height: 1; display: inline-grid; place-items: center; width: 1em; height: 1em; transform-origin: 50% 50%; animation: claudeTurn 3.2s linear infinite; flex: none; }
   @keyframes claudeTurn { to { transform: rotate(360deg); } }
   /* Inside the epic: who is on it, where the empty-thread hint would be (or after the last message). */
+  .working .wAv { display: flex; flex: none; }
+  .working .wAv > * + * { margin-left: -10px; }
   .working { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; background: var(--warm-bg); color: var(--warm-ink); font-size: 14.5px; }
   .working::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), var(--warm-line) 0 70%, var(--claude) 85%, var(--warm-line) 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
   .working > div { flex: 1; min-width: 0; }
@@ -1622,6 +1624,7 @@ const EN = {
   "ouvindo esta sala agora": "listening to this room now",
   "visto há {ago}": "seen {ago} ago",
   "está trabalhando nisso": "is working on this",
+  "estão trabalhando nisso": "are working on this",
   "O andamento e a entrega aparecem aqui nesta thread.": "Progress and the delivery show up here in this thread.",
   "Alguém está esperando você aqui": "Someone is waiting on you here",
   "{n} coisas esperando você aqui": "{n} things waiting on you here",
@@ -3833,16 +3836,44 @@ const mainWorker = () => {
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3 && acks.find((b) => b.msg_id === a.msg_id && b.who === a.who) === a);
   return k ? { who: k.who, email: k.email } : null;
 };
+// Every Claude on it, for the card at the end of the thread: each live "doing" ack (its newest on that message), one
+// per Claude; with none, the single fallback above (a recent non-delivery post).
+const liveDoing = (acks) => {
+  const seen = new Set(), out = [];
+  for (const a of acks) {
+    const k = `${a.who}|${a.email}`;
+    if (a.status === "doing" && Date.now() - a.ts < 20 * 60e3 && !seen.has(k) && acks.find((b) => b.msg_id === a.msg_id && b.who === a.who && b.email === a.email) === a) { seen.add(k); out.push({ who: a.who, email: a.email }); }
+  }
+  return out;
+};
+const threadWorkers = () => {
+  if (isPre()) return [];
+  const e = thread === "main" ? null : S.epics.find((x) => x.id === thread);
+  let ids;
+  if (e) {
+    if (e.archived > 0) return [];
+    const branched = new Set((S.epics || []).filter((x) => x.id !== e.id).map((x) => x.from_msg));
+    ids = new Set(allMsgs().filter((m) => m.thread === e.id && !branched.has(m.id)).map((m) => m.id)); ids.add(e.from_msg);
+  } else {
+    const epicFrom = new Set((S.epics || []).map((x) => x.from_msg));
+    ids = new Set(allMsgs().filter((m) => m.thread === "main" && !epicFrom.has(m.id)).map((m) => m.id));
+  }
+  const all = liveDoing((S.acks || []).filter((a) => ids.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts));
+  if (all.length) return all;
+  const one = e ? epicWorker(e) : mainWorker();
+  return one ? [one] : [];
+};
 const epicBusy = (e) => { const w = epicWorker(e); return w ? t("{via} de {who}", { via: w.who, who: name(w.email) }) : null; };
 // The same, inside the open epic's thread: a card at the end (in place of the empty-thread hint) saying who is on it.
 function renderWorking() {
   const el = document.getElementById("msgs");
   if (!el || !S) return;
   el.querySelector("#working")?.remove();
-  const w = isPre() ? null : thread === "main" ? mainWorker() : epicWorker(S.epics.find((e) => e.id === thread));
-  el.querySelector(".empty")?.classList.toggle("hidden", !!w);
-  if (!w) return;
-  el.insertAdjacentHTML("beforeend", `<div id="working" class="working">${agentAvatar(w.email, w.who)}<div><b>${t("{via} de {who}", { via: esc(w.who), who: esc(name(w.email)) })}</b> ${t("está trabalhando nisso")}<small>${t("O andamento e a entrega aparecem aqui nesta thread.")}</small></div><span class="spin">✻</span></div>`);
+  const ws = threadWorkers();
+  el.querySelector(".empty")?.classList.toggle("hidden", !!ws.length);
+  if (!ws.length) return;
+  const who = (w) => `<b>${t("{via} de {who}", { via: esc(w.who), who: esc(name(w.email)) })}</b>`;
+  el.insertAdjacentHTML("beforeend", `<div id="working" class="working"><span class="wAv">${ws.slice(0, 4).map((w) => agentAvatar(w.email, w.who)).join("")}</span><div>${ws.length === 1 ? `${who(ws[0])} ${t("está trabalhando nisso")}` : `${ws.map(who).join(", ")} ${t("estão trabalhando nisso")}`}<small>${t("O andamento e a entrega aparecem aqui nesta thread.")}</small></div><span class="spin">✻</span></div>`);
 }
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
