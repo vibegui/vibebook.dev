@@ -266,10 +266,48 @@ const sessionStatus = (sid: string): Status | undefined => {
 };
 /** Sent with every call made from inside Claude Code, so the room can show this Claude's context bar (and, with
  *  the statusline wrapper, the plan's limits on hover). */
+// Codex (Nov 2026): no session id in the env, so the newest rollout in ~/.codex/sessions (today or yesterday, written
+// in the last 15 min) whose session cwd contains this folder; its last token_count has the context and the plan's
+// limits (primary = 5 h, secondary = 7 days). Same headers as Claude Code's.
+function codexContext(): Record<string, string> {
+  try {
+    const root = join(homedir(), ".codex", "sessions");
+    if (!existsSync(root)) return {};
+    const day = (d: number) => { const t = new Date(Date.now() - d * 864e5); return join(root, String(t.getFullYear()), String(t.getMonth() + 1).padStart(2, "0"), String(t.getDate()).padStart(2, "0")); };
+    const files = [day(0), day(1)].filter((d) => existsSync(d))
+      .flatMap((d) => readdirSync(d).filter((f) => f.endsWith(".jsonl")).map((f) => join(d, f)))
+      .map((f) => ({ f, m: statSync(f).mtimeMs })).filter((x) => Date.now() - x.m < 15 * 60e3).sort((a, b) => b.m - a.m).slice(0, 10);
+    const cwd = process.cwd();
+    const read = (f: string, from: "head" | "tail", n: number) => {
+      const fd = openSync(f, "r"); const size = fstatSync(fd).size; const k = Math.min(size, n); const buf = Buffer.alloc(k);
+      readSync(fd, buf, 0, k, from === "head" ? 0 : size - k); closeSync(fd); return buf.toString("utf8");
+    };
+    for (const { f } of files) {
+      let meta: any; try { meta = JSON.parse(read(f, "head", 1 << 20).split("\n")[0]); } catch { continue; }
+      const dir = String(meta?.payload?.cwd ?? "");
+      if (!dir || (cwd !== dir && !cwd.startsWith(dir + "/"))) continue;
+      const lines = read(f, "tail", 2 << 20).split("\n");
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (!lines[i].includes('"token_count"')) continue;
+        let p: any; try { p = JSON.parse(lines[i])?.payload; } catch { continue; }
+        const u = p?.info?.last_token_usage, w = Number(p?.info?.model_context_window);
+        if (!u || !w) continue;
+        const h: Record<string, string> = { "x-vibebook-context": `${Number(u.input_tokens) || 0}/${w}` };
+        const limits: Record<string, { p: number; r: number }> = {};
+        for (const [k, l] of [["five_hour", p.rate_limits?.primary], ["seven_day", p.rate_limits?.secondary]] as const)
+          if (typeof l?.used_percent === "number") limits[k] = { p: Math.round(l.used_percent), r: Number(l.resets_at) || 0 };
+        if (Object.keys(limits).length) h["x-vibebook-limits"] = JSON.stringify(limits);
+        return h;
+      }
+    }
+  } catch {}
+  return {};
+}
 const myContext = (): Record<string, string> => {
   const sid = process.env.CLAUDE_CODE_SESSION_ID;
-  const c = sid ? sessionContext(sid) : undefined;
-  if (!sid || !c) return {};
+  if (!sid) return codexContext();
+  const c = sessionContext(sid);
+  if (!c) return {};
   const st = sessionStatus(sid);
   const h: Record<string, string> = { "x-vibebook-context": `${c.tokens}/${st?.window ?? c.window}` };
   if (st?.limits && Object.keys(st.limits).length) h["x-vibebook-limits"] = JSON.stringify(st.limits);

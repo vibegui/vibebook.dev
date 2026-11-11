@@ -281,10 +281,70 @@ var sessionStatus = (sid) => {
   const s = readJson(join(STATUS, `${sid}.json`), null);
   return s && Date.now() - s.at < 6 * 3600000 ? s : undefined;
 };
+function codexContext() {
+  try {
+    const root = join(homedir(), ".codex", "sessions");
+    if (!existsSync(root))
+      return {};
+    const day = (d) => {
+      const t = new Date(Date.now() - d * 86400000);
+      return join(root, String(t.getFullYear()), String(t.getMonth() + 1).padStart(2, "0"), String(t.getDate()).padStart(2, "0"));
+    };
+    const files = [day(0), day(1)].filter((d) => existsSync(d)).flatMap((d) => readdirSync(d).filter((f) => f.endsWith(".jsonl")).map((f) => join(d, f))).map((f) => ({ f, m: statSync(f).mtimeMs })).filter((x) => Date.now() - x.m < 15 * 60000).sort((a, b) => b.m - a.m).slice(0, 10);
+    const cwd = process.cwd();
+    const read = (f, from, n) => {
+      const fd = openSync(f, "r");
+      const size = fstatSync(fd).size;
+      const k = Math.min(size, n);
+      const buf = Buffer.alloc(k);
+      readSync(fd, buf, 0, k, from === "head" ? 0 : size - k);
+      closeSync(fd);
+      return buf.toString("utf8");
+    };
+    for (const { f } of files) {
+      let meta;
+      try {
+        meta = JSON.parse(read(f, "head", 1 << 20).split(`
+`)[0]);
+      } catch {
+        continue;
+      }
+      const dir = String(meta?.payload?.cwd ?? "");
+      if (!dir || cwd !== dir && !cwd.startsWith(dir + "/"))
+        continue;
+      const lines = read(f, "tail", 2 << 20).split(`
+`);
+      for (let i = lines.length - 1;i >= 0; i--) {
+        if (!lines[i].includes('"token_count"'))
+          continue;
+        let p;
+        try {
+          p = JSON.parse(lines[i])?.payload;
+        } catch {
+          continue;
+        }
+        const u = p?.info?.last_token_usage, w = Number(p?.info?.model_context_window);
+        if (!u || !w)
+          continue;
+        const h = { "x-vibebook-context": `${Number(u.input_tokens) || 0}/${w}` };
+        const limits = {};
+        for (const [k, l] of [["five_hour", p.rate_limits?.primary], ["seven_day", p.rate_limits?.secondary]])
+          if (typeof l?.used_percent === "number")
+            limits[k] = { p: Math.round(l.used_percent), r: Number(l.resets_at) || 0 };
+        if (Object.keys(limits).length)
+          h["x-vibebook-limits"] = JSON.stringify(limits);
+        return h;
+      }
+    }
+  } catch {}
+  return {};
+}
 var myContext = () => {
   const sid = process.env.CLAUDE_CODE_SESSION_ID;
-  const c = sid ? sessionContext(sid) : undefined;
-  if (!sid || !c)
+  if (!sid)
+    return codexContext();
+  const c = sessionContext(sid);
+  if (!c)
     return {};
   const st = sessionStatus(sid);
   const h = { "x-vibebook-context": `${c.tokens}/${st?.window ?? c.window}` };
