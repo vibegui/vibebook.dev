@@ -1094,6 +1094,7 @@ export class Book extends DurableObject<Env> {
   // when at least two people's agents take part. One agent alone (even with @vibe answering it) never pauses:
   // AGENT_LIMIT caps the agent and AI_LIMIT caps @vibe.
   agentStreak(thread: string) {
+    if ((this.env.AGENT_STREAK_OFF ?? "").split(",").includes(this.get("book_id") ?? "")) return 0; // a room working with many Claudes on purpose
     const authors = new Set<string>();
     let n = 0;
     for (const m of this.sql

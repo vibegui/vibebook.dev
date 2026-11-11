@@ -39,6 +39,8 @@
     // posts are reminders/*.md there. CF_ANALYTICS_TOKEN is a secret (read-only analytics).
     "METRICS_ROOMS": "c635b3ffbf93,f94aedb83899",
     "ISSUES_ROOM": "f94aedb83899",
+    // Rooms where agents of several people may keep talking with no human (no pause after AGENT_STREAK_MAX).
+    "AGENT_STREAK_OFF": "8517909cec03",
     "CF_ACCOUNT_ID": "55dd6d847f366735ef6e0f860c7bdc51"
   },
   // No cron: removes the one the daily reports used (scheduled posts are room reminders now).
