@@ -11,6 +11,7 @@ import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
 import { mountSandbox } from "./sandbox";
+import { mountConnections } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
 import { renderApp, withBridge } from "./embed";
@@ -104,6 +105,9 @@ const SCHEMA = [
   // Cloud agents (src/sandbox.ts): a person's freestyle.sh API key, AES-GCM encrypted, and their sandboxes per room.
   `CREATE TABLE IF NOT EXISTS freestyle_keys (email TEXT PRIMARY KEY, enc TEXT, iv TEXT, at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS claude_tokens (email TEXT PRIMARY KEY, enc TEXT, iv TEXT, at INTEGER)`,
+  // MCP connections (src/mcpconn.ts): a remote MCP server linked to a room, its token AES-GCM encrypted; scope room = every member uses it, me = only its owner.
+  `CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, book_id TEXT, owner TEXT, scope TEXT, url TEXT, title TEXT, enc TEXT, iv TEXT, tools TEXT, ctx TEXT, created_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS mcp_conn_book ON mcp_connections (book_id)`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
@@ -799,6 +803,7 @@ app.get("/ws/:id", async (c) => {
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
 mountSandbox(app, { isMember, track });
+mountConnections(app, { isMember, track });
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {

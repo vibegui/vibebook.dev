@@ -23,6 +23,16 @@ async function vaultKey(env: Pick<Env, "SESSION_SECRET">) {
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
 const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
+/** Encrypt/decrypt one secret with the vault key (MCP connection tokens use it too). */
+export async function seal(env: Pick<Env, "SESSION_SECRET">, text: string) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await vaultKey(env), enc.encode(text)));
+  return { enc: b64(ct), iv: b64(iv) };
+}
+export async function unseal(env: Pick<Env, "SESSION_SECRET">, ct: string, iv: string) {
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(iv) }, await vaultKey(env), unb64(ct)));
+}
+
 // Two secrets per person, same vault: their freestyle API key and their Claude subscription token (`claude setup-token`).
 type Vault = "freestyle_keys" | "claude_tokens";
 export async function saveKey(env: Env, email: string, key: string, table: Vault = "freestyle_keys") {

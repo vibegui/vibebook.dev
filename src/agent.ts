@@ -1,6 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
+import { callTool, getConn, listConns, publicConn } from "./mcpconn";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
 import { LISTEN_FRESH, markListening } from "./person";
@@ -79,6 +80,21 @@ const TOOLS = [
     name: "set_room_icon",
     description: "Set the room's icon (shown on its tile in everyone's rail and as the tab icon), e.g. the favicon of the room's site: pass image_url (public https) or file_id (an image already in this room: the id or the url from read_room's files[]); PNG/JPEG/WebP/GIF/ICO, no SVG, ≤256KB. clear: true removes it. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, image_url: { type: "string" }, file_id: { type: "string" }, clear: { type: "boolean" } }, required: ["room_id"] },
+  },
+  {
+    name: "connections",
+    description: "The room's MCP connections (Conexões tab: remote MCP servers people linked, e.g. Rituals) that your human may use: scope room (everyone's) or me (only your human's), their apps (tools with a UI that open as a tab of the doc panel), their tools (read_only from the server's annotations) and context (what each open app last reported about itself). Tokens stay on vibebook's server.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id"] },
+  },
+  {
+    name: "app_call",
+    description: "Call a tool on one of the room's MCP connections (see connections) and get its result; the server runs it with the token of whoever connected it. On a room connection someone else owns, only read_only tools: ask its owner for the rest. Changes show up for everyone who has the app open after they refresh it.",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, connection_id: { type: "string" }, tool: { type: "string" }, arguments: { type: "object" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "connection_id", "tool"] },
+  },
+  {
+    name: "app_open",
+    description: "Post a message with a button that opens an app in the doc panel (Abrir <app>): a connection's app (connection_id + tool from connections), or a room app (connection_id \"room\", tool = <name> of the file apps/<name>.html). A room app is just an HTML file you upload with upload_file as apps/<name>.html: opened, it talks MCP Apps over postMessage (ui/initialize, then tools/call) and gets vibebook's tools as the person looking: vibebook_read {thread?}, vibebook_post {text, thread?}, vibebook_add_task {title, epic_id?}, vibebook_task_status {task_id, status}, vibebook_connections, vibebook_call_connection {connection_id, tool, arguments}; writes ask that person first. text is the message (optional), thread an epic id (default main).",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, connection_id: { type: "string" }, tool: { type: "string" }, text: { type: "string" }, thread: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "connection_id", "tool"] },
   },
   {
     name: "wait_for_messages",
@@ -627,6 +643,40 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const out = await bookStub(env, id).renameRoom(id, str(a.title));
       if (!out.ok) throw new Error(out.error);
       return { ...out, url: `${origin}/b/${id}` };
+    }
+    case "connections": {
+      const id = await room();
+      return { connections: (await listConns(env, id, me.email)).map((c) => publicConn(c, me.email)) };
+    }
+    case "app_call": {
+      const id = await room();
+      if (!(await env.AGENT_LIMIT.limit({ key: `app:${me.email}` })).success) throw new Error("rate limited: too many app calls in the last minute. Wait a bit.");
+      const c = await getConn(env, id, str(a.connection_id), me.email);
+      if (!c) throw new Error(`no connection ${str(a.connection_id)} you can use in this room; call connections`);
+      const tool = publicConn(c, me.email).tools.find((t) => t.name === str(a.tool));
+      if (!tool) throw new Error(`${c.title} has no tool ${str(a.tool)} you can call (app-only tools are the app's)`);
+      // ponytail: someone else's room connection = read-only for other people's Claudes; a ⏸ ask to its owner is the upgrade.
+      if (c.owner !== me.email && !tool.read_only) throw new Error(`${str(a.tool)} changes things in ${c.owner}'s account on ${c.title}; ask them (only read_only tools on someone else's connection)`);
+      const result = await callTool(env, c, tool.name, a.arguments);
+      ctx.waitUntil(track(env, "app_call", { user: me.email, dims: { book: id, host: new URL(c.url).host, tool: tool.name, via: "agent", client: me.client } }));
+      return result;
+    }
+    case "app_open": {
+      const id = await room();
+      // A room app: the file apps/<tool>.html (anyone's Claude makes one with upload_file; it uses the room through the
+      // MCP Apps bridge: vibebook_read, vibebook_post, vibebook_add_task, vibebook_task_status, vibebook_call_connection).
+      if (str(a.connection_id) === "room") {
+        const tool = str(a.tool).replace(/^apps\//, "").replace(/\.html$/, "");
+        if (!/^[\w.-]{1,60}$/.test(tool)) throw new Error("tool is the room app's name: apps/<name>.html → <name>");
+        const card = { root: "c", elements: { c: { type: "Card", props: { title: tool }, children: ["t", "a"] }, t: { type: "Text", props: { text: `apps/${tool}.html · app da sala`, style: "muted" } }, a: { type: "Actions", children: ["b"] }, b: { type: "LinkButton", props: { label: `Abrir ${tool}`, url: `#app:room/${tool}` } } } };
+        return call("post", { room_id: id, text: str(a.text) || `Abri o app **${tool}**.`, thread: a.thread, card, model: a.model, repo: a.repo }, env, ctx, me, origin);
+      }
+      const c = await getConn(env, id, str(a.connection_id), me.email);
+      if (!c) throw new Error(`no connection ${str(a.connection_id)} you can use in this room; call connections`);
+      const app = publicConn(c, me.email).apps.find((x) => x.tool === str(a.tool));
+      if (!app) throw new Error(`${c.title} has no app ${str(a.tool)}; call connections for the list`);
+      const card = { root: "c", elements: { c: { type: "Card", props: { title: app.title }, children: ["t", "a"] }, t: { type: "Text", props: { text: `${c.title} · ${c.scope === "me" ? `app de ${c.owner.split("@")[0]}` : "app da sala"}`, style: "muted" } }, a: { type: "Actions", children: ["b"] }, b: { type: "LinkButton", props: { label: `Abrir ${app.title}`, url: `#app:${c.id}/${app.tool}` } } } };
+      return call("post", { room_id: id, text: str(a.text) || `Abri **${app.title}** (${c.title}).`, thread: a.thread, card, model: a.model, repo: a.repo }, env, ctx, me, origin);
     }
     case "set_room_icon": {
       const id = await room();
