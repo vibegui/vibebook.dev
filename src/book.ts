@@ -1212,7 +1212,7 @@ export class Book extends DurableObject<Env> {
   pins() {
     return this.sql.exec<{ id: string; kind: string; ref: string; title: string; author: string; ts: number }>(`SELECT * FROM pins ORDER BY ts`).toArray();
   }
-  pinAdd(author: string, kind: string, ref: string, title = ""): { ok: true; id: string } | { ok: false; error: string } {
+  async pinAdd(author: string, kind: string, ref: string, title = ""): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
     ref = ref.trim().slice(0, 2000);
     title = title.trim().slice(0, 80);
     if (kind === "link") {
@@ -1220,6 +1220,12 @@ export class Book extends DurableObject<Env> {
       try { u = new URL(/^[a-z]+:\/\//i.test(ref) ? ref : `https://${ref}`); } catch { return { ok: false, error: "not a valid URL" }; }
       if (u.protocol !== "https:" && u.protocol !== "http:") return { ok: false, error: "only http(s) links" };
       ref = u.href;
+    } else if (kind === "app" && /^[a-f0-9]{12}\/[\w.-]{1,100}$/.test(ref)) { // an MCP connection's app: <connection id>/<tool>
+      const [cid, tool] = ref.split("/");
+      const c = await this.env.DB.prepare(`SELECT tools FROM mcp_connections WHERE id = ? AND book_id = ?`).bind(cid, this.get("book_id")).first<{ tools: string }>();
+      const t = c && (JSON.parse(c.tools || "[]") as { name: string; title?: string; _meta?: { ui?: { resourceUri?: string } } }[]).find((x) => x.name === tool);
+      if (!t?._meta?.ui?.resourceUri) return { ok: false, error: `no app ${tool} on connection ${cid} in this room (see connections)` };
+      title ||= (t.title ?? tool).slice(0, 80);
     } else if (kind === "app") { // a room app: the file apps/<ref>.html
       if (!this.sql.exec(`SELECT 1 FROM files WHERE name = ?`, `apps/${ref}.html`).toArray().length) return { ok: false, error: `no room app apps/${ref}.html in this room` };
     } else if (kind === "file") {
@@ -1629,7 +1635,7 @@ export class Book extends DurableObject<Env> {
         return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: rows.slice(0, 100).reverse(), more: rows.length > 100 }));
       }
       case "pin.add": {
-        const r = this.pinAdd(email, String(m.kind ?? ""), String(m.ref ?? ""), String(m.title ?? ""));
+        const r = await this.pinAdd(email, String(m.kind ?? ""), String(m.ref ?? ""), String(m.title ?? ""));
         if (!r.ok) ws.send(JSON.stringify({ t: "error", error: r.error }));
         return;
       }

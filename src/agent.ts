@@ -427,8 +427,8 @@ const TOOLS = [
       type: "object",
       properties: {
         room_id: { type: "string" },
-        kind: { type: "string", enum: ["link", "app", "file"], description: "app = a room app (the file apps/<name>.html), opened in the doc panel" },
-        ref: { type: "string", description: "link: the http(s) URL; app: the room app's <name> (apps/<name>.html); file: the file id" },
+        kind: { type: "string", enum: ["link", "app", "file"], description: "app = a room app (the file apps/<name>.html) or an MCP connection's app (<connection id>/<tool>, from connections), opened in the doc panel" },
+        ref: { type: "string", description: "link: the http(s) URL; app: the room app's <name> (apps/<name>.html) or <connection id>/<tool>; file: the file id" },
         title: { type: "string", description: "short label shown in the sidebar (default: the site's domain, the app's name or the file's name)" },
       },
       required: ["room_id", "kind", "ref"],

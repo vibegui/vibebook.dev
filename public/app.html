@@ -3769,7 +3769,7 @@ function pinsSec() {
   const row = (p) => {
     let href, attrs = "", label = p.title, sub = "", ico;
     if (p.kind === "link") { href = p.ref; attrs = `target="_blank" rel="noopener"`; sub = pinHost(p.ref); label ||= sub; ico = `<span class="ri pinIco" style="background:${color(sub)}">${esc(sub[0]?.toUpperCase() || "↗")}</span>`; }
-    else if (p.kind === "app") { href = `#app:room/${encodeURIComponent(p.ref)}`; attrs = `data-cardgo="#app:room/${esc(p.ref)}"`; label ||= p.ref; sub = t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
+    else if (p.kind === "app") { const to = p.ref.includes("/") ? `#app:${p.ref}` : `#app:room/${p.ref}`; href = esc(to); attrs = `data-cardgo="${esc(to)}"`; label ||= p.ref.split("/").pop(); sub = p.ref.includes("/") ? "app" : t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
     else { const f = (S.files || []).find((x) => x.id === p.ref); if (!f) return ""; href = fileUrl(f); attrs = `target="_blank" rel="noopener" ${viewAttrs(f)}`; label ||= f.name; sub = t("arquivo"); ico = `<span class="ri pinIco app">${icon("file", 14)}</span>`; }
     return `<div class="pinRow"><a class="thread pin" href="${esc(href)}" ${attrs} title="${esc(label)}${p.kind === "link" ? ` · ${esc(p.ref)}` : ""}">${ico}<span class="rt">${esc(label)}<small>${esc(sub)}</small></span></a><button type="button" class="ghost x" data-unpin="${esc(p.id)}" title="${t("Desafixar")}" aria-label="${t("Desafixar {name}", { name: esc(label) })}">${icon("x", 14)}</button></div>`;
   };
