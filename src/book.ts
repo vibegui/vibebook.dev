@@ -238,19 +238,22 @@ export class Book extends DurableObject<Env> {
   roomWindow(open = "main", me = "") {
     const rows = this.sql
       .exec(
-        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m)
+        // Archived epics are left out (the open one aside): in the product room 126 of 133 epics were archived and
+        // their 5 messages each were most of a 655 KB room open (Nov 2026). Opening one fetches it (fillOf / older).
+        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m
+           WHERE m.thread = ? OR m.thread = 'main' OR m.thread IN (SELECT id FROM epics WHERE COALESCE(archived, 0) <= 0))
          WHERE rn <= (CASE WHEN thread = ? THEN 60 ELSE 5 END)
          ORDER BY id`,
-        open,
+        open, open,
       )
       .toArray()
       .map(({ rn: _rn, ...r }) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
     const have = new Set(rows.map((m) => m.id));
     const origins = this.sql
       .exec(
-        `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL)
+        `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL AND (COALESCE(archived, 0) <= 0 OR id = ?))
            OR (author = ? AND ts > ?) OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
-        me, Date.now() - 48 * 3600e3,
+        open, me, Date.now() - 48 * 3600e3,
       )
       .toArray()
       .filter((r) => !have.has(r.id as number))
