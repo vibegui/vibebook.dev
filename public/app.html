@@ -68,6 +68,11 @@
   .avatar.pic img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; display: block; }
   /* A person's Claude: orange asterisk, the person's avatar as a badge. */
   .avatar.claude { background: var(--claude); color: #fff; font-size: 17px; font-weight: 400; position: relative; overflow: visible; }
+  .avatar.claude.codex { background: light-dark(#111, #ececec); color: light-dark(#fff, #111); }
+  .avatar.claude.gemini { background: linear-gradient(135deg, #4f8cff, #9b6bff); }
+  .avatar.claude.cursor { background: light-dark(#2b2b2b, #d9d9d9); color: light-dark(#fff, #111); }
+  .avatar.claude.copilot { background: #6e40c9; }
+  .agentRow .aglyph.codex { color: light-dark(#111, #ececec); } .agentRow .aglyph.codex.on { background: light-dark(#111, #ececec); color: light-dark(#fff, #111); }
   .avatar.claude > .avatar { position: absolute; right: -5px; bottom: -5px; width: 16px; height: 16px; font-size: 7px; box-shadow: 0 0 0 2px var(--panel); }
 
   /* home */
@@ -1926,7 +1931,17 @@ const avatar = (email, on) => {
     : `<span class="avatar ${on ? "on" : ""}" style="background:${color(email)}" title="${esc(name(email))}">${esc(name(email).slice(0, 2).toUpperCase())}</span>`;
 };
 // A person's Claude: the orange asterisk, with its person's avatar as a small badge.
-const agentAvatar = (email, via) => `<span class="avatar claude" title="${t("{via} de {who}", { via: esc(via || "Claude"), who: esc(name(email)) })}">✻${avatar(email)}</span>`;
+// Which coding agent it is, from the model or client it reported: Codex isn't drawn as Claude (Nov 2026). Unknown
+// names (e.g. "vibebook CLI", which Claude Code drives) keep the Claude mark.
+const agentKind = (via) => {
+  const v = String(via || "");
+  if (/codex|gpt|openai|\bo[1-9]\b/i.test(v)) return ["codex", "◎"];
+  if (/gemini/i.test(v)) return ["gemini", "✦"];
+  if (/cursor/i.test(v)) return ["cursor", "▲"];
+  if (/copilot/i.test(v)) return ["copilot", "◉"];
+  return ["", "✻"];
+};
+const agentAvatar = (email, via) => { const [k, g] = agentKind(via); return `<span class="avatar claude${k ? ` ${k}` : ""}" title="${t("{via} de {who}", { via: esc(prettyModel(via) || "Claude"), who: esc(name(email)) })}">${g}${avatar(email)}</span>`; };
 // @vibe's grading notes (Jev, on the room's alarm): a quiet chip, the same words the Claudes get in read_room.
 const vibeNotes = (f) => (f?.length ? `<span class="vnote" title="@vibe: ${esc(f.join(" · "))}. ${t("O Claude de quem pegar a tarefa também vê isso.")}">${icon("alert", 12)} ${esc(f.join(" · "))}</span>` : "");
 const ago = (ts) => { const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? t("agora") : m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; };
@@ -3744,7 +3759,7 @@ const agentRows = (email) => {
   const seen = new Set();
   // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
   return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo)).slice(0, 3)
-    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${a.listening ? "on" : ""}">✻</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
+    .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${agentKind(a.who)[0]} ${a.listening ? "on" : ""}">${agentKind(a.who)[1]}</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from or on any message in its thread
 // (a new ask written inside the epic), or an agent wrote in its thread in the last 3 minutes. Shown as a turning ✻
