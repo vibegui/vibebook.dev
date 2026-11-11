@@ -15,6 +15,7 @@ import { mountConnections } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
 
+import { jwks } from "./mcpauth";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, maxBytes, searchRooms, sizeError, TYPES_ERROR, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
 export { Book } from "./book";
@@ -111,6 +112,11 @@ const SCHEMA = [
   // A write someone else asked to make with a room connection's token: waits for its owner (Aprovar/Negar in the Apps tab).
   `CREATE TABLE IF NOT EXISTS mcp_pending (id TEXT PRIMARY KEY, book_id TEXT, conn_id TEXT, owner TEXT, requester TEXT, via TEXT, tool TEXT, args TEXT, status TEXT, result TEXT, created_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS mcp_pending_conn ON mcp_pending (conn_id, status)`,
+  // Sign-in per person on a connection's server (src/mcpauth.ts): the OAuth client vibebook registered there (DCR),
+  // the PKCE flows in progress (10 min) and each person's grant (identifies them on that server; sealed).
+  `CREATE TABLE IF NOT EXISTS mcp_oauth_clients (issuer TEXT, redirect TEXT, client_id TEXT, secret_enc TEXT, secret_iv TEXT, token_endpoint TEXT, at INTEGER, PRIMARY KEY (issuer, redirect))`,
+  `CREATE TABLE IF NOT EXISTS mcp_oauth_states (state TEXT PRIMARY KEY, email TEXT, book_id TEXT, conn_id TEXT, resource TEXT, issuer TEXT, verifier TEXT, back TEXT, expires_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS mcp_grants (email TEXT, resource TEXT, issuer TEXT, access_enc TEXT, access_iv TEXT, refresh_enc TEXT, refresh_iv TEXT, expires_at INTEGER, at INTEGER, PRIMARY KEY (email, resource))`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
@@ -334,6 +340,9 @@ app.get("/oauth/code", (c) => {
 // A file link opened in a browser tab (not fetched by the app): the room id, so it gets a page instead of JSON.
 const fileLink = (c: Context) =>
   c.req.method === "GET" && (c.req.header("accept") ?? "").includes("text/html") ? new URL(c.req.url).pathname.match(/^\/api\/books\/([^/]+)\/files\/[^/]+$/)?.[1] : undefined;
+
+// The public half of the identity seal (src/mcpauth.ts): an MCP server checks X-Vibebook-Identity against it.
+app.get("/.well-known/jwks.json", async (c) => c.json(await jwks(c.env), 200, { "cache-control": "public, max-age=3600" }));
 
 app.use("*", async (c, next) => {
   const email = await identify(c);

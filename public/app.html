@@ -207,6 +207,10 @@
   .agConn small { color: var(--mute); }
   .agConn code { font-size: 12px; word-break: break-all; background: var(--bg); padding: 8px; border-radius: 8px; }
   .agConn button { justify-self: start; }
+  .connSign { display: grid; gap: 6px; margin: 6px 0; }
+  .connSign small { color: var(--mute); }
+  .connSign a.primary { justify-self: start; text-decoration: none; display: inline-flex; padding: 7px 12px; border-radius: 10px; background: var(--accent); color: var(--accent-ink, #fff); font-weight: 600; font-size: 13.5px; }
+  .connWho .link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
   .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
   .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
   .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
@@ -1396,6 +1400,12 @@ const EN = {
   "áudio maior que 50MB.": "audio larger than 50MB.",
   "Tudo": "All",
   "{n} versões": "{n} versions",
+  "Sem token aqui: se o servidor pedir login, cada pessoa entra com a própria conta dela, e o vibebook só diz quem é e de qual sala.": "No token here: if the server asks for a sign-in, each person signs in with their own account, and vibebook only says who they are and from which room.",
+  "Da sala: todo mundo vê; cada um entra com a própria conta": "Room: everyone sees it; each one signs in with their own account",
+  "Você entrou em {host} com a sua conta.": "You're signed in to {host} with your account.",
+  "Sair": "Sign out",
+  "Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.": "Sign in to {host} with your account to use it. vibebook keeps no token: it only says who you are and from which room.",
+  "Entrar em {host}": "Sign in to {host}",
   "Conectar seu agente": "Connect your agent",
   "Copiar prompt": "Copy prompt",
   "Copiado. Cole no Claude Code, dentro da pasta do projeto.": "Copied. Paste it into Claude Code, inside the project folder.",
@@ -1772,7 +1782,6 @@ const EN = {
   "O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.": "What the room decides and every approval show up here. The Claudes log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
   "Lembretes": "Reminders",
-  "Da sala: todo mundo lê; escrita com a minha conta pede meu OK": "Room's: everyone reads; writes with my account need my OK",
   "(pelo Claude)": "(through their Claude)",
   "quer usar": "wants to use",
   "abrir um link": "open a link",
@@ -1792,8 +1801,6 @@ const EN = {
   "Carregando…": "Loading…",
   "Conectar MCP": "Connect MCP",
   "URL do servidor MCP": "MCP server URL",
-  "Token (se o servidor pedir)": "Token (if the server asks for one)",
-  "fica cifrado no servidor; ninguém vê, nem os Claudes": "kept encrypted on the server; nobody sees it, not even the Claudes",
   "Da sala: todo mundo usa junto": "Room's: everyone uses it together",
   "Só minha: só eu e meus Claudes": "Only mine: just me and my Claudes",
   "Atualizar": "Refresh",
@@ -4725,13 +4732,16 @@ function renderConns() {
   el.innerHTML = `<div class="connHead"><b>Apps</b>${connForm ? "" : `<button type="button" class="ghost" id="connAdd">${icon("plus", 15)} ${t("Conectar MCP")}</button>`}</div>
     ${connForm ? `<form class="connForm" id="connForm">
       <label>${t("URL do servidor MCP")}<input name="url" required placeholder="https://…/mcp" autocomplete="off" spellcheck="false"></label>
-      <label>${t("Token (se o servidor pedir)")}<input name="token" type="password" autocomplete="off" placeholder="${t("fica cifrado no servidor; ninguém vê, nem os Claudes")}"></label>
-      <fieldset><label><input type="radio" name="scope" value="me" checked> ${t("Só minha: só eu e meus Claudes")}</label><label><input type="radio" name="scope" value="room"> ${t("Da sala: todo mundo lê; escrita com a minha conta pede meu OK")}</label></fieldset>
+      <small class="mute">${t("Sem token aqui: se o servidor pedir login, cada pessoa entra com a própria conta dela, e o vibebook só diz quem é e de qual sala.")}</small>
+      <fieldset><label><input type="radio" name="scope" value="me" checked> ${t("Só minha: só eu e meus Claudes")}</label><label><input type="radio" name="scope" value="room"> ${t("Da sala: todo mundo vê; cada um entra com a própria conta")}</label></fieldset>
       <div class="acts"><button type="button" id="connCancel">${t("Cancelar")}</button><button class="primary">${t("Conectar")}</button></div></form>` : ""}
     <div class="conn"><div class="connTop"><b>${t("Esta sala")}</b><span class="cScope">${t("da sala")}</span><small>apps/*.html</small></div>
       ${rapps.length ? appBtns("room", rapps) : `<small class="mute">${t("Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu Claude: “faz um app apps/enquete.html pra esta sala”.")}</small>`}</div>
     ${conns.map((c) => `<div class="conn"><div class="connTop"><b>${esc(c.title)}</b>${scopeChip(c)}<small>${esc(c.host)} · ${esc(name(c.owner))}</small>
         <button type="button" class="ghost" data-conn-ref="${c.id}" title="${t("Atualizar")}" aria-label="${t("Atualizar")}">↻</button>${c.mine ? `<button type="button" class="ghost" data-conn-del="${c.id}" title="${t("Remover conexão")}" aria-label="${t("Remover conexão")}">${icon("x", 14)}</button>` : ""}</div>
+        ${c.auth === "identity" ? (c.signed_in
+          ? `<small class="mute connWho">${t("Você entrou em {host} com a sua conta.", { host: esc(c.host) })} <button type="button" class="link" data-conn-out="${c.id}">${t("Sair")}</button></small>`
+          : `<div class="connSign"><small>${t("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: esc(c.host) })}</small><a class="primary" href="/api/books/${S.id}/connections/${c.id}/signin">${t("Entrar em {host}", { host: esc(c.host) })}</a></div>`) : ""}
         ${(c.pending || []).map((p) => `<div class="connPend"><span>🔐 <b>${esc(name(p.requester))}</b>${p.via === "agent" ? ` ${t("(pelo Claude)")}` : ""} ${t("quer usar")} <code>${esc(p.tool)}</code></span><small>${esc(String(p.args || "").slice(0, 160))}</small><div><button type="button" class="primary" data-pend="${c.id}/${p.id}/1">${t("Aprovar")}</button><button type="button" class="ghost" data-pend="${c.id}/${p.id}/0">${t("Negar")}</button></div></div>`).join("")}${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
   const f = document.getElementById("connForm");
   if (f && keep) for (const [k, v] of Object.entries(keep)) if (f.elements[k] && k !== "scope") f.elements[k].value = v;
@@ -4740,7 +4750,11 @@ function renderConns() {
   if (f) f.onsubmit = async (e) => {
     e.preventDefault();
     const btn = f.querySelector(".primary"); btn.disabled = true; btn.textContent = t("Conectando…");
-    try { await api(`/api/books/${S.id}/connections`, { url: f.url.value.trim(), token: f.token.value, scope: f.scope.value }); connForm = false; conns = null; renderConns(); }
+    try {
+      const r = await api(`/api/books/${S.id}/connections`, { url: f.url.value.trim(), scope: f.scope.value });
+      if (r.connection?.needs_sign_in) return void (location.href = `/api/books/${S.id}/connections/${r.connection.id}/signin`);
+      connForm = false; conns = null; renderConns();
+    }
     catch (x) { toast(esc(x.message)); btn.disabled = false; btn.textContent = t("Conectar"); }
   };
   el.querySelectorAll("[data-pend]").forEach((b) => b.onclick = async () => {
@@ -4749,6 +4763,7 @@ function renderConns() {
     try { await api(`/api/books/${S.id}/connections/${cid}/pending/${pid}`, { approve: yes === "1" }); } catch (x) { toast(esc(x.message)); }
     conns = null; renderConns();
   });
+  el.querySelectorAll("[data-conn-out]").forEach((b) => b.onclick = async () => { try { await api(`/api/books/${S.id}/connections/${b.dataset.connOut}/signout`, {}); } catch (x) { toast(esc(x.message)); } conns = null; renderConns(); });
   el.querySelectorAll("[data-conn-more]").forEach((b) => b.onclick = () => { const id = b.dataset.connMore; connMore.has(id) ? connMore.delete(id) : connMore.add(id); renderConns(); });
   el.querySelectorAll("[data-conn-open]").forEach((b) => b.onclick = () => { const [cid, tool] = b.dataset.connOpen.split("/"); connApp = { cid, tool }; renderConns(); });
   el.querySelectorAll("[data-conn-ref]").forEach((b) => b.onclick = async () => { try { await api(`/api/books/${S.id}/connections/${b.dataset.connRef}/refresh`, {}); conns = null; renderConns(); } catch (x) { toast(esc(x.message)); } });
