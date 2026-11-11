@@ -1,3 +1,4 @@
+import { checkEmbed } from "./embed";
 import { poke } from "./person";
 // Room (vibebook) operations shared by the app API and the agent MCP.
 import type { Lang } from "./lang";
@@ -119,6 +120,8 @@ export async function storeFile(env: Env, bookId: string, email: string, type: s
   const rem = type === "text/markdown" ? REMINDER_FILE.exec(rawName.trim()) : null;
   const agentMd = type === "text/markdown" ? /^agents\/([^\\/\u0000-\u001f]{1,60})\.md$/i.exec(rawName.trim()) : null; // a sandbox's CLAUDE.md (src/sandbox.ts)
   const appHtml = type === "text/html" ? /^apps\/([\w.-]{1,60})\.html$/i.exec(rawName.trim()) : null; // a room app (Conexões → Esta sala)
+  // A room app can ask to post or move tasks as whoever opens it: it passes the same check as HTML posted in a message.
+  if (appHtml) await checkEmbed(env, text, email);
   const name = rem ? `reminders/${rem[1].trim()}.md` : agentMd ? `agents/${agentMd[1].trim()}.md` : appHtml ? `apps/${appHtml[1]}.html` : (rawName || `arquivo.${{ "text/html": "html", "text/markdown": "md" }[type] ?? type.split("/")[1]}`).replace(/[\\/\u0000-\u001f]/g, "_").slice(0, 120);
   const meta = { id: crypto.randomUUID().replace(/-/g, "").slice(0, 16), name, type, size: body.byteLength, author: email, ts: Date.now() };
   await env.FILES.put(`${bookId}/${meta.id}`, body, { httpMetadata: { contentType: type }, customMetadata: { name, author: email } });

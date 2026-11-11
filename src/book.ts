@@ -285,30 +285,6 @@ export class Book extends DurableObject<Env> {
     this.epicsChanged();
     return { ok: true };
   }
-  // Room apps: HTML templates with {{field}} slots that agents fill to post a special message (post with app + data).
-  apps(): { name: string; description: string; author: string; ts: number }[] {
-    return this.sql.exec<{ name: string; description: string; author: string; ts: number }>(`SELECT name, description, author, ts FROM apps ORDER BY name`).toArray();
-  }
-  appsOf(bookId: string) {
-    this.bind(bookId);
-    return this.apps();
-  }
-  appHtml(bookId: string, name: string) {
-    this.bind(bookId);
-    return (this.sql.exec(`SELECT html FROM apps WHERE name = ?`, name).toArray()[0]?.html as string | undefined) ?? null;
-  }
-  appSave(bookId: string, email: string, name: string, description: string, html: string) {
-    this.bind(bookId);
-    this.sql.exec(`INSERT INTO apps (name, description, html, author, ts) VALUES (?, ?, ?, ?, ?) ON CONFLICT(name) DO UPDATE SET description = excluded.description, html = excluded.html, author = excluded.author, ts = excluded.ts`, name, description, html, email, Date.now());
-    this.broadcast({ t: "apps", apps: this.apps() });
-    return this.apps();
-  }
-  appDelete(bookId: string, name: string) {
-    this.bind(bookId);
-    const n = this.sql.exec(`DELETE FROM apps WHERE name = ?`, name).rowsWritten;
-    if (n) this.broadcast({ t: "apps", apps: this.apps() });
-    return n > 0;
-  }
   // Reminders are files: reminders/<name>.md in the room's files (upload, MCP save_reminder, the app's Lembretes tab).
   // Saving one makes @vibe read when it should run (one MODEL_ROUTE call: "todo dia às 8h" → cron + zone); a file that
   // doesn't say is kept with an error the tab shows until it's fixed. At each run @vibe posts the file's text in the
@@ -1242,8 +1218,8 @@ export class Book extends DurableObject<Env> {
       try { u = new URL(/^[a-z]+:\/\//i.test(ref) ? ref : `https://${ref}`); } catch { return { ok: false, error: "not a valid URL" }; }
       if (u.protocol !== "https:" && u.protocol !== "http:") return { ok: false, error: "only http(s) links" };
       ref = u.href;
-    } else if (kind === "app") {
-      if (!this.sql.exec(`SELECT 1 FROM apps WHERE name = ?`, ref).toArray().length) return { ok: false, error: `no app named ${ref} in this room` };
+    } else if (kind === "app") { // a room app: the file apps/<ref>.html
+      if (!this.sql.exec(`SELECT 1 FROM files WHERE name = ?`, `apps/${ref}.html`).toArray().length) return { ok: false, error: `no room app apps/${ref}.html in this room` };
     } else if (kind === "file") {
       if (!this.sql.exec(`SELECT 1 FROM files WHERE id = ?`, ref).toArray().length) return { ok: false, error: `no file ${ref} in this room` };
     } else return { ok: false, error: "kind must be link, app or file" };
@@ -1562,7 +1538,6 @@ export class Book extends DurableObject<Env> {
         // The newest 12 and the pinned ones; the whole list (~100 KB in the product room) when Arquivos opens ("files.get").
         files: this.sql.exec(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(),
         filesN: this.sql.exec<{ n: number }>(`SELECT count(*) AS n FROM files`).one().n,
-        apps: this.apps(),
         reminders: this.reminders(),
         polls: this.polls(),
         decisions: this.decisions(),
@@ -1656,8 +1631,6 @@ export class Book extends DurableObject<Env> {
       }
       case "pin.del":
         return void this.pinDel(String(m.id ?? ""));
-      case "app.delete":
-        return void this.appDelete(this.get("book_id") ?? "", String(m.name ?? ""));
       case "reminder.delete":
         return void this.reminderDelete(this.get("book_id") ?? "", String(m.id ?? ""));
       // The person takes one of their own requests out of their Claude's queue ("já resolvido"): an ack with status

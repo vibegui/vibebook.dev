@@ -1,4 +1,3 @@
-import { escapeHtml } from "./auth";
 import type { Env } from "./index";
 import { decide } from "./jev";
 import { findSecret } from "./secrets";
@@ -37,14 +36,12 @@ export async function checkEmbed(env: Env, html: string, who: string) {
   if (hits.length) throw new Error(`blocked by @vibe's check: the HTML ${hits.map((k) => REASON[k]).join("; ")}. Rewrite it without that.`);
 }
 
-/** Fills a room app's {{field}} slots with escaped values (text only: a value can't inject markup). */
-export const renderApp = (tpl: string, data: Record<string, unknown>) =>
-  tpl.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (_, k: string) => {
-    const v = data[k];
-    return v == null ? "" : escapeHtml(typeof v === "string" ? v : JSON.stringify(v));
-  });
-
-// Appended to every embed: reports its height so the message grows to fit, and window.vibebook.send(text) asks the
-// app to post a message as the person looking at it (the app shows the text and waits for their click).
-const BRIDGE = `<script>(()=>{const p=(m)=>parent.postMessage(Object.assign({vbEmbed:1},m),"*");const h=()=>p({h:document.documentElement.scrollHeight});new ResizeObserver(h).observe(document.documentElement);addEventListener("load",h);window.vibebook={send:(text)=>p({send:String(text).slice(0,1000)})};})()</script>`;
-export const withBridge = (html: string) => html + BRIDGE;
+// Appended to every embed: a tiny MCP Apps client, so an embed talks to the same host as the panel's apps (public/app.html
+// makeHost): its height (ui/notifications/size-changed), window.vibebook.send(text) = ui/message (the person is asked
+// before it's posted as them) and window.vibebook.call(name, args) = tools/call (vibebook's tools, writes asked too).
+const BRIDGE = `<script>(()=>{let n=0;const w={};const s=(m)=>parent.postMessage(Object.assign({jsonrpc:"2.0"},m),"*");const rq=(method,params)=>new Promise((r)=>{const id="vb"+ ++n;w[id]=r;s({id,method,params})});addEventListener("message",(e)=>{const m=e.data;if(m&&w[m.id]){w[m.id](m.error?{isError:true,content:[{type:"text",text:m.error.message}]}:m.result);delete w[m.id]}});const h=()=>s({method:"ui/notifications/size-changed",params:{height:document.documentElement.scrollHeight}});new ResizeObserver(h).observe(document.documentElement);addEventListener("load",h);window.vibebook={send:(t)=>rq("ui/message",{role:"user",content:[{type:"text",text:String(t).slice(0,1000)}]}),call:(name,args)=>rq("tools/call",{name,arguments:args||{}})};})()</script>`;
+// First thing in the page (after a doctype): the embed's own scripts can call window.vibebook as they load.
+export const withBridge = (html: string) => {
+  const dt = html.match(/^\s*<!doctype[^>]*>/i)?.[0] ?? "";
+  return dt + BRIDGE + html.slice(dt.length);
+};

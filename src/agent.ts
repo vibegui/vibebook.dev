@@ -7,7 +7,7 @@ import { cardOf } from "./card";
 import { LISTEN_FRESH, markListening } from "./person";
 import type { AgentProps } from "./connect";
 import type { Env } from "./index";
-import { checkEmbed, EMBED_MAX, renderApp, withBridge } from "./embed";
+import { checkEmbed, EMBED_MAX, withBridge } from "./embed";
 import { bookStub, createBook, FILE_TYPES, inviteMember, isMember, MAX_FILE_BYTES, searchRooms, setRoomIcon, storeFile, waitsFor } from "./rooms";
 import { checkUrl } from "./reader";
 import { growthReport, productReport } from "./reports";
@@ -136,15 +136,13 @@ const TOOLS = [
       type: "object",
       properties: {
         room_id: { type: "string" },
-        text: { type: "string", description: "Short, group-chat style, in the room's language (optional caption when you pass html or app)" },
+        text: { type: "string", description: "Short, group-chat style, in the room's language (optional caption when you pass html)" },
         html: { type: "string", description: `optional: a self-contained HTML snippet (≤${EMBED_MAX / 1000}KB) shown inline in the message` },
-        app: { type: "string", description: "optional: name of a room app (list_apps) to render with data instead of html" },
         card: {
           type: "object",
           description:
-            'optional: a native card (json-render spec): { root: "c", elements: { c: { type: "Card", props: { title, subtitle }, children: [...] }, ... } }. Components: Card (root), Section {title}, Text {content, style: plain|bold|muted|code}, Fields > Field {label, value}, Table {headers: [], rows: [[]]} (≤50 rows, ≤10 cols), Chart {title, kind: bar|line, data: [{label, value}]} (≤30), Divider, Image {url: a file of this room}, Actions > Button {label, value?, style: primary|danger} (your human\'s click is posted as their reply to this message, like choices) / LinkButton {label, url: http(s) (new tab), or a place in the room: "#m<message id>", "#e<epic id>" (its thread), "#doc" or "#doc:<epic id>"}. Drawn natively by the app (no HTML): prefer it over html for tables, numbers, status and decisions. Which one: a `card` for status, reports, numbers, tables, small charts and decisions with buttons (drawn natively, phone-friendly, no safety check, the shape Slack/Teams cards use); `html` only for a visual a card can\'t draw (a custom interactive view); a room app (`save_app` once, then `post` with `app` + `data`) when the same html message repeats (a daily report, an approval form); plain text for everything else.',
+            'optional: a native card (json-render spec): { root: "c", elements: { c: { type: "Card", props: { title, subtitle }, children: [...] }, ... } }. Components: Card (root), Section {title}, Text {content, style: plain|bold|muted|code}, Fields > Field {label, value}, Table {headers: [], rows: [[]]} (≤50 rows, ≤10 cols), Chart {title, kind: bar|line, data: [{label, value}]} (≤30), Divider, Image {url: a file of this room}, Actions > Button {label, value?, style: primary|danger} (your human\'s click is posted as their reply to this message, like choices) / LinkButton {label, url: http(s) (new tab), or a place in the room: "#m<message id>", "#e<epic id>" (its thread), "#doc" or "#doc:<epic id>"}. Drawn natively by the app (no HTML): prefer it over html for tables, numbers, status and decisions. Which one: a `card` for status, reports, numbers, tables, small charts and decisions with buttons (drawn natively, phone-friendly, no safety check, the shape Slack/Teams cards use); `html` only for a visual a card can\'t draw (a custom interactive view); an app (the file apps/<name>.html, see app_open) when people should use it in the doc panel, more than once; plain text for everything else.',
         },
-        data: { type: "object", description: "values for the app's {{field}} slots (inserted as escaped text)" },
         thread: { type: "string", description: '"main" or an epic id from read_room; default: the thread of the message in reply_to, else "main"' },
         reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
         choices: { type: "array", items: { type: "string" }, description: "optional, 2-8 short options when you ask your human to pick: the room shows them as buttons (radio, or checkboxes with multi) and their pick comes back as their message replying to yours (reply_to = this message). Use this instead of asking them to type numbers." },
@@ -154,31 +152,6 @@ const TOOLS = [
       },
       required: ["room_id"],
     },
-  },
-  {
-    name: "save_app",
-    description: "Save (or replace) a room app: an HTML template with {{field}} slots that any agent in the room can post with post({app, data}) for a recurring special message (daily report card, metric chart, approval card). Same sandbox and safety check as html posts. People see the room's apps in its Apps tab, with a preview.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        room_id: { type: "string" },
-        name: { type: "string", description: "short id, letters/digits/-, e.g. \"daily-report\"" },
-        description: { type: "string", description: "one line: what it shows and which fields it takes" },
-        html: { type: "string", description: `the template (≤${EMBED_MAX / 1000}KB), self-contained, with {{field}} slots` },
-        model: { type: "string" },
-      },
-      required: ["room_id", "name", "html"],
-    },
-  },
-  {
-    name: "list_apps",
-    description: "List the room's apps (name, description, author). Pass name to get one app's template too.",
-    inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id"] },
-  },
-  {
-    name: "delete_app",
-    description: "Delete a room app by name.",
-    inputSchema: { type: "object", properties: { room_id: { type: "string" }, name: { type: "string" }, model: { type: "string" } }, required: ["room_id", "name"] },
   },
   {
     name: "save_reminder",
@@ -444,8 +417,8 @@ const TOOLS = [
       type: "object",
       properties: {
         room_id: { type: "string" },
-        kind: { type: "string", enum: ["link", "app", "file"] },
-        ref: { type: "string", description: "link: the http(s) URL; app: the app's name; file: the file id" },
+        kind: { type: "string", enum: ["link", "app", "file"], description: "app = a room app (the file apps/<name>.html), opened in the doc panel" },
+        ref: { type: "string", description: "link: the http(s) URL; app: the room app's <name> (apps/<name>.html); file: the file id" },
         title: { type: "string", description: "short label shown in the sidebar (default: the site's domain, the app's name or the file's name)" },
       },
       required: ["room_id", "kind", "ref"],
@@ -765,15 +738,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       // The plugin's hooks (permission.sh, question.sh) bring a Claude stuck in the terminal to the room with these openers.
       if (ASK_OPENER.test(str(a.text))) ctx.waitUntil(track(env, "terminal_ask", { user: me.email, dims: { book: id } }));
       let fileIds: string[] = [];
-      if (a.html || a.app) {
-        let html = str(a.html);
-        if (a.app) {
-          const tpl = await bookStub(env, id).appHtml(id, str(a.app));
-          if (tpl === null) throw new Error(`no app named ${str(a.app)} in this room; see list_apps`);
-          html = renderApp(tpl, a.data && typeof a.data === "object" ? (a.data as Record<string, unknown>) : {});
-        }
+      if (a.html) {
+        const html = str(a.html);
         await checkEmbed(env, html, me.email);
-        const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, `${str(a.app) || "embed"}.html`);
+        const meta = await storeFile(env, id, me.email, "text/html", new TextEncoder().encode(withBridge(html)).buffer as ArrayBuffer, "embed.html");
         fileIds = [meta.id];
       }
       const before = (await db.prepare(`SELECT last_id FROM agent_reads WHERE agent = ? AND book_id = ?`).bind(me.agent, id).first<{ last_id: number }>())?.last_id;
@@ -788,22 +756,6 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         if (unread.length) return { ...posted, unread_from_your_human: unread, note: "Your human wrote this after your last read_room and you haven't read it: handle it now (ack, then act), before going on." };
       }
       return posted;
-    }
-    case "save_app": {
-      const id = await room();
-      const name = str(a.name).trim().toLowerCase();
-      if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(name)) throw new Error("name: letters, digits and -, up to 40");
-      await checkEmbed(env, str(a.html), me.email);
-      return { ok: true, apps: await bookStub(env, id).appSave(id, me.email, name, str(a.description).slice(0, 200), str(a.html)) };
-    }
-    case "list_apps": {
-      const id = await room();
-      const stub = bookStub(env, id);
-      return a.name ? { name: str(a.name), html: await stub.appHtml(id, str(a.name)) } : { apps: await stub.appsOf(id) };
-    }
-    case "delete_app": {
-      const id = await room();
-      return { ok: await bookStub(env, id).appDelete(id, str(a.name)) };
     }
     case "save_reminder": {
       const id = await room();

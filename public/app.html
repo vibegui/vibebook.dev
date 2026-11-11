@@ -287,7 +287,7 @@
   .pinForm input { width: 100%; }
   .pinForm .row { display: flex; justify-content: flex-end; gap: 6px; }
   .pinBtn { position: absolute; top: 6px; right: 6px; padding: 5px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); opacity: 0; }
-  .ftile:hover .pinBtn, .acard:hover .pinBtn, .pinBtn.on, .pinBtn:focus-visible { opacity: 1; }
+  .ftile:hover .pinBtn, .pinBtn.on, .pinBtn:focus-visible { opacity: 1; }
   .pinBtn.on { color: var(--accent); }
   @media (hover: none) { .pinBtn { opacity: .8; } }
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
@@ -741,7 +741,6 @@
   .doc[data-pane="reminders"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="reminders"]) .remPane { display: none; }
   .doc.collab[data-view="edit"]:not([data-pane="doc"]) .cm { display: none; }
   .remPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
-  .doc[data-pane="conns"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="conns"]) .connsPane { display: none; }
   .connsPane { flex: 1; overflow: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 12px; }
   .connsPane:has(> .connFrame) { padding: 0; gap: 0; overflow: hidden; }
   .connHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -764,6 +763,7 @@
   .connBar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
   .connBar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .connBar button { flex: none; }
+  .appAsk[hidden] { display: none !important; }
   .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; }
   .appAsk q { font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; max-height: 120px; overflow: auto; color: var(--ink); }
   .appAsk q::before, .appAsk q::after { content: ""; }
@@ -889,20 +889,13 @@
   .embedWrap.clipped::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 36px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .18)); pointer-events: none; }
   .atts:has(.embedBox) { display: block; }
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
-  .embedAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
-  .embedAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedAsk div { display: flex; gap: 8px; }
+  .embedBox .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
+  .embedBox .appAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedBox .appAsk div { display: flex; gap: 8px; }
   .rems { margin-bottom: 20px; } .rems h4 { margin: 0 0 8px; font-size: 13px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
   .rem { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin-bottom: 8px; }
   .rem > div { flex: 1; min-width: 0; display: grid; gap: 2px; } .rem.open { align-items: flex-start; } .remBody { cursor: pointer; } .remBody b { display: flex; align-items: center; gap: 4px; }
   .remText { margin: 8px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font: 13px/1.5 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; cursor: text; } .rem small { color: var(--mute); font-size: 12px; }
   .rem button { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none; }
-  .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-  .acard { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
-  .aprev { display: block; height: 170px; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
-  .aprev iframe { width: 200%; height: 340px; border: 0; transform: scale(.5); transform-origin: 0 0; pointer-events: none; }
-  .ainfo { display: grid; gap: 2px; padding: 10px 12px 12px; font-size: 13.5px; }
-  .ainfo b { font: 600 13px ui-monospace, Menlo, monospace; } .ainfo span { color: var(--ink); } .ainfo small { color: var(--mute); font-size: 12px; }
-  .acard [data-app-del] { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; padding: 0; border-radius: 50%; background: var(--panel); opacity: .8; }
   /* file viewer */
   .viewer { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: #0c1016; color: #fff; }
   .viewer[open] { display: flex; flex-direction: column; }
@@ -1065,7 +1058,7 @@
     .peekRow button { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 34px; padding: 0 9px; border: 0; border-radius: 9px; background: none; color: var(--mute); font: inherit; }
     .peekRow button small { font-size: 11px; font-weight: 600; }
     .peekRow .peekDoc { flex: 1; min-width: 0; text-align: left; }
-    .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="conns"] .peekRow [data-pane="conns"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
+    .book[data-sheet="doc"][data-pane="doc"] .peekRow [data-pane="doc"], .book[data-sheet="doc"][data-pane="files"] .peekRow [data-pane="files"], .book[data-sheet="doc"][data-pane="apps"] .peekRow [data-pane="apps"], .book[data-sheet="doc"][data-pane="decisions"] .peekRow [data-pane="decisions"], .book[data-sheet="doc"][data-pane="reminders"] .peekRow [data-pane="reminders"] { background: var(--hover); color: var(--ink); }
     .book[data-sheet="doc"] .docPeek .grab { display: none; } /* open: no handle, no empty band under the tabs */
     .docPeek .grab { align-self: center; width: 32px; height: 4px; }
     #peekTxt { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -1734,7 +1727,6 @@ const EN = {
   "Apagar registro": "Delete entry",
   "O que a sala decidir e cada aprovação aparecem aqui. Os Claudes registram conforme a conversa anda.": "What the room decides and every approval show up here. The Claudes log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
-  "Este embed quer mandar, como você:": "This embed wants to send, as you:",
   "Lembretes": "Reminders",
   "Esta sala": "This room",
   "Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu Claude: “faz um app apps/enquete.html pra esta sala”.": "A room app is an HTML file in apps/ that uses the room through its iframe: it reads the doc, tasks and messages, posts and moves tasks (with your OK). Ask your Claude: “make an app apps/poll.html for this room”.",
@@ -1765,9 +1757,6 @@ const EN = {
   "de {who}": "by {who}",
   "Apagar lembrete": "Delete reminder",
   "rodou {n}×": "ran {n}×",
-  "Apagar app": "Delete app",
-  "Apagar app {name}": "Delete app {name}",
-  "Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.": "No apps yet. Apps are HTML message templates (a report card, a chart) that the Claudes save with <code>save_app</code> and reuse with <code>post</code> + <code>app</code>. Ask your Claude: “make an app for the daily report”.",
   "Apagar este lembrete?": "Delete this reminder?",
   "nome, ex.: relatorio-diario": "name, e.g. daily-report",
   "Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.": "Say when and what. E.g.: Every day at 8am: pull yesterday's numbers and post here what changed.",
@@ -1855,7 +1844,6 @@ const EN = {
   "Ligado": "On",
   "ligado": "on",
   "Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu Claude: “todo dia às 8h, me manda o resumo do que mudou”.": "No reminders yet. Click New reminder, or ask your Claude: “every day at 8am, send me a summary of what changed”.",
-  "Apagar o app {name}? As mensagens já postadas continuam.": "Delete the app {name}? Messages already posted stay.",
   "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.": "Paste an image in the chat (Cmd+V), drag a file in or use the clip. Everything shared in this vibebook lands here.",
   "Carregar mensagens anteriores": "Load earlier messages",
   "Comece a conversa. Os Claudes ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>.": "Start the conversation. The Claudes on in this room read and reply; yours acts with your OK. E.g. <i>organize the project into epics: new site, rentals and domain</i>.",
@@ -2856,7 +2844,6 @@ function onEvent(ev, id) {
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
     case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); return;
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); return;
-    case "apps": S.apps = ev.apps; renderApps(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "pins": S.pins = ev.pins; renderSide(); renderFiles(); renderApps(); return;
@@ -2955,7 +2942,7 @@ function renderBook() {
     <aside class="side" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="conns" title="${t("Conexões")}" aria-label="${t("Conexões")}">${icon("plug", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2980,15 +2967,14 @@ function renderBook() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${t("Quadro de tarefas")}" aria-label="${t("Quadro de tarefas")}">${icon("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="conns" title="${t("Conexões")}" aria-label="${t("Conexões")}">${icon("plug", 17)}<small id="connCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${t("Quadro de tarefas")}" aria-label="${t("Quadro de tarefas")}">${icon("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
       <div class="cm" id="cm"></div>
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
-      <div class="appsPane" id="appsPane"></div>
-      <div class="connsPane" id="connsPane"></div>
+      <div class="appsPane connsPane" id="appsPane"></div>
       <div class="remPane" id="remPane"></div>
       <div class="agentsPane" id="agentsPane"></div>
     </section>
@@ -3200,7 +3186,6 @@ function renderBook() {
     if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
-    if (pane === "conns") renderConns();
     if (pane === "reminders") renderReminders();
     if (pane === "agents") { renderMyClaude(); loadSandboxes(); }
     if (pane === "board") { const k = document.getElementById("kanban"), d = $app.querySelector(".doc"); if (k.parentElement !== d) d.append(k); renderKanban(); }
@@ -3782,7 +3767,7 @@ function pinsSec() {
   const row = (p) => {
     let href, attrs = "", label = p.title, sub = "", ico;
     if (p.kind === "link") { href = p.ref; attrs = `target="_blank" rel="noopener"`; sub = pinHost(p.ref); label ||= sub; ico = `<span class="ri pinIco" style="background:${color(sub)}">${esc(sub[0]?.toUpperCase() || "↗")}</span>`; }
-    else if (p.kind === "app") { href = `/api/books/${S.id}/apps/${encodeURIComponent(p.ref)}`; attrs = `data-view="frame" data-name="${esc(p.ref)}"`; label ||= p.ref; sub = t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
+    else if (p.kind === "app") { href = `#app:room/${encodeURIComponent(p.ref)}`; attrs = `data-cardgo="#app:room/${esc(p.ref)}"`; label ||= p.ref; sub = t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
     else { const f = (S.files || []).find((x) => x.id === p.ref); if (!f) return ""; href = fileUrl(f); attrs = `target="_blank" rel="noopener" ${viewAttrs(f)}`; label ||= f.name; sub = t("arquivo"); ico = `<span class="ri pinIco app">${icon("file", 14)}</span>`; }
     return `<div class="pinRow"><a class="thread pin" href="${esc(href)}" ${attrs} title="${esc(label)}${p.kind === "link" ? ` · ${esc(p.ref)}` : ""}">${ico}<span class="rt">${esc(label)}<small>${esc(sub)}</small></span></a><button type="button" class="ghost x" data-unpin="${esc(p.id)}" title="${t("Desafixar")}" aria-label="${t("Desafixar {name}", { name: esc(label) })}">${icon("x", 14)}</button></div>`;
   };
@@ -4455,7 +4440,7 @@ function cardHtml(m) {
 }
 // A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
 function cardGo(to) {
-  if (to.startsWith("#app:")) { const [cid, tool] = to.slice(5).split("/"); connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "conns" })); if (ROOM_PHONE.matches) openSheet("doc"); return; }
+  if (to.startsWith("#app:")) { const [cid, tool] = to.slice(5).split("/"); connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })); if (ROOM_PHONE.matches) openSheet("doc"); return; }
   if (to.startsWith("#m")) return goToMsg(Number(to.slice(2)));
   const epic = to.startsWith("#e") ? to.slice(2) : to.split(":")[1];
   const target = epic && S.epics.some((x) => x.id === epic) ? epic : epic ? null : thread;
@@ -4579,55 +4564,15 @@ function renderDecisions() {
   el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar esse registro?"))) send({ t: "decision.del", id: b.dataset.ddel }); });
 }
 
-// Embeds (HTML an agent posted inline): they report their height, and window.vibebook.send(text) shows the text
-// under the embed with Enviar/Cancelar; only the person's click posts it, as a normal message (same filters).
-addEventListener("message", (e) => {
-  const d = e.data;
-  if (!d || d.vbEmbed !== 1) return;
-  const fr = [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
-  if (!fr) return;
-  // Capped (420px, or 55% of a phone's screen): taller embeds scroll inside and ⤢ opens them full screen.
-  if (typeof d.h === "number") {
-    const cap = Math.min(420, Math.round(innerHeight * 0.55)), h = Math.max(Math.ceil(d.h) + 2, 40); // +2: the frame's border
-    fr.style.height = `${Math.min(h, cap)}px`;
-    fr.closest(".embedWrap")?.classList.toggle("clipped", h > cap);
-  }
-  if (typeof d.send === "string" && d.send.trim() && S) {
-    const box = fr.parentElement;
-    box.querySelector(".embedAsk")?.remove();
-    const ask = document.createElement("div");
-    ask.className = "embedAsk";
-    ask.innerHTML = `<span>${t("Este embed quer mandar, como você:")}</span><q></q><div><button type="button" class="primary">${t("Enviar")}</button><button type="button" class="ghost">${t("Cancelar")}</button></div>`;
-    ask.querySelector("q").textContent = d.send.trim().slice(0, 1000);
-    const at = thread; // the open thread: an embed only shows in its own message's thread
-    ask.querySelector(".primary").onclick = () => { send({ t: "msg", thread: at, text: d.send.trim().slice(0, 1000), files: [] }); ask.remove(); };
-    ask.querySelector(".ghost").onclick = () => ask.remove();
-    box.appendChild(ask);
-  }
-});
-
-// Apps: the room's HTML templates (save_app), each with a live preview (the template with its {{fields}} shown
-// as their names, served sandboxed by /api/books/:id/apps/:name); click opens it in the viewer.
-function renderApps() {
-  const el = document.getElementById("appsPane"); if (!el) return;
-  const n = S.apps?.length ?? 0;
-  document.getElementById("appCount").textContent = n ? ` ${n}` : "";
-  const url = (a) => `/api/books/${S.id}/apps/${encodeURIComponent(a.name)}?v=${a.ts}`;
-  el.innerHTML = (S.apps?.length ? `<div class="agrid">${S.apps.map((a) => `
-    <div class="acard"><a class="aprev" href="${url(a)}" data-view="frame" data-name="${esc(a.name)}"><iframe src="${url(a)}" sandbox="allow-scripts" loading="lazy" tabindex="-1" title="${esc(a.name)}"></iframe></a>
-      <div class="ainfo"><b>${esc(a.name)}</b><span>${esc(a.description || "")}</span><small>${esc(name(a.author))} · ${ago(a.ts)}</small></div>
-      ${pinToggle("app", a.name)}<button class="ghost" data-app-del="${esc(a.name)}" title="${t("Apagar app")}" aria-label="${t("Apagar app {name}", { name: esc(a.name) })}">${icon("x")}</button></div>`).join("")}</div>`
-    : `<div class="empty">${t("Nenhum app ainda. Apps são modelos de mensagem em HTML (um card de report, um gráfico) que os Claudes salvam com <code>save_app</code> e reusam com <code>post</code> + <code>app</code>. Peça pro seu Claude: “cria um app pro report diário”.")}</div>`);
-  wirePinToggles(el);
-  el.querySelectorAll("[data-app-del]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar o app {name}? As mensagens já postadas continuam.", { name: b.dataset.appDel }))) send({ t: "app.delete", name: b.dataset.appDel }); });
-}
+// The Apps tab: room apps (apps/*.html) and the room's MCP connections; renderConns below draws it.
+function renderApps() { if (document.querySelector('.doc[data-pane="apps"]')) renderConns(); }
 
 // Conexões: the room's MCP servers (src/mcpconn.ts), "da sala" (everyone) or "minha" (only you and your Claudes), plus
 // "Esta sala": room apps, plain HTML files apps/<name>.html (any Claude makes one with upload_file). Every app opens here
 // in an opaque-origin iframe; below is the host side of the MCP Apps bridge (ui/initialize, tool-input/result,
 // tools/call, open-link, message, model context). A remote app's tools/call goes to its own server through the Worker;
 // a room app gets vibebook's tools instead (VB_TOOLS), run here as the person looking, writes only after they allow it.
-let conns = null, connsBook = null, connForm = false, connApp = null, appBridge = null; // connApp = { cid ("room" for a room app), tool }
+let conns = null, connsBook = null, connForm = false, connApp = null; // connApp = { cid ("room" for a room app), tool }
 async function loadConns() {
   const book = S.id;
   try { const r = await api(`/api/books/${book}/connections`); if (S.id === book) { conns = r.connections; connsBook = book; } }
@@ -4641,20 +4586,19 @@ function roomApps() {
   return (S.files || []).filter((f) => f.type === "text/html" && /^apps\/[\w.-]+\.html$/i.test(f.name) && !seen.has(f.name) && seen.add(f.name))
     .map((f) => ({ tool: f.name.slice(5, -5), title: f.name.slice(5, -5), description: `${name(f.author)} · ${ago(f.ts)}`, file: f }));
 }
-function connsFilesChanged() { if (document.querySelector('.doc[data-pane="conns"]') && !(connApp && document.querySelector(".connFrame"))) renderConns(); }
+function connsFilesChanged() { if (document.querySelector('.doc[data-pane="apps"]') && !(connApp && document.querySelector(".connFrame"))) renderConns(); }
 function renderConns() {
-  const el = document.getElementById("connsPane"); if (!el) return;
+  const el = document.getElementById("appsPane"); if (!el) return;
   if (connsBook !== S.id) { conns = null; connsBook = S.id; }
   if (!S.filesAll) send({ t: "files.get" }); // room apps live among the files; the state brings only the newest 12
   if (conns === null) { el.innerHTML = `<div class="empty">${t("Carregando…")}</div>`; loadConns(); conns = undefined; return; }
   if (conns === undefined) return; // loading
   const rapps = roomApps();
-  document.getElementById("connCount").textContent = conns.length + rapps.length ? ` ${conns.length + rapps.length}` : "";
+  document.getElementById("appCount").textContent = conns.length + rapps.length ? ` ${conns.length + rapps.length}` : "";
   if (connApp) return renderConnApp(el);
-  if (appBridge) { window.removeEventListener("message", appBridge); appBridge = null; }
   const keep = document.getElementById("connForm") && Object.fromEntries(new FormData(document.getElementById("connForm")));
   const appBtns = (cid, apps) => `<div class="connApps">${apps.map((a) => `<button type="button" class="connApp" data-conn-open="${cid}/${esc(a.tool)}"><b>${esc(a.title)}</b><span>${esc(a.description)}</span></button>`).join("")}</div>`;
-  el.innerHTML = `<div class="connHead"><b>${t("Conexões")}</b>${connForm ? "" : `<button type="button" class="ghost" id="connAdd">${icon("plus", 15)} ${t("Conectar MCP")}</button>`}</div>
+  el.innerHTML = `<div class="connHead"><b>Apps</b>${connForm ? "" : `<button type="button" class="ghost" id="connAdd">${icon("plus", 15)} ${t("Conectar MCP")}</button>`}</div>
     ${connForm ? `<form class="connForm" id="connForm">
       <label>${t("URL do servidor MCP")}<input name="url" required placeholder="https://…/mcp" autocomplete="off" spellcheck="false"></label>
       <label>${t("Token (se o servidor pedir)")}<input name="token" type="password" autocomplete="off" placeholder="${t("fica cifrado no servidor; ninguém vê, nem os Claudes")}"></label>
@@ -4702,11 +4646,11 @@ function renderConnApp(el) {
 }
 const textOf = (content) => (Array.isArray(content) ? content.filter((b) => b?.type === "text").map((b) => b.text).join("\n") : "");
 const toolOut = (v) => ({ content: [{ type: "text", text: typeof v === "string" ? v : JSON.stringify(v) }], ...(v && typeof v === "object" ? { structuredContent: v } : {}) });
-// "This app wants to … as you": one question at a time above the app, Permitir/Cancelar.
+// "This app wants to … as you": one question at a time, in the app's own box (above the panel app, under an embed).
 let appAskQ = Promise.resolve();
-function appAsk(what, detail) {
+function appAsk(box, what, detail) {
   const run = () => new Promise((res) => {
-    const box = document.getElementById("appAsk"); if (!box) return res(false);
+    if (!box?.isConnected) return res(false);
     box.hidden = false;
     box.innerHTML = `<span>${t("Este app quer {what}, como você:", { what: esc(what) })}</span><q></q><div><button type="button" class="primary">${t("Permitir")}</button><button type="button" class="ghost">${t("Cancelar")}</button></div>`;
     box.querySelector("q").textContent = String(detail).slice(0, 600);
@@ -4736,7 +4680,7 @@ function vbRead({ thread = "main", limit = 50 } = {}) {
     messages: msgs.map((m) => ({ id: m.id, from: m.author === "ai" ? "@vibe" : name(m.author), agent: m.kind === "agent", text: m.text, at: new Date(m.ts).toISOString() })),
   };
 }
-async function vbCall(name, a = {}) {
+async function vbCall(name, a = {}, ask) {
   const ok = (v) => toolOut(v);
   const thread = (x) => (x && x !== "main" && !S.epics.some((e) => e.id === x) ? null : x || "main");
   switch (name) {
@@ -4745,50 +4689,42 @@ async function vbCall(name, a = {}) {
     case "vibebook_post": {
       const th = thread(a.thread), text = String(a.text || "").trim().slice(0, 4000);
       if (!th || !text) return { isError: true, content: [{ type: "text", text: "text and a valid thread (main or an epic id) needed" }] };
-      if (!(await appAsk(t("postar"), text))) return { isError: true, content: [{ type: "text", text: "the person cancelled" }] };
+      if (!(await ask(t("postar"), text))) return { isError: true, content: [{ type: "text", text: "the person cancelled" }] };
       send({ t: "msg", thread: th, text, files: [] }); return ok("posted");
     }
     case "vibebook_add_task": {
       const ep = a.epic_id && a.epic_id !== "main" ? S.epics.find((e) => e.id === a.epic_id) : null;
       if (a.epic_id && a.epic_id !== "main" && !ep) return { isError: true, content: [{ type: "text", text: "no such epic" }] };
       const title = String(a.title || "").trim().slice(0, 200);
-      if (!title || !(await appAsk(t("criar uma tarefa"), `${ep ? ep.title : t("sala principal")}: ${title}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!title || !(await ask(t("criar uma tarefa"), `${ep ? ep.title : t("sala principal")}: ${title}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       send({ t: "task.add", epic: ep ? ep.id : "main", title }); return ok("added");
     }
     case "vibebook_task_status": {
       const task = [...S.epics.flatMap((e) => e.tasks), ...(S.roomTasks || [])].find((x) => x.id === a.task_id);
       if (!task || !["todo", "doing", "review", "done"].includes(a.status)) return { isError: true, content: [{ type: "text", text: "no such task or bad status" }] };
-      if (!(await appAsk(t("mover uma tarefa"), `${task.title} → ${a.status}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!(await ask(t("mover uma tarefa"), `${task.title} → ${a.status}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       send({ t: "task.status", id: task.id, status: a.status }); return ok("moved");
     }
     case "vibebook_call_connection": {
       if (!Array.isArray(conns)) await loadConns();
       const c = (conns || []).find((x) => x.id === a.connection_id), tl = c?.tools.find((x) => x.name === a.tool);
       if (!tl) return { isError: true, content: [{ type: "text", text: "no such connection/tool for this person" }] };
-      if (!tl.read_only && !(await appAsk(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {})))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!tl.read_only && !(await ask(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {})))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       return (await api(`/api/books/${S.id}/connections/${c.id}/call`, { name: tl.name, arguments: a.arguments || {} })).result;
     }
   }
   return { isError: true, content: [{ type: "text", text: `unknown tool ${name}` }] };
 }
-async function mountApp(frame, c, a) {
-  const room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
-  let ui, first;
-  if (room) {
-    ui = { tool: { name: a.tool, title: a.title, description: "", inputSchema: { type: "object" } } };
-    first = Promise.resolve(toolOut(vbRead()));
-  } else {
-    try { ui = await api(`${base}/ui?tool=${encodeURIComponent(a.tool)}`); }
-    catch (e) { const d = document.createElement("div"); d.className = "empty"; d.textContent = e.message; frame.replaceWith(d); return; }
-    first = api(`${base}/call`, { name: a.tool, arguments: {} }).then((r) => r.result).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
-  }
-  const call = (name, args) => (room ? vbCall(name, args || {}) : api(`${base}/call`, { name, arguments: args || {} }).then((r) => r.result));
+// One MCP Apps host for every app frame: the panel's app and each embed in the chat. hostFor(frame) keeps a host per
+// iframe; one window listener finds the frame by e.source. tools/call: a remote app's own server (through the Worker),
+// otherwise vibebook's tools (VB_TOOLS) as the person looking, writes behind appAsk. ui/message = post as you (asked).
+const hosts = new WeakMap();
+function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remote app, first?, tool?, base?, toolName?, embed? }
   const post = (m) => frame.contentWindow?.postMessage({ jsonrpc: "2.0", ...m }, "*");
-  const dark = document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-  if (appBridge) window.removeEventListener("message", appBridge);
-  appBridge = async (e) => {
-    if (e.source !== frame.contentWindow) return;
-    const m = e.data; if (!m || m.jsonrpc !== "2.0" || typeof m.method !== "string") return;
+  const ask = (what, detail) => appAsk(o.ask(), what, detail);
+  const call = (name, args) => (o.call ? o.call(name, args || {}) : vbCall(name, args || {}, ask));
+  const dark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  return async (m) => {
     const ok = (result) => m.id !== undefined && post({ id: m.id, result });
     try {
       switch (m.method) {
@@ -4796,35 +4732,67 @@ async function mountApp(frame, c, a) {
           const r = frame.getBoundingClientRect();
           return ok({ protocolVersion: "2026-01-26", hostInfo: { name: "vibebook", version: "1" },
             hostCapabilities: { openLinks: {}, serverTools: {}, logging: {}, message: { text: {} }, updateModelContext: { text: {}, structuredContent: {} } },
-            hostContext: { toolInfo: { tool: ui.tool }, theme: dark ? "dark" : "light", displayMode: "fullscreen", availableDisplayModes: ["fullscreen"], containerDimensions: { height: Math.round(r.height), width: Math.round(r.width) }, locale: LOCALE, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, platform: ROOM_PHONE.matches ? "mobile" : "web", user: { email: S.me, name: name(S.me) }, room: { id: S.id, title: bookTitle() } } });
+            hostContext: { ...(o.tool ? { toolInfo: { tool: o.tool } } : {}), theme: dark() ? "dark" : "light", displayMode: o.embed ? "inline" : "fullscreen", availableDisplayModes: [o.embed ? "inline" : "fullscreen"], containerDimensions: o.embed ? { maxHeight: 420, width: Math.round(r.width) } : { height: Math.round(r.height), width: Math.round(r.width) }, locale: LOCALE, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, platform: ROOM_PHONE.matches ? "mobile" : "web", user: { email: S.me, name: name(S.me) }, room: { id: S.id, title: bookTitle() } } });
         }
         case "ui/notifications/initialized":
-          post({ method: "ui/notifications/tool-input", params: { arguments: {} } });
-          post({ method: "ui/notifications/tool-result", params: await first });
+          if (o.first) { post({ method: "ui/notifications/tool-input", params: { arguments: {} } }); post({ method: "ui/notifications/tool-result", params: await o.first }); }
           return;
-        case "tools/list": return ok({ tools: room ? VB_TOOLS : [] });
+        case "ui/notifications/size-changed": { // embeds grow to fit, capped (420px or 55% of a phone): taller ones scroll inside, ⤢ opens them
+          if (!o.embed || typeof m.params?.height !== "number") return;
+          const cap = Math.min(420, Math.round(innerHeight * 0.55)), h = Math.max(Math.ceil(m.params.height) + 2, 40);
+          frame.style.height = `${Math.min(h, cap)}px`; frame.closest(".embedWrap")?.classList.toggle("clipped", h > cap);
+          return;
+        }
+        case "tools/list": return ok({ tools: o.call ? [] : VB_TOOLS });
         case "tools/call": return ok(await call(m.params?.name, m.params?.arguments));
         case "ui/open-link": { const u = String(m.params?.url || ""); if (/^https?:\/\//i.test(u)) window.open(u, "_blank", "noopener"); return ok({}); }
-        case "ui/message": { // into the composer, never sent by itself: the person reads and presses Enviar
-          const input = document.getElementById("input"), text = textOf(m.params?.content).slice(0, 4000);
-          if (input && text) { input.value = text; input.dispatchEvent(new Event("input")); input.focus(); }
-          return ok({});
-        }
+        case "ui/message": { const text = textOf(m.params?.content).trim().slice(0, 4000); return ok(text ? await vbCall("vibebook_post", { text, thread: o.thread ?? thread }, ask) : {}); }
         case "ui/update-model-context": {
           const text = textOf(m.params?.content) || (m.params?.structuredContent ? JSON.stringify(m.params.structuredContent) : "");
-          if (text && !room) api(`${base}/context`, { tool: a.tool, text: text.slice(0, 4000) }).catch(() => {});
+          if (text && o.base) api(`${o.base}/context`, { tool: o.toolName, text: text.slice(0, 4000) }).catch(() => {});
           return ok({});
         }
-        case "ui/request-display-mode": return ok({ mode: "fullscreen" });
+        case "ui/request-display-mode": return ok({ mode: o.embed ? "inline" : "fullscreen" });
         case "ping": return ok({});
         default:
-          if (m.method.startsWith("notifications/") || m.method.startsWith("ui/notifications/")) return; // size-changed, logging…
+          if (m.method.startsWith("notifications/") || m.method.startsWith("ui/notifications/")) return; // logging…
           if (m.id !== undefined) post({ id: m.id, error: { code: -32601, message: `vibebook doesn't support ${m.method} yet` } });
       }
     } catch (x) { if (m.id !== undefined) post({ id: m.id, error: { code: -32000, message: String(x.message || x) } }); }
   };
-  window.addEventListener("message", appBridge);
-  if (room) frame.src = `/api/books/${S.id}/files/${a.file.id}`; else frame.srcdoc = ui.html;
+}
+// An embed's host: asks show under the embed, posts go to the embed's own thread.
+function embedHost(fr) {
+  if (!hosts.has(fr)) {
+    const box = fr.closest(".embedBox"), at = thread; // an embed only shows in its own message's thread
+    hosts.set(fr, makeHost(fr, { embed: true, thread: at, ask: () => box.querySelector(".appAsk") || box.appendChild(Object.assign(document.createElement("div"), { className: "appAsk", hidden: true })) }));
+  }
+  return hosts.get(fr);
+}
+addEventListener("message", (e) => {
+  const d = e.data; if (!d || !S) return;
+  const panel = document.querySelector(".connFrame");
+  const fr = panel?.contentWindow === e.source ? panel : [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
+  if (!fr) return;
+  // Embeds saved before Nov 2026 carry the old bridge: { vbEmbed: 1, h } / { vbEmbed: 1, send }.
+  if (d.vbEmbed === 1) return embedHost(fr)(typeof d.h === "number" ? { method: "ui/notifications/size-changed", params: { height: d.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(d.send || "") }] } });
+  if (d.jsonrpc === "2.0" && typeof d.method === "string") (hosts.get(fr) || embedHost(fr))(d);
+});
+async function mountApp(frame, c, a) {
+  const room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
+  const ask = () => document.getElementById("appAsk");
+  if (room) {
+    hosts.set(frame, makeHost(frame, { ask, tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }));
+    frame.src = `/api/books/${S.id}/files/${a.file.id}`;
+    return;
+  }
+  let ui;
+  try { ui = await api(`${base}/ui?tool=${encodeURIComponent(a.tool)}`); }
+  catch (e) { const d = document.createElement("div"); d.className = "empty"; d.textContent = e.message; frame.replaceWith(d); return; }
+  const call = (name, args) => api(`${base}/call`, { name, arguments: args }).then((r) => r.result);
+  const first = call(a.tool, {}).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
+  hosts.set(frame, makeHost(frame, { ask, call, first, tool: ui.tool, base, toolName: a.tool }));
+  frame.srcdoc = ui.html;
 }
 
 // Reminders: files reminders/<name>.md. @vibe reads when each runs; at that time it posts the text for whoever saved it,
