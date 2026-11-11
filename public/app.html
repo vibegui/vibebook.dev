@@ -2886,7 +2886,7 @@ function onEvent(ev, id) {
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
       loadRoomAgents();
-      if (firstLoad) renderBook(); else { renderSide(); renderChat(); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(stick ? undefined : "stay"); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
       return;
     }
     case "closed": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.choices = ev.choices; const el = document.getElementById(`m${m.id}`)?.querySelector(".choice"); if (el) el.outerHTML = choiceHtml(m); } break; }
@@ -5159,7 +5159,8 @@ function renderChat(keep) {
   renderWorking();
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   syncEnd();
-  if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
+  if (keep === "stay") { el.scrollTop = t0; renderReceipts(); pinOnLoad(el); } // a state refresh while reading above
+  else if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
   else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
 }
 function loadOlder() {
@@ -5227,7 +5228,8 @@ function appendMsg(m) {
     let j = i; while (j > 0 && remKey(list[j - 1]) === remKey(m)) j--;
     last.outerHTML = msgHtml(foldReminders(list.slice(j, i + 1))[0]);
   } else el.insertAdjacentHTML("beforeend", msgHtml(m, prev));
-  scrollDown(true); pinOnLoad(el.lastElementChild); renderReceipts();
+  // Your own message takes you to the bottom; anyone else's (a Claude working, @vibe) only when you were there.
+  scrollDown(m.author === S.me && m.kind !== "agent"); pinOnLoad(el.lastElementChild); renderReceipts();
 }
 // Images change height after they load; keep pinned to the bottom when we were there.
 let stick = true; // was the reader at the bottom of the chat?
