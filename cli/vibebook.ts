@@ -460,8 +460,21 @@ function herdrServer(appMode = false) {
     .on("error", (e) => process.stderr.write(`vibebook herdr: botão "ir pro Claude" desligado (${(e as Error).message})\n`))
     .listen(port, "127.0.0.1");
 }
-async function herdrSync(agent: string, tools: Tool[]) {
+// claude_rooms for the runner, which loops every 15s for local work (herdr panes, idle Claudes, compaction): asked again
+// only when the hub says a ✻ toggle or a listener changed ({t:"agents"} poke), or 5 min passed. Asking every 15s was
+// 5.5k requests a day per machine, a quarter of all of vibebook's (Nov 2026). No hub: every 15s, as before.
+let roomsCache: { gen: number; at: number; res: Awaited<ReturnType<typeof callTool>> } | null = null;
+async function claudeRooms(agent: string, tools: Tool[]) {
+  const port = await ensureHub().catch(() => null);
+  let gen = -1;
+  if (port) try { gen = ((await (await fetch(`http://127.0.0.1:${port}/wait?book=agents&since=-1`)).json()) as { agents?: number }).agents ?? -1; } catch {}
+  if (roomsCache && gen >= 0 && roomsCache.gen === gen && Date.now() - roomsCache.at < 5 * 60_000) return roomsCache.res;
   const res = await callTool("claude_rooms", {}, agent, tools);
+  roomsCache = { gen, at: Date.now(), res };
+  return res;
+}
+async function herdrSync(agent: string, tools: Tool[]) {
+  const res = await claudeRooms(agent, tools);
   const rooms = (JSON.parse(res.content[0]?.text ?? "{}") as { rooms?: { room_id: string; title: string; on: boolean; listening?: boolean }[] }).rooms ?? [];
   const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
   const map = readJson<Record<string, HerdrRoom>>(HERDR, {});
@@ -626,7 +639,7 @@ const happ = (...args: string[]) => {
 };
 const appClaude = (sp: AppSpace) => sp.tabs.flatMap((t) => t.terminals).find((t) => /claude/i.test(t.app ?? ""));
 async function herdrAppSync(agent: string, tools: Tool[]) {
-  const res = await callTool("claude_rooms", {}, agent, tools);
+  const res = await claudeRooms(agent, tools);
   const rooms = (JSON.parse(res.content[0]?.text ?? "{}") as { rooms?: { room_id: string; title: string; on: boolean; listening?: boolean }[] }).rooms ?? [];
   const deaf = new Set(rooms.filter((r) => r.on && r.listening === false).map((r) => r.room_id));
   const map = readJson<Record<string, HerdrRoom & { space?: string }>>(HERDR_APP, {});
@@ -788,20 +801,22 @@ async function ensureHub(): Promise<number | null> {
 }
 async function hub() {
   if (hubPort()) return; // one per machine
-  let gen = 0, allGen = 0, lastUse = Date.now(), backoff = 1000;
+  let gen = 0, allGen = 0, agentsGen = 0, lastUse = Date.now(), backoff = 1000;
   const books = new Map<string, number>();
   const waiters = new Set<{ book: string; done: () => void }>();
-  const seen = (book: string) => (book === "*" ? gen : Math.max(books.get(book) ?? 0, allGen));
+  // book=agents: the herdr runner's channel (a ✻ Ligar Claude toggle or a listener starting/stopping: {t:"agents"}).
+  const seen = (book: string) => (book === "agents" ? agentsGen : book === "*" ? gen : Math.max(books.get(book) ?? 0, allGen));
+  const bumpAgents = () => { agentsGen = ++gen; for (const w of [...waiters]) if (w.book === "agents") { waiters.delete(w); w.done(); } };
   const bump = (book?: string) => {
     gen++;
     if (book) books.set(book, gen); else allGen = gen;
-    for (const w of [...waiters]) if (!book || w.book === "*" || w.book === book) { waiters.delete(w); w.done(); }
+    for (const w of [...waiters]) if (w.book !== "agents" && (!book || w.book === "*" || w.book === book)) { waiters.delete(w); w.done(); }
   };
   const server = createServer((req, res) => {
     lastUse = Date.now();
     const u = new URL(req.url ?? "/", "http://hub");
     const book = u.searchParams.get("book") || "*", since = Number(u.searchParams.get("since") ?? -1);
-    const answer = (timeout = false) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ gen, timeout })); };
+    const answer = (timeout = false) => { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ gen, agents: agentsGen, timeout })); };
     if (seen(book) > since) return answer();
     const w = { book, done: () => { clearTimeout(timer); answer(); } };
     const timer = setTimeout(() => { waiters.delete(w); answer(true); }, 50_000);
@@ -821,8 +836,8 @@ async function hub() {
     sock = ws;
     let closed = false;
     const again = () => { if (closed) return; closed = true; clearInterval(ping); setTimeout(() => connect().catch(again), backoff); backoff = Math.min(backoff * 2, 60_000); };
-    ws.onopen = () => { backoff = 1000; bump(); ping = setInterval(() => { try { ws.send("ping"); } catch {} }, 45_000); }; // (re)connected: everyone checks once
-    ws.onmessage = (e) => { try { const m = JSON.parse(String(e.data)); if (m.t === "me" && m.book) bump(m.book); } catch {} };
+    ws.onopen = () => { backoff = 1000; bump(); bumpAgents(); ping = setInterval(() => { try { ws.send("ping"); } catch {} }, 45_000); }; // (re)connected: everyone checks once
+    ws.onmessage = (e) => { try { const m = JSON.parse(String(e.data)); if (m.t === "me" && m.book) bump(m.book); if (m.t === "agents") bumpAgents(); } catch {} };
     ws.onclose = again;
     ws.onerror = again;
   };
