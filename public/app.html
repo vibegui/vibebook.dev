@@ -1995,10 +1995,13 @@ const fileChips = (h) => h.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\
   const n = vs.length > 1 ? vs.length - vs.findIndex((v) => v.id === fid) : 0;
   return `<a ${pre}href="/api/books/${room}/files/${fid}"${post} class="fchip" title="${esc(nameOf)}">${fileIcon(f || { type: /\.html?$/i.test(nameOf) ? "text/html" : "" }, 14)}<span>${esc(nameOf)}</span>${n ? `<small>v${n}</small>` : ""}</a>`;
 });
-const linkify = (h) => fileChips(ghChips(h.replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`)));
+// Slack-style :shortcodes: (":point_up:") become the emoji when shown, in people's and agents' messages, old ones too.
+const EMOJI = JSON.parse("{\"point_up\": \"☝️\", \"point_up_2\": \"👆\", \"point_down\": \"👇\", \"point_left\": \"👈\", \"point_right\": \"👉\", \"+1\": \"👍\", \"thumbsup\": \"👍\", \"-1\": \"👎\", \"thumbsdown\": \"👎\", \"ok_hand\": \"👌\", \"clap\": \"👏\", \"pray\": \"🙏\", \"raised_hands\": \"🙌\", \"wave\": \"👋\", \"muscle\": \"💪\", \"eyes\": \"👀\", \"fire\": \"🔥\", \"rocket\": \"🚀\", \"tada\": \"🎉\", \"100\": \"💯\", \"heart\": \"❤️\", \"heart_eyes\": \"😍\", \"smile\": \"😄\", \"smiley\": \"😃\", \"grin\": \"😁\", \"joy\": \"😂\", \"rofl\": \"🤣\", \"laughing\": \"😆\", \"sweat_smile\": \"😅\", \"wink\": \"😉\", \"blush\": \"😊\", \"slightly_smiling_face\": \"🙂\", \"upside_down_face\": \"🙃\", \"thinking_face\": \"🤔\", \"thinking\": \"🤔\", \"neutral_face\": \"😐\", \"expressionless\": \"😑\", \"unamused\": \"😒\", \"roll_eyes\": \"🙄\", \"face_with_rolling_eyes\": \"🙄\", \"grimacing\": \"😬\", \"sweat\": \"😓\", \"cry\": \"😢\", \"sob\": \"😭\", \"scream\": \"😱\", \"rage\": \"😡\", \"angry\": \"😠\", \"sunglasses\": \"😎\", \"nerd_face\": \"🤓\", \"sleeping\": \"😴\", \"exploding_head\": \"🤯\", \"partying_face\": \"🥳\", \"shrug\": \"🤷\", \"facepalm\": \"🤦\", \"white_check_mark\": \"✅\", \"heavy_check_mark\": \"✔️\", \"check\": \"✔️\", \"x\": \"❌\", \"warning\": \"⚠️\", \"no_entry\": \"⛔\", \"question\": \"❓\", \"exclamation\": \"❗\", \"bulb\": \"💡\", \"memo\": \"📝\", \"pushpin\": \"📌\", \"link\": \"🔗\", \"lock\": \"🔒\", \"unlock\": \"🔓\", \"key\": \"🔑\", \"bug\": \"🐛\", \"wrench\": \"🔧\", \"hammer\": \"🔨\", \"gear\": \"⚙️\", \"zap\": \"⚡\", \"star\": \"⭐\", \"sparkles\": \"✨\", \"boom\": \"💥\", \"hourglass\": \"⌛\", \"alarm_clock\": \"⏰\", \"calendar\": \"📅\", \"chart_with_upwards_trend\": \"📈\", \"chart_with_downwards_trend\": \"📉\", \"moneybag\": \"💰\", \"money_with_wings\": \"💸\", \"dart\": \"🎯\", \"trophy\": \"🏆\", \"coffee\": \"☕\", \"beer\": \"🍺\", \"pizza\": \"🍕\", \"see_no_evil\": \"🙈\", \"hugs\": \"🤗\", \"hugging_face\": \"🤗\", \"handshake\": \"🤝\", \"crossed_fingers\": \"🤞\", \"writing_hand\": \"✍️\", \"skull\": \"💀\", \"ghost\": \"👻\", \"robot_face\": \"🤖\", \"robot\": \"🤖\", \"brain\": \"🧠\", \"speech_balloon\": \"💬\", \"mag\": \"🔍\", \"computer\": \"💻\", \"iphone\": \"📱\", \"package\": \"📦\", \"construction\": \"🚧\", \"rotating_light\": \"🚨\", \"sos\": \"🆘\", \"green_heart\": \"💚\", \"blue_heart\": \"💙\", \"purple_heart\": \"💜\", \"yellow_heart\": \"💛\", \"broken_heart\": \"💔\", \"dog\": \"🐶\", \"cat\": \"🐱\", \"sun\": \"☀️\", \"rainbow\": \"🌈\", \"rain\": \"🌧️\", \"snowflake\": \"❄️\", \"earth_americas\": \"🌎\", \"brazil\": \"🇧🇷\", \"flag-br\": \"🇧🇷\", \"checkered_flag\": \"🏁\", \"arrow_up\": \"⬆️\", \"arrow_down\": \"⬇️\", \"arrow_right\": \"➡️\", \"arrow_left\": \"⬅️\", \"heavy_plus_sign\": \"➕\", \"heavy_minus_sign\": \"➖\", \"red_circle\": \"🔴\", \"large_green_circle\": \"🟢\", \"green_circle\": \"🟢\", \"large_yellow_circle\": \"🟡\", \"yellow_circle\": \"🟡\", \"white_circle\": \"⚪\", \"black_circle\": \"⚫\"}");
+const emojify = (t) => t.replace(/:([a-z0-9_+-]{1,40}):/g, (x, k) => EMOJI[k] ?? x);
+const linkify = (h) => fileChips(ghChips(emojify(h).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`)));
 // Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
 // No <img>: files go as attachments, and a remote image would be a tracker.
-const md = (s) => fileChips(ghChips(DOMPurify.sanitize(marked.parse(s, { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
+const md = (s) => fileChips(ghChips(DOMPurify.sanitize(marked.parse(emojify(s), { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
   .replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"')
   .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"')));
 const api = async (path, body) => {
@@ -3321,6 +3324,14 @@ function renderBook() {
   welcome();
   // A shared link to one message (/b/<room>#m123) lands on it.
   if (/^#m\d+$/.test(location.hash)) setTimeout(() => goToMsg(Number(location.hash.slice(2))), 300);
+  // …and a link to one file (#f<id>, the viewer's own address) opens it.
+  else if (/^#f[0-9a-f]+$/.test(location.hash)) { const fid = location.hash.slice(2); history.replaceState(null, "", location.pathname + location.search); setTimeout(() => openFile(fid), 300); }
+}
+// A room file by id: its name and type from what's loaded (the newest 12, the messages), else asked for once.
+function openFile(fid, again) {
+  const f = (S.files || []).find((x) => x.id === fid) || allMsgs().flatMap((x) => x.files || []).find((x) => x.id === fid);
+  if (!f && !again && !S.filesAll) { send({ t: "files.get" }); return setTimeout(() => openFile(fid, true), 800); }
+  openViewer(`/api/books/${S.id}/files/${fid}`, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || t("arquivo"));
 }
 
 // First room someone opens after being invited (not their own room): a few steps on how vibebook works (each
@@ -4329,7 +4340,9 @@ function openViewer(url, kind, fname) {
     document.body.appendChild(d);
   }
   loadViewer(d, url, kind, fname);
-  if (!d.open) history.pushState({ viewer: 1 }, "", location.href); // Back (phone gesture, browser, PWA) closes it
+  // Back (phone gesture, browser, PWA) closes it. A room file gets its own address (/b/<room>?t=…#f<id>): copy it and
+  // send it to someone in the room, it opens the same file for them.
+  if (!d.open) history.pushState({ viewer: 1 }, "", d.dataset.fid ? `${location.pathname}${location.search}#f${d.dataset.fid}` : location.href);
   d.showModal();
 }
 // Versions of a file = the room's files with the same name (each upload of report.html is one), newest first. The
@@ -4353,6 +4366,7 @@ function loadViewer(d, url, kind, fname) {
   d.querySelector("header a").href = typeof url === "string" ? outside(url) : "";
   const vsel = d.querySelector(".vsel"); vsel.hidden = true;
   if (d.dataset.fid) { refreshVersions(); if (!S.filesAll) send({ t: "files.get" }); }
+  if (d.open && d.dataset.fid && history.state?.viewer) history.replaceState(history.state, "", `${location.pathname}${location.search}#f${d.dataset.fid}`); // another version picked
   const body = d.querySelector(".vbody");
   body.className = `vbody ${kind}`;
   d.classList.toggle("noLink", kind === "table");
@@ -4628,6 +4642,9 @@ document.addEventListener("click", (e) => {
 // A permission ask (Aprovar/Negar from the plugin's hook) is answered in place: the button, then Confirmar (never by
 // accident). The answer is still a message of the person's (that's what the server checks: only their own human
 // message counts), but it isn't drawn in the chat: the ask shows "✓ Aprovado por X" instead.
+// Someone else's Claude asking them (⏸ permission, ❓ question) is between that person and their Claude: the rest of
+// the room doesn't see it (it filled shared threads with "Aprovar/Negar" and "ok", Nov 2026).
+const othersAsk = (m) => m?.kind === "agent" && m.author !== S.me && /^(⏸ Seu Claude|❓ Seu Claude)/.test(m.text || "");
 const isPermAnswer = (m) => { if (!m?.reply_to || m.kind === "agent") return false; const q = S.messages.find((x) => x.id === m.reply_to); return !!q && isPermAsk(q) && q.author === m.author; };
 function permHtml(m, c, ans) {
   if (ans) { const ok = /^\s*aprov/i.test(ans.text); return `<div class="permAsk done ${ok ? "ok" : "no"}">${icon(ok ? "check" : "x", 14)} ${ok ? t("Aprovado por {who}", { who: esc(name(ans.author)) }) : t("Negado por {who}", { who: esc(name(ans.author)) })} · ${hhmm(ans.ts)}</div>`; }
@@ -5136,7 +5153,7 @@ function renderChat(keep) {
     }, 400);
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
-  const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m));
+  const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m) && !othersAsk(m) && !othersAsk(S.messages.find((x) => x.id === m.reply_to)));
   if (liveState && all.length < WIN && !olderBusy && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread] && !fillOf.has(S.id + thread)) {
     fillOf.add(S.id + thread); olderBusy = true;
     send({ t: "older", thread, before: all[0]?.id ?? 0 });
@@ -5219,6 +5236,7 @@ function renderReceipts() {
 function appendMsg(m) {
   const el = document.getElementById("msgs");
   // An answer to a permission ask: redraw the ask (now "✓ Aprovado por X"), not a new message.
+  if (othersAsk(m) || othersAsk(S.messages.find((x) => x.id === m.reply_to))) return;
   if (isPermAnswer(m)) { const q = S.messages.find((x) => x.id === m.reply_to), box = document.querySelector(`#m${m.reply_to} .permAsk, #m${m.reply_to} .choice`); if (q && box) box.outerHTML = choiceHtml(q); return; }
   el.querySelector(".empty")?.remove();
   const list = S.messages.filter((x) => x.thread === m.thread), i = list.indexOf(m), prev = list[i - 1];
