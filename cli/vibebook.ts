@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.4";
+const VERSION = "1.6.5";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -826,9 +826,9 @@ const HELP = `vibebook ${VERSION}: your vibebook rooms from the terminal (for yo
   vibebook call <tool> ['{json}' | -d @file | -d @-]
                                  run a tool; room_id, repo and model are filled in from this folder
   vibebook listen [--room <id>]  wait until the room has messages you haven't read, print them, exit
-  vibebook connect <mcp url> [--token-cmd "op read op://…" | --token-env VAR | --token-file path] [--scope me|room] [--title ..]
-                                 link an MCP server to this folder's room (its apps show in the Apps tab); the token
-                                 goes from your secret store to vibebook without being printed
+  vibebook connect <mcp url> [--scope me|room] [--title ..]
+                                 link an MCP server to this folder's room (its apps show in the Apps tab); no token:
+                                 a server that needs a login has each person sign in from the Apps tab
   vibebook upload <file> [--message ".."] [--thread <epic>] [--room <id>] ['{"thread":"<epic>"}']
   vibebook herdr [--once]        keep one Claude Code per room in herdr: opens it when you switch
                                  "Meu Claude" on in the app, closes it when you switch it off
@@ -1073,19 +1073,12 @@ async function main() {
       return;
     }
     case "connect": {
-      // Links a remote MCP server to the room. The token comes from a secret store and goes straight to vibebook: the
-      // CLI never prints it, so the Claude running this command never sees it.
+      // Links a remote MCP server to the room. No tokens (Nov 2026): the server sees who calls from vibebook's identity
+      // seal, and one that needs its own login has each person sign in from the Apps tab.
       const url = pos[1];
-      if (!url) return die('usage: vibebook connect <mcp url> [--token-cmd "op read op://Vault/Item/field" | --token-env VAR | --token-file path] [--scope room|me] [--title ..] [--room <id>]');
-      let token = "";
-      if (flag("token-cmd")) {
-        try { token = execSync(flag("token-cmd") as string, { stdio: ["inherit", "pipe", "inherit"] }).toString().trim(); }
-        catch { return die("--token-cmd failed (nothing was sent)"); }
-      } else if (flag("token-env")) token = process.env[flag("token-env") as string] ?? "";
-      else if (flag("token-file")) token = existsSync(flag("token-file") as string) ? readFileSync(flag("token-file") as string, "utf8").trim() : "";
-      if ((flag("token-cmd") || flag("token-env") || flag("token-file")) && !token) return die("the token came back empty (nothing was sent)");
+      if (!url) return die("usage: vibebook connect <mcp url> [--scope room|me] [--title ..] [--room <id>]");
+      if (flag("token-cmd") || flag("token-env") || flag("token-file")) return die("vibebook no longer takes MCP tokens: connect the URL, then each person signs in from the Apps tab (Entrar em <host>). Nothing was sent.");
       const args: Record<string, unknown> = { url, scope: flag("scope") === "room" ? "room" : "me" };
-      if (token) args.token = token;
       if (flag("title")) args.title = flag("title");
       if (flag("room")) args.room_id = flag("room");
       const res = await callTool("connect_mcp", args, agent);

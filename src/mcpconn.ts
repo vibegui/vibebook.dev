@@ -139,17 +139,17 @@ export async function createConn(env: Env, book: string, email: string, b: { url
   const local = env.DEV_EMAIL && /^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(raw);
   const ok = local ? { url: raw } : checkUrl(raw);
   if ("error" in ok) throw new Error(`URL: ${ok.error}`);
-  const token = String(b.token ?? "").replace(/\s+/g, "").replace(/^Bearer/i, "") || null;
-  if (token && token.length > 4000) throw new Error("token longo demais");
+  // No pasted tokens (Nov 2026): the server sees who calls from the identity seal and signs each person in itself.
+  if (b.token) throw new Error("conexões não levam mais token: conecte só a URL; quem usar entra com a própria conta (Entrar em <host> na aba Apps)");
   const n: { n: number } | null = await env.DB.prepare(`SELECT COUNT(*) n FROM mcp_connections WHERE book_id = ?`).bind(book).first();
   if ((n?.n ?? 0) >= MAX_CONNS) throw new Error(`no máximo ${MAX_CONNS} conexões por sala`);
   const cid = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  const sealed = token ? await seal(env, token) : { enc: null, iv: null };
+  const sealed = { enc: null, iv: null };
   const who: Who = { email, room: book, origin };
   // A server that asks its own sign-in is linked anyway: the tools come after this person signs in (needs_sign_in).
   let result: any = null, tools: Tool[] = [], needsAuth = false;
   try {
-    const first = await init(ok.url, token, await identityJwt(env, origin, { email, room: book, aud: ok.url }));
+    const first = await init(ok.url, null, await identityJwt(env, origin, { email, room: book, aud: ok.url }));
     result = first.result;
     sessions.set(`${cid}:${email}`, first.session);
     tools = await listTools(env, { id: cid, url: ok.url, ...sealed }, who);
@@ -175,45 +175,17 @@ export async function deleteConn(env: Env, book: string, cid: string, email: str
   await bookStub(env, book).connsChanged();
 }
 
-/** Someone else's room connection: they read freely, but a write with the owner's token waits for the owner. */
-export const needsOwner = (c: Conn, email: string, tool: string) => {
-  if (c.owner === email || !c.enc) return false; // no pasted token: each person calls as themselves, the server decides
-  const t = toolsOf(c).find((x) => x.name === tool);
-  return !t?.annotations?.readOnlyHint;
-};
-/** Queues that write for the connection's owner and tells them in the room (Aprovar/Negar live in the Apps tab). */
-export async function askOwner(env: Env, c: Conn, requester: string, via: "app" | "agent", tool: string, args: unknown, thread = "main") {
-  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
-  const a = JSON.stringify(args && typeof args === "object" ? args : {}).slice(0, 4000);
-  if (findSecret(a)) throw new Error("os argumentos parecem ter um segredo; não guardei o pedido");
-  await env.DB.prepare(`INSERT INTO mcp_pending (id, book_id, conn_id, owner, requester, via, tool, args, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`)
-    .bind(id, c.book_id, c.id, c.owner, requester, via, tool, a, Date.now()).run();
-  const who = requester.split("@")[0], owner = c.owner.split("@")[0];
-  await bookStub(env, c.book_id).vibePost(c.book_id, thread, `🔐 @${owner}, ${who}${via === "agent" ? " (pelo agent)" : ""} quer usar **${tool}** em **${c.title}** com a sua conta. Aprova ou nega na aba Apps, no card da conexão.`);
-  await bookStub(env, c.book_id).connsChanged();
-  return { pending: true, request_id: id, note: `${tool} changes things with ${c.owner}'s account on ${c.title}: it waits for their OK (they were asked in the room). Nothing ran yet.` };
-}
-export async function pendingFor(env: Env, c: Conn) {
-  const r = await env.DB.prepare(`SELECT id, requester, via, tool, args, created_at FROM mcp_pending WHERE conn_id = ? AND status = 'open' ORDER BY created_at`).bind(c.id).all();
-  return r.results;
-}
-/** The owner's answer: runs the call on approve, and says how it went in the room. */
-export async function decidePending(env: Env, c: Conn, pid: string, email: string, approve: boolean) {
-  if (c.owner !== email) throw new Error("só quem conectou decide");
-  const p = await env.DB.prepare(`SELECT * FROM mcp_pending WHERE id = ? AND conn_id = ? AND status = 'open'`).bind(pid, c.id).first<{ requester: string; tool: string; args: string }>();
-  if (!p) throw new Error("pedido não encontrado ou já decidido");
-  let line: string, result = "";
-  if (approve) {
-    try {
-      const r = await callTool(env, c, p.tool, JSON.parse(p.args || "{}"), { email: c.owner, room: c.book_id, origin: "https://vibebook.dev" });
-      result = JSON.stringify(r).slice(0, 4000);
-      line = `✓ @${p.requester.split("@")[0]}, ${email.split("@")[0]} aprovou: **${p.tool}** rodou em ${c.title}${r?.isError ? " e voltou com erro" : ""}.`;
-    } catch (e) { result = String((e as Error).message); line = `✗ @${p.requester.split("@")[0]}, ${p.tool} em ${c.title} foi aprovado mas falhou: ${result.slice(0, 200)}`; }
-  } else line = `@${p.requester.split("@")[0]}, ${email.split("@")[0]} negou **${p.tool}** em ${c.title}.`;
-  await env.DB.prepare(`UPDATE mcp_pending SET status = ?, result = ? WHERE id = ?`).bind(approve ? "done" : "denied", result, pid).run();
-  await bookStub(env, c.book_id).vibePost(c.book_id, "main", line);
-  await bookStub(env, c.book_id).connsChanged();
-  return { ok: true, result: result || undefined };
+/** Connections made with a pasted token before Nov 2026: the token is dropped (each person signs in instead) and the
+ *  owner is told once in the room. Idempotent (one UPDATE per row decides who posts), run on the Worker's schema pass. */
+export async function retireTokens(env: Env) {
+  const rows = (await env.DB.prepare(`SELECT id, book_id, owner, title, url FROM mcp_connections WHERE enc IS NOT NULL`).all<{ id: string; book_id: string; owner: string; title: string; url: string }>()).results;
+  for (const r of rows) {
+    const done = await env.DB.prepare(`UPDATE mcp_connections SET enc = NULL, iv = NULL WHERE id = ? AND enc IS NOT NULL`).bind(r.id).run();
+    if (!done.meta.changes) continue;
+    sessions.forEach((_, k) => k.startsWith(`${r.id}:`) && sessions.delete(k));
+    await bookStub(env, r.book_id).vibePost(r.book_id, "main", `🔑 @${r.owner.split("@")[0]}, a conexão **${r.title}** usava um token colado, que o vibebook apagou: agora cada pessoa entra no ${new URL(r.url).host} com a própria conta (aba Apps → Entrar). Nada mais guarda a sua senha ou chave aqui.`).catch(() => {});
+    await bookStub(env, r.book_id).connsChanged().catch(() => {});
+  }
 }
 
 // ---- The app's HTML with its CSP. ----
@@ -291,7 +263,7 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     const no = await guard(c); if (no) return no;
     const email = c.get("email");
     const signed = await signedInTo(c.env, email);
-    return c.json({ connections: await Promise.all((await listConns(c.env, c.req.param("id"), email)).map(async (x) => ({ ...publicConn(x, email, signed), pending: x.owner === email && x.scope === "room" ? await pendingFor(c.env, x) : [] }))) });
+    return c.json({ connections: (await listConns(c.env, c.req.param("id"), email)).map((x) => publicConn(x, email, signed)) });
   });
 
   app.post("/api/books/:id/connections", async (c: any) => {
@@ -319,14 +291,6 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     } catch (e) { return fail(c, e); }
   });
 
-  // The owner approves or denies a write someone else asked to make with their token.
-  app.post("/api/books/:id/connections/:cid/pending/:pid", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    const b = await c.req.json().catch(() => ({}));
-    try { return c.json(await decidePending(c.env, x, c.req.param("pid"), c.get("email"), b.approve === true)); }
-    catch (e) { return fail(c, e, 400); }
-  });
 
   // The app's HTML for an opaque-origin iframe (the page puts it in srcdoc).
   app.get("/api/books/:id/connections/:cid/ui", async (c: any) => {
@@ -347,7 +311,6 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
     const b = await c.req.json().catch(() => ({}));
     try {
-      if (needsOwner(x, email, String(b.name ?? ""))) return c.json({ result: { isError: true, content: [{ type: "text", text: "Essa ação usa a conta de quem conectou: pedi a aprovação na sala. Nada rodou ainda." }], structuredContent: await askOwner(c.env, x, email, "app", String(b.name ?? ""), b.arguments) } });
       const result = await callTool(c.env, x, String(b.name ?? ""), b.arguments, who(c));
       c.executionCtx.waitUntil(deps.track(c.env, "app_call", { user: email, dims: { book: x.book_id, host: new URL(x.url).host, tool: String(b.name), via: "app" } }));
       return c.json({ result });

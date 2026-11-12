@@ -1,7 +1,7 @@
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
-import { askOwner, callTool, createConn, deleteConn, getConn, listConns, needsOwner, publicConn } from "./mcpconn";
+import { callTool, createConn, deleteConn, getConn, listConns, publicConn } from "./mcpconn";
 import { AuthNeeded, signedInTo } from "./mcpauth";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
@@ -89,8 +89,8 @@ const TOOLS = [
   },
   {
     name: "connect_mcp",
-    description: "Link a remote MCP server (Streamable HTTP URL) to the room, like the Apps tab's Conectar MCP: its tools and apps show up for the room (scope room) or only for your human and their Claudes (scope me). Never put a token in your arguments yourself: run `vibebook connect <url> --token-cmd \"op read op://…\"` (or --token-env / --token-file), which reads the token from the secret store and sends it straight to vibebook, encrypted at rest, never shown to you, the browser or the room. Only when your human asked for it.",
-    inputSchema: { type: "object", properties: { room_id: { type: "string" }, url: { type: "string" }, token: { type: "string", description: "filled by `vibebook connect`, never typed by an agent" }, scope: { type: "string", enum: ["me", "room"], description: "me (default): only your human and their Claudes; room: everyone reads, writes by others wait for your human's OK" }, title: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "url"] },
+    description: "Link a remote MCP server (Streamable HTTP URL) to the room, like the Apps tab's Conectar MCP: its tools and apps show up for the room (scope room) or only for your human and their agents (scope me). No tokens: the server gets a signed identity of whoever calls (X-Vibebook-Identity), and a server that needs its own login has each person sign in from the Apps tab (Entrar em <host>).",
+    inputSchema: { type: "object", properties: { room_id: { type: "string" }, url: { type: "string" }, scope: { type: "string", enum: ["me", "room"], description: "me (default): only your human and their agents; room: every member uses it, each with their own sign-in" }, title: { type: "string" }, model: { type: "string" }, repo: { type: "string" } }, required: ["room_id", "url"] },
   },
   {
     name: "disconnect_mcp",
@@ -636,7 +636,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     case "connect_mcp": {
       const id = await room();
       if (!(await env.LOGIN_LIMIT.limit({ key: `mcp:${me.email}` })).success) throw new Error("rate limited: too many connection attempts in the last minute. Wait a bit.");
-      const c = await createConn(env, id, me.email, { url: a.url, token: a.token, scope: a.scope, title: a.title }, (p) => ctx.waitUntil(p), track, origin);
+      const c = await createConn(env, id, me.email, { url: a.url, scope: a.scope, title: a.title }, (p) => ctx.waitUntil(p), track, origin);
       return { ok: true, connection: c, note: "It shows in the room's Apps tab now (people refresh the tab to see it)." };
     }
     case "disconnect_mcp": {
@@ -652,7 +652,6 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const tool = publicConn(c, me.email).tools.find((t) => t.name === str(a.tool));
       if (!tool) throw new Error(`${c.title} has no tool ${str(a.tool)} you can call (app-only tools are the app's)`);
       // Someone else's room connection: reads run; a write waits for the owner's OK (asked in the room).
-      if (needsOwner(c, me.email, tool.name)) return askOwner(env, c, me.email, "agent", tool.name, a.arguments, str(a.thread) || "main");
       const result = await callTool(env, c, tool.name, a.arguments, { email: me.email, room: id, origin }).catch((e) => {
         if (e instanceof AuthNeeded) throw new Error(`${e.message}: your human signs in once on ${new URL(c.url).host} from the room's Apps tab (Entrar); vibebook keeps no token for it`);
         throw e;

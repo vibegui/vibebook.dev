@@ -11,7 +11,7 @@ import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
 import { mountSandbox } from "./sandbox";
-import { mountConnections } from "./mcpconn";
+import { mountConnections, retireTokens } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
 
@@ -147,8 +147,10 @@ async function toSite(site: Fetcher, req: Request) {
 }
 const knownUsers = new Set<string>();
 
+let tokensRetired: Promise<unknown> | undefined; // once per isolate: old pasted MCP tokens are dropped (retireTokens)
 app.use("*", async (c, next) => {
   await ensureSchema(c.env.DB);
+  c.executionCtx.waitUntil((tokensRetired ??= retireTokens(c.env).catch((e) => { tokensRetired = undefined; console.error("retireTokens", String(e)); })));
   await next();
 });
 

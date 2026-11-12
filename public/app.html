@@ -5002,7 +5002,7 @@ function renderConns() {
         ${c.auth === "identity" ? (c.signed_in
           ? `<small class="mute connWho">${t("Você entrou em {host} com a sua conta.", { host: esc(c.host) })} <button type="button" class="link" data-conn-out="${c.id}">${t("Sair")}</button></small>`
           : `<div class="connSign"><small>${t("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: esc(c.host) })}</small><a class="primary" href="/api/books/${S.id}/connections/${c.id}/signin">${t("Entrar em {host}", { host: esc(c.host) })}</a></div>`) : ""}
-        ${(c.pending || []).map((p) => `<div class="connPend"><span>🔐 <b>${esc(name(p.requester))}</b>${p.via === "agent" ? ` ${t("(pelo agent)")}` : ""} ${t("quer usar")} <code>${esc(p.tool)}</code></span><small>${esc(String(p.args || "").slice(0, 160))}</small><div><button type="button" class="primary" data-pend="${c.id}/${p.id}/1">${t("Aprovar")}</button><button type="button" class="ghost" data-pend="${c.id}/${p.id}/0">${t("Negar")}</button></div></div>`).join("")}${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
+        ${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
   const f = document.getElementById("connForm");
   if (f && keep) for (const [k, v] of Object.entries(keep)) if (f.elements[k] && k !== "scope") f.elements[k].value = v;
   document.getElementById("connAdd")?.addEventListener("click", () => { connForm = true; renderConns(); document.querySelector('#connForm [name="url"]')?.focus(); });
@@ -5017,12 +5017,6 @@ function renderConns() {
     }
     catch (x) { toast(esc(x.message)); btn.disabled = false; btn.textContent = t("Conectar"); }
   };
-  el.querySelectorAll("[data-pend]").forEach((b) => b.onclick = async () => {
-    const [cid, pid, yes] = b.dataset.pend.split("/");
-    b.disabled = true;
-    try { await api(`/api/books/${S.id}/connections/${cid}/pending/${pid}`, { approve: yes === "1" }); } catch (x) { toast(esc(x.message)); }
-    conns = null; renderConns();
-  });
   el.querySelectorAll("[data-conn-out]").forEach((b) => b.onclick = async () => { try { await api(`/api/books/${S.id}/connections/${b.dataset.connOut}/signout`, {}); } catch (x) { toast(esc(x.message)); } conns = null; renderConns(); });
   el.querySelectorAll("[data-conn-more]").forEach((b) => b.onclick = () => { const id = b.dataset.connMore; connMore.has(id) ? connMore.delete(id) : connMore.add(id); renderConns(); });
   el.querySelectorAll("[data-conn-open]").forEach((b) => b.onclick = () => { const [cid, tool] = b.dataset.connOpen.split("/"); connApp = { cid, tool }; renderConns(); });
