@@ -73,3 +73,14 @@ export const ResolveWaitBody = z.object({
 export const RoomOrderBody = z.object({ ids: z.array(z.unknown()) });
 export const TintBody = z.object({ tint: z.optional(z.nullable(z.string())) });
 export const ArchiveBody = z.object({ archived: z.optional(z.boolean()) });
+
+export const OkResult = z.object({ ok: z.literal(true) });
+export type OkResult = z.infer<typeof OkResult>;
+export const PushKeyResult = z.object({ key: z.nullable(z.string()) });
+export type PushKeyResult = z.infer<typeof PushKeyResult>;
+export const PushTestResult = z.object({
+  ok: z.literal(true),
+  sent: z.number(),
+});
+export type PushTestResult = z.infer<typeof PushTestResult>;
+export type ErrorBody = z.infer<typeof ErrorBody>;
