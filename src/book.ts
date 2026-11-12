@@ -1134,7 +1134,7 @@ export class Book extends DurableObject<Env> {
     // working, the thread of the request it acked last, so the person sees it in the conversation they're in.
     // A request acked in main that became an epic: the work (and so the question) is in that epic.
     if (!thread && !replyTo && agent && ASK_OPENER.test(text)) {
-      const r = this.sql.exec<{ id: number; thread: string }>(`SELECT m.id, m.thread FROM acks a JOIN messages m ON m.id = a.msg_id WHERE a.agent = ? AND a.status IN ('doing', 'blocked') ORDER BY a.ts DESC LIMIT 1`, agent).toArray()[0];
+      const r = this.sql.exec<{ id: number; thread: string }>(`SELECT m.id, m.thread FROM acks a JOIN messages m ON m.id = a.msg_id WHERE a.agent = ? AND a.status IN ('doing', 'blocked') ORDER BY a.msg_id DESC LIMIT 1`, agent).toArray()[0]; // the newest request it's on, not the ack a later post touched (a ⏸ for "publica" landed in another epic, Nov 2026)
       const ep = r && this.sql.exec<{ id: string }>(`SELECT id FROM epics WHERE from_msg = ? AND COALESCE(archived, 0) <= 0 ORDER BY ts DESC LIMIT 1`, r.id).toArray()[0]?.id;
       // No live ack (it answered in a thread without acking, or already closed it): where this person and their
       // Claudes last wrote in the last 30 min, so an ask mid-conversation in an epic doesn't land in main.
