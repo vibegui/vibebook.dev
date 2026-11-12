@@ -1084,11 +1084,12 @@
   /* Epic tree: a sub-epic under its parent, › opens/closes the branch (epicTree). */
   .epNode { display: flex; flex-wrap: wrap; align-items: center; }
   .epNode > .thread { flex: 1; min-width: 0; width: auto; }
-  .epChev { width: 16px; flex: none; border: 0; background: none; color: var(--mute); padding: 0; font-size: 16px; line-height: 1; cursor: pointer; transition: transform .12s; }
+  .epChev { width: 26px; height: 34px; flex: none; border: 0; background: none; color: var(--mute); padding: 0; margin-right: -2px; border-radius: 8px; font-size: 22px; font-weight: 700; line-height: 34px; text-align: center; cursor: pointer; transition: transform .12s, background .12s; }
+  button.epChev:hover { background: var(--hover); color: var(--ink); }
   span.epChev { cursor: default; }
   .epNode.open > .epChev { transform: rotate(90deg); }
   .epNode.kidsBusy:not(.open) > .epChev { color: var(--claude); }
-  .epKids { flex: 0 0 calc(100% - 15px); min-width: 0; margin-left: 15px; padding-left: 4px; border-left: 1px solid var(--line); }
+  .epKids { flex: 0 0 calc(100% - 13px); min-width: 0; margin-left: 13px; padding-left: 2px; border-left: 1px solid var(--line); }
   .epNode:not(.open) > .epKids { display: none; }
   @media (prefers-reduced-motion: reduce) { .epChev { transition: none; } }
   @media (max-width: 900px) {
@@ -4298,6 +4299,9 @@ function renderSide() {
     };
   });
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
+    // A parent epic you're already in: clicking its row again opens/closes its branch (a big target besides the ›).
+    const chev = b.dataset.thread === thread && b.parentElement?.querySelector(`:scope > [data-chev="${b.dataset.thread}"]`);
+    if (chev) return chev.click();
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   });
