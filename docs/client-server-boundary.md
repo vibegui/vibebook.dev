@@ -5,9 +5,10 @@ The browser app uses Svelte 5, TypeScript and Vite. Its entry is `svelte/main.ts
 `clientBoundary` in `svelte/build/clientBoundary.ts` rejects backend imports while Vite resolves the browser dependency graph. This applies to direct imports, transitive imports, aliases, symlinks and statically analyzable dynamic imports. A browser build fails if it reaches:
 
 - Any runtime module under `src/`.
-- A `*.server.ts`/`*.server.js` module or a `server/` directory.
+- A `*.server.ts`/`*.server.js` module or a project-owned `server/` directory. A dependency's directory layout alone does not mark its browser-safe helpers as server-only; the runtime and explicit marker checks still apply to dependencies.
 - A module importing `server-only`.
 - A Node, Cloudflare or workerd runtime module.
+- A `.env`/`.env.*` or `.dev.vars`/`.dev.vars.*` file, or content inside `.git/`, `.ssh/` or `.vibebook/`. This includes raw and URL asset imports; use `import.meta.env` for deliberately public Vite configuration.
 
 Mark backend modules outside `src/` explicitly:
 
@@ -23,7 +24,9 @@ The local `server-only` package is an empty module on the Worker. The Vite plugi
 
 Place browser-safe runtime helpers and wire contracts in `shared/`. Shared modules must not import backend implementations. Type-only imports (`import type`) are erased before dependency resolution and can refer to backend types without adding backend runtime code to the browser bundle. Prefer contracts in `shared/` when both sides use them.
 
-Run `bun run check:client-boundary` to build positive and negative fixtures through Vite. The fixtures verify shared imports and type erasure, and reject direct, transitive, aliased, symlinked, dynamic, marked and runtime-specific backend imports. `bun run build:ui` enforces the same boundary on the actual app.
+Run `bun run check:client-boundary` to build positive and negative fixtures through Vite. The fixtures verify shared imports, type erasure and public Vite configuration, and reject direct, transitive, aliased, symlinked, dynamic, marked and runtime-specific backend imports. Synthetic private-file fixtures also cover raw/URL imports and externally configured imports without reading project credentials. `bun run build:ui` enforces the same boundary on the actual app. Browser builders share the classification rules exported by `createClientBoundaryPolicy` so they cannot silently diverge.
+
+The app's Bun browser builds, `bun run build:collab` and `bun run build:mcp`, also enforce this shared policy through `scripts/browser-build.ts`; their regression fixtures are in `scripts/bun-client-boundary.test.ts`. The separate `site/` application has its own browser/SSR pipeline and is outside these app build guards.
 
 The guard protects the build's module graph. It cannot classify arbitrary code fetched or executed at runtime; do not add `eval`, variable remote imports or manual source copying as a way around the module boundary. It is not a replacement for keeping credentials out of source code.
 
