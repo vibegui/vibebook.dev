@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.2";
+const VERSION = "1.6.3";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -342,6 +342,10 @@ async function callTool(name: string, args: Record<string, unknown>, agent: stri
   if (props.includes("repo") && args.repo === undefined) args.repo = basename(root);
   const model = flag("model") ?? process.env.VIBEBOOK_MODEL;
   if (props.includes("model") && args.model === undefined && model) args.model = model;
+  // Inside an agent app other than a terminal (Antigravity runs Gemini through this CLI), the room shows the app too:
+  // "Antigravity · Gemini 3.8 Flash" instead of a bare model name that read as another product.
+  const host = hostApp();
+  if (host && typeof args.model === "string" && !args.model.toLowerCase().includes(host.toLowerCase())) args.model = `${host} · ${args.model}`.slice(0, 40);
   const res = (await rpc("tools/call", { name, arguments: args }, agent)) as { content: { type: string; text?: string; data?: string; mimeType?: string }[]; isError?: boolean };
   return res;
 }
@@ -436,6 +440,25 @@ function linkFolder(folder: string, room: string) {
   writeFileSync(f, `room_id=${room}\n`);
   const exclude = join(folder, ".git", "info", "exclude");
   if (existsSync(exclude) && !readFileSync(exclude, "utf8").split("\n").includes(".vibebook")) appendFileSync(exclude, "\n.vibebook\n");
+}
+/** The agent app this CLI runs under (walk up our own parents to an .app): only apps that are an agent themselves,
+ *  not terminals or plain editors. Cached per process. */
+let hostAppMemo: string | null | undefined;
+function hostApp(): string | null {
+  if (hostAppMemo !== undefined) return hostAppMemo;
+  hostAppMemo = null;
+  if (process.platform !== "darwin" && process.platform !== "linux") return null;
+  try {
+    let p = String(process.ppid);
+    for (let i = 0; i < 15 && p && p !== "1" && p !== "0"; i++) {
+      const [ppid, ...cmd] = execFileSync("ps", ["-o", "ppid=,comm=", "-p", p]).toString().trim().split(/\s+/);
+      const name = cmd.join(" ").match(/([^/]+)\.app\/Contents\//)?.[1] ?? cmd.join(" ").split("/").pop() ?? "";
+      const hit = /^(Antigravity|Cursor|Windsurf)$/i.exec(name);
+      if (hit) return (hostAppMemo = hit[1][0].toUpperCase() + hit[1].slice(1).toLowerCase());
+      p = ppid;
+    }
+  } catch {}
+  return null;
 }
 /** The terminal app hosting herdr (walk up from a herdr process to an .app), so "go to my Claude" can raise it. */
 function terminalApp(): string | undefined {
