@@ -1634,6 +1634,7 @@ function openBook(id) {
 
 const send = (m) => sendRoomCommand(ws, m);
 const viewMounts = new Map();
+const sidebarDragHandles = new WeakSet();
 function renderView(kind, target, props, remount = false) {
   let mounted = viewMounts.get(kind);
   if (mounted && (mounted.target !== target || remount)) { mounted.destroy(); viewMounts.delete(kind); mounted = null; }
@@ -2723,16 +2724,16 @@ function pinsSec() {
 }
 function wirePins(el) {
   const open = () => { pinAdding = true; renderSide(); document.querySelector("#pinForm [name=url]")?.focus(); };
-  el.querySelector("#pinPlus")?.addEventListener("click", open);
-  el.querySelector("#pinEmpty")?.addEventListener("click", open);
-  el.querySelector("#pinCancel")?.addEventListener("click", () => { pinAdding = false; renderSide(); });
-  el.querySelector("#pinForm")?.addEventListener("submit", (e) => {
+  const plus = el.querySelector("#pinPlus"); if (plus) plus.onclick = open;
+  const empty = el.querySelector("#pinEmpty"); if (empty) empty.onclick = open;
+  const cancel = el.querySelector("#pinCancel"); if (cancel) cancel.onclick = () => { pinAdding = false; renderSide(); };
+  const form = el.querySelector("#pinForm"); if (form) form.onsubmit = (e) => {
     e.preventDefault();
-    const f = e.target, url = f.url.value.trim();
+    const f = e.target, url = f.elements.namedItem("url").value.trim();
     if (!url) return;
-    send({ t: "pin.add", kind: "link", ref: url, title: f.title.value.trim() });
+    send({ t: "pin.add", kind: "link", ref: url, title: f.elements.namedItem("title").value.trim() });
     pinAdding = false; renderSide();
-  });
+  };
   el.querySelectorAll("[data-unpin]").forEach((b) => b.onclick = () => send({ t: "pin.del", id: b.dataset.unpin }));
 }
 // Your Claude's open question (a<msg> wait) in another thread of this room: one line on top of whatever thread you're
@@ -2756,24 +2757,28 @@ function renderSide() {
     if (old) { old.destroy(); viewMounts.delete("sidebar"); }
     return renderRail(el);
   }
-  renderView("sidebar", el, {room:S, thread, archOpen, foldOpen, friends, vb:{t,icon,avatar,ago,name,initials,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicIco,epicBusy,waitPill,waitsIn,prodMark}}, true);
+  renderView("sidebar", el, {room:S, thread, archOpen, foldOpen, friends, vb:{t,icon,avatar,ago,name,initials,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicIco,epicBusy,waitPill,waitsIn,prodMark}});
   el.querySelector("#railToggle").onclick = toggleRail;
   // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
-  el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.addEventListener("click", () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open)));
+  el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.onclick = () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open));
   el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
   wirePins(el);
   el.querySelectorAll("[data-epowner]").forEach((b) => {
     const go = (ev) => { ev.preventDefault(); ev.stopPropagation(); ownerMenu(b, b.dataset.epowner); };
-    b.addEventListener("click", go);
-    b.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") go(ev); });
+    b.onclick = go;
+    b.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") go(ev); };
   });
-  sheetDrag(el.querySelector(".sheetGrab"), "side", false);
-  el.querySelector("#sideRooms")?.addEventListener("click", openSwitch);
+  const grab = el.querySelector(".sheetGrab");
+  if (grab && !sidebarDragHandles.has(grab)) {
+    sheetDrag(grab, "side", false);
+    sidebarDragHandles.add(grab);
+  }
+  const rooms = el.querySelector("#sideRooms"); if (rooms) rooms.onclick = openSwitch;
   // The root row's "editar" chip renames the room; it sits inside the row's button, so it stops the row's click.
-  el.querySelector("#sideRename")?.addEventListener("click", (e) => { e.stopPropagation(); renameThread(); });
+  const rename = el.querySelector("#sideRename"); if (rename) rename.onclick = (e) => { e.stopPropagation(); renameThread(); };
   // Same actions as the header's ✓ 🗑 (hidden on phones): close the sheet, then run them.
-  el.querySelector("#sideArch")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicArch")?.click(); });
-  el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
+  const archive = el.querySelector("#sideArch"); if (archive) archive.onclick = () => { closeSheet(); document.getElementById("epicArch")?.click(); };
+  const remove = el.querySelector("#sideDel"); if (remove) remove.onclick = () => { closeSheet(); document.getElementById("epicDel")?.click(); };
   // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
   el.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((b) => {
     b.draggable = true;
@@ -2801,7 +2806,8 @@ function renderSide() {
   // The form is absent on the Arquivados tab. Empty title: the + just puts you in the field.
   const ne = document.getElementById("newEpic");
   // Phones: once the keyboard is up (the visible viewport shrinks), bring the field to the middle of the sheet.
-  ne?.querySelector("input").addEventListener("focus", (e) => setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 350));
+  const epicInput = ne?.querySelector("input");
+  if (epicInput) epicInput.onfocus = (e) => setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 350);
   if (ne) ne.onsubmit = (e) => { e.preventDefault(); const v = e.target[0].value.trim(); if (!v) return e.target[0].focus(); send({ t: "epic", title: v }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;

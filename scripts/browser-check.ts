@@ -2,6 +2,8 @@
 // and run `bun scripts/browser-check.ts`. Test data is confined to a newly created local room.
 import { chromium, expect as baseExpect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
+import {parseRoomEvent} from '../shared/validation';
+import {createRoomStore} from '../svelte/roomStore';
 const expect=baseExpect.configure({timeout:60_000});
 const base=process.env.TEST_BASE_URL || 'http://127.0.0.1:8797';
 if(!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base)) throw Error('Browser check requires a local test Worker');
@@ -9,6 +11,7 @@ const output=process.env.TEST_OUTPUT_DIR || '/tmp/vibebook-browser-check';
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-gpu']});
 const errors:string[]=[];
+const capturedRoom=createRoomStore();
 try {
   const desktop=await browser.newContext({locale:'en-US',viewport:{width:1440,height:1000},reducedMotion:'reduce'});
   await desktop.addCookies([{name:'vb_lang',value:'en',url:base}]);
@@ -21,7 +24,7 @@ try {
   // Two independent live sessions exercise server fan-out without sending invitations.
   const a=await desktop.newPage(), b=await second.newPage();
   for(const page of [a,b]){
-    page.on('websocket',socket=>{socket.on('framesent',frame=>{try{const m=JSON.parse(String(frame.payload));if(m.t==='msg')console.log('WS sent',m.text);}catch{}});socket.on('framereceived',frame=>{try{const m=JSON.parse(String(frame.payload));if(m.t==='msg')console.log('WS received',m.m.text);}catch{}});});
+    page.on('websocket',socket=>{socket.on('framesent',frame=>{try{const m=JSON.parse(String(frame.payload));if(m.t==='msg')console.log('WS sent',m.text);}catch{}});socket.on('framereceived',frame=>{try{const m=JSON.parse(String(frame.payload));if(socket.url().includes('/ws/'))capturedRoom.apply(parseRoomEvent(String(frame.payload)),id);if(m.t==='msg')console.log('WS received',m.m.text);}catch{}});});
     page.on('pageerror',error=>{errors.push(error.message);console.error('BROWSER_ERROR',error.message);});
     await page.route('https://fonts.googleapis.com/**',route=>route.abort());
     await page.route('https://fonts.gstatic.com/**',route=>route.abort());
@@ -95,9 +98,21 @@ try {
   console.log('PASS files/pins, board keyboard/list and Inbox');
   await a.screenshot({path:`${output}/desktop-after.png`,fullPage:true});
   await b.screenshot({path:`${output}/mobile-after.png`,fullPage:true});
+  // Both CodeMirror instances edit the same Yjs document; the backend mirrors it to Book.
+  await a.locator('#docEditBar').click();
+  await b.locator('#docPeek [data-pane=doc]').click();
+  await b.locator('#docEditBar').click();
+  await expect(a.locator('#cm .cm-content')).toBeVisible();
+  await expect(b.locator('#cm .cm-content')).toBeVisible();
+  const docText=await a.locator('#cm .cm-content').innerText();
+  await a.locator('#cm .cm-content').fill(`${docText}\n\nLive document synchronization verified`);
+  await expect(b.locator('#cm .cm-content')).toContainText('Live document synchronization verified',{timeout:90_000});
+  console.log('PASS two live Yjs document editors');
   const invalid=await desktop.request.post(`${base}/api/books/${id}/post`,{data:{text:42},headers:{origin:base}});
   expect(invalid.status()).toBe(400);
   expect(errors).toEqual([]);
-  await writeFile(`${output}/results.json`,JSON.stringify({room:id,epic:eid,readyMs,checks:['two live sessions','task updates','escaped chat','reply context','typed upload','files and pins','board keyboard/list','invalid HTTP payload'],errors},null,2));
+  const snapshot=capturedRoom.get();
+  if(snapshot)await writeFile(`${output}/room-state.json`,JSON.stringify({t:'state',...snapshot}));
+  await writeFile(`${output}/results.json`,JSON.stringify({room:id,epic:eid,readyMs,checks:['two live sessions','task updates','escaped chat','reply context','typed upload','files and pins','board keyboard/list','invalid HTTP payload','two Yjs editors'],errors},null,2));
   console.log(`PASS real Worker/browser checks; evidence ${output}; ready ${readyMs} ms`);
 }finally{await browser.close();}

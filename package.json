@@ -36,7 +36,7 @@
     "dev": "bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
-    "check": "node node_modules/@typescript/native/bin/tsc --noEmit && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
+    "check": "bun run check:backend && bun run check:ui && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run test:store && bun run test:ui && bun run test:build",
     "build:collab": "bun build collab/editor.ts --outfile public/collab.js --format esm --minify --target browser",
     "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs",
     "build:ui": "vite build --config svelte/vite.config.ts",
@@ -46,6 +46,9 @@
     "test:store": "bun test scripts/room-store.test.ts",
     "check:protocol": "bun scripts/protocol-check.ts",
     "test:browser": "bun scripts/browser-check.ts",
-    "measure:ui": "bun scripts/ui-metrics.ts"
+    "measure:ui": "bun scripts/ui-metrics.ts",
+    "check:backend": "node node_modules/@typescript/native/bin/tsc --noEmit && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
+    "check:bundle": "bun scripts/ui-build-check.ts",
+    "test:build": "bun test scripts/ui-version.test.ts"
   }
 }

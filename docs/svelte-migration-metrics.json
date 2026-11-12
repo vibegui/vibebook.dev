@@ -1,0 +1,92 @@
+{
+  "baselineCommit": "30bcc5f",
+  "sizes": {
+    "baseline": {
+      "initialRawBytes": 500720,
+      "initialGzipBytes": 144086,
+      "inboxAdditionalGzipBytes": 17872
+    },
+    "current": {
+      "initialRawBytes": 538937,
+      "initialGzipBytes": 150686,
+      "files": [
+        "public/app.html",
+        "public/app.css",
+        "public/svelte/app.js",
+        "public/svelte/main-jdVC_yn0.js"
+      ]
+    }
+  },
+  "fixture": {
+    "messages": 3,
+    "epics": 1,
+    "tasks": 2
+  },
+  "timings": [
+    {
+      "variant": "before",
+      "ms": 4016,
+      "threadSwitchMs": 1057.2000000029802,
+      "heapBytes": 2894748,
+      "taskSeconds": 4.882459,
+      "nodes": 973
+    },
+    {
+      "variant": "after",
+      "ms": 2933,
+      "threadSwitchMs": 1098.2000000029802,
+      "heapBytes": 3646640,
+      "taskSeconds": 3.974663,
+      "nodes": 1413
+    },
+    {
+      "variant": "before",
+      "ms": 2869,
+      "threadSwitchMs": 983.1000000089407,
+      "heapBytes": 2904804,
+      "taskSeconds": 3.879103,
+      "nodes": 973
+    },
+    {
+      "variant": "after",
+      "ms": 2848,
+      "threadSwitchMs": 1130.1000000089407,
+      "heapBytes": 3652808,
+      "taskSeconds": 3.983755,
+      "nodes": 1413
+    },
+    {
+      "variant": "before",
+      "ms": 2786,
+      "threadSwitchMs": 935.0999999940395,
+      "heapBytes": 2899876,
+      "taskSeconds": 3.811655,
+      "nodes": 973
+    },
+    {
+      "variant": "after",
+      "ms": 2938,
+      "threadSwitchMs": 1234.5,
+      "heapBytes": 3652808,
+      "taskSeconds": 4.224544,
+      "nodes": 1413
+    }
+  ],
+  "medians": {
+    "before": {
+      "ms": 2869,
+      "threadSwitchMs": 983.1000000089407,
+      "heapBytes": 2899876,
+      "taskSeconds": 3.879103,
+      "nodes": 973
+    },
+    "after": {
+      "ms": 2933,
+      "threadSwitchMs": 1130.1000000089407,
+      "heapBytes": 3652808,
+      "taskSeconds": 3.983755,
+      "nodes": 1413
+    }
+  },
+  "note": "Controlled local ARM frontend benchmark: same captured real Book snapshot and simulated WS/HTTP delivery, three alternating samples each, fonts/local runner blocked. Includes browser asset loading, rendering and thread switching; excludes actual Worker/database/network latency. Small fixture; not a production performance claim."
+}

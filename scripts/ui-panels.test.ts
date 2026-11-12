@@ -135,4 +135,69 @@ describe('native Svelte chat',()=>{
     expect(target.querySelectorAll('.origin')).toHaveLength(1);
     expect(target.querySelectorAll('#m9')).toHaveLength(1);
   },30_000);
+  test('special reminder origins omit self-linking cards without removing native DOM',()=>{
+    const origin={...message(7,'Reminder origin'),tag:'reminder'};
+    const normal={...message(8,'Reminder reply'),tag:'reminder'};
+    const seen:{id:number;origin:boolean}[]=[];
+    const room={...fixture(),messages:[normal]};
+    const {target,update}=renderChat(room,{origin,vb:bridge({remHtml:(m,isOrigin=false)=>{
+      seen.push({id:m.id,origin:isOrigin});
+      return '<div class="msg remMsg" id="m'+m.id+'"><div class="body">'+escape(m.text)+(isOrigin?'':'<button class="tcard">Open thread</button>')+'</div></div>';
+    }})});
+    expect(seen).toContainEqual({id:7,origin:true});
+    expect(target.querySelector('.origin .tcard')).toBeNull();
+    expect(target.querySelector('.origin #m7')).toBeNull();
+    expect(target.querySelectorAll('#m8 .tcard')).toHaveLength(1);
+    update({...room,messages:[{...normal,text:'Updated reminder'}]});
+    expect(target.querySelector('.origin .tcard')).toBeNull();
+    expect(target.querySelectorAll('#m8 .tcard')).toHaveLength(1);
+  },30_000);
+});
+
+describe('stable native sidebar integration',()=>{
+  test('repeated room updates preserve keyed navigation and form drafts',()=>{
+    let room=fixture();
+    const target=window.document.createElement('div');window.document.body.append(target);
+    type SidebarProps=import('svelte').ComponentProps<typeof import('../svelte/Sidebar.svelte').default>;
+    const sidebarBridge:SidebarProps['vb']={...vb,bookTitle:()=>room.book.title,roomMark:()=>'<span class="ri"></span>',roomStrip:()=>'',pinsSec:()=>'',sbxRows:()=>'',agentRows:()=>'',epicIco:()=>'<span class="ri"></span>',epicBusy:()=>null,waitPill:()=>'',waitsIn:()=>[],prodMark:()=>''};
+    const props:SidebarProps={room,thread:'e',friends:['friend@test'],vb:sidebarBridge};
+    const view=mountView('sidebar',target as unknown as Element,props);active.push(view);
+    const row=target.querySelector('[data-thread=e]');
+    const create=target.querySelector<HTMLInputElement>('#newEpic input')!;
+    const invite=target.querySelector<HTMLInputElement>('#invite input')!;
+    create.value='Draft epic title';invite.value='invitee@test';
+    for(let i=0;i<6;i++){
+      room={...room,epics:room.epics.map(e=>({...e,title:`Epic update ${i}`})),messages:[...room.messages,{id:i+1,author:'you@test',thread:'e',ts:i,text:'new activity'}]};
+      view.update({...props,room,vb:{...sidebarBridge}});
+      expect(target.querySelector('[data-thread=e]')).toBe(row);
+      expect(target.querySelector('#newEpic input')).toBe(create);
+      expect(create.value).toBe('Draft epic title');
+      expect(invite.value).toBe('invitee@test');
+    }
+    expect(target.querySelector('[data-thread=e] .rt')?.textContent).toBe('Epic update 5');
+  },30_000);
+
+  test('the real host pin wiring remains idempotent on a preserved form',()=>{
+    const host=readFileSync(new URL('../svelte/legacy/host.js',import.meta.url),'utf8');
+    const start=host.indexOf('function wirePins(el) {');
+    const end=host.indexOf('\n// Your Claude',start);
+    expect(start).toBeGreaterThan(-1);expect(end).toBeGreaterThan(start);
+    const calls:RoomCommand[]=[];let renders=0;
+    // Execute the actual host boundary against DOM retained across updates.
+    // This catches listener accumulation without copying its implementation.
+    const wire=new Function('send','renderSide','document',`let pinAdding=false;${host.slice(start,end)};return wirePins;`)((event:RoomCommand)=>calls.push(event),()=>renders++,window.document) as (target:Element)=>void;
+    const target=window.document.createElement('div');window.document.body.append(target);
+    target.innerHTML='<button id="pinPlus"></button><button id="pinEmpty"></button><button id="pinCancel"></button><form id="pinForm"><input name="url"><input name="title"></form><button data-unpin="p1"></button>';
+    const form=target.querySelector('form')!;
+    target.querySelector<HTMLInputElement>('[name=url]')!.value='https://example.com/project';
+    target.querySelector<HTMLInputElement>('[name=title]')!.value='Project';
+    for(let i=0;i<8;i++)wire(target as unknown as Element);
+    form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+    expect(calls).toEqual([{t:'pin.add',kind:'link',ref:'https://example.com/project',title:'Project'}]);
+    expect(renders).toBe(1);
+    (target.querySelector('[data-unpin]') as unknown as HTMLElement).click();
+    expect(calls.at(-1)).toEqual({t:'pin.del',id:'p1'});
+    (target.querySelector('#pinPlus') as unknown as HTMLElement).click();
+    expect(renders).toBe(2);
+  },30_000);
 });

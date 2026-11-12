@@ -1101,7 +1101,7 @@
     .book > .doc, .book.nodoc > .doc { top: calc(var(--headH, 60px) + var(--peekH, 44px)); height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px) - max(96px, var(--vvh, 100dvh) * .2)); border-radius: 0 0 18px 18px; box-shadow: 0 12px 40px rgb(0 0 0 / .25), inset 0 -1px 0 var(--line); transform: translateY(calc(-100% - var(--headH, 60px) - var(--peekH, 44px) - 48px)); }
     .book[data-sheet="doc"] > .doc { transform: none; } /* after the line above, also when .nodoc */
     /* Typing in the doc (keyboard up): it takes all the room down to the keyboard, no chat strip below. */
-    .book[data-sheet="doc"] > .doc:focus-within { height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px)); border-radius: 0; }
+    .book[data-sheet="doc"] > .doc:has(textarea:focus, input:not([type="checkbox"]):not([type="radio"]):focus, [contenteditable="true"]:focus) { height: calc(var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px)); border-radius: 0; }
     /* iOS zooms into anything editable under 16px; the collab editor is contenteditable, not a textarea. */
     .doc .cm .cm-scroller { font-size: 16px; }
     .book[data-sheet="doc"] > .sheetDim { top: calc(var(--headH, 60px) + var(--peekH, 44px)); }
