@@ -1,0 +1,7496 @@
+{
+  "sourceRevision": "9579bc46479fbd33594a635d105834758acfc60c",
+  "workingTreeDirty": true,
+  "sourceFingerprint": "8cd930355d8ab2fe6688930890399aa41bc414ee93878c3ff3460952da300cc1",
+  "sourceHashes": [
+    {
+      "file": "collab/editor.ts",
+      "sha256": "04c628c82370a1fb3f58f4ebfb3df984b1aaa143307d02a6d9d2560ba867521e"
+    },
+    {
+      "file": "public/app-svelte.css",
+      "sha256": "366741a7eaa9790b43a20eb188ac16dcbebeb6fd336c01fed4ec575a59516323"
+    },
+    {
+      "file": "public/app-svelte.html",
+      "sha256": "82bfceb78610485948f506088c3a0f2e1075ad8710593cec85cd81be34e28e2f"
+    },
+    {
+      "file": "shared/commands.ts",
+      "sha256": "a88a61f4c929c0d5c99b25966983f0273d95cb4cfafce417892d91990b7d220d"
+    },
+    {
+      "file": "shared/room.ts",
+      "sha256": "37ea71c1d15124ddc30d04ba63457b9d9c04f35cff80e6d47a1aad409da49c3c"
+    },
+    {
+      "file": "shared/rpc.ts",
+      "sha256": "f33dfc7f0496e70217ba65cf37617822ab7febacb5c3b2ea55e3669af5a80068"
+    },
+    {
+      "file": "shared/uiVariant.ts",
+      "sha256": "1bb3bda2afdc393b29048afecf7122b1a0affc1343ea54b97e7c60188ea0d990"
+    },
+    {
+      "file": "shared/validation.ts",
+      "sha256": "7bbbdf3d0e78495cdc4c83d089c8900459e692b2eaeb940fb52d45c1742ba7b5"
+    },
+    {
+      "file": "src/access.ts",
+      "sha256": "e118adfc1714d6132cca686ff30ff25e9d1522348c41b58b514e7d945ea8b5d0"
+    },
+    {
+      "file": "src/agent.ts",
+      "sha256": "cb6b7c0b02fefa267b78fa5d209828485ba2d924c0cbd16adf2df5fd49ba9d00"
+    },
+    {
+      "file": "src/analytics.ts",
+      "sha256": "cee0d4f8f26b246aa872d3a7d224a30ea9ca0563628df70ef0104fcaef6b3afb"
+    },
+    {
+      "file": "src/auth.ts",
+      "sha256": "37f14c99b980280672bf470d2ca7d1a8c6553954598e6d1ecb3ac769c1922d96"
+    },
+    {
+      "file": "src/book.ts",
+      "sha256": "4ada26a21539c37006552842dd114ad61c9559b5d680b62b97ff52008a25a84e"
+    },
+    {
+      "file": "src/card.ts",
+      "sha256": "1c9760d78c052962094a94679222b92c94c81d1c22bd97ee25792df56298c146"
+    },
+    {
+      "file": "src/connect.ts",
+      "sha256": "1769b1cb9009c752c8ab4cb22f2db80cf2f1e5e10cea9a92b3ffbb58d4bc9ce7"
+    },
+    {
+      "file": "src/cron.ts",
+      "sha256": "228aa6f6fe05a726b60893f5fec5a8ea2eb33c114a503d080dc6568ae990ac6d"
+    },
+    {
+      "file": "src/digest.ts",
+      "sha256": "5f55d20577666ef737a37b587dd94a928d3369e93a7e8d27bb506234270948f5"
+    },
+    {
+      "file": "src/docroom.ts",
+      "sha256": "5b06b4edaba9abfeb7af6a541d2341b77f10933e709bef61ea72d7e0df7c49a1"
+    },
+    {
+      "file": "src/embed.ts",
+      "sha256": "819e6ebeedd3ff01cc7bfd293e1756073612f7b2edf485f4429e8eef62ec8e81"
+    },
+    {
+      "file": "src/html.d.ts",
+      "sha256": "925fbee8e1b9e909f82b71fbf45bb8a91921ad0d0c50f940f3a775aff67bccbd"
+    },
+    {
+      "file": "src/index.ts",
+      "sha256": "8b1006b9e33a5f237b383d57f4c0742650d7878b6052ceb71dd87d879b6e0376"
+    },
+    {
+      "file": "src/jev.ts",
+      "sha256": "1a2ab3072cf9a7fa762b340fd4db7305bcceb87ebaa4455e161d3721a8d57e7b"
+    },
+    {
+      "file": "src/lang.ts",
+      "sha256": "e058b32394ff1179bb4cd471f6cab68433364241460a04ec1bf416cae31dd0b1"
+    },
+    {
+      "file": "src/mcp.ts",
+      "sha256": "28805334327af929a9c446a5c1e54d21ef9be2de001a60721a983976f2dcf158"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "sha256": "64bda3aa02feda8e34ac3c07b3c7c883a8e3472530658694383bd5bd6fb29882"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "sha256": "c5ded26d568810afe8ef35875e17d8ae323eec05cfcf481a79f73269292365da"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "sha256": "3ef10a75ec312a9f1b90bc585315264b8af697ee23d5bb80ef36aaa8548c498b"
+    },
+    {
+      "file": "src/person.ts",
+      "sha256": "efc17420d9505284360a232283abb5592323d8212b81f948d11ae6c074d8bfb8"
+    },
+    {
+      "file": "src/reader.ts",
+      "sha256": "1a7dfcd6ecab01ae7e45d9e67673843c325d7b64c9a901646a2d44b5fc6ba079"
+    },
+    {
+      "file": "src/reports.ts",
+      "sha256": "c735893a74a3b4722053d6252343f0eb33a16feaeea04aef152af4981677c318"
+    },
+    {
+      "file": "src/rooms.ts",
+      "sha256": "ff6c364afafc5f8f0a76864f0ddfc514c1344c976c2b7980811e9ab548d1ad44"
+    },
+    {
+      "file": "src/route-home.ts",
+      "sha256": "c0637c124c554e4992cf627f9799ea44ff3e0575cd9eda31eae2fad72df43234"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "sha256": "79aca811c9adae3ac04ed6f2254ea6e67af318386d45b414d2a55e1849f913f2"
+    },
+    {
+      "file": "src/secrets.ts",
+      "sha256": "ef126fc9d3f88c4c6f69d9077f44cf85f946f6b11bd01eb6a34db3ac3829f8e7"
+    },
+    {
+      "file": "src/start-room.ts",
+      "sha256": "5ea3c801c146a26bfbc04d5d38b9e58b4c563c5f5490c40fecfe2c5f32680451"
+    },
+    {
+      "file": "src/taskblock.ts",
+      "sha256": "876aed4805c86a95f7141cf0f93bee7e813d8b905b84fd47329065fda9f40b4d"
+    },
+    {
+      "file": "src/track.ts",
+      "sha256": "123a54041eebe0251954d5e5e883e9fb1396e546107921b1cc4bcd8cf25a58ae"
+    },
+    {
+      "file": "src/webpush.ts",
+      "sha256": "1618ae7d1832182d2f23dace508728f8257a583a9ad25980916019263547864e"
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "sha256": "1a5c0455f8e924fd5e3d64fa1794ceb1c19699c56a6ec328210914e6e1916849"
+    },
+    {
+      "file": "svelte/Chat.svelte",
+      "sha256": "dc25aa0e63c6c241d7d8896278c5cd7e120d2f8113f8f30fb85f7437271483f9"
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "sha256": "adf99bfc21a5f659743277e4daa2a58acfce394834639306de6bc4c3fab12400"
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "sha256": "cfd9ce8daacdf2372b6b2c04477747fa78a785e405a406e276acb06d9dc15609"
+    },
+    {
+      "file": "svelte/Message.svelte",
+      "sha256": "0802a82bf329b874dd0d6217500b96c79b3049723ec7b38f4844fcd0dc30b888"
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "sha256": "79a53c5f6b12c2446c3eebc9db373c553aa88083ecf06b3896c88aa45f3abb2b"
+    },
+    {
+      "file": "svelte/Sidebar.svelte",
+      "sha256": "9a2af2984efb300c827aad65adb88e47cdebc13a3c28f485078f6620c0f14a5e"
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "sha256": "aa869a448bbaffd77da23ab685128bf8524889dd568ac989486076f11e74a11d"
+    },
+    {
+      "file": "svelte/Tasks.svelte",
+      "sha256": "54ca616455d84fb9d51593120d5ec7c5851a4a5b7d323c83aee316ea743d2f61"
+    },
+    {
+      "file": "svelte/View.svelte",
+      "sha256": "f4c616a8a93d4f3ed305aa500c66bedee7c79ef311713e372cd7cf2ed1f94541"
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "sha256": "dcda8874f791ab60085ac8ca339b96a9e7e165a9f621e458f4b4b496a42bf790"
+    },
+    {
+      "file": "svelte/build/uiVariantBoundary.ts",
+      "sha256": "325dce2110895ba27787f9cf543c564c2035e698ae058398882e3a83d31a41f1"
+    },
+    {
+      "file": "svelte/build/uiVersion.ts",
+      "sha256": "d323c9e490b5de4eee40d700a27457b1e39657cc819fc756914edb2d87815fa0"
+    },
+    {
+      "file": "svelte/chatTypes.ts",
+      "sha256": "a91ad695a890a159be8b954e1935b9b8520918ed2bdcd2dea7b53438cc701a07"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "sha256": "2601a6a211f46bfd98609cb55a233ac71e536bafaaa18d02794fcc9d56534c7c"
+    },
+    {
+      "file": "svelte/main.ts",
+      "sha256": "aa062003560803811f6aeaca89a65499b7671ebebab85683ba270ce5aa82d02d"
+    },
+    {
+      "file": "svelte/navigation.ts",
+      "sha256": "1b215e330307d4f548a0fae079828f03bdd0ebd3afda192d80d489deff0e0f26"
+    },
+    {
+      "file": "svelte/panels.ts",
+      "sha256": "5c1350c993b040dad46ae4ada6920e3fde8da32d24dca62207043325436b5fa0"
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "sha256": "053019e2d10c7c9af4cb55b1ae728f1eade3f751b46b7466e011a58d16698213"
+    },
+    {
+      "file": "svelte/roomStore.ts",
+      "sha256": "fb9fc16f07245107d2cf231195aac80ec07bf9faae1d5a8c469fb77f708c5146"
+    },
+    {
+      "file": "svelte/transport.ts",
+      "sha256": "c6c072f892a1e0c61898ee703aa8e09d3904cdab57a3f6cff4fa56dcc17786d8"
+    },
+    {
+      "file": "svelte/types.ts",
+      "sha256": "355d902f73a25797c5fc5349abfbe0a7a94e325ce3b76e28aa2523c9043a4195"
+    },
+    {
+      "file": "svelte/vite.config.ts",
+      "sha256": "23c93e2ba43d59ef17e0deeae73b44c93aaa96568dc1ddba2825ccbef00bcbbf"
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "sha256": "cfd9ce8daacdf2372b6b2c04477747fa78a785e405a406e276acb06d9dc15609"
+    },
+    {
+      "file": "vanilla/inbox/main.ts",
+      "sha256": "a230288d985fc3c7af25929d9dfd485b30cc78f2187201ebf24715d1e820e6b3"
+    },
+    {
+      "file": "vanilla/inbox/types.ts",
+      "sha256": "355d902f73a25797c5fc5349abfbe0a7a94e325ce3b76e28aa2523c9043a4195"
+    }
+  ],
+  "note": "Source inventory, not a claim of migration completion. Inline style and type entries are candidates requiring review. Generated/public vanilla assets are protected separately.",
+  "counts": {
+    "files": 64,
+    "functions": 708,
+    "networkCalls": 70,
+    "endpoints": 80,
+    "typeEscapeCandidates": 56,
+    "domOperations": 238,
+    "styleCandidates": 104
+  },
+  "firstPartyJavaScript": [
+    "svelte/legacy/host.js"
+  ],
+  "functions": [
+    {
+      "file": "collab/editor.ts",
+      "line": 11,
+      "name": "mountCollab",
+      "lines": 23
+    },
+    {
+      "file": "shared/uiVariant.ts",
+      "line": 4,
+      "name": "uiVariant",
+      "lines": 5
+    },
+    {
+      "file": "shared/uiVariant.ts",
+      "line": 10,
+      "name": "uiShellPath",
+      "lines": 3
+    },
+    {
+      "file": "shared/uiVariant.ts",
+      "line": 15,
+      "name": "uiNavigationUrl",
+      "lines": 16
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 21,
+      "name": "record",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 23,
+      "name": "str",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 24,
+      "name": "num",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 26,
+      "name": "bool",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 27,
+      "name": "nullable",
+      "lines": 4
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 31,
+      "name": "array",
+      "lines": 4
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 35,
+      "name": "dict",
+      "lines": 4
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 40,
+      "name": "oneOf",
+      "lines": 4
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 45,
+      "name": "shape",
+      "lines": 11
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 56,
+      "name": "isAttachment",
+      "lines": 5
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 65,
+      "name": "isTask",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 79,
+      "name": "isEpic",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 96,
+      "name": "isMessage",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 102,
+      "name": "isAck",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 116,
+      "name": "isReminder",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 122,
+      "name": "isBookMeta",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 125,
+      "name": "isSuggestion",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 134,
+      "name": "isDecision",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 140,
+      "name": "isPin",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 150,
+      "name": "isPoll",
+      "lines": 1
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 169,
+      "name": "documentEventCheck",
+      "lines": 7
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 251,
+      "name": "isRoomEvent",
+      "lines": 9
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 263,
+      "name": "normalizeLegacyFlags",
+      "lines": 39
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 265,
+      "name": "flag",
+      "lines": 4
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 269,
+      "name": "tasks",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 271,
+      "name": "epics",
+      "lines": 6
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 277,
+      "name": "reminders",
+      "lines": 2
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 302,
+      "name": "parseRoomEvent",
+      "lines": 5
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 349,
+      "name": "isRoomCommand",
+      "lines": 9
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 358,
+      "name": "parseRoomCommand",
+      "lines": 16
+    },
+    {
+      "file": "shared/validation.ts",
+      "line": 375,
+      "name": "isPostMessageRequest",
+      "lines": 5
+    },
+    {
+      "file": "src/access.ts",
+      "line": 37,
+      "name": "roomMeta",
+      "lines": 17
+    },
+    {
+      "file": "src/access.ts",
+      "line": 57,
+      "name": "accessPage",
+      "lines": 37
+    },
+    {
+      "file": "src/access.ts",
+      "line": 96,
+      "name": "filePage",
+      "lines": 8
+    },
+    {
+      "file": "src/access.ts",
+      "line": 105,
+      "name": "cardPage",
+      "lines": 38
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 461,
+      "name": "rpcError",
+      "lines": 1
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 464,
+      "name": "str",
+      "lines": 1
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 467,
+      "name": "unreadRooms",
+      "lines": 10
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 482,
+      "name": "ensureAgent",
+      "lines": 13
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 497,
+      "name": "markDelivered",
+      "lines": 12
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 511,
+      "name": "receipt",
+      "lines": 15
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 531,
+      "name": "call",
+      "lines": 469
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 535,
+      "name": "room",
+      "lines": 6
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 541,
+      "name": "unread",
+      "lines": 1
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 1002,
+      "name": "choicesOf",
+      "lines": 6
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 1013,
+      "name": "due",
+      "lines": 7
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 1022,
+      "name": "memberCached",
+      "lines": 8
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 1030,
+      "name": "stalledFor",
+      "lines": 7
+    },
+    {
+      "file": "src/agent.ts",
+      "line": 1037,
+      "name": "handleAgentMcp",
+      "lines": 104
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 36,
+      "name": "firstMatch",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 37,
+      "name": "device",
+      "lines": 2
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 39,
+      "name": "str",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 41,
+      "name": "refHost",
+      "lines": 8
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 50,
+      "name": "load",
+      "lines": 20
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 71,
+      "name": "dayKeys",
+      "lines": 2
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 75,
+      "name": "rank",
+      "lines": 14
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 90,
+      "name": "stackByDay",
+      "lines": 15
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 107,
+      "name": "trafficOverview",
+      "lines": 35
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 127,
+      "name": "matches",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 152,
+      "name": "modelOf",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 153,
+      "name": "num",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 158,
+      "name": "activeDays",
+      "lines": 9
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 169,
+      "name": "retention",
+      "lines": 24
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 176,
+      "name": "activeIn",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 195,
+      "name": "adminOverview",
+      "lines": 154
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 229,
+      "name": "count",
+      "lines": 1
+    },
+    {
+      "file": "src/analytics.ts",
+      "line": 230,
+      "name": "people",
+      "lines": 1
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 15,
+      "name": "b64url",
+      "lines": 5
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 21,
+      "name": "hmac",
+      "lines": 4
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 25,
+      "name": "safeEqual",
+      "lines": 6
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 33,
+      "name": "sessionEmail",
+      "lines": 15
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 49,
+      "name": "sessionAfter",
+      "lines": 8
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 58,
+      "name": "startSession",
+      "lines": 10
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 71,
+      "name": "safeNext",
+      "lines": 1
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 73,
+      "name": "codeHash",
+      "lines": 1
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 76,
+      "name": "sameOrigin",
+      "lines": 4
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 82,
+      "name": "identify",
+      "lines": 8
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 219,
+      "name": "inviteLink",
+      "lines": 4
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 268,
+      "name": "escapeHtml",
+      "lines": 1
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 303,
+      "name": "gh",
+      "lines": 1
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 319,
+      "name": "emailHtml",
+      "lines": 9
+    },
+    {
+      "file": "src/book.ts",
+      "line": 24,
+      "name": "costOf",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 37,
+      "name": "epicDocSeed",
+      "lines": 2
+    },
+    {
+      "file": "src/book.ts",
+      "line": 40,
+      "name": "epicKey",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 55,
+      "name": "withQuote",
+      "lines": 2
+    },
+    {
+      "file": "src/book.ts",
+      "line": 65,
+      "name": "rid",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 69,
+      "name": "cutDoc",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 71,
+      "name": "hash",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 133,
+      "name": "h",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 181,
+      "name": "has",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 460,
+      "name": "words",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 462,
+      "name": "covered",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 471,
+      "name": "goal",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 705,
+      "name": "drop",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 727,
+      "name": "who",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 752,
+      "name": "nm",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 758,
+      "name": "label",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1042,
+      "name": "fold",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1045,
+      "name": "mentionsMe",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1047,
+      "name": "toAgents",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1048,
+      "name": "forOther",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1050,
+      "name": "who",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1052,
+      "name": "threadName",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1430,
+      "name": "s",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1431,
+      "name": "task",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1432,
+      "name": "epic",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1433,
+      "name": "bump",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1542,
+      "name": "like",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1833,
+      "name": "at",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1883,
+      "name": "goal",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1933,
+      "name": "no",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1966,
+      "name": "nm",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1968,
+      "name": "topic",
+      "lines": 1
+    },
+    {
+      "file": "src/book.ts",
+      "line": 1992,
+      "name": "yes",
+      "lines": 1
+    },
+    {
+      "file": "src/card.ts",
+      "line": 8,
+      "name": "S",
+      "lines": 7
+    },
+    {
+      "file": "src/card.ts",
+      "line": 16,
+      "name": "httpUrl",
+      "lines": 5
+    },
+    {
+      "file": "src/card.ts",
+      "line": 88,
+      "name": "cardOf",
+      "lines": 27
+    },
+    {
+      "file": "src/card.ts",
+      "line": 96,
+      "name": "walk",
+      "lines": 15
+    },
+    {
+      "file": "src/card.ts",
+      "line": 117,
+      "name": "cardText",
+      "lines": 4
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 17,
+      "name": "providerFor",
+      "lines": 23
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 42,
+      "name": "lang",
+      "lines": 1
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 75,
+      "name": "page",
+      "lines": 17
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 93,
+      "name": "consentHtml",
+      "lines": 15
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 111,
+      "name": "fail",
+      "lines": 8
+    },
+    {
+      "file": "src/cron.ts",
+      "line": 7,
+      "name": "parseCron",
+      "lines": 19
+    },
+    {
+      "file": "src/cron.ts",
+      "line": 28,
+      "name": "offset",
+      "lines": 8
+    },
+    {
+      "file": "src/cron.ts",
+      "line": 38,
+      "name": "nextRun",
+      "lines": 19
+    },
+    {
+      "file": "src/cron.ts",
+      "line": 62,
+      "name": "cronWords",
+      "lines": 22
+    },
+    {
+      "file": "src/cron.ts",
+      "line": 78,
+      "name": "fem",
+      "lines": 1
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 37,
+      "name": "sendDigests",
+      "lines": 33
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 71,
+      "name": "digestMail",
+      "lines": 23
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 74,
+      "name": "link",
+      "lines": 1
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 75,
+      "name": "row",
+      "lines": 2
+    },
+    {
+      "file": "src/embed.ts",
+      "line": 26,
+      "name": "checkEmbed",
+      "lines": 12
+    },
+    {
+      "file": "src/embed.ts",
+      "line": 44,
+      "name": "withBridge",
+      "lines": 4
+    },
+    {
+      "file": "src/index.ts",
+      "line": 137,
+      "name": "schemaKey",
+      "lines": 1
+    },
+    {
+      "file": "src/index.ts",
+      "line": 138,
+      "name": "ensureSchema",
+      "lines": 2
+    },
+    {
+      "file": "src/index.ts",
+      "line": 140,
+      "name": "migrate",
+      "lines": 4
+    },
+    {
+      "file": "src/index.ts",
+      "line": 149,
+      "name": "toSite",
+      "lines": 8
+    },
+    {
+      "file": "src/index.ts",
+      "line": 192,
+      "name": "pageview",
+      "lines": 5
+    },
+    {
+      "file": "src/index.ts",
+      "line": 202,
+      "name": "shell",
+      "lines": 7
+    },
+    {
+      "file": "src/index.ts",
+      "line": 210,
+      "name": "currentVersion",
+      "lines": 10
+    },
+    {
+      "file": "src/index.ts",
+      "line": 343,
+      "name": "safeTitle",
+      "lines": 1
+    },
+    {
+      "file": "src/index.ts",
+      "line": 359,
+      "name": "esc",
+      "lines": 1
+    },
+    {
+      "file": "src/index.ts",
+      "line": 367,
+      "name": "fileLink",
+      "lines": 2
+    },
+    {
+      "file": "src/index.ts",
+      "line": 396,
+      "name": "devOnly",
+      "lines": 1
+    },
+    {
+      "file": "src/index.ts",
+      "line": 523,
+      "name": "edgeCached",
+      "lines": 16
+    },
+    {
+      "file": "src/jev.ts",
+      "line": 12,
+      "name": "decide",
+      "lines": 17
+    },
+    {
+      "file": "src/lang.ts",
+      "line": 6,
+      "name": "reqLang",
+      "lines": 3
+    },
+    {
+      "file": "src/lang.ts",
+      "line": 11,
+      "name": "cookieLang",
+      "lines": 1
+    },
+    {
+      "file": "src/lang.ts",
+      "line": 13,
+      "name": "asLang",
+      "lines": 1
+    },
+    {
+      "file": "src/mcp.ts",
+      "line": 46,
+      "name": "safeEqual",
+      "lines": 6
+    },
+    {
+      "file": "src/mcp.ts",
+      "line": 54,
+      "name": "isAdminMcp",
+      "lines": 4
+    },
+    {
+      "file": "src/mcp.ts",
+      "line": 59,
+      "name": "rpcError",
+      "lines": 2
+    },
+    {
+      "file": "src/mcp.ts",
+      "line": 62,
+      "name": "handleMcp",
+      "lines": 57
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 15,
+      "name": "b64u",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 16,
+      "name": "rand",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 20,
+      "name": "identityKey",
+      "lines": 12
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 32,
+      "name": "jwks",
+      "lines": 3
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 35,
+      "name": "identityJwt",
+      "lines": 8
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 48,
+      "name": "okUrl",
+      "lines": 6
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 54,
+      "name": "getJson",
+      "lines": 5
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 60,
+      "name": "discover",
+      "lines": 17
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 77,
+      "name": "clientFor",
+      "lines": 15
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 93,
+      "name": "startAuth",
+      "lines": 12
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 105,
+      "name": "tokenRequest",
+      "lines": 10
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 115,
+      "name": "saveGrant",
+      "lines": 7
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 123,
+      "name": "finishAuth",
+      "lines": 9
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 133,
+      "name": "tokenFor",
+      "lines": 14
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 147,
+      "name": "signedInTo",
+      "lines": 3
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 150,
+      "name": "forget",
+      "lines": 3
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 28,
+      "name": "canUse",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 29,
+      "name": "uiOf",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 30,
+      "name": "modelVisible",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 31,
+      "name": "toolsOf",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 32,
+      "name": "ctxOf",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 33,
+      "name": "firstLine",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 36,
+      "name": "publicConn",
+      "lines": 14
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 51,
+      "name": "listConns",
+      "lines": 5
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 56,
+      "name": "getConn",
+      "lines": 4
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 65,
+      "name": "post",
+      "lines": 10
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 75,
+      "name": "answer",
+      "lines": 12
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 88,
+      "name": "needsSignIn",
+      "lines": 7
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 95,
+      "name": "init",
+      "lines": 9
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 104,
+      "name": "rpc",
+      "lines": 14
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 118,
+      "name": "listTools",
+      "lines": 10
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 130,
+      "name": "callTool",
+      "lines": 4
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 136,
+      "name": "createConn",
+      "lines": 33
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 169,
+      "name": "deleteConn",
+      "lines": 8
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 180,
+      "name": "retireTokens",
+      "lines": 10
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 193,
+      "name": "domains",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 194,
+      "name": "cspFor",
+      "lines": 11
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 205,
+      "name": "appHtml",
+      "lines": 15
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 222,
+      "name": "mountConnections",
+      "lines": 111
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 223,
+      "name": "guard",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 224,
+      "name": "conn",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 225,
+      "name": "fail",
+      "lines": 1
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 226,
+      "name": "who",
+      "lines": 1
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 11,
+      "name": "fold",
+      "lines": 1
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 13,
+      "name": "handles",
+      "lines": 4
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 18,
+      "name": "mentioned",
+      "lines": 5
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 38,
+      "name": "plainCopy",
+      "lines": 5
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 44,
+      "name": "COPY_PROMPT",
+      "lines": 12
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 57,
+      "name": "unsubscribeUrl",
+      "lines": 3
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 60,
+      "name": "validUnsub",
+      "lines": 1
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 66,
+      "name": "mailBody",
+      "lines": 17
+    },
+    {
+      "file": "src/person.ts",
+      "line": 44,
+      "name": "poke",
+      "lines": 8
+    },
+    {
+      "file": "src/person.ts",
+      "line": 53,
+      "name": "pokeRoom",
+      "lines": 4
+    },
+    {
+      "file": "src/person.ts",
+      "line": 63,
+      "name": "markListening",
+      "lines": 6
+    },
+    {
+      "file": "src/reader.ts",
+      "line": 4,
+      "name": "checkUrl",
+      "lines": 24
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 22,
+      "name": "yesterday",
+      "lines": 4
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 27,
+      "name": "pct",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 29,
+      "name": "vs",
+      "lines": 4
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 33,
+      "name": "bytes",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 34,
+      "name": "day",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 36,
+      "name": "counts",
+      "lines": 15
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 52,
+      "name": "growthReport",
+      "lines": 37
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 55,
+      "name": "top",
+      "lines": 8
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 68,
+      "name": "count",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 91,
+      "name": "externalRefs",
+      "lines": 10
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 102,
+      "name": "cfQuery",
+      "lines": 10
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 121,
+      "name": "issuesLine",
+      "lines": 26
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 131,
+      "name": "f",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 149,
+      "name": "unblockLine",
+      "lines": 5
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 151,
+      "name": "n",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 156,
+      "name": "wsStateLine",
+      "lines": 11
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 169,
+      "name": "agentCallLine",
+      "lines": 6
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 176,
+      "name": "productReport",
+      "lines": 48
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 181,
+      "name": "iso",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 182,
+      "name": "worker",
+      "lines": 9
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 184,
+      "name": "sum",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 198,
+      "name": "tot",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 231,
+      "name": "kinds",
+      "lines": 7
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 233,
+      "name": "n",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 235,
+      "name": "per",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 238,
+      "name": "kindLines",
+      "lines": 5
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 240,
+      "name": "row",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 252,
+      "name": "foldPath",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 253,
+      "name": "bytesLines",
+      "lines": 15
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 269,
+      "name": "ms",
+      "lines": 1
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 271,
+      "name": "zoneId",
+      "lines": 5
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 12,
+      "name": "isMember",
+      "lines": 2
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 15,
+      "name": "befriend",
+      "lines": 5
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 21,
+      "name": "bookStub",
+      "lines": 1
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 23,
+      "name": "docRoomName",
+      "lines": 1
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 24,
+      "name": "docRoomStub",
+      "lines": 1
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 26,
+      "name": "createBook",
+      "lines": 15
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 43,
+      "name": "inviteMember",
+      "lines": 44
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 90,
+      "name": "setRoomIcon",
+      "lines": 13
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 113,
+      "name": "maxBytes",
+      "lines": 1
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 115,
+      "name": "sizeError",
+      "lines": 1
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 119,
+      "name": "storeFile",
+      "lines": 21
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 149,
+      "name": "fileHeaders",
+      "lines": 9
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 161,
+      "name": "waitsFor",
+      "lines": 13
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 178,
+      "name": "searchRooms",
+      "lines": 24
+    },
+    {
+      "file": "src/route-home.ts",
+      "line": 14,
+      "name": "routeMessage",
+      "lines": 63
+    },
+    {
+      "file": "src/route-home.ts",
+      "line": 64,
+      "name": "toPick",
+      "lines": 6
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 19,
+      "name": "vaultKey",
+      "lines": 4
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 23,
+      "name": "b64",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 24,
+      "name": "unb64",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 27,
+      "name": "seal",
+      "lines": 5
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 32,
+      "name": "unseal",
+      "lines": 3
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 38,
+      "name": "saveKey",
+      "lines": 7
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 45,
+      "name": "loadKey",
+      "lines": 6
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 53,
+      "name": "useEnv",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 54,
+      "name": "fs",
+      "lines": 11
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 66,
+      "name": "slug",
+      "lines": 2
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 70,
+      "name": "defaultAgentMd",
+      "lines": 11
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 83,
+      "name": "setupScript",
+      "lines": 48
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 85,
+      "name": "q",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 136,
+      "name": "writeVibebookLogin",
+      "lines": 19
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 140,
+      "name": "rnd",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 156,
+      "name": "writeClaudeEnv",
+      "lines": 4
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 165,
+      "name": "agentFile",
+      "lines": 9
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 176,
+      "name": "createSandbox",
+      "lines": 25
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 204,
+      "name": "redoSetup",
+      "lines": 22
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 230,
+      "name": "roomChanged",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 231,
+      "name": "mountSandbox",
+      "lines": 150
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 233,
+      "name": "key",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 234,
+      "name": "mine",
+      "lines": 1
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 384,
+      "name": "redact",
+      "lines": 2
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 386,
+      "name": "agentSandboxes",
+      "lines": 15
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 401,
+      "name": "agentSandboxPower",
+      "lines": 11
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 412,
+      "name": "agentSandboxExec",
+      "lines": 15
+    },
+    {
+      "file": "src/secrets.ts",
+      "line": 16,
+      "name": "findSecret",
+      "lines": 1
+    },
+    {
+      "file": "src/start-room.ts",
+      "line": 13,
+      "name": "fold",
+      "lines": 1
+    },
+    {
+      "file": "src/start-room.ts",
+      "line": 16,
+      "name": "shortTitle",
+      "lines": 6
+    },
+    {
+      "file": "src/start-room.ts",
+      "line": 24,
+      "name": "matchFriend",
+      "lines": 9
+    },
+    {
+      "file": "src/start-room.ts",
+      "line": 34,
+      "name": "startRoom",
+      "lines": 35
+    },
+    {
+      "file": "src/taskblock.ts",
+      "line": 9,
+      "name": "line",
+      "lines": 1
+    },
+    {
+      "file": "src/taskblock.ts",
+      "line": 12,
+      "name": "section",
+      "lines": 7
+    },
+    {
+      "file": "src/taskblock.ts",
+      "line": 21,
+      "name": "parseBlock",
+      "lines": 10
+    },
+    {
+      "file": "src/taskblock.ts",
+      "line": 34,
+      "name": "renderBlock",
+      "lines": 11
+    },
+    {
+      "file": "src/taskblock.ts",
+      "line": 48,
+      "name": "reconcile",
+      "lines": 18
+    },
+    {
+      "file": "src/track.ts",
+      "line": 18,
+      "name": "fitDims",
+      "lines": 13
+    },
+    {
+      "file": "src/track.ts",
+      "line": 32,
+      "name": "track",
+      "lines": 18
+    },
+    {
+      "file": "src/track.ts",
+      "line": 52,
+      "name": "visitorHash",
+      "lines": 7
+    },
+    {
+      "file": "src/track.ts",
+      "line": 61,
+      "name": "ipRange",
+      "lines": 2
+    },
+    {
+      "file": "src/track.ts",
+      "line": 65,
+      "name": "requestContext",
+      "lines": 19
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 6,
+      "name": "b64d",
+      "lines": 7
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 13,
+      "name": "b64e",
+      "lines": 6
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 19,
+      "name": "cat",
+      "lines": 6
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 25,
+      "name": "enc",
+      "lines": 1
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 27,
+      "name": "vapidJwt",
+      "lines": 11
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 39,
+      "name": "hkdf",
+      "lines": 4
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 44,
+      "name": "encrypt",
+      "lines": 18
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 67,
+      "name": "pushTo",
+      "lines": 14
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 66,
+      "name": "move",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 68,
+      "name": "setMode",
+      "lines": 6
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 74,
+      "name": "drag",
+      "lines": 4
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 78,
+      "name": "drop",
+      "lines": 6
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 84,
+      "name": "key",
+      "lines": 12
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "line": 29,
+      "name": "dirOf",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "line": 41,
+      "name": "enter",
+      "lines": 7
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "line": 70,
+      "name": "url",
+      "lines": 1
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "line": 71,
+      "name": "pin",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Files.svelte",
+      "line": 73,
+      "name": "toggle",
+      "lines": 10
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "line": 27,
+      "name": "tab",
+      "lines": 4
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "line": 37,
+      "name": "who",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "line": 39,
+      "name": "kind",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "line": 41,
+      "name": "href",
+      "lines": 2
+    },
+    {
+      "file": "svelte/Inbox.svelte",
+      "line": 43,
+      "name": "short",
+      "lines": 1
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "line": 15,
+      "name": "when",
+      "lines": 8
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "line": 23,
+      "name": "open",
+      "lines": 4
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "line": 27,
+      "name": "toggle",
+      "lines": 5
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "line": 32,
+      "name": "save",
+      "lines": 25
+    },
+    {
+      "file": "svelte/Sidebar.svelte",
+      "line": 40,
+      "name": "count",
+      "lines": 7
+    },
+    {
+      "file": "svelte/Sidebar.svelte",
+      "line": 47,
+      "name": "last",
+      "lines": 5
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 2,
+      "name": "focus",
+      "lines": 4
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 17,
+      "name": "waiting",
+      "lines": 2
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 33,
+      "name": "save",
+      "lines": 6
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 39,
+      "name": "due",
+      "lines": 7
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 8,
+      "name": "createClientBoundaryPolicy",
+      "lines": 74
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 17,
+      "name": "clean",
+      "lines": 2
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 19,
+      "name": "privatePath",
+      "lines": 8
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 27,
+      "name": "serverFile",
+      "lines": 1
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 28,
+      "name": "within",
+      "lines": 7
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 37,
+      "name": "serverDirectory",
+      "lines": 8
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 45,
+      "name": "reason",
+      "lines": 28
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 73,
+      "name": "assertClient",
+      "lines": 7
+    },
+    {
+      "file": "svelte/build/clientBoundary.ts",
+      "line": 84,
+      "name": "clientBoundary",
+      "lines": 33
+    },
+    {
+      "file": "svelte/build/uiVariantBoundary.ts",
+      "line": 7,
+      "name": "uiVariantBoundary",
+      "lines": 66
+    },
+    {
+      "file": "svelte/build/uiVariantBoundary.ts",
+      "line": 25,
+      "name": "clean",
+      "lines": 2
+    },
+    {
+      "file": "svelte/build/uiVariantBoundary.ts",
+      "line": 27,
+      "name": "within",
+      "lines": 7
+    },
+    {
+      "file": "svelte/build/uiVariantBoundary.ts",
+      "line": 34,
+      "name": "assert",
+      "lines": 23
+    },
+    {
+      "file": "svelte/build/uiVersion.ts",
+      "line": 6,
+      "name": "browserScripts",
+      "lines": 15
+    },
+    {
+      "file": "svelte/build/uiVersion.ts",
+      "line": 23,
+      "name": "versionAppShell",
+      "lines": 62
+    },
+    {
+      "file": "svelte/build/uiVersion.ts",
+      "line": 86,
+      "name": "uiVersion",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 634,
+      "name": "t",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 638,
+      "name": "langSwitch",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 645,
+      "name": "esc",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 647,
+      "name": "color",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 649,
+      "name": "name",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 651,
+      "name": "avatar",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 661,
+      "name": "agentKind",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 669,
+      "name": "agentAvatar",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 671,
+      "name": "vibeNotes",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 672,
+      "name": "ago",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 675,
+      "name": "fold",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 677,
+      "name": "handlesOf",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 678,
+      "name": "handleOf",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 679,
+      "name": "mentionTarget",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 684,
+      "name": "mentions",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 690,
+      "name": "ghChips",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 700,
+      "name": "fileChips",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 711,
+      "name": "emojify",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 712,
+      "name": "linkify",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 718,
+      "name": "md",
+      "lines": 3
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 721,
+      "name": "api",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 734,
+      "name": "clW",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 783,
+      "name": "icon",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 793,
+      "name": "fit",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 802,
+      "name": "theme",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 803,
+      "name": "setTheme",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 813,
+      "name": "roomOrder",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 814,
+      "name": "iconUrl",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 815,
+      "name": "tile",
+      "lines": 3
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 819,
+      "name": "seenHere",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 823,
+      "name": "refreshMe",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 833,
+      "name": "connectMe",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 850,
+      "name": "renderSwitcher",
+      "lines": 80
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 860,
+      "name": "dot",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 862,
+      "name": "busy",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 864,
+      "name": "waitN",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 866,
+      "name": "cloud",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 867,
+      "name": "item",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 877,
+      "name": "mark",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 949,
+      "name": "renderSwitchList",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 959,
+      "name": "swHitsHtml",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 961,
+      "name": "day",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 967,
+      "name": "swSearch",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 979,
+      "name": "openSwitch",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 997,
+      "name": "land",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1003,
+      "name": "route",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1017,
+      "name": "login",
+      "lines": 46
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1024,
+      "name": "view",
+      "lines": 37
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1083,
+      "name": "keepMe",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1085,
+      "name": "newVersion",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1094,
+      "name": "home",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1107,
+      "name": "homeWith",
+      "lines": 68
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1112,
+      "name": "plural",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1181,
+      "name": "phoneHome",
+      "lines": 63
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1183,
+      "name": "dot",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1184,
+      "name": "waitN",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1185,
+      "name": "plural",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1246,
+      "name": "loginsSec",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1247,
+      "name": "fillLogins",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1251,
+      "name": "when",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1252,
+      "name": "row",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1260,
+      "name": "wireHome",
+      "lines": 38
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1261,
+      "name": "saveName",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1300,
+      "name": "wireAsk",
+      "lines": 47
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1305,
+      "name": "where",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1307,
+      "name": "go",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1326,
+      "name": "short",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1329,
+      "name": "label",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1330,
+      "name": "render",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1350,
+      "name": "startRoom",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1355,
+      "name": "newRoom",
+      "lines": 23
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1379,
+      "name": "confirmArchive",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1392,
+      "name": "archivedPage",
+      "lines": 18
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1414,
+      "name": "renderAgents",
+      "lines": 38
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1426,
+      "name": "last",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1427,
+      "name": "stale",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1431,
+      "name": "usedTxt",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1437,
+      "name": "boxes",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1438,
+      "name": "sync",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1457,
+      "name": "renderWaits",
+      "lines": 37
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1458,
+      "name": "who",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1459,
+      "name": "href",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1460,
+      "name": "li",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1469,
+      "name": "row",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1498,
+      "name": "syncInbox",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1506,
+      "name": "loadUI",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1507,
+      "name": "openInbox",
+      "lines": 23
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1537,
+      "name": "connectCard",
+      "lines": 46
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1594,
+      "name": "fileIcon",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1602,
+      "name": "roomSkeleton",
+      "lines": 15
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1607,
+      "name": "mark",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1608,
+      "name": "row",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1609,
+      "name": "msg",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1617,
+      "name": "openBook",
+      "lines": 24
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1642,
+      "name": "send",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1646,
+      "name": "disposeView",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1653,
+      "name": "renderView",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1659,
+      "name": "clearViews",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1666,
+      "name": "panelBridge",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1667,
+      "name": "chatBridge",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1668,
+      "name": "selectThread",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1671,
+      "name": "onEvent",
+      "lines": 97
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1778,
+      "name": "notifyPerm",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1779,
+      "name": "notifyMuted",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1780,
+      "name": "renderBells",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1798,
+      "name": "unlockChime",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1800,
+      "name": "chime",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1810,
+      "name": "notifyMsg",
+      "lines": 16
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1827,
+      "name": "renderBook",
+      "lines": 319
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1904,
+      "name": "setBoard",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1913,
+      "name": "setDocW",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1938,
+      "name": "draw",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1939,
+      "name": "close",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1955,
+      "name": "closePop",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1956,
+      "name": "choose",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1963,
+      "name": "renderPop",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1968,
+      "name": "updatePop",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2000,
+      "name": "renderTray",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2008,
+      "name": "addFiles",
+      "lines": 23
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2034,
+      "name": "togglePlus",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2079,
+      "name": "addOpt",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2099,
+      "name": "setPane",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2125,
+      "name": "editBar",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2127,
+      "name": "setView",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2147,
+      "name": "openFile",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2156,
+      "name": "welcome",
+      "lines": 29
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2170,
+      "name": "done",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2171,
+      "name": "show",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2189,
+      "name": "disposeCollab",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2197,
+      "name": "ensureCollab",
+      "lines": 21
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2220,
+      "name": "bookTitle",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2222,
+      "name": "coverColor",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2224,
+      "name": "initials",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2230,
+      "name": "roomMark",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2236,
+      "name": "squarePng",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2247,
+      "name": "setFavicon",
+      "lines": 31
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2282,
+      "name": "toggleRail",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2289,
+      "name": "renderRail",
+      "lines": 19
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2310,
+      "name": "isPre",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2311,
+      "name": "preOf",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2313,
+      "name": "renderPre",
+      "lines": 15
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2331,
+      "name": "loadRoomAgents",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2341,
+      "name": "herdrPing",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2347,
+      "name": "whereOf",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2355,
+      "name": "renderMyClaude",
+      "lines": 22
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2377,
+      "name": "toggleClaude",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2386,
+      "name": "renderAgentsPane",
+      "lines": 43
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2431,
+      "name": "sbxCost",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2432,
+      "name": "usd",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2434,
+      "name": "sbxRows",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2442,
+      "name": "roomDocClick",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2442,
+      "name": "roomDocPane",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2444,
+      "name": "isPermAsk",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2445,
+      "name": "myQueue",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2458,
+      "name": "loadSandboxes",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2467,
+      "name": "sbxHtml",
+      "lines": 19
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2486,
+      "name": "wireSbx",
+      "lines": 15
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2487,
+      "name": "redraw",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2488,
+      "name": "run",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2489,
+      "name": "call",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2506,
+      "name": "loadScript",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2507,
+      "name": "openTerminal",
+      "lines": 33
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2521,
+      "name": "close",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2535,
+      "name": "resize",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2547,
+      "name": "connectPrompt",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2548,
+      "name": "copyConnect",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2552,
+      "name": "renderClaudeBar",
+      "lines": 36
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2560,
+      "name": "set",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2588,
+      "name": "renderStart",
+      "lines": 18
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2590,
+      "name": "row",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2606,
+      "name": "kTok",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2608,
+      "name": "ctxPct",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2610,
+      "name": "ctxTip",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2612,
+      "name": "bar",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2613,
+      "name": "item",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2623,
+      "name": "ctxBar",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2628,
+      "name": "agentRows",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2639,
+      "name": "epicWorker",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2653,
+      "name": "mainWorker",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2662,
+      "name": "liveDoing",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2670,
+      "name": "threadWorkers",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2687,
+      "name": "epicBusy",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2689,
+      "name": "renderWorking",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2696,
+      "name": "who",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2701,
+      "name": "waitsIn",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2702,
+      "name": "waitPill",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2704,
+      "name": "prodMark",
+      "lines": 3
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2708,
+      "name": "ownerPic",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2709,
+      "name": "epicIco",
+      "lines": 3
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2713,
+      "name": "ownerMenu",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2723,
+      "name": "close",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2724,
+      "name": "out",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2725,
+      "name": "esc_",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2731,
+      "name": "pinHost",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2733,
+      "name": "pinsSec",
+      "lines": 15
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2735,
+      "name": "row",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2748,
+      "name": "wirePins",
+      "lines": 14
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2749,
+      "name": "open",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2764,
+      "name": "renderAskBar",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2773,
+      "name": "renderSide",
+      "lines": 94
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2789,
+      "name": "go",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2869,
+      "name": "pickPic",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2889,
+      "name": "inviteText",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2893,
+      "name": "copyInvite",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2899,
+      "name": "toast",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2908,
+      "name": "shownOrder",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2909,
+      "name": "waits",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2910,
+      "name": "rank",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2918,
+      "name": "roomStrip",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2920,
+      "name": "dot",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2921,
+      "name": "busy",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2922,
+      "name": "waitN",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2928,
+      "name": "leaveBoard",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2929,
+      "name": "renderKanban",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2935,
+      "name": "renameThread",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2943,
+      "name": "renderPeek",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2959,
+      "name": "openSheet",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2964,
+      "name": "closeSheet",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2972,
+      "name": "sheetPop",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2982,
+      "name": "sheetDrag",
+      "lines": 27
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3009,
+      "name": "renderTasks",
+      "lines": 51
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3014,
+      "name": "wireChev",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3016,
+      "name": "pick",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3062,
+      "name": "fileUrl",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3066,
+      "name": "viewAttrs",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3070,
+      "name": "outside",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3071,
+      "name": "openViewer",
+      "lines": 20
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3093,
+      "name": "fileVersions",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3099,
+      "name": "refreshVersions",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3105,
+      "name": "loadViewer",
+      "lines": 26
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3132,
+      "name": "csvRows",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3147,
+      "name": "viewerPop",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3169,
+      "name": "kb",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3170,
+      "name": "attHtml",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3178,
+      "name": "pollHtml",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3196,
+      "name": "hhmm",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3198,
+      "name": "continues",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3200,
+      "name": "threadCard",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3209,
+      "name": "treeFiles",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3219,
+      "name": "treeFilesHtml",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3224,
+      "name": "threadCards",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3225,
+      "name": "refreshThreadCards",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3241,
+      "name": "syncEnd",
+      "lines": 11
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3255,
+      "name": "snip",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3256,
+      "name": "replyWho",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3257,
+      "name": "quoteHtml",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3261,
+      "name": "renderReply",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3272,
+      "name": "copySync",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3280,
+      "name": "copyLink",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3283,
+      "name": "done",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3287,
+      "name": "copyMsg",
+      "lines": 10
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3291,
+      "name": "done",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3297,
+      "name": "startReply",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3318,
+      "name": "goToMsg",
+      "lines": 19
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3367,
+      "name": "cardHtml",
+      "lines": 40
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3372,
+      "name": "txt",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3373,
+      "name": "draw",
+      "lines": 32
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3375,
+      "name": "kids",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3408,
+      "name": "cardGo",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3431,
+      "name": "othersAsk",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3432,
+      "name": "isPermAnswer",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3433,
+      "name": "permHtml",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3448,
+      "name": "choiceHtml",
+      "lines": 17
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3478,
+      "name": "remKey",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3479,
+      "name": "foldReminders",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3488,
+      "name": "issueHtml",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3490,
+      "name": "day",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3491,
+      "name": "parts",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3495,
+      "name": "remHtml",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3498,
+      "name": "day",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3503,
+      "name": "isNotice",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3504,
+      "name": "noticeHtml",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3510,
+      "name": "mact",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3511,
+      "name": "renderDecisions",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3522,
+      "name": "renderApps",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3530,
+      "name": "loadConns",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3536,
+      "name": "scopeChip",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3538,
+      "name": "roomApps",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3543,
+      "name": "connsFilesChanged",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3544,
+      "name": "renderConns",
+      "lines": 49
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3554,
+      "name": "appBtns",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3593,
+      "name": "renderConnApp",
+      "lines": 20
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3613,
+      "name": "textOf",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3614,
+      "name": "toolOut",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3617,
+      "name": "appAsk",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3618,
+      "name": "run",
+      "lines": 9
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3623,
+      "name": "done",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3638,
+      "name": "vbRead",
+      "lines": 11
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3649,
+      "name": "vbCall",
+      "lines": 37
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3650,
+      "name": "ok",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3651,
+      "name": "thread",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3690,
+      "name": "makeHost",
+      "lines": 47
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3691,
+      "name": "post",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3692,
+      "name": "ask",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3693,
+      "name": "call",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3694,
+      "name": "dark",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3696,
+      "name": "ok",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3738,
+      "name": "embedHost",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3757,
+      "name": "mountApp",
+      "lines": 16
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3759,
+      "name": "ask",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3768,
+      "name": "call",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3776,
+      "name": "renderReminders",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3783,
+      "name": "renderFiles",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3791,
+      "name": "pinOf",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3792,
+      "name": "pinToggle",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3793,
+      "name": "wirePinToggles",
+      "lines": 7
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3808,
+      "name": "allMsgs",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3811,
+      "name": "syncUrl",
+      "lines": 6
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3819,
+      "name": "renderThreadFiles",
+      "lines": 11
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3830,
+      "name": "renderChat",
+      "lines": 45
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3875,
+      "name": "pullOlder",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3879,
+      "name": "loadOlder",
+      "lines": 8
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3890,
+      "name": "prettyModel",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3891,
+      "name": "renderReceipts",
+      "lines": 41
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3895,
+      "name": "at",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3896,
+      "name": "via",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3932,
+      "name": "appendMsg",
+      "lines": 3
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3939,
+      "name": "pinOnLoad",
+      "lines": 4
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3943,
+      "name": "scrollDown",
+      "lines": 21
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3967,
+      "name": "loadPele",
+      "lines": 5
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3972,
+      "name": "renderMermaid",
+      "lines": 18
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3992,
+      "name": "placeTasks",
+      "lines": 12
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4008,
+      "name": "docEpic",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4009,
+      "name": "renderDoc",
+      "lines": 31
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4045,
+      "name": "lockId",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4046,
+      "name": "rnd",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4047,
+      "name": "lockVerify",
+      "lines": 1
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4048,
+      "name": "lockSet",
+      "lines": 11
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4059,
+      "name": "lockScreen",
+      "lines": 13
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4065,
+      "name": "go",
+      "lines": 4
+    },
+    {
+      "file": "svelte/main.ts",
+      "line": 22,
+      "name": "mountView",
+      "lines": 25
+    },
+    {
+      "file": "svelte/main.ts",
+      "line": 47,
+      "name": "mountInbox",
+      "lines": 7
+    },
+    {
+      "file": "svelte/navigation.ts",
+      "line": 3,
+      "name": "createUiNavigation",
+      "lines": 16
+    },
+    {
+      "file": "svelte/navigation.ts",
+      "line": 8,
+      "name": "route",
+      "lines": 2
+    },
+    {
+      "file": "svelte/panels.ts",
+      "line": 35,
+      "name": "escapeHtml",
+      "lines": 8
+    },
+    {
+      "file": "svelte/panels.ts",
+      "line": 43,
+      "name": "fileKind",
+      "lines": 14
+    },
+    {
+      "file": "svelte/panels.ts",
+      "line": 57,
+      "name": "kb",
+      "lines": 4
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "line": 21,
+      "name": "createRoomConnection",
+      "lines": 80
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "line": 33,
+      "name": "clearTimers",
+      "lines": 5
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "line": 38,
+      "name": "dispose",
+      "lines": 10
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "line": 48,
+      "name": "connect",
+      "lines": 39
+    },
+    {
+      "file": "svelte/roomConnection.ts",
+      "line": 53,
+      "name": "owns",
+      "lines": 1
+    },
+    {
+      "file": "svelte/roomStore.ts",
+      "line": 8,
+      "name": "reduceRoom",
+      "lines": 144
+    },
+    {
+      "file": "svelte/roomStore.ts",
+      "line": 16,
+      "name": "updateMessage",
+      "lines": 2
+    },
+    {
+      "file": "svelte/roomStore.ts",
+      "line": 134,
+      "name": "key",
+      "lines": 1
+    },
+    {
+      "file": "svelte/roomStore.ts",
+      "line": 153,
+      "name": "createRoomStore",
+      "lines": 12
+    },
+    {
+      "file": "svelte/transport.ts",
+      "line": 21,
+      "name": "sendRoomCommand",
+      "lines": 9
+    },
+    {
+      "file": "svelte/transport.ts",
+      "line": 30,
+      "name": "receiveRoomEvent",
+      "lines": 5
+    },
+    {
+      "file": "svelte/transport.ts",
+      "line": 41,
+      "name": "createRoomApi",
+      "lines": 116
+    },
+    {
+      "file": "svelte/transport.ts",
+      "line": 46,
+      "name": "json",
+      "lines": 28
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "line": 27,
+      "name": "tab",
+      "lines": 4
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "line": 37,
+      "name": "who",
+      "lines": 2
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "line": 39,
+      "name": "kind",
+      "lines": 2
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "line": 41,
+      "name": "href",
+      "lines": 2
+    },
+    {
+      "file": "vanilla/inbox/Inbox.svelte",
+      "line": 43,
+      "name": "short",
+      "lines": 1
+    },
+    {
+      "file": "vanilla/inbox/main.ts",
+      "line": 5,
+      "name": "mountInbox",
+      "lines": 7
+    }
+  ],
+  "network": [
+    {
+      "file": "src/agent.ts",
+      "line": 698,
+      "callee": "fetch",
+      "target": "ok.url",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 189,
+      "callee": "fetch",
+      "target": "\"https://oauth2.googleapis.com/token\"",
+      "method": "POST"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 201,
+      "callee": "fetch",
+      "target": "\"https://openidconnect.googleapis.com/v1/userinfo\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 292,
+      "callee": "fetch",
+      "target": "\"https://github.com/login/oauth/access_token\"",
+      "method": "POST"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 303,
+      "callee": "fetch",
+      "target": "`https://api.github.com${path}`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/jev.ts",
+      "line": 15,
+      "callee": "fetch",
+      "target": "\"https://openrouter.ai/api/alpha/decisions\"",
+      "method": "POST"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 55,
+      "callee": "fetch",
+      "target": "okUrl(env, url)",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 81,
+      "callee": "fetch",
+      "target": "okUrl(env, as.registration_endpoint)",
+      "method": "POST"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 110,
+      "callee": "fetch",
+      "target": "okUrl(env, cl.token_endpoint)",
+      "method": "POST"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 66,
+      "callee": "fetch",
+      "target": "url",
+      "method": "POST"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 103,
+      "callee": "fetch",
+      "target": "\"https://api.cloudflare.com/client/v4/graphql\"",
+      "method": "POST"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 272,
+      "callee": "fetch",
+      "target": "\"https://api.cloudflare.com/client/v4/zones?name=vibebook.dev\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 55,
+      "callee": "fetch",
+      "target": "`${API}${path}`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "src/webpush.ts",
+      "line": 74,
+      "callee": "fetch",
+      "target": "s.endpoint",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/Reminders.svelte",
+      "line": 40,
+      "callee": "createRoomApi(room.id).uploadFile",
+      "target": "{\n        name: `reminders/${nm}.md`,\n        type: \"text/markdown\",\n        body: draft.text,\n      }",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 722,
+      "callee": "fetch",
+      "target": "path",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 825,
+      "callee": "api",
+      "target": "\"/api/me?ui=svelte\"",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 899,
+      "callee": "fetch",
+      "target": "`/api/books/${b.id}/icon`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 901,
+      "callee": "api",
+      "target": "`/api/books/${b.id}/icon`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 906,
+      "callee": "api",
+      "target": "`/api/books/${b.id}/tint`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 923,
+      "callee": "api",
+      "target": "\"/api/rooms/order\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 972,
+      "callee": "fetch",
+      "target": "`/api/search?q=${encodeURIComponent(q)}`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1022,
+      "callee": "fetch",
+      "target": "\"/auth/providers\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1053,
+      "callee": "fetch",
+      "target": "path",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1098,
+      "callee": "api",
+      "target": "\"/api/me?ui=svelte\"",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1242,
+      "callee": "api",
+      "target": "\"/api/me?ui=svelte\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1249,
+      "callee": "fetch",
+      "target": "\"/api/me/logins\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1261,
+      "callee": "api",
+      "target": "\"/api/me?ui=svelte\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1273,
+      "callee": "fetch",
+      "target": "\"/auth/logout\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1276,
+      "callee": "fetch",
+      "target": "\"/auth/logout-all\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1281,
+      "callee": "fetch",
+      "target": "`/api/friends/${encodeURIComponent(b.dataset.unfriend)}`",
+      "method": "DELETE"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1286,
+      "callee": "api",
+      "target": "\"/api/friends\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1313,
+      "callee": "createRoomApi(bookId).postMessage",
+      "target": "{ text, thread: dest.epic_id || \"main\" }",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1324,
+      "callee": "api",
+      "target": "\"/api/route\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1351,
+      "callee": "api",
+      "target": "\"/api/books/start\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1387,
+      "callee": "api",
+      "target": "`/api/books/${id}/archive`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1395,
+      "callee": "api",
+      "target": "\"/api/archived\"",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1408,
+      "callee": "api",
+      "target": "`/api/books/${b.dataset.restore}/archive`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1419,
+      "callee": "fetch",
+      "target": "\"/api/agents\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1444,
+      "callee": "fetch",
+      "target": "\"/api/agents/revoke\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1491,
+      "callee": "api",
+      "target": "\"/api/waits/resolve\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1524,
+      "callee": "api",
+      "target": "\"/api/waits/resolve\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1540,
+      "callee": "fetch",
+      "target": "\"/api/agents\"",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1625,
+      "callee": "api",
+      "target": "\"/api/me?ui=svelte\"",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2024,
+      "callee": "createRoomApi(S.id).uploadFile",
+      "target": "{ name:file.name, type:file.type, body:file }",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2333,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/agents`",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2343,
+      "callee": "fetch",
+      "target": "`${HERDR_LOCAL}/ping`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2350,
+      "callee": "fetch",
+      "target": "`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || \"\")}`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2382,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/claude`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2423,
+      "callee": "fetch",
+      "target": "`${HERDR_LOCAL}/focus?room=${S.id}`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2461,
+      "callee": "fetch",
+      "target": "`/api/books/${S.id}/sandboxes`",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2489,
+      "callee": "fetch",
+      "target": "url",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2523,
+      "callee": "fetch",
+      "target": "`/api/sandboxes/${sid}/terminal`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2837,
+      "callee": "fetch",
+      "target": "`/api/books/${S.id}/members/${encodeURIComponent(who)}`",
+      "method": "DELETE"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2844,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/requests`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2848,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/members`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2855,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/members`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2861,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/members`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2879,
+      "callee": "fetch",
+      "target": "\"/api/me/avatar\"",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3122,
+      "callee": "fetch",
+      "target": "url",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3532,
+      "callee": "api",
+      "target": "`/api/books/${book}/connections`",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3577,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/connections`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3583,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/connections/${b.dataset.connOut}/signout`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3586,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/connections/${b.dataset.connRef}/refresh`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3590,
+      "callee": "fetch",
+      "target": "`/api/books/${S.id}/connections/${b.dataset.connDel}`",
+      "method": "DELETE"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3681,
+      "callee": "api",
+      "target": "`/api/books/${S.id}/connections/${c.id}/call`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3691,
+      "callee": "frame.contentWindow?.postMessage",
+      "target": "{ jsonrpc: \"2.0\", ...m }",
+      "method": "GET/default or typed transport"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3725,
+      "callee": "api",
+      "target": "`${o.base}/context`",
+      "method": "POST"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3766,
+      "callee": "api",
+      "target": "`${base}/ui?tool=${encodeURIComponent(a.tool)}`",
+      "method": "GET"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3768,
+      "callee": "api",
+      "target": "`${base}/call`",
+      "method": "POST"
+    }
+  ],
+  "endpoints": [
+    {
+      "file": "src/auth.ts",
+      "line": 93,
+      "method": "GET",
+      "path": "\"/providers\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 95,
+      "method": "POST",
+      "path": "\"/email/start\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 142,
+      "method": "POST",
+      "path": "\"/email/verify\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 169,
+      "method": "GET",
+      "path": "\"/google/start\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 185,
+      "method": "GET",
+      "path": "\"/google/callback\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 224,
+      "method": "GET",
+      "path": "\"/invite\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 249,
+      "method": "POST",
+      "path": "\"/logout\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 257,
+      "method": "POST",
+      "path": "\"/logout-all\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 273,
+      "method": "GET",
+      "path": "\"/github/start\""
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 288,
+      "method": "GET",
+      "path": "\"/github/callback\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 225,
+      "method": "GET",
+      "path": "path || \"/\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 232,
+      "method": "GET",
+      "path": "`/${lang}${path}`"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 258,
+      "method": "GET",
+      "path": "\"/login\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 259,
+      "method": "GET",
+      "path": "\"/app\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 263,
+      "method": "GET",
+      "path": "\"/archived\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 270,
+      "method": "GET",
+      "path": "\"/b/*\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 286,
+      "method": "PUT",
+      "path": "\"/api/upload/:token\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 310,
+      "method": "GET",
+      "path": "\"/api/notify\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 346,
+      "method": "GET",
+      "path": "\"/mail/:onoff{off|on}\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 357,
+      "method": "GET",
+      "path": "\"/oauth/code\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 371,
+      "method": "GET",
+      "path": "\"/.well-known/jwks.json\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 397,
+      "method": "GET",
+      "path": "\"/api/dev/digest\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 401,
+      "method": "GET",
+      "path": "\"/api/dev/report\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 405,
+      "method": "GET",
+      "path": "\"/api/dev/as\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 413,
+      "method": "GET",
+      "path": "\"/api/me/logins\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 420,
+      "method": "GET",
+      "path": "\"/api/me\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 462,
+      "method": "GET",
+      "path": "\"/api/push/key\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 463,
+      "method": "POST",
+      "path": "\"/api/push/subscribe\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 471,
+      "method": "POST",
+      "path": "\"/api/push/unsubscribe\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 476,
+      "method": "POST",
+      "path": "\"/api/push/test\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 481,
+      "method": "POST",
+      "path": "\"/api/waits/resolve\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 492,
+      "method": "POST",
+      "path": "\"/api/me/avatar\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 507,
+      "method": "POST",
+      "path": "\"/api/books/:id/icon\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 539,
+      "method": "GET",
+      "path": "\"/api/books/:id/icon\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 549,
+      "method": "GET",
+      "path": "\"/api/avatar/:email\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 558,
+      "method": "GET",
+      "path": "\"/api/archived\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 572,
+      "method": "GET",
+      "path": "\"/api/search\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 581,
+      "method": "GET",
+      "path": "\"/api/books/:id/agents\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 617,
+      "method": "POST",
+      "path": "\"/api/route\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 635,
+      "method": "POST",
+      "path": "\"/api/books/:id/post\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 648,
+      "method": "POST",
+      "path": "\"/api/books/:id/claude\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 660,
+      "method": "POST",
+      "path": "\"/api/rooms/order\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 672,
+      "method": "POST",
+      "path": "\"/api/books/:id/tint\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 681,
+      "method": "POST",
+      "path": "\"/api/books/:id/archive\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 691,
+      "method": "POST",
+      "path": "\"/api/me\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 699,
+      "method": "POST",
+      "path": "\"/api/books\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 709,
+      "method": "POST",
+      "path": "\"/api/books/start\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 720,
+      "method": "POST",
+      "path": "\"/api/books/:id/request\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 735,
+      "method": "GET",
+      "path": "\"/api/books/:id/access\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 737,
+      "method": "POST",
+      "path": "\"/api/books/:id/requests\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 753,
+      "method": "POST",
+      "path": "\"/api/books/:id/members\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 764,
+      "method": "POST",
+      "path": "\"/api/friends\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 773,
+      "method": "DELETE",
+      "path": "\"/api/friends/:email\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 781,
+      "method": "DELETE",
+      "path": "\"/api/books/:id/members/:email\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 797,
+      "method": "POST",
+      "path": "\"/api/books/:id/files\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 813,
+      "method": "GET",
+      "path": "\"/api/books/:id/files/:fid\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 833,
+      "method": "GET",
+      "path": "\"/yjs/:name\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 845,
+      "method": "GET",
+      "path": "\"/ws-me\""
+    },
+    {
+      "file": "src/index.ts",
+      "line": 849,
+      "method": "GET",
+      "path": "\"/ws/:id\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 229,
+      "method": "GET",
+      "path": "\"/api/books/:id/connections/:cid/signin\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 238,
+      "method": "POST",
+      "path": "\"/api/books/:id/connections/:cid/signout\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 245,
+      "method": "GET",
+      "path": "\"/api/mcp-oauth/callback\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 262,
+      "method": "GET",
+      "path": "\"/api/books/:id/connections\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 269,
+      "method": "POST",
+      "path": "\"/api/books/:id/connections\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 278,
+      "method": "DELETE",
+      "path": "\"/api/books/:id/connections/:cid\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 284,
+      "method": "POST",
+      "path": "\"/api/books/:id/connections/:cid/refresh\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 296,
+      "method": "GET",
+      "path": "\"/api/books/:id/connections/:cid/ui\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 307,
+      "method": "POST",
+      "path": "\"/api/books/:id/connections/:cid/call\""
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 321,
+      "method": "POST",
+      "path": "\"/api/books/:id/connections/:cid/context\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 236,
+      "method": "GET",
+      "path": "\"/api/freestyle\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 238,
+      "method": "POST",
+      "path": "\"/api/claude-token\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 249,
+      "method": "DELETE",
+      "path": "\"/api/claude-token\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 253,
+      "method": "POST",
+      "path": "\"/api/freestyle\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 268,
+      "method": "DELETE",
+      "path": "\"/api/freestyle\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 273,
+      "method": "GET",
+      "path": "\"/api/books/:id/sandboxes\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 308,
+      "method": "POST",
+      "path": "\"/api/books/:id/sandboxes\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 323,
+      "method": "POST",
+      "path": "`/api/sandboxes/:sid/${act}`"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 333,
+      "method": "POST",
+      "path": "\"/api/sandboxes/:sid/setup\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 340,
+      "method": "DELETE",
+      "path": "\"/api/sandboxes/:sid\""
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 359,
+      "method": "POST",
+      "path": "\"/api/sandboxes/:sid/terminal\""
+    }
+  ],
+  "typeEscapes": [
+    {
+      "file": "src/agent.ts",
+      "line": 1044,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 33,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 82,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcp.ts",
+      "line": 69,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 57,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 66,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 71,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 77,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 85,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpauth.ts",
+      "line": 111,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 82,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 150,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 194,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 222,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 223,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 224,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 225,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 226,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 229,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 238,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 245,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 262,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 269,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 278,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 284,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 296,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 307,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 321,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 108,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 184,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 186,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 186,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 188,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 188,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 188,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 188,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 196,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 197,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 198,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/reports.ts",
+      "line": 262,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 54,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 231,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 232,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 233,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 234,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 236,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 238,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 249,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 253,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 268,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 273,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 308,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 323,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 333,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 340,
+      "kind": "explicit any"
+    },
+    {
+      "file": "src/sandbox.ts",
+      "line": 359,
+      "kind": "explicit any"
+    }
+  ],
+  "dom": [
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 639,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 793,
+      "operation": "setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 794,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 794,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 810,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 811,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 845,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 855,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 887,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 894,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 901,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 932,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 937,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 943,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 944,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 954,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1001,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1025,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1046,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1049,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1064,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1074,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1088,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1089,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1090,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1114,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1179,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1186,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1231,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1253,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1270,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1271,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1272,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1309,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1317,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1322,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1324,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1332,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1356,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1357,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1358,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1364,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1365,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1372,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1373,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1373,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1380,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1381,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1384,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1385,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1396,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1432,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1438,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1439,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1467,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1478,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1480,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1485,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1501,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1501,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1509,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1509,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1509,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1509,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1511,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1530,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1546,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1548,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1550,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1556,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1562,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1574,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1576,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1576,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1576,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1629,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1635,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1636,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1656,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1785,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1786,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1799,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1830,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1889,
+      "operation": "setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1890,
+      "operation": "setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1915,
+      "operation": "setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1938,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1950,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1964,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1998,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1999,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2001,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2006,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2040,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2060,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2061,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2062,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2079,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2080,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2091,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2117,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2117,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2125,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2166,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2167,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2168,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2173,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2178,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2181,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2204,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2210,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2240,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2256,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2267,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2290,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2303,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2315,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2365,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2396,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2401,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2402,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2426,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2464,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2487,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2490,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2491,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2491,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2492,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2493,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2494,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2495,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2506,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2509,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2512,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2513,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2514,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2524,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2531,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2531,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2531,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2533,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2561,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2561,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2595,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2597,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2603,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2697,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2716,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2717,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2718,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2770,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2847,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2848,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2849,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2875,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2901,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2949,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2952,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2953,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2979,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3017,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3017,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3018,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3032,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3033,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3074,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3075,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3076,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3080,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3082,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3082,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3083,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3103,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3108,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3114,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3116,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3117,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3121,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3121,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3124,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3127,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3129,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3129,
+      "operation": "replaceChildren"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3155,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3230,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3249,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3250,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3265,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3266,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3273,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3302,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3337,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3340,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3343,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3356,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3417,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3419,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3420,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3439,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3442,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3443,
+      "operation": "assign outerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3465,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3514,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3515,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3548,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3551,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3555,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3571,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3572,
+      "operation": "addEventListener"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3575,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3581,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3598,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3605,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3606,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3621,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3622,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3623,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3741,
+      "operation": "appendChild"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3741,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3767,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3767,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3767,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3780,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3787,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3828,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3929,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3968,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3978,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3978,
+      "operation": "assign className"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3982,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3985,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4022,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4028,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4033,
+      "operation": "insertAdjacentHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4061,
+      "operation": "createElement"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4063,
+      "operation": "assign innerHTML"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4067,
+      "operation": "assign textContent"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 4073,
+      "operation": "addEventListener"
+    }
+  ],
+  "styles": [
+    {
+      "file": "public/app-svelte.css",
+      "line": 1,
+      "kind": "authored stylesheet"
+    },
+    {
+      "file": "src/access.ts",
+      "line": 91,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/access.ts",
+      "line": 115,
+      "kind": "component/style block"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 132,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 320,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 321,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 321,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 322,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 323,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 323,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 323,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 324,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 325,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 326,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/auth.ts",
+      "line": 326,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/card.ts",
+      "line": 30,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/card.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/card.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/connect.ts",
+      "line": 78,
+      "kind": "component/style block"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 82,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 82,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 83,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 83,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 84,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/digest.ts",
+      "line": 84,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 352,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 352,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 361,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 362,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/index.ts",
+      "line": 362,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 236,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mcpconn.ts",
+      "line": 259,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 72,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 72,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 73,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 74,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 75,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 75,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 76,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 77,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/mentionmail.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 71,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 75,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 75,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 75,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 78,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 80,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 80,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "src/rooms.ts",
+      "line": 80,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 141,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/Board.svelte",
+      "line": 195,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/Sidebar.svelte",
+      "line": 328,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 52,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/TaskList.svelte",
+      "line": 145,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 656,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 817,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 954,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1031,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1031,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1032,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1038,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1137,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1152,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1168,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1382,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1400,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1402,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1403,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1436,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1607,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1608,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1609,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1609,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1614,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1615,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1879,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1880,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1881,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2002,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2233,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2292,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2295,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2297,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2298,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2612,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2626,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2710,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2711,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 2737,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3019,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3189,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 3390,
+      "kind": "inline style candidate"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 793,
+      "kind": "document.documentElement.style.setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1889,
+      "kind": "document.documentElement.style.setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1890,
+      "kind": "document.documentElement.style.setProperty"
+    },
+    {
+      "file": "svelte/legacy/host.js",
+      "line": 1915,
+      "kind": "book.style.setProperty"
+    }
+  ]
+}

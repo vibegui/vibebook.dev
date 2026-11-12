@@ -29,6 +29,9 @@
     "scripts/ui-metrics.ts",
     "scripts/ui-panels.test.ts",
     "scripts/ui-version.test.ts",
-    "scripts/ui-variant.test.ts"
+    "scripts/ui-variant.test.ts",
+    "scripts/ui-variant-boundary.test.ts",
+    "scripts/vanilla-isolation-check.ts",
+    "scripts/migration-inventory.ts"
   ]
 }

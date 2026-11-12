@@ -1,0 +1,28 @@
+{
+  "mode": "vanilla",
+  "entry": "vanilla/inbox/main.ts",
+  "ownedModules": [
+    "vanilla/inbox/Inbox.svelte",
+    "vanilla/inbox/main.ts"
+  ],
+  "rawBytes": 56189,
+  "gzipBytes": 17885,
+  "protectedAssets": [
+    {
+      "path": "app.html",
+      "sha256": "079d63a44a275fccfdfeb7b05ae39e106f5d671bc48810d78fec5b412ccfeea6"
+    },
+    {
+      "path": "svelte/ui.js",
+      "sha256": "18d76179998c34d00ce840f0baa46d08d837c566c8f6360cccd350fa81f079ce"
+    },
+    {
+      "path": "collab.js",
+      "sha256": "1817da5e2658cb4ba159beb76e45c5b7dfc2d2f26a327ce22569f464291592ec"
+    },
+    {
+      "path": "sw.js",
+      "sha256": "e4263107e5d201f9bba1c4c23f793007f45c26b2454685c74d5124f9b8f344ea"
+    }
+  ]
+}

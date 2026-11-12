@@ -1,6 +1,6 @@
 # Full Svelte migration and conditions of satisfaction
 
-Status: planned; not complete. The online Svelte preview is a foundation, not completion of this plan. This document defines the goal, implementation order, required evidence and final acceptance gates for the complete migration.
+Status: in progress; not complete. The online Svelte preview is a foundation, not completion of this plan. This document defines the goal, implementation order, required evidence and final acceptance gates for the complete migration. Checked implementation milestones must be revalidated against the final deployed revision before sign-off.
 
 ## Goal to use
 
@@ -39,7 +39,7 @@ Use Tailwind's Vite integration and CSS-first theme configuration. Default paths
 
 - [ ] Record the starting main commit and a feature-parity matrix covering all screens, operations, states and routes. Include light/dark themes, English/Portuguese and desktop/mobile behavior.
 - [ ] Inventory first-party JavaScript, legacy host responsibilities, direct DOM rendering/event wiring, application API calls, protocol messages, CSS sources, inline styles and runtime CSS injection. Each entry has a migration destination and a verification case.
-- [ ] Separate any currently shared UI source before migrating its design. In particular, the vanilla Inbox must remain rebuildable with its original styling while Svelte adopts Tailwind; preserving an old compiled bundle while breaking its source/build does not satisfy maintaining vanilla.
+- [x] Separate any currently shared UI source before migrating its design. In particular, the vanilla Inbox must remain rebuildable with its original styling while Svelte adopts Tailwind; preserving an old compiled bundle while breaking its source/build does not satisfy maintaining vanilla. Evidence: `vanilla/inbox/`, `check:vanilla`, cross-variant import fixtures and `docs/svelte-migration/vanilla-build.json` (strict source check: zero errors/warnings; independent build: no preview-owned modules; default assets preserved).
 - [ ] Include login/access/OAuth; home and room switching; chat/history/replies/mentions/reactions/search/Inbox; sidebar/epics/tasks/board; documents/Yjs; files/folders/versions/viewers/uploads/pins; reminders/decisions; people/invites/account/theme; MCP apps/connections/embeds; sandboxes/agents; PWA/install/push and mobile interactions. Add any current vanilla feature missing from this list.
 - [ ] Capture the vanilla baseline and Studio reference described below. Keep ongoing vanilla fixes in a change ledger; account for them before each preview release.
 

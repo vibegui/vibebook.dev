@@ -3,12 +3,14 @@ import { defineConfig } from "vite";
 import { join } from "node:path";
 import { uiVersion } from "./build/uiVersion.ts";
 import { clientBoundary, projectRoot } from "./build/clientBoundary.ts";
+import { uiVariantBoundary } from "./build/uiVariantBoundary.ts";
 
 // Preview assets cannot replace the vanilla app's on-demand Inbox bundle.
 export default defineConfig(({ mode }) => ({
   root: import.meta.dirname,
   plugins: [
     clientBoundary({ projectRoot }),
+    uiVariantBoundary(projectRoot, mode === "vanilla" ? "vanilla" : "svelte"),
     svelte({ compilerOptions: { css: "injected" } }),
     ...(mode === "vanilla" ? [] : [uiVersion(join(projectRoot, "public"))]),
   ],
@@ -20,7 +22,7 @@ export default defineConfig(({ mode }) => ({
     lib: {
       entry:
         mode === "vanilla"
-          ? "vanillaInbox.ts"
+          ? "../vanilla/inbox/main.ts"
           : { ui: "main.ts", app: "legacy/host.js" },
       formats: ["es"],
       fileName: (_format, name) =>

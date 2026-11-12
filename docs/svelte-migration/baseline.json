@@ -1,0 +1,46 @@
+{
+  "startingCommit": "9579bc4",
+  "publishedBaseline": "d3e1473",
+  "variants": {
+    "vanilla": "/app and /b/ROOM",
+    "svelte": "?ui=svelte"
+  },
+  "assets": [
+    {
+      "path": "public/app.html",
+      "sha256": "079d63a44a275fccfdfeb7b05ae39e106f5d671bc48810d78fec5b412ccfeea6",
+      "rawBytes": 507293,
+      "gzipBytes": 146313
+    },
+    {
+      "path": "public/svelte/ui.js",
+      "sha256": "18d76179998c34d00ce840f0baa46d08d837c566c8f6360cccd350fa81f079ce",
+      "rawBytes": 56158,
+      "gzipBytes": 17872
+    },
+    {
+      "path": "public/collab.js",
+      "sha256": "1817da5e2658cb4ba159beb76e45c5b7dfc2d2f26a327ce22569f464291592ec",
+      "rawBytes": 624259,
+      "gzipBytes": 215764
+    },
+    {
+      "path": "public/sw.js",
+      "sha256": "e4263107e5d201f9bba1c4c23f793007f45c26b2454685c74d5124f9b8f344ea",
+      "rawBytes": 1252,
+      "gzipBytes": 607
+    },
+    {
+      "path": "public/manifest.webmanifest",
+      "sha256": "56127f028d209e866ed719b5c4ee1c2adfdb4e96cecd92561a18a8a036e53ace",
+      "rawBytes": 463,
+      "gzipBytes": 266
+    },
+    {
+      "path": "src/webpush.ts",
+      "sha256": "1618ae7d1832182d2f23dace508728f8257a583a9ad25980916019263547864e",
+      "rawBytes": 4994,
+      "gzipBytes": 2143
+    }
+  ]
+}
