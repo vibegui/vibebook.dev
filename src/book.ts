@@ -47,6 +47,9 @@ const CLASSIFY_FIRST_MSGS = 1; // a new room gets its title/summary after its fi
 const AGENT_STREAK_MAX = 6;
 const AGENT_READ_MAX = 60;
 const ORIGIN_TEXT_MAX = 1200;
+/** An agent's view of a reply: "↩ in reply to <who> #<id>: "<start of it>"" on top of the reply's own text. */
+const withQuote = (q: { id: number; from: string; text: string } | undefined, text: string) =>
+  q ? `↩ in reply to ${q.from} #${q.id}: "${q.text.replace(/\s+/g, " ").slice(0, 300)}${q.text.length > 300 ? "…" : ""}"\n\n${text}` : text;
 const REMINDERS_MAX = 20; // per room
 const REMINDER_MIN_GAP_MS = 30 * 60_000; // each fire wakes a Claude: no more than twice an hour
 // Board lanes. `done` stays in sync with status = "done" so older readers keep working.
@@ -557,7 +560,7 @@ export class Book extends DurableObject<Env> {
       .map((m) => {
         const { reply_to, ...rest } = m as typeof m & { reply_to: number | null };
         const q = reply_to ? this.quotes([reply_to], (e) => (e === "ai" ? "@vibe" : e)).get(reply_to) : undefined;
-        return { ...rest, from_your_human: true, ...(q ? { reply_to, reply_quote: q } : {}) };
+        return { ...rest, text: withQuote(q, rest.text), from_your_human: true, ...(q ? { reply_to, reply_quote: q } : {}) };
       });
   }
   /** The person's own answer to one of their agent's questions (choices/buttons), if any. */
@@ -1046,7 +1049,9 @@ export class Book extends DurableObject<Env> {
         reply_quote: m.reply_to ? quoted.get(m.reply_to as number) : undefined,
         choices: m.choices ? (JSON.parse(m.choices as string) as { options: string[]; multi: boolean }) : undefined,
         card: m.card ? JSON.parse(m.card as string) : undefined,
-        text: (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""),
+        // The replied message rides inside the text too, not only in reply_quote: a Sonnet read a bare "vc fez isso?"
+        // (a reply to "Pode revisar o ledger?") and asked which "isso" (Nov 2026).
+        text: withQuote(quoted.get(m.reply_to as number), (m.text as string) || (m.poll ? `[poll ${m.poll}]` : "")),
         files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
     const lastId = (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0;
