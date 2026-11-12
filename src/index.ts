@@ -459,33 +459,7 @@ app.get("/api/me", async (c) => {
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
 // Native notifications: this device's push subscription (the app's 🔔). One row per endpoint, owned by whoever subscribed last.
-app.get("/api/push/key", (c) => c.json({ key: c.env.VAPID_PUBLIC_KEY ?? null }));
-app.post("/api/push/subscribe", async (c) => {
-  const b = await c.req.json<{ endpoint?: string; p256dh?: string; auth?: string }>().catch(() => ({}) as { endpoint?: string; p256dh?: string; auth?: string });
-  if (!b.endpoint?.startsWith("https://") || !b.p256dh || !b.auth || b.endpoint.length > 1000) return c.json({ error: "bad subscription" }, 400);
-  await c.env.DB.prepare(`INSERT OR REPLACE INTO push_subs (endpoint, email, p256dh, auth, ua, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
-    .bind(b.endpoint, c.get("email"), b.p256dh.slice(0, 200), b.auth.slice(0, 100), (c.req.header("user-agent") ?? "").slice(0, 200), Date.now()).run();
-  c.executionCtx.waitUntil(track(c.env, "push_subscribed", { user: c.get("email") }));
-  return c.json({ ok: true });
-});
-app.post("/api/push/unsubscribe", async (c) => {
-  const { endpoint } = await c.req.json<{ endpoint?: string }>().catch(() => ({}) as { endpoint?: string });
-  await c.env.DB.prepare(`DELETE FROM push_subs WHERE endpoint = ? AND email = ?`).bind(endpoint ?? "", c.get("email")).run();
-  return c.json({ ok: true });
-});
-app.post("/api/push/test", async (c) => {
-  const sent = await pushTo(c.env, [c.get("email")], { title: "vibebook", body: "Notificações ligadas neste aparelho ✓", url: "/app", tag: "test" });
-  return c.json({ ok: true, sent });
-});
 
-app.post("/api/waits/resolve", async (c) => {
-  const { book_id, ref } = await c.req.json<{ book_id?: string; ref?: string }>().catch(() => ({}) as { book_id?: string; ref?: string });
-  if (!book_id || !ref?.startsWith("m")) return c.json({ error: "bad request" }, 400);
-  await c.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(book_id, ref, c.get("email")).run();
-  c.executionCtx.waitUntil(poke(c.env, [c.get("email")], { t: "me" })); // your other tabs and devices
-  c.executionCtx.waitUntil(track(c.env, "wait_resolved", { user: c.get("email"), dims: { book: book_id } }));
-  return c.json({ ok: true });
-});
 
 // Profile picture: the app resizes it to a small square before sending. R2 `avatars/<email>`, users.avatar = version.
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
@@ -649,36 +623,9 @@ app.post("/api/books/:id/claude", async (c) => {
 });
 
 // The person's own order of their rooms (dragged in the rail); vibebook herdr orders the herdr workspaces the same way.
-app.post("/api/rooms/order", async (c) => {
-  const email = c.get("email");
-  const { ids } = await c.req.json<{ ids?: unknown }>().catch(() => ({ ids: [] }));
-  const list = (Array.isArray(ids) ? ids : []).filter((x): x is string => typeof x === "string").slice(0, 300);
-  if (!list.length) return c.json({ error: "ids required" }, 400);
-  const st = c.env.DB.prepare(`UPDATE members SET position = ? WHERE book_id = ? AND email = ?`);
-  await c.env.DB.batch(list.map((id, i) => st.bind(i, id, email)));
-  return c.json({ ok: true });
-});
 
 // A room's color in the person's rail: neighbours with the same color read as one group.
-const TINTS = ["blue", "green", "yellow", "orange", "pink", "purple"];
-app.post("/api/books/:id/tint", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { tint } = await c.req.json<{ tint?: string | null }>().catch(() => ({ tint: null }));
-  await c.env.DB.prepare(`UPDATE members SET tint = ? WHERE book_id = ? AND email = ?`).bind(tint && TINTS.includes(tint) ? tint : null, id, email).run();
-  return c.json({ ok: true });
-});
 
-app.post("/api/books/:id/archive", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { archived } = await c.req.json<{ archived?: boolean }>().catch(() => ({ archived: true }));
-  await c.env.DB.prepare(`UPDATE members SET archived_at = ? WHERE book_id = ? AND email = ?`).bind(archived === false ? null : Date.now(), id, email).run();
-  c.executionCtx.waitUntil(track(c.env, archived === false ? "book_restored" : "book_archived", { user: email, dims: { book: id } }));
-  return c.json({ ok: true });
-});
 
 app.post("/api/me", async (c) => {
   const { name } = await c.req.json<{ name?: string }>().catch(() => ({ name: "" }));

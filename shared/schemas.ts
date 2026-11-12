@@ -48,3 +48,28 @@ export type UploadFileResult = z.infer<typeof UploadFileResult>;
 
 /** Any error answer of the app's routes. */
 export const ErrorBody = z.object({ error: z.string() });
+
+// Slice 2: small account/room mutations. Lenient where the old handlers were (unknown tint → none, non-string ids dropped).
+export const TINTS = [
+  "blue",
+  "green",
+  "yellow",
+  "orange",
+  "pink",
+  "purple",
+] as const;
+export const PushSubscribeBody = z.object({
+  endpoint: z.string().check(z.startsWith("https://"), z.maxLength(1000)),
+  p256dh: z.string().check(z.minLength(1)),
+  auth: z.string().check(z.minLength(1)),
+});
+export const PushUnsubscribeBody = z.object({
+  endpoint: z.optional(z.string()),
+});
+export const ResolveWaitBody = z.object({
+  book_id: z.string().check(z.minLength(1)),
+  ref: z.string().check(z.startsWith("m")),
+});
+export const RoomOrderBody = z.object({ ids: z.array(z.unknown()) });
+export const TintBody = z.object({ tint: z.optional(z.nullable(z.string())) });
+export const ArchiveBody = z.object({ archived: z.optional(z.boolean()) });

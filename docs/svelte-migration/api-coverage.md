@@ -10,7 +10,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/books` | `src/index.ts:699` | JSON RPC | 37 | todo |
 | GET | `/api/books/:id/access` | `src/index.ts:735` | JSON RPC | 37 | todo |
 | GET | `/api/books/:id/agents` | `src/index.ts:581` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/archive` | `src/index.ts:681` | JSON RPC | 37 | todo |
+| POST | `/api/books/:id/archive` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/:id/claude` | `src/index.ts:648` | JSON RPC | 37 | todo |
 | GET | `/api/books/:id/connections` | `src/mcpconn.ts:262` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/connections` | `src/mcpconn.ts:269` | JSON RPC | 37 | todo |
@@ -32,7 +32,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/books/:id/requests` | `src/index.ts:737` | JSON RPC | 37 | todo |
 | GET | `/api/books/:id/sandboxes` | `src/sandbox.ts:273` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/sandboxes` | `src/sandbox.ts:308` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/tint` | `src/index.ts:672` | JSON RPC | 37 | todo |
+| POST | `/api/books/:id/tint` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/start` | `src/index.ts:709` | JSON RPC | 2 | todo |
 | POST | `/api/claude-token` | `src/sandbox.ts:238` | JSON RPC | 2 | todo |
 | DELETE | `/api/claude-token` | `src/sandbox.ts:249` | JSON RPC | 2 | todo |
@@ -50,18 +50,18 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/me/avatar` | `src/index.ts:492` | binary upload (typed adapter) | 1 | todo |
 | GET | `/api/me/logins` | `src/index.ts:413` | JSON RPC | 1 | todo |
 | GET | `/api/notify` | `src/index.ts:310` | agent long-poll (CLI), not the app | 0 | n/a (documented) |
-| GET | `/api/push/key` | `src/index.ts:462` | JSON RPC | 1 | todo |
-| POST | `/api/push/subscribe` | `src/index.ts:463` | JSON RPC | 1 | todo |
-| POST | `/api/push/test` | `src/index.ts:476` | JSON RPC | 0 | todo |
-| POST | `/api/push/unsubscribe` | `src/index.ts:471` | JSON RPC | 1 | todo |
-| POST | `/api/rooms/order` | `src/index.ts:660` | JSON RPC | 1 | todo |
+| GET | `/api/push/key` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
+| POST | `/api/push/subscribe` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
+| POST | `/api/push/test` | `src/api.ts` | JSON RPC | 0 | tested (slice 2) |
+| POST | `/api/push/unsubscribe` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
+| POST | `/api/rooms/order` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
 | POST | `/api/route` | `src/index.ts:617` | JSON RPC | 1 | todo |
 | DELETE | `/api/sandboxes/:sid` | `src/sandbox.ts:340` | JSON RPC | 4 | todo |
 | POST | `/api/sandboxes/:sid/setup` | `src/sandbox.ts:333` | JSON RPC | 4 | todo |
 | POST | `/api/sandboxes/:sid/terminal` | `src/sandbox.ts:359` | JSON RPC | 4 | todo |
 | GET | `/api/search` | `src/index.ts:572` | JSON RPC | 2 | todo |
 | PUT | `/api/upload/:token` | `src/index.ts:286` | binary PUT (agent upload link) | 0 | n/a (documented) |
-| POST | `/api/waits/resolve` | `src/index.ts:481` | JSON RPC | 2 | todo |
+| POST | `/api/waits/resolve` | `src/api.ts` | JSON RPC | 2 | tested (slice 2) |
 | GET | `/app` | `src/index.ts:259` | JSON RPC | 16 | todo |
 | GET | `/archived` | `src/index.ts:263` | JSON RPC | 4 | todo |
 | GET | `/b/*` | `src/index.ts:270` | JSON RPC | 0 | todo |
@@ -73,5 +73,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/yjs/:name` | `src/index.ts:833` | WebSocket upgrade (typed protocol, not JSON RPC) | 1 | n/a (documented) |
 
 Slice 1 (post, upload): schemas in `shared/schemas.ts`, routes in `src/api.ts`, client `svelte/lib/client/api.ts`, type tests `svelte/lib/client/api.typetest.ts` (request and response mismatches fail svelte-check), runtime: `scripts/protocol-check.ts`, `scripts/ui-panels.test.ts` and a local run of every status (200, business 400, invalid payload 400, 403, 415).
+
+Slice 2 (push subscribe/unsubscribe/key/test, waits/resolve, rooms/order, tint, archive): same gates; runtime run of each success and error status. One stricter answer: `archive` with a non-boolean `archived` is now a 400 (it used to archive). Bundle cost so far: the preview's main chunk grew 39.1 → 48.3 KB gzip (hono/client + zod/mini + the response schemas).
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.
