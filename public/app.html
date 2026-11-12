@@ -624,6 +624,18 @@
   .mfoot .doing { color: var(--accent); } .mfoot .did { color: var(--ok-ink); } .mfoot .wait > i { color: var(--wait-ink); }
   .mfoot .need { flex-basis: 100%; color: var(--wait-ink); background: var(--wait-bg); padding: 5px 10px; border-radius: 10px; } .mfoot .need b { font-weight: 600; }
   .mfoot .mr { display: inline-flex; flex-wrap: wrap; gap: 2px 10px; } .mfoot .mr .rd { color: var(--accent); }
+  /* Seen by: one small pill per message, the readers' faces stacked with their agent's mark; hover/tap lists them. */
+  .seen { position: relative; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 1px 7px 1px 3px; font: inherit; color: var(--mute); cursor: default; }
+  .seen .sv { position: relative; display: inline-flex; margin-left: -5px; } .seen .sv:first-child { margin-left: 0; }
+  .seen .sv .avatar { width: 18px; height: 18px; font-size: 8px; box-shadow: 0 0 0 1.5px var(--bg); }
+  .seen .sv.dl { opacity: .45; }
+  .seen .sv i { position: absolute; right: -3px; bottom: -3px; width: 11px; height: 11px; border-radius: 50%; background: var(--claude); color: #fff; font: 600 8px/11px system-ui; font-style: normal; text-align: center; box-shadow: 0 0 0 1.5px var(--bg); }
+  .seen .sv i.codex, .seen .sv i.cursor { background: light-dark(#111, #ececec); color: light-dark(#fff, #111); } .seen .sv i.gemini { background: #6b7cff; } .seen .sv i.copilot { background: #6e40c9; }
+  .seen .more { font-size: 11px; } .seen .ck { color: var(--accent); font-size: 11px; }
+  .seenPop { display: none; position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 20; min-width: 220px; max-width: 300px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: 0 8px 24px rgb(0 0 0 / .14); text-align: left; }
+  .seen:hover .seenPop, .seen:focus-within .seenPop, .seen:focus .seenPop { display: grid; gap: 2px; }
+  .seenPop div { display: flex; align-items: center; gap: 8px; padding: 4px 6px; color: var(--ink); white-space: nowrap; } .seenPop div span { flex: 1; overflow: hidden; text-overflow: ellipsis; } .seenPop small { color: var(--mute); }
+  .seenPop .avatar { width: 20px; height: 20px; font-size: 9px; flex: none; }
   .mfoot .spin { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent; animation: ackspin 0.9s linear infinite; }
   @keyframes ackspin { to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) { .mfoot .spin { animation: none; } }
@@ -1069,6 +1081,16 @@
   /* The tabs never move (they sit right under the room's row); a long archived list scrolls inside instead of
      pushing everything down. */
   .epList.arch { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+  /* Epic tree: a sub-epic under its parent, › opens/closes the branch (epicTree). */
+  .epNode { display: flex; flex-wrap: wrap; align-items: center; }
+  .epNode > .thread { flex: 1; min-width: 0; width: auto; }
+  .epChev { width: 16px; flex: none; border: 0; background: none; color: var(--mute); padding: 0; font-size: 16px; line-height: 1; cursor: pointer; transition: transform .12s; }
+  span.epChev { cursor: default; }
+  .epNode.open > .epChev { transform: rotate(90deg); }
+  .epNode.kidsBusy:not(.open) > .epChev { color: var(--claude); }
+  .epKids { flex: 0 0 calc(100% - 15px); min-width: 0; margin-left: 15px; padding-left: 4px; border-left: 1px solid var(--line); }
+  .epNode:not(.open) > .epKids { display: none; }
+  @media (prefers-reduced-motion: reduce) { .epChev { transition: none; } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -1988,6 +2010,12 @@ const EN = {
   "aguardando {who}": "waiting on {who}",
   "{who} parou": "{who} stopped",
   "lido por {who}": "read by {who}",
+  "Fechar galho": "Collapse branch",
+  "Abrir galho": "Expand branch",
+  "visto por {n}": "seen by {n}",
+  "visto por {n} de {m}": "seen by {n} of {m}",
+  "leu": "read",
+  "recebeu": "delivered",
   "entregue, ainda não lido por {who}": "delivered, not yet read by {who}",
   "Diagrama com erro": "Diagram error",
   "na linha {n}": "on line {n}",
@@ -4107,6 +4135,28 @@ function ownerMenu(anchor, id) {
   m.querySelectorAll("[data-own]").forEach((b) => b.onclick = () => { send({ t: "epic.owner", id, owner: b.dataset.own }); close(); });
   m.querySelector("button")?.focus();
 }
+// Epic tree (Nov 2026): a sub-epic (its request was written in another epic's thread: epics[].parent) sits under its
+// parent; › opens and closes the branch. Closed branches are remembered per room in this browser (vb.tree.<room>), and
+// a branch holding the thread you're in stays open. A room with no sub-epics draws the flat list as before.
+const treeClosed = () => { try { return new Set(JSON.parse(localStorage.getItem(`vb.tree.${S.id}`) || "[]")); } catch { return new Set(); } };
+function epicTree(list) {
+  const ids = new Set(list.map((e) => e.id)), kids = new Map();
+  for (const e of list) if (e.parent && e.parent !== e.id && ids.has(e.parent)) { if (!kids.has(e.parent)) kids.set(e.parent, []); kids.get(e.parent).push(e); }
+  if (!kids.size) return list.map(epicRow).join("");
+  const closed = treeClosed(), seen = new Set();
+  const below = (id, f, d = 0) => d < 12 && (kids.get(id) || []).some((k) => f(k) || below(k.id, f, d + 1));
+  const node = (e) => {
+    if (seen.has(e.id)) return "";
+    seen.add(e.id);
+    const ks = kids.get(e.id) || [];
+    if (!ks.length) return `<div class="epNode leaf"><span class="epChev"></span>${epicRow(e)}</div>`;
+    const open = !closed.has(e.id) || below(e.id, (k) => k.id === thread);
+    const busy = below(e.id, (k) => !!epicBusy(k));
+    return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}"><button type="button" class="epChev" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</button>${epicRow(e)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
+  };
+  // Roots first (no parent in this list); anything a cycle left out still gets its row.
+  return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map(epicRow).join("");
+}
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           ${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
@@ -4178,7 +4228,7 @@ function renderSide() {
         // Open and archived epics are two tabs right under the room's row, so switching never moves them; a long
         // archived list scrolls inside (.epList.arch).
         return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
-      <div class="epList${showArch ? " arch" : ""}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
+      <div class="epList${showArch ? " arch" : ""}">${showArch ? epicTree(arch) : `${epicTree(open)}
       <form id="newEpic" class="newRoom"><input placeholder="${t("Novo épico: escreva o título…")}" aria-label="${t("Novo épico")}" enterkeyhint="done" /><button class="ri" aria-label="${t("Criar épico")}">${icon("plus")}</button></form>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
       })()}
@@ -4221,7 +4271,14 @@ function renderSide() {
   el.querySelector("#sideArch")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicArch")?.click(); });
   el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
   // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
-  el.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((b) => {
+  el.querySelectorAll("[data-chev]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation();
+    const c = treeClosed(), id = b.dataset.chev;
+    if (c.has(id)) c.delete(id); else c.add(id);
+    try { localStorage.setItem(`vb.tree.${S.id}`, JSON.stringify([...c])); } catch {}
+    renderSide();
+  });
+  el.querySelectorAll(".epList .thread[data-thread]:not(.pre)").forEach((b) => {
     b.draggable = true;
     b.ondragstart = (e) => { e.dataTransfer.setData("text/vb-epic", b.dataset.thread); e.dataTransfer.effectAllowed = "move"; b.classList.add("dragging"); };
     b.ondragend = () => b.classList.remove("dragging");
@@ -4648,7 +4705,8 @@ document.addEventListener("click", (e) => {
   if (a) { e.preventDefault(); return openViewer(a.getAttribute("href"), a.dataset.view, a.dataset.name || ""); }
   // A link to one of this room's files written in a message ([report.html](https://vibebook.dev/api/books/<room>/files/<id>))
   // opens in the viewer too: as a plain link, the home-screen app navigated to the raw file with no bar and no way back.
-  const l = e.target.closest?.("a[href]"); if (!l || !S?.id) return;
+  // Not the viewer's own "abrir numa aba" (↗): it points at the same file and must open a tab, not the viewer again.
+  const l = e.target.closest?.("a[href]"); if (!l || !S?.id || l.closest(".viewer")) return;
   let u; try { u = new URL(l.getAttribute("href"), location.href); } catch { return; }
   const m = u.origin === location.origin && new RegExp(`^/api/books/${S.id}/files/([0-9a-f]+)$`).exec(u.pathname);
   if (!m) return;
@@ -5477,6 +5535,16 @@ function loadOlder() {
 // then who has read it (receipts). Color only says the state; only ⏸ (a Claude needs you in its terminal) stands out.
 // Model ids read the same everywhere (prettyModel).
 const prettyModel = (s) => String(s ?? "").replace(/^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i, (_, f, a, b) => `Claude ${f[0].toUpperCase()}${f.slice(1)} ${a}.${b}`);
+// "Visto por": the readers stacked as faces with their agent's mark (✓ only delivered = faded), ≤5 then +N; hover or
+// tap (focus) lists each one with its model and read/delivered.
+function seenPill(rd) {
+  rd.sort((a, b) => b.read - a.read);
+  const face = ({ r, read }) => { const [k, g] = agentKind(r.who); return `<span class="sv${read ? "" : " dl"}">${avatar(r.email)}<i class="${k}">${g}</i></span>`; };
+  const nRead = rd.filter((x) => x.read).length;
+  const label = nRead === rd.length ? t("visto por {n}", { n: rd.length }) : t("visto por {n} de {m}", { n: nRead, m: rd.length });
+  return `<button type="button" class="seen" aria-label="${label}">${rd.slice(0, 5).map(face).join("")}${rd.length > 5 ? `<span class="more">+${rd.length - 5}</span>` : ""}<span class="ck">${nRead ? "✓✓" : "✓"}</span>
+    <span class="seenPop" role="tooltip">${rd.map((x) => `<div>${avatar(x.r.email)}<span>${x.who}</span><small>${x.read ? t("leu") : t("recebeu")}</small></div>`).join("")}</span></button>`;
+}
 function renderReceipts() {
   const el = document.getElementById("msgs"); if (!el) return;
   el.querySelectorAll(".mfoot").forEach((x) => x.remove());
@@ -5511,11 +5579,11 @@ function renderReceipts() {
     const m = list.findLast((x) => x.id <= Math.max(r.read, r.delivered) && !(x.kind === "agent" && x.author === r.email));
     if (!m || seenAck.has(`${m.id}|${r.who}|${r.email}`)) continue;
     const read = r.read >= m.id, who = via(r);
-    at(m.id).rd.push(`<span class="${read ? "rd" : ""}" title="${read ? t("lido por {who}", { who }) : t("entregue, ainda não lido por {who}", { who })}">${read ? "✓✓" : "✓"} ${esc(prettyModel(r.who))}</span>`);
+    at(m.id).rd.push({ r, read, who });
   }
   for (const [id, f] of Object.entries(foot)) {
     const body = document.querySelector(`#m${id} .body`); if (!body) continue;
-    body.insertAdjacentHTML("beforeend", `<div class="mfoot">${f.st.join("")}${f.rd.length ? `<span class="mr">${f.rd.join("")}</span>` : ""}</div>`);
+    body.insertAdjacentHTML("beforeend", `<div class="mfoot">${f.st.join("")}${f.rd.length ? seenPill(f.rd) : ""}</div>`);
   }
 }
 function appendMsg(m) {
