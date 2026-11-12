@@ -76,7 +76,7 @@ export async function verifyStudioPalette(page: Page, theme: "light" | "dark") {
           if (key.endsWith("height")) return [key, "height"];
           if (key === "--spacing" || key === "--user-color-strength")
             return [key, "width"];
-          throw new Error(`Unmapped Studio token: ${key}`);
+          throw new Error(`Unmapped Studio property ${key}`);
         }),
       );
       const expected = document.createElement("span");
@@ -121,59 +121,59 @@ export async function verifyStudioPalette(page: Page, theme: "light" | "dark") {
             role: "page background",
             node: main,
             property: "background-color",
-            token: "--background",
+            cssVariable: "--background",
           },
           {
             role: "card background",
             node: card,
             property: "background-color",
-            token: "--card",
+            cssVariable: "--card",
           },
           {
             role: "primary background",
             node: primary,
             property: "background-color",
-            token: "--primary",
+            cssVariable: "--primary",
           },
           {
             role: "primary label",
             node: primary,
             property: "color",
-            token: "--primary-foreground",
+            cssVariable: "--primary-foreground",
           },
           {
             role: "input background",
             node: input,
             property: "background-color",
-            token: "--studio-input-background",
+            cssVariable: "--studio-input-background",
           },
           {
             role: "UI family",
             node: main,
             property: "font-family",
-            token: "--font-sans",
+            cssVariable: "--font-sans",
           },
           {
             role: "code family",
             node: code,
             property: "font-family",
-            token: "--font-mono",
+            cssVariable: "--font-mono",
           },
           {
             role: "body weight",
             node: main,
             property: "font-weight",
-            token: "--font-weight-normal",
+            cssVariable: "--font-weight-normal",
           },
           {
             role: "action weight",
             node: primary,
             property: "font-weight",
-            token: "--font-weight-medium",
+            cssVariable: "--font-weight-medium",
           },
         ];
         for (const role of roles) {
-          expected.style.setProperty(role.property, `var(${role.token})`);
+          expected.style.setProperty(role.property, `var(${role.cssVariable})`);
           const expectedValue = getComputedStyle(expected).getPropertyValue(
             role.property,
           );
