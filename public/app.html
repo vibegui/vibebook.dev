@@ -1081,6 +1081,16 @@
   /* The tabs never move (they sit right under the room's row); a long archived list scrolls inside instead of
      pushing everything down. */
   .epList.arch { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+  /* Epic tree: a sub-epic under its parent, › opens/closes the branch (epicTree). */
+  .epNode { display: flex; flex-wrap: wrap; align-items: center; }
+  .epNode > .thread { flex: 1; min-width: 0; width: auto; }
+  .epChev { width: 16px; flex: none; border: 0; background: none; color: var(--mute); padding: 0; font-size: 16px; line-height: 1; cursor: pointer; transition: transform .12s; }
+  span.epChev { cursor: default; }
+  .epNode.open > .epChev { transform: rotate(90deg); }
+  .epNode.kidsBusy:not(.open) > .epChev { color: var(--claude); }
+  .epKids { flex: 0 0 calc(100% - 15px); min-width: 0; margin-left: 15px; padding-left: 4px; border-left: 1px solid var(--line); }
+  .epNode:not(.open) > .epKids { display: none; }
+  @media (prefers-reduced-motion: reduce) { .epChev { transition: none; } }
   @media (max-width: 900px) {
     /* minmax(0, …) + min-height: 0: Safari otherwise lets a panel grow to its content instead of scrolling it.
        --vvh follows the visible viewport, so the composer stays above the iOS keyboard. */
@@ -2000,6 +2010,8 @@ const EN = {
   "aguardando {who}": "waiting on {who}",
   "{who} parou": "{who} stopped",
   "lido por {who}": "read by {who}",
+  "Fechar galho": "Collapse branch",
+  "Abrir galho": "Expand branch",
   "visto por {n}": "seen by {n}",
   "visto por {n} de {m}": "seen by {n} of {m}",
   "leu": "read",
@@ -4123,6 +4135,28 @@ function ownerMenu(anchor, id) {
   m.querySelectorAll("[data-own]").forEach((b) => b.onclick = () => { send({ t: "epic.owner", id, owner: b.dataset.own }); close(); });
   m.querySelector("button")?.focus();
 }
+// Epic tree (Nov 2026): a sub-epic (its request was written in another epic's thread: epics[].parent) sits under its
+// parent; › opens and closes the branch. Closed branches are remembered per room in this browser (vb.tree.<room>), and
+// a branch holding the thread you're in stays open. A room with no sub-epics draws the flat list as before.
+const treeClosed = () => { try { return new Set(JSON.parse(localStorage.getItem(`vb.tree.${S.id}`) || "[]")); } catch { return new Set(); } };
+function epicTree(list) {
+  const ids = new Set(list.map((e) => e.id)), kids = new Map();
+  for (const e of list) if (e.parent && e.parent !== e.id && ids.has(e.parent)) { if (!kids.has(e.parent)) kids.set(e.parent, []); kids.get(e.parent).push(e); }
+  if (!kids.size) return list.map(epicRow).join("");
+  const closed = treeClosed(), seen = new Set();
+  const below = (id, f, d = 0) => d < 12 && (kids.get(id) || []).some((k) => f(k) || below(k.id, f, d + 1));
+  const node = (e) => {
+    if (seen.has(e.id)) return "";
+    seen.add(e.id);
+    const ks = kids.get(e.id) || [];
+    if (!ks.length) return `<div class="epNode leaf"><span class="epChev"></span>${epicRow(e)}</div>`;
+    const open = !closed.has(e.id) || below(e.id, (k) => k.id === thread);
+    const busy = below(e.id, (k) => !!epicBusy(k));
+    return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}"><button type="button" class="epChev" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</button>${epicRow(e)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
+  };
+  // Roots first (no parent in this list); anything a cycle left out still gets its row.
+  return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map(epicRow).join("");
+}
 const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           ${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
@@ -4194,7 +4228,7 @@ function renderSide() {
         // Open and archived epics are two tabs right under the room's row, so switching never moves them; a long
         // archived list scrolls inside (.epList.arch).
         return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
-      <div class="epList${showArch ? " arch" : ""}">${showArch ? arch.map(epicRow).join("") : `${open.map(epicRow).join("")}
+      <div class="epList${showArch ? " arch" : ""}">${showArch ? epicTree(arch) : `${epicTree(open)}
       <form id="newEpic" class="newRoom"><input placeholder="${t("Novo épico: escreva o título…")}" aria-label="${t("Novo épico")}" enterkeyhint="done" /><button class="ri" aria-label="${t("Criar épico")}">${icon("plus")}</button></form>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
       })()}
@@ -4237,7 +4271,14 @@ function renderSide() {
   el.querySelector("#sideArch")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicArch")?.click(); });
   el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
   // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
-  el.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((b) => {
+  el.querySelectorAll("[data-chev]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation();
+    const c = treeClosed(), id = b.dataset.chev;
+    if (c.has(id)) c.delete(id); else c.add(id);
+    try { localStorage.setItem(`vb.tree.${S.id}`, JSON.stringify([...c])); } catch {}
+    renderSide();
+  });
+  el.querySelectorAll(".epList .thread[data-thread]:not(.pre)").forEach((b) => {
     b.draggable = true;
     b.ondragstart = (e) => { e.dataTransfer.setData("text/vb-epic", b.dataset.thread); e.dataTransfer.effectAllowed = "move"; b.classList.add("dragging"); };
     b.ondragend = () => b.classList.remove("dragging");
