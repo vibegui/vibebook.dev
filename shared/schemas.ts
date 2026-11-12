@@ -84,3 +84,54 @@ export const PushTestResult = z.object({
 });
 export type PushTestResult = z.infer<typeof PushTestResult>;
 export type ErrorBody = z.infer<typeof ErrorBody>;
+
+// Slice 3: account and room lists. Database rows are parsed against these before they leave the Worker.
+export const EmailBody = z.object({ email: z.string() });
+export const ArchivedRoom = z.object({
+  id: z.string(),
+  title: z.string(),
+  folder: z.nullable(z.string()),
+  summary: z.nullable(z.string()),
+  updated_at: z.number(),
+  archived_at: z.number(),
+  members: z.nullable(z.string()),
+});
+export const ArchivedResult = z.object({ books: z.array(ArchivedRoom) });
+export type ArchivedResult = z.infer<typeof ArchivedResult>;
+export const SearchResult = z.object({
+  rooms: z.number(),
+  failed: z.optional(z.number()),
+  epics: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      archived: z.boolean(),
+      ts: z.number(),
+      room_id: z.string(),
+      room: z.string(),
+    }),
+  ),
+  messages: z.array(
+    z.object({
+      id: z.number(),
+      thread: z.string(),
+      topic: z.nullable(z.string()),
+      author: z.string(),
+      by_agent: z.boolean(),
+      via: z.nullable(z.string()),
+      ts: z.number(),
+      files: z.array(z.object({ id: z.string(), name: z.string() })),
+      snippet: z.string(),
+      room_id: z.string(),
+      room: z.string(),
+    }),
+  ),
+});
+export type SearchResult = z.infer<typeof SearchResult>;
+export const LoginsResult = z.object({
+  logins: z.array(
+    z.object({ method: z.string(), last: z.number(), n: z.number() }),
+  ),
+  providers: z.object({ google: z.boolean(), github: z.boolean() }),
+});
+export type LoginsResult = z.infer<typeof LoginsResult>;

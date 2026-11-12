@@ -1,4 +1,4 @@
-import { api, type ApiServices } from "./api";
+import { accountApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -411,12 +411,6 @@ app.get("/api/dev/as", (c) => {
 });
 
 // How you sign in (the profile): per method, the last login and how many, from your own login events (user, ts index).
-app.get("/api/me/logins", async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT COALESCE(json_extract(dims, '$.method'), 'email') AS method, MAX(ts) AS last, COUNT(*) AS n FROM events WHERE user = ? AND name = 'login' GROUP BY 1`,
-  ).bind(c.get("email")).all();
-  return c.json({ logins: results, providers: { google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET) } });
-});
 
 app.get("/api/me", async (c) => {
   const email = c.get("email");
@@ -530,29 +524,9 @@ app.get("/api/avatar/:email", (c) =>
 
 // Archive is per person: the room leaves your list (and your agent's inbox) and lands in /archived.
 // Everyone else keeps it; restoring brings it back. Nothing is deleted.
-app.get("/api/archived", async (c) => {
-  const r = await c.env.DB.prepare(
-    `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, m.archived_at,
-       (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
-     FROM books b JOIN members m ON m.book_id = b.id
-     WHERE m.email = ? AND m.archived_at IS NOT NULL ORDER BY m.archived_at DESC`,
-  )
-    .bind(c.get("email"))
-    .all();
-  return c.json({ books: r.results });
-});
 
 // The agents of this room's members: model/client, last seen, and whether they're listening to this room now.
 // Search everything of yours (⌘K): messages, epics (archived too) and attached files across your rooms.
-app.get("/api/search", async (c) => {
-  const email = c.get("email");
-  const q = (c.req.query("q") ?? "").trim().slice(0, 120);
-  if (q.length < 2) return c.json({ rooms: 0, epics: [], messages: [] });
-  if (!(await c.env.AGENT_LIMIT.limit({ key: `search:${email}` })).success) return c.json({ error: "rate limited" }, 429);
-  const out = await searchRooms(c.env, email, q);
-  c.executionCtx.waitUntil(track(c.env, "search", { user: email, dims: { via: "app", hits: out.messages.length + out.epics.length, rooms: out.rooms } }));
-  return c.json(out);
-});
 app.get("/api/books/:id/agents", async (c) => {
   const id = c.req.param("id");
   const now = Date.now();
@@ -609,8 +583,8 @@ app.post("/api/route", async (c) => {
 
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
-app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"))); await next(); });
-app.route("/", api);
+app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
+app.route("/", accountApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
@@ -692,48 +666,11 @@ app.post("/api/books/:id/requests", async (c) => {
   return c.json({ ok: true });
 });
 
-app.post("/api/books/:id/members", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { email: invitee } = await c.req.json<{ email: string }>();
-  const who = (invitee ?? "").trim().toLowerCase();
-  if (!EMAIL_RE.test(who)) return c.json({ error: "invalid email" }, 400);
-  await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, who, reqLang(c.req.raw));
-  return c.json({ ok: true });
-});
 
-app.post("/api/friends", async (c) => {
-  const { email: friend } = await c.req.json<{ email: string }>();
-  const who = (friend ?? "").trim().toLowerCase();
-  if (!EMAIL_RE.test(who) || who === c.get("email")) return c.json({ error: "invalid email" }, 400);
-  await befriend(c.env.DB, c.get("email"), who);
-  return c.json({ ok: true });
-});
 
 // Unfriend: removes both directions (shared vibebooks are untouched).
-app.delete("/api/friends/:email", async (c) => {
-  const me = c.get("email");
-  const who = decodeURIComponent(c.req.param("email")).toLowerCase();
-  await c.env.DB.prepare(`DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)`).bind(me, who, who, me).run();
-  return c.json({ ok: true });
-});
 
 // Cancel a pending invite (any member) or remove someone (owner only).
-app.delete("/api/books/:id/members/:email", async (c) => {
-  const me = c.get("email");
-  const id = c.req.param("id");
-  const who = decodeURIComponent(c.req.param("email")).toLowerCase();
-  const db = c.env.DB;
-  if (!(await isMember(db, id, me))) return c.json({ error: "forbidden" }, 403);
-  const book = await db.prepare(`SELECT owner FROM books WHERE id = ?`).bind(id).first<{ owner: string }>();
-  if (who === book?.owner) return c.json({ error: "O dono não pode ser removido." }, 400);
-  const joined = !!(await db.prepare(`SELECT 1 FROM users WHERE email = ?`).bind(who).first());
-  if (joined && me !== book?.owner) return c.json({ error: "Só quem criou o vibebook remove quem já entrou." }, 403);
-  await db.prepare(`DELETE FROM members WHERE book_id = ? AND email = ?`).bind(id, who).run();
-  await bookStub(c.env, id).fetch("https://book/members-changed", { method: "POST" });
-  return c.json({ ok: true });
-});
 
 // Files: stored in R2 under <book>/<file>; types, limits and serving headers live in rooms.ts.
 
