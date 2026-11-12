@@ -1,0 +1,36 @@
+{
+  "capturedAt": "2026-11-12T19:23:32.433Z",
+  "license": "OFL-1.1",
+  "records": [
+    {
+      "name": "InterVariable-693b77d4f3.woff2",
+      "url": "https://studio.decocms.com/assets/InterVariable-DiVDrmQJ.woff2",
+      "bytes": 352240,
+      "sha256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3"
+    },
+    {
+      "name": "InterVariable-Italic-e564f65291.woff2",
+      "url": "https://studio.decocms.com/assets/InterVariable-Italic-FCBEiFp6.woff2",
+      "bytes": 387976,
+      "sha256": "e564f652916db6c139570fefb9524a77c4d48f30c92928de9db19b6b5c7a262a"
+    },
+    {
+      "name": "CommitMono-f342ca6c3f.woff2",
+      "url": "https://studio.decocms.com/assets/CommitMono-VariableFont-ytizKI8U.woff2",
+      "bytes": 86768,
+      "sha256": "f342ca6c3f2597e6c0fcd84b3f3ed64d3ce5bdb6d0af19d190d645a558b1cf29"
+    },
+    {
+      "name": "Inter-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/rsms/inter/master/LICENSE.txt",
+      "bytes": 4380,
+      "sha256": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a"
+    },
+    {
+      "name": "CommitMono-LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/eigilnikolajsen/commit-mono/main/LICENSE-FONT",
+      "bytes": 4360,
+      "sha256": "005e08f22d472be5139dcaf876dbed7ce8f17a501cd180c3259ad2aaf27237fe"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
-import { compile } from "svelte/compiler";
+import { compile, compileModule } from "svelte/compiler";
 import { Window as HappyDOMWindow } from "happy-dom";
 import type { Room } from "../svelte/roomStore";
 import type { RoomCommand } from "../shared/commands";
@@ -47,6 +47,13 @@ for (const key of [
 plugin({
   name: "svelte-panel-tests",
   setup(build) {
+    build.onLoad({ filter: /\.svelte\.js$/ }, (args) => ({
+      contents: compileModule(readFileSync(args.path, "utf8"), {
+        filename: args.path,
+        generate: "client",
+      }).js.code,
+      loader: "js",
+    }));
     build.onLoad({ filter: /\.svelte$/ }, (args) => ({
       contents: compile(readFileSync(args.path, "utf8"), {
         filename: args.path,

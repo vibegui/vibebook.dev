@@ -1,0 +1,503 @@
+/* Studio source digest: eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb. Token names are namespaced during migration. */
+@layer theme, base, legacy, components, utilities;
+@import "tailwindcss" prefix(tw) source(none);
+@source "../";
+@source "../../public/app-svelte.html";
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+@font-face {
+  font-family: "Inter var";
+  src: url("/fonts/studio/InterVariable-693b77d4f3.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter var";
+  src: url("/fonts/studio/InterVariable-Italic-e564f65291.woff2")
+    format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CommitMono";
+  src: url("/fonts/studio/CommitMono-f342ca6c3f.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --vb-team-1: oklch(64.6% 0.222 41.116);
+  --vb-team-2: oklch(60% 0.118 184.704);
+  --vb-team-3: oklch(39.8% 0.07 227.392);
+  --vb-team-4: oklch(82.8% 0.189 84.429);
+  --vb-team-5: oklch(76.9% 0.188 70.08);
+  --vb-background: #fefdfb;
+  --vb-foreground: #0a0a09;
+  --vb-card: #fffffd;
+  --vb-card-foreground: #0a0a09;
+  --vb-popover: #fffffd;
+  --vb-popover-foreground: #0a0a09;
+  --vb-muted: #f5f4f2;
+  --vb-muted-foreground: #676664;
+  --vb-subtle-foreground: #a4a3a1;
+  --vb-accent: #f5f4f2;
+  --vb-accent-foreground: #0a0a09;
+  --vb-border: #edecea;
+  --vb-hairline: #0000000f;
+  --vb-input: #e4e3e1;
+  --vb-ring: #0a0a09;
+  --vb-primary: #0a0a09;
+  --vb-primary-foreground: #fff;
+  --vb-primary-hover: #2a2a28;
+  --vb-secondary: #f5f4f2;
+  --vb-secondary-foreground: #0a0a09;
+  --vb-secondary-hover: #edecea;
+  --vb-studio-input-background: var(--vb-card);
+  --vb-studio-outline-foreground: var(--vb-card-foreground);
+  --vb-studio-outline-hover-background: var(--vb-accent);
+  --vb-studio-secondary-background: var(--vb-secondary);
+  --vb-studio-secondary-foreground: var(--vb-secondary-foreground);
+  --vb-studio-secondary-hover-background: var(--vb-secondary-hover);
+  --vb-studio-secondary-hover-foreground: var(--vb-secondary-foreground);
+  --vb-studio-secondary-shadow: none;
+  --vb-destructive: #df2225;
+  --vb-destructive-foreground: #fff;
+  --vb-success: #009a41;
+  --vb-success-foreground: #fff;
+  --vb-warning: #c56e00;
+  --vb-warning-foreground: #fff;
+  --vb-special: #6f5fe0;
+  --vb-special-foreground: #fff;
+  --vb-notice: #216bf2;
+  --vb-link: #216bf2;
+  --vb-highlight: #e6edfc;
+  --vb-user-color-strength: 100%;
+  --vb-sidebar: #faf9f7;
+  --vb-sidebar-foreground: #0a0a09;
+  --vb-sidebar-accent: #edecea;
+  --vb-sidebar-accent-foreground: #0a0a0a;
+  --vb-sidebar-border: #edecea;
+  --vb-sidebar-ring: #0a0a09;
+  --vb-sidebar-primary: #0a0a09;
+  --vb-sidebar-primary-foreground: #fff;
+  --vb-chart-1: oklch(73% 0.15 289);
+  --vb-chart-2: oklch(60% 0.18 150);
+  --vb-chart-3: oklch(61% 0.2 6.81);
+  --vb-chart-4: oklch(84% 0.17 84.5);
+  --vb-chart-5: oklch(74% 0.17 159);
+  --vb-app-site-editor: oklch(64% 0.16 289);
+  --vb-app-calendar: oklch(64% 0.16 325);
+  --vb-app-experiments: oklch(64% 0.16 15);
+  --vb-app-analytics: oklch(64% 0.16 245);
+  --vb-app-cdn: oklch(64% 0.16 200);
+  --vb-app-assets: oklch(64% 0.16 55);
+  --vb-app-releases: oklch(64% 0.16 85);
+  --vb-app-hosting: oklch(64% 0.16 120);
+  --vb-app-e2e: oklch(64% 0.16 160);
+  --vb-app-automations: oklch(64% 0.16 350);
+  --vb-app-reports: oklch(64% 0.16 265);
+  --vb-font-sans: "Inter var", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --vb-font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --vb-font-mono:
+    "CommitMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --vb-spacing: 0.25rem;
+  --vb-radius: 0.5rem;
+  --vb-border-hairline: 1px;
+  --vb-studio-button-radius: 9999px;
+  --vb-studio-control-radius: 0.625rem;
+  --vb-studio-surface-radius: 1rem;
+  --vb-studio-control-height: 2.25rem;
+  --vb-shadow-xs: oklch(0% 0 0/0.03) 0px 1px 2px;
+  --vb-shadow-sm:
+    oklch(0% 0 0/0.04) 0px 2px 4px, oklch(0% 0 0/0.02) 0px 1px 2px;
+  --vb-shadow-md:
+    oklch(0% 0 0/0.06) 0px 4px 12px, oklch(0% 0 0/0.04) 0px 2px 4px;
+  --vb-shadow-lg:
+    oklch(0% 0 0/0.08) 0px 8px 32px, oklch(0% 0 0/0.06) 0px 4px 12px;
+  --vb-edge-drop: 0px 1px 2px 0px #0000000d;
+  --vb-edge-ring: 0px 0px 0px 1px #0000001c;
+  --vb-shadow-edge: var(--vb-edge-ring), var(--vb-edge-drop);
+  --vb-shadow-edge-raised:
+    var(--vb-edge-ring), 0px 1px 2px 0px #0000000d, 0px 4px 12px 0px #0000000f;
+  --vb-shadow-soft:
+    0px 0px 0px 1px #00000008, 0px 1px 2px 0px #00000008,
+    0px 8px 24px 0px #0000000f;
+  --vb-shadow-lift:
+    0px 0px 0px 1px #0000000a, 0px 1px 2px 0px #0000000d,
+    0px 4px 12px 0px #0000000f;
+  --vb-glass: #ffffffdb;
+  --vb-glass-raised: #ffffffb3;
+  --vb-glass-rim: #ffffffe6;
+  --vb-glass-shadow:
+    0px 0px 0px 1px #0000000d, 0px 2px 6px 0px #00000008,
+    0px 24px 64px 0px #0000001a;
+  --vb-scrim: #0000002e;
+  --vb-ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --vb-ease-in-cubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --vb-ease-in-quart: cubic-bezier(0.895, 0.03, 0.685, 0.22);
+  --vb-ease-in-quint: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+  --vb-ease-in-expo: cubic-bezier(0.95, 0.05, 0.795, 0.035);
+  --vb-ease-in-circ: cubic-bezier(0.6, 0.04, 0.98, 0.335);
+  --vb-ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --vb-ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --vb-ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --vb-ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+  --vb-ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --vb-ease-out-circ: cubic-bezier(0.075, 0.82, 0.165, 1);
+  --vb-ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --vb-ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --vb-ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+  --vb-ease-in-out-quint: cubic-bezier(0.86, 0, 0.07, 1);
+  --vb-ease-in-out-expo: cubic-bezier(1, 0, 0, 1);
+  --vb-ease-in-out-circ: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+  --vb-shadow-border:
+    0px 0px 0px 0.5px #00000017, 0px 1px 2px -1px #0003,
+    0px 2px 4px 0px #0000000a;
+  --vb-brand: #d0ec1a;
+  --vb-brand-foreground: #07401a;
+  --vb-brand-green-light: #d0ec1a;
+  --vb-brand-green-dark: #07401a;
+  --vb-brand-soft: #8caa25;
+  --vb-brand-lime-tint: #eff6cc;
+  --vb-brand-purple-light: #a595ff;
+  --vb-brand-purple-dark: #151042;
+  --vb-brand-purple-tint: #efecff;
+  --vb-brand-yellow-light: #ffc116;
+  --vb-brand-yellow-dark: #392b02;
+  --vb-brand-yellow-tint: #fff4d1;
+  --vb-brand-blue: oklch(82.9% 0.105 209.2);
+  --vb-brand-blue-dark: #0b3b44;
+  --vb-brand-blue-tint: #e0f7fb;
+  --vb-project-blue: #3b82f6;
+  --vb-project-green: #22c55e;
+  --vb-project-purple: #a855f7;
+  --vb-project-red: #ef4444;
+  --vb-project-amber: #f59e0b;
+}
+
+:root[data-theme="dark"],
+.dark {
+  --vb-background: oklch(17.5% 0 0);
+  --vb-foreground: oklch(96% 0 0);
+  --vb-card: oklch(21% 0 0);
+  --vb-card-foreground: oklch(96% 0 0);
+  --vb-popover: oklch(22% 0 0);
+  --vb-popover-foreground: oklch(96% 0 0);
+  --vb-muted: oklch(23% 0 0);
+  --vb-muted-foreground: oklch(62% 0 0);
+  --vb-accent: oklch(26% 0 0);
+  --vb-accent-foreground: oklch(96% 0 0);
+  --vb-border: oklch(26% 0 0);
+  --vb-hairline: #ffffff1a;
+  --vb-input: oklch(28% 0 0);
+  --vb-ring: oklch(82% 0 0);
+  --vb-primary: oklch(82% 0 0);
+  --vb-primary-foreground: oklch(14% 0 0);
+  --vb-primary-hover: oklch(74% 0 0);
+  --vb-subtle-foreground: oklch(50% 0 0);
+  --vb-secondary: oklch(26% 0 0);
+  --vb-secondary-foreground: oklch(96% 0 0);
+  --vb-secondary-hover: oklch(30% 0 0);
+  --vb-studio-input-background: var(--vb-input);
+  --vb-studio-outline-hover-background: var(--vb-input);
+  --vb-destructive: oklch(62% 0.22 27);
+  --vb-destructive-foreground: oklch(97% 0.01 17);
+  --vb-success: oklch(45% 0.15 149);
+  --vb-success-foreground: oklch(97% 0.02 156);
+  --vb-warning: oklch(65% 0.15 70);
+  --vb-warning-foreground: oklch(98% 0.02 95);
+  --vb-special: oklch(60% 0.16 290);
+  --vb-special-foreground: oklch(97% 0.02 295);
+  --vb-link: #739eff;
+  --vb-highlight: #263866;
+  --vb-user-color-strength: 55%;
+  --vb-sidebar: oklch(15.5% 0 0);
+  --vb-sidebar-foreground: oklch(96% 0 0);
+  --vb-sidebar-accent: oklch(23% 0 0);
+  --vb-sidebar-accent-foreground: oklch(96% 0 0);
+  --vb-sidebar-border: oklch(26% 0 0);
+  --vb-sidebar-ring: oklch(82% 0 0);
+  --vb-sidebar-primary: oklch(82% 0 0);
+  --vb-sidebar-primary-foreground: oklch(14% 0 0);
+  --vb-chart-1: oklch(73% 0.15 289);
+  --vb-chart-2: oklch(60% 0.18 150);
+  --vb-chart-3: oklch(61% 0.2 6.81);
+  --vb-chart-4: oklch(84% 0.17 84.5);
+  --vb-chart-5: oklch(74% 0.17 159);
+  --vb-notice: oklch(72% 0.11 245);
+  --vb-edge-drop:
+    0 2px 2px 0 #0000001a, 0 4px 4px 0 #0000001a, 0 8px 8px 0 #0000001a;
+  --vb-edge-ring:
+    inset 0 1px 0 0 #ffffff08, inset 0 0 0 1px #ffffff08, 0 0 0 1px #0000001a;
+  --vb-shadow-edge: var(--vb-edge-ring), var(--vb-edge-drop);
+  --vb-shadow-edge-raised:
+    var(--vb-edge-ring), 0 4px 8px 0 #00000026, 0 16px 32px -8px #00000040;
+  --vb-shadow-soft: var(--vb-edge-ring), 0 8px 24px 0 #00000040;
+  --vb-shadow-lift: var(--vb-edge-ring), 0 4px 12px 0 #0003;
+  --vb-glass: #1c1c1cb8;
+  --vb-glass-raised: #2a2a2a99;
+  --vb-glass-rim: #ffffff14;
+  --vb-glass-shadow: 0 0 0 1px #00000040, 0 24px 64px 0 #0006;
+  --vb-scrim: #0006;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --vb-background: oklch(17.5% 0 0);
+    --vb-foreground: oklch(96% 0 0);
+    --vb-card: oklch(21% 0 0);
+    --vb-card-foreground: oklch(96% 0 0);
+    --vb-popover: oklch(22% 0 0);
+    --vb-popover-foreground: oklch(96% 0 0);
+    --vb-muted: oklch(23% 0 0);
+    --vb-muted-foreground: oklch(62% 0 0);
+    --vb-accent: oklch(26% 0 0);
+    --vb-accent-foreground: oklch(96% 0 0);
+    --vb-border: oklch(26% 0 0);
+    --vb-hairline: #ffffff1a;
+    --vb-input: oklch(28% 0 0);
+    --vb-ring: oklch(82% 0 0);
+    --vb-primary: oklch(82% 0 0);
+    --vb-primary-foreground: oklch(14% 0 0);
+    --vb-primary-hover: oklch(74% 0 0);
+    --vb-subtle-foreground: oklch(50% 0 0);
+    --vb-secondary: oklch(26% 0 0);
+    --vb-secondary-foreground: oklch(96% 0 0);
+    --vb-secondary-hover: oklch(30% 0 0);
+    --vb-studio-input-background: var(--vb-input);
+    --vb-studio-outline-hover-background: var(--vb-input);
+    --vb-destructive: oklch(62% 0.22 27);
+    --vb-destructive-foreground: oklch(97% 0.01 17);
+    --vb-success: oklch(45% 0.15 149);
+    --vb-success-foreground: oklch(97% 0.02 156);
+    --vb-warning: oklch(65% 0.15 70);
+    --vb-warning-foreground: oklch(98% 0.02 95);
+    --vb-special: oklch(60% 0.16 290);
+    --vb-special-foreground: oklch(97% 0.02 295);
+    --vb-link: #739eff;
+    --vb-highlight: #263866;
+    --vb-user-color-strength: 55%;
+    --vb-sidebar: oklch(15.5% 0 0);
+    --vb-sidebar-foreground: oklch(96% 0 0);
+    --vb-sidebar-accent: oklch(23% 0 0);
+    --vb-sidebar-accent-foreground: oklch(96% 0 0);
+    --vb-sidebar-border: oklch(26% 0 0);
+    --vb-sidebar-ring: oklch(82% 0 0);
+    --vb-sidebar-primary: oklch(82% 0 0);
+    --vb-sidebar-primary-foreground: oklch(14% 0 0);
+    --vb-chart-1: oklch(73% 0.15 289);
+    --vb-chart-2: oklch(60% 0.18 150);
+    --vb-chart-3: oklch(61% 0.2 6.81);
+    --vb-chart-4: oklch(84% 0.17 84.5);
+    --vb-chart-5: oklch(74% 0.17 159);
+    --vb-notice: oklch(72% 0.11 245);
+    --vb-edge-drop:
+      0 2px 2px 0 #0000001a, 0 4px 4px 0 #0000001a, 0 8px 8px 0 #0000001a;
+    --vb-edge-ring:
+      inset 0 1px 0 0 #ffffff08, inset 0 0 0 1px #ffffff08, 0 0 0 1px #0000001a;
+    --vb-shadow-edge: var(--vb-edge-ring), var(--vb-edge-drop);
+    --vb-shadow-edge-raised:
+      var(--vb-edge-ring), 0 4px 8px 0 #00000026, 0 16px 32px -8px #00000040;
+    --vb-shadow-soft: var(--vb-edge-ring), 0 8px 24px 0 #00000040;
+    --vb-shadow-lift: var(--vb-edge-ring), 0 4px 12px 0 #0003;
+    --vb-glass: #1c1c1cb8;
+    --vb-glass-raised: #2a2a2a99;
+    --vb-glass-rim: #ffffff14;
+    --vb-glass-shadow: 0 0 0 1px #00000040, 0 24px 64px 0 #0006;
+    --vb-scrim: #0006;
+  }
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  :root[data-theme="dark"],
+  .dark {
+    --vb-studio-input-background: color-mix(
+      in oklab,
+      var(--vb-input) 30%,
+      transparent
+    );
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      --vb-studio-input-background: color-mix(
+        in oklab,
+        var(--vb-input) 30%,
+        transparent
+      );
+    }
+  }
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  :root[data-theme="dark"],
+  .dark {
+    --vb-studio-outline-hover-background: color-mix(
+      in oklab,
+      var(--vb-input) 50%,
+      transparent
+    );
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+      --vb-studio-outline-hover-background: color-mix(
+        in oklab,
+        var(--vb-input) 50%,
+        transparent
+      );
+    }
+  }
+}
+
+@media only screen and (min-device-pixel-ratio: 2),
+  only screen and (min-resolution: 192dpi) {
+  :root {
+    --vb-border-hairline: 0.5px;
+  }
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-team-1: var(--vb-team-1);
+  --color-team-2: var(--vb-team-2);
+  --color-team-3: var(--vb-team-3);
+  --color-team-4: var(--vb-team-4);
+  --color-team-5: var(--vb-team-5);
+  --color-background: var(--vb-background);
+  --color-foreground: var(--vb-foreground);
+  --color-card: var(--vb-card);
+  --color-card-foreground: var(--vb-card-foreground);
+  --color-popover: var(--vb-popover);
+  --color-popover-foreground: var(--vb-popover-foreground);
+  --color-muted: var(--vb-muted);
+  --color-muted-foreground: var(--vb-muted-foreground);
+  --color-subtle-foreground: var(--vb-subtle-foreground);
+  --color-accent: var(--vb-accent);
+  --color-accent-foreground: var(--vb-accent-foreground);
+  --color-border: var(--vb-border);
+  --color-hairline: var(--vb-hairline);
+  --color-input: var(--vb-input);
+  --color-ring: var(--vb-ring);
+  --color-primary: var(--vb-primary);
+  --color-primary-foreground: var(--vb-primary-foreground);
+  --color-primary-hover: var(--vb-primary-hover);
+  --color-secondary: var(--vb-secondary);
+  --color-secondary-foreground: var(--vb-secondary-foreground);
+  --color-secondary-hover: var(--vb-secondary-hover);
+  --color-studio-input-background: var(--vb-studio-input-background);
+  --color-studio-outline-foreground: var(--vb-studio-outline-foreground);
+  --color-studio-outline-hover-background: var(
+    --vb-studio-outline-hover-background
+  );
+  --color-studio-secondary-background: var(--vb-studio-secondary-background);
+  --color-studio-secondary-foreground: var(--vb-studio-secondary-foreground);
+  --color-studio-secondary-hover-background: var(
+    --vb-studio-secondary-hover-background
+  );
+  --color-studio-secondary-hover-foreground: var(
+    --vb-studio-secondary-hover-foreground
+  );
+  --color-destructive: var(--vb-destructive);
+  --color-destructive-foreground: var(--vb-destructive-foreground);
+  --color-success: var(--vb-success);
+  --color-success-foreground: var(--vb-success-foreground);
+  --color-warning: var(--vb-warning);
+  --color-warning-foreground: var(--vb-warning-foreground);
+  --color-special: var(--vb-special);
+  --color-special-foreground: var(--vb-special-foreground);
+  --color-notice: var(--vb-notice);
+  --color-link: var(--vb-link);
+  --color-highlight: var(--vb-highlight);
+  --color-sidebar: var(--vb-sidebar);
+  --color-sidebar-foreground: var(--vb-sidebar-foreground);
+  --color-sidebar-accent: var(--vb-sidebar-accent);
+  --color-sidebar-accent-foreground: var(--vb-sidebar-accent-foreground);
+  --color-sidebar-border: var(--vb-sidebar-border);
+  --color-sidebar-ring: var(--vb-sidebar-ring);
+  --color-sidebar-primary: var(--vb-sidebar-primary);
+  --color-sidebar-primary-foreground: var(--vb-sidebar-primary-foreground);
+  --color-chart-1: var(--vb-chart-1);
+  --color-chart-2: var(--vb-chart-2);
+  --color-chart-3: var(--vb-chart-3);
+  --color-chart-4: var(--vb-chart-4);
+  --color-chart-5: var(--vb-chart-5);
+  --color-app-site-editor: var(--vb-app-site-editor);
+  --color-app-calendar: var(--vb-app-calendar);
+  --color-app-experiments: var(--vb-app-experiments);
+  --color-app-analytics: var(--vb-app-analytics);
+  --color-app-cdn: var(--vb-app-cdn);
+  --color-app-assets: var(--vb-app-assets);
+  --color-app-releases: var(--vb-app-releases);
+  --color-app-hosting: var(--vb-app-hosting);
+  --color-app-e2e: var(--vb-app-e2e);
+  --color-app-automations: var(--vb-app-automations);
+  --color-app-reports: var(--vb-app-reports);
+  --color-shadow-xs: var(--vb-shadow-xs);
+  --color-shadow-sm: var(--vb-shadow-sm);
+  --color-shadow-md: var(--vb-shadow-md);
+  --color-shadow-lg: var(--vb-shadow-lg);
+  --color-glass: var(--vb-glass);
+  --color-glass-raised: var(--vb-glass-raised);
+  --color-glass-rim: var(--vb-glass-rim);
+  --color-scrim: var(--vb-scrim);
+  --color-brand: var(--vb-brand);
+  --color-brand-foreground: var(--vb-brand-foreground);
+  --color-brand-green-light: var(--vb-brand-green-light);
+  --color-brand-green-dark: var(--vb-brand-green-dark);
+  --color-brand-soft: var(--vb-brand-soft);
+  --color-brand-lime-tint: var(--vb-brand-lime-tint);
+  --color-brand-purple-light: var(--vb-brand-purple-light);
+  --color-brand-purple-dark: var(--vb-brand-purple-dark);
+  --color-brand-purple-tint: var(--vb-brand-purple-tint);
+  --color-brand-yellow-light: var(--vb-brand-yellow-light);
+  --color-brand-yellow-dark: var(--vb-brand-yellow-dark);
+  --color-brand-yellow-tint: var(--vb-brand-yellow-tint);
+  --color-brand-blue: var(--vb-brand-blue);
+  --color-brand-blue-dark: var(--vb-brand-blue-dark);
+  --color-brand-blue-tint: var(--vb-brand-blue-tint);
+  --color-project-blue: var(--vb-project-blue);
+  --color-project-green: var(--vb-project-green);
+  --color-project-purple: var(--vb-project-purple);
+  --color-project-red: var(--vb-project-red);
+  --color-project-amber: var(--vb-project-amber);
+  --font-sans: "Inter var", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    "CommitMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  --spacing: 0.25rem;
+  --text-xs: 0.75rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 500;
+  --font-weight-bold: 600;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.025em;
+  --tracking-widest: 0.1em;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.875rem;
+  --shadow-xs: var(--vb-shadow-xs);
+  --shadow-sm: var(--vb-shadow-sm);
+  --shadow-md: var(--vb-shadow-md);
+  --shadow-lg: var(--vb-shadow-lg);
+  --shadow-edge: var(--vb-shadow-edge);
+  --shadow-edge-raised: var(--vb-shadow-edge-raised);
+  --shadow-soft: var(--vb-shadow-soft);
+  --shadow-lift: var(--vb-shadow-lift);
+  --shadow-border: var(--vb-shadow-border);
+  --radius-button: var(--vb-studio-button-radius);
+  --radius-control: var(--vb-studio-control-radius);
+  --radius-surface: var(--vb-studio-surface-radius);
+}

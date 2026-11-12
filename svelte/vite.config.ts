@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 import { join } from "node:path";
@@ -6,12 +7,46 @@ import { clientBoundary, projectRoot } from "./build/clientBoundary.ts";
 import { uiVariantBoundary } from "./build/uiVariantBoundary.ts";
 
 // Preview assets cannot replace the vanilla app's on-demand Inbox bundle.
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => ({
   root: import.meta.dirname,
+  publicDir: join(projectRoot, "public"),
+  resolve: { alias: { $lib: join(projectRoot, "svelte/lib") } },
+  // Library mode preserves this dependency expression unless explicitly replaced.
+  // Never ship a Node `process` global or a browser process polyfill.
+  define:
+    mode === "vanilla"
+      ? {}
+      : {
+          "process.env.NODE_ENV": JSON.stringify(
+            command === "serve" ? "development" : "production",
+          ),
+        },
+  server: {
+    host: "127.0.0.1",
+    port: 5173,
+    strictPort: true,
+    fs: {
+      allow: [projectRoot],
+      deny: [
+        "**/.env",
+        "**/.env.*",
+        "**/.dev.vars",
+        "**/.dev.vars.*",
+        "**/.vibebook/**",
+        "**/.git/**",
+        "**/.ssh/**",
+        "**/*.pem",
+        "**/*.key",
+      ],
+    },
+  },
   plugins: [
     clientBoundary({ projectRoot }),
     uiVariantBoundary(projectRoot, mode === "vanilla" ? "vanilla" : "svelte"),
-    svelte({ compilerOptions: { css: "injected" } }),
+    ...(mode === "vanilla" ? [] : [tailwindcss()]),
+    svelte({
+      compilerOptions: { css: mode === "vanilla" ? "injected" : "external" },
+    }),
     ...(mode === "vanilla" ? [] : [uiVersion(join(projectRoot, "public"))]),
   ],
   build: {
@@ -19,12 +54,15 @@ export default defineConfig(({ mode }) => ({
       mode === "vanilla" ? "../public/svelte" : "../public/svelte-preview",
     emptyOutDir: true,
     minify: true,
+    cssCodeSplit: false,
+    copyPublicDir: false,
     lib: {
       entry:
         mode === "vanilla"
           ? "../vanilla/inbox/main.ts"
-          : { ui: "main.ts", app: "legacy/host.js" },
+          : { ui: "main.ts", app: "bootstrap.ts" },
       formats: ["es"],
+      cssFileName: "ui",
       fileName: (_format, name) =>
         mode === "vanilla" ? "ui.js" : `${name}.js`,
     },

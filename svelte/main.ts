@@ -3,6 +3,7 @@ import type { Component, ComponentProps } from "svelte";
 import { writable } from "svelte/store";
 import View from "./View.svelte";
 import Inbox from "./Inbox.svelte";
+import InboxMount from "./InboxMount.svelte";
 import Tasks from "./Tasks.svelte";
 import Board from "./Board.svelte";
 import Files from "./Files.svelte";
@@ -48,6 +49,18 @@ export function mountInbox(
   target: Element,
   props: ComponentProps<typeof Inbox>,
 ) {
-  const c = flushSync(() => mount(Inbox, { target, props }));
-  return () => unmount(c);
+  const { waits, ...rest } = props;
+  const values = writable(waits);
+  const c = flushSync(() =>
+    mount(InboxMount, { target, props: { props: rest, waits: values } }),
+  );
+  const destroy = () =>
+    flushSync(() => {
+      void unmount(c);
+    });
+  return Object.assign(destroy, {
+    updateWaits(next: ComponentProps<typeof Inbox>["waits"]) {
+      flushSync(() => values.set(next));
+    },
+  });
 }
