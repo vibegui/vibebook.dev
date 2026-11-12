@@ -2,6 +2,13 @@
 // error; if a server change makes it compile, the contract moved and this file fails the check.
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
+import type {
+  OkResult,
+  PostMessageResult,
+  PushKeyResult,
+  PushTestResult,
+  UploadFileResult,
+} from "../../../shared/schemas";
 
 declare const api: Client;
 const post = api.api.books[":id"].post.$post;
@@ -17,12 +24,12 @@ void post({ json: { text: "hi" } });
 
 type PostOk = InferResponseType<typeof post, 200>;
 type PostBad = InferResponseType<typeof post, 400>;
-const ok = {} as PostOk;
+declare const ok: PostOk;
 const id: number = ok.id;
 const thread: string = ok.thread;
 // @ts-expect-error a field the server doesn't send
 void ok.messageId;
-const bad = {} as PostBad;
+declare const bad: PostBad;
 const err: string = bad.error;
 void [id, thread, err];
 
@@ -30,7 +37,7 @@ type UploadOk = InferResponseType<
   (typeof api.api.books)[":id"]["files"]["$post"],
   200
 >;
-const f = {} as UploadOk;
+declare const f: UploadOk;
 const name: string = f.name,
   size: number = f.size;
 // @ts-expect-error uploads answer with the stored file, not a message
@@ -61,7 +68,21 @@ const notBool = { archived: "no" };
 // @ts-expect-error archived is a boolean
 void archive({ param: { id: "r" }, json: notBool });
 type Key = InferResponseType<typeof api.api.push.key.$get, 200>;
-const key: string | null = ({} as Key).key;
+declare const keyRes: Key;
+const key: string | null = keyRes.key;
 type Sent = InferResponseType<typeof api.api.push.test.$post, 200>;
-const sent: number = ({} as Sent).sent;
+declare const sentRes: Sent;
+const sent: number = sentRes.sent;
 void [key, sent];
+
+// What each handler answers is exactly the schema type the client validates with (ok bodies, by status).
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
+const sameAs = <T extends true>(t: T) => t;
+sameAs<Equal<InferResponseType<typeof post>, PostMessageResult>>(true);
+sameAs<Equal<UploadOk, UploadFileResult>>(true);
+sameAs<Equal<Key, PushKeyResult>>(true);
+sameAs<Equal<Sent, PushTestResult>>(true);
+sameAs<Equal<InferResponseType<typeof archive, 200>, OkResult>>(true);
