@@ -88,6 +88,9 @@ export function clientBoundary(options: { projectRoot: string }): Plugin {
   return {
     name: "vibebook-client-boundary",
     enforce: "pre",
+    applyToEnvironment(environment) {
+      return environment.config.consumer === "client";
+    },
     configResolved(config) {
       publicDir = config.publicDir;
       // Vite's CSS @import/url() resolvers read outside the module graph and
@@ -98,14 +101,26 @@ export function clientBoundary(options: { projectRoot: string }): Plugin {
           this: ThisParameterType<ResolverFunction>,
           ...[source, importer, resolveOptions]: Parameters<ResolverFunction>
         ) {
-          assertClient(source, importer);
+          // Alias arrays are shared with Vite's SSR dependency optimizer. Node
+          // modules there are server dependencies, not browser dependencies.
+          // Unknown contexts keep the browser policy (fail closed).
+          const environment: unknown = Reflect.get(this, "environment");
+          const server =
+            environment !== null &&
+            typeof environment === "object" &&
+            "config" in environment &&
+            environment.config !== null &&
+            typeof environment.config === "object" &&
+            "consumer" in environment.config &&
+            environment.config.consumer === "server";
+          if (!server) assertClient(source, importer);
           const result = original
             ? await original.call(this, source, importer, resolveOptions)
             : await this.resolve(source, importer, {
                 ...resolveOptions,
                 skipSelf: true,
               });
-          if (result)
+          if (!server && result)
             assertClient(
               typeof result === "string" ? result : result.id,
               importer,

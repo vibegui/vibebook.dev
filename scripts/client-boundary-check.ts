@@ -323,6 +323,37 @@ try {
       await rm(publicLink);
     }
   }
+  // Browser boundaries must not reject Vite's separate server optimizer/build.
+  // The same backend and Node values rejected above remain valid server code.
+  await writeFile(
+    entry,
+    'export {value} from "../src/private"; export {readFile} from "node:fs";',
+  );
+  const serverBuild = await build({
+    configFile: false,
+    root: join(root, "client"),
+    logLevel: "silent",
+    plugins: [clientBoundary({ projectRoot: root })],
+    build: {
+      ssr: entry,
+      write: false,
+      minify: false,
+      rolldownOptions: { external: ["node:fs"] },
+    },
+  });
+  const serverCode = (Array.isArray(serverBuild) ? serverBuild : [serverBuild])
+    .flatMap((result) => {
+      assert("output" in result, "expected server bundle, not watcher");
+      return result.output;
+    })
+    .filter((chunk) => chunk.type === "chunk")
+    .map((chunk) => chunk.code)
+    .join("\n");
+  assert(serverCode.includes(backendSentinel));
+  assert(serverCode.includes("node:fs"));
+  console.log(
+    "PASS separate server environment permits backend and Node imports",
+  );
 } finally {
   await rm(root, { recursive: true, force: true });
 }
