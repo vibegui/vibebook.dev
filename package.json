@@ -35,7 +35,7 @@
     "server-only": "file:./packages/server-only"
   },
   "scripts": {
-    "dev": "bun run build:ui && bun run build:mcp && wrangler dev",
+    "dev": "bun run build:collab:svelte && bun run build:ui && bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
     "check": "bun run check:backend && bun run check:ui && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run test:store && bun run test:ui && bun run test:build && bun run test:connection && bun run check:tooling && bun run format:check",
@@ -51,10 +51,12 @@
     "measure:ui": "bun scripts/ui-metrics.ts",
     "check:backend": "node node_modules/@typescript/native/bin/tsc --noEmit && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
     "check:bundle": "bun scripts/ui-build-check.ts",
-    "test:build": "bun test scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts",
+    "test:build": "bun test scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts scripts/ui-variant.test.ts",
     "dev:ui": "vite build --watch --config svelte/vite.config.ts",
     "test:connection": "bun test scripts/room-connection.test.ts scripts/host-lifecycle.test.ts",
     "check:tooling": "node node_modules/@typescript/native/bin/tsc -p tsconfig.tooling.json",
-    "format:check": "prettier --check svelte/*.ts svelte/*.svelte svelte/build/*.ts shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,browser-check}.ts'"
+    "format:check": "prettier --check svelte/*.ts svelte/*.svelte svelte/build/*.ts shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts'",
+    "build:vanilla-ui": "vite build --mode vanilla --config svelte/vite.config.ts",
+    "build:collab:svelte": "bun -e 'import { buildCollab } from \"./scripts/build-collab\"; await buildCollab({outfile:\"public/collab-svelte.js\"})'"
   }
 }

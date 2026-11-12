@@ -4,23 +4,27 @@ import { join } from "node:path";
 import { uiVersion } from "./build/uiVersion.ts";
 import { clientBoundary, projectRoot } from "./build/clientBoundary.ts";
 
-// The app's Svelte pieces, built into one ES module the vanilla app imports on demand (like public/collab.js):
-// `bun run build:ui` → public/svelte/ui.js (committed). CSS is injected by each component, so there's no second file.
-export default defineConfig({
+// Preview assets cannot replace the vanilla app's on-demand Inbox bundle.
+export default defineConfig(({ mode }) => ({
   root: import.meta.dirname,
   plugins: [
     clientBoundary({ projectRoot }),
     svelte({ compilerOptions: { css: "injected" } }),
-    uiVersion(join(projectRoot, "public")),
+    ...(mode === "vanilla" ? [] : [uiVersion(join(projectRoot, "public"))]),
   ],
   build: {
-    outDir: "../public/svelte",
+    outDir:
+      mode === "vanilla" ? "../public/svelte" : "../public/svelte-preview",
     emptyOutDir: true,
     minify: true,
     lib: {
-      entry: { ui: "main.ts", app: "legacy/host.js" },
+      entry:
+        mode === "vanilla"
+          ? "vanillaInbox.ts"
+          : { ui: "main.ts", app: "legacy/host.js" },
       formats: ["es"],
-      fileName: (_format, name) => `${name}.js`,
+      fileName: (_format, name) =>
+        mode === "vanilla" ? "ui.js" : `${name}.js`,
     },
   },
-});
+}));

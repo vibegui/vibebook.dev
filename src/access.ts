@@ -2,6 +2,7 @@
 // Slack, iMessage read og:*) and a card to ask to join. The title is readable by anyone holding the link, on purpose.
 import { escapeHtml } from "./auth";
 import type { Lang } from "./lang";
+import { uiNavigationUrl, type UiVariant } from "../shared/uiVariant";
 
 export type AccessState = "out" | "ask" | "asked" | "missing";
 
@@ -53,16 +54,18 @@ export function roomMeta(origin: string, id: string, title: string | null) {
 
 const LOGO = `<svg viewBox="0 0 32 32" aria-hidden="true" width="28" height="28"><rect x="3" y="4" width="22" height="24" rx="5" fill="#1d5fc4"/><rect x="7" y="9" width="11" height="3" rx="1.5" fill="#fff"/><rect x="7" y="15" width="8" height="3" rx="1.5" fill="#fff"/><circle cx="24" cy="23" r="7" fill="#f2dc4a"/><path d="M24 19.5l1 2.4 2.5 1.1-2.5 1.1-1 2.4-1-2.4-2.5-1.1 2.5-1.1z" fill="#14305e"/></svg>`;
 
-export function accessPage(o: { origin: string; id: string; title: string | null; state: AccessState; email?: string; auto?: boolean; lang?: Lang }) {
+export function accessPage(o: { origin: string; id: string; title: string | null; state: AccessState; email?: string; auto?: boolean; lang?: Lang; ui?: UiVariant }) {
   const t = T[o.lang ?? "pt"];
   const title = escapeHtml(o.title ?? "");
-  const next = encodeURIComponent(`/b/${o.id}?pedir=1`);
+  const next = encodeURIComponent(uiNavigationUrl(`/b/${o.id}?pedir=1`, o.origin, o.ui ?? "vanilla"));
+  const login = uiNavigationUrl(`/login?next=${next}`, o.origin, o.ui ?? "vanilla");
+  const room = uiNavigationUrl(`/b/${o.id}`, o.origin, o.ui ?? "vanilla");
   const body =
     o.state === "missing"
       ? `<h1>${t.missingH}</h1><p>${t.missingP}</p><a class="btn" href="/app">${t.open}</a>`
       : `<p class="k">${t.k}</p><h1>${title}</h1>${
           o.state === "out"
-            ? `<p>${t.outP}</p><a class="btn" href="/login?next=${next}">${t.outBtn}</a>`
+            ? `<p>${t.outP}</p><a class="btn" href="${escapeHtml(login)}">${t.outBtn}</a>`
             : o.state === "ask"
               ? `<p>${t.askP(escapeHtml(o.email ?? ""))}</p><button class="btn" id="ask" type="button">${t.askBtn}</button><p class="err" id="err" hidden></p>`
               : `<p class="ok">${t.sent}</p><p>${t.sentP}</p>`
@@ -74,7 +77,7 @@ const b = document.getElementById("ask"), err = document.getElementById("err");
 async function ask() {
   b.disabled = true; b.textContent = ${JSON.stringify(t.asking)};
   const r = await fetch("/api/books/${o.id}/request", { method: "POST" }).catch(() => null);
-  if (r && r.ok) return location.replace("/b/${o.id}");
+  if (r && r.ok) return location.replace(${JSON.stringify(room)});
   b.disabled = false; b.textContent = ${JSON.stringify(t.askBtn)};
   err.hidden = false; err.textContent = r && r.status === 429 ? ${JSON.stringify(t.err429)} : ${JSON.stringify(t.err)};
 }

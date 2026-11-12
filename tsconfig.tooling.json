@@ -28,6 +28,7 @@
     "scripts/ui-build-check.ts",
     "scripts/ui-metrics.ts",
     "scripts/ui-panels.test.ts",
-    "scripts/ui-version.test.ts"
+    "scripts/ui-version.test.ts",
+    "scripts/ui-variant.test.ts"
   ]
 }

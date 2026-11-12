@@ -1,6 +1,6 @@
 // Check the actual browser graph and ensure its committed assets match its sources.
 import { readdir, readFile } from "node:fs/promises";
-const dir = new URL("../public/svelte/", import.meta.url);
+const dir = new URL("../public/svelte-preview/", import.meta.url);
 async function snapshot() {
   const files = (await readdir(dir))
     .filter((name) => name.endsWith(".js"))
@@ -8,13 +8,29 @@ async function snapshot() {
   const assets: Array<readonly [string, string]> = await Promise.all(
     files.map(
       async (name) =>
-        [`svelte/${name}`, await readFile(new URL(name, dir), "utf8")] as const,
+        [
+          `svelte-preview/${name}`,
+          await readFile(new URL(name, dir), "utf8"),
+        ] as const,
     ),
   );
+  assets.push([
+    "app-svelte.html",
+    await readFile(
+      new URL("../public/app-svelte.html", import.meta.url),
+      "utf8",
+    ),
+  ]);
   assets.push([
     "app.html",
     await readFile(new URL("../public/app.html", import.meta.url), "utf8"),
   ]);
+  for (const name of ["svelte/ui.js", "collab.js"]) {
+    assets.push([
+      name,
+      await readFile(new URL(`../public/${name}`, import.meta.url), "utf8"),
+    ]);
+  }
   return new Map(assets);
 }
 const before = await snapshot();
@@ -29,7 +45,7 @@ const changed = [...new Set([...before.keys(), ...after.keys()])].filter(
 );
 if (changed.length) {
   console.error(
-    `Generated UI assets were stale: ${changed.join(", ")}. Review and commit public/app.html and all public/svelte/*.js files, then rerun check.`,
+    `Generated UI assets were stale: ${changed.join(", ")}. Review and commit public/app-svelte.html and all public/svelte-preview/*.js files, then rerun check.`,
   );
   process.exit(1);
 }

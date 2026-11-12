@@ -23,16 +23,19 @@ async function browserScripts(
 export async function versionAppShell(
   publicDirectory: string,
 ): Promise<string> {
-  const scripts = await browserScripts(join(publicDirectory, "svelte"));
+  const scripts = await browserScripts(join(publicDirectory, "svelte-preview"));
   if (!scripts.includes("app.js"))
     throw new Error(
-      "Cannot version the app shell before svelte/app.js is built",
+      "Cannot version the app shell before svelte-preview/app.js is built",
     );
-  const names = [...scripts.map((name) => `svelte/${name}`), "app.css"];
+  const names = [
+    ...scripts.map((name) => `svelte-preview/${name}`),
+    "app-svelte.css",
+  ];
   // The editor is loaded separately, but its changes must also wake installed PWAs.
   try {
-    await readFile(join(publicDirectory, "collab.js"));
-    names.push("collab.js");
+    await readFile(join(publicDirectory, "collab-svelte.js"));
+    names.push("collab-svelte.js");
   } catch (error) {
     if (
       !(error instanceof Error) ||
@@ -51,7 +54,7 @@ export async function versionAppShell(
     hash.update(content);
   });
   const version = hash.digest("hex").slice(0, 20);
-  const shellPath = join(publicDirectory, "app.html");
+  const shellPath = join(publicDirectory, "app-svelte.html");
   const shell = await readFile(shellPath, "utf8");
   // Do not hash the shell or inject another line: that would either make each
   // rebuild change its own input or couple the HTML layout to build metadata.
@@ -59,22 +62,22 @@ export async function versionAppShell(
     app = 0;
   const next = shell
     .replace(
-      /(\bhref=["'])\/app\.css(?:\?[^"']*)?(["'])/g,
+      /(\bhref=["'])\/app-svelte\.css(?:\?[^"']*)?(["'])/g,
       (_match, start: string, end: string) => {
         css++;
-        return `${start}/app.css?v=${version}${end}`;
+        return `${start}/app-svelte.css?v=${version}${end}`;
       },
     )
     .replace(
-      /(\bsrc=["'])\/svelte\/app\.js(?:\?[^"']*)?(["'])/g,
+      /(\bsrc=["'])\/svelte-preview\/app\.js(?:\?[^"']*)?(["'])/g,
       (_match, start: string, end: string) => {
         app++;
-        return `${start}/svelte/app.js?v=${version}${end}`;
+        return `${start}/svelte-preview/app.js?v=${version}${end}`;
       },
     );
   if (css !== 1 || app !== 1)
     throw new Error(
-      "App shell must reference app.css and svelte/app.js exactly once",
+      "App shell must reference app-svelte.css and svelte-preview/app.js exactly once",
     );
   if (next !== shell) await writeFile(shellPath, next);
   return version;

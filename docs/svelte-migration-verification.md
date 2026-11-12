@@ -1,5 +1,7 @@
 # Svelte migration: local verification
 
+The later [rollout plan](svelte-rollout-plan.md) preserves vanilla as default and isolates the Svelte opt-in assets; its paths supersede the earlier migration layout described below.
+
 The later [adversarial review](adversarial-architecture-review.md) adds boundary/lifecycle fixes and supersedes the static test counts below. Historical performance samples remain tied to the earlier migration build.
 
 Status: implemented and locally verified on `codex/svelte-completion`, based on `main` 30bcc5f. Not deployed. Integration and production verification remain open in [the task thread](https://vibebook.dev/b/f94aedb83899?t=4e27ed8b).

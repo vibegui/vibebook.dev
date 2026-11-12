@@ -1,6 +1,9 @@
 // Existing host integrations retained during the incremental TypeScript migration.
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
+import { createUiNavigation } from "../navigation";
+import { uiNavigationUrl } from "../../shared/uiVariant";
+const navigation = createUiNavigation(history, () => location.href, "svelte");
 import {createRoomApi} from "../transport";
 import {createRoomConnection} from "../roomConnection";
 // i18n: the Portuguese string is the key; EN has the English, anything missing falls back to Portuguese.
@@ -717,7 +720,7 @@ const md = (s) => DOMPurify.sanitize(fileChips(ghChips(DOMPurify.sanitize(marked
   .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"'))), { ...MD_PURIFY, ADD_ATTR: ["target"] }); // again after the chips' regexes
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
-  if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
+  if (r.status === 401) { location.href = uiNavigationUrl(`/login?next=${encodeURIComponent(location.pathname + location.search)}`, location.href, "svelte"); throw new Error("unauthenticated"); }
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.statusText);
   return r.json();
 };
@@ -819,7 +822,7 @@ function seenHere(upto) { const mine = myBooks?.find((b) => b.id === S?.id); if 
 // Coming back to the tab refreshes once too (a phone drops sockets in the background).
 function refreshMe() {
   if (!document.body.classList.contains("has-sw")) return;
-  api("/api/me").then((me) => {
+  api("/api/me?ui=svelte").then((me) => {
     keepMe(me);
     const before = JSON.stringify(waitsIn());
     myBooks = me.books; myWaits = me.waits || []; if (S?.messages?.length) seenHere(S.messages.at(-1).id); renderSwitcher();
@@ -986,7 +989,7 @@ swList.onclick = (e) => {
   if (!a) return;
   e.preventDefault();
   const [room, th, msg] = a.dataset.hit.split("|");
-  history.pushState(null, "", a.getAttribute("href"));
+  navigation.pushState(null, "", a.getAttribute("href"));
   route();
   if (!msg) return;
   // Wait for the room (cached rooms draw at once, a first visit loads), then land on the message.
@@ -1015,7 +1018,7 @@ async function login() {
   document.title = `${t("Entrar")} · vibebook`;
   setFavicon(null);
   const q = new URLSearchParams(location.search);
-  const next = q.get("next") || "/app";
+  const next = uiNavigationUrl(q.get("next") || "/app", location.href, "svelte");
   const providers = await fetch("/auth/providers").then((r) => r.json()).catch(() => ({ google: false }));
   let email = "";
   const view = (step, err = "") => {
@@ -1051,7 +1054,7 @@ async function login() {
       const j = await r.json().catch(() => ({}));
       if (!r.ok) return view(step, j.error || t("Algo deu errado. Tenta de novo."));
       if (step === "email") return view("code");
-      location.href = j.next || "/app";
+      location.href = uiNavigationUrl(j.next || "/app", location.href, "svelte");
     };
     if (step === "code") document.getElementById("code").oninput = (e) => { if (e.target.value.replace(/\D/g, "").length === 6) f.requestSubmit(); };
   };
@@ -1061,7 +1064,8 @@ async function login() {
 window.addEventListener("popstate", () => {
   if (viewerPop() || sheetPop()) return;
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
-  if (!m || !S || m[1] !== S.id) return route();
+  // A cached snapshot survives home navigation; it cannot stand in for a mounted room/socket.
+  if (!m || !S || m[1] !== S.id || !roomConnection || !$app.querySelector(".book")) return route();
   thread = new URLSearchParams(location.search).get("t") || "main";
   if (thread !== "main" && !S.epics.some((e) => e.id === thread)) thread = "main";
   docRoom = false; boardEpic = thread === "main" ? null : thread;
@@ -1069,7 +1073,7 @@ window.addEventListener("popstate", () => {
 });
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[data-nav]");
-  if (a) { e.preventDefault(); history.pushState(null, "", a.getAttribute("href")); route(); }
+  if (a) { e.preventDefault(); navigation.pushState(null, "", a.getAttribute("href")); route(); }
 });
 
 // ---------------- home ----------------
@@ -1091,7 +1095,7 @@ async function home() {
   document.title = "vibebook";
   setFavicon(null);
   if (meCache) homeWith(meCache);
-  const me = await api("/api/me");
+  const me = await api("/api/me?ui=svelte");
   if (/^\/(b|login|archived)\b/.test(location.pathname)) return keepMe(me); // left home while it loaded
   const changed = JSON.stringify(me) !== meJson;
   keepMe(me);
@@ -1235,7 +1239,7 @@ function phoneHome(me) {
     try { await lockSet(want, me.email); toast(want ? t("Pronto: o vibebook pede Face ID ao abrir neste aparelho.") : t("Face ID desligado neste aparelho.")); }
     catch { lt.checked = !want; toast(t("Não deu pra usar o Face ID aqui.")); }
   };
-  d.querySelector(".pdHead b").onclick = async () => { const n = prompt(t("Seu nome:"), me.name || ""); if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
+  d.querySelector(".pdHead b").onclick = async () => { const n = prompt(t("Seu nome:"), me.name || ""); if (n?.trim()) { await api("/api/me?ui=svelte", { name: n }); home(); } };
 }
 
 // Profile: how you sign in. Email codes always work; Google/GitHub show when the server has them, with your last use.
@@ -1254,7 +1258,7 @@ async function fillLogins() {
   ].join("");
 }
 function wireHome(me) {
-  const saveName = async (n) => { if (n?.trim()) { await api("/api/me", { name: n }); home(); } };
+  const saveName = async (n) => { if (n?.trim()) { await api("/api/me?ui=svelte", { name: n }); home(); } };
   const pf = document.getElementById("profileDlg");
   document.getElementById("myName").onclick = () => pf ? pf.showModal() : null;
   if (pf) {
@@ -1269,7 +1273,7 @@ function wireHome(me) {
   document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
   document.getElementById("logoutAll").onclick = async () => {
     if (!confirm(t("Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam."))) return;
-    await fetch("/auth/logout-all", { method: "POST" }); location.href = "/login";
+    await fetch("/auth/logout-all", { method: "POST" }); location.href = uiNavigationUrl("/login", location.href, "svelte");
   };
   document.getElementById("new").onclick = () => newRoom();
   document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
@@ -1309,7 +1313,7 @@ function wireAsk() {
       const posted = await createRoomApi(bookId).postMessage({ text, thread: dest.epic_id || "main" });
       if (!posted.ok) throw new Error(posted.error);
       pendingThread = dest.epic_id || null;
-      history.pushState(null, "", `/b/${bookId}`); route();
+      navigation.pushState(null, "", `/b/${bookId}`); route();
     } catch (err) { out.innerHTML = `<div class="why bad">${esc(err.message)}</div>`; }
   };
   form.onsubmit = async (e) => {
@@ -1345,7 +1349,7 @@ function wireAsk() {
 // Claude on), then the room. Also the home router's "new room" choice, with the typed text already in.
 async function startRoom(text) {
   const r = await api("/api/books/start", { text });
-  history.pushState(null, "", `/b/${r.id}`); route();
+  navigation.pushState(null, "", `/b/${r.id}`); route();
   if (r.unknown?.length) setTimeout(() => toast(t("Não achei {who} nos seus amigos: convide pelo email em Pessoas.", { who: esc(r.unknown.join(", ")) })), 1500);
 }
 function newRoom() {
@@ -1618,7 +1622,7 @@ function openBook(id) {
   typingNotes.clear();
   liveState = false;
   attached = [];
-  api("/api/me").then((me) => { keepMe(me); friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
+  api("/api/me?ui=svelte").then((me) => { keepMe(me); friends = me.friends.map((f) => f.email); myBooks = me.books; myWaits = me.waits || []; renderSwitcher(); renderSide(); if (S) setFavicon(bookTitle()); }).catch(() => {});
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
   const cached = roomCache.get(id);
   if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
@@ -2137,7 +2141,7 @@ function renderBook() {
   // A shared link to one message (/b/<room>#m123) lands on it.
   if (/^#m\d+$/.test(location.hash)) setTimeout(() => goToMsg(Number(location.hash.slice(2))), 300);
   // …and a link to one file (#f<id>, the viewer's own address) opens it.
-  else if (/^#f[0-9a-f]+$/.test(location.hash)) { const fid = location.hash.slice(2); history.replaceState(null, "", location.pathname + location.search); setTimeout(() => openFile(fid), 300); }
+  else if (/^#f[0-9a-f]+$/.test(location.hash)) { const fid = location.hash.slice(2); navigation.replaceState(null, "", location.pathname + location.search); setTimeout(() => openFile(fid), 300); }
 }
 // A room file by id: its name and type from what's loaded (the newest 12, the messages), else asked for once.
 function openFile(fid, again) {
@@ -2201,7 +2205,7 @@ function ensureCollab() {
   // Only the newest request mounts: switching room/epic while the module loads (A → B → A) must not leave two editors.
   const gen = collabGen;
   if (!key || !host) return;
-  (collabLoad ??= import(/* @vite-ignore */ "/collab.js")).then((m) => {
+  (collabLoad ??= import(/* @vite-ignore */ "/collab-svelte.js")).then((m) => {
     if (gen !== collabGen) return;
     collab?.destroy(); host.innerHTML = "";
     collab = m.mountCollab(host, {
@@ -2954,7 +2958,7 @@ const ROOM_PHONE = matchMedia("(max-width: 900px)");
 let sheetSkip = false;
 function openSheet(which) {
   const bk = $app.querySelector(".book"); if (!bk || !ROOM_PHONE.matches || bk.dataset.sheet === which) return;
-  if (!bk.dataset.sheet) history.pushState({ sheet: 1 }, "", location.href);
+  if (!bk.dataset.sheet) navigation.pushState({ sheet: 1 }, "", location.href);
   bk.dataset.sheet = which;
 }
 function closeSheet(pick) {
@@ -3081,7 +3085,7 @@ function openViewer(url, kind, fname) {
   loadViewer(d, url, kind, fname);
   // Back (phone gesture, browser, PWA) closes it. A room file gets its own address (/b/<room>?t=…#f<id>): copy it and
   // send it to someone in the room, it opens the same file for them.
-  if (!d.open) history.pushState({ viewer: 1 }, "", d.dataset.fid ? `${location.pathname}${location.search}#f${d.dataset.fid}` : location.href);
+  if (!d.open) navigation.pushState({ viewer: 1 }, "", d.dataset.fid ? `${location.pathname}${location.search}#f${d.dataset.fid}` : location.href);
   d.showModal();
 }
 // Versions of a file = the room's files with the same name (each upload of report.html is one), newest first. The
@@ -3105,7 +3109,7 @@ function loadViewer(d, url, kind, fname) {
   d.querySelector("header a").href = typeof url === "string" ? outside(url) : "";
   const vsel = d.querySelector(".vsel"); vsel.hidden = true;
   if (d.dataset.fid) { refreshVersions(); if (!S.filesAll) send({ t: "files.get" }); }
-  if (d.open && d.dataset.fid && history.state?.viewer) history.replaceState(history.state, "", `${location.pathname}${location.search}#f${d.dataset.fid}`); // another version picked
+  if (d.open && d.dataset.fid && history.state?.viewer) navigation.replaceState(history.state, "", `${location.pathname}${location.search}#f${d.dataset.fid}`); // another version picked
   const body = d.querySelector(".vbody");
   body.className = `vbody ${kind}`;
   d.classList.toggle("noLink", kind === "table");
@@ -3144,7 +3148,7 @@ function viewerPop() {
   if (viewerSkip) { viewerSkip = false; return true; }
   const d = document.getElementById("viewer");
   if (!d?.open) return false;
-  history.replaceState(null, "", location.href);
+  navigation.replaceState(null, "", location.href);
   d.close();
   return true;
 }
@@ -3561,7 +3565,7 @@ function renderConns() {
         ${c.auth === "identity" ? (c.signed_in
           ? `<small class="mute connWho">${t("Você entrou em {host} com a sua conta.", { host: esc(c.host) })} <button type="button" class="link" data-conn-out="${c.id}">${t("Sair")}</button></small>`
           : `<div class="connSign"><small>${t("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: esc(c.host) })}</small><a class="primary" href="/api/books/${S.id}/connections/${c.id}/signin">${t("Entrar em {host}", { host: esc(c.host) })}</a></div>`) : ""}
-        ${(c.pending || []).map((p) => `<div class="connPend"><span>🔐 <b>${esc(name(p.requester))}</b>${p.via === "agent" ? ` ${t("(pelo agent)")}` : ""} ${t("quer usar")} <code>${esc(p.tool)}</code></span><small>${esc(String(p.args || "").slice(0, 160))}</small><div><button type="button" class="primary" data-pend="${c.id}/${p.id}/1">${t("Aprovar")}</button><button type="button" class="ghost" data-pend="${c.id}/${p.id}/0">${t("Negar")}</button></div></div>`).join("")}${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
+        ${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
   const f = document.getElementById("connForm");
   if (f && keep) for (const [k, v] of Object.entries(keep)) if (f.elements[k] && k !== "scope") f.elements[k].value = v;
   document.getElementById("connAdd")?.addEventListener("click", () => { connForm = true; renderConns(); document.querySelector('#connForm [name="url"]')?.focus(); });
@@ -3576,12 +3580,6 @@ function renderConns() {
     }
     catch (x) { toast(esc(x.message)); btn.disabled = false; btn.textContent = t("Conectar"); }
   };
-  el.querySelectorAll("[data-pend]").forEach((b) => b.onclick = async () => {
-    const [cid, pid, yes] = b.dataset.pend.split("/");
-    b.disabled = true;
-    try { await api(`/api/books/${S.id}/connections/${cid}/pending/${pid}`, { approve: yes === "1" }); } catch (x) { toast(esc(x.message)); }
-    conns = null; renderConns();
-  });
   el.querySelectorAll("[data-conn-out]").forEach((b) => b.onclick = async () => { try { await api(`/api/books/${S.id}/connections/${b.dataset.connOut}/signout`, {}); } catch (x) { toast(esc(x.message)); } conns = null; renderConns(); });
   el.querySelectorAll("[data-conn-more]").forEach((b) => b.onclick = () => { const id = b.dataset.connMore; connMore.has(id) ? connMore.delete(id) : connMore.add(id); renderConns(); });
   el.querySelectorAll("[data-conn-open]").forEach((b) => b.onclick = () => { const [cid, tool] = b.dataset.connOpen.split("/"); connApp = { cid, tool }; renderConns(); });
@@ -3812,8 +3810,8 @@ const allMsgs = () => (S.origins?.length ? [...S.messages, ...S.origins.filter((
 let urlSynced = false;
 function syncUrl() {
   if (!S) return;
-  const want = `/b/${S.id}${thread !== "main" && !isPre() ? `?t=${encodeURIComponent(thread)}` : ""}`;
-  if (location.pathname + location.search !== want) history[urlSynced ? "pushState" : "replaceState"](null, "", want);
+  const want = uiNavigationUrl(`/b/${S.id}${thread !== "main" && !isPre() ? `?t=${encodeURIComponent(thread)}` : ""}`, location.href, "svelte");
+  if (location.pathname + location.search !== want) navigation[urlSynced ? "pushState" : "replaceState"](null, "", want);
   urlSynced = true;
 }
 // Inside an epic: what it produced (reports, prints, PDFs), newest version of each name, so a report is one tap away

@@ -1319,3 +1319,5 @@
   .swDlg #swList .tile { opacity: 1; width: 26px; height: 26px; font-size: 11px; border-radius: 8px; }
   .swDlg #swList small { margin-left: auto; color: var(--mute); }
   @media (max-width: 900px) { body.has-sw #switcher { display: none; } body.has-sw #app { margin-left: 0; } }
+
+  .preview table { overflow-wrap: normal; } .preview th { white-space: nowrap; } .preview td { min-width: 7em; max-width: 26em; vertical-align: top; } /* .preview's overflow-wrap: anywhere let every cell shrink to one letter: cells keep whole words and the table scrolls sideways */

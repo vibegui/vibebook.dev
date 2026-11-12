@@ -28,11 +28,11 @@ const oldUI = execFileSync("git", [
   `${baselineCommit}:public/svelte/ui.js`,
 ]);
 const files = [
-  "public/app.html",
-  "public/app.css",
-  ...(await readdir("public/svelte"))
+  "public/app-svelte.html",
+  "public/app-svelte.css",
+  ...(await readdir("public/svelte-preview"))
     .filter((f) => f.endsWith(".js") && f !== "ui.js")
-    .map((f) => `public/svelte/${f}`),
+    .map((f) => `public/svelte-preview/${f}`),
 ];
 const current = await Promise.all(files.map((f) => readFile(f)));
 const sizes = {

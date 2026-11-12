@@ -1,4 +1,5 @@
 import { isPostMessageRequest } from "../shared/validation";
+import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
 import { type Context, Hono } from "hono";
 import { cookieLang, reqLang } from "./lang";
@@ -193,13 +194,23 @@ const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) =>
 // The page carries its own version (the asset's etag) in <meta name="vb-v">, and /api/me says the current one: the
 // app shows "Nova versão" when they differ (an installed PWA keeps an old page around for days).
 const shell = async (c: { env: Env; req: { url: string; raw: Request } }) => {
-  const res = await c.env.ASSETS.fetch(new Request(new URL("/app", c.req.url), c.req.raw));
+  const asset = await c.env.ASSETS.fetch(new Request(new URL(uiShellPath(c.req.url), c.req.url), c.req.raw));
+  const res = new Response(asset.body, asset);
+  res.headers.set("x-vibebook-ui", uiVariant(c.req.url));
   const v = res.headers.get("etag");
   return res.status === 200 && v ? new HTMLRewriter().on("head", { element: (el) => { el.append(`<meta name="vb-v" content="${v.replace(/[^\w-]/g, "")}" />`, { html: true }); } }).transform(res) : res;
 };
-let appVersion: string | undefined; // per isolate = per deploy
+const appVersions = new Map<UiVariant, string>(); // per variant, isolate and deploy
 const currentVersion = async (env: Env, url: string) =>
-  (appVersion ??= ((await env.ASSETS.fetch(new Request(new URL("/app", url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, ""));
+  {
+    const variant = uiVariant(url);
+    let version = appVersions.get(variant);
+    if (version === undefined) {
+      version = ((await env.ASSETS.fetch(new Request(new URL(uiShellPath(url), url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, "");
+      appVersions.set(variant, version);
+    }
+    return version;
+  };
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
@@ -238,14 +249,15 @@ for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
     return res;
   });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
-app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
+app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url))) : pageview(c, await shell(c))));
 app.get("/app", async (c) => {
   const email = await identify(c);
-  return email ? pageview(c, await shell(c), email) : c.redirect("/login");
+  return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl("/login", c.req.url, uiVariant(c.req.url)));
 });
 app.get("/archived", async (c) => {
   const email = await identify(c);
-  return email ? pageview(c, await shell(c), email) : c.redirect("/login?next=%2Farchived");
+  const next = uiNavigationUrl("/archived", c.req.url, uiVariant(c.req.url));
+  return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl(`/login?next=${encodeURIComponent(next)}`, c.req.url, uiVariant(c.req.url)));
 });
 // A room link: members get the app; anyone else (and link-preview bots) a page with the room's name and "Pedir
 // acesso". The title is readable by whoever holds the link, on purpose: that's what makes the shared card useful.
@@ -258,7 +270,7 @@ app.get("/b/*", async (c) => {
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
   const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
   const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
-  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw) }), book ? 200 : 404);
+  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), book ? 200 : 404);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
   return pageview(c, res, email ?? undefined);

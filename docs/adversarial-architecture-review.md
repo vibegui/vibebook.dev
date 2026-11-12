@@ -1,5 +1,7 @@
 # Adversarial architecture review
 
+The later [rollout plan](svelte-rollout-plan.md) preserves vanilla as default and isolates the Svelte opt-in assets; its paths supersede the earlier migration layout described below.
+
 Three independent reviews challenged browser/server isolation, room/editor lifecycle and code hygiene. The review covered the Svelte room app and its Vite/Bun browser builders, not the separate `site/` SSR application. Findings were reproduced before fixing; fixture credentials were synthetic.
 
 | Finding | Severity | Resolution |

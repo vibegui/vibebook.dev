@@ -1,6 +1,6 @@
 # Browser and backend boundaries
 
-The browser app uses Svelte 5, TypeScript and Vite. Its entry is `svelte/main.ts`; Vite emits the committed browser bundle in `public/svelte/`. The Cloudflare Worker and Durable Objects live in `src/` and are built separately by Wrangler.
+The browser app uses Svelte 5, TypeScript and Vite. Its entry is `svelte/main.ts`; Vite emits the committed browser bundle in `public/svelte-preview/`. The Cloudflare Worker and Durable Objects live in `src/` and are built separately by Wrangler.
 
 `clientBoundary` in `svelte/build/clientBoundary.ts` rejects backend imports while Vite resolves the browser dependency graph. This applies to direct imports, transitive imports, aliases, symlinks and statically analyzable dynamic imports. A browser build fails if it reaches:
 
@@ -42,9 +42,9 @@ Run `bun scripts/protocol-check.ts` for malformed-payload, nullable-data, discon
 
 ## Frontend layout and migration boundary
 
-`public/app.html` is the document shell and `public/app.css` contains the existing styles. `svelte/legacy/host.js` retains existing composer, routing, document editor, embed and account integrations. It is intentionally JavaScript during the incremental migration and is not covered by the Svelte TypeScript check. `svelte/{Chat,Message,Sidebar,Tasks,Board,Files,Reminders,Inbox}.svelte`, the room reducer, and the new transport/contracts are TypeScript checked. This migration does not claim that every existing HTTP endpoint or host integration is typed.
+`public/app-svelte.html` is the document shell and `public/app-svelte.css` contains the existing styles. `svelte/legacy/host.js` retains existing composer, routing, document editor, embed and account integrations. It is intentionally JavaScript during the incremental migration and is not covered by the Svelte TypeScript check. `svelte/{Chat,Message,Sidebar,Tasks,Board,Files,Reminders,Inbox}.svelte`, the room reducer, and the new transport/contracts are TypeScript checked. This migration does not claim that every existing HTTP endpoint or host integration is typed.
 
-Vite builds both `svelte/main.ts` and the host entry into `public/svelte/`. Commit **all** generated JavaScript chunks together; `ui.js` alone is no longer the complete build. Run `bun run build:ui` after browser source or shared runtime contract changes. The Worker remains a separate Wrangler build; no backend implementation is imported by the browser.
+Vite builds both `svelte/main.ts` and the host entry into `public/svelte-preview/`. Commit **all** generated JavaScript chunks together; `ui.js` alone is no longer the complete build. Run `bun run build:ui` after browser source or shared runtime contract changes. The Worker remains a separate Wrangler build; no backend implementation is imported by the browser.
 
 Verification commands: `bun run check`, `bun run check:ui`, `bun run test:ui`, `bun run test:store`, `bun run check:protocol`, `bun run check:client-boundary`. For live checks, start the local Worker with `DEV_EMAIL` configured, then run `bun run test:browser` and `bun run measure:ui`. Browser checks refuse production URLs and create only local test data. Metrics alternate baseline/current HTML in isolated browser contexts and record downloaded gzip bytes, readiness, thread switching, browser task duration, heap and DOM nodes; local results are not a production performance claim.
 
@@ -57,3 +57,5 @@ Install a Playwright Chromium runtime before browser checks (`bunx playwright in
 `bun run dev` builds current frontend assets before starting Wrangler. Run `bun run dev:ui` in a second terminal for guarded frontend build watching; this workflow does not provide HMR. New build/test tooling is strictly checked by `check:tooling`. Scoped `format:check` covers the typed frontend, contracts and related scripts; the existing JavaScript integration host is excluded from that formatting migration.
 
 The typed `roomConnection.ts` owns one room's socket and retry/stability timers until disposal. Leaving a room invalidates callbacks, cancels retries and destroys collaborative editor providers. `test:connection` exercises these lifecycle boundaries, including callbacks already queued at disposal. See `adversarial-architecture-review.md` for reproduced findings and remaining architecture work.
+
+Vanilla remains the default at ordinary URLs, with its original HTML, Inbox and editor assets. The Svelte preview is selected only by `?ui=svelte`; `shared/uiVariant.ts` and `svelte/navigation.ts` preserve that per-URL selection without global history overrides or sticky assignment. See `svelte-rollout-plan.md`.
