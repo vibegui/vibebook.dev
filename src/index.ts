@@ -18,6 +18,7 @@ import { sendDigests } from "./digest";
 import { jwks } from "./mcpauth";
 import { befriend, bookStub, createBook, setRoomIcon, docRoomName, docRoomStub, FILE_TYPES, fileHeaders, inviteMember, isMember, maxBytes, searchRooms, sizeError, TYPES_ERROR, storeFile, waitsFor } from "./rooms";
 import { requestContext, track } from "./track";
+import { pushTo } from "./webpush";
 export { Book } from "./book";
 export { Person } from "./person";
 import { LISTEN_FRESH, markListening, poke, pokeRoom } from "./person";
@@ -25,6 +26,9 @@ export { DocRoom } from "./docroom";
 
 export type Env = {
   DB: D1Database;
+  /** Web Push (VAPID, base64url): public = 65-byte P-256 point, private = 32-byte scalar. Missing: no native notifications. */
+  VAPID_PUBLIC_KEY?: string;
+  VAPID_PRIVATE_KEY?: string;
   ASSETS: Fetcher;
   /** The landing as a deco Studio site (site/, Worker vibebook-site). Missing or failing: the static page in public/. */
   SITE?: Fetcher;
@@ -120,6 +124,8 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS mcp_oauth_states (state TEXT PRIMARY KEY, email TEXT, book_id TEXT, conn_id TEXT, resource TEXT, issuer TEXT, verifier TEXT, back TEXT, expires_at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS mcp_grants (email TEXT, resource TEXT, issuer TEXT, access_enc TEXT, access_iv TEXT, refresh_enc TEXT, refresh_iv TEXT, expires_at INTEGER, at INTEGER, PRIMARY KEY (email, resource))`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, email TEXT, p256dh TEXT, auth TEXT, ua TEXT, created_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS push_subs_email ON push_subs (email)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 // Columns added after launch; ALTER fails harmlessly once they exist.
@@ -438,6 +444,26 @@ app.get("/api/me", async (c) => {
 });
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
+// Native notifications: this device's push subscription (the app's 🔔). One row per endpoint, owned by whoever subscribed last.
+app.get("/api/push/key", (c) => c.json({ key: c.env.VAPID_PUBLIC_KEY ?? null }));
+app.post("/api/push/subscribe", async (c) => {
+  const b = await c.req.json<{ endpoint?: string; p256dh?: string; auth?: string }>().catch(() => ({}) as { endpoint?: string; p256dh?: string; auth?: string });
+  if (!b.endpoint?.startsWith("https://") || !b.p256dh || !b.auth || b.endpoint.length > 1000) return c.json({ error: "bad subscription" }, 400);
+  await c.env.DB.prepare(`INSERT OR REPLACE INTO push_subs (endpoint, email, p256dh, auth, ua, created_at) VALUES (?, ?, ?, ?, ?, ?)`)
+    .bind(b.endpoint, c.get("email"), b.p256dh.slice(0, 200), b.auth.slice(0, 100), (c.req.header("user-agent") ?? "").slice(0, 200), Date.now()).run();
+  c.executionCtx.waitUntil(track(c.env, "push_subscribed", { user: c.get("email") }));
+  return c.json({ ok: true });
+});
+app.post("/api/push/unsubscribe", async (c) => {
+  const { endpoint } = await c.req.json<{ endpoint?: string }>().catch(() => ({}) as { endpoint?: string });
+  await c.env.DB.prepare(`DELETE FROM push_subs WHERE endpoint = ? AND email = ?`).bind(endpoint ?? "", c.get("email")).run();
+  return c.json({ ok: true });
+});
+app.post("/api/push/test", async (c) => {
+  const sent = await pushTo(c.env, [c.get("email")], { title: "vibebook", body: "Notificações ligadas neste aparelho ✓", url: "/app", tag: "test" });
+  return c.json({ ok: true, sent });
+});
+
 app.post("/api/waits/resolve", async (c) => {
   const { book_id, ref } = await c.req.json<{ book_id?: string; ref?: string }>().catch(() => ({}) as { book_id?: string; ref?: string });
   if (!book_id || !ref?.startsWith("m")) return c.json({ error: "bad request" }, 400);

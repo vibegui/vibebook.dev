@@ -1215,6 +1215,13 @@
   .pask textarea { flex: 1 1 auto; min-height: 56px; width: 100%; resize: none; font-size: 16px; }
   .pask .primary { padding: 12px; font-size: 16px; flex: none; }
   .pask .askOut { margin-top: 0; }
+  /* Install the PWA (phones, in the browser): what you get + how. */
+  .pwaCard { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 0 0 14px; background: var(--panel); display: grid; gap: 8px; }
+  .pwaCard header { display: flex; align-items: center; gap: 10px; } .pwaCard header b { flex: 1; font-size: 16px; }
+  .pwaCard header img { width: 36px; height: 36px; border-radius: 9px; }
+  .pwaCard ul { margin: 0; padding-left: 18px; color: var(--mute); font-size: 14px; line-height: 1.5; }
+  .pwaCard ol { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+  .pwaCard .row { display: flex; gap: 8px; align-items: center; } .pwaCard .row .primary { flex: 1; }
   .pdrawer { margin: 0; height: 100dvh; max-height: none; width: min(340px, 86vw); border: 0; border-radius: 0 20px 20px 0; padding: max(18px, env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom)); background: var(--bg); overflow: auto; }
   .pdrawer[open] { display: flex; flex-direction: column; gap: 16px; animation: pdIn .18s ease-out; }
   .pdLock { display: flex; align-items: center; gap: 10px; font-size: 15px; padding: 4px 0; } .pdLock input { width: 18px; height: 18px; }
@@ -1511,6 +1518,20 @@ const EN = {
   "Novo": "New",
   "O que você quer resolver? Eu acho a sala e o épico certos.": "What do you want to get done? I'll find the right room and epic.",
   "Notificações": "Notifications",
+  "Instale o vibebook no celular": "Install vibebook on your phone",
+  "Notificações nativas quando alguém te marca ou seu Claude pede permissão": "Native notifications when someone mentions you or your Claude asks for permission",
+  "Abre em tela cheia, sem a barra do navegador": "Opens full screen, without the browser bar",
+  "Um toque na tela inicial e você está na sala": "One tap on your home screen and you're in the room",
+  "Face ID ao abrir, se quiser": "Face ID when it opens, if you want",
+  "Instalar o app": "Install the app",
+  "Como instalar": "How to install",
+  "No iPhone, abra vibebook.dev no Safari pra instalar.": "On iPhone, open vibebook.dev in Safari to install it.",
+  "Toque em Compartilhar (o quadrado com a seta) na barra do Safari": "Tap Share (the square with the arrow) in Safari's bar",
+  "Escolha \"Adicionar à Tela de Início\"": "Choose \"Add to Home Screen\"",
+  "Abra o vibebook pelo ícone e ligue o 🔔 no menu": "Open vibebook from its icon and turn on 🔔 in the menu",
+  "Abra o menu ⋮ do navegador": "Open the browser's ⋮ menu",
+  "Escolha \"Instalar app\" ou \"Adicionar à tela inicial\"": "Choose \"Install app\" or \"Add to home screen\"",
+  "No iPhone, as notificações só funcionam com o vibebook instalado: Safari → Compartilhar → Adicionar à Tela de Início, depois abra pelo ícone.": "On iPhone, notifications only work with vibebook installed: Safari → Share → Add to Home Screen, then open it from the icon.",
   "Seu nome:": "Your name:",
   "Remover {email} dos seus amigos? Os vibebooks em comum continuam.": "Remove {email} from your friends? Shared vibebooks stay.",
   "Enviando…": "Sending…",
@@ -2532,6 +2553,7 @@ function phoneHome(me) {
     </header>
     <main class="pmain">
       <div id="setupCard"></div>
+      ${pwaCard()}
       ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${t("Como seus amigos te chamam?")}</b><span class="muted">${t("O pessoal e os agents vão te chamar assim.")}</span>
         <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
       <div class="pgrid">
@@ -3101,13 +3123,66 @@ function renderBells() {
     b.title = title; b.setAttribute("aria-label", title);
     b.onclick = async () => {
       unlockChime();
-      if (state === "default") { await Notification.requestPermission(); if (notifyPerm() === "granted") { try { localStorage.removeItem("vb.mute"); } catch {} chime(); } }
+      if (state === "default") { if (IOS_WEB) { pwaHow(); return; } await Notification.requestPermission(); if (notifyPerm() === "granted") { try { localStorage.removeItem("vb.mute"); } catch {} chime(); pushSync(true); } }
       else if (state === "denied") alert(t("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página."));
-      else if (state === "on" || state === "muted") { try { localStorage.setItem("vb.mute", state === "on" ? "1" : ""); } catch {} if (state === "muted") chime(); }
+      else if (state === "on" || state === "muted") { try { localStorage.setItem("vb.mute", state === "on" ? "1" : ""); } catch {} if (state === "muted") chime(); pushSync(true); }
       renderBells();
     };
   });
 }
+// Native notifications (web push): this device subscribes while notifications are on and not muted, so a mention, an
+// ask for you or your Claude's ⏸/❓ reaches it with the app closed (the server skips rooms you have open). iPhone: only
+// in the installed app. Once per page load, or again when the 🔔 changes.
+let pushOnce = false;
+async function pushSync(force) {
+  if ((pushOnce && !force) || !("serviceWorker" in navigator) || !("PushManager" in window) || IOS_WEB) return;
+  pushOnce = true;
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (notifyPerm() !== "granted" || notifyMuted()) {
+      if (sub) { await fetch("/api/push/unsubscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }); await sub.unsubscribe(); }
+      return;
+    }
+    const { key } = await (await fetch("/api/push/key")).json();
+    if (!key) return;
+    const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (key.length % 4)) % 4)), (c) => c.charCodeAt(0));
+    sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+    const j = sub.toJSON();
+    await fetch("/api/push/subscribe", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }) });
+  } catch (e) { console.warn("push", e); }
+}
+// The PWA card: phones in the browser (not installed). Android/Chrome gets a real Install button (beforeinstallprompt);
+// iPhone Safari can't be opened by a page, so the button shows the 3 steps; other iPhone browsers are told to use Safari.
+const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+const IOS_WEB = IOS && !STANDALONE;
+let installEv = null;
+addEventListener("beforeinstallprompt", (e) => { if (IOS) return; e.preventDefault(); installEv = e; document.querySelectorAll("[data-pwa-install]").forEach((b) => (b.textContent = t("Instalar o app"))); });
+const pwaOff = () => { try { return localStorage.getItem("vb.pwaOff") === "1"; } catch { return false; } };
+function pwaCard() {
+  if (STANDALONE || pwaOff() || !matchMedia("(pointer: coarse)").matches) return "";
+  const safari = !IOS || (/Safari\//.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram/.test(navigator.userAgent));
+  return `<section class="pwaCard" id="pwaCard">
+    <header><img src="/icon-192.png" alt="" /><b>${t("Instale o vibebook no celular")}</b><button class="ghost" data-pwa-off aria-label="${t("Fechar")}">${icon("x", 18)}</button></header>
+    <ul><li>${t("Notificações nativas quando alguém te marca ou seu Claude pede permissão")}</li><li>${t("Abre em tela cheia, sem a barra do navegador")}</li><li>${t("Um toque na tela inicial e você está na sala")}</li><li>${t("Face ID ao abrir, se quiser")}</li></ul>
+    <div class="row">${safari ? `<button class="primary" data-pwa-install>${installEv ? t("Instalar o app") : t("Como instalar")}</button>` : `<span class="muted">${t("No iPhone, abra vibebook.dev no Safari pra instalar.")}</span>`}</div>
+    <ol id="pwaSteps" hidden>${IOS ? `<li>${t("Toque em Compartilhar (o quadrado com a seta) na barra do Safari")}</li><li>${t("Escolha \"Adicionar à Tela de Início\"")}</li><li>${t("Abra o vibebook pelo ícone e ligue o 🔔 no menu")}</li>` : `<li>${t("Abra o menu ⋮ do navegador")}</li><li>${t("Escolha \"Instalar app\" ou \"Adicionar à tela inicial\"")}</li><li>${t("Abra o vibebook pelo ícone e ligue o 🔔 no menu")}</li>`}</ol>
+  </section>`;
+}
+function pwaHow() {
+  const card = document.getElementById("pwaCard");
+  if (card) { card.querySelector("#pwaSteps").hidden = false; card.scrollIntoView({ block: "center", behavior: "smooth" }); }
+  else alert(t("No iPhone, as notificações só funcionam com o vibebook instalado: Safari → Compartilhar → Adicionar à Tela de Início, depois abra pelo ícone."));
+}
+document.addEventListener("click", async (e) => {
+  if (e.target.closest("[data-pwa-off]")) { try { localStorage.setItem("vb.pwaOff", "1"); } catch {} document.getElementById("pwaCard")?.remove(); return; }
+  if (!e.target.closest("[data-pwa-install]")) return;
+  if (installEv) { installEv.prompt(); const { outcome } = await installEv.userChoice; installEv = null; if (outcome === "accepted") document.getElementById("pwaCard")?.remove(); return; }
+  const steps = document.getElementById("pwaSteps"); if (steps) steps.hidden = !steps.hidden;
+});
+pushSync();
 let audioCtx = null;
 const unlockChime = () => { try { audioCtx ??= new AudioContext(); audioCtx.resume(); } catch {} };
 document.addEventListener("pointerdown", unlockChime, { once: true });
