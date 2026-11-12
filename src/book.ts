@@ -18,6 +18,7 @@ import { findSecret } from "./secrets";
 import { cronWords, nextRun, parseCron } from "./cron";
 import { decide, type Question } from "./jev";
 import { track } from "./track";
+import { pushTo } from "./webpush";
 
 // OpenRouter reports each call's USD cost in usage.raw.cost; the admin sums it per model.
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
@@ -609,6 +610,20 @@ export class Book extends DurableObject<Env> {
   online() {
     return [...new Set(this.sockets().map((ws) => this.ctx.getTags(ws)[0]))];
   }
+  private pushedAt = new Map<string, number>();
+  /** A native notification (web push) to these people's devices, unless they have this room open; ≤1 per person per
+   *  room every 20s (the tag also folds them into one per room on the device). Mentions, asks for you, your Claude's ⏸/❓. */
+  async notify(emails: string[], title: string, body: string, msgId: number, thread: string) {
+    const bookId = this.get("book_id");
+    if (!bookId || !this.env.VAPID_PUBLIC_KEY) return;
+    const here = new Set(this.online()), now = Date.now();
+    const to = [...new Set(emails)].filter((e) => !here.has(e) && now - (this.pushedAt.get(e) ?? 0) > 20_000);
+    if (!to.length) return;
+    to.forEach((e) => this.pushedAt.set(e, now));
+    const room = (await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>())?.title ?? "vibebook";
+    const sent = await pushTo(this.env, to, { title: `${title} · ${room}`, body, url: `/b/${bookId}${thread && thread !== "main" ? `?t=${encodeURIComponent(thread)}` : ""}#m${msgId}`, tag: `vb-${bookId}` });
+    if (sent) await track(this.env, "push_sent", { dims: { book: bookId, n: sent } });
+  }
   sockets(except?: WebSocket) {
     return this.ctx.getWebSockets().filter((ws) => ws !== except && ws.readyState === WebSocket.OPEN);
   }
@@ -668,6 +683,8 @@ export class Book extends DurableObject<Env> {
   async queueMentions(m: Msg) {
     const who = mentioned(m.text, await this.members(), await this.names(), m.author);
     if (!who.length) return;
+    const nm = (await this.names())[m.author] || m.author.split("@")[0];
+    this.ctx.waitUntil(this.notify(who, m.author === "ai" ? "@vibe" : m.kind === "agent" ? `agent de ${nm}` : nm, m.text.replace(/\s+/g, " "), m.id, m.thread));
     const delay = this.env.DEV_EMAIL ? 5_000 : MAIL_DELAY_MS; // local dev: see it in seconds
     for (const e of who) this.sql.exec(`INSERT OR IGNORE INTO mail_q (email, msg_id, due) VALUES (?, ?, ?)`, e, m.id, m.ts + delay);
     await this.wakeAt(m.ts + delay);
@@ -1231,6 +1248,7 @@ export class Book extends DurableObject<Env> {
     }
     const m = this.sql.exec<{ thread: string }>(`SELECT thread FROM messages WHERE id = ?`, msgId).toArray()[0];
     const topic = m && m.thread !== "main" ? this.epics().find((e) => e.id === m.thread)?.title ?? "" : "";
+    this.ctx.waitUntil(this.notify([email], "⏸ Seu Claude espera você no terminal", text, msgId, m?.thread ?? "main"));
     await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
       .bind(bookId, `b${msgId}`, email, m?.thread ?? "main", topic, `⏸ Seu Claude espera você no terminal: ${text}`, Date.now())
       .run();
@@ -1244,6 +1262,7 @@ export class Book extends DurableObject<Env> {
       if (r.meta.changes) await poke(this.env, [email], { t: "me" });
       return;
     }
+    this.ctx.waitUntil(this.notify([email], text.startsWith("❓") ? "❓ Seu Claude pergunta" : "⏸ Seu Claude pede permissão", text.replace(/^\S+ Seu Claude [^:]*:\s*/, "").replace(/\s+/g, " "), msgId, thread));
     const topic = thread !== "main" ? this.epics().find((e) => e.id === thread)?.title ?? "" : "";
     await this.env.DB.prepare(`INSERT OR REPLACE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, '', ?, ?)`)
       .bind(bookId, `a${msgId}`, email, thread, topic, text.split("\n").slice(0, 2).join(" ").slice(0, 300), Date.now())
@@ -1971,6 +1990,8 @@ export class Book extends DurableObject<Env> {
         if (!r) break; // the next pass starts from this message again
         cost += r.cost;
         const yes = (k: string, at: number) => (r.answers[k]?.noul ?? 0) >= at;
+        const asked = others.slice(0, 12).filter((_, i) => yes(`p${i}`, 0.7));
+        if (asked.length) this.ctx.waitUntil(this.notify(asked, `${nm(m.author)} espera sua resposta`, m.text.replace(/\s+/g, " "), m.id, m.thread));
         await DB.batch([
           ...others.slice(0, 12).filter((_, i) => yes(`p${i}`, 0.7)).map((e) =>
             DB.prepare(`INSERT OR IGNORE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(bookId, `m${m.id}`, e, m.thread, topic(m.thread), m.author, m.text.slice(0, 280), m.ts),

@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.6";
+var VERSION = "1.6.7";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -401,6 +401,12 @@ var printResult = (res) => {
         }
       process.stdout.write(`${text}
 `);
+      try {
+        const n = JSON.parse(text).unread_from_your_human?.length;
+        if (n)
+          process.stderr.write(`vibebook: ⚠ ${n} mensagem(ns) do seu humano chegaram enquanto você trabalhava: veja unread_from_your_human (ou rode read_room)
+`);
+      } catch {}
     } else if (c.data) {
       const f = join(tmpdir(), `vibebook-${randomBytes(4).toString("hex")}.${(c.mimeType ?? "").split("/")[1] || "bin"}`);
       writeFileSync(f, Buffer.from(c.data, "base64"));

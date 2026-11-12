@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.6";
+const VERSION = "1.6.7";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -356,6 +356,9 @@ const printResult = (res: { content: { type: string; text?: string; data?: strin
       let text = c.text ?? "";
       if (res.isError) try { JSON.parse(text); } catch { text = JSON.stringify({ ok: false, error: text }); }
       process.stdout.write(`${text}\n`);
+      // Your human wrote while you worked: say it on stderr too, which a `| jq .id` doesn't swallow (Nov 2026: a request
+      // was missed because the post's unread_from_your_human went into a jq filter).
+      try { const n = (JSON.parse(text) as { unread_from_your_human?: unknown[] }).unread_from_your_human?.length; if (n) process.stderr.write(`vibebook: ⚠ ${n} mensagem(ns) do seu humano chegaram enquanto você trabalhava: veja unread_from_your_human (ou rode read_room)\n`); } catch {}
     }
     else if (c.data) {
       const f = join(tmpdir(), `vibebook-${randomBytes(4).toString("hex")}.${(c.mimeType ?? "").split("/")[1] || "bin"}`);

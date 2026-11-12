@@ -1,6 +1,6 @@
 {
   "name": "vibebook.dev",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "vibebook CLI: your vibebook rooms from the terminal, for you and your Claude. One login per machine; room tools discovered at run time.",
   "type": "module",
   "bin": { "vibebook": "cli.mjs" },
