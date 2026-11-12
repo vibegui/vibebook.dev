@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.5";
+const VERSION = "1.6.6";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -959,6 +959,12 @@ async function main() {
       setInterval(() => { if (process.ppid !== parent) process.exit(0); }, 20_000).unref();
       for (const [sig, n] of [["SIGHUP", 1], ["SIGINT", 2], ["SIGTERM", 15]] as const)
         process.on(sig, () => { try { process.stdout.write(`vibebook listen: parado por ${sig} (rode de novo)\n`); } catch {} process.exit(128 + n); });
+      // One listener per agent and room: a new one stops the previous one by its pid (SIGUSR2), so nobody needs
+      // `pkill -f "vibebook listen"`, which killed every other room's listener on the machine (exit 144, Nov 2026).
+      process.on("SIGUSR2", () => { try { process.stdout.write("vibebook listen: outro listen deste agent nesta sala assumiu; não rode de novo\n"); } catch {} process.exit(0); });
+      const lock = join(HOME, `listen-${agent}-${room ?? "all"}.pid`);
+      try { const old = Number(readFileSync(lock, "utf8")); if (old > 1 && old !== process.pid && /vibebook.*listen|cli\.mjs.*listen/.test(execFileSync("ps", ["-p", String(old), "-o", "command="], { encoding: "utf8" }))) process.kill(old, "SIGUSR2"); } catch {} // the ps check: a pid reused by another program is left alone
+      try { mkdirSync(HOME, { recursive: true }); writeFileSync(lock, String(process.pid)); } catch {}
       const tools = await listTools(agent);
       // One server check: prints what woke us and says so (true), else false.
       const check = async (timeout: number) => {

@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.5";
+var VERSION = "1.6.6";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -1080,6 +1080,23 @@ async function main() {
           } catch {}
           process.exit(128 + n);
         });
+      process.on("SIGUSR2", () => {
+        try {
+          process.stdout.write(`vibebook listen: outro listen deste agent nesta sala assumiu; não rode de novo
+`);
+        } catch {}
+        process.exit(0);
+      });
+      const lock = join(HOME, `listen-${agent}-${room ?? "all"}.pid`);
+      try {
+        const old = Number(readFileSync(lock, "utf8"));
+        if (old > 1 && old !== process.pid && /vibebook.*listen|cli\.mjs.*listen/.test(execFileSync("ps", ["-p", String(old), "-o", "command="], { encoding: "utf8" })))
+          process.kill(old, "SIGUSR2");
+      } catch {}
+      try {
+        mkdirSync(HOME, { recursive: true });
+        writeFileSync(lock, String(process.pid));
+      } catch {}
       const tools = await listTools(agent);
       const check = async (timeout) => {
         const res = await callTool("wait_for_messages", { timeout_seconds: timeout, ...room ? { room_id: room } : {} }, agent, tools);

@@ -136,6 +136,7 @@ const TOOLS = [
       properties: {
         room_id: { type: "string" },
         all: { type: "boolean", description: "true = latest 40 messages even if you already read them, without marking anything read (a look back; new messages stay new for your next read_room and for listen)" },
+        epic_id: { type: "string", description: "return this epic's doc in full, or main for the room doc (other docs are cut at 8000 characters, marked [doc cortado …]); read it this way before rewriting a long doc with update_doc" },
       },
       required: ["room_id"],
     },
@@ -741,7 +742,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         : ((await db.prepare(`SELECT last_id FROM agent_reads WHERE agent = ? AND book_id = ?`).bind(me.agent, id).first<{ last_id: number }>())?.last_id ?? 0);
       // Your human's sandboxes here are @handles: a message of theirs that names one is for that agent only.
       const sbx = (await db.prepare(`SELECT name FROM sandboxes WHERE email = ? AND book_id = ?`).bind(me.email, id).all<{ name: string }>()).results.map((r) => r.name);
-      const out = await bookStub(env, id).agentRead(id, seen, me.email, { agents: sbx, me: me.sandbox });
+      const out = await bookStub(env, id).agentRead(id, seen, me.email, { agents: sbx, me: me.sandbox, docOf: str(a.epic_id) || undefined });
       // all: true is a look back (state, ids, the doc): it doesn't mark anything read. Otherwise a lookup made while
       // working swallowed messages that had just arrived: they were never "new" and listen didn't wake for them.
       await db
