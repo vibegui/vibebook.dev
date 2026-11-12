@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.3";
+const VERSION = "1.6.4";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -453,8 +453,8 @@ function hostApp(): string | null {
     for (let i = 0; i < 15 && p && p !== "1" && p !== "0"; i++) {
       const [ppid, ...cmd] = execFileSync("ps", ["-o", "ppid=,comm=", "-p", p]).toString().trim().split(/\s+/);
       const name = cmd.join(" ").match(/([^/]+)\.app\/Contents\//)?.[1] ?? cmd.join(" ").split("/").pop() ?? "";
-      const hit = /^(Antigravity|Cursor|Windsurf)$/i.exec(name);
-      if (hit) return (hostAppMemo = hit[1][0].toUpperCase() + hit[1].slice(1).toLowerCase());
+      const hit = /^(Antigravity|agy|Cursor|Windsurf)$/i.exec(name); // agy: Antigravity's binary on Linux
+      if (hit) return (hostAppMemo = /^agy$/i.test(hit[1]) ? "Antigravity" : hit[1][0].toUpperCase() + hit[1].slice(1).toLowerCase());
       p = ppid;
     }
   } catch {}

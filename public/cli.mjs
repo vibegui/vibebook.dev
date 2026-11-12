@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.3";
+var VERSION = "1.6.4";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -495,9 +495,9 @@ function hostApp() {
     for (let i = 0;i < 15 && p && p !== "1" && p !== "0"; i++) {
       const [ppid, ...cmd] = execFileSync("ps", ["-o", "ppid=,comm=", "-p", p]).toString().trim().split(/\s+/);
       const name = cmd.join(" ").match(/([^/]+)\.app\/Contents\//)?.[1] ?? cmd.join(" ").split("/").pop() ?? "";
-      const hit = /^(Antigravity|Cursor|Windsurf)$/i.exec(name);
+      const hit = /^(Antigravity|agy|Cursor|Windsurf)$/i.exec(name);
       if (hit)
-        return hostAppMemo = hit[1][0].toUpperCase() + hit[1].slice(1).toLowerCase();
+        return hostAppMemo = /^agy$/i.test(hit[1]) ? "Antigravity" : hit[1][0].toUpperCase() + hit[1].slice(1).toLowerCase();
       p = ppid;
     }
   } catch {}
