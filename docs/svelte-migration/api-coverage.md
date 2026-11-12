@@ -4,7 +4,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 
 | Method | Path | Handler | Kind | Vanilla refs | RPC status |
 |---|---|---|---|---|---|
-| GET | `/.well-known/jwks.json` | `src/index.ts:371` | JSON RPC | 0 | todo |
+| GET | `/.well-known/jwks.json` | `src/index.ts:371` | external auth protocol (public keys for X-Vibebook-Identity), not app RPC | 0 | n/a (documented) |
 | GET | `/api/archived` | `src/index.ts:558` | JSON RPC | 1 | todo |
 | GET | `/api/avatar/:email` | `src/index.ts:549` | binary GET (asset) | 2 | n/a (documented) |
 | POST | `/api/books` | `src/index.ts:699` | JSON RPC | 37 | todo |
@@ -62,10 +62,10 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/search` | `src/index.ts:572` | JSON RPC | 2 | todo |
 | PUT | `/api/upload/:token` | `src/index.ts:286` | binary PUT (agent upload link) | 0 | n/a (documented) |
 | POST | `/api/waits/resolve` | `src/api.ts` | JSON RPC | 2 | tested (slice 2) |
-| GET | `/app` | `src/index.ts:259` | JSON RPC | 16 | todo |
-| GET | `/archived` | `src/index.ts:263` | JSON RPC | 4 | todo |
-| GET | `/b/*` | `src/index.ts:270` | JSON RPC | 0 | todo |
-| GET | `/login` | `src/index.ts:258` | JSON RPC | 8 | todo |
+| GET | `/app` | `src/index.ts:259` | HTML shell (navigation) | 16 | n/a (documented) |
+| GET | `/archived` | `src/index.ts:263` | HTML shell (navigation) | 4 | n/a (documented) |
+| GET | `/b/*` | `src/index.ts:270` | HTML shell (navigation) | 0 | n/a (documented) |
+| GET | `/login` | `src/index.ts:258` | HTML page (navigation) | 8 | n/a (documented) |
 | GET | `/mail/:onoff{off|on}` | `src/index.ts:346` | browser navigation / redirect | 0 | n/a (documented) |
 | GET | `/oauth/code` | `src/index.ts:357` | browser navigation / redirect | 0 | n/a (documented) |
 | GET | `/ws-me` | `src/index.ts:845` | WebSocket upgrade (typed protocol, not JSON RPC) | 2 | n/a (documented) |
