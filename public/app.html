@@ -664,6 +664,11 @@
   .mention.me { background: var(--sun, #f2dc4a); color: #14305e; }
   .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
   .mentionPop[hidden] { display: none; }
+  .composer .emojiBtn { font-size: 19px; line-height: 1; filter: grayscale(.4); } .composer .emojiBtn:hover, .composer .emojiBtn[aria-expanded="true"] { filter: none; }
+  .emojiPop { width: min(340px, calc(100% - 48px)); }
+  .emojiPop input { width: 100%; margin-bottom: calc(6px * var(--space)); }
+  .emojiPop .eGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); max-height: 220px; overflow: auto; }
+  .emojiPop .eGrid button { justify-content: center; font-size: 22px; padding: calc(5px * var(--space)); }
   .mentionPop button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 7px 10px; border-radius: 10px; text-align: left; font: inherit; cursor: pointer; }
   .mentionPop button.sel, .mentionPop button:hover { background: var(--panel); }
   .mentionPop small { color: var(--mute); margin-left: auto; font-size: 12px; }
@@ -1335,6 +1340,8 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Buscar emoji…": "Search emoji…",
+  "Emoji": "Emoji",
   "Não consegui abrir este arquivo.": "Couldn't open this file.",
   "Desafixar": "Unpin",
   "Desafixar {name}": "Unpin {name}",
@@ -3058,6 +3065,8 @@ function renderBook() {
         <div class="replyBar" id="replyBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
+          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>
+          <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${t("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${t("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
           <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
             <button type="button" role="menuitem" id="attach">${icon("paperclip")} ${t("Anexar arquivo")} <small>${t("ou Cmd+V")}</small></button>
@@ -3144,6 +3153,25 @@ function renderBook() {
     if (e.key === "ArrowLeft") setDocW(cur + 24); else if (e.key === "ArrowRight") setDocW(cur - 24);
   };
   const input = document.getElementById("input");
+  // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
+  // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.
+  {
+    const btn = document.getElementById("emojiBtn"), box = document.getElementById("emojiPop"), q = document.getElementById("emojiQ"), grid = document.getElementById("emojiGrid");
+    const all = [...new Map(Object.entries(EMOJI).map(([k, v]) => [v, k])).entries()]; // [emoji, first name]
+    const draw = () => { const w = q.value.trim().toLowerCase().replace(/:/g, ""); grid.innerHTML = all.filter(([e, k]) => !w || Object.entries(EMOJI).some(([n, v]) => v === e && n.includes(w))).map(([e, k]) => `<button type="button" title=":${esc(k)}:" data-emoji="${e}">${e}</button>`).join(""); };
+    const close = () => { box.hidden = true; btn.setAttribute("aria-expanded", "false"); };
+    btn.onclick = (ev) => { ev.stopPropagation(); if (!box.hidden) return close(); q.value = ""; draw(); box.hidden = false; btn.setAttribute("aria-expanded", "true"); if (!matchMedia("(pointer: coarse)").matches) q.focus(); };
+    q.oninput = draw;
+    q.onkeydown = (ev) => { if (ev.key === "Escape") { close(); input.focus(); } if (ev.key === "Enter") { ev.preventDefault(); grid.querySelector("button")?.click(); } };
+    grid.onclick = (ev) => {
+      const b = ev.target.closest("[data-emoji]"); if (!b) return;
+      const a = input.selectionStart ?? input.value.length, z = input.selectionEnd ?? a;
+      input.value = input.value.slice(0, a) + b.dataset.emoji + input.value.slice(z);
+      input.focus(); input.selectionStart = input.selectionEnd = a + b.dataset.emoji.length;
+      input.dispatchEvent(new Event("input")); close();
+    };
+    document.addEventListener("click", (ev) => { if (!box.hidden && !box.contains(ev.target) && ev.target !== btn) close(); });
+  }
   // @ autocomplete: people in the room (you excluded), filtered by what follows the @.
   const pop = document.getElementById("mentionPop");
   let picks = [], pickAt = 0, atStart = -1;
