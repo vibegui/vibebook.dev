@@ -755,6 +755,7 @@
   .preview blockquote { margin: 0 0 12px; padding: 4px 14px; background: var(--panel); border-radius: 10px; color: var(--mute); }
   .preview table { border-collapse: collapse; margin: 0 0 12px; font-size: 14px; display: block; max-width: 100%; overflow-x: auto; }
   .preview th, .preview td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; }
+  .preview table { overflow-wrap: normal; } .preview th { white-space: nowrap; } .preview td { min-width: 7em; max-width: 26em; vertical-align: top; } /* .preview's overflow-wrap: anywhere let every cell shrink to one letter: cells keep whole words and the table scrolls sideways */
   .preview .empty { margin: 0; }
   .doc[data-view="preview"] textarea, .doc[data-view="edit"] .preview { display: none; }
   /* doc panel tabs + files library */
