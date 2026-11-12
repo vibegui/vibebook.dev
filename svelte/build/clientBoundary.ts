@@ -1,8 +1,9 @@
 import { builtinModules } from "node:module";
 import { realpathSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Plugin } from "vite";
+import type { Plugin, ResolverFunction } from "vite";
 
 /** Shared by browser builders; keep backend and private configuration out of emitted assets. */
 export function createClientBoundaryPolicy(options: { projectRoot: string }) {
@@ -83,9 +84,86 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
 /** Backend code is not a browser dependency. Check every module in Vite's graph, including dependencies. */
 export function clientBoundary(options: { projectRoot: string }): Plugin {
   const { assertClient } = createClientBoundaryPolicy(options);
+  let publicDir = "";
   return {
     name: "vibebook-client-boundary",
     enforce: "pre",
+    configResolved(config) {
+      publicDir = config.publicDir;
+      // Vite's CSS @import/url() resolvers read outside the module graph and
+      // capture this alias array before configResolved. Protect existing aliases
+      // and the fallback IN PLACE; replacing the array leaves those reads open.
+      const protect = (original?: ResolverFunction): ResolverFunction => {
+        const guarded = async function (
+          this: ThisParameterType<ResolverFunction>,
+          ...[source, importer, resolveOptions]: Parameters<ResolverFunction>
+        ) {
+          assertClient(source, importer);
+          const result = original
+            ? await original.call(this, source, importer, resolveOptions)
+            : await this.resolve(source, importer, {
+                ...resolveOptions,
+                skipSelf: true,
+              });
+          if (result)
+            assertClient(
+              typeof result === "string" ? result : result.id,
+              importer,
+            );
+          return result;
+        };
+        // Vite 8.3.8 accepts/awaits async alias resolvers, but its exported alias
+        // type omits Rolldown's async wrapper. Real CSS/Tailwind builds cover
+        // this SDK-only mismatch; an upstream type fix makes this directive fail.
+        // @ts-expect-error Async resolver return is supported by Vite's runtime.
+        return guarded;
+      };
+      for (const alias of config.resolve.alias)
+        alias.customResolver = protect(
+          typeof alias.customResolver === "function"
+            ? alias.customResolver
+            : alias.customResolver?.resolveId,
+        );
+      config.resolve.alias.push({
+        find: /^/,
+        replacement: "",
+        customResolver: protect(),
+      });
+    },
+    async buildStart() {
+      // Public URLs short-circuit CSS resolution. A public symlink must not
+      // expose a protected target through that path or through static copying.
+      const visited = new Set<string>();
+      const inspect = async (directory: string): Promise<void> => {
+        assertClient(directory);
+        const real = realpathSync(directory);
+        if (visited.has(real)) return;
+        visited.add(real);
+        for (const entry of await readdir(directory, { withFileTypes: true })) {
+          const path = resolve(directory, entry.name);
+          assertClient(path);
+          if (
+            entry.isDirectory() ||
+            (entry.isSymbolicLink() && (await stat(path)).isDirectory())
+          )
+            await inspect(path);
+        }
+      };
+      if (publicDir) {
+        try {
+          await stat(publicDir);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            "code" in error &&
+            error.code === "ENOENT"
+          )
+            return;
+          throw error;
+        }
+        await inspect(publicDir);
+      }
+    },
     async resolveId(source, importer, resolveOptions) {
       assertClient(source, importer);
       if (source.startsWith("\0")) return;

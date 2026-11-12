@@ -38,6 +38,19 @@ beforeAll(async () => {
   );
   // All credential-like files are synthetic; tests never inspect repository secrets.
   await writeFile(join(root, ".dev.vars"), "SYNTHETIC_PRIVATE_CONFIGURATION");
+  await writeFile(
+    join(root, "src/private.css"),
+    `.probe {--backend-probe:"${backendSentinel}"}`,
+  );
+  await writeFile(
+    join(root, "shared/nested.css"),
+    '@import "../src/private.css";',
+  );
+  await writeFile(
+    join(root, "shared/public-font.woff2"),
+    "SYNTHETIC_PUBLIC_FONT",
+  );
+  await symlink(join(root, ".dev.vars"), join(root, "shared/font-link.woff2"));
   await symlink(join(root, "src/private.ts"), join(root, "shared/link.ts"));
   await writeFile(
     join(root, "client/template.html"),
@@ -83,6 +96,45 @@ for (const [name, source] of forbidden) {
     ).rejects.toThrow("[client-boundary]");
   });
 }
+
+for (const [name, css] of [
+  [
+    "private font URL",
+    '@font-face{font-family:"probe";src:url("../.dev.vars")}',
+  ],
+  ["backend asset URL", '.probe{background:url("../src/private.ts")}'],
+  ["nested backend CSS import", '@import "../shared/nested.css";'],
+  [
+    "private font symlink",
+    '@font-face{font-family:"probe";src:url("../shared/font-link.woff2")}',
+  ],
+]) {
+  test(`Bun rejects CSS ${name} before browser output`, async () => {
+    await writeFile(join(root, "client/style.css"), css!);
+    await writeFile(
+      entrypoint,
+      'import "./style.css"; export const value = 1;',
+    );
+    await expect(
+      buildBrowser({ entrypoints: [entrypoint] }, root),
+    ).rejects.toThrow("[client-boundary]");
+  });
+}
+
+test("Bun permits a browser-safe CSS font without private markers", async () => {
+  await writeFile(
+    join(root, "client/style.css"),
+    '@font-face{font-family:"public";src:url("../shared/public-font.woff2")}',
+  );
+  await writeFile(entrypoint, 'import "./style.css"; export const value = 1;');
+  const result = await buildBrowser({ entrypoints: [entrypoint] }, root);
+  const output = (
+    await Promise.all(result.outputs.map((file) => file.text()))
+  ).join("\n");
+  expect(result.success).toBe(true);
+  expect(output).not.toContain(backendSentinel);
+  expect(output).not.toContain("SYNTHETIC_PRIVATE_CONFIGURATION");
+});
 
 test("production editor build configuration enforces the boundary", async () => {
   await writeFile(entrypoint, 'export { value } from "../src/private";');
