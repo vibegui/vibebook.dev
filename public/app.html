@@ -2177,7 +2177,8 @@ function connectMe() {
   meWs.onopen = () => { meWsTry = 0; };
   meWs.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
-    if (m.t === "me") { clearTimeout(meT); meT = setTimeout(refreshMe, 600); }
+    // A new message in the room open here: this tab already has it (the room's socket), no /api/me refetch (15k a day).
+    if (m.t === "me" && !(m.msg && m.book && m.book === S?.id)) { clearTimeout(meT); meT = setTimeout(refreshMe, 600); }
     // Only an agents poke refetches this room's agents: a plain message here ({t:"me"}) did too, ~13k fetches a day.
     if (m.t === "agents" && (m.book === "*" || m.book === S?.id)) { clearTimeout(agT); agT = setTimeout(loadRoomAgents, 600); }
   };

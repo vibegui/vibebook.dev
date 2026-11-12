@@ -41,7 +41,7 @@ export class Person extends DurableObject<Env> {
 }
 
 /** Tell these people's open apps that something changed. Fire and forget, ≤50 people per call. */
-export function poke(env: Env, emails: Iterable<string>, msg: { t: "me"; book?: string } | { t: "agents"; book: string }) {
+export function poke(env: Env, emails: Iterable<string>, msg: { t: "me"; book?: string; msg?: 1 } | { t: "agents"; book: string }) {
   const body = JSON.stringify(msg);
   return Promise.all(
     [...new Set(emails)].slice(0, 50).map((e) =>

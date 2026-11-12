@@ -589,8 +589,9 @@ export class Book extends DurableObject<Env> {
     return out;
   }
   /** The members' open apps refetch what they see outside this room (rail, waits): src/person.ts. */
-  pokeMembers() {
-    this.ctx.waitUntil(this.members().then((m) => poke(this.env, m, { t: "me", book: this.get("book_id") ?? undefined })).catch(() => {}));
+  // msg: only a new message or rename (touch): a tab with this room open already has it and skips the /api/me refetch.
+  pokeMembers(msg = false) {
+    this.ctx.waitUntil(this.members().then((m) => poke(this.env, m, { t: "me", book: this.get("book_id") ?? undefined, ...(msg ? { msg: 1 as const } : {}) })).catch(() => {}));
   }
   async members(): Promise<string[]> {
     const id = this.get("book_id");
@@ -978,7 +979,7 @@ export class Book extends DurableObject<Env> {
     )
       .bind(Date.now(), fields.title ?? null, fields.folder ?? null, fields.summary ?? null, fields.lastId ?? null, fields.human ?? null, fields.agent ?? null, id)
       .run();
-    this.pokeMembers();
+    this.pokeMembers(true);
   }
   /** What each person has seen in this room (the app's unread dots): everyone with the room open, up to `upto`. */
   async markRead(emails: string[], upto: number) {
