@@ -1354,6 +1354,9 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Copiar link": "Copy link",
+  "Copiar o link desta mensagem": "Copy a link to this message",
+  "Link copiado": "Link copied",
   "Caixa de entrada": "Inbox",
   "Caixa de entrada: o que espera por você": "Inbox: what's waiting on you",
   "Esta sala": "This room",
@@ -2059,6 +2062,7 @@ let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting 
 const clW = (ws) => (ws.some((w) => /^[ab]\d/.test(w.ref)) ? " cl" : "");
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
+  link: `<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>`,
   inbox: `<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>`,
   grid: `<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>`,
   search: `<circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4-4"/>`,
@@ -4674,6 +4678,14 @@ function copySync(txt) {
   let ok = false; try { ok = document.execCommand("copy"); } catch {}
   ta.remove(); return ok;
 }
+// A link to one message (/b/<room>?t=<thread>#m<id>): someone in the room who opens it lands on it, in its thread.
+function copyLink(id) {
+  const m = allMsgs().find((x) => x.id === id); if (!m) return;
+  const url = `${location.origin}/b/${S.id}${m.thread && m.thread !== "main" ? `?t=${encodeURIComponent(m.thread)}` : ""}#m${id}`;
+  const done = () => { toast(`✓ ${t("Link copiado")}`, 1600); navigator.vibrate?.(15); };
+  if (copySync(url)) return done();
+  (navigator.clipboard?.writeText(url) ?? Promise.reject()).then(done, () => toast(`${t("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copylink="${id}">${t("Copiar link")}</button>`));
+}
 function copyMsg(id) {
   const m = S.messages.find((x) => x.id === id); if (!m) return;
   const txt = m.text || m.files?.map((f) => f.name).join("\n") || "";
@@ -4694,6 +4706,8 @@ document.addEventListener("click", (ev) => {
   if (r) return startReply(Number(r.dataset.reply));
   const cp = ev.target.closest("[data-copymsg]");
   if (cp) return copyMsg(Number(cp.dataset.copymsg));
+  const cl = ev.target.closest("[data-copylink]");
+  if (cl) return copyLink(Number(cl.dataset.copylink));
   const ml = ev.target.closest("a.mlink[data-msg]");
   if (ml) { ev.preventDefault(); return goToMsg(Number(ml.dataset.msg)); }
   const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
@@ -4881,7 +4895,7 @@ function noticeHtml(m) {
   return `<div class="msg remMsg noticeMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary><span class="vibeMark" aria-hidden="true">✦</span><span class="remT">${mentions(esc(one))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day}</span></summary><div class="txt">${mentions(md(m.text || ""))}</div></details></div></div>`;
 }
 // Hover actions (Copiar / Responder) shared by messages and the quiet reminder/issue lines.
-const mact = (id) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-reply="${id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>`;
+const mact = (id) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-copylink="${id}" title="${t("Copiar link")}" aria-label="${t("Copiar o link desta mensagem")}">${icon("link", 14)} ${t("Copiar link")}</button><button type="button" class="rbtn" data-reply="${id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>`;
 const msgHtml = (m, prev) => {
   if (m.tag === "reminder") return remHtml(m);
   if (m.tag === "issue") return issueHtml(m);
