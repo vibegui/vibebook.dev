@@ -7,8 +7,11 @@
     "@codemirror/lang-markdown": "6.3.4",
     "@codemirror/state": "^6.7.6",
     "@codemirror/view": "^6.43.15",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/bun": "latest",
     "codemirror": "6.0.2",
+    "svelte": "5.57.3",
+    "vite": "^8.3.8",
     "wrangler": "^4.152.0",
     "y-codemirror.next": "0.3.5",
     "y-websocket": "3.1.0"
@@ -32,6 +35,7 @@
     "deploy": "bun run build:mcp && wrangler deploy",
     "check": "tsc --noEmit && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
     "build:collab": "bun build collab/editor.ts --outfile public/collab.js --format esm --minify --target browser",
-    "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs"
+    "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs",
+    "build:ui": "vite build --config svelte/vite.config.ts"
   }
 }

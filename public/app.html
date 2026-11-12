@@ -1360,6 +1360,7 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Não deu pra abrir agora. Tente de novo.": "Couldn't open it now. Try again.",
   "Buscando a mensagem…": "Finding the message…",
   "Não achei essa mensagem nesta sala.": "Couldn't find that message in this room.",
   "Copiar link": "Copy link",
@@ -2835,37 +2836,32 @@ function syncInbox() {
   const n = myWaits.length, k = b.querySelector(".kN");
   k.hidden = !n; k.textContent = n; k.className = `kN${clW(myWaits)}`;
 }
+// The inbox is the first piece of the app in Svelte (svelte/Inbox.svelte → public/svelte/ui.js, loaded on first
+// open, epic "Front-end framework evaluation"): the dialog and its CSS stay here, the component draws inside it.
+let uiLoad;
+const loadUI = () => (uiLoad ??= import("/svelte/ui.js"));
 function openInbox() {
   let d = document.getElementById("inbox");
   if (!d) { d = document.createElement("dialog"); d.id = "inbox"; d.className = "inbox"; document.body.appendChild(d); d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); }
-  const here = S?.id ? myWaits.filter((w) => w.book_id === S.id) : [];
-  if (!S?.id) inboxAll = true;
-  const list = inboxAll ? myWaits : here;
-  const who = (w) => (w.author_name || w.author.split("@")[0]).split(" ")[0];
-  const row = (w) => { const i = myWaits.indexOf(w), task = w.ref.startsWith("t"), ask = /^[ab]/.test(w.ref); return `<li>
-      <a href="/b/${w.book_id}${w.thread === "main" ? "" : `?t=${encodeURIComponent(w.thread)}`}${w.ref.startsWith("m") || ask ? `#m${w.ref.slice(1)}` : ""}" data-ib="${i}"><span class="wIc${task ? " task" : ""}">${task ? icon("check", 16) : avatar(w.author)}</span>
-        <span class="wt"><span>${task ? `<b>${t("Tarefa sua esperando OK:")}</b> ` : ask ? `<b>${t("Seu agent espera você:")}</b> ` : `<b>${esc(who(w))}:</b> `}${esc(w.text.length > 220 ? `${w.text.slice(0, 218)}…` : w.text)}</span>
-        <small>${inboxAll ? `${esc(w.room)} › ` : ""}${w.topic ? esc(w.topic) : t("sala principal")} · ${ago(w.ts)}</small></span></a>
-      ${w.ref.startsWith("m") ? `<button class="ghost" data-ib-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check")}</button>` : ""}
-    </li>`; };
-  d.innerHTML = `<header><h2>${t("Caixa de entrada")}</h2><button class="ghost" data-ib-close aria-label="${t("Fechar")}">${icon("x", 18)}</button></header>
-    ${S?.id ? `<div class="ibTabs" role="tablist"><button type="button" class="${inboxAll ? "" : "on"}" data-ib-tab="here">${t("Esta sala")} <small>${here.length}</small></button><button type="button" class="${inboxAll ? "on" : ""}" data-ib-tab="all">${t("Todas")} <small>${myWaits.length}</small></button></div>` : ""}
-    ${list.length ? `<ul>${list.map(row).join("")}</ul>` : `<p class="ibEmpty">${inboxAll ? t("Nada esperando você. ✓") : t("Nada esperando você nesta sala. ✓")}</p>`}`;
-  d.querySelector("[data-ib-close]").onclick = () => d.close();
-  d.querySelectorAll("[data-ib-tab]").forEach((b) => b.onclick = () => { inboxAll = b.dataset.ibTab === "all"; openInbox(); });
-  d.querySelectorAll("[data-ib]").forEach((a) => a.onclick = (e) => {
-    const w = myWaits[Number(a.dataset.ib)]; if (!w) return;
-    d.close();
-    const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
-    if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid, w.thread); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
-  });
-  d.querySelectorAll("[data-ib-done]").forEach((b) => b.onclick = () => {
-    const w = myWaits[Number(b.dataset.ibDone)];
-    myWaits = myWaits.filter((x) => x !== w);
-    renderSwitcher(); renderWaits(); if (S) renderSide(); openInbox();
-    api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
-  });
-  if (!d.open) d.showModal();
+  loadUI().then(({ mountInbox }) => {
+    d._unmount?.(); d.replaceChildren();
+    d._unmount = mountInbox(d, {
+      waits: myWaits, roomId: S?.id ?? null, all: inboxAll, vb: { t, icon, avatar, ago },
+      ontab: (v) => (inboxAll = v),
+      onclose: () => d.close(),
+      onopen: (w, e) => {
+        d.close();
+        const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
+        if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid, w.thread); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
+      },
+      onresolve: (w) => {
+        myWaits = myWaits.filter((x) => x !== w);
+        renderSwitcher(); renderWaits(); if (S) renderSide(); openInbox();
+        api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+      },
+    });
+    if (!d.open) d.showModal();
+  }).catch(() => toast(t("Não deu pra abrir agora. Tente de novo.")));
 }
 document.addEventListener("click", (e) => { if (e.target.closest?.("#inboxBtn")) openInbox(); });
 
