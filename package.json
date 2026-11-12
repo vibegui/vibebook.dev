@@ -38,7 +38,7 @@
     "dev": "bun run build:api-types && bun run build:collab:svelte && bun run build:ui && bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
-    "check": "bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run test:store && bun run test:ui && bun run test:build && bun run test:connection && bun run check:tooling && bun run format:check",
+    "check": "bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run test:store && bun run test:rpc && bun run test:ui && bun run test:build && bun run test:connection && bun run check:tooling && bun run format:check",
     "build:collab": "bun scripts/build-collab.ts",
     "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs",
     "build:ui": "bun run build:api-types && vite build --config svelte/vite.config.ts",
@@ -55,11 +55,12 @@
     "dev:ui": "vite build --watch --config svelte/vite.config.ts",
     "test:connection": "bun test scripts/room-connection.test.ts scripts/host-lifecycle.test.ts",
     "check:tooling": "node node_modules/@typescript/native/bin/tsc -p tsconfig.tooling.json",
-    "format:check": "prettier --check svelte/*.ts svelte/*.svelte svelte/build/*.ts shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts' vanilla/inbox/*.ts vanilla/inbox/*.svelte scripts/ui-variant-boundary.test.ts scripts/vanilla-isolation-check.ts scripts/migration-inventory.ts",
+    "format:check": "prettier --check svelte/*.ts svelte/*.svelte svelte/build/*.ts shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts' vanilla/inbox/*.ts vanilla/inbox/*.svelte scripts/ui-variant-boundary.test.ts scripts/vanilla-isolation-check.ts scripts/migration-inventory.ts scripts/rpc-routes.test.ts",
     "build:vanilla-ui": "vite build --mode vanilla --config svelte/vite.config.ts",
     "build:collab:svelte": "bun -e 'import { buildCollab } from \"./scripts/build-collab\"; await buildCollab({outfile:\"public/collab-svelte.js\"})'",
     "check:vanilla": "svelte-check --tsconfig vanilla/tsconfig.json && bun scripts/vanilla-isolation-check.ts",
     "capture:inventory": "bun scripts/migration-inventory.ts",
-    "build:api-types": "node node_modules/@typescript/native/bin/tsc -p tsconfig.api.json"
+    "build:api-types": "node node_modules/@typescript/native/bin/tsc -p tsconfig.api.json",
+    "test:rpc": "bun test scripts/rpc-routes.test.ts"
   }
 }
