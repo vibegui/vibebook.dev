@@ -379,10 +379,12 @@ export class Book extends DurableObject<Env> {
     if (n) this.broadcast({ t: "reminders", reminders: this.reminders() });
     return n > 0;
   }
-  async reminderEnable(bookId: string, idOrName: string, on: boolean) {
+  async reminderEnable(bookId: string, idOrName: string, on: boolean, by?: string) {
     this.bind(bookId);
     const r = this.reminders().find((x) => x.id === idOrName || x.name === idOrName);
     if (!r) return false;
+    // A reminder fires as its owner's instruction to their Claude: only they turn it on or off.
+    if (by && r.owner !== by) return false;
     // Back on: the next run counts from now, so a paused reminder doesn't fire for the runs it missed.
     const f = on && r.cron ? this.nextFire(r.cron, r.tz) : null;
     const next = f && "next" in f ? f.next : r.next_at;
@@ -1710,7 +1712,7 @@ export class Book extends DurableObject<Env> {
         return void this.pushAcks(`msg_id = ? AND agent = ?`, id, `h:${email}`);
       }
       case "reminder.enable":
-        return void (await this.reminderEnable(this.get("book_id") ?? "", String(m.id ?? ""), !!m.on));
+        return void (await this.reminderEnable(this.get("book_id") ?? "", String(m.id ?? ""), !!m.on, email));
       case "task.toggle":
         return this.setTask(String(m.id));
       case "task.status":

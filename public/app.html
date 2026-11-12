@@ -2051,9 +2051,12 @@ const emojify = (t) => t.replace(/:([a-z0-9_+-]{1,40}):/g, (x, k) => EMOJI[k] ??
 const linkify = (h) => fileChips(ghChips(emojify(h).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer nofollow ugc">${u}</a>`)));
 // Markdown for @vibe's and agents' messages (they write it): render, sanitize, open links in a new tab.
 // No <img>: files go as attachments, and a remote image would be a tracker.
-const md = (s) => fileChips(ghChips(DOMPurify.sanitize(marked.parse(emojify(s), { breaks: true, gfm: true }), { FORBID_TAGS: ["img"] })
+// What other people's markdown may not carry: images (trackers), page-wide CSS, forms and inline styles (a fake
+// prompt or an overlay on Aprovar/Permitir).
+const MD_PURIFY = { FORBID_TAGS: ["img", "style", "form", "input", "button", "textarea", "select", "iframe", "object", "embed"], FORBID_ATTR: ["style"] };
+const md = (s) => DOMPurify.sanitize(fileChips(ghChips(DOMPurify.sanitize(marked.parse(emojify(s), { breaks: true, gfm: true }), MD_PURIFY)
   .replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, '<a target="_blank" rel="noopener noreferrer nofollow ugc" ').replace(/<a href="#m(\d+)"/g, '<a class="mlink" href="#m$1" data-msg="$1"')
-  .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"')));
+  .replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, '<a class="mlink" href="#$1" data-cardgo="#$1"'))), { ...MD_PURIFY, ADD_ATTR: ["target"] }); // again after the chips' regexes
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
   if (r.status === 401) { location.href = `/login?next=${encodeURIComponent(location.pathname)}`; throw new Error("unauthenticated"); }
@@ -5112,7 +5115,9 @@ async function vbCall(name, a = {}, ask) {
       if (!Array.isArray(conns)) await loadConns();
       const c = (conns || []).find((x) => x.id === a.connection_id), tl = c?.tools.find((x) => x.name === a.tool);
       if (!tl) return { isError: true, content: [{ type: "text", text: "no such connection/tool for this person" }] };
-      if (!tl.read_only && !(await ask(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {})))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      // Always asked, read-only or not: readOnlyHint is the remote server's word, and an embed calling a connection of
+      // yours could read your data through it and pass it on (security review, Nov 2026).
+      if (!(await ask(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {})))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       return (await api(`/api/books/${S.id}/connections/${c.id}/call`, { name: tl.name, arguments: a.arguments || {} })).result;
     }
   }
@@ -5179,6 +5184,9 @@ function embedHost(fr) {
 }
 addEventListener("message", (e) => {
   const d = e.data; if (!d || !S) return;
+  // Every app frame is opaque (sandbox without same-origin): a frame that navigated itself to a real site keeps the
+  // same WindowProxy, so e.source alone would let that site talk to the host.
+  if (e.origin !== "null") return;
   const panel = document.querySelector(".connFrame");
   const fr = panel?.contentWindow === e.source ? panel : [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
   if (!fr) return;
@@ -5547,7 +5555,7 @@ function renderDoc(force) {
   const pv = document.getElementById("preview");
   const tk = document.getElementById("tasks"); if (tk) document.getElementById("tasksHome").append(tk); // keep it out of the innerHTML wipe
   pv.innerHTML = text.trim()
-    ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ADD_ATTR: ["target"] })
+    ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), { ...MD_PURIFY, FORBID_TAGS: MD_PURIFY.FORBID_TAGS.filter((x) => x !== "img"), ADD_ATTR: ["target"] }) // the doc keeps images (screenshots of the room's files)
     : `<div class="empty">${t("Documento vazio. Clique em <b>Editar</b> ou peça pro seu Claude resumir as decisões aqui.")}</div>`;
   pv.querySelectorAll("a").forEach((a) => { a.target = "_blank"; a.rel = "noopener noreferrer nofollow ugc"; });
   // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.

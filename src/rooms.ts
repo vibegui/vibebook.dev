@@ -59,7 +59,7 @@ export async function inviteMember(env: Env, ctx: { waitUntil(p: Promise<unknown
       env.EMAIL.send({
         to: who,
         from: { email: "convite@vibebook.dev", name: "vibebook" },
-        replyTo: inviter,
+        // No replyTo: a reply would quote the sign-in link back to the inviter.
         subject: en ? `${name} invited you to the vibebook "${title}"` : `${name} te chamou pro vibebook "${title}"`,
         text: en
           ? `${inviter} invited you to the vibebook "${title}".\n\nOpen it: ${url}\n\nBring your Claude: paste this in Claude Code, inside the project folder:\n${setup}\nOther clients: ${connect}`

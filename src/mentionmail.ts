@@ -2,7 +2,7 @@
 // model (what they want from you, in one line, plus the context), with the room/epic/people and a button back.
 // Your email inbox is the vibebook inbox. Queue + timing live in the Book (mail_q); this file is the pure parts.
 import type { Lang } from "./lang";
-import { emailHtml, escapeHtml, hmac } from "./auth";
+import { emailHtml, escapeHtml, hmac, safeEqual } from "./auth";
 
 export const MAIL_DELAY_MS = 5 * 60_000; // time to read it in the app before we email
 export const MAIL_GAP_MS = 20 * 60_000; // ≤1 email per person per room in this window (later mentions wait and group)
@@ -57,7 +57,7 @@ Escreva em ${f.lang === "en" ? "inglês (subject, ask e context em inglês)" : "
 export async function unsubscribeUrl(secret: string, origin: string, email: string) {
   return `${origin}/mail/off?e=${encodeURIComponent(email)}&s=${await hmac(secret, `mail-off:${email}`)}`;
 }
-export const validUnsub = async (secret: string, email: string, sig: string) => sig === (await hmac(secret, `mail-off:${email}`));
+export const validUnsub = async (secret: string, email: string, sig: string) => safeEqual(sig, await hmac(secret, `mail-off:${email}`));
 
 const MAIL_T = {
   pt: { mentioned: "te mencionou em", tasks: "Suas tarefas abertas aqui", reply: "Responder no vibebook", inConv: "Na conversa:", replyTo: (w: string) => `Responder este email vai direto para ${w}.`, why: "Você recebe isto quando alguém te menciona e você não viu em 5 minutos.", off: "Não quero esses emails", replyText: "Responder:" },

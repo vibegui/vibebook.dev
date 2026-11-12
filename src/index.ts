@@ -88,6 +88,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,
   // What each person has seen in each room in the app (the switcher's unread dots).
   // One-time upload links for agents: the file goes from disk (curl) to R2 without passing through the model.
+  `CREATE TABLE IF NOT EXISTS invite_used (sig TEXT PRIMARY KEY, ts INTEGER)`,
   `CREATE TABLE IF NOT EXISTS upload_links (token TEXT PRIMARY KEY, email TEXT, agent TEXT, book_id TEXT, filename TEXT, type TEXT, message TEXT, thread TEXT, model TEXT, expires_at INTEGER, used INTEGER DEFAULT 0)`,
   // "Esperando você": what someone is waiting on a person for. ref = m<message id> (Jev read the message as an ask
   // to them; deleted when Jev reads their later post in that thread as the answer, or they tick it) or t<task id>
@@ -227,7 +228,9 @@ for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
     if (!c.env.SITE) return c.notFound();
     const res = await toSite(c.env.SITE, c.req.raw);
     if (c.req.path.startsWith("/_site/")) res.headers.set("access-control-allow-origin", "*"); // the sandboxed preview loads them cross-origin
-    else if ((res.headers.get("content-type") ?? "").includes("text/html")) res.headers.set("content-security-policy", "sandbox allow-scripts allow-forms allow-popups allow-modals");
+    // Every response, not just text/html: an SVG or XHTML from these paths would otherwise run on vibebook.dev.
+    res.headers.set("content-security-policy", "sandbox allow-scripts allow-forms allow-popups allow-modals");
+    res.headers.set("x-content-type-options", "nosniff");
     return res;
   });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
@@ -251,7 +254,7 @@ app.get("/b/*", async (c) => {
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
   const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
   const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
-  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir"), lang: reqLang(c.req.raw) }), book ? 200 : 404);
+  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw) }), book ? 200 : 404);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
   return pageview(c, res, email ?? undefined);
@@ -367,16 +370,18 @@ app.use("*", async (c, next) => {
 
 
 // Local dev only: the daily reports' text, without waiting for the cron.
+// Like identify: DEV_EMAIL counts on loopback alone, even if it ever reached production config.
+const devOnly = (c: Context) => !c.env.DEV_EMAIL || !/^(127\.0\.0\.1|localhost)$/.test(new URL(c.req.url).hostname);
 app.get("/api/dev/digest", async (c) => {
-  if (!c.env.DEV_EMAIL) return c.notFound();
+  if (devOnly(c)) return c.notFound();
   return c.json({ sent: await sendDigests(c.env, Date.now(), c.req.query("email") || undefined) });
 });
 app.get("/api/dev/report", async (c) => {
-  if (!c.env.DEV_EMAIL) return c.notFound();
+  if (devOnly(c)) return c.notFound();
   return c.text(c.req.query("which") === "product" ? await productReport(c.env) : await growthReport(c.env));
 });
 app.get("/api/dev/as", (c) => {
-  if (!c.env.DEV_EMAIL) return c.notFound();
+  if (devOnly(c)) return c.notFound();
   const email = c.req.query("email") ?? "";
   c.header("set-cookie", `dev_as=${encodeURIComponent(email)}; Path=/; SameSite=Lax`);
   return c.redirect("/");

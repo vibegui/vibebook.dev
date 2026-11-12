@@ -695,7 +695,8 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       }
       const ok = checkUrl(str(a.image_url));
       if ("error" in ok) throw new Error(`image_url: ${ok.error}`);
-      const r = await fetch(ok.url, { redirect: "follow", headers: { accept: "image/*" } });
+      const r = await fetch(ok.url, { redirect: "manual", headers: { accept: "image/*" } }); // checkUrl saw only this hop
+      if (r.status >= 300 && r.status < 400) throw new Error("image_url redirects; pass the final image URL");
       if (!r.ok) throw new Error(`image_url answered ${r.status}`);
       if (Number(r.headers.get("content-length") ?? 0) > 256_000) throw new Error("image too big (≤256KB)");
       const type = (r.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
@@ -914,8 +915,10 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const model = str(a.model).slice(0, 40) || (await db.prepare(`SELECT coalesce(model, client) AS who FROM agents WHERE id = ?`).bind(me.agent).first<{ who: string }>())?.who || "";
       ctx.waitUntil(track(env, "agent_issue", { user: me.email, dims: { kind, book: id, message_id: Number(a.message_id) || undefined, model, client: me.client, what } }));
       // Every report also lands in vibebook's product room, so the team sees it (test people left out).
-      if (env.ISSUES_ROOM && !me.email.endsWith("@test.vibebook.dev"))
-        ctx.waitUntil(bookStub(env, env.ISSUES_ROOM).issuePost(env.ISSUES_ROOM, `**${kind}** · ${model || me.client || "Claude"} · ${me.email.split("@")[0]}`, what).catch(() => {}));
+      // Posted as @vibe in a room people trust: only for members of that room (anyone else's report is just counted).
+      const member = env.ISSUES_ROOM && (await db.prepare(`SELECT 1 FROM members WHERE book_id = ? AND email = ?`).bind(env.ISSUES_ROOM, me.email).first());
+      if (env.ISSUES_ROOM && member && !me.email.endsWith("@test.vibebook.dev"))
+        ctx.waitUntil(bookStub(env, env.ISSUES_ROOM).issuePost(env.ISSUES_ROOM, `**${kind}** · ${(model || me.client || "Claude").replace(/[^\p{L}\p{N} .:_-]/gu, "")} · ${me.email.split("@")[0]}`, what).catch(() => {}));
       return { ok: true, note: "recorded. Now fix it and tell your human in the room what happened." };
     }
     case "set_task_status": {
@@ -1030,6 +1033,8 @@ async function stalledFor(env: Env, me: Me, only: string) {
 export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionContext, props: AgentProps): Promise<Response> {
   // The CLI's hub (one per machine) listens here instead of long-polling: a hibernating socket on the person's
   // channel (src/person.ts), which says {t:"me", book} on every message in their rooms. Same token as the MCP.
+  // A sandbox's login (props.room) doesn't get the person's channel: it would hear about every one of their rooms.
+  if (request.headers.get("upgrade") === "websocket" && props.room) return new Response("a sandbox login reaches only its own room", { status: 403 });
   if (request.headers.get("upgrade") === "websocket") return env.PEOPLE.get(env.PEOPLE.idFromName(props.email.toLowerCase())).fetch(request);
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });
   const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;

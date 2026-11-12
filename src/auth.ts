@@ -22,7 +22,7 @@ export async function hmac(secret: string, data: string) {
   const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return b64url(await crypto.subtle.sign("HMAC", key, enc.encode(data)));
 }
-const safeEqual = (a: string, b: string) => {
+export const safeEqual = (a: string, b: string) => {
   if (a.length !== b.length) return false;
   let out = 0;
   for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -233,6 +233,14 @@ auth.get("/invite", async (c) => {
   const next = `/b/${t.b}`;
   // Expired link: still useful, just log in normally and come back to the book.
   if (!t.e || !t.b || !t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
+  // The link signs in only a first-timer, once (security review, Nov 2026): it reached whole accounts, could be
+  // forwarded or quoted back in a reply, and swapped the session of whoever was signed in (login CSRF).
+  // Someone already signed in goes to the room as they are; an existing account logs in the normal way.
+  const current = await sessionEmail(c);
+  if (current) return c.redirect(safeNext(next));
+  const known = await c.env.DB.prepare(`SELECT 1 FROM users WHERE email = ?`).bind(t.e).first();
+  const used = !known && (await c.env.DB.prepare(`INSERT INTO invite_used (sig, ts) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(sig, Date.now()).run()).meta.changes === 0;
+  if (known || used) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   await startSession(c, t.e);
   c.executionCtx.waitUntil(track(c.env, "login", { user: t.e, dims: { method: "invite" } }));
   return c.redirect(safeNext(next));
