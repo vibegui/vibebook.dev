@@ -2178,7 +2178,8 @@ function connectMe() {
   meWs.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (m.t === "me") { clearTimeout(meT); meT = setTimeout(refreshMe, 600); }
-    if ((m.t === "agents" && (m.book === "*" || m.book === S?.id)) || (m.t === "me" && m.book && m.book === S?.id)) { clearTimeout(agT); agT = setTimeout(loadRoomAgents, 600); }
+    // Only an agents poke refetches this room's agents: a plain message here ({t:"me"}) did too, ~13k fetches a day.
+    if (m.t === "agents" && (m.book === "*" || m.book === S?.id)) { clearTimeout(agT); agT = setTimeout(loadRoomAgents, 600); }
   };
   meWs.onclose = () => { meWs = null; if (document.visibilityState === "visible") setTimeout(connectMe, Math.min(30_000, 1000 * 2 ** meWsTry++)); };
 }
@@ -2960,10 +2961,14 @@ function openBook(id) {
   const cached = roomCache.get(id);
   if (cached) { S = cached; if (!cached.epics.some((e) => e.id === thread) && !thread.startsWith("pre:")) thread = "main"; renderBook(); }
   else $app.innerHTML = roomSkeleton(id);
+  // Reconnects back off (1s, 2s, 4s… 30s) and say why the last socket closed (rc, in the server's ws_state): a 1s fixed
+  // retry reopened one room ~100×/hour for one person, 250 KB each (Nov 2026).
+  let tries = 0, lastCode = "";
   const connect = () => {
-    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}`);
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}${lastCode ? `&rc=${lastCode}` : ""}`);
+    ws.onopen = () => { setTimeout(() => { if (ws?.readyState === 1) tries = 0; }, 15_000); }; // only a socket that stayed up resets the backoff
     ws.onmessage = (e) => onEvent(JSON.parse(e.data), id);
-    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (!liveState && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } setTimeout(() => ws && connect(), 1000); };
+    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (!liveState && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } lastCode = String(e.code || ""); setTimeout(() => ws && connect(), Math.min(30_000, 1000 * 2 ** tries++)); };
   };
   connect();
 }

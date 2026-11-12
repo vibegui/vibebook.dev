@@ -18,7 +18,7 @@ import { track } from "./track";
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
 export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number; embed?: boolean };
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
-type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null; choices?: string | null; for_who?: string | null; card?: string | null };
+type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null; choices?: string | null; for_who?: string | null; card?: string | null; cut?: boolean };
 type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
 const SEED_GOAL = "o que este épico entrega e por quê";
 /** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
@@ -46,6 +46,7 @@ const CLASSIFY_FIRST_MSGS = 1; // a new room gets its title/summary after its fi
 // Agents can't talk among themselves forever: after this many messages in a row with no human, the thread pauses.
 const AGENT_STREAK_MAX = 6;
 const AGENT_READ_MAX = 60;
+const ORIGIN_TEXT_MAX = 1200;
 const REMINDERS_MAX = 20; // per room
 const REMINDER_MIN_GAP_MS = 30 * 60_000; // each fire wakes a Claude: no more than twice an hour
 // Board lanes. `done` stays in sync with status = "done" so older readers keep working.
@@ -64,6 +65,7 @@ export const ASK_OPENER = /^(⏸ Seu Claude (pede permissão|quer seguir)|❓ Se
 
 export class Book extends DurableObject<Env> {
   sql: SqlStorage;
+  receiptsT = 0; // a coalesced receipts push is pending (receipt())
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -269,7 +271,12 @@ export class Book extends DurableObject<Env> {
       )
       .toArray()
       .filter((r) => !have.has(r.id as number))
-      .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+      // Only for thread cards, the queue and the ✻: the text is cut (agents' reports of 10 KB+ made origins 287 KB of a
+      // 530 KB room open, Nov 2026); the whole message comes with its own thread when that thread opens.
+      .map((r) => {
+        const text = String(r.text ?? ""), cut = text.length > ORIGIN_TEXT_MAX;
+        return { ...r, text: cut ? `${text.slice(0, ORIGIN_TEXT_MAX)}…` : text, cut: cut || undefined, card: null, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null } as Msg;
+      });
     const counts: Record<string, number> = {};
     for (const r of this.sql.exec(`SELECT thread, count(*) AS n FROM messages GROUP BY thread`).toArray()) counts[r.thread as string] = r.n as number;
     const sent: Record<string, number> = {};
@@ -1263,8 +1270,9 @@ export class Book extends DurableObject<Env> {
        ON CONFLICT(agent) DO UPDATE SET who = excluded.who, read = max(read, excluded.read), delivered = max(delivered, excluded.delivered), ts = excluded.ts`,
       r.agent, r.email, r.who.slice(0, 40), r.read, r.delivered, Date.now(),
     );
-    // Every listener's wait/read lands here: push only when a ✓ moves (a busy room sent the same list 1000×/day).
-    if (!same) this.broadcast({ t: "receipts", receipts: this.receiptsList() });
+    // Every listener's wait/read lands here: push only when a ✓ moves (a busy room sent the same list 1000×/day), and
+    // at most one push per ~2s per room (10 agents reading one message were 10 full lists to every tab: 118 MB in a day).
+    if (!same && !this.receiptsT) this.receiptsT = setTimeout(() => { this.receiptsT = 0; this.broadcast({ t: "receipts", receipts: this.receiptsList() }); }, 2000) as unknown as number;
   }
 
   // Pinned: what's always at hand in the room (the live site, the landing, the repo, an app or file of the room),
@@ -1627,7 +1635,7 @@ export class Book extends DurableObject<Env> {
     // What opening a room costs on the wire (the biggest share of the zone's bandwidth in Nov 2026): total + the 3
     // fattest fields, read by the product report.
     const top = Object.entries(state).map(([k, v]) => [k, JSON.stringify(v)?.length ?? 0] as const).sort((a, b) => b[1] - a[1]).slice(0, 3);
-    this.ctx.waitUntil(track(this.env, "ws_state", { user: email, dims: { book: bookId, bytes: body.length, top: top.map(([k, n]) => `${k} ${Math.round(n / 1000)}k`).join(", ") } }));
+    this.ctx.waitUntil(track(this.env, "ws_state", { user: email, dims: { book: bookId, bytes: body.length, top: top.map(([k, n]) => `${k} ${Math.round(n / 1000)}k`).join(", "), rc: url.searchParams.get("rc") ?? undefined } })); // rc: close code of the socket this one replaces (a reconnect)
     this.broadcast({ t: "online", online: this.online() });
     return new Response(null, { status: 101, webSocket: client });
   }
