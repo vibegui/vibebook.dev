@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "shared/**/*.ts",
+    "svelte/build/**/*.ts",
+    "svelte/vite.config.ts",
+    "scripts/browser-build.ts",
+    "scripts/browser-check.ts",
+    "scripts/build-collab.ts",
+    "scripts/build-mcp.ts",
+    "scripts/bun-client-boundary.test.ts",
+    "scripts/client-boundary-check.ts",
+    "scripts/host-lifecycle.test.ts",
+    "scripts/protocol-check.ts",
+    "scripts/room-connection.test.ts",
+    "scripts/room-store.test.ts",
+    "scripts/ui-build-check.ts",
+    "scripts/ui-metrics.ts",
+    "scripts/ui-panels.test.ts",
+    "scripts/ui-version.test.ts"
+  ]
+}

@@ -1,7 +1,8 @@
 // Existing host integrations retained during the incremental TypeScript migration.
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
-import {sendRoomCommand, receiveRoomEvent, createRoomApi} from "../transport";
+import {createRoomApi} from "../transport";
+import {createRoomConnection} from "../roomConnection";
 // i18n: the Portuguese string is the key; EN has the English, anything missing falls back to Portuguese.
 // Language = the vb_lang cookie (set by the landing and the PT · EN switch), else the browser's.
 const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^pt/i.test(navigator.language) ? "pt" : (/^en/i.test(navigator.language) ? "en" : "pt"));
@@ -1000,7 +1001,8 @@ function route() {
   clearViews();
   renderSwitcher();
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
-  if (ws) { ws.onclose = null; ws.onmessage = null; ws.close(); ws = null; }
+  roomConnection?.dispose();
+  roomConnection = null;
   if (location.pathname === "/login") return login();
   if (location.pathname === "/archived") return archivedPage();
   m ? openBook(m[1]) : home();
@@ -1304,7 +1306,8 @@ function wireAsk() {
     try {
       if (!dest.book_id) return await startRoom(text);
       const bookId = dest.book_id;
-      await createRoomApi(bookId).postMessage({ text, thread: dest.epic_id || "main" });
+      const posted = await createRoomApi(bookId).postMessage({ text, thread: dest.epic_id || "main" });
+      if (!posted.ok) throw new Error(posted.error);
       pendingThread = dest.epic_id || null;
       history.pushState(null, "", `/b/${bookId}`); route();
     } catch (err) { out.innerHTML = `<div class="why bad">${esc(err.message)}</div>`; }
@@ -1575,7 +1578,7 @@ async function connectCard(el, room) {
 }
 
 // ---------------- book ----------------
-let ws = null;
+let roomConnection = null;
 const roomStore = UI.createRoomStore();
 let S = null; // compatibility bridge for host integrations; the typed store owns WS state
 const typingNotes = new Map(); // transient display notes, not persisted room data
@@ -1622,30 +1625,38 @@ function openBook(id) {
   else $app.innerHTML = roomSkeleton(id);
   // Reconnects back off (1s, 2s, 4s… 30s) and say why the last socket closed (rc, in the server's ws_state): a 1s fixed
   // retry reopened one room ~100×/hour for one person, 250 KB each (Nov 2026).
-  let tries = 0, lastCode = "";
-  const connect = () => {
-    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}${lastCode ? `&rc=${lastCode}` : ""}`);
-    ws.onopen = () => { setTimeout(() => { if (ws?.readyState === 1) tries = 0; }, 15_000); }; // only a socket that stayed up resets the backoff
-    ws.onmessage = (e) => onEvent(receiveRoomEvent(e.data), id);
-    ws.onclose = (e) => { if (e.code === 4003) { $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; ws = null; return; } if (!liveState && e.code !== 1000) { $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; return; } lastCode = String(e.code || ""); setTimeout(() => ws && connect(), Math.min(30_000, 1000 * 2 ** tries++)); };
-  };
-  connect();
+  const connection = createRoomConnection({
+    url: (lastCode) => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}${lastCode ? `&rc=${lastCode}` : ""}`,
+    onEvent: (event) => { if (roomConnection === connection) onEvent(event, id); },
+    onRemoved: () => { if (roomConnection !== connection) return; clearViews(); $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`; },
+    onUnavailable: () => { if (roomConnection !== connection) return; clearViews(); $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`; },
+  });
+  roomConnection = connection;
+  connection.start();
 }
 
-const send = (m) => sendRoomCommand(ws, m);
+const send = (m) => roomConnection?.send(m) ?? false;
+
 const viewMounts = new Map();
 const sidebarDragHandles = new WeakSet();
+function disposeView(kind) {
+  const mounted = viewMounts.get(kind);
+  if (!mounted) return;
+  mounted.target._mo?.disconnect();
+  mounted.destroy();
+  viewMounts.delete(kind);
+}
 function renderView(kind, target, props, remount = false) {
   let mounted = viewMounts.get(kind);
-  if (mounted && (mounted.target !== target || remount)) { mounted.destroy(); viewMounts.delete(kind); mounted = null; }
+  if (mounted && (mounted.target !== target || remount)) { disposeView(kind); mounted = null; }
   if (!mounted) { target.replaceChildren(); mounted = { ...UI.mountView(kind, target, props), target }; viewMounts.set(kind, mounted); }
   else mounted.update(props);
 }
 function clearViews() {
+  disposeCollab();
   // Svelte subscriptions and observers must stop when leaving a room, including
   // navigation to home/login where renderBook will not run again.
-  for (const v of viewMounts.values()) { v.target._mo?.disconnect(); v.destroy(); }
-  viewMounts.clear();
+  for (const kind of viewMounts.keys()) disposeView(kind);
   pinRO.disconnect();
 }
 const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
@@ -1660,7 +1671,7 @@ function onEvent(ev, id) {
   const previousState = S;
   if (ev.t === "epicsPatch" && S) {
     const known = new Set([...S.epics.map(e => e.id), ...ev.changed.map(e => e.id)]);
-    if (ev.order.some(id => !known.has(id))) { ws?.close(); return; }
+    if (ev.order.some(id => !known.has(id))) { roomConnection?.resync(); return; }
   }
   if (roomStore.get() !== S) roomStore.replace(S);
   S = roomStore.apply(ev, id);
@@ -2171,16 +2182,24 @@ function welcome() {
 // Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
 // with everyone's cursors. Loaded on first edit; if it can't load or connect, the plain textarea keeps working.
 let collab = null, collabKey = null, collabLoad = null, collabGen = 0;
+function disposeCollab() {
+  // Invalidate callbacks before provider.destroy(), which can emit disconnected.
+  ++collabGen;
+  const previous = collab;
+  collab = null;
+  collabKey = null;
+  previous?.destroy();
+}
 function ensureCollab() {
   const panel = $app.querySelector(".doc"), host = document.getElementById("cm");
   const ep = docEpic();
   const key = panel?.dataset.view === "edit" && S?.id && !isPre() ? (ep ? `${S.id}~${ep}` : S.id) : null;
   if (key === collabKey) return;
-  collab?.destroy(); collab = null; collabKey = key;
+  disposeCollab(); collabKey = key;
   panel?.classList.remove("collab");
   if (host) host.innerHTML = "";
   // Only the newest request mounts: switching room/epic while the module loads (A → B → A) must not leave two editors.
-  const gen = ++collabGen;
+  const gen = collabGen;
   if (!key || !host) return;
   (collabLoad ??= import(/* @vite-ignore */ "/collab.js")).then((m) => {
     if (gen !== collabGen) return;
@@ -2753,8 +2772,7 @@ function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   if (railMode && window.innerWidth > 900) {
-    const old = viewMounts.get("sidebar");
-    if (old) { old.destroy(); viewMounts.delete("sidebar"); }
+    disposeView("sidebar");
     return renderRail(el);
   }
   renderView("sidebar", el, {room:S, thread, archOpen, foldOpen, friends, vb:{t,icon,avatar,ago,name,initials,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicIco,epicBusy,waitPill,waitsIn,prodMark}});
@@ -2992,7 +3010,7 @@ function renderTasks() {
   const wireChev = () => head.querySelector(".thChev").onclick = () => openSheet("side");
   // On phones the icon + name + ▾ are one raised button, like the selected row in the sheet it opens (.thread.sel).
   const pick = (mark, name) => `<span class="thPick">${mark.replace('class="ri', 'class="ri thMark')}${name}${chev}</span>`;
-  if (preOf()) { head.innerHTML = `${pick(`<span class="ri">${esc(initials(preOf().title))}</span>`, `<span class="epicName" id="roomName">${esc(preOf().title)}</span>`)}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; wireChev(); document.getElementById("roomName").onclick = () => ROOM_PHONE.matches && openSheet("side"); el.innerHTML = ""; renderPeek(); return; }
+  if (preOf()) { disposeView("tasks"); head.innerHTML = `${pick(`<span class="ri">${esc(initials(preOf().title))}</span>`, `<span class="epicName" id="roomName">${esc(preOf().title)}</span>`)}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`; wireChev(); document.getElementById("roomName").onclick = () => ROOM_PHONE.matches && openSheet("side"); el.innerHTML = ""; renderPeek(); return; }
   head.innerHTML = epic
     ? `${pick(`<span class="ri" style="background:${color(epic.title)};color:#fff">${esc(initials(epic.title))}</span>`, `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span>`)}<button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
     : `${pick(roomMark("ri roomIco"), `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>`)}${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
@@ -3819,7 +3837,7 @@ function renderChat(keep) {
   renderTasks();
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());
-  if (isPre()) { const old=viewMounts.get("chat"); if(old){old.destroy();viewMounts.delete("chat");} return renderPre(el); }
+  if (isPre()) { disposeView("chat"); return renderPre(el); }
   // Opening an epic with no conversation yet: show its doc (goal + tasks) instead of an empty panel, if it was closed.
   if (win.thread !== thread || win.room !== S.id) {
     const bk = $app.querySelector(".book");

@@ -17,7 +17,10 @@ export type ChatBridge = {
   ago: (ts: number) => string;
   hhmm: (ts: number) => string;
   dateTime?: (ts: number) => string;
-  continues: (previous: ChatMessage | undefined, current: ChatMessage) => boolean;
+  continues: (
+    previous: ChatMessage | undefined,
+    current: ChatMessage,
+  ) => boolean;
   waiting: (id: number) => boolean;
   typingLabel?: (mode: string) => string;
   typingNote?: (id: number) => string | undefined;

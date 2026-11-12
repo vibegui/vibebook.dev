@@ -2327,6 +2327,34 @@ function zi(e) {
 // node_modules/svelte/src/internal/client/reactivity/props.js
 var Bi = {
 	get(e, t) {
+		if (!e.exclude.has(t)) return e.props[t];
+	},
+	set(e, t) {
+		return !1;
+	},
+	getOwnPropertyDescriptor(e, t) {
+		if (!e.exclude.has(t) && t in e.props) return {
+			enumerable: !0,
+			configurable: !0,
+			value: e.props[t]
+		};
+	},
+	has(e, t) {
+		return !e.exclude.has(t) && t in e.props;
+	},
+	ownKeys(e) {
+		return Reflect.ownKeys(e.props).filter((t) => !e.exclude.has(t));
+	}
+};
+/*#__NO_SIDE_EFFECTS__*/
+function Vi(e, t, n) {
+	return new Proxy({
+		props: e,
+		exclude: t
+	}, Bi);
+}
+var Hi = {
+	get(e, t) {
 		let n = e.props.length;
 		for (; n--;) {
 			let r = e.props[n];
@@ -2367,10 +2395,10 @@ var Bi = {
 		return t;
 	}
 };
-function Vi(...e) {
-	return new Proxy({ props: e }, Bi);
+function Ui(...e) {
+	return new Proxy({ props: e }, Hi);
 }
-function Hi(e, t, n, r) {
+function Wi(e, t, n, r) {
 	var i = !0, a = !!(n & 8), o = !!(n & 16), c = r, l = !0, u = void 0, d = () => o && i ? (u ??= /* @__PURE__ */ ht(r), B(u)) : (l && (l = !1, c = o ? mr(r) : r), c);
 	let f;
 	if (a) {
@@ -2407,24 +2435,24 @@ function Hi(e, t, n, r) {
 // node_modules/svelte/src/internal/disclose-version.js
 typeof window < "u" && ((window.__svelte ??= {}).v ??= /* @__PURE__ */ new Set()).add("5");
 // svelte/View.svelte
-function Ui(e, t) {
+function Gi(e, t) {
 	let n = () => Li(t.values, "$values", r), [r, i] = Ri();
 	var a = Nr();
 	ni(P(a), () => t.component, (e, t) => {
-		t(e, Vi(n));
+		t(e, Ui(n));
 	}), U(e, a), i();
 }
 // svelte/Inbox.svelte
-var Wi = /* @__PURE__ */ H("<div class=\"ibTabs\" role=\"tablist\"><button type=\"button\"> <small> </small></button> <button type=\"button\"> <small> </small></button></div>"), Gi = /* @__PURE__ */ H("<b> </b>"), Ki = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), qi = /* @__PURE__ */ H("<li><a><span></span> <span class=\"wt\"><span><!> </span> <small> </small></span></a> <!></li>"), Ji = /* @__PURE__ */ H("<ul></ul>"), Yi = /* @__PURE__ */ H("<p class=\"ibEmpty\"> </p>"), Xi = /* @__PURE__ */ H("<header><h2> </h2> <button class=\"ghost\"></button></header> <!> <!>", 1);
-function Zi(e, t) {
+var Ki = /* @__PURE__ */ H("<div class=\"ibTabs\" role=\"tablist\"><button type=\"button\"> <small> </small></button> <button type=\"button\"> <small> </small></button></div>"), qi = /* @__PURE__ */ H("<b> </b>"), Ji = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), Yi = /* @__PURE__ */ H("<li><a><span></span> <span class=\"wt\"><span><!> </span> <small> </small></span></a> <!></li>"), Xi = /* @__PURE__ */ H("<ul></ul>"), Zi = /* @__PURE__ */ H("<p class=\"ibEmpty\"> </p>"), Qi = /* @__PURE__ */ H("<header><h2> </h2> <button class=\"ghost\"></button></header> <!> <!>", 1);
+function $i(e, t) {
 	Je(t, !0);
-	let n = Hi(t, "all", 3, !1), r = /* @__PURE__ */ j($t(mr(() => n()))), i = (e) => {
+	let n = Wi(t, "all", 3, !1), r = /* @__PURE__ */ j($t(mr(() => n()))), i = (e) => {
 		M(r, e, !0), t.ontab?.(e);
 	}, a = /* @__PURE__ */ k(() => t.roomId ? t.waits.filter((e) => e.book_id === t.roomId) : []), o = /* @__PURE__ */ k(() => B(r) || !t.roomId), s = /* @__PURE__ */ k(() => B(o) ? t.waits : B(a)), c = (e) => (e.author_name || e.author.split("@")[0]).split(" ")[0], l = (e) => e.ref.startsWith("t") ? "task" : /^[ab]/.test(e.ref) ? "agent" : "ask", u = (e) => `/b/${e.book_id}${e.thread === "main" ? "" : `?t=${encodeURIComponent(e.thread)}`}${/^[mab]/.test(e.ref) ? `#m${e.ref.slice(1)}` : ""}`, d = (e) => e.length > 220 ? `${e.slice(0, 218)}…` : e;
-	var f = Xi(), p = P(f), m = N(p), h = F(m, !0), g = I(m, 2);
+	var f = Qi(), p = P(f), m = N(p), h = F(m, !0), g = I(m, 2);
 	K(g, () => t.vb.icon("x", 18), !0), O(g), O(p);
 	var _ = I(p, 2), v = (e) => {
-		var n = Wi(), r = N(n);
+		var n = Ki(), r = N(n);
 		let s;
 		var c = N(r), l = F(I(c), !0);
 		O(r);
@@ -2439,19 +2467,19 @@ function Zi(e, t) {
 		t.roomId && e(v);
 	});
 	var y = I(_, 2), b = (e) => {
-		var n = Ji();
+		var n = Xi();
 		Xr(n, 21, () => B(s), (e) => e.book_id + e.ref, (e, n) => {
-			var r = qi(), i = N(r), a = N(i);
+			var r = Yi(), i = N(r), a = N(i);
 			let s;
 			K(a, () => l(B(n)) === "task" ? t.vb.icon("check", 16) : t.vb.avatar(B(n).author), !0), O(a);
 			var f = I(a, 2), p = N(f), m = N(p), h = (e) => {
-				var n = Gi(), r = F(n, !0);
+				var n = qi(), r = F(n, !0);
 				L((e) => W(r, e), [() => t.vb.t("Tarefa sua esperando OK:")]), U(e, n);
 			}, g = /* @__PURE__ */ k(() => l(B(n)) === "task"), _ = (e) => {
-				var n = Gi(), r = F(n, !0);
+				var n = qi(), r = F(n, !0);
 				L((e) => W(r, e), [() => t.vb.t("Seu agent espera você:")]), U(e, n);
 			}, v = /* @__PURE__ */ k(() => l(B(n)) === "agent"), y = (e) => {
-				var t = Gi(), r = F(t);
+				var t = qi(), r = F(t);
 				L((e) => W(r, `${e ?? ""}:`), [() => c(B(n))]), U(e, t);
 			};
 			G(m, (e) => {
@@ -2462,7 +2490,7 @@ function Zi(e, t) {
 			var x = F(I(p, 2));
 			O(f), O(i);
 			var S = I(i, 2), C = (e) => {
-				var r = Ki();
+				var r = Ji();
 				K(r, () => t.vb.icon("check"), !0), O(r), L((e, t) => {
 					J(r, "title", e), J(r, "aria-label", t);
 				}, [() => t.vb.t("Já resolvi (respondi em outro lugar, ou não é comigo)"), () => t.vb.t("Já resolvi (respondi em outro lugar, ou não é comigo)")]), V("click", r, () => t.onresolve(B(n))), U(e, r);
@@ -2480,7 +2508,7 @@ function Zi(e, t) {
 			]), V("click", i, (e) => t.onopen(B(n), e)), U(e, r);
 		}), O(n), U(e, n);
 	}, x = (e) => {
-		var n = Yi(), r = F(n, !0);
+		var n = Zi(), r = F(n, !0);
 		L((e) => W(r, e), [() => B(o) ? t.vb.t("Nada esperando você. ✓") : t.vb.t("Nada esperando você nesta sala. ✓")]), U(e, n);
 	};
 	G(y, (e) => {
@@ -2492,14 +2520,14 @@ function Zi(e, t) {
 	}), U(e, f), Ye();
 }
 wr(["click"]);
-// svelte/Tasks.svelte
-function Qi(e) {
+// svelte/TaskList.svelte
+function ea(e) {
 	e.focus(), e.select();
 }
-var $i = /* @__PURE__ */ H("<span class=\"vnote\"><!> </span>"), ea = /* @__PURE__ */ H("<input class=\"tedit\"/>"), ta = /* @__PURE__ */ H("<span class=\"tt\" role=\"button\" tabindex=\"0\"> <!></span>"), na = /* @__PURE__ */ H("<option> </option>"), ra = /* @__PURE__ */ H("<div><input type=\"checkbox\"/> <!> <select><option> </option><!></select> <button type=\"button\"><!> </button> <button class=\"ghost x\"></button></div>"), ia = /* @__PURE__ */ H("<div class=\"thead\"><b> </b><small> </small><i><span></span></i></div> <!> <!> <form class=\"row\" id=\"newTask\" style=\"margin-top:6px\"><input/><button></button></form>", 1);
-function aa(e, t) {
+var ta = /* @__PURE__ */ H("<span class=\"vnote\"><!> </span>"), na = /* @__PURE__ */ H("<input class=\"tedit\"/>"), ra = /* @__PURE__ */ H("<span class=\"tt\" role=\"button\" tabindex=\"0\"> <!></span>"), ia = /* @__PURE__ */ H("<option> </option>"), aa = /* @__PURE__ */ H("<div><input type=\"checkbox\"/> <!> <select><option> </option><!></select> <button type=\"button\"><!> </button> <button class=\"ghost x\"></button></div>"), oa = /* @__PURE__ */ H("<div class=\"thead\"><b> </b><small> </small><i><span></span></i></div> <!> <!> <form class=\"row\" id=\"newTask\" style=\"margin-top:6px\"><input/><button></button></form>", 1);
+function sa(e, t) {
 	Je(t, !0);
-	let n = Hi(t, "waits", 19, () => []), r = /* @__PURE__ */ k(() => t.room.epics.find((e) => e.id === t.thread) || (t.thread === "main" && t.room.roomTasks?.length ? {
+	let n = Wi(t, "waits", 19, () => []), r = /* @__PURE__ */ k(() => t.room.epics.find((e) => e.id === t.thread) || (t.thread === "main" && t.room.roomTasks?.length ? {
 		id: "main",
 		tasks: t.room.roomTasks,
 		flags: []
@@ -2523,11 +2551,11 @@ function aa(e, t) {
 		});
 	}
 	var f = Nr(), p = P(f), m = (e) => {
-		var n = ia(), f = P(n), p = N(f), m = F(p, !0), h = I(p), g = F(h), _ = I(h), v = N(_);
+		var n = oa(), f = P(n), p = N(f), m = F(p, !0), h = I(p), g = F(h), _ = I(h), v = N(_);
 		let y;
 		O(_), O(f);
 		var b = I(f, 2), x = (e) => {
-			var n = $i(), i = N(n);
+			var n = ta(), i = N(n);
 			K(i, () => t.vb.icon("alert", 12));
 			var a = I(i);
 			O(n), L((e, t) => {
@@ -2539,18 +2567,18 @@ function aa(e, t) {
 		});
 		var S = I(b, 2);
 		Xr(S, 17, () => B(a), (e) => e.id, (e, n) => {
-			var r = ra();
+			var r = aa();
 			let a;
 			var o = N(r);
 			Si(o);
 			var l = I(o, 2), f = (e) => {
-				var t = ea();
-				Si(t), Tn(() => Oi(t, () => B(c), (e) => M(c, e))), ri(t, (e) => Qi?.(e)), Cr("blur", t, () => u(B(n))), V("keydown", t, (e) => {
+				var t = na();
+				Si(t), Tn(() => Oi(t, () => B(c), (e) => M(c, e))), ri(t, (e) => ea?.(e)), Cr("blur", t, () => u(B(n))), V("keydown", t, (e) => {
 					e.key === "Enter" && u(B(n)), e.key === "Escape" && u(B(n), !1);
 				}), U(e, t);
 			}, p = (e) => {
-				var r = ta(), i = N(r, !0), a = I(i), o = (e) => {
-					var r = $i(), i = N(r);
+				var r = ra(), i = N(r, !0), a = I(i), o = (e) => {
+					var r = ta(), i = N(r);
 					K(i, () => t.vb.icon("alert", 12));
 					var a = I(i);
 					O(r), L((e, t) => {
@@ -2574,7 +2602,7 @@ function aa(e, t) {
 			let h;
 			var g = N(m), _ = F(g, !0);
 			g.value = g.__value = "", Xr(I(g), 17, () => t.room.members || [], Kr, (e, n) => {
-				var r = na(), i = F(r, !0), a = {};
+				var r = ia(), i = F(r, !0), a = {};
 				L((e) => {
 					W(i, e), a !== (a = B(n)) && (r.value = (r.__value = a) ?? "");
 				}, [() => B(n) === t.room.me ? t.vb.t("você") : t.vb.name(B(n))]), U(e, r);
@@ -2641,18 +2669,32 @@ wr([
 	"keydown",
 	"click"
 ]);
+// svelte/Tasks.svelte
+var ca = /* @__PURE__ */ new Set([
+	"$$slots",
+	"$$events",
+	"$$legacy"
+]);
+function la(e, t) {
+	Je(t, !0);
+	let n = /* @__PURE__ */ Vi(t, ca);
+	var r = Nr();
+	Gr(P(r), () => JSON.stringify([t.room.id, t.thread]), (e) => {
+		sa(e, Ui(() => n));
+	}), U(e, r), Ye();
+}
 // svelte/panels.ts
-var oa = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
+var ua = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
 	"&": "&amp;",
 	"<": "&lt;",
 	">": "&gt;",
 	"\"": "&quot;",
 	"'": "&#39;"
-})[e]), sa = (e) => e.type.startsWith("image/") ? "img" : e.type.startsWith("audio/") ? "audio" : e.type === "text/html" ? "html" : e.type === "application/pdf" ? "pdf" : /\.md$/i.test(e.name) || e.type === "text/markdown" ? "md" : e.type === "text/plain" || e.type === "text/csv" ? "txt" : "other", ca = (e) => e > 1e6 ? `${(e / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(e / 1e3))} KB`, la = /* @__PURE__ */ H("<button type=\"button\"><span class=\"kt\"> </span><!><span> </span></button>"), ua = /* @__PURE__ */ H("<section><h3 class=\"mine\"> </h3><!></section>"), da = /* @__PURE__ */ H("<section><h3><span class=\"ri\"> </span> </h3><!></section>"), fa = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), pa = /* @__PURE__ */ H("<div class=\"klist\"><!><!></div>"), ma = /* @__PURE__ */ H("<span class=\"vnote\"><!> </span>"), ha = /* @__PURE__ */ H("<!><span> </span>", 1), ga = /* @__PURE__ */ H("<span><!> </span>"), _a = /* @__PURE__ */ H("<div draggable=\"true\" tabindex=\"0\" role=\"button\"><div class=\"kt\"></div><!> <div class=\"km\"><span class=\"kep\"> </span><!><!></div></div>"), va = /* @__PURE__ */ H("<div class=\"kempty\"> </div>"), ya = /* @__PURE__ */ H("<input type=\"hidden\" name=\"epic\"/>"), ba = /* @__PURE__ */ H("<option> </option>"), xa = /* @__PURE__ */ H("<select name=\"epic\"></select>"), Sa = /* @__PURE__ */ H("<form class=\"kadd\"><input/><button></button><!></form>"), Ca = /* @__PURE__ */ H("<section><h3> <span> </span></h3><div class=\"cards\"></div> <!></section>"), wa = /* @__PURE__ */ H("<div class=\"lanes\"></div>"), Ta = /* @__PURE__ */ H("<div class=\"kbar\"><span class=\"seg\"><button type=\"button\" data-mode=\"board\"><!> </button><button type=\"button\" data-mode=\"list\"> </button></span><small class=\"kScope\"> </small></div> <!>", 1);
-function Ea(e, t) {
+})[e]), da = (e) => e.type.startsWith("image/") ? "img" : e.type.startsWith("audio/") ? "audio" : e.type === "text/html" ? "html" : e.type === "application/pdf" ? "pdf" : /\.md$/i.test(e.name) || e.type === "text/markdown" ? "md" : e.type === "text/plain" || e.type === "text/csv" ? "txt" : "other", fa = (e) => e > 1e6 ? `${(e / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(e / 1e3))} KB`, pa = /* @__PURE__ */ H("<button type=\"button\"><span class=\"kt\"> </span><!><span> </span></button>"), ma = /* @__PURE__ */ H("<section><h3 class=\"mine\"> </h3> <!></section>"), ha = /* @__PURE__ */ H("<section><h3><span class=\"ri\"> </span> </h3> <!></section>"), ga = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), _a = /* @__PURE__ */ H("<div class=\"klist\"><!><!></div>"), va = /* @__PURE__ */ H("<span class=\"vnote\"><!> </span>"), ya = /* @__PURE__ */ H("<!><span> </span>", 1), ba = /* @__PURE__ */ H("<span><!> </span>"), xa = /* @__PURE__ */ H("<div draggable=\"true\" tabindex=\"0\" role=\"button\"><div class=\"kt\"></div> <!> <div class=\"km\"><span class=\"kep\"> </span><!><!></div></div>"), Sa = /* @__PURE__ */ H("<div class=\"kempty\"> </div>"), Ca = /* @__PURE__ */ H("<input type=\"hidden\" name=\"epic\"/>"), wa = /* @__PURE__ */ H("<option> </option>"), Ta = /* @__PURE__ */ H("<select name=\"epic\"></select>"), Ea = /* @__PURE__ */ H("<form class=\"kadd\"><input/><button></button><!></form>"), Da = /* @__PURE__ */ H("<section><h3> <span> </span></h3> <div class=\"cards\"></div> <!></section>"), Oa = /* @__PURE__ */ H("<div class=\"lanes\"></div>"), ka = /* @__PURE__ */ H("<div class=\"kbar\"><span class=\"seg\"><button type=\"button\" data-mode=\"board\"><!> </button><button type=\"button\" data-mode=\"list\"> </button></span><small class=\"kScope\"> </small></div> <!>", 1);
+function Aa(e, t) {
 	Je(t, !0);
 	let n = (e, n = m) => {
-		var r = la();
+		var r = pa();
 		let i;
 		var a = N(r), o = F(a, !0), s = I(a), c = (e) => {
 			var r = Nr();
@@ -2718,7 +2760,7 @@ function Ea(e, t) {
 		e.key === "ArrowRight" && i < r.length - 1 && (e.preventDefault(), h(n.id, r[i + 1][0])), e.key === "ArrowLeft" && i > 0 && (e.preventDefault(), h(n.id, r[i - 1][0])), e.key === "Enter" && t.onopen?.(n.epic.id);
 	}
 	var x = Nr(), S = P(x), C = (e) => {
-		var l = Ta(), p = P(l), m = N(p), h = N(m);
+		var l = ka(), p = P(l), m = N(p), h = N(m);
 		let x;
 		var S = N(h);
 		K(S, () => t.vb.icon("board", 14));
@@ -2731,44 +2773,44 @@ function Ea(e, t) {
 		var te = F(I(m), !0);
 		O(p);
 		var ne = I(p, 2), re = (e) => {
-			var r = pa(), i = N(r), a = (e) => {
-				var r = ua(), i = N(r), a = F(i);
-				Xr(I(i), 17, () => B(f), (e) => e.id, (e, t) => {
+			var r = _a(), i = N(r), a = (e) => {
+				var r = ma(), i = N(r), a = F(i);
+				Xr(I(i, 2), 17, () => B(f), (e) => e.id, (e, t) => {
 					n(e, () => B(t));
 				}), O(r), L((e) => W(a, `⏳ ${e ?? ""} · ${B(f).length ?? ""}`), [() => t.vb.t("Esperando você")]), U(e, r);
 			};
 			G(i, (e) => {
 				B(f).length && e(a);
 			}), Xr(I(i), 17, () => B(d), (e) => e.e.id, (e, r) => {
-				var i = da(), a = N(i), o = N(a);
+				var i = ha(), a = N(i), o = N(a);
 				let s;
 				var c = F(o, !0), l = I(o);
-				O(a), Xr(I(a), 17, () => B(r).list, (e) => e.id, (e, t) => {
+				O(a), Xr(I(a, 2), 17, () => B(r).list, (e) => e.id, (e, t) => {
 					n(e, () => B(t));
 				}), O(i), L((e, t) => {
 					s = ui(o, "", s, { background: e }), W(c, t), W(l, `${B(r).e.title ?? ""} · ${B(r).list.length ?? ""}`);
 				}, [() => t.vb.color(B(r).e.title), () => t.vb.initials(B(r).e.title)]), U(e, i);
 			}, (e) => {
-				var n = fa(), r = F(n, !0);
+				var n = ga(), r = F(n, !0);
 				L((e) => W(r, e), [() => t.vb.t("Nenhuma tarefa aberta.")]), U(e, n);
 			}), O(r), U(e, r);
 		}, ie = (e) => {
-			var n = wa();
+			var n = Oa();
 			Xr(n, 21, () => r, Kr, (e, n) => {
 				var r = /* @__PURE__ */ k(() => _(B(n), 2));
 				let i = () => B(r)[0], l = () => B(r)[1], d = /* @__PURE__ */ k(() => B(u).filter((e) => e.status === i()));
-				var f = Ca();
+				var f = Da();
 				let p;
 				var m = N(f), h = N(m, !0), g = F(I(h), !0);
 				O(m);
-				var x = I(m);
+				var x = I(m, 2);
 				Xr(x, 21, () => B(d), (e) => e.id, (e, n) => {
-					var r = _a();
+					var r = xa();
 					let i;
 					var a = N(r);
-					K(a, () => t.vb.mentions?.(oa(B(n).title)) ?? oa(B(n).title), !0), O(a);
-					var o = I(a), s = (e) => {
-						var r = ma(), i = N(r);
+					K(a, () => t.vb.mentions?.(ua(B(n).title)) ?? ua(B(n).title), !0), O(a);
+					var o = I(a, 2), s = (e) => {
+						var r = va(), i = N(r);
 						K(i, () => t.vb.icon("alert", 12));
 						var a = I(i);
 						O(r), L((e, t) => {
@@ -2781,7 +2823,7 @@ function Ea(e, t) {
 					var c = I(o, 2), l = N(c);
 					let u;
 					var d = F(l, !0), f = I(l), p = (e) => {
-						var r = ha(), i = P(r);
+						var r = ya(), i = P(r);
 						K(i, () => t.vb.avatar(B(n).owner));
 						var a = F(I(i), !0);
 						L((e) => W(a, e), [() => B(n).owner === t.room.me ? t.vb.t("você") : t.vb.name(B(n).owner)]), U(e, r);
@@ -2790,7 +2832,7 @@ function Ea(e, t) {
 						B(n).owner && e(p);
 					});
 					var m = I(f), h = (e) => {
-						var r = ga(), i = N(r);
+						var r = ba(), i = N(r);
 						K(i, () => t.vb.icon("calendar", 12));
 						var a = I(i);
 						O(r), L(() => W(a, ` ${B(n).due ?? ""}`)), U(e, r);
@@ -2804,21 +2846,21 @@ function Ea(e, t) {
 						}), J(r, "data-k", B(n).id), J(r, "data-status", B(n).status), J(r, "data-epic", B(n).epic.id), J(r, "title", e), u = ui(l, "", u, { background: a }), W(d, B(n).epic.title);
 					}, [() => t.vb.t("Arraste, ou use ← →. Clique pra abrir o épico."), () => t.vb.color(B(n).epic.title)]), Cr("dragstart", r, (e) => v(e, B(n).id)), Cr("dragend", r, (e) => e.currentTarget.classList.remove("dragging")), V("click", r, () => t.onopen?.(B(n).epic.id)), V("keydown", r, (e) => b(e, B(n))), U(e, r);
 				}, (e) => {
-					var n = va(), r = F(n, !0);
+					var n = Sa(), r = F(n, !0);
 					L((e) => W(r, e), [() => t.vb.t(i() === "todo" ? "Nada a fazer." : "Arraste um card pra cá.")]), U(e, n);
 				}), O(x);
 				var S = I(x, 2), C = (e) => {
-					var n = Sa(), r = N(n);
+					var n = Ea(), r = N(n);
 					Si(r);
 					var i = I(r);
 					K(i, () => t.vb.icon("plus"), !0), O(i);
 					var s = I(i), l = (e) => {
-						var t = ya();
+						var t = Ca();
 						Si(t), L(() => Ci(t, B(c))), U(e, t);
 					}, u = (e) => {
-						var n = xa();
+						var n = Ta();
 						Xr(n, 21, () => t.room.epics, Kr, (e, t) => {
-							var n = ba(), r = F(n, !0), i = {};
+							var n = wa(), r = F(n, !0), i = {};
 							L(() => {
 								W(r, B(t).title), i !== (i = B(t).id) && (n.value = (n.__value = i) ?? "");
 							}), U(e, n);
@@ -2861,7 +2903,7 @@ function Ea(e, t) {
 			() => B(c) ? t.room.epics.find((e) => e.id === B(c))?.title : t.vb.t("Todos os épicos")
 		]), V("click", h, () => g("board")), V("click", w, () => g("list")), U(e, l);
 	}, w = (e) => {
-		var n = fa(), r = F(n, !0);
+		var n = ga(), r = F(n, !0);
 		L((e) => W(r, e), [() => t.vb.t("Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu agent organizar o projeto em épicos e tarefas.")]), U(e, n);
 	};
 	G(S, (e) => {
@@ -2870,8 +2912,8 @@ function Ea(e, t) {
 }
 wr(["click", "keydown"]);
 // svelte/Files.svelte
-var Da = /* @__PURE__ */ H("<button type=\"button\"> <small> </small></button>"), Oa = /* @__PURE__ */ H("<div class=\"ftabs\"></div>"), ka = /* @__PURE__ */ H("<div class=\"fcrumb\"><button type=\"button\" class=\"ghost\"> </button><b><!> </b></div>"), Aa = /* @__PURE__ */ H("<button type=\"button\" class=\"ftile fdir\"><div class=\"thumb\"></div><b> </b><small> </small></button>"), ja = /* @__PURE__ */ H("<img loading=\"lazy\"/>"), Ma = /* @__PURE__ */ H("<a class=\"ftile\" target=\"_blank\" rel=\"noopener\"><div class=\"thumb\"><!></div> <b> </b><small> </small> <button type=\"button\" data-pin-kind=\"file\"></button></a>"), Na = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), Pa = /* @__PURE__ */ H("<!> <!> <div class=\"fgrid\"><!> <!></div> <!>", 1);
-function Fa(e, t) {
+var ja = /* @__PURE__ */ H("<button type=\"button\"> <small> </small></button>"), Ma = /* @__PURE__ */ H("<div class=\"ftabs\"></div>"), Na = /* @__PURE__ */ H("<div class=\"fcrumb\"><button type=\"button\" class=\"ghost\"> </button><b><!> </b></div>"), Pa = /* @__PURE__ */ H("<button type=\"button\" class=\"ftile fdir\"><div class=\"thumb\"></div> <b> </b><small> </small></button>"), Fa = /* @__PURE__ */ H("<img loading=\"lazy\"/>"), Ia = /* @__PURE__ */ H("<a class=\"ftile\" target=\"_blank\" rel=\"noopener\"><div class=\"thumb\"><!></div> <b> </b><small> </small> <button type=\"button\" data-pin-kind=\"file\"></button></a>"), La = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), Ra = /* @__PURE__ */ H("<!> <!> <div class=\"fgrid\"><!> <!></div> <!>", 1);
+function za(e, t) {
 	Je(t, !0);
 	let n = [
 		["all", "Tudo"],
@@ -2885,11 +2927,11 @@ function Fa(e, t) {
 	], r = /* @__PURE__ */ j("all"), i = /* @__PURE__ */ j(""), a = /* @__PURE__ */ k(() => t.room.files || []), o = /* @__PURE__ */ k(() => {
 		let e = { all: B(a).length };
 		for (let t of B(a)) {
-			let n = sa(t);
+			let n = da(t);
 			e[n] = (e[n] || 0) + 1;
 		}
 		return e;
-	}), s = /* @__PURE__ */ k(() => B(o)[B(r)] ? B(r) : "all"), c = /* @__PURE__ */ k(() => B(a).filter((e) => B(s) === "all" || sa(e) === B(s))), l = (e) => e.name.includes("/") ? e.name.slice(0, e.name.lastIndexOf("/")) : "", u = /* @__PURE__ */ k(() => B(i) && B(c).some((e) => l(e) === B(i) || l(e).startsWith(B(i) + "/")) ? B(i) : ""), d = /* @__PURE__ */ k(() => B(u) ? B(u) + "/" : "");
+	}), s = /* @__PURE__ */ k(() => B(o)[B(r)] ? B(r) : "all"), c = /* @__PURE__ */ k(() => B(a).filter((e) => B(s) === "all" || da(e) === B(s))), l = (e) => e.name.includes("/") ? e.name.slice(0, e.name.lastIndexOf("/")) : "", u = /* @__PURE__ */ k(() => B(i) && B(c).some((e) => l(e) === B(i) || l(e).startsWith(B(i) + "/")) ? B(i) : ""), d = /* @__PURE__ */ k(() => B(u) ? B(u) + "/" : "");
 	Sn(() => {
 		B(o)[B(r)] || M(r, "all"), B(i) && B(u) !== B(i) && M(i, "");
 	});
@@ -2929,12 +2971,12 @@ function Fa(e, t) {
 		});
 	}
 	var v = Nr(), y = P(v), b = (e) => {
-		var i = Pa(), a = P(i), c = (e) => {
-			var i = Oa();
+		var i = Ra(), a = P(i), c = (e) => {
+			var i = Ma();
 			Xr(i, 21, () => n.filter(([e]) => B(o)[e]), Kr, (e, n) => {
 				var i = /* @__PURE__ */ k(() => _(B(n), 2));
 				let a = () => B(i)[0], c = () => B(i)[1];
-				var l = Da();
+				var l = ja();
 				let u;
 				var d = N(l), f = F(I(d), !0);
 				O(l), L((e) => {
@@ -2946,7 +2988,7 @@ function Fa(e, t) {
 			B(o).all > 1 && e(c);
 		});
 		var l = I(a, 2), v = (e) => {
-			var n = ka(), r = N(n), i = F(r), a = I(r), o = N(a);
+			var n = Na(), r = N(n), i = F(r), a = I(r), o = N(a);
 			K(o, () => t.vb.icon("folder", 14));
 			var s = I(o);
 			O(a), O(n), L((e, t) => {
@@ -2960,15 +3002,15 @@ function Fa(e, t) {
 		Xr(b, 17, () => B(p).dirs, Kr, (e, n) => {
 			var r = /* @__PURE__ */ k(() => _(B(n), 2));
 			let i = () => B(r)[0], a = () => B(r)[1];
-			var o = Aa(), s = N(o);
+			var o = Pa(), s = N(o);
 			K(s, () => t.vb.icon("folder", 34), !0), O(s);
-			var c = I(s), l = F(c), u = F(I(c), !0);
+			var c = I(s, 2), l = F(c), u = F(I(c), !0);
 			O(o), L((e) => {
 				J(o, "data-fdir", B(d) + i()), W(l, `${i() ?? ""}/`), W(u, e);
 			}, [() => a() === 1 ? t.vb.t("1 arquivo") : t.vb.t("{n} arquivos", { n: a() })]), V("click", o, (e) => f(e, B(d) + i())), U(e, o);
 		}), Xr(I(b, 2), 17, () => B(p).list, (e) => e.id, (e, n) => {
-			var r = Ma(), i = N(r), a = N(i), o = (e) => {
-				var t = ja();
+			var r = Ia(), i = N(r), a = N(i), o = (e) => {
+				var t = Fa();
 				L((e) => {
 					J(t, "src", e), J(t, "alt", B(n).name);
 				}, [() => m(B(n))]), U(e, t);
@@ -2989,7 +3031,7 @@ function Fa(e, t) {
 				() => B(n).name.slice(B(d).length),
 				() => t.vb.name(B(n).author),
 				() => t.vb.ago(B(n).ts),
-				() => B(p).versions[B(n).name] > 1 ? t.vb.t("{n} versões", { n: B(p).versions[B(n).name] }) : ca(B(n).size),
+				() => B(p).versions[B(n).name] > 1 ? t.vb.t("{n} versões", { n: B(p).versions[B(n).name] }) : fa(B(n).size),
 				() => !!h(B(n)),
 				() => t.vb.t(h(B(n)) ? "Desafixar" : "Fixar na lateral"),
 				() => t.vb.t(h(B(n)) ? "Desafixar" : "Fixar na lateral"),
@@ -2997,14 +3039,14 @@ function Fa(e, t) {
 			]), V("click", v, (e) => g(e, B(n))), U(e, r);
 		}), O(y);
 		var x = I(y, 2), S = (e) => {
-			var n = Na(), r = F(n, !0);
+			var n = La(), r = F(n, !0);
 			L((e) => W(r, e), [() => t.vb.t("Nada aqui.")]), U(e, n);
 		};
 		G(x, (e) => {
 			!B(p).list.length && !B(p).dirs.length && e(S);
 		}), U(e, i);
 	}, x = (e) => {
-		var n = Na(), r = F(n, !0);
+		var n = La(), r = F(n, !0);
 		L((e) => W(r, e), [() => t.vb.t("Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.")]), U(e, n);
 	};
 	G(y, (e) => {
@@ -3013,39 +3055,39 @@ function Fa(e, t) {
 }
 wr(["click"]);
 // shared/room.ts
-var Ia = [
+var Ba = [
 	"todo",
 	"doing",
 	"review",
 	"done"
-], La = (e) => typeof e == "object" && !!e && !Array.isArray(e), Y = (e) => typeof e == "string", X = (e) => typeof e == "number" && Number.isFinite(e), Ra = (e) => typeof e == "boolean", Z = (e) => (t) => t === null || e(t), Q = (e) => (t) => Array.isArray(t) && t.every(e), za = (e) => (t) => La(t) && Object.values(t).every(e), Ba = Q(Y), Va = (...e) => (t) => typeof t == "string" && e.includes(t), Ha = Va(...Ia), $ = (e, t = {}) => (n) => La(n) && Object.entries(e).every(([e, t]) => t(n[e])) && Object.entries(t).every(([e, t]) => n[e] === void 0 || t(n[e])), Ua = (e) => $({
+], Va = (e) => typeof e == "object" && !!e && !Array.isArray(e), Y = (e) => typeof e == "string", X = (e) => typeof e == "number" && Number.isFinite(e), Ha = (e) => typeof e == "boolean", Z = (e) => (t) => t === null || e(t), Q = (e) => (t) => Array.isArray(t) && t.every(e), Ua = (e) => (t) => Va(t) && Object.values(t).every(e), Wa = Q(Y), Ga = (...e) => (t) => typeof t == "string" && e.includes(t), Ka = Ga(...Ba), $ = (e, t = {}) => (n) => Va(n) && Object.entries(e).every(([e, t]) => t(n[e])) && Object.entries(t).every(([e, t]) => n[e] === void 0 || t(n[e])), qa = (e) => $({
 	id: Y,
 	name: Y,
 	type: Y,
 	size: X,
 	author: Y,
 	ts: X
-}, { embed: Ra })(e), Wa = $({
+}, { embed: Ha })(e), Ja = $({
 	id: Y,
 	title: Y,
-	done: Ra,
-	status: Ha
+	done: Ha,
+	status: Ka
 }, {
 	owner: Z(Y),
 	due: Z(Y),
-	flags: Ba,
+	flags: Wa,
 	epic_id: Y
-}), Ga = (e) => Wa(e), Ka = $({
+}), Ya = (e) => Ja(e), Xa = $({
 	id: Y,
 	title: Y,
-	tasks: Q(Ga)
+	tasks: Q(Ya)
 }, {
-	archived: Ra,
-	kept: Ra,
+	archived: Ha,
+	kept: Ha,
 	owner: Z(Y),
 	from_msg: Z(X),
 	parent: Z(Y),
-	flags: Ba,
+	flags: Wa,
 	prod: Z($({ stage: Y }, {
 		at: X,
 		note: Y
@@ -3056,7 +3098,7 @@ var Ia = [
 		type: Y,
 		n: X
 	}))
-}), qa = (e) => Ka(e), Ja = $({
+}), Za = (e) => Xa(e), Qa = $({
 	id: X,
 	thread: Y,
 	author: Y,
@@ -3070,11 +3112,11 @@ var Ia = [
 	choices: Z(Y),
 	poll: Z(Y),
 	card: Z(Y),
-	files: Q(Ua),
-	quiet: Ra,
-	cut: Ra,
+	files: Q(qa),
+	quiet: Ha,
+	cut: Ha,
 	for_who: Z(Y)
-}), Ya = (e) => Ja(e), Xa = $({
+}), $a = (e) => Qa(e), eo = $({
 	msg_id: X,
 	email: Y,
 	who: Y,
@@ -3083,11 +3125,11 @@ var Ia = [
 }, {
 	agent: Y,
 	note: Z(Y)
-}), Za = (e) => Xa(e), Qa = $({
+}), to = (e) => eo(e), no = $({
 	id: Y,
 	text: Y,
 	owner: Y,
-	enabled: Ra
+	enabled: Ha
 }, {
 	name: Z(Y),
 	error: Z(Y),
@@ -3097,22 +3139,22 @@ var Ia = [
 	thread: Y,
 	tz: Y,
 	file_id: Z(Y)
-}), $a = (e) => Qa(e), eo = $({
+}), ro = (e) => no(e), io = $({
 	title: Y,
 	owner: Y
 }, {
 	summary: Z(Y),
 	folder: Z(Y)
-}), to = (e) => eo(e), no = $({
+}), ao = (e) => io(e), oo = $({
 	title: Y,
-	tasks: Ba
-}, { why: Y }), ro = (e) => no(e), io = $({
+	tasks: Wa
+}, { why: Y }), so = (e) => oo(e), co = $({
 	id: X,
 	text: Y,
 	who: Y,
 	kind: Y,
 	ts: X
-}), ao = (e) => io(e), oo = $({
+}), lo = (e) => co(e), uo = $({
 	id: Y,
 	kind: Y,
 	ref: Y
@@ -3120,18 +3162,18 @@ var Ia = [
 	title: Y,
 	author: Y,
 	ts: X
-}), so = (e) => oo(e), co = $({
+}), fo = (e) => uo(e), po = $({
 	id: Y,
 	question: Y,
-	options: Ba,
-	multi: Ra,
-	closed: Ra,
+	options: Wa,
+	multi: Ha,
+	closed: Ha,
 	author: Y,
-	votes: Q(Ba)
-}), lo = (e) => co(e), uo = $({
+	votes: Q(Wa)
+}), mo = (e) => po(e), ho = $({
 	email: Y,
 	ts: X
-}, { name: Z(Y) }), fo = $({
+}, { name: Z(Y) }), go = $({
 	email: Y,
 	who: Y,
 	read: X,
@@ -3139,40 +3181,48 @@ var Ia = [
 }, {
 	agent: Y,
 	ts: X
-}), po = {
+}), _o = $({ text: Y }, {
+	epic: Z(Y),
+	stale: (e) => e === !1,
+	fetched: Ha,
+	by: Y
+}), vo = $({
+	epic: Y,
+	stale: (e) => e === !0
+}, { by: Y }), yo = {
 	state: $({
 		me: Y,
-		book: to,
-		messages: Q(Ya),
-		epics: Q(qa),
-		members: Ba,
-		online: Ba,
-		suggestions: Q(ro)
+		book: ao,
+		messages: Q($a),
+		epics: Q(Za),
+		members: Wa,
+		online: Wa,
+		suggestions: Q(so)
 	}, {
-		roomTasks: Q(Ga),
-		names: za(Y),
-		avatars: za(X),
-		pending: Ba,
-		requests: Q(uo),
-		files: Q(Ua),
+		roomTasks: Q(Ya),
+		names: Ua(Y),
+		avatars: Ua(X),
+		pending: Wa,
+		requests: Q(ho),
+		files: Q(qa),
 		filesN: X,
-		filesAll: Ra,
-		reminders: Q($a),
-		acks: Q(Za),
-		receipts: Q(fo),
-		counts: za(X),
+		filesAll: Ha,
+		reminders: Q(ro),
+		acks: Q(to),
+		receipts: Q(go),
+		counts: Ua(X),
 		countsAt: X,
-		full: Ba,
-		complete: Ra,
-		origins: Q(Ya),
-		docs: za(Y),
+		full: Wa,
+		complete: Ha,
+		origins: Q($a),
+		docs: Ua(Y),
 		doc: Y,
-		docNotes: Ba,
-		decisions: Q(ao),
-		pins: Q(so),
-		polls: za(lo)
+		docNotes: Wa,
+		decisions: Q(lo),
+		pins: Q(fo),
+		polls: Ua(mo)
 	}),
-	msg: $({ m: Ya }),
+	msg: $({ m: $a }),
 	moved: $({
 		id: X,
 		thread: Y
@@ -3189,47 +3239,41 @@ var Ia = [
 		id: X,
 		choices: Y
 	}),
-	epics: $({ epics: Q(qa) }, { roomTasks: Q(Ga) }),
+	epics: $({ epics: Q(Za) }, { roomTasks: Q(Ya) }),
 	epicsPatch: $({
-		changed: Q(qa),
-		order: Ba
-	}, { roomTasks: Q(Ga) }),
-	doc: $({}, {
-		epic: Z(Y),
-		text: Y,
-		stale: Ra,
-		fetched: Ra,
-		by: Y
-	}),
-	docNotes: $({ notes: Ba }),
+		changed: Q(Za),
+		order: Wa
+	}, { roomTasks: Q(Ya) }),
+	doc: (e) => Va(e) && (e.stale === !0 ? vo(e) && e.text === void 0 && e.fetched === void 0 : _o(e)),
+	docNotes: $({ notes: Wa }),
 	meta: $({}, {
 		title: Y,
 		folder: Y,
 		summary: Y
 	}),
-	suggestions: $({ suggestions: Q(ro) }),
-	requests: $({ requests: Q(uo) }),
-	members: $({ members: Ba }, {
-		pending: Ba,
-		requests: Q(uo),
-		names: za(Y),
-		avatars: za(X)
+	suggestions: $({ suggestions: Q(so) }),
+	requests: $({ requests: Q(ho) }),
+	members: $({ members: Wa }, {
+		pending: Wa,
+		requests: Q(ho),
+		names: Ua(Y),
+		avatars: Ua(X)
 	}),
-	files: $({ files: Q(Ua) }),
-	fileAdd: $({ file: Ua }),
-	reminders: $({ reminders: Q($a) }),
-	decisions: $({ decisions: Q(ao) }),
-	pins: $({ pins: Q(so) }),
-	receipts: $({ receipts: Q(fo) }),
+	files: $({ files: Q(qa) }),
+	fileAdd: $({ file: qa }),
+	reminders: $({ reminders: Q(ro) }),
+	decisions: $({ decisions: Q(lo) }),
+	pins: $({ pins: Q(fo) }),
+	receipts: $({ receipts: Q(go) }),
 	older: $({
-		messages: Q(Ya),
+		messages: Q($a),
 		thread: Y,
-		more: Ra
+		more: Ha
 	}),
-	acks: $({ acks: Q(Za) }),
-	ackRows: $({ acks: Q(Za) }),
-	poll: $({ poll: lo }),
-	online: $({ online: Ba }),
+	acks: $({ acks: Q(to) }),
+	ackRows: $({ acks: Q(to) }),
+	poll: $({ poll: mo }),
+	online: $({ online: Wa }),
 	conns: $({}),
 	error: $({}, { error: Y }),
 	blocked: $({
@@ -3237,15 +3281,15 @@ var Ia = [
 		reason: Y
 	})
 };
-function mo(e) {
-	return !La(e) || typeof e.t != "string" || !Object.hasOwn(po, e.t) ? !1 : po[e.t](e);
+function bo(e) {
+	return !Va(e) || typeof e.t != "string" || !Object.hasOwn(yo, e.t) ? !1 : yo[e.t](e);
 }
-function ho(e) {
-	if (!La(e)) return e;
-	let t = (e, t) => La(e) && (e[t] === 0 || e[t] === 1) ? {
+function xo(e) {
+	if (!Va(e)) return e;
+	let t = (e, t) => Va(e) && (e[t] === 0 || e[t] === 1) ? {
 		...e,
 		[t]: e[t] === 1
-	} : e, n = (e) => Array.isArray(e) ? e.map((e) => t(e, "done")) : e, r = (e) => Array.isArray(e) ? e.map((e) => La(e) ? {
+	} : e, n = (e) => Array.isArray(e) ? e.map((e) => t(e, "done")) : e, r = (e) => Array.isArray(e) ? e.map((e) => Va(e) ? {
 		...e,
 		tasks: n(e.tasks)
 	} : e) : e, i = (e) => Array.isArray(e) ? e.map((e) => t(e, "enabled")) : e;
@@ -3263,15 +3307,15 @@ function ho(e) {
 		reminders: i(e.reminders)
 	} : e;
 }
-function go(e) {
-	let t = ho(JSON.parse(e));
-	if (!mo(t)) throw TypeError("Invalid room event");
+function So(e) {
+	let t = xo(JSON.parse(e));
+	if (!bo(t)) throw TypeError("Invalid room event");
 	return t;
 }
-var _o = {
+var Co = {
 	msg: $({ thread: Y }, {
 		text: Y,
-		files: Ba,
+		files: Wa,
 		reply_to: Z(X)
 	}),
 	"files.get": $({}),
@@ -3289,7 +3333,7 @@ var _o = {
 	}),
 	older: $({ thread: Y }, { before: X }),
 	"pin.add": $({
-		kind: Va("link", "file", "app"),
+		kind: Ga("link", "file", "app"),
 		ref: Y
 	}, { title: Y }),
 	"pin.del": $({ id: Y }),
@@ -3297,12 +3341,12 @@ var _o = {
 	"ack.dismiss": $({ id: X }),
 	"reminder.enable": $({
 		id: Y,
-		on: Ra
+		on: Ha
 	}),
 	"task.toggle": $({ id: Y }),
 	"task.status": $({
 		id: Y,
-		status: Ha
+		status: Ka
 	}),
 	"task.rename": $({
 		id: Y,
@@ -3319,39 +3363,44 @@ var _o = {
 		title: Y
 	}),
 	"epic.del": $({ id: Y }),
-	"epic.archive": $({ id: Y }, { archived: Ra }),
-	"epic.order": $({ ids: Ba }),
+	"epic.archive": $({ id: Y }, { archived: Ha }),
+	"epic.order": $({ ids: Wa }),
 	"poll.create": $({
 		thread: Y,
 		question: Y,
-		options: Ba,
-		multi: Ra
+		options: Wa,
+		multi: Ha
 	}),
 	vote: $({
 		id: Y,
 		opt: X
 	}),
 	"poll.close": $({ id: Y }),
-	suggestion: $({ i: X }, { accept: Ra })
+	suggestion: $({ i: X }, { accept: Ha })
 };
-function vo(e) {
-	return !La(e) || typeof e.t != "string" || !Object.hasOwn(_o, e.t) ? !1 : _o[e.t](e);
+function wo(e) {
+	return !Va(e) || typeof e.t != "string" || !Object.hasOwn(Co, e.t) ? !1 : Co[e.t](e);
 }
 // svelte/transport.ts
-function yo(e, t) {
-	if (!vo(t)) throw TypeError("Invalid room command");
+function To(e, t) {
+	if (!wo(t)) throw TypeError("Invalid room command");
 	return !e || e.readyState !== 1 ? !1 : (e.send(JSON.stringify(t)), !0);
 }
-function bo(e) {
+function Eo(e) {
 	if (typeof e != "string") throw TypeError("Room events must be JSON text");
-	return go(e);
+	return So(e);
 }
-function xo(e, t = fetch) {
+function Do(e, t = fetch) {
 	let n = `/api/books/${encodeURIComponent(e)}`;
-	async function r(e) {
-		let t = await e.json();
-		if (!e.ok) throw Error(La(t) && typeof t.error == "string" ? t.error : `HTTP ${e.status}`);
-		return t;
+	async function r(e, t = !1) {
+		let n;
+		try {
+			n = await e.json();
+		} catch (t) {
+			throw e.ok ? t : Error(`HTTP ${e.status}`);
+		}
+		if (!e.ok && !(t && e.status === 400 && Va(n) && n.ok === !1 && typeof n.error == "string")) throw Error(Va(n) && typeof n.error == "string" ? n.error : `HTTP ${e.status}`);
+		return n;
 	}
 	return {
 		async postMessage(e) {
@@ -3359,8 +3408,8 @@ function xo(e, t = fetch) {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify(e)
-			}));
-			if (!La(i) || typeof i.ok != "boolean") throw TypeError("Invalid post response");
+			}), !0);
+			if (!Va(i) || typeof i.ok != "boolean") throw TypeError("Invalid post response");
 			if (i.ok === !1 && typeof i.error == "string") return {
 				ok: !1,
 				error: i.error
@@ -3381,10 +3430,10 @@ function xo(e, t = fetch) {
 				},
 				body: e.body
 			}));
-			if (!Ua(i)) throw TypeError("Invalid upload response");
+			if (!qa(i)) throw TypeError("Invalid upload response");
 			if ("reminder" in i) {
 				let e = i.reminder;
-				if (!La(e) || typeof e.ok != "boolean" || e.error !== void 0 && typeof e.error != "string" || e.name !== void 0 && typeof e.name != "string" || e.every !== void 0 && e.every !== null && typeof e.every != "string" || e.next_at !== void 0 && typeof e.next_at != "string" || e.cron !== void 0 && e.cron !== null && typeof e.cron != "string" || e.timezone !== void 0 && typeof e.timezone != "string") throw TypeError("Invalid reminder response");
+				if (!Va(e) || typeof e.ok != "boolean" || e.error !== void 0 && typeof e.error != "string" || e.name !== void 0 && typeof e.name != "string" || e.every !== void 0 && e.every !== null && typeof e.every != "string" || e.next_at !== void 0 && typeof e.next_at != "string" || e.cron !== void 0 && e.cron !== null && typeof e.cron != "string" || e.timezone !== void 0 && typeof e.timezone != "string") throw TypeError("Invalid reminder response");
 				return {
 					...i,
 					reminder: {
@@ -3403,8 +3452,8 @@ function xo(e, t = fetch) {
 	};
 }
 // svelte/Reminders.svelte
-var So = /* @__PURE__ */ H("<button class=\"primary\" id=\"remNew\"><!> </button>"), Co = /* @__PURE__ */ H("<form class=\"remForm\" id=\"remForm\"><input name=\"name\" maxlength=\"60\" required=\"\"/> <textarea name=\"text\" required=\"\"></textarea> <div class=\"row\"><span class=\"err\" id=\"remErr\"> </span><button type=\"button\" class=\"ghost\" id=\"remCancel\"> </button><button class=\"primary\" id=\"remSave\"> </button></div></form>"), wo = /* @__PURE__ */ H("<span class=\"err\"> </span>"), To = /* @__PURE__ */ H("<pre class=\"remText\"> </pre>"), Eo = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), Do = /* @__PURE__ */ H("<div><div class=\"remBody\" role=\"button\" tabindex=\"0\"><b><!> </b> <small><!> </small> <!><!></div> <!> <label class=\"sw\"><input type=\"checkbox\"/> </label> <button class=\"ghost\"></button></div>"), Oo = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), ko = /* @__PURE__ */ H("<div class=\"remHead\"><p></p><!></div> <!> <!> <!>", 1);
-function Ao(e, t) {
+var Oo = /* @__PURE__ */ H("<button class=\"primary\" id=\"remNew\"><!> </button>"), ko = /* @__PURE__ */ H("<form class=\"remForm\" id=\"remForm\"><input name=\"name\" maxlength=\"60\" required=\"\"/> <textarea name=\"text\" required=\"\"></textarea> <div class=\"row\"><span class=\"err\" id=\"remErr\"> </span><button type=\"button\" class=\"ghost\" id=\"remCancel\"> </button><button class=\"primary\" id=\"remSave\"> </button></div></form>"), Ao = /* @__PURE__ */ H("<span class=\"err\"> </span>"), jo = /* @__PURE__ */ H("<pre class=\"remText\"> </pre>"), Mo = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), No = /* @__PURE__ */ H("<div><div class=\"remBody\" role=\"button\" tabindex=\"0\"><b><!> </b> <small><!> </small> <!><!></div> <!> <label class=\"sw\"><input type=\"checkbox\"/> </label> <button class=\"ghost\"></button></div>"), Po = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), Fo = /* @__PURE__ */ H("<div class=\"remHead\"><p></p> <!></div> <!> <!> <!>", 1);
+function Io(e, t) {
 	Je(t, !0);
 	let n = /* @__PURE__ */ j(null), r = /* @__PURE__ */ j(""), i = /* @__PURE__ */ j(!1), a = /* @__PURE__ */ j($t([])), o = /* @__PURE__ */ k(() => t.room.reminders || []), s = /* @__PURE__ */ k(() => t.vb.locale || (document.documentElement.lang === "en" ? "en-US" : "pt-BR")), c = (e) => new Date(e).toLocaleString(B(s), {
 		weekday: "short",
@@ -3424,7 +3473,7 @@ function Ao(e, t) {
 		let a = { ...B(n) }, o = a.name.trim().replace(/\.md$/i, "").replace(/[\\/]/g, "-");
 		M(i, !0), M(r, "");
 		try {
-			let e = await xo(t.room.id).uploadFile({
+			let e = await Do(t.room.id).uploadFile({
 				name: `reminders/${o}.md`,
 				type: "text/markdown",
 				body: a.text
@@ -3444,10 +3493,10 @@ function Ao(e, t) {
 			M(i, !1);
 		}
 	}
-	var f = ko(), p = P(f), m = N(p);
+	var f = Fo(), p = P(f), m = N(p);
 	K(m, () => t.vb.t("Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o agent de quem salvou faz."), !0), O(m);
-	var h = I(m), g = (e) => {
-		var n = So(), r = N(n);
+	var h = I(m, 2), g = (e) => {
+		var n = Oo(), r = N(n);
 		K(r, () => t.vb.icon("plus", 14));
 		var i = I(r);
 		O(n), L((e) => W(i, ` ${e ?? ""}`), [() => t.vb.t("Novo lembrete")]), V("click", n, () => l({
@@ -3459,7 +3508,7 @@ function Ao(e, t) {
 		B(n) || e(g);
 	}), O(p);
 	var _ = I(p, 2), v = (e) => {
-		var a = Co(), o = N(a);
+		var a = ko(), o = N(a);
 		Si(o);
 		var s = I(o, 2);
 		ot(s);
@@ -3478,7 +3527,7 @@ function Ao(e, t) {
 	});
 	var y = I(_, 2);
 	Xr(y, 17, () => B(o), (e) => e.id, (e, n) => {
-		var r = Do();
+		var r = No();
 		let i;
 		var o = N(r), s = N(o), d = N(s);
 		K(d, () => t.vb.icon(B(a).includes(B(n).id) ? "chevronDown" : "chevronRight", 13));
@@ -3494,21 +3543,21 @@ function Ao(e, t) {
 		var g = I(m, 1, !0);
 		O(p);
 		var _ = I(p, 2), v = (e) => {
-			var t = wo(), r = F(t);
+			var t = Ao(), r = F(t);
 			L(() => W(r, `⚠ ${B(n).error ?? ""}`)), U(e, t);
 		};
 		G(_, (e) => {
 			B(n).error && e(v);
 		});
 		var y = I(_), b = (e) => {
-			var t = To(), r = F(t, !0);
+			var t = jo(), r = F(t, !0);
 			L(() => W(r, B(n).text)), U(e, t);
 		}, x = /* @__PURE__ */ k(() => B(a).includes(B(n).id));
 		G(y, (e) => {
 			B(x) && e(b);
 		}), O(o);
 		var S = I(o, 2), C = (e) => {
-			var r = Eo();
+			var r = Mo();
 			K(r, () => t.vb.icon("pencil", 14), !0), O(r), L((e, t) => {
 				J(r, "data-rem-edit", B(n).id), J(r, "title", e), J(r, "aria-label", t);
 			}, [() => t.vb.t("Editar"), () => t.vb.t("Editar")]), V("click", r, () => l({
@@ -3555,7 +3604,7 @@ function Ao(e, t) {
 		}), U(e, r);
 	});
 	var b = I(y, 2), x = (e) => {
-		var n = Oo(), r = F(n, !0);
+		var n = Po(), r = F(n, !0);
 		L((e) => W(r, e), [() => t.vb.t("Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu agent: “todo dia às 8h, me manda o resumo do que mudou”.")]), U(e, n);
 	};
 	G(b, (e) => {
@@ -3568,17 +3617,17 @@ wr([
 	"change"
 ]);
 // svelte/Sidebar.svelte
-var jo = /* @__PURE__ */ H("<span class=\"claudeSpin\">✻</span>"), Mo = /* @__PURE__ */ H("<button type=\"button\"><!><span class=\"rt\"> </span> <!> <!><!> <span class=\"n\"> </span></button>"), No = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fnRow\"><span class=\"fn\"> </span><span class=\"pendTag\"> </span></span> <small class=\"memActs\"><button type=\"button\" class=\"ghost resend\"> </button> · <button type=\"button\" class=\"ghost resend\"> </button></small></div>"), Po = /* @__PURE__ */ H("<span class=\"fn\"> </span>"), Fo = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> </small></div>"), Io = /* @__PURE__ */ H("<button type=\"button\" class=\"ghost x\"></button>"), Lo = /* @__PURE__ */ H("<div class=\"member\"><!> <!> <!></div> <!>", 1), Ro = /* @__PURE__ */ H("<button type=\"button\" class=\"iconBtn phOnly\" id=\"sideArch\"></button> <button type=\"button\" class=\"iconBtn phOnly\" id=\"sideDel\"></button>", 1), zo = /* @__PURE__ */ H("<span class=\"rowEdit phOnly\" role=\"button\" tabindex=\"0\" id=\"sideRename\"><!> </span>"), Bo = /* @__PURE__ */ H("<div class=\"epTabs\" role=\"tablist\"><button type=\"button\" role=\"tab\" data-arch=\"\"> <b> </b></button> <button type=\"button\" role=\"tab\" data-arch=\"1\"> <b> </b></button></div>"), Vo = /* @__PURE__ */ H("<button type=\"button\"><span class=\"ri\"> </span><span class=\"rt\"> </span><span class=\"n\"> </span></button>"), Ho = /* @__PURE__ */ H("<form id=\"newEpic\" class=\"newRoom\"><input enterkeyhint=\"done\"/><button class=\"ri\"></button></form> <!>", 1), Uo = /* @__PURE__ */ H("<div class=\"member reqRow\"><!> <div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> <button type=\"button\" class=\"ghost resend okAsk\" data-ok=\"1\"> </button></small></div> <button type=\"button\" class=\"ghost x\" data-ok=\"\"></button></div>"), Wo = /* @__PURE__ */ H("<div class=\"asks\"><h4> </h4> <!></div>"), Go = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"off\"><summary> </summary><!></details>"), Ko = /* @__PURE__ */ H("<button type=\"button\" class=\"friendAdd\"><!><span class=\"fn\"> </span><b></b></button>"), qo = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"friends\"><summary> </summary> <!></details>"), Jo = /* @__PURE__ */ H("<option></option>"), Yo = /* @__PURE__ */ H("<button type=\"button\" class=\"sheetGrab\"><i></i></button> <!> <div class=\"sideHead\"><div class=\"sideTop\"><a data-nav=\"\" href=\"/app\" class=\"muted\"><!> vibebooks</a> <!> <button type=\"button\" class=\"iconBtn\" id=\"railToggle\" aria-expanded=\"true\"></button></div></div> <div class=\"sec threadsSec\"><button type=\"button\" data-thread=\"main\"><!><span class=\"rt\"> </span> <!> <!><span class=\"n\"> </span></button> <!> <div><!> <!></div></div> <!> <div class=\"sec\"><!> <h4> </h4> <!> <!> <!> <!> <form class=\"row\" id=\"invite\" style=\"margin-top:8px\"><input type=\"email\" required=\"\" list=\"friendList\" autocomplete=\"off\"/><button></button></form> <datalist id=\"friendList\"></datalist></div>", 1);
-function Xo(e, t) {
+var Lo = /* @__PURE__ */ H("<span class=\"claudeSpin\">✻</span>"), Ro = /* @__PURE__ */ H("<button type=\"button\"><!><span class=\"rt\"> </span> <!> <!><!> <span class=\"n\"> </span></button>"), zo = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fnRow\"><span class=\"fn\"> </span><span class=\"pendTag\"> </span></span> <small class=\"memActs\"><button type=\"button\" class=\"ghost resend\"> </button> · <button type=\"button\" class=\"ghost resend\"> </button></small></div>"), Bo = /* @__PURE__ */ H("<span class=\"fn\"> </span>"), Vo = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> </small></div>"), Ho = /* @__PURE__ */ H("<button type=\"button\" class=\"ghost x\"></button>"), Uo = /* @__PURE__ */ H("<div class=\"member\"><!> <!> <!></div> <!>", 1), Wo = /* @__PURE__ */ H("<button type=\"button\" class=\"iconBtn phOnly\" id=\"sideArch\"></button> <button type=\"button\" class=\"iconBtn phOnly\" id=\"sideDel\"></button>", 1), Go = /* @__PURE__ */ H("<span class=\"rowEdit phOnly\" role=\"button\" tabindex=\"0\" id=\"sideRename\"><!> </span>"), Ko = /* @__PURE__ */ H("<div class=\"epTabs\" role=\"tablist\"><button type=\"button\" role=\"tab\" data-arch=\"\"> <b> </b></button> <button type=\"button\" role=\"tab\" data-arch=\"1\"> <b> </b></button></div>"), qo = /* @__PURE__ */ H("<button type=\"button\"><span class=\"ri\"> </span><span class=\"rt\"> </span><span class=\"n\"> </span></button>"), Jo = /* @__PURE__ */ H("<form id=\"newEpic\" class=\"newRoom\"><input enterkeyhint=\"done\"/><button class=\"ri\"></button></form> <!>", 1), Yo = /* @__PURE__ */ H("<div class=\"member reqRow\"><!> <div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> <button type=\"button\" class=\"ghost resend okAsk\" data-ok=\"1\"> </button></small></div> <button type=\"button\" class=\"ghost x\" data-ok=\"\"></button></div>"), Xo = /* @__PURE__ */ H("<div class=\"asks\"><h4> </h4> <!></div>"), Zo = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"off\"><summary> </summary><!></details>"), Qo = /* @__PURE__ */ H("<button type=\"button\" class=\"friendAdd\"><!><span class=\"fn\"> </span><b></b></button>"), $o = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"friends\"><summary> </summary> <!></details>"), es = /* @__PURE__ */ H("<option></option>"), ts = /* @__PURE__ */ H("<button type=\"button\" class=\"sheetGrab\"><i></i></button> <!> <div class=\"sideHead\"><div class=\"sideTop\"><a data-nav=\"\" href=\"/app\" class=\"muted\"><!> vibebooks</a> <!> <button type=\"button\" class=\"iconBtn\" id=\"railToggle\" aria-expanded=\"true\"></button></div></div> <div class=\"sec threadsSec\"><button type=\"button\" data-thread=\"main\"><!><span class=\"rt\"> </span> <!> <!><span class=\"n\"> </span></button> <!> <div><!> <!></div></div> <!> <div class=\"sec\"><!> <h4> </h4> <!> <!> <!> <!> <form class=\"row\" id=\"invite\" style=\"margin-top:8px\"><input type=\"email\" required=\"\" list=\"friendList\" autocomplete=\"off\"/><button></button></form> <datalist id=\"friendList\"></datalist></div>", 1);
+function ns(e, t) {
 	Je(t, !0);
 	let n = (e, n = m) => {
 		let r = /* @__PURE__ */ k(() => n().tasks.filter((e) => e.done).length), i = /* @__PURE__ */ k(() => t.vb.epicBusy(n()));
-		var a = Mo();
+		var a = Ro();
 		let o;
 		var s = N(a);
 		K(s, () => t.vb.epicIco(n(), !0));
 		var c = I(s), l = F(c, !0), u = I(c, 2), d = (e) => {
-			var n = jo();
+			var n = Lo();
 			L((e) => J(n, "aria-label", e), [() => t.vb.t("{who} está trabalhando", { who: B(i) })]), U(e, n);
 		};
 		G(u, (e) => {
@@ -3598,10 +3647,10 @@ function Xo(e, t) {
 			}), J(a, "data-thread", n().id), J(a, "title", s), W(l, n().title), W(h, n().tasks.length ? `${B(r)}/${n().tasks.length}` : "");
 		}, [() => t.vb.waitsIn(n().id).length > 0, () => `${n().title} · ${B(r)}/${n().tasks.length} tasks${n().archived ? ` · ${t.vb.t("arquivado")}` : ""}${B(i) ? ` · ${t.vb.t("{who} está trabalhando aqui", { who: B(i) })}` : ""}`]), U(e, a);
 	}, r = (e, n = m) => {
-		var r = Lo(), i = P(r), a = N(i);
+		var r = Uo(), i = P(r), a = N(i);
 		K(a, () => t.vb.avatar(n(), t.room.online.includes(n())));
 		var o = I(a, 2), s = (e) => {
-			var r = No(), i = N(r), a = N(i), o = F(a, !0), s = I(a), c = F(s, !0);
+			var r = zo(), i = N(r), a = N(i), o = F(a, !0), s = I(a), c = F(s, !0);
 			O(i);
 			var l = I(i, 2), u = N(l), d = F(u, !0), f = I(u, 2), p = F(f, !0);
 			O(l), O(r), L((e, t, r, i, l, m, h) => {
@@ -3616,12 +3665,12 @@ function Xo(e, t) {
 				() => t.vb.t("reenviar")
 			]), U(e, r);
 		}, c = /* @__PURE__ */ k(() => t.room.pending?.includes(n())), l = (e) => {
-			var r = Po(), i = F(r, !0);
+			var r = Bo(), i = F(r, !0);
 			L(() => {
 				J(r, "title", n()), W(i, t.room.names[n()]);
 			}), U(e, r);
 		}, u = (e) => {
-			var t = Fo(), r = N(t), i = F(r, !0), a = F(I(r));
+			var t = Vo(), r = N(t), i = F(r, !0), a = F(I(r));
 			O(t), L((e, t) => {
 				J(r, "title", n()), W(i, e), W(a, `@${t ?? ""}`);
 			}, [() => n().split("@")[0], () => n().split("@")[1] ?? ""]), U(e, t);
@@ -3630,7 +3679,7 @@ function Xo(e, t) {
 			B(c) ? e(s) : t.room.names?.[n()] ? e(l, 1) : e(u, -1);
 		});
 		var d = I(o, 2), f = (e) => {
-			var r = Io();
+			var r = Ho();
 			K(r, () => t.vb.icon("x"), !0), O(r), L((e, t) => {
 				J(r, "data-remove", n()), J(r, "aria-label", e), J(r, "title", t);
 			}, [() => t.vb.t("Remover {email}", { email: n() }), () => t.room.pending?.includes(n()) ? t.vb.t("Cancelar convite") : t.vb.t("Remover do vibebook")]), U(e, r);
@@ -3638,20 +3687,20 @@ function Xo(e, t) {
 		G(d, (e) => {
 			B(p) && e(f);
 		}), O(i), K(I(i, 2), () => t.vb.agentRows(n())), U(e, r);
-	}, i = Hi(t, "archOpen", 3, !1), a = Hi(t, "foldOpen", 19, () => ({
+	}, i = Wi(t, "archOpen", 3, !1), a = Wi(t, "foldOpen", 19, () => ({
 		off: !1,
 		friends: null
-	})), o = Hi(t, "friends", 19, () => []), s = (e) => t.room.counts ? (t.room.counts[e] ?? 0) + t.room.messages.filter((n) => n.thread === e && n.id > (t.room.countsAt ?? 0)).length : t.room.messages.filter((t) => t.thread === e).length, c = (e) => t.room.messages.reduce((t, n) => n.thread === e.id && n.id > t ? n.id : t, 0), l = /* @__PURE__ */ k(() => t.room.epics.find((e) => e.id === t.thread)), u = /* @__PURE__ */ k(() => t.room.epics.filter((e) => !e.archived)), d = /* @__PURE__ */ k(() => t.room.epics.filter((e) => e.archived).map((e, t) => ({
+	})), o = Wi(t, "friends", 19, () => []), s = (e) => t.room.counts ? (t.room.counts[e] ?? 0) + t.room.messages.filter((n) => n.thread === e && n.id > (t.room.countsAt ?? 0)).length : t.room.messages.filter((t) => t.thread === e).length, c = (e) => t.room.messages.reduce((t, n) => n.thread === e.id && n.id > t ? n.id : t, 0), l = /* @__PURE__ */ k(() => t.room.epics.find((e) => e.id === t.thread)), u = /* @__PURE__ */ k(() => t.room.epics.filter((e) => !e.archived)), d = /* @__PURE__ */ k(() => t.room.epics.filter((e) => e.archived).map((e, t) => ({
 		epic: e,
 		last: c(e),
 		i: t
 	})).sort((e, t) => t.last - e.last || t.i - e.i).map(({ epic: e }) => e)), f = /* @__PURE__ */ k(() => i() && B(d).length > 0), p = /* @__PURE__ */ k(() => t.room.members.filter((e) => e === t.room.me || t.room.online.includes(e))), h = /* @__PURE__ */ k(() => t.room.members.filter((e) => !B(p).includes(e))), g = /* @__PURE__ */ k(() => o().filter((e) => !t.room.members.includes(e)));
-	var _ = Yo(), v = P(_), y = I(v, 2);
+	var _ = ts(), v = P(_), y = I(v, 2);
 	K(y, () => t.vb.roomStrip());
 	var b = I(y, 2), x = N(b), S = N(x);
 	K(N(S), () => t.vb.icon("back")), ke(), O(S);
 	var C = I(S, 2), w = (e) => {
-		var n = Ro(), r = P(n);
+		var n = Wo(), r = P(n);
 		K(r, () => t.vb.icon(B(l).archived ? "undo" : "check", 18), !0), O(r);
 		var i = I(r, 2);
 		K(i, () => t.vb.icon("trash", 18), !0), O(i), L((e, t, n, a) => {
@@ -3673,7 +3722,7 @@ function Xo(e, t) {
 	var re = N(te);
 	K(re, () => t.vb.roomMark("ri roomIco"));
 	var ie = I(re), ae = F(ie, !0), oe = I(ie, 2), se = (e) => {
-		var n = zo(), r = N(n);
+		var n = Go(), r = N(n);
 		K(r, () => t.vb.icon("pencil", 13));
 		var i = I(r);
 		O(n), L((e, t) => {
@@ -3688,7 +3737,7 @@ function Xo(e, t) {
 	var ue = F(I(le), !0);
 	O(te);
 	var de = I(te, 2), fe = (e) => {
-		var n = Bo(), r = N(n);
+		var n = Ko(), r = N(n);
 		let i;
 		var a = N(r), o = F(I(a), !0);
 		O(r);
@@ -3709,9 +3758,9 @@ function Xo(e, t) {
 		n(e, () => B(t));
 	});
 	var ge = I(he, 2), _e = (e) => {
-		var n = Ho(), r = P(n), i = N(r), a = I(i);
+		var n = Jo(), r = P(n), i = N(r), a = I(i);
 		K(a, () => t.vb.icon("plus"), !0), O(a), O(r), Xr(I(r, 2), 17, () => t.room.suggestions, Kr, (e, n, r) => {
-			var i = Vo();
+			var i = qo();
 			let a;
 			J(i, "data-thread", `pre:${r}`);
 			var o = N(i), s = F(o, !0), c = I(o), l = F(c, !0), u = F(I(c), !0);
@@ -3732,9 +3781,9 @@ function Xo(e, t) {
 	var ve = I(ee, 2);
 	K(ve, () => t.vb.pinsSec());
 	var ye = I(ve, 2), be = N(ye), xe = (e) => {
-		var n = Wo(), r = N(n), i = F(r, !0);
+		var n = Xo(), r = N(n), i = F(r, !0);
 		Xr(I(r, 2), 17, () => t.room.requests, (e) => e.email, (e, n) => {
-			var r = Uo(), i = N(r);
+			var r = Yo(), i = N(r);
 			K(i, () => t.vb.avatar(B(n).email));
 			var a = I(i, 2), o = N(a), s = F(o, !0), c = I(o), l = N(c), u = I(l), d = F(u, !0);
 			O(c), O(a);
@@ -3762,7 +3811,7 @@ function Xo(e, t) {
 		r(e, () => t);
 	});
 	var E = I(Te, 2), Ee = (e) => {
-		var n = Go(), i = N(n), o = F(i, !0);
+		var n = Zo(), i = N(n), o = F(i, !0);
 		Xr(I(i), 16, () => B(h), (e) => e, (e, t) => {
 			r(e, () => t);
 		}), O(n), L((e) => {
@@ -3773,9 +3822,9 @@ function Xo(e, t) {
 		B(h).length && e(Ee);
 	});
 	var D = I(E, 2), De = (e) => {
-		var n = qo(), r = N(n), i = F(r);
+		var n = $o(), r = N(n), i = F(r);
 		Xr(I(r, 2), 16, () => B(g), (e) => e, (e, n) => {
-			var r = Ko(), i = N(r);
+			var r = Qo(), i = N(r);
 			K(i, () => t.vb.avatar(n));
 			var a = I(i), o = F(a, !0), s = I(a);
 			K(s, () => t.vb.icon("plus"), !0), O(s), O(r), L((e, t) => {
@@ -3792,7 +3841,7 @@ function Xo(e, t) {
 	K(je, () => t.vb.icon("plus"), !0), O(je), O(Oe);
 	var Me = I(Oe, 2);
 	Xr(Me, 21, () => B(g), Kr, (e, t) => {
-		var n = Jo(), r = {};
+		var n = es(), r = {};
 		L(() => {
 			r !== (r = B(t)) && (n.value = (n.__value = r) ?? "");
 		}), U(e, n);
@@ -3815,20 +3864,20 @@ function Xo(e, t) {
 	]), U(e, _), Ye();
 }
 // svelte/Message.svelte
-var Zo = /* @__PURE__ */ H("<span class=\"gut\"> </span>"), Qo = /* @__PURE__ */ H(" <span class=\"agentTag\">agent</span>", 1), $o = /* @__PURE__ */ H("<span class=\"doneTag\"> </span>"), es = /* @__PURE__ */ H("<div><!> <!> <span class=\"mact\"><button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button></span> <div class=\"body\"><!> <div class=\"who\"><!> <!> <span class=\"hhmm\"> </span></div> <div class=\"txt\"></div> <!> <!> <!> <!> <!></div></div>");
-function ts(e, t) {
+var rs = /* @__PURE__ */ H("<span class=\"gut\"> </span>"), is = /* @__PURE__ */ H(" <span class=\"agentTag\">agent</span>", 1), as = /* @__PURE__ */ H("<span class=\"doneTag\"> </span>"), os = /* @__PURE__ */ H("<div><!> <!> <span class=\"mact\"><button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button></span> <div class=\"body\"><!> <div class=\"who\"><!> <!> <span class=\"hhmm\"> </span></div> <div class=\"txt\"></div> <!> <!> <!> <!> <!></div></div>");
+function ss(e, t) {
 	Je(t, !0);
-	let n = Hi(t, "origin", 3, !1), r = /* @__PURE__ */ k(() => t.vb.continues(t.previous, t.message)), i = /* @__PURE__ */ k(() => t.message.tag === "reminder" ? t.vb.remHtml(t.message, n()) : t.message.tag === "issue" ? t.vb.issueHtml(t.message) : t.vb.isNotice(t.message) ? t.vb.noticeHtml(t.message) : null), a = /* @__PURE__ */ k(() => n() && B(i) ? B(i).replace(/\sid="m\d+"/, "") : B(i)), o = /* @__PURE__ */ k(() => !t.message.text && t.typing ? `<span class="typing">${t.vb.esc(t.vb.typingNote?.(t.message.id) || t.vb.t("pensando ({mode})", { mode: t.vb.typingLabel?.(t.typing) ?? t.typing }))}…</span>` : t.message.author === "ai" ? t.message.text ? t.vb.mentions(t.vb.md(t.message.text)) : t.message.poll ? "" : `<span class="typing">${t.vb.t("pensando…")}</span>` : t.message.text ? t.vb.mentions(t.message.kind === "agent" ? t.vb.md(t.message.text) : t.vb.linkify(t.vb.esc(t.message.text))) : ""), s = /* @__PURE__ */ k(() => t.vb.dateTime?.(t.message.ts) ?? new Date(t.message.ts).toLocaleString());
+	let n = Wi(t, "origin", 3, !1), r = /* @__PURE__ */ k(() => t.vb.continues(t.previous, t.message)), i = /* @__PURE__ */ k(() => t.message.tag === "reminder" ? t.vb.remHtml(t.message, n()) : t.message.tag === "issue" ? t.vb.issueHtml(t.message) : t.vb.isNotice(t.message) ? t.vb.noticeHtml(t.message) : null), a = /* @__PURE__ */ k(() => n() && B(i) ? B(i).replace(/\sid="m\d+"/, "") : B(i)), o = /* @__PURE__ */ k(() => !t.message.text && t.typing ? `<span class="typing">${t.vb.esc(t.vb.typingNote?.(t.message.id) || t.vb.t("pensando ({mode})", { mode: t.vb.typingLabel?.(t.typing) ?? t.typing }))}…</span>` : t.message.author === "ai" ? t.message.text ? t.vb.mentions(t.vb.md(t.message.text)) : t.message.poll ? "" : `<span class="typing">${t.vb.t("pensando…")}</span>` : t.message.text ? t.vb.mentions(t.message.kind === "agent" ? t.vb.md(t.message.text) : t.vb.linkify(t.vb.esc(t.message.text))) : ""), s = /* @__PURE__ */ k(() => t.vb.dateTime?.(t.message.ts) ?? new Date(t.message.ts).toLocaleString());
 	var c = Nr(), l = P(c), u = (e) => {
 		var t = Nr();
 		K(P(t), () => B(a)), U(e, t);
 	}, d = (e) => {
-		var i = es();
+		var i = os();
 		let a;
 		var c = N(i);
 		K(c, () => t.message.kind === "agent" ? t.vb.agentAvatar(t.message.author, t.message.via) : t.vb.avatar(t.message.author));
 		var l = I(c, 2), u = (e) => {
-			var n = Zo(), r = F(n, !0);
+			var n = rs(), r = F(n, !0);
 			L((e) => {
 				J(n, "title", B(s)), W(r, e);
 			}, [() => t.vb.hhmm(t.message.ts)]), U(e, n);
@@ -3856,7 +3905,7 @@ function ts(e, t) {
 			t.message.reply_to && e(C);
 		});
 		var w = I(S, 2), T = N(w), ee = (e) => {
-			var n = Qo(), r = P(n), i = I(r);
+			var n = is(), r = P(n), i = I(r);
 			L((e, t) => {
 				W(r, `${e ?? ""} `), J(i, "title", t);
 			}, [() => t.vb.t("{via} de {who}", {
@@ -3871,7 +3920,7 @@ function ts(e, t) {
 			t.message.kind === "agent" ? e(ee) : e(te, -1);
 		});
 		var ne = I(T, 2), re = (e) => {
-			var n = $o(), r = F(n);
+			var n = as(), r = F(n);
 			L((e, t) => {
 				J(n, "title", e), W(r, `✓ ${t ?? ""}`);
 			}, [() => t.vb.t("Reporta algo entregue"), () => t.vb.t("entregue")]), U(e, n);
@@ -3940,14 +3989,14 @@ function ts(e, t) {
 	}), U(e, c), Ye();
 }
 // svelte/Chat.svelte
-var ns = /* @__PURE__ */ H("<div class=\"older\"><button type=\"button\" class=\"ghost\" id=\"olderBtn\"> </button></div>"), rs = /* @__PURE__ */ H("<div class=\"origin\"><!> <div class=\"replies\"><span> </span><button type=\"button\" class=\"ghost\"> <!></button></div></div>"), is = /* @__PURE__ */ H("<div><!></div>"), as = /* @__PURE__ */ H("<!> <!> <!>", 1);
-function os(e, t) {
+var cs = /* @__PURE__ */ H("<div class=\"older\"><button type=\"button\" class=\"ghost\" id=\"olderBtn\"> </button></div>"), ls = /* @__PURE__ */ H("<div class=\"origin\"><!> <div class=\"replies\"><span> </span><button type=\"button\" class=\"ghost\"> <!></button></div></div>"), us = /* @__PURE__ */ H("<div><!></div>"), ds = /* @__PURE__ */ H("<!> <!> <!>", 1);
+function fs(e, t) {
 	Je(t, !0);
-	let n = Hi(t, "more", 3, !1), r = Hi(t, "origin", 3, null), i = Hi(t, "replyCount", 3, 0);
+	let n = Wi(t, "more", 3, !1), r = Wi(t, "origin", 3, null), i = Wi(t, "replyCount", 3, 0);
 	var a = Nr();
 	Gr(P(a), () => t.room.id + ":" + t.thread, (e) => {
-		var a = as(), o = P(a), s = (e) => {
-			var n = ns(), r = N(n), i = F(r, !0);
+		var a = ds(), o = P(a), s = (e) => {
+			var n = cs(), r = N(n), i = F(r, !0);
 			O(n), L((e) => W(i, e), [() => t.vb.t("Carregar mensagens anteriores")]), V("click", r, function(...e) {
 				t.onloadolder?.apply(this, e);
 			}), U(e, n);
@@ -3956,8 +4005,8 @@ function os(e, t) {
 			t.list.length && n() && e(s);
 		});
 		var c = I(o, 2), l = (e) => {
-			var n = rs(), a = N(n);
-			ts(a, {
+			var n = ls(), a = N(n);
+			ss(a, {
 				get message() {
 					return r();
 				},
@@ -3982,7 +4031,7 @@ function os(e, t) {
 			Xr(P(n), 19, () => t.list, (e) => e.id, (e, n, r) => {
 				{
 					let i = /* @__PURE__ */ k(() => B(r) ? t.list[B(r) - 1] : t.previous);
-					ts(e, {
+					ss(e, {
 						get message() {
 							return B(n);
 						},
@@ -3999,7 +4048,7 @@ function os(e, t) {
 				}
 			}), U(e, n);
 		}, f = (e) => {
-			var n = is();
+			var n = us();
 			let i;
 			var a = N(n), o = (e) => {
 				var n = Nr();
@@ -4019,7 +4068,7 @@ function os(e, t) {
 }
 wr(["click"]);
 // svelte/roomStore.ts
-function ss(e, t, n) {
+function ps(e, t, n) {
 	if (t.t === "state") return {
 		...t,
 		id: n,
@@ -4177,32 +4226,32 @@ function ss(e, t, n) {
 		default: return r;
 	}
 }
-function cs() {
+function ms() {
 	let e = Ni(null);
 	return {
 		subscribe: e.subscribe,
 		get: () => Pi(e),
 		replace: e.set,
 		apply(t, n) {
-			return e.update((e) => ss(e, t, n)), Pi(e);
+			return e.update((e) => ps(e, t, n)), Pi(e);
 		}
 	};
 }
 // svelte/main.ts
-var ls = /* @__PURE__ */ t({
-	createRoomStore: () => cs,
-	mountInbox: () => fs,
-	mountView: () => ds
-}), us = {
-	tasks: aa,
-	board: Ea,
-	files: Fa,
-	reminders: Ao,
-	sidebar: Xo,
-	chat: os
+var hs = /* @__PURE__ */ t({
+	createRoomStore: () => ms,
+	mountInbox: () => vs,
+	mountView: () => _s
+}), gs = {
+	tasks: la,
+	board: Aa,
+	files: za,
+	reminders: Io,
+	sidebar: ns,
+	chat: fs
 };
-function ds(e, t, n) {
-	let r = Ni(n), i = us[e], a = Ft(() => Rr(Ui, {
+function _s(e, t, n) {
+	let r = Ni(n), i = gs[e], a = Ft(() => Rr(Gi, {
 		target: t,
 		props: {
 			component: i,
@@ -4220,11 +4269,11 @@ function ds(e, t, n) {
 		}
 	};
 }
-function fs(e, t) {
-	let n = Ft(() => Rr(Zi, {
+function vs(e, t) {
+	let n = Ft(() => Rr($i, {
 		target: e,
 		props: t
 	}));
 	return () => Hr(n);
 }
-export { xo as a, cs as i, fs as n, bo as o, ds as r, yo as s, ls as t };
+export { Do as a, ms as i, vs as n, Eo as o, _s as r, To as s, hs as t };

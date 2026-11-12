@@ -51,3 +51,9 @@ Verification commands: `bun run check`, `bun run check:ui`, `bun run test:ui`, `
 The default `bun run check` runs backend and UI typing, shared protocol checks, boundary fixtures, a real UI build with generated-asset consistency checks, component/store tests and shell-version tests. The build stamps deterministic asset query versions into the shell so the Worker's existing HTML ETag update notification continues to detect JavaScript and CSS releases. Commit the shell alongside all generated chunks.
 
 Install a Playwright Chromium runtime before browser checks (`bunx playwright install chromium`). `test:browser` captures the real room protocol snapshot used by `measure:ui`; the benchmark starts its own local static server and simulates the same HTTP/WebSocket delivery for both versions. It does not measure backend or production network latency.
+
+## Development and review checks
+
+`bun run dev` builds current frontend assets before starting Wrangler. Run `bun run dev:ui` in a second terminal for guarded frontend build watching; this workflow does not provide HMR. New build/test tooling is strictly checked by `check:tooling`. Scoped `format:check` covers the typed frontend, contracts and related scripts; the existing JavaScript integration host is excluded from that formatting migration.
+
+The typed `roomConnection.ts` owns one room's socket and retry/stability timers until disposal. Leaving a room invalidates callbacks, cancels retries and destroys collaborative editor providers. `test:connection` exercises these lifecycle boundaries, including callbacks already queued at disposal. See `adversarial-architecture-review.md` for reproduced findings and remaining architecture work.
