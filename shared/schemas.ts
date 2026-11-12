@@ -135,3 +135,22 @@ export const LoginsResult = z.object({
   providers: z.object({ google: z.boolean(), github: z.boolean() }),
 });
 export type LoginsResult = z.infer<typeof LoginsResult>;
+
+// Slice 4: the room's "Ligar Claude" toggle and access requests.
+export const ClaudeToggleBody = z.object({ on: z.optional(z.boolean()) });
+export const ClaudeToggleResult = z.object({
+  ok: z.literal(true),
+  claude_on: z.boolean(),
+});
+export type ClaudeToggleResult = z.infer<typeof ClaudeToggleResult>;
+export const AccessRequestResult = z.object({
+  ok: z.literal(true),
+  member: z.optional(z.literal(true)),
+});
+export type AccessRequestResult = z.infer<typeof AccessRequestResult>;
+export const DecideRequestBody = z.object({
+  email: z.string(),
+  ok: z.boolean(),
+});
+export const AccessResult = z.object({ member: z.boolean() });
+export type AccessResult = z.infer<typeof AccessResult>;

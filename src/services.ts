@@ -9,7 +9,7 @@ import { befriend, bookStub, FILE_TYPES, inviteMember, isMember, maxBytes, searc
 import { track } from "./track";
 import { pushTo } from "./webpush";
 
-export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req: Request): ApiServices {
+export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req0: Request): ApiServices {
   return {
     isMember: (roomId) => isMember(env.DB, roomId, email),
     humanPost: (roomId, text, thread) => bookStub(env, roomId).humanPost(roomId, email, text, thread),
@@ -34,7 +34,7 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     loginProviders: { google: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET), github: !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) },
     isEmail: (s) => EMAIL_RE.test(s),
     befriend: async (who) => { await befriend(env.DB, email, who); },
-    invite: (roomId, who) => inviteMember(env, ctx, new URL(req.url).origin, email, roomId, who, reqLang(req)),
+    invite: (roomId, who) => inviteMember(env, ctx, new URL(req0.url).origin, email, roomId, who, reqLang(req0)),
     removeMember: async (roomId, who) => {
       const book = await env.DB.prepare(`SELECT owner FROM books WHERE id = ?`).bind(roomId).first<{ owner: string }>();
       if (who === book?.owner) return { error: "O dono não pode ser removido.", status: 400 };
@@ -43,6 +43,29 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
       await env.DB.prepare(`DELETE FROM members WHERE book_id = ? AND email = ?`).bind(roomId, who).run();
       await bookStub(env, roomId).fetch("https://book/members-changed", { method: "POST" });
       return null;
+    },
+    pokeAgents: (roomId) => ctx.waitUntil(poke(env, [email], { t: "agents", book: roomId })),
+    requestAccess: async (roomId) => {
+      if (!(await env.DB.prepare(`SELECT 1 FROM books WHERE id = ?`).bind(roomId).first())) return "not_found";
+      if (await isMember(env.DB, roomId, email)) return "member";
+      if (!(await env.LOGIN_LIMIT.limit({ key: `ask:${email}` })).success) return "limited";
+      const r = await env.DB.prepare(`INSERT OR IGNORE INTO access_requests (book_id, email, ts) VALUES (?, ?, ?)`).bind(roomId, email, Date.now()).run();
+      if (r.meta.changes) {
+        const name = (await env.DB.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>())?.name ?? undefined;
+        await bookStub(env, roomId).fetch(`https://book/access-requested?book=${roomId}`, { method: "POST", body: JSON.stringify({ who: email, name }) });
+        ctx.waitUntil(track(env, "access_requested", { user: email, dims: { book: roomId } }));
+      }
+      return "asked";
+    },
+    decideRequest: async (roomId, who, approve) => {
+      const req = await env.DB.prepare(`SELECT email FROM access_requests WHERE book_id = ? AND email = ? AND denied = 0`).bind(roomId, who).first<{ email: string }>();
+      if (!req) return false;
+      if (approve) {
+        await env.DB.prepare(`DELETE FROM access_requests WHERE book_id = ? AND email = ?`).bind(roomId, req.email).run();
+        await inviteMember(env, ctx, new URL(req0.url).origin, email, roomId, req.email, reqLang(req0));
+      } else await env.DB.prepare(`UPDATE access_requests SET denied = 1 WHERE book_id = ? AND email = ?`).bind(roomId, req.email).run();
+      await bookStub(env, roomId).fetch("https://book/requests-changed", { method: "POST" });
+      return true;
     },
   };
 }

@@ -1,4 +1,4 @@
-import { accountApi, type ApiServices } from "./api";
+import { roomApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -584,20 +584,10 @@ app.post("/api/route", async (c) => {
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", accountApi);
+app.route("/", roomApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
-app.post("/api/books/:id/claude", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { on } = await c.req.json<{ on?: boolean }>().catch(() => ({ on: false }));
-  await c.env.DB.prepare(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`).bind(on ? 1 : 0, id, email).run();
-  c.executionCtx.waitUntil(poke(c.env, [email], { t: "agents", book: id }));
-  c.executionCtx.waitUntil(track(c.env, on ? "claude_on" : "claude_off", { user: email, dims: { book: id } }));
-  return c.json({ ok: true, claude_on: !!on });
-});
 
 // The person's own order of their rooms (dragged in the rail); vibebook herdr orders the herdr workspaces the same way.
 
@@ -633,38 +623,7 @@ app.post("/api/books/start", async (c) => {
 });
 
 // Ask to join a room you opened by link. Silent when already asked or declined (no way to probe or spam).
-app.post("/api/books/:id/request", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  const book = await c.env.DB.prepare(`SELECT 1 FROM books WHERE id = ?`).bind(id).first();
-  if (!book) return c.json({ error: "not found" }, 404);
-  if (await isMember(c.env.DB, id, email)) return c.json({ ok: true, member: true });
-  if (!(await c.env.LOGIN_LIMIT.limit({ key: `ask:${email}` })).success) return c.json({ error: "rate limited" }, 429);
-  const r = await c.env.DB.prepare(`INSERT OR IGNORE INTO access_requests (book_id, email, ts) VALUES (?, ?, ?)`).bind(id, email, Date.now()).run();
-  if (r.meta.changes) {
-    const name = (await c.env.DB.prepare(`SELECT name FROM users WHERE email = ?`).bind(email).first<{ name: string | null }>())?.name ?? undefined;
-    await bookStub(c.env, id).fetch(`https://book/access-requested?book=${id}`, { method: "POST", body: JSON.stringify({ who: email, name }) });
-    c.executionCtx.waitUntil(track(c.env, "access_requested", { user: email, dims: { book: id } }));
-  }
-  return c.json({ ok: true });
-});
-app.get("/api/books/:id/access", async (c) => c.json({ member: await isMember(c.env.DB, c.req.param("id"), c.get("email")) }));
 // A member lets someone in (= the usual invite, which emails them the link) or declines (kept, so they can't re-ask).
-app.post("/api/books/:id/requests", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { email: who, ok } = await c.req.json<{ email: string; ok: boolean }>();
-  const req = await c.env.DB.prepare(`SELECT email FROM access_requests WHERE book_id = ? AND email = ? AND denied = 0`).bind(id, String(who ?? "").toLowerCase()).first<{ email: string }>();
-  if (!req) return c.json({ error: "no such request" }, 404);
-  if (ok) {
-    await c.env.DB.prepare(`DELETE FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
-    await inviteMember(c.env, c.executionCtx, new URL(c.req.url).origin, email, id, req.email, reqLang(c.req.raw));
-  } else await c.env.DB.prepare(`UPDATE access_requests SET denied = 1 WHERE book_id = ? AND email = ?`).bind(id, req.email).run();
-  await bookStub(c.env, id).fetch("https://book/requests-changed", { method: "POST" });
-  c.executionCtx.waitUntil(track(c.env, ok ? "access_approved" : "access_denied", { user: email, dims: { book: id } }));
-  return c.json({ ok: true });
-});
 
 
 

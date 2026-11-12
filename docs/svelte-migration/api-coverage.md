@@ -8,10 +8,10 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/archived` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
 | GET | `/api/avatar/:email` | `src/index.ts:549` | binary GET (asset) | 2 | n/a (documented) |
 | POST | `/api/books` | `src/index.ts:699` | JSON RPC | 37 | todo |
-| GET | `/api/books/:id/access` | `src/index.ts:735` | JSON RPC | 37 | todo |
+| GET | `/api/books/:id/access` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | GET | `/api/books/:id/agents` | `src/index.ts:581` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/archive` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
-| POST | `/api/books/:id/claude` | `src/index.ts:648` | JSON RPC | 37 | todo |
+| POST | `/api/books/:id/claude` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | GET | `/api/books/:id/connections` | `src/mcpconn.ts:262` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/connections` | `src/mcpconn.ts:269` | JSON RPC | 37 | todo |
 | DELETE | `/api/books/:id/connections/:cid` | `src/mcpconn.ts:278` | JSON RPC | 37 | todo |
@@ -28,8 +28,8 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/books/:id/members` | `src/api.ts` | JSON RPC | 37 | tested (slice 3) |
 | DELETE | `/api/books/:id/members/:email` | `src/api.ts` | JSON RPC | 37 | tested (slice 3) |
 | POST | `/api/books/:id/post` | `src/api.ts` | JSON RPC | 37 | tested (slice 1) |
-| POST | `/api/books/:id/request` | `src/index.ts:720` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/requests` | `src/index.ts:737` | JSON RPC | 37 | todo |
+| POST | `/api/books/:id/request` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
+| POST | `/api/books/:id/requests` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | GET | `/api/books/:id/sandboxes` | `src/sandbox.ts:273` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/sandboxes` | `src/sandbox.ts:308` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/tint` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
@@ -77,5 +77,7 @@ Slice 1 (post, upload): schemas in `shared/schemas.ts`, routes in `src/api.ts`, 
 Slice 2 (push subscribe/unsubscribe/key/test, waits/resolve, rooms/order, tint, archive): same gates; runtime run of each success and error status. One stricter answer: `archive` with a non-boolean `archived` is now a 400 (it used to archive). Bundle cost so far: the preview's main chunk grew 39.1 → 48.3 KB gzip (hono/client + zod/mini + the response schemas).
 
 Slice 3 (archived, search, logins, friends add/remove, members invite/remove): database rows are parsed with the response schemas (`ArchivedRoom`, `LoginsResult`) before they leave the Worker; the type tests assert each route's 200 body equals its schema type.
+
+Slice 4 (Ligar Claude, access request, approve/deny, access status): same gates; runtime run of every branch (non-member 403, unknown room 404, already a member, asked, deny twice → 404, approve → member).
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.
