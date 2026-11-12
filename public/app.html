@@ -1356,6 +1356,8 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Buscando a mensagem…": "Finding the message…",
+  "Não achei essa mensagem nesta sala.": "Couldn't find that message in this room.",
   "Copiar link": "Copy link",
   "Copiar o link desta mensagem": "Copy a link to this message",
   "Link copiado": "Link copied",
@@ -2847,7 +2849,7 @@ function openInbox() {
     const w = myWaits[Number(a.dataset.ib)]; if (!w) return;
     d.close();
     const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
-    if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
+    if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid, w.thread); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
   });
   d.querySelectorAll("[data-ib-done]").forEach((b) => b.onclick = () => {
     const w = myWaits[Number(b.dataset.ibDone)];
@@ -3039,6 +3041,12 @@ function onEvent(ev, id) {
       S.messages = [...ev.messages.filter((m) => !have.has(m.id)), ...S.messages].sort((a, b) => a.id - b.id);
       if (!ev.more) olderDone[S.id + ev.thread] = true;
       if (ev.thread === thread) { win.n += ev.messages.length; renderChat(!fillOf.delete(S.id + ev.thread)); }
+      if (goPending && ev.thread === thread) {
+        const g = goPending;
+        if (S.messages.some((x) => x.id === g.id)) { goPending = null; setTimeout(() => goToMsg(g.id), 50); }
+        else if (ev.more && ++g.n < 15) pullOlder();
+        else { goPending = null; toast(t("Não achei essa mensagem nesta sala.")); }
+      }
       return;
     }
     case "acks": S.acks = ev.acks; renderReceipts(); renderSide(); renderWorking(); return;
@@ -4716,11 +4724,25 @@ document.addEventListener("click", (ev) => {
   goToMsg(Number(q.dataset.goto));
 });
 // A message referenced by a reply quote or a [link](#m123): switch to its thread if needed, then scroll to it and flash.
-function goToMsg(id) {
-  const m = S.messages.find((x) => x.id === id);
-  if (m && m.thread !== thread) { thread = m.thread; boardEpic = thread === "main" ? null : thread; docRoom = false; renderSide(); renderChat(); renderKanban(); renderDoc(); }
-  const el = document.getElementById(`m${id}`);
-  if (!el) return toast(t("Essa mensagem está mais acima: role o chat pra carregar."));
+// Goes to a message: switches to its thread (th when the message isn't loaded yet: the inbox, a #m link), widens the
+// window when it's loaded but not drawn, else pages back through the thread (≤15 × 100) until it shows up.
+let goPending = null;
+function goToMsg(id, th) {
+  const m = S.messages.find((x) => x.id === id), want = m?.thread || th;
+  if (want && want !== thread && (want === "main" || S.epics.some((e) => e.id === want))) { thread = want; boardEpic = thread === "main" ? null : thread; docRoom = false; renderSide(); renderChat(); renderKanban(); renderDoc(); }
+  let el = document.getElementById(`m${id}`);
+  if (!el && m) {
+    const all = S.messages.filter((x) => x.thread === thread), i = all.indexOf(m);
+    if (i >= 0) { win.n = Math.max(win.n, all.length - i + 10); renderChat(true); el = document.getElementById(`m${id}`); }
+  }
+  if (!el) {
+    if (goPending?.id === id) return;
+    goPending = { id, n: 0 };
+    toast(t("Buscando a mensagem…"), 1500);
+    return pullOlder();
+  }
+  goPending = null;
+  stick = false; // reading up there now: new content below must not pull the chat back down
   el.scrollIntoView({ block: "center", behavior: "smooth" });
   el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
 }
@@ -5353,6 +5375,10 @@ function renderChat(keep) {
   if (keep === "stay") { el.scrollTop = t0; renderReceipts(); pinOnLoad(el); } // a state refresh while reading above
   else if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
   else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
+}
+function pullOlder() {
+  const all = S.messages.filter((m) => m.thread === thread);
+  olderBusy = true; send({ t: "older", thread, before: all[0]?.id ?? 0 });
 }
 function loadOlder() {
   if (olderBusy || isPre()) return;
