@@ -1008,6 +1008,20 @@
   .link { background: none; border: none; color: var(--accent); padding: 0; font-size: inherit; text-decoration: underline; }
   dialog { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--ink); padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
   dialog::backdrop { background: oklch(0.2 0.05 250 / .35); }
+  #inboxBtn { position: relative; } #inboxBtn .kN { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 10px/16px var(--sans); text-align: center; }
+  dialog.inbox { width: min(560px, calc(100% - 24px)); max-height: min(80vh, 720px); padding: calc(18px * var(--space)); display: none; flex-direction: column; gap: calc(10px * var(--space)); }
+  dialog.inbox[open] { display: flex; }
+  dialog.inbox header { display: flex; align-items: center; gap: calc(10px * var(--space)); } dialog.inbox header h2 { margin: 0; font-size: 18px; flex: 1; }
+  dialog.inbox .ibTabs { display: flex; gap: calc(6px * var(--space)); }
+  dialog.inbox .ibTabs button { border: 1px solid var(--line); background: none; color: var(--ink-2, inherit); border-radius: 999px; padding: calc(5px * var(--space)) calc(12px * var(--space)); font: inherit; font-size: 13.5px; cursor: pointer; }
+  dialog.inbox .ibTabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  dialog.inbox ul { list-style: none; margin: 0; padding: 0; overflow: auto; }
+  dialog.inbox li { display: flex; align-items: flex-start; gap: calc(8px * var(--space)); border-top: 1px solid var(--line); }
+  dialog.inbox li a { flex: 1; display: flex; gap: calc(10px * var(--space)); padding: calc(10px * var(--space)) calc(4px * var(--space)); color: inherit; text-decoration: none; min-width: 0; }
+  dialog.inbox li a:hover { background: var(--hover); }
+  dialog.inbox li .wt { display: flex; flex-direction: column; gap: 2px; min-width: 0; } dialog.inbox li small { color: var(--muted); }
+  dialog.inbox li > button { margin-top: calc(8px * var(--space)); }
+  dialog.inbox .ibEmpty { color: var(--muted); padding: calc(18px * var(--space)) 0; text-align: center; }
   dialog.welcome { width: min(520px, calc(100% - 32px)); padding: 30px 30px 22px; }
   dialog.welcome .wIco { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--ai-bg); color: var(--accent); margin-bottom: 16px; }
   dialog.welcome h3 { font-size: 26px; line-height: 1.15; margin-bottom: 10px; }
@@ -1340,6 +1354,13 @@ const EN = {
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
+  "Caixa de entrada": "Inbox",
+  "Caixa de entrada: o que espera por você": "Inbox: what's waiting on you",
+  "Esta sala": "This room",
+  "Todas": "All",
+  "Seu Claude espera você:": "Your Claude is waiting on you:",
+  "Nada esperando você. ✓": "Nothing waiting on you. ✓",
+  "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
   "Buscar emoji…": "Search emoji…",
   "Emoji": "Emoji",
   "Não consegui abrir este arquivo.": "Couldn't open this file.",
@@ -2038,6 +2059,7 @@ let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting 
 const clW = (ws) => (ws.some((w) => /^[ab]\d/.test(w.ref)) ? " cl" : "");
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
+  inbox: `<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>`,
   grid: `<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>`,
   search: `<circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4-4"/>`,
   expand: `<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/>`,
@@ -2149,6 +2171,7 @@ document.addEventListener("visibilitychange", () => {
 });
 let swHtml = "";
 function renderSwitcher() {
+  syncInbox();
   const cur = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1];
   const show = !!myBooks && location.pathname !== "/login";
   document.body.classList.toggle("has-sw", show);
@@ -2788,6 +2811,48 @@ function renderWaits() {
   });
 }
 
+// Caixa de entrada: the same waits as the home ("Esperando você": asks to you, your tasks in review, your Claude
+// waiting on you), opened from any room, "Esta sala" or "Todas"; a click goes to the message, ✓ resolves an ask.
+let inboxAll = false;
+function syncInbox() {
+  const b = document.getElementById("inboxBtn"); if (!b) return;
+  const n = myWaits.length, k = b.querySelector(".kN");
+  k.hidden = !n; k.textContent = n; k.className = `kN${clW(myWaits)}`;
+}
+function openInbox() {
+  let d = document.getElementById("inbox");
+  if (!d) { d = document.createElement("dialog"); d.id = "inbox"; d.className = "inbox"; document.body.appendChild(d); d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); }
+  const here = S?.id ? myWaits.filter((w) => w.book_id === S.id) : [];
+  if (!S?.id) inboxAll = true;
+  const list = inboxAll ? myWaits : here;
+  const who = (w) => (w.author_name || w.author.split("@")[0]).split(" ")[0];
+  const row = (w) => { const i = myWaits.indexOf(w), task = w.ref.startsWith("t"), ask = /^[ab]/.test(w.ref); return `<li>
+      <a href="/b/${w.book_id}${w.thread === "main" ? "" : `?t=${encodeURIComponent(w.thread)}`}${w.ref.startsWith("m") || ask ? `#m${w.ref.slice(1)}` : ""}" data-ib="${i}"><span class="wIc${task ? " task" : ""}">${task ? icon("check", 16) : avatar(w.author)}</span>
+        <span class="wt"><span>${task ? `<b>${t("Tarefa sua esperando OK:")}</b> ` : ask ? `<b>${t("Seu Claude espera você:")}</b> ` : `<b>${esc(who(w))}:</b> `}${esc(w.text.length > 220 ? `${w.text.slice(0, 218)}…` : w.text)}</span>
+        <small>${inboxAll ? `${esc(w.room)} › ` : ""}${w.topic ? esc(w.topic) : t("sala principal")} · ${ago(w.ts)}</small></span></a>
+      ${w.ref.startsWith("m") ? `<button class="ghost" data-ib-done="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check")}</button>` : ""}
+    </li>`; };
+  d.innerHTML = `<header><h2>${t("Caixa de entrada")}</h2><button class="ghost" data-ib-close aria-label="${t("Fechar")}">${icon("x", 18)}</button></header>
+    ${S?.id ? `<div class="ibTabs" role="tablist"><button type="button" class="${inboxAll ? "" : "on"}" data-ib-tab="here">${t("Esta sala")} <small>${here.length}</small></button><button type="button" class="${inboxAll ? "on" : ""}" data-ib-tab="all">${t("Todas")} <small>${myWaits.length}</small></button></div>` : ""}
+    ${list.length ? `<ul>${list.map(row).join("")}</ul>` : `<p class="ibEmpty">${inboxAll ? t("Nada esperando você. ✓") : t("Nada esperando você nesta sala. ✓")}</p>`}`;
+  d.querySelector("[data-ib-close]").onclick = () => d.close();
+  d.querySelectorAll("[data-ib-tab]").forEach((b) => b.onclick = () => { inboxAll = b.dataset.ibTab === "all"; openInbox(); });
+  d.querySelectorAll("[data-ib]").forEach((a) => a.onclick = (e) => {
+    const w = myWaits[Number(a.dataset.ib)]; if (!w) return;
+    d.close();
+    const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
+    if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
+  });
+  d.querySelectorAll("[data-ib-done]").forEach((b) => b.onclick = () => {
+    const w = myWaits[Number(b.dataset.ibDone)];
+    myWaits = myWaits.filter((x) => x !== w);
+    renderSwitcher(); renderWaits(); if (S) renderSide(); openInbox();
+    api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+  });
+  if (!d.open) d.showModal();
+}
+document.addEventListener("click", (e) => { if (e.target.closest?.("#inboxBtn")) openInbox(); });
+
 // First-class setup: vibebook assumes your Claude is connected. Until it is, the home and every room lead with one
 // sentence to paste into Claude Code (it installs the plugin, does the one OAuth step, links the folder and listens),
 // a Copy button, and a live "waiting" that turns green when your Claude shows up. Other clients are folded below.
@@ -3054,7 +3119,7 @@ function renderBook() {
   <div class="book ${railMode ? "rail" : ""}">
     <aside class="side" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Claude</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
@@ -3990,6 +4055,7 @@ function renderAskBar() {
   el.querySelector("[data-askgo]").onclick = (e) => goToMsg(Number(e.currentTarget.dataset.askgo));
 }
 function renderSide() {
+  syncInbox();
   renderAskBar();
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
