@@ -1,4 +1,4 @@
-import { isPostMessageRequest } from "../shared/validation";
+import { api } from "./api";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
 import { type Context, Hono } from "hono";
@@ -632,16 +632,8 @@ app.post("/api/route", async (c) => {
   }
 });
 
-app.post("/api/books/:id/post", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const input: unknown = await c.req.json().catch(() => null);
-  if (!isPostMessageRequest(input)) return c.json({ ok: false, error: "invalid message payload" }, 400);
-  const out = await bookStub(c.env, id).humanPost(id, email, input.text, input.thread || "main");
-  if (out.ok) c.executionCtx.waitUntil(track(c.env, "home_route_sent", { user: email, dims: { book: id, epic: out.thread !== "main" } }));
-  return out.ok ? c.json(out) : c.json(out, 400);
-});
+// Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
+app.route("/", api);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
@@ -794,21 +786,6 @@ app.delete("/api/books/:id/members/:email", async (c) => {
 });
 
 // Files: stored in R2 under <book>/<file>; types, limits and serving headers live in rooms.ts.
-app.post("/api/books/:id/files", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!FILE_TYPES.includes(type)) return c.json({ error: TYPES_ERROR }, 415);
-  if (Number(c.req.header("content-length") ?? 0) > maxBytes(type)) return c.json({ error: sizeError(type) }, 413);
-  try {
-    const meta = await storeFile(c.env, id, email, type, await c.req.arrayBuffer(), decodeURIComponent(c.req.header("x-filename") ?? ""));
-    c.executionCtx.waitUntil(track(c.env, "file_uploaded", { user: email, dims: { book: id, type, size: meta.size } }));
-    return c.json(meta);
-  } catch (e) {
-    return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
-  }
-});
 
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");

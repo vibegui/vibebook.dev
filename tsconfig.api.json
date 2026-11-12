@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": false, "declaration": true, "emitDeclarationOnly": true, "outDir": ".api-types", "rootDir": "." },
+  "include": ["src/api.ts", "src/*.d.ts"]
+}
