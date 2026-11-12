@@ -1,22 +1,22 @@
 {
-  "scope": "Incremental M0 isolation and M2 slices 1/2, not full migration acceptance",
-  "sourceCommit": "8b83025743655a87c39010eb84fc8a91962fab93",
-  "capturedAt": "2026-11-12T19:20:29.160Z",
+  "scope": "Incremental M0/M2 and native Studio/Tailwind foundation, not full migration acceptance",
+  "sourceCommit": "7023667e7485e46dd86d1ed071b964feab019ff8",
+  "capturedAt": "2026-11-12T22:34:45.522Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
-    "passed": 64,
+    "passed": 75,
     "failed": 0,
-    "assertions": 292
+    "assertions": 349
   },
   "svelteCheck": {
     "preview": "0 errors and 0 warnings",
     "vanilla": "0 errors and 0 warnings"
   },
-  "logSha256": "4720db879df2fde6a4f101387140f3ae49b9503037a3da9b486d163ca876ba2c",
+  "logSha256": "32b8a7d6388d43ca521474d88db5552284122039f3b1eff8f43b428319990a90",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
-    "files": 384,
+    "files": 404,
     "backendRuntimeSources": [],
     "cloudflareWorkerTypes": [],
     "apiDeclarations": [
@@ -25,7 +25,7 @@
     ]
   },
   "defaultAssetDiff": {
-    "baseline": "d3e1473",
+    "baseline": "e0bce88",
     "paths": [
       "public/app.html",
       "public/svelte/ui.js",
@@ -36,10 +36,23 @@
     ],
     "changed": []
   },
+  "browserProof": {
+    "file": "docs/svelte-migration/native-foundation/browser.json",
+    "testedSourceCommit": "aa15890cf60539a3b51d063d97eb69210e136e13",
+    "identicalEmittedAssetsAt": "7023667e7485e46dd86d1ed071b964feab019ff8",
+    "scope": "Gallery and Inbox",
+    "status": "pass"
+  },
+  "cssBoundary": {
+    "vite": "Plain CSS and actual Tailwind: private/backend URLs, aliases, symlinks, public symlinks, nested imports reject; safe fonts pass; server positive/client negative fixtures pass",
+    "bun": "Native CSS resolution rejects private font, backend URL, nested backend import and private symlink; safe font passes",
+    "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures"
+  },
   "limits": [
-    "Runtime HTTP unit tests inject authenticated ApiServices; production authentication and persistence require Worker/browser verification.",
-    "Studio source snapshot includes complete rules; workspace screenshots, computed roles and loaded-font comparisons remain pending.",
-    "M0 baseline fixtures and the full native Svelte/Tailwind migration remain pending.",
-    "No final M7 performance or M8 authenticated production acceptance is claimed."
+    "Actual authenticated Studio workspace comparison remains pending.",
+    "Full application still contains legacy host/presentation; check:styles (full) remains failing.",
+    "Gallery and Inbox browser suite uses explicit local fixtures, not authenticated production.",
+    "Gallery HMR passes with scoped resolver guard; full application/backend/shared-contract HMR remains pending.",
+    "No final performance/font budget, complete feature parity or M8 sign-off is claimed."
   ]
 }
