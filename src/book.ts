@@ -9,7 +9,7 @@ import { parseBlock, reconcile, renderBlock } from "./taskblock";
 import { asLang, type Lang } from "./lang";
 import { DurableObject } from "cloudflare:workers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText, Output } from "ai";
+import { generateText, type LanguageModel, Output } from "ai";
 import { z } from "zod";
 import type { Env } from "./index";
 import { MAIL_DAY_MAX, MAIL_DELAY_MS, MAIL_GAP_MS, type MailFacts, COPY_PROMPT, mailBody, mentioned, plainCopy, unsubscribeUrl } from "./mentionmail";
@@ -1816,7 +1816,7 @@ export class Book extends DurableObject<Env> {
   // ---- AI ----
   // quick: no reasoning tokens. The cheap router/classifier models think by default and would spend the
   // whole output budget thinking (empty answer), so routing and classify always run with reasoning off.
-  model(name: string, quick = false) {
+  model(name: string, quick = false): LanguageModel { // explicit: the provider's inferred class type can't be emitted as a declaration (.api-types)
     return createOpenRouter({ apiKey: this.env.OPENROUTER_API_KEY })(name, quick ? { reasoning: { enabled: false, effort: "none" } } : undefined);
   }
 

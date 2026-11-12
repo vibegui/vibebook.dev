@@ -1,17 +1,14 @@
 import type { RoomCommand } from "../shared/commands";
 import type { RoomEvent } from "../shared/room";
-import type {
-  PostMessageRequest,
-  PostMessageResponse,
-  RoomApi,
-  UploadFileResponse,
-} from "../shared/rpc";
+import type { RoomApi } from "../shared/rpc";
 import {
-  isAttachment,
-  isRoomCommand,
-  parseRoomEvent,
-  record,
-} from "../shared/validation";
+  AttachmentSchema,
+  ErrorBody,
+  PostMessageResult,
+  UploadFileResult,
+} from "../shared/schemas";
+import { isRoomCommand, parseRoomEvent } from "../shared/validation";
+import { client } from "./lib/client/api";
 
 /** The socket surface needed by the UI, allowing deterministic transport tests without a server. */
 export interface RoomSocket {
@@ -33,124 +30,72 @@ export function receiveRoomEvent(raw: unknown): RoomEvent {
   return parseRoomEvent(raw);
 }
 
-/** Typed HTTP calls with response validation. Authorization and business rules remain on the Worker. */
+/** HTTP calls through the inferred Hono client (svelte/lib/client/api.ts): request shapes come from the Worker's
+ *  validated routes, and responses are checked against the shared schemas before the UI sees them. Authorization and
+ *  business rules stay on the Worker. */
 export type FetchLike = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ) => Promise<Response>;
+/** What these helpers read of a response (both fetch's Response and hc's typed ClientResponse have it). */
+type Answer = { ok: boolean; status: number; json(): Promise<unknown> };
+async function body(response: Answer): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch (error) {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    throw error;
+  }
+}
+function failure(response: Answer, value: unknown): Error {
+  const e = ErrorBody.safeParse(value);
+  return new Error(e.success ? e.data.error : `HTTP ${response.status}`);
+}
 export function createRoomApi(
   roomId: string,
   fetcher: FetchLike = fetch,
 ): RoomApi {
-  const base = `/api/books/${encodeURIComponent(roomId)}`;
-  async function json(
-    response: Response,
-    allowBusinessError = false,
-  ): Promise<unknown> {
-    let value: unknown;
-    try {
-      value = await response.json();
-    } catch (error) {
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      throw error;
-    }
-    if (
-      !response.ok &&
-      !(
-        allowBusinessError &&
-        response.status === 400 &&
-        record(value) &&
-        value.ok === false &&
-        typeof value.error === "string"
-      )
-    )
-      throw new Error(
-        record(value) && typeof value.error === "string"
-          ? value.error
-          : `HTTP ${response.status}`,
-      );
-    return value;
-  }
+  const api = client("/", fetcher);
+  const room = api.api.books[":id"];
+  const id = encodeURIComponent(roomId); // hc puts params into the path as they are
+
   return {
-    async postMessage(input: PostMessageRequest): Promise<PostMessageResponse> {
-      const value = await json(
-        await fetcher(`${base}/post`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(input),
-        }),
-        true,
-      );
-      if (!record(value) || typeof value.ok !== "boolean")
-        throw new TypeError("Invalid post response");
-      if (value.ok === false && typeof value.error === "string")
-        return { ok: false, error: value.error };
-      if (
-        value.ok === true &&
-        typeof value.id === "number" &&
-        typeof value.thread === "string"
-      )
-        return { ok: true, id: value.id, thread: value.thread };
-      throw new TypeError("Invalid post response");
+    async postMessage(input) {
+      const response = await room.post.$post({
+        param: { id },
+        json: input,
+      });
+      const value = await body(response);
+      // 400 with { ok: false } is a business answer (empty message…), not a failure.
+      if (response.ok || response.status === 400) {
+        const r = PostMessageResult.safeParse(value);
+        if (r.success) return r.data;
+        if (response.ok) throw new TypeError("Invalid post response");
+      }
+      throw failure(response, value);
     },
-    async uploadFile(input): Promise<UploadFileResponse> {
-      const value = await json(
-        await fetcher(`${base}/files`, {
-          method: "POST",
-          headers: {
+    async uploadFile(input) {
+      // The file is the raw body (hc's init.body), its type and name go in the validated headers.
+      const response = await room.files.$post(
+        {
+          param: { id },
+          header: {
             "content-type": input.type,
             "x-filename": encodeURIComponent(input.name),
           },
-          body: input.body,
-        }),
+        },
+        { init: { body: input.body } },
       );
-      if (!isAttachment(value)) throw new TypeError("Invalid upload response");
-      if ("reminder" in value) {
-        const reminder = value.reminder;
-        if (
-          !record(reminder) ||
-          typeof reminder.ok !== "boolean" ||
-          (reminder.error !== undefined &&
-            typeof reminder.error !== "string") ||
-          (reminder.name !== undefined && typeof reminder.name !== "string") ||
-          (reminder.every !== undefined &&
-            reminder.every !== null &&
-            typeof reminder.every !== "string") ||
-          (reminder.next_at !== undefined &&
-            typeof reminder.next_at !== "string") ||
-          (reminder.cron !== undefined &&
-            reminder.cron !== null &&
-            typeof reminder.cron !== "string") ||
-          (reminder.timezone !== undefined &&
-            typeof reminder.timezone !== "string")
-        )
-          throw new TypeError("Invalid reminder response");
-        return {
-          ...value,
-          reminder: {
-            ok: reminder.ok,
-            ...(typeof reminder.name === "string"
-              ? { name: reminder.name }
-              : {}),
-            ...(typeof reminder.error === "string"
-              ? { error: reminder.error }
-              : {}),
-            ...(typeof reminder.every === "string" || reminder.every === null
-              ? { every: reminder.every }
-              : {}),
-            ...(typeof reminder.next_at === "string"
-              ? { next_at: reminder.next_at }
-              : {}),
-            ...(typeof reminder.cron === "string" || reminder.cron === null
-              ? { cron: reminder.cron }
-              : {}),
-            ...(typeof reminder.timezone === "string"
-              ? { timezone: reminder.timezone }
-              : {}),
-          },
-        };
-      }
-      return value;
+      const value = await body(response);
+      if (!response.ok) throw failure(response, value);
+      const r = UploadFileResult.safeParse(value);
+      if (!r.success)
+        throw new TypeError(
+          AttachmentSchema.safeParse(value).success
+            ? "Invalid reminder response"
+            : "Invalid upload response",
+        );
+      return r.data;
     },
   };
 }

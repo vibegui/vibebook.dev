@@ -3054,40 +3054,961 @@ function za(e, t) {
 	}), U(e, v), Ye();
 }
 wr(["click"]);
-// shared/room.ts
-var Ba = [
+// node_modules/zod/v4/core/util.js
+function Ba(e, t) {
+	return typeof t == "bigint" ? t.toString() : t;
+}
+var Va = class {
+	constructor(e) {
+		this._getter = e, this._value = void 0;
+	}
+	get value() {
+		let e = this._getter;
+		return e !== void 0 && (this._value = e(), this._getter = void 0), this._value;
+	}
+};
+function Ha(e) {
+	return new Va(e);
+}
+function Ua(e) {
+	let t = +!!e.startsWith("^"), n = e.endsWith("$") ? e.length - 1 : e.length;
+	return e.slice(t, n);
+}
+function Wa(e, t, n) {
+	Object.defineProperty(e, t, {
+		value: n,
+		writable: !0,
+		enumerable: !0,
+		configurable: !0
+	});
+}
+function Ga(e) {
+	let t = Object.getOwnPropertyDescriptor(e, "shape");
+	return t?.get ? t.get.raw : t?.value;
+}
+function Ka(e) {
+	return Ga(e._zod.def) ?? e._zod.def.shape;
+}
+function qa(e, t, n) {
+	Object.defineProperty(e, t, {
+		get() {
+			let e = n();
+			return Wa(this, t, e), e;
+		},
+		enumerable: !0,
+		configurable: !0
+	});
+}
+function Ja(e, t, n) {
+	t in e ? Wa(e, t, n) : e[t] = n;
+}
+function Ya(e, t, n, r) {
+	let i = Ka(t);
+	for (let a of n) {
+		let n = Object.getOwnPropertyDescriptor(i, a);
+		n.enumerable && (n.get ? qa(e, a, () => {
+			let e = t._zod.def.shape[a];
+			return r ? r(e, a) : e;
+		}) : Ja(e, a, r ? r(n.value, a) : n.value));
+	}
+}
+function Xa(e, t) {
+	for (let n of Reflect.ownKeys(t)) {
+		let r = Object.getOwnPropertyDescriptor(t, n);
+		r.enumerable && (r.get ? qa(e, n, () => t[n]) : Ja(e, n, r.value));
+	}
+}
+function Za(...e) {
+	let t = {};
+	for (let n of e) {
+		let e = Object.getOwnPropertyDescriptors(n);
+		Object.assign(t, e);
+	}
+	return Object.defineProperties({}, t);
+}
+var Qa = "captureStackTrace" in Error ? Error.captureStackTrace : (...e) => {};
+function $a(e) {
+	return typeof e == "object" && !!e && !Array.isArray(e);
+}
+function eo(e) {
+	if ($a(e) === !1) return !1;
+	let t = e.constructor;
+	if (t === void 0 || typeof t != "function") return !0;
+	let n = t.prototype;
+	return $a(n) !== !1 && Object.prototype.hasOwnProperty.call(n, "isPrototypeOf") !== !1;
+}
+function to(e) {
+	return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function no(e, t, n) {
+	let r = new e._zod.constr(t ?? e._zod.def);
+	return (!t || n?.parent) && (r._zod.parent = e), r;
+}
+function ro(e) {
+	let t = e;
+	if (!t) return {};
+	if (typeof t == "string") return { error: () => t };
+	if (t?.message !== void 0) {
+		if (t?.error !== void 0) throw Error("Cannot specify both `message` and `error` params");
+		t.error = t.message;
+	}
+	return delete t.message, typeof t.error == "string" ? {
+		...t,
+		error: () => t.error
+	} : t;
+}
+function io(e) {
+	return Object.keys(e).filter((t) => e[t]._zod.optin !== void 0 && e[t]._zod.optout === "optional");
+}
+function ao(e, t) {
+	if (!eo(t)) throw Error("Invalid input to extend: expected a plain object");
+	let n = e._zod.def.checks;
+	if (n && n.length > 0) {
+		let n = Ka(e);
+		for (let e of Reflect.ownKeys(t)) if (Object.getOwnPropertyDescriptor(n, e) !== void 0) throw Error("Cannot overwrite keys on object schemas containing refinements. Use `.safeExtend()` instead.");
+	}
+	return no(e, Za(e._zod.def, { shape: oo(e, t) }));
+}
+function oo(e, t) {
+	let n = {};
+	return Ya(n, e, Reflect.ownKeys(Ka(e))), Xa(n, t), n;
+}
+function so(e, t = 0) {
+	if (e.aborted === !0) return !0;
+	for (let n = t; n < e.issues.length; n++) if (e.issues[n]?.continue !== !0) return !0;
+	return !1;
+}
+function co(e, t = 0) {
+	if (e.aborted === !0) return !0;
+	for (let n = t; n < e.issues.length; n++) if (e.issues[n]?.continue === !1) return !0;
+	return !1;
+}
+function lo(e, t) {
+	return t.map((t) => {
+		var n;
+		return (n = t).path ?? (n.path = []), t.path.unshift(e), t;
+	});
+}
+function uo(e) {
+	return typeof e == "string" ? e : e?.message;
+}
+function fo(e, t, n) {
+	var r;
+	for (let i = t; i < e.length; i++) (r = e[i]).schema ?? (r.schema = n);
+}
+function po(e, t, n) {
+	var r;
+	let i = e.inst?._zod?.traits;
+	i?.has("$ZodType") && (i.has("$ZodCheck") ? (r = e).schema ?? (r.schema = e.inst) : e.schema = e.inst);
+	let a = e.schema === e.inst ? void 0 : e.schema?._zod.def?.error, o = e.message ? e.message : uo(e.inst?._zod.def?.error?.(e)) ?? uo(a?.(e)) ?? uo(t?.error?.(e)) ?? uo(n.customError?.(e)) ?? uo(n.localeError?.(e)) ?? "Invalid input", s = {};
+	for (let t of Object.keys(e)) t !== "inst" && t !== "schema" && t !== "continue" && t !== "input" && t !== "__proto__" && (s[t] = e[t]);
+	return s.path ??= [], s.message = o, t?.reportInput && (s.input = e.input), s;
+}
+function mo(e, t) {
+	for (let n in t) {
+		let r = Object.getOwnPropertyDescriptor(t, n);
+		r.get ? Object.defineProperty(e, n, {
+			...r,
+			enumerable: !1
+		}) : _o(e, n, r.value);
+	}
+}
+function ho(e, t, n, r = !0) {
+	return Object.defineProperty(e, t, {
+		configurable: !0,
+		writable: !0,
+		enumerable: r,
+		value: n
+	}), n;
+}
+function go(e, t, n) {
+	return ho(e, t, n, !1);
+}
+function _o(e, t, n) {
+	Object.defineProperty(e, t, {
+		configurable: !0,
+		get() {
+			return this == null ? n : ho(this, t, n.bind(this));
+		},
+		set(e) {
+			ho(this, t, e);
+		}
+	});
+}
+function vo(e, t) {
+	let n = Object.getPrototypeOf(e);
+	return t in n ? void 0 : n;
+}
+var yo, bo = !1, xo = {
+	configurable: !0,
+	get() {
+		bo = !0;
+	}
+};
+function So(e, t, n) {
+	let r = Object.getPrototypeOf(e._zod);
+	t in r && yo !== e._zod ? yo = void 0 : (yo = e._zod, Object.defineProperty(r, t, {
+		configurable: !0,
+		get() {
+			Object.defineProperty(this, t, xo);
+			let e = bo;
+			bo = !1;
+			try {
+				let r = n(this);
+				return bo ? delete this[t] : Object.defineProperty(this, t, {
+					configurable: !0,
+					writable: !0,
+					value: r
+				}), bo ||= e, r;
+			} catch (n) {
+				throw delete this[t], bo ||= e, n;
+			}
+		},
+		set(e) {
+			Object.defineProperty(this, t, {
+				configurable: !0,
+				writable: !0,
+				value: e
+			});
+		}
+	}));
+}
+function Co(e, t, n, r) {
+	let i = vo(e, t);
+	i && Object.defineProperty(i, t, {
+		configurable: !0,
+		get() {
+			let e = {
+				configurable: !0,
+				writable: !0,
+				enumerable: r,
+				value: void 0
+			};
+			return Object.defineProperty(this, t, e), e.value = n(this), Object.defineProperty(this, t, e), e.value;
+		},
+		set(e) {
+			Object.defineProperty(this, t, {
+				configurable: !0,
+				writable: !0,
+				enumerable: r,
+				value: e
+			});
+		}
+	});
+}
+// node_modules/zod/v4/core/core.js
+var wo, To = {
+	value: void 0,
+	enumerable: !1
+}, Eo = "captureStackTrace" in Error ? Error : null;
+function Do(e) {
+	let t = Eo;
+	if (t) {
+		let n = t.stackTraceLimit;
+		if (typeof n == "number") {
+			try {
+				t.stackTraceLimit = 0;
+			} catch {
+				return Eo = null, new e();
+			}
+			try {
+				return new e();
+			} finally {
+				t.stackTraceLimit = n;
+			}
+		}
+	}
+	return new e();
+}
+/* @__NO_SIDE_EFFECTS__ */
+function Oo(e, t, n, r) {
+	let i = {};
+	function a(e) {
+		this.def = e, this.constr = d, this.traits = /* @__PURE__ */ new Set();
+	}
+	a.prototype = i;
+	let o = n, s = o && /* @__PURE__ */ new WeakSet();
+	function c(n, r) {
+		if (!n._zod) {
+			To.value = new a(r);
+			try {
+				Object.defineProperty(n, "_zod", To);
+			} finally {
+				To.value = void 0;
+			}
+		} else if (n._zod.traits.has(e)) return;
+		if (n._zod.traits.add(e), t(n, r), s) {
+			let e = Object.getPrototypeOf(n), t = n._zod.constr.prototype, r = e;
+			for (; r && r !== t;) r = Object.getPrototypeOf(r);
+			let i = r ?? e;
+			s.has(i) || (s.add(i), mo(i, o));
+		}
+		let i = d.prototype;
+		for (let e in i) Object.prototype.hasOwnProperty.call(i, e) && (e in n || (n[e] = i[e].bind(n)));
+	}
+	let l = r?.Parent ?? Object;
+	class u extends l {}
+	Object.defineProperty(u, "name", { value: e });
+	function d(e) {
+		let t = r?.Parent ? Do(u) : this;
+		c(t, e);
+		let n = t._zod.deferred;
+		if (n) {
+			for (let e of n) e();
+			t._zod.deferred = void 0;
+		}
+		let i = globalThis.__zod_globalConfig?.postProcessor;
+		return i && i(t), t;
+	}
+	return Object.defineProperty(d, "init", { value: c }), Object.defineProperty(d, Symbol.hasInstance, { value: (t) => r?.Parent && t instanceof r.Parent ? !0 : t?._zod?.traits?.has(e) }), Object.defineProperty(d, "name", { value: e }), d;
+}
+var ko = class extends Error {
+	constructor() {
+		super("Encountered Promise during synchronous parse. Use .parseAsync() instead.");
+	}
+};
+(wo = globalThis).__zod_globalConfig ?? (wo.__zod_globalConfig = {});
+var Ao = globalThis.__zod_globalConfig;
+function jo(e) {
+	return e && Object.assign(Ao, e), Ao;
+}
+// node_modules/zod/v4/core/errors.js
+function Mo() {
+	let e = this._zod;
+	return e.message ??= JSON.stringify(e.def, Ba, 2), e.message;
+}
+function No(e) {
+	this._zod.message = e;
+}
+var Po = {
+	get: Mo,
+	set: No,
+	enumerable: !0,
+	configurable: !0
+}, Fo = {
+	value: void 0,
+	enumerable: !1
+}, Io = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]), Lo = /* @__PURE__ */ Oo("$ZodError", (e, t) => {
+	e.name = "$ZodError", Fo.value = t, Object.defineProperty(e, "issues", Fo), Fo.value = void 0, Object.defineProperty(e, "message", Po);
+	let n = Object.getPrototypeOf(e);
+	Io.has(n) || (Io.add(n), Object.defineProperty(n, "toString", {
+		configurable: !0,
+		enumerable: !1,
+		get() {
+			let e = () => this.message;
+			return Object.defineProperty(this, "toString", {
+				value: e,
+				configurable: !0,
+				writable: !0
+			}), e;
+		},
+		set(e) {
+			Object.defineProperty(this, "toString", {
+				value: e,
+				configurable: !0,
+				writable: !0
+			});
+		}
+	}));
+}, void 0, { Parent: Error }), Ro = /* @__PURE__*/ ((e) => {
+	let t = (n, r, i, a) => {
+		let o = i ? {
+			...i,
+			async: !1
+		} : { async: !1 }, s = n._zod.run({
+			value: r,
+			issues: []
+		}, o);
+		if (s instanceof Promise) throw new ko();
+		if (s.issues.length) {
+			let n = new ((a?.Err) ?? e)(s.issues.map((e) => po(e, o, jo())));
+			throw Qa(n, a?.callee ?? t), n;
+		}
+		return s.value;
+	};
+	return t;
+})(Lo), zo = /* @__PURE__*/ ((e) => {
+	let t = async (n, r, i, a) => {
+		let o = i ? {
+			...i,
+			async: !0
+		} : { async: !0 }, s = n._zod.run({
+			value: r,
+			issues: []
+		}, o);
+		if (s instanceof Promise && (s = await s), s.issues.length) {
+			let n = new ((a?.Err) ?? e)(s.issues.map((e) => po(e, o, jo())));
+			throw Qa(n, a?.callee ?? t), n;
+		}
+		return s.value;
+	};
+	return t;
+})(Lo), Bo = /* @__PURE__*/ ((e) => (t, n, r) => {
+	let i = r ? {
+		...r,
+		async: !1
+	} : { async: !1 }, a = t._zod.run({
+		value: n,
+		issues: []
+	}, i);
+	if (a instanceof Promise) throw new ko();
+	return a.issues.length ? Vo(e, a.issues, i) : {
+		success: !0,
+		data: a.value
+	};
+})(Lo);
+function Vo(e, t, n) {
+	let r;
+	return {
+		success: !1,
+		get error() {
+			return r || (r = new e(t.map((e) => po(e, n, jo()))), t = void 0, n = void 0), r;
+		},
+		set error(e) {
+			r = e, t = void 0, n = void 0;
+		}
+	};
+}
+var Ho = /* @__PURE__*/ ((e) => async (t, n, r) => {
+	let i = r ? {
+		...r,
+		async: !0
+	} : { async: !0 }, a = t._zod.run({
+		value: n,
+		issues: []
+	}, i);
+	return a instanceof Promise && (a = await a), a.issues.length ? Vo(e, a.issues, i) : {
+		success: !0,
+		data: a.value
+	};
+})(Lo), Uo = /^[\s\S]{0,}$/, Wo = /^-?\d+(?:\.\d+)?$/, Go = /^(?:true|false)$/i, Ko = {
+	major: 4,
+	minor: 6,
+	patch: 7
+}, qo = /*@__PURE__*/ Oo("$ZodType", (e, t) => {
+	var n;
+	e ??= {}, e._zod.def = t, e._zod.bag = e._zod.bag || {}, e._zod.version = Ko;
+	let r = e._zod.def.checks, i = e._zod.traits.has("$ZodCheck") ? [e, ...r ?? []] : r?.length ? [...r] : [];
+	for (let t of i) for (let n of t._zod.onattach) n(e);
+	if (i.length === 0) (n = e._zod).deferred ?? (n.deferred = []), e._zod.deferred?.push(() => {
+		e._zod.run = e._zod.parse;
+	});
+	else {
+		let t = (t, n, r) => {
+			if (t.memo) return t;
+			let i = so(t), a;
+			for (let o of n) {
+				if (o._zod.def.when) {
+					if (co(t) || !o._zod.def.when(t)) continue;
+				} else if (i) continue;
+				let n = t.issues.length, s = o._zod.check(t);
+				if (s instanceof Promise && r?.async === !1) throw new ko();
+				if (a || s instanceof Promise) a = (a ?? Promise.resolve()).then(async () => {
+					await s, t.issues.length !== n && (fo(t.issues, n, e), i ||= so(t, n));
+				});
+				else {
+					if (t.issues.length === n) continue;
+					fo(t.issues, n, e), i ||= so(t, n);
+				}
+			}
+			return a ? a.then(() => t) : t;
+		}, n = (n, r, a) => {
+			if (so(n)) return n.aborted = !0, n;
+			let o = t(r, i, a);
+			if (o instanceof Promise) {
+				if (a.async === !1) throw new ko();
+				return o.then((t) => e._zod.parse(t, a));
+			}
+			return e._zod.parse(o, a);
+		};
+		e._zod.run = (r, a) => {
+			if (a.skipChecks) return e._zod.parse(r, a);
+			if (a.direction === "backward") {
+				let t = e._zod.parse({
+					value: r.value,
+					issues: []
+				}, {
+					...a,
+					skipChecks: !0
+				});
+				return t instanceof Promise ? t.then((e) => n(e, r, a)) : n(t, r, a);
+			}
+			let o = e._zod.parse(r, a);
+			if (o instanceof Promise) {
+				if (a.async === !1) throw new ko();
+				return o.then((e) => t(e, i, a));
+			}
+			return t(o, i, a);
+		};
+	}
+}, {
+	get "~standard"() {
+		return go(this, "~standard", Xo(this));
+	},
+	set "~standard"(e) {
+		ho(this, "~standard", e);
+	}
+}), Jo = (e, t) => e.issues.length ? { issues: e.issues.map((e) => po(e, t, jo())) } : { value: e.value };
+async function Yo(e, t) {
+	let n = { async: !0 };
+	return Jo(await e._zod.run({
+		value: t,
+		issues: []
+	}, n), n);
+}
+function Xo(e) {
+	return {
+		validate: (t) => {
+			let n = { async: !1 };
+			try {
+				let r = e._zod.run({
+					value: t,
+					issues: []
+				}, n);
+				if (!(r instanceof Promise)) return Jo(r, n);
+			} catch {}
+			return Yo(e, t);
+		},
+		vendor: "zod",
+		version: 1
+	};
+}
+var Zo = /*@__PURE__*/ Oo("$ZodString", (e, t) => {
+	qo.init(e, t), e._zod.pattern = t.pattern ?? Uo, e._zod.parse = (n, r) => {
+		if (t.coerce) try {
+			n.value = String(n.value);
+		} catch {}
+		return typeof n.value == "string" || n.issues.push({
+			expected: "string",
+			code: "invalid_type",
+			input: n.value,
+			inst: e
+		}), n;
+	};
+}), Qo = /*@__PURE__*/ Oo("$ZodNumber", (e, t) => {
+	qo.init(e, t), e._zod.pattern = Wo, e._zod.parse = (n, r) => {
+		if (t.coerce) try {
+			n.value = Number(n.value);
+		} catch {}
+		let i = n.value;
+		if (typeof i == "number" && !Number.isNaN(i) && Number.isFinite(i)) return n;
+		let a = typeof i == "number" ? Number.isNaN(i) ? "NaN" : Number.isFinite(i) ? void 0 : String(i) : void 0;
+		return n.issues.push({
+			expected: "number",
+			code: "invalid_type",
+			input: i,
+			inst: e,
+			...a ? { received: a } : {}
+		}), n;
+	};
+}), $o = /*@__PURE__*/ Oo("$ZodBoolean", (e, t) => {
+	qo.init(e, t), e._zod.pattern = Go, e._zod.parse = (n, r) => {
+		if (t.coerce) try {
+			n.value = !!n.value;
+		} catch {}
+		let i = n.value;
+		return typeof i == "boolean" || n.issues.push({
+			expected: "boolean",
+			code: "invalid_type",
+			input: i,
+			inst: e
+		}), n;
+	};
+});
+function es(e, t, n, r, i, a) {
+	let o = n in r, s = a === "optional";
+	if (o || !s || i !== "optional") {
+		if (e.issues.length) {
+			if (i !== void 0 && s && !o) return;
+			t.issues.push(...lo(n, e.issues));
+		}
+		!o && i === void 0 ? e.issues.length || t.issues.push({
+			code: "invalid_type",
+			expected: "nonoptional",
+			input: void 0,
+			path: [n]
+		}) : e.value === void 0 ? (o || i === "defaulted" && !s) && (t.value[n] = void 0) : t.value[n] = e.value;
+	}
+}
+var ts = [];
+function ns(e) {
+	let t = Object.keys(e.shape), n = Object.getOwnPropertySymbols(e.shape), r = n.length ? n : ts, i = r.length ? [...t, ...r] : t;
+	for (let t of i) if (!e.shape?.[t]?._zod?.traits?.has("$ZodType")) throw Error(`Invalid element at key "${String(t)}": expected a Zod schema`);
+	let a = io(e.shape);
+	return {
+		...e,
+		allKeys: i,
+		symbolKeys: r,
+		keySet: new Set(t),
+		numKeys: t.length,
+		optionalKeys: new Set(a)
+	};
+}
+function rs(e, t, n, r, i, a, o) {
+	let s = [], c = i.keySet, l = i.catchall._zod, u = l.def.type, d = l.optin, f = l.optout, p = 0;
+	for (let i in t) {
+		if (o && n.issues.length !== p) {
+			if (so(n, p)) break;
+			p = n.issues.length;
+		}
+		if (c.has(i)) continue;
+		if (i === "__proto__") {
+			u === "never" && s.push(i);
+			continue;
+		}
+		if (u === "never") {
+			s.push(i);
+			continue;
+		}
+		let a = l.run({
+			value: t[i],
+			issues: []
+		}, r);
+		a instanceof Promise ? e.push(a.then((e) => es(e, n, i, t, d, f))) : es(a, n, i, t, d, f);
+	}
+	return s.length && n.issues.push({
+		code: "unrecognized_keys",
+		keys: s,
+		input: t,
+		inst: a,
+		continue: !0
+	}), e.length ? Promise.all(e).then(() => n) : n;
+}
+var is = /*@__PURE__*/ Oo("$ZodObject", (e, t) => {
+	qo.init(e, t);
+	let n = Object.getOwnPropertyDescriptor(t, "shape"), r = n?.get ? n.get.raw : t.shape ?? {};
+	if (r) {
+		let e = () => {
+			let n = { ...r };
+			return Object.defineProperty(t, "shape", { value: n }), e.raw = n, n;
+		};
+		e.raw = r, Object.defineProperty(t, "shape", { get: e });
+	}
+	let i = Ha(() => ns(t));
+	So(e, "propValues", (e) => {
+		let t = e.def.shape, n = {};
+		for (let e in t) {
+			let r = t[e]._zod;
+			if (r.values) {
+				Object.prototype.hasOwnProperty.call(n, e) || Wa(n, e, /* @__PURE__ */ new Set());
+				for (let t of r.values) n[e].add(t);
+				r.optin !== void 0 && n[e].add(void 0);
+			}
+		}
+		return n;
+	});
+	let a = $a, o = t.catchall, s, c = Ao.memoizer;
+	c?.attach(e), e._zod.parse = (t, n) => {
+		s ??= i.value;
+		let r = t.value;
+		if (!a(r)) return t.issues.push({
+			expected: "object",
+			code: "invalid_type",
+			input: r,
+			inst: e
+		}), t;
+		t.value = c ? c.alloc(e, t, {}, n) : {};
+		let l = [], u = s.shape, d = n?.abortEarly, f = t.issues.length;
+		for (let e of s.allKeys) {
+			if (d && t.issues.length !== f) {
+				if (so(t, f)) break;
+				f = t.issues.length;
+			}
+			if (e === "__proto__") continue;
+			let i = u[e], a = i._zod.optin, o = i._zod.optout, s = i._zod.run({
+				value: r[e],
+				issues: []
+			}, n);
+			s instanceof Promise ? l.push(s.then((n) => es(n, t, e, r, a, o))) : es(s, t, e, r, a, o);
+		}
+		return o ? rs(l, r, t, n, i.value, e, d === !0) : l.length ? Promise.all(l).then(() => t) : t;
+	};
+});
+function as(e, t, n, r) {
+	for (let n of e) if (n.issues.length === 0) return t.value = n.value, t;
+	let i = e.filter((e) => !so(e));
+	return i.length === 1 ? (t.value = i[0].value, i[0]) : (t.issues.push({
+		code: "invalid_union",
+		input: t.value,
+		inst: n,
+		errors: e.map((e) => e.issues.map((e) => po(e, r, jo())))
+	}), t);
+}
+var os = /*@__PURE__*/ Oo("$ZodUnion", (e, t) => {
+	qo.init(e, t), So(e, "optin", (e) => e.def.options.some((e) => e._zod.optin === "defaulted") ? "defaulted" : e.def.options.some((e) => e._zod.optin !== void 0) ? "optional" : void 0), So(e, "optout", (e) => e.def.options.some((e) => e._zod.optout === "optional") ? "optional" : void 0), So(e, "values", (e) => {
+		if (e.def.options.every((e) => e._zod.values)) return new Set(e.def.options.flatMap((e) => Array.from(e._zod.values)));
+	}), So(e, "pattern", (e) => {
+		if (e.def.options.every((e) => e._zod.pattern)) {
+			let t = e.def.options.map((e) => e._zod.pattern);
+			return RegExp(`^(${t.map((e) => Ua(e.source)).join("|")})$`);
+		}
+	});
+	let n = t.options.length === 1 ? t.options[0]._zod.run : null;
+	e._zod.parse = (r, i) => {
+		if (n) return n(r, i);
+		let a = !1, o = [];
+		for (let e of t.options) {
+			let t = e._zod.run({
+				value: r.value,
+				issues: []
+			}, i);
+			if (t instanceof Promise) o.push(t), a = !0;
+			else {
+				if (t.issues.length === 0) return t;
+				o.push(t);
+			}
+		}
+		return a ? Promise.all(o).then((t) => as(t, r, e, i)) : as(o, r, e, i);
+	};
+}), ss = /*@__PURE__*/ Oo("$ZodLiteral", (e, t) => {
+	qo.init(e, t);
+	let n = new Set(t.values);
+	e._zod.values = n, So(e, "pattern", (e) => {
+		let t = e.def.values;
+		return RegExp(t.length ? `^(${t.map((e) => typeof e == "string" ? to(e) : e ? to(e.toString()) : String(e)).join("|")})$` : "^[^\\s\\S]$");
+	}), e._zod.parse = (r, i) => {
+		let a = r.value;
+		return n.has(a) || r.issues.push({
+			code: "invalid_value",
+			values: t.values,
+			input: a,
+			inst: e
+		}), r;
+	};
+});
+function cs(e, t) {
+	return e.value = t.issues.length ? void 0 : t.value, e;
+}
+var ls = /*@__PURE__*/ Oo("$ZodOptional", (e, t) => {
+	qo.init(e, t), So(e, "optin", (e) => e.def.innerType._zod.optin === "defaulted" ? "defaulted" : "optional"), e._zod.optout = "optional", So(e, "values", (e) => {
+		let t = e.def.innerType._zod.values;
+		return t ? /* @__PURE__ */ new Set([...t, void 0]) : void 0;
+	}), So(e, "pattern", (e) => {
+		let t = e.def.innerType._zod.pattern;
+		return t ? RegExp(`^(${Ua(t.source)})?$`) : void 0;
+	}), e._zod.parse = (e, n) => {
+		if (e.value === void 0) {
+			if (t.innerType._zod.optin !== "defaulted") return e;
+			let r = t.innerType._zod.run({
+				value: e.value,
+				issues: []
+			}, n);
+			return r instanceof Promise ? r.then((t) => cs(e, t)) : cs(e, r);
+		}
+		return t.innerType._zod.run(e, n);
+	};
+}), us = /*@__PURE__*/ Oo("$ZodNullable", (e, t) => {
+	qo.init(e, t), So(e, "optin", (e) => e.def.innerType._zod.optin), So(e, "optout", (e) => e.def.innerType._zod.optout), So(e, "pattern", (e) => {
+		let t = e.def.innerType._zod.pattern;
+		return t ? RegExp(`^(${Ua(t.source)}|null)$`) : void 0;
+	}), So(e, "values", (e) => e.def.innerType._zod.values ? /* @__PURE__ */ new Set([...e.def.innerType._zod.values, null]) : void 0), e._zod.parse = (e, n) => e.value === null ? e : t.innerType._zod.run(e, n);
+});
+// node_modules/zod/v4/core/api.js
+function ds(e) {
+	return e.checks &&= [...e.checks], e;
+}
+// @__NO_SIDE_EFFECTS__
+function fs(e, t) {
+	return new e(ds({
+		type: "string",
+		...ro(t)
+	}));
+}
+// @__NO_SIDE_EFFECTS__
+function ps(e, t) {
+	return new e(ds({
+		type: "number",
+		checks: [],
+		...ro(t)
+	}));
+}
+// @__NO_SIDE_EFFECTS__
+function ms(e, t) {
+	return new e({
+		type: "boolean",
+		...ro(t)
+	});
+}
+// node_modules/zod/v4/mini/schemas.js
+var hs = /*@__PURE__*/ Oo("ZodMiniType", (e, t) => {
+	if (!e._zod) throw Error("Uninitialized schema in ZodMiniType.");
+	qo.init(e, t), e.def = t, e.type = t.type;
+}, {
+	get with() {
+		return this.check;
+	},
+	set with(e) {
+		ho(this, "with", e);
+	},
+	parse(e, t) {
+		return Ro(this, e, t, { callee: this.parse });
+	},
+	parseAsync(e, t) {
+		return zo(this, e, t, { callee: this.parseAsync });
+	},
+	safeParse(e, t) {
+		return Bo(this, e, t);
+	},
+	safeParseAsync(e, t) {
+		return Ho(this, e, t);
+	},
+	check(...e) {
+		let t = this.def;
+		return this.clone({
+			...t,
+			checks: [...t.checks ?? [], ...e.map((e) => typeof e == "function" ? { _zod: {
+				check: e,
+				def: { check: "custom" },
+				onattach: []
+			} } : e)]
+		}, { parent: !0 });
+	},
+	clone(e, t) {
+		return no(this, e, t);
+	},
+	brand() {
+		return this;
+	},
+	register(e, t) {
+		return e.add(this, t), this;
+	},
+	apply(e, ...t) {
+		return t.length === 0 ? e(this) : e(this, ...t);
+	}
+}), gs = /*@__PURE__*/ Oo("ZodMiniString", (e, t) => {
+	Zo.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function _s(e) {
+	return /* @__PURE__ */ fs(gs, e);
+}
+var vs = /*@__PURE__*/ Oo("ZodMiniNumber", (e, t) => {
+	Qo.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function ys(e) {
+	return /* @__PURE__ */ ps(vs, e);
+}
+var bs = /*@__PURE__*/ Oo("ZodMiniBoolean", (e, t) => {
+	$o.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function xs(e) {
+	return /* @__PURE__ */ ms(bs, e);
+}
+var Ss = /*@__PURE__*/ Oo("ZodMiniObject", (e, t) => {
+	is.init(e, t), hs.init(e, t), Co(e, "shape", (e) => e._zod.def.shape, !1);
+});
+// @__NO_SIDE_EFFECTS__
+function Cs(e, t) {
+	return new Ss({
+		type: "object",
+		shape: e ?? {},
+		...ro(t)
+	});
+}
+// @__NO_SIDE_EFFECTS__
+function ws(e, t) {
+	return ao(e, t);
+}
+var Ts = /*@__PURE__*/ Oo("ZodMiniUnion", (e, t) => {
+	os.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function Es(e, t) {
+	return new Ts({
+		type: "union",
+		options: e,
+		...ro(t)
+	});
+}
+var Ds = /*@__PURE__*/ Oo("ZodMiniLiteral", (e, t) => {
+	ss.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function Os(e, t) {
+	return new Ds({
+		type: "literal",
+		values: Array.isArray(e) ? e : [e],
+		...ro(t)
+	});
+}
+var ks = /*@__PURE__*/ Oo("ZodMiniOptional", (e, t) => {
+	ls.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function As(e) {
+	return new ks({
+		type: "optional",
+		innerType: e
+	});
+}
+var js = /*@__PURE__*/ Oo("ZodMiniNullable", (e, t) => {
+	us.init(e, t), hs.init(e, t);
+});
+// @__NO_SIDE_EFFECTS__
+function Ms(e) {
+	return new js({
+		type: "nullable",
+		innerType: e
+	});
+}
+var Ns = /* @__PURE__ */ Es([/* @__PURE__ */ Cs({
+	ok: /* @__PURE__ */ Os(!0),
+	id: /* @__PURE__ */ ys(),
+	thread: /* @__PURE__ */ _s()
+}), /* @__PURE__ */ Cs({
+	ok: /* @__PURE__ */ Os(!1),
+	error: /* @__PURE__ */ _s()
+})]), Ps = /* @__PURE__ */ Cs({
+	ok: /* @__PURE__ */ xs(),
+	name: /* @__PURE__ */ As(/* @__PURE__ */ _s()),
+	error: /* @__PURE__ */ As(/* @__PURE__ */ _s()),
+	every: /* @__PURE__ */ As(/* @__PURE__ */ Ms(/* @__PURE__ */ _s())),
+	cron: /* @__PURE__ */ As(/* @__PURE__ */ Ms(/* @__PURE__ */ _s())),
+	timezone: /* @__PURE__ */ As(/* @__PURE__ */ _s()),
+	next_at: /* @__PURE__ */ As(/* @__PURE__ */ _s())
+}), Fs = /* @__PURE__ */ Cs({
+	id: /* @__PURE__ */ _s(),
+	name: /* @__PURE__ */ _s(),
+	type: /* @__PURE__ */ _s(),
+	size: /* @__PURE__ */ ys(),
+	author: /* @__PURE__ */ _s(),
+	ts: /* @__PURE__ */ ys(),
+	embed: /* @__PURE__ */ As(/* @__PURE__ */ xs())
+}), Is = /* @__PURE__ */ ws(Fs, { reminder: /* @__PURE__ */ As(Ps) }), Ls = /* @__PURE__ */ Cs({ error: /* @__PURE__ */ _s() }), Rs = [
 	"todo",
 	"doing",
 	"review",
 	"done"
-], Va = (e) => typeof e == "object" && !!e && !Array.isArray(e), Y = (e) => typeof e == "string", X = (e) => typeof e == "number" && Number.isFinite(e), Ha = (e) => typeof e == "boolean", Z = (e) => (t) => t === null || e(t), Q = (e) => (t) => Array.isArray(t) && t.every(e), Ua = (e) => (t) => Va(t) && Object.values(t).every(e), Wa = Q(Y), Ga = (...e) => (t) => typeof t == "string" && e.includes(t), Ka = Ga(...Ba), $ = (e, t = {}) => (n) => Va(n) && Object.entries(e).every(([e, t]) => t(n[e])) && Object.entries(t).every(([e, t]) => n[e] === void 0 || t(n[e])), qa = (e) => $({
+], zs = (e) => typeof e == "object" && !!e && !Array.isArray(e), Y = (e) => typeof e == "string", X = (e) => typeof e == "number" && Number.isFinite(e), Bs = (e) => typeof e == "boolean", Z = (e) => (t) => t === null || e(t), Q = (e) => (t) => Array.isArray(t) && t.every(e), Vs = (e) => (t) => zs(t) && Object.values(t).every(e), Hs = Q(Y), Us = (...e) => (t) => typeof t == "string" && e.includes(t), Ws = Us(...Rs), $ = (e, t = {}) => (n) => zs(n) && Object.entries(e).every(([e, t]) => t(n[e])) && Object.entries(t).every(([e, t]) => n[e] === void 0 || t(n[e])), Gs = (e) => $({
 	id: Y,
 	name: Y,
 	type: Y,
 	size: X,
 	author: Y,
 	ts: X
-}, { embed: Ha })(e), Ja = $({
+}, { embed: Bs })(e), Ks = $({
 	id: Y,
 	title: Y,
-	done: Ha,
-	status: Ka
+	done: Bs,
+	status: Ws
 }, {
 	owner: Z(Y),
 	due: Z(Y),
-	flags: Wa,
+	flags: Hs,
 	epic_id: Y
-}), Ya = (e) => Ja(e), Xa = $({
+}), qs = (e) => Ks(e), Js = $({
 	id: Y,
 	title: Y,
-	tasks: Q(Ya)
+	tasks: Q(qs)
 }, {
-	archived: Ha,
-	kept: Ha,
+	archived: Bs,
+	kept: Bs,
 	owner: Z(Y),
 	from_msg: Z(X),
 	parent: Z(Y),
-	flags: Wa,
+	flags: Hs,
 	prod: Z($({ stage: Y }, {
 		at: X,
 		note: Y
@@ -3098,7 +4019,7 @@ var Ba = [
 		type: Y,
 		n: X
 	}))
-}), Za = (e) => Xa(e), Qa = $({
+}), Ys = (e) => Js(e), Xs = $({
 	id: X,
 	thread: Y,
 	author: Y,
@@ -3112,11 +4033,11 @@ var Ba = [
 	choices: Z(Y),
 	poll: Z(Y),
 	card: Z(Y),
-	files: Q(qa),
-	quiet: Ha,
-	cut: Ha,
+	files: Q(Gs),
+	quiet: Bs,
+	cut: Bs,
 	for_who: Z(Y)
-}), $a = (e) => Qa(e), eo = $({
+}), Zs = (e) => Xs(e), Qs = $({
 	msg_id: X,
 	email: Y,
 	who: Y,
@@ -3125,11 +4046,11 @@ var Ba = [
 }, {
 	agent: Y,
 	note: Z(Y)
-}), to = (e) => eo(e), no = $({
+}), $s = (e) => Qs(e), ec = $({
 	id: Y,
 	text: Y,
 	owner: Y,
-	enabled: Ha
+	enabled: Bs
 }, {
 	name: Z(Y),
 	error: Z(Y),
@@ -3139,22 +4060,22 @@ var Ba = [
 	thread: Y,
 	tz: Y,
 	file_id: Z(Y)
-}), ro = (e) => no(e), io = $({
+}), tc = (e) => ec(e), nc = $({
 	title: Y,
 	owner: Y
 }, {
 	summary: Z(Y),
 	folder: Z(Y)
-}), ao = (e) => io(e), oo = $({
+}), rc = (e) => nc(e), ic = $({
 	title: Y,
-	tasks: Wa
-}, { why: Y }), so = (e) => oo(e), co = $({
+	tasks: Hs
+}, { why: Y }), ac = (e) => ic(e), oc = $({
 	id: X,
 	text: Y,
 	who: Y,
 	kind: Y,
 	ts: X
-}), lo = (e) => co(e), uo = $({
+}), sc = (e) => oc(e), cc = $({
 	id: Y,
 	kind: Y,
 	ref: Y
@@ -3162,18 +4083,18 @@ var Ba = [
 	title: Y,
 	author: Y,
 	ts: X
-}), fo = (e) => uo(e), po = $({
+}), lc = (e) => cc(e), uc = $({
 	id: Y,
 	question: Y,
-	options: Wa,
-	multi: Ha,
-	closed: Ha,
+	options: Hs,
+	multi: Bs,
+	closed: Bs,
 	author: Y,
-	votes: Q(Wa)
-}), mo = (e) => po(e), ho = $({
+	votes: Q(Hs)
+}), dc = (e) => uc(e), fc = $({
 	email: Y,
 	ts: X
-}, { name: Z(Y) }), go = $({
+}, { name: Z(Y) }), pc = $({
 	email: Y,
 	who: Y,
 	read: X,
@@ -3181,48 +4102,48 @@ var Ba = [
 }, {
 	agent: Y,
 	ts: X
-}), _o = $({ text: Y }, {
+}), mc = $({ text: Y }, {
 	epic: Z(Y),
 	stale: (e) => e === !1,
-	fetched: Ha,
+	fetched: Bs,
 	by: Y
-}), vo = $({
+}), hc = $({
 	epic: Y,
 	stale: (e) => e === !0
-}, { by: Y }), yo = {
+}, { by: Y }), gc = {
 	state: $({
 		me: Y,
-		book: ao,
-		messages: Q($a),
-		epics: Q(Za),
-		members: Wa,
-		online: Wa,
-		suggestions: Q(so)
+		book: rc,
+		messages: Q(Zs),
+		epics: Q(Ys),
+		members: Hs,
+		online: Hs,
+		suggestions: Q(ac)
 	}, {
-		roomTasks: Q(Ya),
-		names: Ua(Y),
-		avatars: Ua(X),
-		pending: Wa,
-		requests: Q(ho),
-		files: Q(qa),
+		roomTasks: Q(qs),
+		names: Vs(Y),
+		avatars: Vs(X),
+		pending: Hs,
+		requests: Q(fc),
+		files: Q(Gs),
 		filesN: X,
-		filesAll: Ha,
-		reminders: Q(ro),
-		acks: Q(to),
-		receipts: Q(go),
-		counts: Ua(X),
+		filesAll: Bs,
+		reminders: Q(tc),
+		acks: Q($s),
+		receipts: Q(pc),
+		counts: Vs(X),
 		countsAt: X,
-		full: Wa,
-		complete: Ha,
-		origins: Q($a),
-		docs: Ua(Y),
+		full: Hs,
+		complete: Bs,
+		origins: Q(Zs),
+		docs: Vs(Y),
 		doc: Y,
-		docNotes: Wa,
-		decisions: Q(lo),
-		pins: Q(fo),
-		polls: Ua(mo)
+		docNotes: Hs,
+		decisions: Q(sc),
+		pins: Q(lc),
+		polls: Vs(dc)
 	}),
-	msg: $({ m: $a }),
+	msg: $({ m: Zs }),
 	moved: $({
 		id: X,
 		thread: Y
@@ -3239,41 +4160,41 @@ var Ba = [
 		id: X,
 		choices: Y
 	}),
-	epics: $({ epics: Q(Za) }, { roomTasks: Q(Ya) }),
+	epics: $({ epics: Q(Ys) }, { roomTasks: Q(qs) }),
 	epicsPatch: $({
-		changed: Q(Za),
-		order: Wa
-	}, { roomTasks: Q(Ya) }),
-	doc: (e) => Va(e) && (e.stale === !0 ? vo(e) && e.text === void 0 && e.fetched === void 0 : _o(e)),
-	docNotes: $({ notes: Wa }),
+		changed: Q(Ys),
+		order: Hs
+	}, { roomTasks: Q(qs) }),
+	doc: (e) => zs(e) && (e.stale === !0 ? hc(e) && e.text === void 0 && e.fetched === void 0 : mc(e)),
+	docNotes: $({ notes: Hs }),
 	meta: $({}, {
 		title: Y,
 		folder: Y,
 		summary: Y
 	}),
-	suggestions: $({ suggestions: Q(so) }),
-	requests: $({ requests: Q(ho) }),
-	members: $({ members: Wa }, {
-		pending: Wa,
-		requests: Q(ho),
-		names: Ua(Y),
-		avatars: Ua(X)
+	suggestions: $({ suggestions: Q(ac) }),
+	requests: $({ requests: Q(fc) }),
+	members: $({ members: Hs }, {
+		pending: Hs,
+		requests: Q(fc),
+		names: Vs(Y),
+		avatars: Vs(X)
 	}),
-	files: $({ files: Q(qa) }),
-	fileAdd: $({ file: qa }),
-	reminders: $({ reminders: Q(ro) }),
-	decisions: $({ decisions: Q(lo) }),
-	pins: $({ pins: Q(fo) }),
-	receipts: $({ receipts: Q(go) }),
+	files: $({ files: Q(Gs) }),
+	fileAdd: $({ file: Gs }),
+	reminders: $({ reminders: Q(tc) }),
+	decisions: $({ decisions: Q(sc) }),
+	pins: $({ pins: Q(lc) }),
+	receipts: $({ receipts: Q(pc) }),
 	older: $({
-		messages: Q($a),
+		messages: Q(Zs),
 		thread: Y,
-		more: Ha
+		more: Bs
 	}),
-	acks: $({ acks: Q(to) }),
-	ackRows: $({ acks: Q(to) }),
-	poll: $({ poll: mo }),
-	online: $({ online: Wa }),
+	acks: $({ acks: Q($s) }),
+	ackRows: $({ acks: Q($s) }),
+	poll: $({ poll: dc }),
+	online: $({ online: Hs }),
 	conns: $({}),
 	error: $({}, { error: Y }),
 	blocked: $({
@@ -3281,15 +4202,15 @@ var Ba = [
 		reason: Y
 	})
 };
-function bo(e) {
-	return !Va(e) || typeof e.t != "string" || !Object.hasOwn(yo, e.t) ? !1 : yo[e.t](e);
+function _c(e) {
+	return !zs(e) || typeof e.t != "string" || !Object.hasOwn(gc, e.t) ? !1 : gc[e.t](e);
 }
-function xo(e) {
-	if (!Va(e)) return e;
-	let t = (e, t) => Va(e) && (e[t] === 0 || e[t] === 1) ? {
+function vc(e) {
+	if (!zs(e)) return e;
+	let t = (e, t) => zs(e) && (e[t] === 0 || e[t] === 1) ? {
 		...e,
 		[t]: e[t] === 1
-	} : e, n = (e) => Array.isArray(e) ? e.map((e) => t(e, "done")) : e, r = (e) => Array.isArray(e) ? e.map((e) => Va(e) ? {
+	} : e, n = (e) => Array.isArray(e) ? e.map((e) => t(e, "done")) : e, r = (e) => Array.isArray(e) ? e.map((e) => zs(e) ? {
 		...e,
 		tasks: n(e.tasks)
 	} : e) : e, i = (e) => Array.isArray(e) ? e.map((e) => t(e, "enabled")) : e;
@@ -3307,15 +4228,15 @@ function xo(e) {
 		reminders: i(e.reminders)
 	} : e;
 }
-function So(e) {
-	let t = xo(JSON.parse(e));
-	if (!bo(t)) throw TypeError("Invalid room event");
+function yc(e) {
+	let t = vc(JSON.parse(e));
+	if (!_c(t)) throw TypeError("Invalid room event");
 	return t;
 }
-var Co = {
+var bc = {
 	msg: $({ thread: Y }, {
 		text: Y,
-		files: Wa,
+		files: Hs,
 		reply_to: Z(X)
 	}),
 	"files.get": $({}),
@@ -3333,7 +4254,7 @@ var Co = {
 	}),
 	older: $({ thread: Y }, { before: X }),
 	"pin.add": $({
-		kind: Ga("link", "file", "app"),
+		kind: Us("link", "file", "app"),
 		ref: Y
 	}, { title: Y }),
 	"pin.del": $({ id: Y }),
@@ -3341,12 +4262,12 @@ var Co = {
 	"ack.dismiss": $({ id: X }),
 	"reminder.enable": $({
 		id: Y,
-		on: Ha
+		on: Bs
 	}),
 	"task.toggle": $({ id: Y }),
 	"task.status": $({
 		id: Y,
-		status: Ka
+		status: Ws
 	}),
 	"task.rename": $({
 		id: Y,
@@ -3363,97 +4284,229 @@ var Co = {
 		title: Y
 	}),
 	"epic.del": $({ id: Y }),
-	"epic.archive": $({ id: Y }, { archived: Ha }),
-	"epic.order": $({ ids: Wa }),
+	"epic.archive": $({ id: Y }, { archived: Bs }),
+	"epic.order": $({ ids: Hs }),
 	"poll.create": $({
 		thread: Y,
 		question: Y,
-		options: Wa,
-		multi: Ha
+		options: Hs,
+		multi: Bs
 	}),
 	vote: $({
 		id: Y,
 		opt: X
 	}),
 	"poll.close": $({ id: Y }),
-	suggestion: $({ i: X }, { accept: Ha })
+	suggestion: $({ i: X }, { accept: Bs })
 };
-function wo(e) {
-	return !Va(e) || typeof e.t != "string" || !Object.hasOwn(Co, e.t) ? !1 : Co[e.t](e);
+function xc(e) {
+	return !zs(e) || typeof e.t != "string" || !Object.hasOwn(bc, e.t) ? !1 : bc[e.t](e);
 }
+// node_modules/hono/dist/client/utils.js
+var Sc = (e, t) => (e = e.replace(/\/+$/, ""), e += "/", t = t.replace(/^\/+/, ""), e + t), Cc = (e, t) => {
+	for (let [n, r] of Object.entries(t)) {
+		let t = RegExp("/:" + n + "(?:{[^/]+})?\\??(?=/|$)");
+		e = e.replace(t, () => r ? `/${r}` : "");
+	}
+	return e;
+}, wc = (e) => {
+	let t = new URLSearchParams();
+	for (let [n, r] of Object.entries(e)) if (r !== void 0) {
+		if (Array.isArray(r)) for (let e of r) e !== void 0 && t.append(n, e);
+		else t.set(n, r);
+	}
+	return t;
+}, Tc = (e, t) => {
+	switch (t) {
+		case "ws": return e.replace(/^http/, "ws");
+		case "http": return e.replace(/^ws/, "http");
+	}
+}, Ec = (e) => /^https?:\/\/[^\/]+?\/index(?=\?|$)/.test(e) ? e.replace(/\/index(?=\?|$)/, "/") : e.replace(/\/index(?=\?|$)/, "");
+function Dc(e) {
+	return typeof e == "object" && !!e && !Array.isArray(e);
+}
+function Oc(e, t) {
+	if (!Dc(e) && !Dc(t)) return t;
+	let n = { ...e };
+	for (let e in t) {
+		let r = t[e];
+		n[e] = Dc(n[e]) && Dc(r) ? Oc(n[e], r) : r;
+	}
+	return n;
+}
+// node_modules/hono/dist/utils/cookie.js
+var kc = /^[\w!#$%&'*.^`|~+-]+$/, Ac = (e, t, n = {}) => {
+	if (!kc.test(e)) throw Error("Invalid cookie name");
+	let r = `${e}=${t}`;
+	if (e.startsWith("__Secure-") && !n.secure) throw Error("__Secure- Cookie must have Secure attributes");
+	if (e.startsWith("__Host-")) {
+		if (!n.secure) throw Error("__Host- Cookie must have Secure attributes");
+		if (n.path !== "/") throw Error("__Host- Cookie must have Path attributes with \"/\"");
+		if (n.domain) throw Error("__Host- Cookie must not have Domain attributes");
+	}
+	for (let e of [
+		"domain",
+		"path",
+		"sameSite",
+		"priority"
+	]) if (n[e] && /[;\r\n]/.test(n[e])) throw Error(`${e} must not contain ";", "\\r", or "\\n"`);
+	if (n && typeof n.maxAge == "number" && n.maxAge >= 0) {
+		if (n.maxAge > 3456e4) throw Error("Cookies Max-Age SHOULD NOT be greater than 400 days (34560000 seconds) in duration.");
+		r += `; Max-Age=${n.maxAge | 0}`;
+	}
+	if (n.domain && n.prefix !== "host" && (r += `; Domain=${n.domain}`), n.path && (r += `; Path=${n.path}`), n.expires) {
+		if (n.expires.getTime() - Date.now() > 3456e7) throw Error("Cookies Expires SHOULD NOT be greater than 400 days (34560000 seconds) in the future.");
+		r += `; Expires=${n.expires.toUTCString()}`;
+	}
+	if (n.httpOnly && (r += "; HttpOnly"), n.secure && (r += "; Secure"), n.sameSite && (r += `; SameSite=${n.sameSite.charAt(0).toUpperCase() + n.sameSite.slice(1)}`), n.priority && (r += `; Priority=${n.priority.charAt(0).toUpperCase() + n.priority.slice(1)}`), n.partitioned) {
+		if (!n.secure) throw Error("Partitioned Cookie must have Secure attributes");
+		r += "; Partitioned";
+	}
+	return r;
+}, jc = (e, t, n) => (t = encodeURIComponent(t), Ac(e, t, n)), Mc = (e, t) => new Proxy(() => {}, {
+	get(n, r) {
+		if (typeof r == "string" && r !== "then") return Mc(e, [...t, r]);
+	},
+	apply(n, r, i) {
+		return e({
+			path: t,
+			args: i
+		});
+	}
+}), Nc = (e, t) => {
+	let n = t.toString();
+	return n ? `${e}?${n}` : e;
+}, Pc = class {
+	url;
+	method;
+	buildSearchParams;
+	queryParams = void 0;
+	pathParams = {};
+	rBody;
+	cType = void 0;
+	constructor(e, t, n) {
+		this.url = e, this.method = t, this.buildSearchParams = n.buildSearchParams;
+	}
+	fetch = async (e, t) => {
+		if (e) {
+			if (e.query && (this.queryParams = this.buildSearchParams(e.query)), e.form) {
+				let t = new FormData();
+				for (let [n, r] of Object.entries(e.form)) if (r !== void 0) {
+					if (Array.isArray(r)) for (let e of r) e !== void 0 && t.append(n, e);
+					else t.append(n, r);
+				}
+				this.rBody = t;
+			}
+			e.json !== void 0 && (this.rBody = JSON.stringify(e.json), this.cType = "application/json"), e.param && (this.pathParams = e.param);
+		}
+		let n = this.method.toUpperCase(), r = {
+			...e?.header,
+			...typeof t?.headers == "function" ? await t.headers() : t?.headers
+		};
+		if (e?.cookie) {
+			let t = [];
+			for (let [n, r] of Object.entries(e.cookie)) r !== void 0 && t.push(jc(n, r));
+			t.length > 0 && (r.Cookie = t.join("; "));
+		}
+		this.cType && (r["Content-Type"] = this.cType);
+		let i = new Headers();
+		for (let [e, t] of Object.entries(r)) t !== void 0 && i.set(e, t);
+		let a = this.url;
+		a = Ec(a), a = Cc(a, this.pathParams), this.queryParams && (a = Nc(a, this.queryParams)), n = this.method.toUpperCase();
+		let o = n !== "GET" && n !== "HEAD";
+		return (t?.fetch || fetch)(a, {
+			body: o ? this.rBody : void 0,
+			method: n,
+			headers: i,
+			...t?.init
+		});
+	};
+}, Fc = (e, t) => Mc(function n(r) {
+	let i = t?.buildSearchParams ?? wc, a = [...r.path], o = a.slice(-3).reverse();
+	if (o[0] === "toString") return o[1] === "name" ? o[2] || "" : n.toString();
+	if (o[0] === "valueOf") return o[1] === "name" ? o[2] || "" : n;
+	let s = "";
+	if (/^\$/.test(o[0])) {
+		let e = a.pop();
+		e && (s = e.replace(/^\$/, ""));
+	}
+	let c = Sc(e, a.join("/"));
+	if (s === "url" || s === "path") {
+		let t = Ec(c);
+		return r.args[0] && (r.args[0].param && (t = Cc(t, r.args[0].param)), r.args[0].query && (t = Nc(t, i(r.args[0].query)))), s === "url" ? new URL(t) : t.slice(e.replace(/\/+$/, "").length).replace(/^\/?/, "/");
+	}
+	if (s === "ws") {
+		let e = Ec(c), n = Tc(r.args[0]?.param ? Cc(e, r.args[0].param) : e, "ws"), a = new URL(n), o = r.args[0]?.query;
+		return o && i(o).forEach((e, t) => {
+			a.searchParams.append(t, e);
+		}), ((...e) => t?.webSocket !== void 0 && typeof t.webSocket == "function" ? t.webSocket(...e) : new WebSocket(...e))(a.toString());
+	}
+	let l = new Pc(c, s, { buildSearchParams: i });
+	if (s) {
+		t ??= {};
+		let e = { ...r.args[1] }, n = t.headers, i = e.headers;
+		n && i && (e.headers = async () => ({
+			...typeof n == "function" ? await n() : n,
+			...typeof i == "function" ? await i() : i
+		}));
+		let a = Oc(t, e);
+		return l.fetch(r.args[0], a);
+	}
+	return l;
+}, []), Ic = (e = "/", t) => Fc(e, t ? { fetch: t } : {});
 // svelte/transport.ts
-function To(e, t) {
-	if (!wo(t)) throw TypeError("Invalid room command");
+function Lc(e, t) {
+	if (!xc(t)) throw TypeError("Invalid room command");
 	return !e || e.readyState !== 1 ? !1 : (e.send(JSON.stringify(t)), !0);
 }
-function Eo(e) {
+function Rc(e) {
 	if (typeof e != "string") throw TypeError("Room events must be JSON text");
-	return So(e);
+	return yc(e);
 }
-function Do(e, t = fetch) {
-	let n = `/api/books/${encodeURIComponent(e)}`;
-	async function r(e, t = !1) {
-		let n;
-		try {
-			n = await e.json();
-		} catch (t) {
-			throw e.ok ? t : Error(`HTTP ${e.status}`);
-		}
-		if (!e.ok && !(t && e.status === 400 && Va(n) && n.ok === !1 && typeof n.error == "string")) throw Error(Va(n) && typeof n.error == "string" ? n.error : `HTTP ${e.status}`);
-		return n;
+async function zc(e) {
+	try {
+		return await e.json();
+	} catch (t) {
+		throw e.ok ? t : Error(`HTTP ${e.status}`);
 	}
+}
+function Bc(e, t) {
+	let n = Ls.safeParse(t);
+	return Error(n.success ? n.data.error : `HTTP ${e.status}`);
+}
+function Vc(e, t = fetch) {
+	let n = Ic("/", t).api.books[":id"], r = encodeURIComponent(e);
 	return {
 		async postMessage(e) {
-			let i = await r(await t(`${n}/post`, {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify(e)
-			}), !0);
-			if (!Va(i) || typeof i.ok != "boolean") throw TypeError("Invalid post response");
-			if (i.ok === !1 && typeof i.error == "string") return {
-				ok: !1,
-				error: i.error
-			};
-			if (i.ok === !0 && typeof i.id == "number" && typeof i.thread == "string") return {
-				ok: !0,
-				id: i.id,
-				thread: i.thread
-			};
-			throw TypeError("Invalid post response");
+			let t = await n.post.$post({
+				param: { id: r },
+				json: e
+			}), i = await zc(t);
+			if (t.ok || t.status === 400) {
+				let e = Ns.safeParse(i);
+				if (e.success) return e.data;
+				if (t.ok) throw TypeError("Invalid post response");
+			}
+			throw Bc(t, i);
 		},
 		async uploadFile(e) {
-			let i = await r(await t(`${n}/files`, {
-				method: "POST",
-				headers: {
+			let t = await n.files.$post({
+				param: { id: r },
+				header: {
 					"content-type": e.type,
 					"x-filename": encodeURIComponent(e.name)
-				},
-				body: e.body
-			}));
-			if (!qa(i)) throw TypeError("Invalid upload response");
-			if ("reminder" in i) {
-				let e = i.reminder;
-				if (!Va(e) || typeof e.ok != "boolean" || e.error !== void 0 && typeof e.error != "string" || e.name !== void 0 && typeof e.name != "string" || e.every !== void 0 && e.every !== null && typeof e.every != "string" || e.next_at !== void 0 && typeof e.next_at != "string" || e.cron !== void 0 && e.cron !== null && typeof e.cron != "string" || e.timezone !== void 0 && typeof e.timezone != "string") throw TypeError("Invalid reminder response");
-				return {
-					...i,
-					reminder: {
-						ok: e.ok,
-						...typeof e.name == "string" ? { name: e.name } : {},
-						...typeof e.error == "string" ? { error: e.error } : {},
-						...typeof e.every == "string" || e.every === null ? { every: e.every } : {},
-						...typeof e.next_at == "string" ? { next_at: e.next_at } : {},
-						...typeof e.cron == "string" || e.cron === null ? { cron: e.cron } : {},
-						...typeof e.timezone == "string" ? { timezone: e.timezone } : {}
-					}
-				};
-			}
-			return i;
+				}
+			}, { init: { body: e.body } }), i = await zc(t);
+			if (!t.ok) throw Bc(t, i);
+			let a = Is.safeParse(i);
+			if (!a.success) throw TypeError(Fs.safeParse(i).success ? "Invalid reminder response" : "Invalid upload response");
+			return a.data;
 		}
 	};
 }
 // svelte/Reminders.svelte
-var Oo = /* @__PURE__ */ H("<button class=\"primary\" id=\"remNew\"><!> </button>"), ko = /* @__PURE__ */ H("<form class=\"remForm\" id=\"remForm\"><input name=\"name\" maxlength=\"60\" required=\"\"/> <textarea name=\"text\" required=\"\"></textarea> <div class=\"row\"><span class=\"err\" id=\"remErr\"> </span><button type=\"button\" class=\"ghost\" id=\"remCancel\"> </button><button class=\"primary\" id=\"remSave\"> </button></div></form>"), Ao = /* @__PURE__ */ H("<span class=\"err\"> </span>"), jo = /* @__PURE__ */ H("<pre class=\"remText\"> </pre>"), Mo = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), No = /* @__PURE__ */ H("<div><div class=\"remBody\" role=\"button\" tabindex=\"0\"><b><!> </b> <small><!> </small> <!><!></div> <!> <label class=\"sw\"><input type=\"checkbox\"/> </label> <button class=\"ghost\"></button></div>"), Po = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), Fo = /* @__PURE__ */ H("<div class=\"remHead\"><p></p> <!></div> <!> <!> <!>", 1);
-function Io(e, t) {
+var Hc = /* @__PURE__ */ H("<button class=\"primary\" id=\"remNew\"><!> </button>"), Uc = /* @__PURE__ */ H("<form class=\"remForm\" id=\"remForm\"><input name=\"name\" maxlength=\"60\" required=\"\"/> <textarea name=\"text\" required=\"\"></textarea> <div class=\"row\"><span class=\"err\" id=\"remErr\"> </span><button type=\"button\" class=\"ghost\" id=\"remCancel\"> </button><button class=\"primary\" id=\"remSave\"> </button></div></form>"), Wc = /* @__PURE__ */ H("<span class=\"err\"> </span>"), Gc = /* @__PURE__ */ H("<pre class=\"remText\"> </pre>"), Kc = /* @__PURE__ */ H("<button class=\"ghost\"></button>"), qc = /* @__PURE__ */ H("<div><div class=\"remBody\" role=\"button\" tabindex=\"0\"><b><!> </b> <small><!> </small> <!><!></div> <!> <label class=\"sw\"><input type=\"checkbox\"/> </label> <button class=\"ghost\"></button></div>"), Jc = /* @__PURE__ */ H("<div class=\"empty\"> </div>"), Yc = /* @__PURE__ */ H("<div class=\"remHead\"><p></p> <!></div> <!> <!> <!>", 1);
+function Xc(e, t) {
 	Je(t, !0);
 	let n = /* @__PURE__ */ j(null), r = /* @__PURE__ */ j(""), i = /* @__PURE__ */ j(!1), a = /* @__PURE__ */ j($t([])), o = /* @__PURE__ */ k(() => t.room.reminders || []), s = /* @__PURE__ */ k(() => t.vb.locale || (document.documentElement.lang === "en" ? "en-US" : "pt-BR")), c = (e) => new Date(e).toLocaleString(B(s), {
 		weekday: "short",
@@ -3473,7 +4526,7 @@ function Io(e, t) {
 		let a = { ...B(n) }, o = a.name.trim().replace(/\.md$/i, "").replace(/[\\/]/g, "-");
 		M(i, !0), M(r, "");
 		try {
-			let e = await Do(t.room.id).uploadFile({
+			let e = await Vc(t.room.id).uploadFile({
 				name: `reminders/${o}.md`,
 				type: "text/markdown",
 				body: a.text
@@ -3493,10 +4546,10 @@ function Io(e, t) {
 			M(i, !1);
 		}
 	}
-	var f = Fo(), p = P(f), m = N(p);
+	var f = Yc(), p = P(f), m = N(p);
 	K(m, () => t.vb.t("Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o agent de quem salvou faz."), !0), O(m);
 	var h = I(m, 2), g = (e) => {
-		var n = Oo(), r = N(n);
+		var n = Hc(), r = N(n);
 		K(r, () => t.vb.icon("plus", 14));
 		var i = I(r);
 		O(n), L((e) => W(i, ` ${e ?? ""}`), [() => t.vb.t("Novo lembrete")]), V("click", n, () => l({
@@ -3508,7 +4561,7 @@ function Io(e, t) {
 		B(n) || e(g);
 	}), O(p);
 	var _ = I(p, 2), v = (e) => {
-		var a = ko(), o = N(a);
+		var a = Uc(), o = N(a);
 		Si(o);
 		var s = I(o, 2);
 		ot(s);
@@ -3527,7 +4580,7 @@ function Io(e, t) {
 	});
 	var y = I(_, 2);
 	Xr(y, 17, () => B(o), (e) => e.id, (e, n) => {
-		var r = No();
+		var r = qc();
 		let i;
 		var o = N(r), s = N(o), d = N(s);
 		K(d, () => t.vb.icon(B(a).includes(B(n).id) ? "chevronDown" : "chevronRight", 13));
@@ -3543,21 +4596,21 @@ function Io(e, t) {
 		var g = I(m, 1, !0);
 		O(p);
 		var _ = I(p, 2), v = (e) => {
-			var t = Ao(), r = F(t);
+			var t = Wc(), r = F(t);
 			L(() => W(r, `⚠ ${B(n).error ?? ""}`)), U(e, t);
 		};
 		G(_, (e) => {
 			B(n).error && e(v);
 		});
 		var y = I(_), b = (e) => {
-			var t = jo(), r = F(t, !0);
+			var t = Gc(), r = F(t, !0);
 			L(() => W(r, B(n).text)), U(e, t);
 		}, x = /* @__PURE__ */ k(() => B(a).includes(B(n).id));
 		G(y, (e) => {
 			B(x) && e(b);
 		}), O(o);
 		var S = I(o, 2), C = (e) => {
-			var r = Mo();
+			var r = Kc();
 			K(r, () => t.vb.icon("pencil", 14), !0), O(r), L((e, t) => {
 				J(r, "data-rem-edit", B(n).id), J(r, "title", e), J(r, "aria-label", t);
 			}, [() => t.vb.t("Editar"), () => t.vb.t("Editar")]), V("click", r, () => l({
@@ -3604,7 +4657,7 @@ function Io(e, t) {
 		}), U(e, r);
 	});
 	var b = I(y, 2), x = (e) => {
-		var n = Po(), r = F(n, !0);
+		var n = Jc(), r = F(n, !0);
 		L((e) => W(r, e), [() => t.vb.t("Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu agent: “todo dia às 8h, me manda o resumo do que mudou”.")]), U(e, n);
 	};
 	G(b, (e) => {
@@ -3617,17 +4670,17 @@ wr([
 	"change"
 ]);
 // svelte/Sidebar.svelte
-var Lo = /* @__PURE__ */ H("<span class=\"claudeSpin\">✻</span>"), Ro = /* @__PURE__ */ H("<button type=\"button\"><!><span class=\"rt\"> </span> <!> <!><!> <span class=\"n\"> </span></button>"), zo = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fnRow\"><span class=\"fn\"> </span><span class=\"pendTag\"> </span></span> <small class=\"memActs\"><button type=\"button\" class=\"ghost resend\"> </button> · <button type=\"button\" class=\"ghost resend\"> </button></small></div>"), Bo = /* @__PURE__ */ H("<span class=\"fn\"> </span>"), Vo = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> </small></div>"), Ho = /* @__PURE__ */ H("<button type=\"button\" class=\"ghost x\"></button>"), Uo = /* @__PURE__ */ H("<div class=\"member\"><!> <!> <!></div> <!>", 1), Wo = /* @__PURE__ */ H("<button type=\"button\" class=\"iconBtn phOnly\" id=\"sideArch\"></button> <button type=\"button\" class=\"iconBtn phOnly\" id=\"sideDel\"></button>", 1), Go = /* @__PURE__ */ H("<span class=\"rowEdit phOnly\" role=\"button\" tabindex=\"0\" id=\"sideRename\"><!> </span>"), Ko = /* @__PURE__ */ H("<div class=\"epTabs\" role=\"tablist\"><button type=\"button\" role=\"tab\" data-arch=\"\"> <b> </b></button> <button type=\"button\" role=\"tab\" data-arch=\"1\"> <b> </b></button></div>"), qo = /* @__PURE__ */ H("<button type=\"button\"><span class=\"ri\"> </span><span class=\"rt\"> </span><span class=\"n\"> </span></button>"), Jo = /* @__PURE__ */ H("<form id=\"newEpic\" class=\"newRoom\"><input enterkeyhint=\"done\"/><button class=\"ri\"></button></form> <!>", 1), Yo = /* @__PURE__ */ H("<div class=\"member reqRow\"><!> <div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> <button type=\"button\" class=\"ghost resend okAsk\" data-ok=\"1\"> </button></small></div> <button type=\"button\" class=\"ghost x\" data-ok=\"\"></button></div>"), Xo = /* @__PURE__ */ H("<div class=\"asks\"><h4> </h4> <!></div>"), Zo = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"off\"><summary> </summary><!></details>"), Qo = /* @__PURE__ */ H("<button type=\"button\" class=\"friendAdd\"><!><span class=\"fn\"> </span><b></b></button>"), $o = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"friends\"><summary> </summary> <!></details>"), es = /* @__PURE__ */ H("<option></option>"), ts = /* @__PURE__ */ H("<button type=\"button\" class=\"sheetGrab\"><i></i></button> <!> <div class=\"sideHead\"><div class=\"sideTop\"><a data-nav=\"\" href=\"/app\" class=\"muted\"><!> vibebooks</a> <!> <button type=\"button\" class=\"iconBtn\" id=\"railToggle\" aria-expanded=\"true\"></button></div></div> <div class=\"sec threadsSec\"><button type=\"button\" data-thread=\"main\"><!><span class=\"rt\"> </span> <!> <!><span class=\"n\"> </span></button> <!> <div><!> <!></div></div> <!> <div class=\"sec\"><!> <h4> </h4> <!> <!> <!> <!> <form class=\"row\" id=\"invite\" style=\"margin-top:8px\"><input type=\"email\" required=\"\" list=\"friendList\" autocomplete=\"off\"/><button></button></form> <datalist id=\"friendList\"></datalist></div>", 1);
-function ns(e, t) {
+var Zc = /* @__PURE__ */ H("<span class=\"claudeSpin\">✻</span>"), Qc = /* @__PURE__ */ H("<button type=\"button\"><!><span class=\"rt\"> </span> <!> <!><!> <span class=\"n\"> </span></button>"), $c = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fnRow\"><span class=\"fn\"> </span><span class=\"pendTag\"> </span></span> <small class=\"memActs\"><button type=\"button\" class=\"ghost resend\"> </button> · <button type=\"button\" class=\"ghost resend\"> </button></small></div>"), el = /* @__PURE__ */ H("<span class=\"fn\"> </span>"), tl = /* @__PURE__ */ H("<div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> </small></div>"), nl = /* @__PURE__ */ H("<button type=\"button\" class=\"ghost x\"></button>"), rl = /* @__PURE__ */ H("<div class=\"member\"><!> <!> <!></div> <!>", 1), il = /* @__PURE__ */ H("<button type=\"button\" class=\"iconBtn phOnly\" id=\"sideArch\"></button> <button type=\"button\" class=\"iconBtn phOnly\" id=\"sideDel\"></button>", 1), al = /* @__PURE__ */ H("<span class=\"rowEdit phOnly\" role=\"button\" tabindex=\"0\" id=\"sideRename\"><!> </span>"), ol = /* @__PURE__ */ H("<div class=\"epTabs\" role=\"tablist\"><button type=\"button\" role=\"tab\" data-arch=\"\"> <b> </b></button> <button type=\"button\" role=\"tab\" data-arch=\"1\"> <b> </b></button></div>"), sl = /* @__PURE__ */ H("<button type=\"button\"><span class=\"ri\"> </span><span class=\"rt\"> </span><span class=\"n\"> </span></button>"), cl = /* @__PURE__ */ H("<form id=\"newEpic\" class=\"newRoom\"><input enterkeyhint=\"done\"/><button class=\"ri\"></button></form> <!>", 1), ll = /* @__PURE__ */ H("<div class=\"member reqRow\"><!> <div class=\"fnCol\"><span class=\"fn\"> </span><small class=\"memActs\"> <button type=\"button\" class=\"ghost resend okAsk\" data-ok=\"1\"> </button></small></div> <button type=\"button\" class=\"ghost x\" data-ok=\"\"></button></div>"), ul = /* @__PURE__ */ H("<div class=\"asks\"><h4> </h4> <!></div>"), dl = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"off\"><summary> </summary><!></details>"), fl = /* @__PURE__ */ H("<button type=\"button\" class=\"friendAdd\"><!><span class=\"fn\"> </span><b></b></button>"), pl = /* @__PURE__ */ H("<details class=\"memMore\" data-fold=\"friends\"><summary> </summary> <!></details>"), ml = /* @__PURE__ */ H("<option></option>"), hl = /* @__PURE__ */ H("<button type=\"button\" class=\"sheetGrab\"><i></i></button> <!> <div class=\"sideHead\"><div class=\"sideTop\"><a data-nav=\"\" href=\"/app\" class=\"muted\"><!> vibebooks</a> <!> <button type=\"button\" class=\"iconBtn\" id=\"railToggle\" aria-expanded=\"true\"></button></div></div> <div class=\"sec threadsSec\"><button type=\"button\" data-thread=\"main\"><!><span class=\"rt\"> </span> <!> <!><span class=\"n\"> </span></button> <!> <div><!> <!></div></div> <!> <div class=\"sec\"><!> <h4> </h4> <!> <!> <!> <!> <form class=\"row\" id=\"invite\" style=\"margin-top:8px\"><input type=\"email\" required=\"\" list=\"friendList\" autocomplete=\"off\"/><button></button></form> <datalist id=\"friendList\"></datalist></div>", 1);
+function gl(e, t) {
 	Je(t, !0);
 	let n = (e, n = m) => {
 		let r = /* @__PURE__ */ k(() => n().tasks.filter((e) => e.done).length), i = /* @__PURE__ */ k(() => t.vb.epicBusy(n()));
-		var a = Ro();
+		var a = Qc();
 		let o;
 		var s = N(a);
 		K(s, () => t.vb.epicIco(n(), !0));
 		var c = I(s), l = F(c, !0), u = I(c, 2), d = (e) => {
-			var n = Lo();
+			var n = Zc();
 			L((e) => J(n, "aria-label", e), [() => t.vb.t("{who} está trabalhando", { who: B(i) })]), U(e, n);
 		};
 		G(u, (e) => {
@@ -3647,10 +4700,10 @@ function ns(e, t) {
 			}), J(a, "data-thread", n().id), J(a, "title", s), W(l, n().title), W(h, n().tasks.length ? `${B(r)}/${n().tasks.length}` : "");
 		}, [() => t.vb.waitsIn(n().id).length > 0, () => `${n().title} · ${B(r)}/${n().tasks.length} tasks${n().archived ? ` · ${t.vb.t("arquivado")}` : ""}${B(i) ? ` · ${t.vb.t("{who} está trabalhando aqui", { who: B(i) })}` : ""}`]), U(e, a);
 	}, r = (e, n = m) => {
-		var r = Uo(), i = P(r), a = N(i);
+		var r = rl(), i = P(r), a = N(i);
 		K(a, () => t.vb.avatar(n(), t.room.online.includes(n())));
 		var o = I(a, 2), s = (e) => {
-			var r = zo(), i = N(r), a = N(i), o = F(a, !0), s = I(a), c = F(s, !0);
+			var r = $c(), i = N(r), a = N(i), o = F(a, !0), s = I(a), c = F(s, !0);
 			O(i);
 			var l = I(i, 2), u = N(l), d = F(u, !0), f = I(u, 2), p = F(f, !0);
 			O(l), O(r), L((e, t, r, i, l, m, h) => {
@@ -3665,12 +4718,12 @@ function ns(e, t) {
 				() => t.vb.t("reenviar")
 			]), U(e, r);
 		}, c = /* @__PURE__ */ k(() => t.room.pending?.includes(n())), l = (e) => {
-			var r = Bo(), i = F(r, !0);
+			var r = el(), i = F(r, !0);
 			L(() => {
 				J(r, "title", n()), W(i, t.room.names[n()]);
 			}), U(e, r);
 		}, u = (e) => {
-			var t = Vo(), r = N(t), i = F(r, !0), a = F(I(r));
+			var t = tl(), r = N(t), i = F(r, !0), a = F(I(r));
 			O(t), L((e, t) => {
 				J(r, "title", n()), W(i, e), W(a, `@${t ?? ""}`);
 			}, [() => n().split("@")[0], () => n().split("@")[1] ?? ""]), U(e, t);
@@ -3679,7 +4732,7 @@ function ns(e, t) {
 			B(c) ? e(s) : t.room.names?.[n()] ? e(l, 1) : e(u, -1);
 		});
 		var d = I(o, 2), f = (e) => {
-			var r = Ho();
+			var r = nl();
 			K(r, () => t.vb.icon("x"), !0), O(r), L((e, t) => {
 				J(r, "data-remove", n()), J(r, "aria-label", e), J(r, "title", t);
 			}, [() => t.vb.t("Remover {email}", { email: n() }), () => t.room.pending?.includes(n()) ? t.vb.t("Cancelar convite") : t.vb.t("Remover do vibebook")]), U(e, r);
@@ -3695,12 +4748,12 @@ function ns(e, t) {
 		last: c(e),
 		i: t
 	})).sort((e, t) => t.last - e.last || t.i - e.i).map(({ epic: e }) => e)), f = /* @__PURE__ */ k(() => i() && B(d).length > 0), p = /* @__PURE__ */ k(() => t.room.members.filter((e) => e === t.room.me || t.room.online.includes(e))), h = /* @__PURE__ */ k(() => t.room.members.filter((e) => !B(p).includes(e))), g = /* @__PURE__ */ k(() => o().filter((e) => !t.room.members.includes(e)));
-	var _ = ts(), v = P(_), y = I(v, 2);
+	var _ = hl(), v = P(_), y = I(v, 2);
 	K(y, () => t.vb.roomStrip());
 	var b = I(y, 2), x = N(b), S = N(x);
 	K(N(S), () => t.vb.icon("back")), ke(), O(S);
 	var C = I(S, 2), w = (e) => {
-		var n = Wo(), r = P(n);
+		var n = il(), r = P(n);
 		K(r, () => t.vb.icon(B(l).archived ? "undo" : "check", 18), !0), O(r);
 		var i = I(r, 2);
 		K(i, () => t.vb.icon("trash", 18), !0), O(i), L((e, t, n, a) => {
@@ -3722,7 +4775,7 @@ function ns(e, t) {
 	var re = N(te);
 	K(re, () => t.vb.roomMark("ri roomIco"));
 	var ie = I(re), ae = F(ie, !0), oe = I(ie, 2), se = (e) => {
-		var n = Go(), r = N(n);
+		var n = al(), r = N(n);
 		K(r, () => t.vb.icon("pencil", 13));
 		var i = I(r);
 		O(n), L((e, t) => {
@@ -3737,7 +4790,7 @@ function ns(e, t) {
 	var ue = F(I(le), !0);
 	O(te);
 	var de = I(te, 2), fe = (e) => {
-		var n = Ko(), r = N(n);
+		var n = ol(), r = N(n);
 		let i;
 		var a = N(r), o = F(I(a), !0);
 		O(r);
@@ -3758,9 +4811,9 @@ function ns(e, t) {
 		n(e, () => B(t));
 	});
 	var ge = I(he, 2), _e = (e) => {
-		var n = Jo(), r = P(n), i = N(r), a = I(i);
+		var n = cl(), r = P(n), i = N(r), a = I(i);
 		K(a, () => t.vb.icon("plus"), !0), O(a), O(r), Xr(I(r, 2), 17, () => t.room.suggestions, Kr, (e, n, r) => {
-			var i = qo();
+			var i = sl();
 			let a;
 			J(i, "data-thread", `pre:${r}`);
 			var o = N(i), s = F(o, !0), c = I(o), l = F(c, !0), u = F(I(c), !0);
@@ -3781,9 +4834,9 @@ function ns(e, t) {
 	var ve = I(ee, 2);
 	K(ve, () => t.vb.pinsSec());
 	var ye = I(ve, 2), be = N(ye), xe = (e) => {
-		var n = Xo(), r = N(n), i = F(r, !0);
+		var n = ul(), r = N(n), i = F(r, !0);
 		Xr(I(r, 2), 17, () => t.room.requests, (e) => e.email, (e, n) => {
-			var r = Yo(), i = N(r);
+			var r = ll(), i = N(r);
 			K(i, () => t.vb.avatar(B(n).email));
 			var a = I(i, 2), o = N(a), s = F(o, !0), c = I(o), l = N(c), u = I(l), d = F(u, !0);
 			O(c), O(a);
@@ -3811,7 +4864,7 @@ function ns(e, t) {
 		r(e, () => t);
 	});
 	var E = I(Te, 2), Ee = (e) => {
-		var n = Zo(), i = N(n), o = F(i, !0);
+		var n = dl(), i = N(n), o = F(i, !0);
 		Xr(I(i), 16, () => B(h), (e) => e, (e, t) => {
 			r(e, () => t);
 		}), O(n), L((e) => {
@@ -3822,9 +4875,9 @@ function ns(e, t) {
 		B(h).length && e(Ee);
 	});
 	var D = I(E, 2), De = (e) => {
-		var n = $o(), r = N(n), i = F(r);
+		var n = pl(), r = N(n), i = F(r);
 		Xr(I(r, 2), 16, () => B(g), (e) => e, (e, n) => {
-			var r = Qo(), i = N(r);
+			var r = fl(), i = N(r);
 			K(i, () => t.vb.avatar(n));
 			var a = I(i), o = F(a, !0), s = I(a);
 			K(s, () => t.vb.icon("plus"), !0), O(s), O(r), L((e, t) => {
@@ -3841,7 +4894,7 @@ function ns(e, t) {
 	K(je, () => t.vb.icon("plus"), !0), O(je), O(Oe);
 	var Me = I(Oe, 2);
 	Xr(Me, 21, () => B(g), Kr, (e, t) => {
-		var n = es(), r = {};
+		var n = ml(), r = {};
 		L(() => {
 			r !== (r = B(t)) && (n.value = (n.__value = r) ?? "");
 		}), U(e, n);
@@ -3864,20 +4917,20 @@ function ns(e, t) {
 	]), U(e, _), Ye();
 }
 // svelte/Message.svelte
-var rs = /* @__PURE__ */ H("<span class=\"gut\"> </span>"), is = /* @__PURE__ */ H(" <span class=\"agentTag\">agent</span>", 1), as = /* @__PURE__ */ H("<span class=\"doneTag\"> </span>"), os = /* @__PURE__ */ H("<div><!> <!> <span class=\"mact\"><button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button></span> <div class=\"body\"><!> <div class=\"who\"><!> <!> <span class=\"hhmm\"> </span></div> <div class=\"txt\"></div> <!> <!> <!> <!> <!></div></div>");
-function ss(e, t) {
+var _l = /* @__PURE__ */ H("<span class=\"gut\"> </span>"), vl = /* @__PURE__ */ H(" <span class=\"agentTag\">agent</span>", 1), yl = /* @__PURE__ */ H("<span class=\"doneTag\"> </span>"), bl = /* @__PURE__ */ H("<div><!> <!> <span class=\"mact\"><button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button> <button type=\"button\" class=\"rbtn\"><!> </button></span> <div class=\"body\"><!> <div class=\"who\"><!> <!> <span class=\"hhmm\"> </span></div> <div class=\"txt\"></div> <!> <!> <!> <!> <!></div></div>");
+function xl(e, t) {
 	Je(t, !0);
 	let n = Wi(t, "origin", 3, !1), r = /* @__PURE__ */ k(() => t.vb.continues(t.previous, t.message)), i = /* @__PURE__ */ k(() => t.message.tag === "reminder" ? t.vb.remHtml(t.message, n()) : t.message.tag === "issue" ? t.vb.issueHtml(t.message) : t.vb.isNotice(t.message) ? t.vb.noticeHtml(t.message) : null), a = /* @__PURE__ */ k(() => n() && B(i) ? B(i).replace(/\sid="m\d+"/, "") : B(i)), o = /* @__PURE__ */ k(() => !t.message.text && t.typing ? `<span class="typing">${t.vb.esc(t.vb.typingNote?.(t.message.id) || t.vb.t("pensando ({mode})", { mode: t.vb.typingLabel?.(t.typing) ?? t.typing }))}…</span>` : t.message.author === "ai" ? t.message.text ? t.vb.mentions(t.vb.md(t.message.text)) : t.message.poll ? "" : `<span class="typing">${t.vb.t("pensando…")}</span>` : t.message.text ? t.vb.mentions(t.message.kind === "agent" ? t.vb.md(t.message.text) : t.vb.linkify(t.vb.esc(t.message.text))) : ""), s = /* @__PURE__ */ k(() => t.vb.dateTime?.(t.message.ts) ?? new Date(t.message.ts).toLocaleString());
 	var c = Nr(), l = P(c), u = (e) => {
 		var t = Nr();
 		K(P(t), () => B(a)), U(e, t);
 	}, d = (e) => {
-		var i = os();
+		var i = bl();
 		let a;
 		var c = N(i);
 		K(c, () => t.message.kind === "agent" ? t.vb.agentAvatar(t.message.author, t.message.via) : t.vb.avatar(t.message.author));
 		var l = I(c, 2), u = (e) => {
-			var n = rs(), r = F(n, !0);
+			var n = _l(), r = F(n, !0);
 			L((e) => {
 				J(n, "title", B(s)), W(r, e);
 			}, [() => t.vb.hhmm(t.message.ts)]), U(e, n);
@@ -3905,7 +4958,7 @@ function ss(e, t) {
 			t.message.reply_to && e(C);
 		});
 		var w = I(S, 2), T = N(w), ee = (e) => {
-			var n = is(), r = P(n), i = I(r);
+			var n = vl(), r = P(n), i = I(r);
 			L((e, t) => {
 				W(r, `${e ?? ""} `), J(i, "title", t);
 			}, [() => t.vb.t("{via} de {who}", {
@@ -3920,7 +4973,7 @@ function ss(e, t) {
 			t.message.kind === "agent" ? e(ee) : e(te, -1);
 		});
 		var ne = I(T, 2), re = (e) => {
-			var n = as(), r = F(n);
+			var n = yl(), r = F(n);
 			L((e, t) => {
 				J(n, "title", e), W(r, `✓ ${t ?? ""}`);
 			}, [() => t.vb.t("Reporta algo entregue"), () => t.vb.t("entregue")]), U(e, n);
@@ -3989,14 +5042,14 @@ function ss(e, t) {
 	}), U(e, c), Ye();
 }
 // svelte/Chat.svelte
-var cs = /* @__PURE__ */ H("<div class=\"older\"><button type=\"button\" class=\"ghost\" id=\"olderBtn\"> </button></div>"), ls = /* @__PURE__ */ H("<div class=\"origin\"><!> <div class=\"replies\"><span> </span><button type=\"button\" class=\"ghost\"> <!></button></div></div>"), us = /* @__PURE__ */ H("<div><!></div>"), ds = /* @__PURE__ */ H("<!> <!> <!>", 1);
-function fs(e, t) {
+var Sl = /* @__PURE__ */ H("<div class=\"older\"><button type=\"button\" class=\"ghost\" id=\"olderBtn\"> </button></div>"), Cl = /* @__PURE__ */ H("<div class=\"origin\"><!> <div class=\"replies\"><span> </span><button type=\"button\" class=\"ghost\"> <!></button></div></div>"), wl = /* @__PURE__ */ H("<div><!></div>"), Tl = /* @__PURE__ */ H("<!> <!> <!>", 1);
+function El(e, t) {
 	Je(t, !0);
 	let n = Wi(t, "more", 3, !1), r = Wi(t, "origin", 3, null), i = Wi(t, "replyCount", 3, 0);
 	var a = Nr();
 	Gr(P(a), () => t.room.id + ":" + t.thread, (e) => {
-		var a = ds(), o = P(a), s = (e) => {
-			var n = cs(), r = N(n), i = F(r, !0);
+		var a = Tl(), o = P(a), s = (e) => {
+			var n = Sl(), r = N(n), i = F(r, !0);
 			O(n), L((e) => W(i, e), [() => t.vb.t("Carregar mensagens anteriores")]), V("click", r, function(...e) {
 				t.onloadolder?.apply(this, e);
 			}), U(e, n);
@@ -4005,8 +5058,8 @@ function fs(e, t) {
 			t.list.length && n() && e(s);
 		});
 		var c = I(o, 2), l = (e) => {
-			var n = ls(), a = N(n);
-			ss(a, {
+			var n = Cl(), a = N(n);
+			xl(a, {
 				get message() {
 					return r();
 				},
@@ -4031,7 +5084,7 @@ function fs(e, t) {
 			Xr(P(n), 19, () => t.list, (e) => e.id, (e, n, r) => {
 				{
 					let i = /* @__PURE__ */ k(() => B(r) ? t.list[B(r) - 1] : t.previous);
-					ss(e, {
+					xl(e, {
 						get message() {
 							return B(n);
 						},
@@ -4048,7 +5101,7 @@ function fs(e, t) {
 				}
 			}), U(e, n);
 		}, f = (e) => {
-			var n = us();
+			var n = wl();
 			let i;
 			var a = N(n), o = (e) => {
 				var n = Nr();
@@ -4068,7 +5121,7 @@ function fs(e, t) {
 }
 wr(["click"]);
 // svelte/roomStore.ts
-function ps(e, t, n) {
+function Dl(e, t, n) {
 	if (t.t === "state") return {
 		...t,
 		id: n,
@@ -4226,32 +5279,32 @@ function ps(e, t, n) {
 		default: return r;
 	}
 }
-function ms() {
+function Ol() {
 	let e = Ni(null);
 	return {
 		subscribe: e.subscribe,
 		get: () => Pi(e),
 		replace: e.set,
 		apply(t, n) {
-			return e.update((e) => ps(e, t, n)), Pi(e);
+			return e.update((e) => Dl(e, t, n)), Pi(e);
 		}
 	};
 }
 // svelte/main.ts
-var hs = /* @__PURE__ */ t({
-	createRoomStore: () => ms,
-	mountInbox: () => vs,
-	mountView: () => _s
-}), gs = {
+var kl = /* @__PURE__ */ t({
+	createRoomStore: () => Ol,
+	mountInbox: () => Ml,
+	mountView: () => jl
+}), Al = {
 	tasks: la,
 	board: Aa,
 	files: za,
-	reminders: Io,
-	sidebar: ns,
-	chat: fs
+	reminders: Xc,
+	sidebar: gl,
+	chat: El
 };
-function _s(e, t, n) {
-	let r = Ni(n), i = gs[e], a = Ft(() => Rr(Gi, {
+function jl(e, t, n) {
+	let r = Ni(n), i = Al[e], a = Ft(() => Rr(Gi, {
 		target: t,
 		props: {
 			component: i,
@@ -4269,11 +5322,11 @@ function _s(e, t, n) {
 		}
 	};
 }
-function vs(e, t) {
+function Ml(e, t) {
 	let n = Ft(() => Rr($i, {
 		target: e,
 		props: t
 	}));
 	return () => Hr(n);
 }
-export { Do as a, ms as i, vs as n, Eo as o, _s as r, To as s, hs as t };
+export { Vc as a, Ol as i, Ml as n, Rc as o, jl as r, Lc as s, kl as t };

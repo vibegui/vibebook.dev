@@ -6,3 +6,4 @@ dist-mcp
 cli/cli.mjs
 
 .svelte-check/
+.api-types/

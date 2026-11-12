@@ -1,22 +1,15 @@
-import type { Attachment } from "./room";
+import type {
+  PostMessageBody,
+  PostMessageResult,
+  SaveReminderResult as SaveReminder,
+  UploadFileResult,
+} from "./schemas";
 
-/** Browser-facing room HTTP operations. These contracts contain DTOs, never Worker implementation types. */
-export interface PostMessageRequest {
-  text: string;
-  thread?: string;
-}
-export type PostMessageResponse =
-  { ok: true; id: number; thread: string } | { ok: false; error: string };
-export type SaveReminderResult = {
-  ok: boolean;
-  name?: string;
-  error?: string;
-  every?: string | null;
-  cron?: string | null;
-  timezone?: string;
-  next_at?: string;
-};
-export type UploadFileResponse = Attachment & { reminder?: SaveReminderResult };
+/** Browser-facing room HTTP operations. The wire types are derived from the runtime schemas in schemas.ts (M1). */
+export type PostMessageRequest = PostMessageBody;
+export type PostMessageResponse = PostMessageResult;
+export type SaveReminderResult = SaveReminder;
+export type UploadFileResponse = UploadFileResult;
 export interface RoomApi {
   postMessage(input: PostMessageRequest): Promise<PostMessageResponse>;
   uploadFile(input: {

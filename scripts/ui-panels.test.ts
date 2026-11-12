@@ -341,10 +341,9 @@ describe("native Svelte room panels", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     flushSync();
     expect(calls[0].url).toBe("/api/books/r/files");
-    expect(calls[0].init?.headers).toEqual({
-      "content-type": "text/markdown",
-      "x-filename": "reminders%2Fdaily.md",
-    });
+    const sent = new Headers(calls[0].init?.headers);
+    expect(sent.get("content-type")).toBe("text/markdown");
+    expect(sent.get("x-filename")).toBe("reminders%2Fdaily.md");
     expect(target.querySelector("#remErr")?.textContent).toContain(
       "Schedule needs a time",
     );
