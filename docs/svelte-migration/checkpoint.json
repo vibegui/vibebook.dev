@@ -1,0 +1,45 @@
+{
+  "scope": "Incremental M0 isolation and M2 slices 1/2, not full migration acceptance",
+  "sourceCommit": "8b83025743655a87c39010eb84fc8a91962fab93",
+  "capturedAt": "2026-11-12T19:20:29.160Z",
+  "command": "bun run check",
+  "exitCode": 0,
+  "tests": {
+    "passed": 64,
+    "failed": 0,
+    "assertions": 292
+  },
+  "svelteCheck": {
+    "preview": "0 errors and 0 warnings",
+    "vanilla": "0 errors and 0 warnings"
+  },
+  "logSha256": "4720db879df2fde6a4f101387140f3ae49b9503037a3da9b486d163ca876ba2c",
+  "frontendTypeProgram": {
+    "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
+    "files": 384,
+    "backendRuntimeSources": [],
+    "cloudflareWorkerTypes": [],
+    "apiDeclarations": [
+      ".api-types/shared/schemas.d.ts",
+      ".api-types/src/api.d.ts"
+    ]
+  },
+  "defaultAssetDiff": {
+    "baseline": "d3e1473",
+    "paths": [
+      "public/app.html",
+      "public/svelte/ui.js",
+      "public/collab.js",
+      "public/sw.js",
+      "public/manifest.webmanifest",
+      "src/webpush.ts"
+    ],
+    "changed": []
+  },
+  "limits": [
+    "Runtime HTTP unit tests inject authenticated ApiServices; production authentication and persistence require Worker/browser verification.",
+    "Studio source snapshot includes complete rules; workspace screenshots, computed roles and loaded-font comparisons remain pending.",
+    "M0 baseline fixtures and the full native Svelte/Tailwind migration remain pending.",
+    "No final M7 performance or M8 authenticated production acceptance is claimed."
+  ]
+}
