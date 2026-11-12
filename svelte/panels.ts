@@ -1,0 +1,12 @@
+import type { Bridge, Wait } from './types';
+import type { SendRoomCommand } from '../shared/commands';
+import type { Attachment, Room } from './roomStore';
+export type { Task, Epic, Reminder } from './roomStore';
+export type RoomFile = Attachment;
+export type PanelRoom = Pick<Room, 'id' | 'me' | 'members' | 'epics' | 'roomTasks' | 'files' | 'filesN' | 'reminders' | 'pins' | 'book'>;
+export type PanelBridge = Bridge & { name: (email: string) => string; color: (text: string) => string; initials: (text: string) => string; locale?: string; mentions?: (html: string) => string };
+export type Send = SendRoomCommand;
+export type PanelProps = { room: PanelRoom; thread: string; vb: PanelBridge; send: Send; waits?: Wait[]; onopen?: (epic: string) => void };
+export const escapeHtml = (text: string) => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+export const fileKind = (f: RoomFile) => f.type.startsWith('image/') ? 'img' : f.type.startsWith('audio/') ? 'audio' : f.type === 'text/html' ? 'html' : f.type === 'application/pdf' ? 'pdf' : /\.md$/i.test(f.name) || f.type === 'text/markdown' ? 'md' : f.type === 'text/plain' || f.type === 'text/csv' ? 'txt' : 'other';
+export const kb = (n: number) => n > 1e6 ? `${(n/1e6).toFixed(1)} MB` : `${Math.max(1,Math.round(n/1e3))} KB`;

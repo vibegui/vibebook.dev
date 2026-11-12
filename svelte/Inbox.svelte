@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { Wait, Bridge } from "./types";
 
   // The inbox: what's waiting on you (asks, your tasks in review, your agent waiting), this room or all rooms.
@@ -13,7 +14,7 @@
     onresolve: (w: Wait) => void;
     onclose: () => void;
   } = $props();
-  let all = $state(startAll);
+  let all = $state(untrack(()=>startAll));
   const tab = (v: boolean) => { all = v; ontab?.(v); };
 
   const here = $derived(roomId ? waits.filter((w) => w.book_id === roomId) : []);

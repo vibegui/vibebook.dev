@@ -1,3 +1,5 @@
+import { isPostMessageRequest } from "../shared/validation";
+import "server-only";
 import { type Context, Hono } from "hono";
 import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
@@ -100,7 +102,6 @@ const SCHEMA = [
   // members' PK is (book_id, email): "my rooms" (/api/me, unreadRooms every 3s per listener) needs email first.
   `CREATE INDEX IF NOT EXISTS members_email ON members (email)`,
   `CREATE INDEX IF NOT EXISTS agents_email ON agents (email)`,
-  `CREATE INDEX IF NOT EXISTS sandboxes_book ON sandboxes (book_id)`,
   // Someone opened a room link without access and asked to join (/b/<id> → "Pedir acesso"). A member approves (=
   // invite) or declines (denied = 1, kept so the same person can't keep asking).
   `CREATE TABLE IF NOT EXISTS access_requests (book_id TEXT, email TEXT, ts INTEGER, denied INTEGER DEFAULT 0, PRIMARY KEY (book_id, email))`,
@@ -120,6 +121,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS mcp_oauth_states (state TEXT PRIMARY KEY, email TEXT, book_id TEXT, conn_id TEXT, resource TEXT, issuer TEXT, verifier TEXT, back TEXT, expires_at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS mcp_grants (email TEXT, resource TEXT, issuer TEXT, access_enc TEXT, access_iv TEXT, refresh_enc TEXT, refresh_iv TEXT, expires_at INTEGER, at INTEGER, PRIMARY KEY (email, resource))`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS sandboxes_book ON sandboxes (book_id)`,
 ];
 let schemaReady: Promise<unknown> | undefined;
 // Columns added after launch; ALTER fails harmlessly once they exist.
@@ -596,8 +598,9 @@ app.post("/api/books/:id/post", async (c) => {
   const email = c.get("email");
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { text, thread } = await c.req.json<{ text?: string; thread?: string }>().catch(() => ({}) as { text?: string; thread?: string });
-  const out = await bookStub(c.env, id).humanPost(id, email, text ?? "", thread || "main");
+  const input: unknown = await c.req.json().catch(() => null);
+  if (!isPostMessageRequest(input)) return c.json({ ok: false, error: "invalid message payload" }, 400);
+  const out = await bookStub(c.env, id).humanPost(id, email, input.text, input.thread || "main");
   if (out.ok) c.executionCtx.waitUntil(track(c.env, "home_route_sent", { user: email, dims: { book: id, epic: out.thread !== "main" } }));
   return out.ok ? c.json(out) : c.json(out, 400);
 });

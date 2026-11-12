@@ -1,3 +1,5 @@
+import "server-only";
+import type { UploadFileResponse } from "../shared/rpc";
 import { checkEmbed } from "./embed";
 import { poke } from "./person";
 // Room (vibebook) operations shared by the app API and the agent MCP.
@@ -111,7 +113,7 @@ export const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
 export const maxBytes = (type: string) => (type.startsWith("audio/") ? MAX_AUDIO_BYTES : MAX_FILE_BYTES);
 export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown, texto, CSV e áudio).";
 export const sizeError = (type: string) => `Arquivo vazio ou maior que ${maxBytes(type) / 1024 / 1024}MB.`;
-export type StoredFile = { id: string; name: string; type: string; size: number; author: string; ts: number; reminder?: { ok: boolean; name: string; error?: string; every?: string | null; next_at?: string } };
+export type StoredFile = UploadFileResponse;
 
 /** Validates and stores one file in R2 + the room's index. Throws an Error whose message is user-facing. */
 export async function storeFile(env: Env, bookId: string, email: string, type: string, body: ArrayBuffer, rawName: string): Promise<StoredFile> {

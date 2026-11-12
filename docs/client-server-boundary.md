@@ -1,0 +1,46 @@
+# Browser and backend boundaries
+
+The browser app uses Svelte 5, TypeScript and Vite. Its entry is `svelte/main.ts`; Vite emits the committed browser bundle in `public/svelte/`. The Cloudflare Worker and Durable Objects live in `src/` and are built separately by Wrangler.
+
+`clientBoundary` in `svelte/build/clientBoundary.ts` rejects backend imports while Vite resolves the browser dependency graph. This applies to direct imports, transitive imports, aliases, symlinks and statically analyzable dynamic imports. A browser build fails if it reaches:
+
+- Any runtime module under `src/`.
+- A `*.server.ts`/`*.server.js` module or a `server/` directory.
+- A module importing `server-only`.
+- A Node, Cloudflare or workerd runtime module.
+
+Mark backend modules outside `src/` explicitly:
+
+```ts
+import "server-only";
+
+export async function readPrivateData() {
+  // Backend implementation.
+}
+```
+
+The local `server-only` package is an empty module on the Worker. The Vite plugin rejects it in the browser graph before tree shaking, so the marker cannot disappear unnoticed as an unused import.
+
+Place browser-safe runtime helpers and wire contracts in `shared/`. Shared modules must not import backend implementations. Type-only imports (`import type`) are erased before dependency resolution and can refer to backend types without adding backend runtime code to the browser bundle. Prefer contracts in `shared/` when both sides use them.
+
+Run `bun run check:client-boundary` to build positive and negative fixtures through Vite. The fixtures verify shared imports and type erasure, and reject direct, transitive, aliased, symlinked, dynamic, marked and runtime-specific backend imports. `bun run build:ui` enforces the same boundary on the actual app.
+
+The guard protects the build's module graph. It cannot classify arbitrary code fetched or executed at runtime; do not add `eval`, variable remote imports or manual source copying as a way around the module boundary. It is not a replacement for keeping credentials out of source code.
+
+## Shared contracts and transports
+
+`shared/room.ts` defines the JSON room snapshot and event union; `shared/commands.ts` defines browser-to-Book commands; `shared/rpc.ts` defines the room HTTP request and response DTOs. The backend uses these contracts for `Book.broadcast`, its initial snapshot, human posting and file uploads. SQLite integer flags are converted to JSON booleans before serialization.
+
+`shared/validation.ts` validates untrusted JSON on both sides: the Worker parses incoming commands before dispatch, and `svelte/transport.ts` parses incoming events before the store sees them. Unknown event/command names, wrong primitive values and malformed nested tasks, files, polls or messages are rejected. The UI store re-exports the shared types and handles only typed events. `createRoomApi` provides typed posting/upload calls with response checks; the existing Worker routes and their authentication remain unchanged.
+
+This is an explicit contract layer over the existing WebSocket/HTTP protocol, not a generated RPC framework. New operations should add their request/response types and validators to `shared/`, then implement the backend handler and typed frontend adapter. Keep transport and state separate: WebSocket owns room data, Yjs owns document text, and Svelte consumes the room store.
+
+Run `bun scripts/protocol-check.ts` for malformed-payload, nullable-data, disconnected-socket and HTTP response tests. Include `shared/` and `svelte/transport.ts` in TypeScript checking so changes to command names or payloads are checked in both applications.
+
+## Frontend layout and migration boundary
+
+`public/app.html` is the document shell and `public/app.css` contains the existing styles. `svelte/legacy/host.js` retains existing composer, routing, document editor, embed and account integrations. It is intentionally JavaScript during the incremental migration and is not covered by the Svelte TypeScript check. `svelte/{Chat,Message,Sidebar,Tasks,Board,Files,Reminders,Inbox}.svelte`, the room reducer, and the new transport/contracts are TypeScript checked. This migration does not claim that every existing HTTP endpoint or host integration is typed.
+
+Vite builds both `svelte/main.ts` and the host entry into `public/svelte/`. Commit **all** generated JavaScript chunks together; `ui.js` alone is no longer the complete build. Run `bun run build:ui` after browser source or shared runtime contract changes. The Worker remains a separate Wrangler build; no backend implementation is imported by the browser.
+
+Verification commands: `bun run check`, `bun run check:ui`, `bun run test:ui`, `bun run test:store`, `bun run check:protocol`, `bun run check:client-boundary`. For live checks, start the local Worker with `DEV_EMAIL` configured, then run `bun run test:browser` and `bun run measure:ui`. Browser checks refuse production URLs and create only local test data. Metrics alternate baseline/current HTML in isolated browser contexts and record downloaded gzip bytes, readiness, thread switching, browser task duration, heap and DOM nodes; local results are not a production performance claim.

@@ -1,3 +1,8 @@
+import "server-only";
+import { TASK_STATUSES } from "../shared/room";
+import type { PostMessageResponse } from "../shared/rpc";
+import type { RoomEvent, Room, BookMeta, Attachment, Message, Poll, Suggestion } from "../shared/room";
+import { parseRoomCommand } from "../shared/validation";
 import { type Card, cardText } from "./card";
 import { poke } from "./person";
 import { parseBlock, reconcile, renderBlock } from "./taskblock";
@@ -16,10 +21,9 @@ import { track } from "./track";
 
 // OpenRouter reports each call's USD cost in usage.raw.cost; the admin sums it per model.
 const costOf = (usage: unknown) => Number((usage as { raw?: { cost?: number } } | undefined)?.raw?.cost) || 0;
-export type FileMeta = { id: string; name: string; type: string; size: number; author: string; ts: number; embed?: boolean };
+export type FileMeta = Attachment;
 // kind: null = a human in the app, "agent" = that person's connected agent (MCP). author "ai" is @vibe.
-type Msg = { id: number; thread: string; author: string; text: string; ts: number; files: FileMeta[]; poll: string | null; kind: string | null; via?: string | null; tag?: string | null; reply_to?: number | null; choices?: string | null; for_who?: string | null; card?: string | null; cut?: boolean };
-type Poll = { id: string; question: string; options: string[]; multi: boolean; closed: boolean; author: string; votes: string[][] };
+type Msg = Message;
 const SEED_GOAL = "o que este épico entrega e por quê";
 /** The room doc's grade row, and what Jev checks in it: [answer id, note when the answer is no, question]. */
 const DOC_GRADE = "_doc";
@@ -33,7 +37,6 @@ export const epicDocSeed = (title: string, why = "") =>
   `# ${title}\n\n**Objetivo:** ${why.trim() || `${SEED_GOAL} (edite aqui ou peça pro seu Claude).`}\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`;
 /** Epic titles compared without numbering, case or accents: "2. Primeira limpeza" = "primeira limpeza". */
 const epicKey = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^[\s\d.)\-–—:#]+/, "").replace(/\s+/g, " ").trim();
-type Suggestion = { title: string; tasks: string[]; why?: string };
 
 const DEFAULT_TITLE = "Novo vibebook";
 const CLASSIFY_DELAY_MS = 30_000;
@@ -53,7 +56,7 @@ const withQuote = (q: { id: number; from: string; text: string } | undefined, te
 const REMINDERS_MAX = 20; // per room
 const REMINDER_MIN_GAP_MS = 30 * 60_000; // each fire wakes a Claude: no more than twice an hour
 // Board lanes. `done` stays in sync with status = "done" so older readers keep working.
-export const STATUSES = ["todo", "doing", "review", "done"] as const;
+export const STATUSES = TASK_STATUSES;
 type Status = (typeof STATUSES)[number];
 const STATUS_LABEL: Record<Status, string> = { todo: "a fazer", doing: "fazendo", review: "esperando OK", done: "feito" };
 const STATUS_LABEL_EN: Record<Status, string> = { todo: "to do", doing: "doing", review: "waiting for OK", done: "done" };
@@ -119,13 +122,13 @@ export class Book extends DurableObject<Env> {
     return this.sql
       .exec<{ id: string; title: string; done: number; owner: string | null; due: string | null; status: string | null }>(`SELECT id, title, done, owner, due, status FROM tasks WHERE epic_id = 'main' ORDER BY ts`)
       .toArray()
-      .map((t) => ({ ...t, epic_id: "main", status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
+      .map((t) => ({ ...t, done: !!t.done, epic_id: "main", status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
   }
   /** Only the epics that changed since the last push, plus the order. The whole list (every archived epic with its
    * tasks) went out on each task move, ~64 KB per open tab in the product room: the biggest share of /ws bandwidth.
    * What the sockets last got is a hash per epic in meta `epics_sent` (the DO hibernates between pushes; the sockets
    * don't). No record yet = the whole list. */
-  pushEpics(epics: ReturnType<Book["epics"]>, roomTasks: unknown) {
+  pushEpics(epics: ReturnType<Book["epics"]>, roomTasks: ReturnType<Book["roomTasks"]>) {
     const h = (x: string) => { let a = 5381; for (let i = 0; i < x.length; i++) a = (a * 33 + x.charCodeAt(i)) | 0; return (a >>> 0).toString(36) + x.length.toString(36); };
     const now: Record<string, string> = Object.fromEntries(epics.map((e) => [e.id, h(JSON.stringify(e))]));
     const raw = this.get("epics_sent");
@@ -142,7 +145,7 @@ export class Book extends DurableObject<Env> {
         `SELECT id, epic_id, title, done, owner, due, status FROM tasks ORDER BY ts`,
       )
       .toArray()
-      .map((t) => ({ ...t, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
+      .map((t) => ({ ...t, done: !!t.done, status: (t.done ? "done" : t.status && t.status !== "done" ? t.status : "todo") as Status }));
     // What each epic produced (Nov 2026: the thread card lists the files of its whole tree): the newest version of each
     // file name attached in its thread (≤8 names, n = uploads of that name), and the parent epic (its request was
     // written in the parent's thread), so the app can gather a tree's files without loading every thread.
@@ -324,7 +327,7 @@ export class Book extends DurableObject<Env> {
       .exec<{ id: string; name: string | null; thread: string; text: string; cron: string | null; tz: string; owner: string; next_at: number | null; enabled: number; error: string | null; every: string | null; file_id: string | null }>(
         `SELECT id, name, thread, text, cron, tz, owner, next_at, coalesce(enabled, 1) AS enabled, error, every, file_id FROM reminders ORDER BY coalesce(name, text)`,
       )
-      .toArray();
+      .toArray().map(r => ({...r, enabled: !!r.enabled}));
   }
   /** cron + zone → the next run, or why it can't be one. */
   nextFire(cron: string, tz: string, from = Date.now()): { next: number } | { error: string } {
@@ -609,12 +612,12 @@ export class Book extends DurableObject<Env> {
   sockets(except?: WebSocket) {
     return this.ctx.getWebSockets().filter((ws) => ws !== except && ws.readyState === WebSocket.OPEN);
   }
-  broadcast(data: unknown, except?: WebSocket) {
+  broadcast(data: RoomEvent, except?: WebSocket) {
     const s = JSON.stringify(data);
     const to = this.sockets(except);
     for (const ws of to) ws.send(s);
     // Fat pushes (≥20 KB on the wire across sockets) are logged, so the report can say which kind eats the bandwidth.
-    if (s.length * to.length >= 20_000) this.ctx.waitUntil(track(this.env, "ws_push", { dims: { book: this.get("book_id") ?? "", t: String((data as { t?: string }).t), bytes: s.length * to.length } }));
+    if (s.length * to.length >= 20_000) this.ctx.waitUntil(track(this.env, "ws_push", { dims: { book: this.get("book_id") ?? "", t: data.t, bytes: s.length * to.length } }));
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
@@ -1177,11 +1180,11 @@ export class Book extends DurableObject<Env> {
   // "X está fazendo isso": an agent took a message as work (MCP ack); its next done post marks it done.
   acksList() {
     // Enough for every request of the last two weeks: the app's "Fila do seu Claude" counts on seeing each one's ack.
-    return this.sql.exec(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 500`, Date.now() - 14 * 864e5).toArray();
+    return this.sql.exec<{msg_id:number;agent:string;email:string;who:string;status:string;ts:number;note:string|null}>(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ts > ? ORDER BY ts DESC LIMIT 500`, Date.now() - 14 * 864e5).toArray();
   }
   /** Only the ack rows that changed (the app merges them by message + agent), not the whole list on every post. */
   pushAcks(where: string, ...args: unknown[]) {
-    const acks = this.sql.exec(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ${where}`, ...args).toArray();
+    const acks = this.sql.exec<{msg_id:number;agent:string;email:string;who:string;status:string;ts:number;note:string|null}>(`SELECT msg_id, agent, email, who, status, note, ts FROM acks WHERE ${where}`, ...args).toArray();
     if (acks.length) this.broadcast({ t: "ackRows", acks });
   }
   agentAck(bookId: string, agent: string, email: string, who: string, msgId?: number, status = "doing", rawNote = "") {
@@ -1270,7 +1273,7 @@ export class Book extends DurableObject<Env> {
 
   // "Delivered to / read by": each connected agent's cursor in this room (written by src/agent.ts from D1).
   receiptsList() {
-    return this.sql.exec(`SELECT agent, email, who, read, delivered, ts FROM receipts WHERE ts > ? AND substr(agent, 1, 2) != 'n_' ORDER BY ts DESC LIMIT 20`, Date.now() - 14 * 864e5).toArray();
+    return this.sql.exec<NonNullable<Room["receipts"]>[number]>(`SELECT agent, email, who, read, delivered, ts FROM receipts WHERE ts > ? AND substr(agent, 1, 2) != 'n_' ORDER BY ts DESC LIMIT 20`, Date.now() - 14 * 864e5).toArray();
   }
   receipt(r: { agent: string; email: string; who: string; read: number; delivered: number }) {
     const old = this.sql.exec<{ who: string; read: number; delivered: number }>(`SELECT who, read, delivered FROM receipts WHERE agent = ?`, r.agent).toArray()[0];
@@ -1346,7 +1349,7 @@ export class Book extends DurableObject<Env> {
   }
 
   /** A person posting from the home router (not over WS): same rules as the chat. */
-  async humanPost(bookId: string, email: string, raw: string, thread = "main") {
+  async humanPost(bookId: string, email: string, raw: string, thread = "main"): Promise<PostMessageResponse> {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
     if (!text) return { ok: false, error: "Mensagem vazia." };
@@ -1608,13 +1611,13 @@ export class Book extends DurableObject<Env> {
     this.ctx.waitUntil(this.markRead([email], (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0));
     // The D1 reads in parallel (each is a round trip): opening a room waited on six of them in a row.
     const [book, members, pending, requests, names, avatars] = await Promise.all([
-      this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first(),
+      this.env.DB.prepare(`SELECT title, folder, summary, owner FROM books WHERE id = ?`).bind(bookId).first<BookMeta>(),
       this.members(), this.pending(), this.requests(), this.names(), this.avatars(),
     ]);
-    const state: Record<string, unknown> = {
+    const state: Extract<RoomEvent, {t:"state"}> = {
         t: "state",
         me: email,
-        book,
+        book: book ?? {title: DEFAULT_TITLE, owner: email},
         doc: this.get("doc") ?? "",
         docNotes: this.docNotes(),
         // Only the open epic's doc; the app asks for another with "doc.get" when that epic opens (all of them were 70 KB).
@@ -1625,7 +1628,7 @@ export class Book extends DurableObject<Env> {
         ...this.roomWindow(url.searchParams.get("t") || "main", email),
         complete: false,
         // The newest 12 and the pinned ones; the whole list (~100 KB in the product room) when Arquivos opens ("files.get").
-        files: this.sql.exec(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(),
+        files: this.sql.exec<{id:string;name:string;type:string;size:number;author:string;ts:number}>(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(),
         filesN: this.sql.exec<{ n: number }>(`SELECT count(*) AS n FROM files`).one().n,
         reminders: this.reminders(),
         polls: this.polls(),
@@ -1653,9 +1656,9 @@ export class Book extends DurableObject<Env> {
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
     const email = this.ctx.getTags(ws)[0];
-    let m: Record<string, any>;
+    let m;
     try {
-      m = JSON.parse(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
+      m = parseRoomCommand(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
     } catch {
       return;
     }
