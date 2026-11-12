@@ -43,3 +43,25 @@ const req: UploadReq = {
   header: { "content-type": "image/png", "x-filename": "a.png" },
 };
 void [name, size, req];
+
+// Slice 2: account and room mutations.
+const subscribe = api.api.push.subscribe.$post;
+const archive = api.api.books[":id"].archive.$post;
+void subscribe({ json: { endpoint: "https://push", p256dh: "k", auth: "a" } });
+const noAuth = { endpoint: "https://push", p256dh: "k" };
+// @ts-expect-error auth is required
+void subscribe({ json: noAuth });
+void api.api.waits.resolve.$post({ json: { book_id: "b", ref: "m1" } });
+void api.api.books[":id"].tint.$post({
+  param: { id: "r" },
+  json: { tint: "blue" },
+});
+void archive({ param: { id: "r" }, json: { archived: false } });
+const notBool = { archived: "no" };
+// @ts-expect-error archived is a boolean
+void archive({ param: { id: "r" }, json: notBool });
+type Key = InferResponseType<typeof api.api.push.key.$get, 200>;
+const key: string | null = ({} as Key).key;
+type Sent = InferResponseType<typeof api.api.push.test.$post, 200>;
+const sent: number = ({} as Sent).sent;
+void [key, sent];
