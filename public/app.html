@@ -4138,20 +4138,28 @@ function ownerMenu(anchor, id) {
 }
 // Epic tree (Nov 2026): a sub-epic (its request was written in another epic's thread: epics[].parent) sits under its
 // parent; › opens and closes the branch. Closed branches are remembered per room in this browser (vb.tree.<room>), and
-// a branch holding the thread you're in stays open. A room with no sub-epics draws the flat list as before.
+// entering a thread opens the branches above it (once: the › still closes them). A room with no sub-epics draws the flat list as before.
 const treeClosed = () => { try { return new Set(JSON.parse(localStorage.getItem(`vb.tree.${S.id}`) || "[]")); } catch { return new Set(); } };
+let treeOpenedFor = "";
 function epicTree(list) {
   const ids = new Set(list.map((e) => e.id)), kids = new Map();
   for (const e of list) if (e.parent && e.parent !== e.id && ids.has(e.parent)) { if (!kids.has(e.parent)) kids.set(e.parent, []); kids.get(e.parent).push(e); }
   if (!kids.size) return list.map(epicRow).join("");
   const closed = treeClosed(), seen = new Set();
   const below = (id, f, d = 0) => d < 12 && (kids.get(id) || []).some((k) => f(k) || below(k.id, f, d + 1));
+  // Entering a thread opens the branches above it once; after that the › always wins (closing works even from inside).
+  if (treeOpenedFor !== `${S.id}/${thread}`) {
+    treeOpenedFor = `${S.id}/${thread}`;
+    let changed = false;
+    for (const id of kids.keys()) if (closed.has(id) && below(id, (k) => k.id === thread)) { closed.delete(id); changed = true; }
+    if (changed) try { localStorage.setItem(`vb.tree.${S.id}`, JSON.stringify([...closed])); } catch {}
+  }
   const node = (e) => {
     if (seen.has(e.id)) return "";
     seen.add(e.id);
     const ks = kids.get(e.id) || [];
     if (!ks.length) return `<div class="epNode leaf"><span class="epChev"></span>${epicRow(e)}</div>`;
-    const open = !closed.has(e.id) || below(e.id, (k) => k.id === thread);
+    const open = !closed.has(e.id);
     const busy = below(e.id, (k) => !!epicBusy(k));
     return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}"><button type="button" class="epChev" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</button>${epicRow(e)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
   };
