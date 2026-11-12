@@ -1,3 +1,6 @@
+import { isPostMessageRequest } from "../shared/validation";
+import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
+import "server-only";
 import { type Context, Hono } from "hono";
 import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
@@ -104,7 +107,6 @@ const SCHEMA = [
   // members' PK is (book_id, email): "my rooms" (/api/me, unreadRooms every 3s per listener) needs email first.
   `CREATE INDEX IF NOT EXISTS members_email ON members (email)`,
   `CREATE INDEX IF NOT EXISTS agents_email ON agents (email)`,
-  `CREATE INDEX IF NOT EXISTS sandboxes_book ON sandboxes (book_id)`,
   // Someone opened a room link without access and asked to join (/b/<id> → "Pedir acesso"). A member approves (=
   // invite) or declines (denied = 1, kept so the same person can't keep asking).
   `CREATE TABLE IF NOT EXISTS access_requests (book_id TEXT, email TEXT, ts INTEGER, denied INTEGER DEFAULT 0, PRIMARY KEY (book_id, email))`,
@@ -124,6 +126,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS mcp_oauth_states (state TEXT PRIMARY KEY, email TEXT, book_id TEXT, conn_id TEXT, resource TEXT, issuer TEXT, verifier TEXT, back TEXT, expires_at INTEGER)`,
   `CREATE TABLE IF NOT EXISTS mcp_grants (email TEXT, resource TEXT, issuer TEXT, access_enc TEXT, access_iv TEXT, refresh_enc TEXT, refresh_iv TEXT, expires_at INTEGER, at INTEGER, PRIMARY KEY (email, resource))`,
   `CREATE TABLE IF NOT EXISTS sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, vm_id TEXT, identity_id TEXT, ready INTEGER DEFAULT 0, created_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS sandboxes_book ON sandboxes (book_id)`,
   `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, email TEXT, p256dh TEXT, auth TEXT, ua TEXT, created_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS push_subs_email ON push_subs (email)`,
 ];
@@ -197,13 +200,23 @@ const pageview = async (c: Context<Ctx>, res: Response, user?: string | null) =>
 // The page carries its own version (the asset's etag) in <meta name="vb-v">, and /api/me says the current one: the
 // app shows "Nova versão" when they differ (an installed PWA keeps an old page around for days).
 const shell = async (c: { env: Env; req: { url: string; raw: Request } }) => {
-  const res = await c.env.ASSETS.fetch(new Request(new URL("/app", c.req.url), c.req.raw));
+  const asset = await c.env.ASSETS.fetch(new Request(new URL(uiShellPath(c.req.url), c.req.url), c.req.raw));
+  const res = new Response(asset.body, asset);
+  res.headers.set("x-vibebook-ui", uiVariant(c.req.url));
   const v = res.headers.get("etag");
   return res.status === 200 && v ? new HTMLRewriter().on("head", { element: (el) => { el.append(`<meta name="vb-v" content="${v.replace(/[^\w-]/g, "")}" />`, { html: true }); } }).transform(res) : res;
 };
-let appVersion: string | undefined; // per isolate = per deploy
+const appVersions = new Map<UiVariant, string>(); // per variant, isolate and deploy
 const currentVersion = async (env: Env, url: string) =>
-  (appVersion ??= ((await env.ASSETS.fetch(new Request(new URL("/app", url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, ""));
+  {
+    const variant = uiVariant(url);
+    let version = appVersions.get(variant);
+    if (version === undefined) {
+      version = ((await env.ASSETS.fetch(new Request(new URL(uiShellPath(url), url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, "");
+      appVersions.set(variant, version);
+    }
+    return version;
+  };
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
@@ -242,14 +255,15 @@ for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
     return res;
   });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
-app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect("/app") : pageview(c, await shell(c))));
+app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url))) : pageview(c, await shell(c))));
 app.get("/app", async (c) => {
   const email = await identify(c);
-  return email ? pageview(c, await shell(c), email) : c.redirect("/login");
+  return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl("/login", c.req.url, uiVariant(c.req.url)));
 });
 app.get("/archived", async (c) => {
   const email = await identify(c);
-  return email ? pageview(c, await shell(c), email) : c.redirect("/login?next=%2Farchived");
+  const next = uiNavigationUrl("/archived", c.req.url, uiVariant(c.req.url));
+  return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl(`/login?next=${encodeURIComponent(next)}`, c.req.url, uiVariant(c.req.url)));
 });
 // A room link: members get the app; anyone else (and link-preview bots) a page with the room's name and "Pedir
 // acesso". The title is readable by whoever holds the link, on purpose: that's what makes the shared card useful.
@@ -262,7 +276,7 @@ app.get("/b/*", async (c) => {
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
   const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
   const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
-  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw) }), book ? 200 : 404);
+  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), book ? 200 : 404);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
   return pageview(c, res, email ?? undefined);
@@ -622,8 +636,9 @@ app.post("/api/books/:id/post", async (c) => {
   const email = c.get("email");
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  const { text, thread } = await c.req.json<{ text?: string; thread?: string }>().catch(() => ({}) as { text?: string; thread?: string });
-  const out = await bookStub(c.env, id).humanPost(id, email, text ?? "", thread || "main");
+  const input: unknown = await c.req.json().catch(() => null);
+  if (!isPostMessageRequest(input)) return c.json({ ok: false, error: "invalid message payload" }, 400);
+  const out = await bookStub(c.env, id).humanPost(id, email, input.text, input.thread || "main");
   if (out.ok) c.executionCtx.waitUntil(track(c.env, "home_route_sent", { user: email, dims: { book: id, epic: out.thread !== "main" } }));
   return out.ok ? c.json(out) : c.json(out, 400);
 });

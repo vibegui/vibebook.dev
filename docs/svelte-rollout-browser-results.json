@@ -1,0 +1,21 @@
+{
+  "room": "86ae6e073a8e",
+  "epic": "bd791703",
+  "readyMs": 66822,
+  "checks": [
+    "two live sessions",
+    "vanilla default and cross-variant task updates",
+    "isolated assets and release versions",
+    "preview URL and reload",
+    "preview home/back/room navigation and editor teardown",
+    "task updates",
+    "escaped chat",
+    "reply context",
+    "typed upload",
+    "files and pins",
+    "board keyboard/list",
+    "invalid HTTP payload",
+    "two Yjs editors"
+  ],
+  "errors": []
+}

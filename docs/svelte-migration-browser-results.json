@@ -1,0 +1,17 @@
+{
+  "room": "7e2eaeb7bb8d",
+  "epic": "aa31a398",
+  "readyMs": 13155,
+  "checks": [
+    "two live sessions",
+    "task updates",
+    "escaped chat",
+    "reply context",
+    "typed upload",
+    "files and pins",
+    "board keyboard/list",
+    "invalid HTTP payload",
+    "two Yjs editors"
+  ],
+  "errors": []
+}

@@ -1,11 +1,7 @@
 // i18n check for public/app.html: every t("…") key has an English entry in EN, and no Portuguese-looking text is
 // left outside t(…) in the app's script. Run: bun scripts/i18n-check.ts (exit 1 on missing keys or leftovers).
-const html = await Bun.file(new URL("../public/app.html", import.meta.url)).text();
-const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-const main = scripts.find((m) => m[1].includes("const EN = {"));
-if (!main) throw new Error("main <script> with `const EN = {` not found");
-const src = main[1];
-const lineOf = (i: number) => html.slice(0, main.index! + "<script>".length + i).split("\n").length;
+const src = await Bun.file(new URL("../svelte/legacy/host.js", import.meta.url)).text();
+const lineOf = (i: number) => src.slice(0,i).split("\n").length;
 
 // EN: the object literal between `const EN = {` and the line `};`.
 const enStart = src.indexOf("const EN = {");
@@ -19,6 +15,14 @@ for (const m of src.matchAll(keyRe)) {
   if (m.index! >= enStart && m.index! < enEnd) continue;
   const k = JSON.parse(`"${m[1]}"`);
   if (!keys.has(k)) keys.set(k, lineOf(m.index!));
+}
+// Svelte components share the host translation dictionary; check their keys too.
+for await (const file of new Bun.Glob("svelte/**/*.{svelte,ts}").scan(".")) {
+  const component = await Bun.file(file).text();
+  for (const m of component.matchAll(/\b(?:vb\.)?t\((["'])((?:\\.|(?!\1).)*)\1/g)) {
+    const k: string = new Function(`return ${m[1]}${m[2]}${m[1]}`)();
+    if (!keys.has(k)) keys.set(k, 0);
+  }
 }
 const missing = [...keys].filter(([k]) => !(k in EN));
 const unused = Object.keys(EN).filter((k) => !keys.has(k));
