@@ -1943,7 +1943,7 @@ export class Book extends DurableObject<Env> {
           pessoas_na_sala: members.map(nm).join(", "),
           assunto: topic(m.thread) || "sala principal",
           conversa_antes: before.map((b) => `${b.author === "ai" ? "@vibe" : nm(b.author)}: ${b.text.slice(0, 240)}`).join("\n") || "(início)",
-          autor: `${nm(m.author)}${m.kind === "agent" ? " (pelo Claude dele ou dela)" : ""}`,
+          autor: `${nm(m.author)}${m.kind === "agent" ? " (pelo agent dele ou dela)" : ""}`,
           mensagem: m.text.slice(0, 1500),
         }, q);
         if (!r) break; // the next pass starts from this message again

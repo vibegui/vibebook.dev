@@ -189,7 +189,7 @@ export async function askOwner(env: Env, c: Conn, requester: string, via: "app" 
   await env.DB.prepare(`INSERT INTO mcp_pending (id, book_id, conn_id, owner, requester, via, tool, args, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?)`)
     .bind(id, c.book_id, c.id, c.owner, requester, via, tool, a, Date.now()).run();
   const who = requester.split("@")[0], owner = c.owner.split("@")[0];
-  await bookStub(env, c.book_id).vibePost(c.book_id, thread, `🔐 @${owner}, ${who}${via === "agent" ? " (pelo Claude)" : ""} quer usar **${tool}** em **${c.title}** com a sua conta. Aprova ou nega na aba Apps, no card da conexão.`);
+  await bookStub(env, c.book_id).vibePost(c.book_id, thread, `🔐 @${owner}, ${who}${via === "agent" ? " (pelo agent)" : ""} quer usar **${tool}** em **${c.title}** com a sua conta. Aprova ou nega na aba Apps, no card da conexão.`);
   await bookStub(env, c.book_id).connsChanged();
   return { pending: true, request_id: id, note: `${tool} changes things with ${c.owner}'s account on ${c.title}: it waits for their OK (they were asked in the room). Nothing ran yet.` };
 }
