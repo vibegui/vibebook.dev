@@ -97,7 +97,11 @@ try {
     });
   });
   const upload = (name: string, body: string | Buffer, type: string) =>
-    api.uploadFile({ name, type, body });
+    api.uploadFile({
+      name,
+      type,
+      body: typeof body === "string" ? body : new Uint8Array(body).buffer,
+    });
   const old = await upload(
       "report.md",
       "# Older immutable version",

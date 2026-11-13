@@ -24,10 +24,11 @@
   const view = untrack(() => controller.state);
   const text = (key: Parameters<typeof viewerText>[1]) => viewerText(lang, key);
   let csvPage = $state(0);
+  const csvText = $derived(
+    $view.content?.kind === "csv" ? ($view.content.text ?? "") : null,
+  );
   const csv = $derived(
-    $view.content?.kind === "csv"
-      ? csvData($view.content.text ?? "")
-      : { rows: [], truncated: false },
+    csvText === null ? { rows: [], truncated: false } : csvData(csvText),
   );
   const rows = $derived(csv.rows.slice(csvPage * 20, (csvPage + 1) * 20));
   $effect(() => {

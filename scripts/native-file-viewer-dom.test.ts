@@ -121,7 +121,7 @@ async function settle() {
   }
   flushSync();
 }
-async function render() {
+async function render(csv?: string) {
   const owner = createFileViewer({
     href: () => location.href,
     state: () => window.history.state,
@@ -130,13 +130,19 @@ async function render() {
       probe: async () => ({ type: "text/plain", size: 2 }),
       text: async (target) => ({
         metadata: { type: "text/plain" },
-        text: target.id === "aa" ? "old preview" : "new preview",
+        text: csv ?? (target.id === "aa" ? "old preview" : "new preview"),
         truncated: false,
       }),
     },
   });
   owners.push(owner);
-  owner.sync(room([file("aa"), file("bb", 2)]), async () => ({ ok: true }));
+  const files = [file("aa"), file("bb", 2)];
+  if (csv !== undefined)
+    for (const file of files) {
+      file.name = "report.csv";
+      file.type = "text/csv";
+    }
+  owner.sync(room(files), async () => ({ ok: true }));
   const target = document.createElement("div");
   document.body.append(target);
   instances.push(
@@ -185,4 +191,27 @@ test("component-only unmount closes the owner and invalidates late media callbac
   owner.mediaError(ticket);
   expect(get(owner.state).open).toBe(false);
   expect(get(owner.state).error).toBe("");
+});
+
+test("CSV pagination bounds active cells and reports omitted parsed columns with original link", async () => {
+  const csv = Array.from({ length: 45 }, (_, row) =>
+    Array.from({ length: 60 }, (_, column) => `${row}:${column}`).join(","),
+  ).join("\n");
+  await render(csv);
+  expect(document.querySelectorAll("[data-file-viewer] td").length).toBe(1000);
+  expect(document.querySelector("[data-file-viewer]")?.textContent).toContain(
+    "Preview shortened",
+  );
+  const next = [...document.querySelectorAll("button")].find(
+    (button) => button.textContent === "Next rows",
+  )!;
+  next.click();
+  await settle();
+  expect(document.querySelector("[data-file-viewer] td")?.textContent).toBe(
+    "20:0",
+  );
+  expect(document.querySelectorAll("[data-file-viewer] td").length).toBe(1000);
+  expect(
+    document.querySelector('[data-file-viewer] a[target="_blank"]'),
+  ).not.toBeNull();
 });
