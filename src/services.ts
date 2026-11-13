@@ -5,7 +5,9 @@ import type { Env } from "./index";
 import { poke } from "./person";
 import { EMAIL_RE } from "./auth";
 import { reqLang } from "./lang";
-import { befriend, bookStub, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR } from "./rooms";
+import { routeMessage } from "./route-home";
+import { startRoom } from "./start-room";
+import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR } from "./rooms";
 import { track } from "./track";
 import { pushTo } from "./webpush";
 
@@ -67,5 +69,26 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
       await bookStub(env, roomId).fetch("https://book/requests-changed", { method: "POST" });
       return true;
     },
+    createRoom: (title) => createBook(env, email, title),
+    startRoom: async (text) => {
+      if (!(await env.AI_LIMIT.limit({ key: email })).success) return false;
+      const out = await startRoom(env, ctx, new URL(req0.url).origin, email, text, reqLang(req0));
+      ctx.waitUntil(track(env, "book_created", { user: email, dims: { book: out.id, start: true, invited: out.invited.length, unknown: out.unknown.length, cost: out.cost } }));
+      return out;
+    },
+    routeHome: async (text) => {
+      if (!(await env.AI_LIMIT.limit({ key: email })).success) return false;
+      const started = Date.now();
+      try {
+        const out = await routeMessage(env, email, text);
+        ctx.waitUntil(track(env, "home_route", { user: email, dims: { ok: true, picked: !!out.pick, epic: !!out.pick?.epic_id, ms: Date.now() - started, cost: +out.cost.toFixed(6), model: env.MODEL_ROUTE } }));
+        return out;
+      } catch (e) {
+        console.error("home route failed", String(e));
+        ctx.waitUntil(track(env, "home_route", { user: email, dims: { ok: false, ms: Date.now() - started } }));
+        throw e;
+      }
+    },
+    sameOrigin: !req0.headers.get("origin") || req0.headers.get("origin") === new URL(req0.url).origin,
   };
 }

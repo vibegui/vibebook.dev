@@ -12,6 +12,13 @@ import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  CreateRoomBody,
+  type CreateRoomResult,
+  RouteResult,
+  SetNameBody,
+  type SetNameResult,
+  StartRoomResult,
+  TextBody,
   type AccessRequestResult,
   type AccessResult,
   ClaudeToggleBody,
@@ -76,6 +83,13 @@ export interface ApiServices {
   requestAccess(roomId: string): Promise<"not_found" | "member" | "limited" | "asked">;
   /** A member approves (invites) or denies a pending request; false = no such pending request. */
   decideRequest(roomId: string, email: string, ok: boolean): Promise<boolean>;
+  createRoom(title?: string): Promise<string>;
+  /** One model call turns "what and with whom" into a room + invites; false = over the AI limit. */
+  startRoom(text: string): Promise<unknown | false>;
+  /** The home box: which room/epic this text belongs to; false = over the AI limit; throws when the model fails. */
+  routeHome(text: string): Promise<unknown | false>;
+  /** The request came from our own pages (no Origin, or ours). */
+  sameOrigin: boolean;
 }
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
@@ -263,4 +277,38 @@ export const roomApi = accountApi
   })
   .get("/api/books/:id/access", async (c) => c.json({ member: await c.get("svc").isMember(c.req.param("id")) } satisfies AccessResult, 200));
 
-export type AppType = typeof roomApi;
+// Slice 5: your name, new rooms and the home's router. Model answers are parsed with their schema before they leave.
+export const homeApi = roomApi
+  .post("/api/me", body(SetNameBody), async (c) => {
+    const clean = (c.req.valid("json").name ?? "").replace(/[<>"@\p{Cc}]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (!clean) return c.json({ error: "Nome vazio." } satisfies ErrorBody, 400);
+    await c.get("svc").sql(`UPDATE users SET name = ? WHERE email = ?`, clean, c.get("email"));
+    return c.json({ ok: true as const, name: clean } satisfies SetNameResult, 200);
+  })
+  .post("/api/books", body(CreateRoomBody), async (c) => {
+    const svc = c.get("svc"), id = await svc.createRoom(c.req.valid("json").title);
+    svc.track("book_created", { book: id });
+    return c.json({ id } satisfies CreateRoomResult, 200);
+  })
+  .post("/api/books/start", body(TextBody), async (c) => {
+    const text = (c.req.valid("json").text ?? "").trim();
+    if (!text) return c.json({ error: "Escreva o que é e com quem." } satisfies ErrorBody, 400);
+    const out = await c.get("svc").startRoom(text);
+    if (out === false) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." } satisfies ErrorBody, 429);
+    return c.json(StartRoomResult.parse(out) satisfies StartRoomResult, 200);
+  })
+  .post("/api/route", body(TextBody), async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    const text = (c.req.valid("json").text ?? "").trim();
+    if (!text) return c.json({ error: "Escreva alguma coisa." } satisfies ErrorBody, 400);
+    try {
+      const out = await svc.routeHome(text);
+      if (out === false) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." } satisfies ErrorBody, 429);
+      return c.json(RouteResult.parse(out) satisfies RouteResult, 200);
+    } catch {
+      return c.json({ error: "Não consegui sugerir agora. Escolha a sala na lista abaixo." } satisfies ErrorBody, 502);
+    }
+  });
+
+export type AppType = typeof homeApi;

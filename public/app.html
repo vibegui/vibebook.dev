@@ -681,6 +681,8 @@
   .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
   .mentionPop[hidden] { display: none; }
   .composer .emojiBtn { font-size: 19px; line-height: 1; filter: grayscale(.4); } .composer .emojiBtn:hover, .composer .emojiBtn[aria-expanded="true"] { filter: none; }
+  .composer .micBtn { color: var(--mute); touch-action: none; } .composer .micBtn.on { color: #fff; background: #d64545; border-radius: 50%; }
+  .composer.dictating textarea, .composer.dictating input { box-shadow: 0 0 0 2px #d64545; }
   .emojiPop { width: min(340px, calc(100% - 48px)); }
   .emojiPop input { width: 100%; margin-bottom: 6px; }
   .emojiPop .eGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); max-height: 220px; overflow: auto; }
@@ -795,6 +797,13 @@
   .doc[data-pane="reminders"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="reminders"]) .remPane { display: none; }
   .doc.collab[data-view="edit"]:not([data-pane="doc"]) .cm { display: none; }
   .remPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  /* An HTML file opened beside the chat (Ao lado): replaces the doc panel's body, follows new versions. */
+  .doc[data-pane="view"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="view"]) .viewPane { display: none; }
+  .viewPane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .viewPane .vpHead { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
+  .viewPane .vpHead b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .viewPane .vpHead select { max-width: 46%; font-size: 12px; }
+  .viewPane iframe { flex: 1; width: 100%; border: 0; background: #fff; }
   .connsPane { flex: 1; overflow: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 12px; }
   .connsPane:has(> .connFrame) { padding: 0; gap: 0; overflow: hidden; }
   .connHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -948,6 +957,14 @@
   .embedOpen:hover { opacity: 1; }
   .embedWrap.clipped::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 36px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .18)); pointer-events: none; }
   .atts:has(.embedBox) { display: block; }
+  .htmlCard { gap: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+  .hcHead { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; font-size: 13px; min-width: 0; }
+  .hcName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .hcHead small { color: var(--mute); flex: none; }
+  .hcOpen { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; }
+  .hcOpen:hover { border-color: var(--accent); }
+  .htmlCard iframe.embed { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  .htmlCard .embedWrap.clipped::after { border-radius: 0; }
+  .htmlCard .appAsk { margin: 8px; }
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedBox .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
   .embedBox .appAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedBox .appAsk div { display: flex; gap: 8px; }
@@ -1383,6 +1400,7 @@
 const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^pt/i.test(navigator.language) ? "pt" : (/^en/i.test(navigator.language) ? "en" : "pt"));
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition; // dictation in the composer, when the browser has it
 const EN = {
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -2011,6 +2029,13 @@ const EN = {
   "aguardando {who}": "waiting on {who}",
   "{who} parou": "{who} stopped",
   "lido por {who}": "read by {who}",
+  "Segure pra ditar (ou segure o espaço)": "Hold to dictate (or hold Space)",
+  "Ditar mensagem": "Dictate a message",
+  "O navegador não deixou usar o microfone.": "The browser didn't allow the microphone.",
+  "Ao lado": "Beside",
+  "Abrir ao lado do chat, no lugar do doc": "Open beside the chat, in place of the doc",
+  "Abrir": "Open",
+  "Prévia": "Preview",
   "Fechar galho": "Collapse branch",
   "Abrir galho": "Expand branch",
   "visto por {n}": "seen by {n}",
@@ -3259,7 +3284,7 @@ function renderBook() {
         <div class="replyBar" id="replyBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>
+          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Segure pra ditar (ou segure o espaço)")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}
           <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${t("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${t("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
           <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
@@ -3285,6 +3310,7 @@ function renderBook() {
       <div class="decPane" id="decPane"></div>
       <div class="appsPane connsPane" id="appsPane"></div>
       <div class="remPane" id="remPane"></div>
+      <div class="viewPane" id="viewPane"></div>
       <div class="agentsPane" id="agentsPane"></div>
     </section>
     <div class="sheetDim" id="sheetDim"></div>
@@ -3347,6 +3373,39 @@ function renderBook() {
     if (e.key === "ArrowLeft") setDocW(cur + 24); else if (e.key === "ArrowRight") setDocW(cur - 24);
   };
   const input = document.getElementById("input");
+  // Dictation: hold Space in the composer (or hold 🎤) and talk; the browser's speech recognition writes as you speak,
+  // release to stop, Enter sends. A quick tap of Space still types a space (only a hold ≥350ms starts listening).
+  if (SR) {
+    const input = document.getElementById("input"), mic = document.getElementById("micBtn"), box = input.closest(".composer") || input.parentElement;
+    let rec = null, base = "", holdT = 0, held = false, pending = false;
+    const typeSpace = () => { pending = false; clearTimeout(holdT); const a = input.selectionStart ?? input.value.length, b = input.selectionEnd ?? a; input.setRangeText(" ", a, b, "end"); input.dispatchEvent(new Event("input", { bubbles: true })); };
+    const start = () => {
+      if (rec) return;
+      base = input.value; rec = new SR(); rec.lang = LOCALE; rec.continuous = true; rec.interimResults = true;
+      rec.onresult = (ev) => { const said = [...ev.results].map((r) => r[0].transcript).join("").trim(); input.value = `${base}${base && said && !/\s$/.test(base) ? " " : ""}${said}`; input.dispatchEvent(new Event("input", { bubbles: true })); };
+      rec.onend = () => { rec = null; box.classList.remove("dictating"); mic?.classList.remove("on"); input.focus(); };
+      rec.onerror = (ev) => { if (ev.error === "not-allowed") toast(t("O navegador não deixou usar o microfone.")); };
+      box.classList.add("dictating"); mic?.classList.add("on");
+      try { rec.start(); } catch { rec = null; box.classList.remove("dictating"); mic?.classList.remove("on"); }
+    };
+    const stop = () => { try { rec?.stop(); } catch {} };
+    input.addEventListener("keydown", (e) => {
+      // Fast typing: the next key can come before Space is released; the space goes in first, and no dictation.
+      if (e.key !== " ") { if (pending) typeSpace(); return; }
+      if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      e.preventDefault(); // decided on keyup (a tap) or after 350ms (a hold)
+      if (e.repeat) return;
+      held = false; pending = true; clearTimeout(holdT);
+      holdT = setTimeout(() => { pending = false; held = true; start(); }, 350);
+    });
+    input.addEventListener("keyup", (e) => {
+      if (e.key !== " ") return;
+      if (held) { held = false; stop(); return; }
+      if (pending) typeSpace();
+    });
+    mic?.addEventListener("pointerdown", (e) => { e.preventDefault(); mic.setPointerCapture?.(e.pointerId); start(); });
+    for (const ev of ["pointerup", "pointercancel"]) mic?.addEventListener(ev, stop);
+  }
   // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
   // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.
   {
@@ -4628,6 +4687,13 @@ const viewAttrs = (f) => `data-view="${f.type.startsWith("image/") ? "img" : "fr
 // hands the URL to Safari instead. Safari has its own cookies, so a file asks to sign in there once (filePage).
 const IOS_PWA = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
 const outside = (u) => IOS_PWA ? `x-safari-${new URL(u, location.href).href}` : u;
+// Esc pressed inside an HTML file in the viewer (the frame has the focus, so the app never sees the key): the file is
+// served with ?esc=1, which adds a listener that posts { vbViewer: "esc" } to us; only the viewer's own frame counts.
+addEventListener("message", (e) => {
+  if (e.data?.vbViewer !== "esc") return;
+  const d = document.querySelector("dialog.viewer[open]");
+  if (d && d.querySelector(".vbody iframe")?.contentWindow === e.source) d.close();
+});
 function openViewer(url, kind, fname) {
   let d = document.getElementById("viewer");
   if (!d) {
@@ -4656,7 +4722,33 @@ function fileVersions(name) {
   for (const m of allMsgs()) for (const f of m.files || []) if (f.name === name && !by.has(f.id)) by.set(f.id, { id: f.id, ts: m.ts });
   return [...by.values()].sort((a, b) => b.ts - a.ts);
 }
+// Ao lado: an HTML file in the doc panel instead of the full-screen viewer, so you can talk in the chat while you read
+// it. It follows the newest version of that name until you pick an older one in its selector.
+let sideView = null; // { room, name, fid, follow }
+function openSide(fid, name) {
+  sideView = { room: S.id, name, fid, follow: fileVersions(name)[0]?.id === fid || !fileVersions(name).length };
+  if (!S.filesAll) send({ t: "files.get" });
+  document.dispatchEvent(new CustomEvent("vb:pane", { detail: "view" }));
+  if (ROOM_PHONE.matches) openSheet("doc");
+  renderSideView();
+}
+function renderSideView() {
+  const el = document.getElementById("viewPane"); if (!el) return;
+  if (!sideView || sideView.room !== S.id) { el.innerHTML = ""; return; }
+  const vs = fileVersions(sideView.name);
+  if (sideView.follow && vs[0]) sideView.fid = vs[0].id;
+  const url = `/api/books/${S.id}/files/${sideView.fid}`;
+  const cur = el.querySelector("iframe");
+  const opts = vs.map((v, i) => `<option value="${v.id}"${v.id === sideView.fid ? " selected" : ""}>v${vs.length - i}${i === 0 ? ` · ${t("mais nova")}` : ""}</option>`).join("");
+  if (cur && el.dataset.fid === sideView.fid) { const sel = el.querySelector("select"); if (sel) { sel.innerHTML = opts; sel.hidden = vs.length < 2; } return; }
+  el.dataset.fid = sideView.fid;
+  el.innerHTML = `<div class="vpHead"><b title="${esc(sideView.name)}">${esc(sideView.name)}</b><select aria-label="${t("Versão")}"${vs.length < 2 ? " hidden" : ""}>${opts}</select><a class="iconBtn" href="${url}" data-view="frame" data-name="${esc(sideView.name)}" title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 16)}</a><button type="button" class="iconBtn" data-sideclose title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 16)}</button></div><iframe sandbox="allow-scripts" src="${url}" title="${esc(sideView.name)}"></iframe>`;
+  el.querySelector("select").onchange = (e) => { sideView.fid = e.target.value; sideView.follow = e.target.selectedIndex === 0; renderSideView(); };
+  el.querySelector("[data-sideclose]").onclick = () => { sideView = null; renderSideView(); document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })); };
+}
+document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-side]"); if (!b) return; e.preventDefault(); openSide(b.dataset.side, b.dataset.name); });
 function refreshVersions() {
+  renderSideView();
   const d = document.getElementById("viewer"); if (!d?.open || !d.dataset.name) return;
   const sel = d.querySelector(".vsel"), vs = fileVersions(d.dataset.name), cur = d.dataset.fid;
   sel.hidden = vs.length < 2;
@@ -4686,7 +4778,7 @@ function loadViewer(d, url, kind, fname) {
         : `<pre class="vdoc">${esc(txt.slice(0, 300_000))}</pre>`;
     }).catch(() => { body.innerHTML = `<p class="vdoc">${t("Não consegui abrir este arquivo.")}</p>`; });
   }
-  else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
+  else { const fr = document.createElement("iframe"), pdf = /\.pdf$/i.test(fname); fr.src = pdf ? url : `${url}${url.includes("?") ? "&" : "?"}esc=1`; fr.title = fname; if (!pdf) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
 }
 // CSV → rows (quotes and "" escapes; ≤2000 rows × 50 columns for the viewer).
 function csvRows(txt) {
@@ -4728,8 +4820,11 @@ document.addEventListener("click", (e) => {
   openViewer(u.pathname, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || l.textContent.trim() || "arquivo");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
-const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
-  ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe><a class="embedOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 15)}</a></div></div>`
+// An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
+// the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
+const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
+  ? htmlCard(f)
   : f.type.startsWith("audio/")
   ? `<div class="audioAtt"><audio controls preload="metadata" src="${fileUrl(f)}"></audio><a href="${fileUrl(f)}" target="_blank" rel="noopener" download="${esc(f.name)}">${icon("mic", 14)} ${esc(f.name)} <small>${kb(f.size)}</small></a></div>`
   : f.type.startsWith("image/")

@@ -1,4 +1,4 @@
-import { roomApi, type ApiServices } from "./api";
+import { homeApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -563,28 +563,11 @@ app.get("/api/books/:id/agents", async (c) => {
 });
 
 // Home composer: suggest where a message should go, then post it there.
-app.post("/api/route", async (c) => {
-  const email = c.get("email");
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  const { text } = await c.req.json<{ text?: string }>().catch(() => ({ text: "" }));
-  if (!text?.trim()) return c.json({ error: "Escreva alguma coisa." }, 400);
-  if (!(await c.env.AI_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." }, 429);
-  const started = Date.now();
-  try {
-    const out = await routeMessage(c.env, email, text.trim());
-    c.executionCtx.waitUntil(track(c.env, "home_route", { user: email, dims: { ok: true, picked: !!out.pick, epic: !!out.pick?.epic_id, ms: Date.now() - started, cost: +out.cost.toFixed(6), model: c.env.MODEL_ROUTE } }));
-    return c.json(out);
-  } catch (e) {
-    console.error("home route failed", String(e));
-    c.executionCtx.waitUntil(track(c.env, "home_route", { user: email, dims: { ok: false, ms: Date.now() - started } }));
-    return c.json({ error: "Não consegui sugerir agora. Escolha a sala na lista abaixo." }, 502);
-  }
-});
 
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", roomApi);
+app.route("/", homeApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
@@ -594,33 +577,10 @@ app.route("/", roomApi);
 // A room's color in the person's rail: neighbours with the same color read as one group.
 
 
-app.post("/api/me", async (c) => {
-  const { name } = await c.req.json<{ name?: string }>().catch(() => ({ name: "" }));
-  const clean = (name ?? "").replace(/[<>"@\p{Cc}]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60);
-  if (!clean) return c.json({ error: "Nome vazio." }, 400);
-  await c.env.DB.prepare(`UPDATE users SET name = ? WHERE email = ?`).bind(clean, c.get("email")).run();
-  return c.json({ ok: true, name: clean });
-});
 
-app.post("/api/books", async (c) => {
-  const email = c.get("email");
-  const { title } = await c.req.json<{ title?: string }>().catch(() => ({ title: undefined }));
-  const id = await createBook(c.env, email, title);
-  c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: id } }));
-  return c.json({ id });
-});
 
 // "Novo vibebook" in one step (src/start-room.ts): what it is and with whom → titled room, first message, invites,
 // Claude on.
-app.post("/api/books/start", async (c) => {
-  const email = c.get("email");
-  const { text } = await c.req.json<{ text?: string }>().catch(() => ({ text: "" }));
-  if (!text?.trim()) return c.json({ error: "Escreva o que é e com quem." }, 400);
-  if (!(await c.env.AI_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos pedidos seguidos. Espera um minuto." }, 429);
-  const out = await startRoom(c.env, c.executionCtx, new URL(c.req.url).origin, email, text.trim(), reqLang(c.req.raw));
-  c.executionCtx.waitUntil(track(c.env, "book_created", { user: email, dims: { book: out.id, start: true, invited: out.invited.length, unknown: out.unknown.length, cost: out.cost } }));
-  return c.json(out);
-});
 
 // Ask to join a room you opened by link. Silent when already asked or declined (no way to probe or spam).
 // A member lets someone in (= the usual invite, which emails them the link) or declines (kept, so they can't re-ask).
@@ -644,6 +604,12 @@ app.get("/api/books/:id/files/:fid", async (c) => {
   const headers = new Headers(fileHeaders(obj.httpMetadata?.contentType ?? "application/octet-stream", obj.customMetadata?.name ?? "arquivo"));
   headers.set("accept-ranges", "bytes");
   const r = obj.range as { offset?: number; length?: number; suffix?: number } | undefined;
+  // In the app's viewer (?esc=1), an HTML file gets one listener that tells the viewer about Esc: focus inside the
+  // sandboxed frame keeps the key from ever reaching the app, so the viewer couldn't close with it.
+  if (!ranged && c.req.query("esc") === "1" && "body" in obj && (obj.httpMetadata?.contentType ?? "").startsWith("text/html")) {
+    headers.delete("content-length");
+    return new Response(`${await obj.text()}\n<script>addEventListener("keydown",function(e){if(e.key==="Escape")parent.postMessage({vbViewer:"esc"},"*")},true)</script>`, { headers });
+  }
   if (!ranged || !r || !("body" in obj)) return new Response("body" in obj ? obj.body : null, { headers });
   const start = r.suffix !== undefined ? Math.max(0, obj.size - r.suffix) : (r.offset ?? 0);
   const len = r.suffix !== undefined ? obj.size - start : (r.length ?? obj.size - start);

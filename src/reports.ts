@@ -170,7 +170,7 @@ async function agentCallLine(env: Env, start: number, end: number) {
   const r = await env.DB.prepare(`SELECT json_extract(dims, '$.tool') AS tool, json_extract(dims, '$.client') AS client, count(*) AS n FROM events WHERE name = 'agent_call' AND ts >= ? AND ts < ? GROUP BY tool, client ORDER BY n DESC LIMIT 6`).bind(start, end).all<{ tool: string; client: string; n: number }>();
   const total = await env.DB.prepare(`SELECT count(*) AS n FROM events WHERE name = 'agent_call' AND ts >= ? AND ts < ?`).bind(start, end).first<{ n: number }>();
   if (!total?.n) return "";
-  return `\n- Chamadas de tool dos Claudes (últimas 24h): **${total.n}** · ${r.results.map((x) => `${x.tool}/${x.client || "?"} ${x.n}`).join(" · ")}`;
+  return `\n- Chamadas de tool dos Claudes (últimas 24h, sem as escutas wait_for_messages/claude_rooms): **${total.n}** · ${r.results.map((x) => `${x.tool}/${x.client || "?"} ${x.n}`).join(" · ")}`;
 }
 
 export async function productReport(env: Env, now = Date.now()) {

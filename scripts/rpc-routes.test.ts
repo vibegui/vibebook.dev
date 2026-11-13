@@ -53,6 +53,10 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     pokeAgents: () => {},
     requestAccess: async () => "asked",
     decideRequest: async () => true,
+    createRoom: async () => "room",
+    startRoom: async () => ({ id: "room" }),
+    routeHome: async () => ({ pick: null }),
+    sameOrigin: true,
     ...overrides,
   };
   const app = new Hono<ApiCtx>()

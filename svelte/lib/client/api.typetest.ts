@@ -3,6 +3,10 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  CreateRoomResult,
+  RouteResult,
+  SetNameResult,
+  StartRoomResult,
   AccessRequestResult,
   AccessResult,
   ArchivedResult,
@@ -129,5 +133,29 @@ sameAs<
   Equal<InferResponseType<typeof room4.request.$post, 200>, AccessRequestResult>
 >(true);
 sameAs<Equal<InferResponseType<typeof room4.access.$get, 200>, AccessResult>>(
+  true,
+);
+
+// Slice 5: your name, new rooms and the home's router.
+void api.api.me.$post({ json: { name: "Gui" } });
+void api.api.books.$post({ json: { title: "x" } });
+void api.api.books.start.$post({ json: { text: "viagem com a Ana" } });
+void api.api.route.$post({ json: { text: "onde fica isso?" } });
+const notText = { text: 5 };
+// @ts-expect-error text is a string
+void api.api.route.$post({ json: notText });
+sameAs<Equal<InferResponseType<typeof api.api.me.$post, 200>, SetNameResult>>(
+  true,
+);
+sameAs<
+  Equal<InferResponseType<typeof api.api.books.$post, 200>, CreateRoomResult>
+>(true);
+sameAs<
+  Equal<
+    InferResponseType<typeof api.api.books.start.$post, 200>,
+    StartRoomResult
+  >
+>(true);
+sameAs<Equal<InferResponseType<typeof api.api.route.$post, 200>, RouteResult>>(
   true,
 );

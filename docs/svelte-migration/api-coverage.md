@@ -7,7 +7,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/.well-known/jwks.json` | `src/index.ts:371` | external auth protocol (public keys for X-Vibebook-Identity), not app RPC | 0 | n/a (documented) |
 | GET | `/api/archived` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
 | GET | `/api/avatar/:email` | `src/index.ts:549` | binary GET (asset) | 2 | n/a (documented) |
-| POST | `/api/books` | `src/index.ts:699` | JSON RPC | 37 | todo |
+| POST | `/api/books` | `src/api.ts` | JSON RPC | 37 | tested (slice 5) |
 | GET | `/api/books/:id/access` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | GET | `/api/books/:id/agents` | `src/index.ts:581` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/archive` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
@@ -33,7 +33,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/books/:id/sandboxes` | `src/sandbox.ts:273` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/sandboxes` | `src/sandbox.ts:308` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/tint` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
-| POST | `/api/books/start` | `src/index.ts:709` | JSON RPC | 2 | todo |
+| POST | `/api/books/start` | `src/api.ts` | JSON RPC | 2 | tested (slice 5) |
 | POST | `/api/claude-token` | `src/sandbox.ts:238` | JSON RPC | 2 | todo |
 | DELETE | `/api/claude-token` | `src/sandbox.ts:249` | JSON RPC | 2 | todo |
 | GET | `/api/dev/as` | `src/index.ts:405` | local dev only (DEV_EMAIL, loopback) | 0 | n/a (documented) |
@@ -46,7 +46,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | DELETE | `/api/friends/:email` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | GET | `/api/mcp-oauth/callback` | `src/mcpconn.ts:245` | browser navigation / redirect | 0 | n/a (documented) |
 | GET | `/api/me` | `src/index.ts:420` | JSON RPC | 14 | todo |
-| POST | `/api/me` | `src/index.ts:691` | JSON RPC | 14 | todo |
+| POST | `/api/me` | `src/api.ts` | JSON RPC | 14 | tested (slice 5) |
 | POST | `/api/me/avatar` | `src/index.ts:492` | binary upload (typed adapter) | 1 | todo |
 | GET | `/api/me/logins` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
 | GET | `/api/notify` | `src/index.ts:310` | agent long-poll (CLI), not the app | 0 | n/a (documented) |
@@ -55,7 +55,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/push/test` | `src/api.ts` | JSON RPC | 0 | tested (slice 2) |
 | POST | `/api/push/unsubscribe` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
 | POST | `/api/rooms/order` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
-| POST | `/api/route` | `src/index.ts:617` | JSON RPC | 1 | todo |
+| POST | `/api/route` | `src/api.ts` | JSON RPC | 1 | tested (slice 5) |
 | DELETE | `/api/sandboxes/:sid` | `src/sandbox.ts:340` | JSON RPC | 4 | todo |
 | POST | `/api/sandboxes/:sid/setup` | `src/sandbox.ts:333` | JSON RPC | 4 | todo |
 | POST | `/api/sandboxes/:sid/terminal` | `src/sandbox.ts:359` | JSON RPC | 4 | todo |
@@ -79,5 +79,7 @@ Slice 2 (push subscribe/unsubscribe/key/test, waits/resolve, rooms/order, tint, 
 Slice 3 (archived, search, logins, friends add/remove, members invite/remove): database rows are parsed with the response schemas (`ArchivedRoom`, `LoginsResult`) before they leave the Worker; the type tests assert each route's 200 body equals its schema type.
 
 Slice 4 (Ligar Claude, access request, approve/deny, access status): same gates; runtime run of every branch (non-member 403, unknown room 404, already a member, asked, deny twice → 404, approve → member).
+
+Slice 5 (your name, create room, start room in one step, home router): the model's answers (start, route) are parsed with their schemas before they leave the Worker; runtime run of each status (empty 400, AI limit 429, cross-site 403, model failure 502, success).
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.

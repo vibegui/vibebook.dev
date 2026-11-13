@@ -21,6 +21,11 @@ export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
     try { await super.webSocketError(ws); } catch (e) { console.error("docroom webSocketError", String(e)); }
   }
   protected async onStart() {
+    // y-protocols' Awareness starts a setInterval (stale-cursor sweep) in its constructor. A pending timer keeps a
+    // Durable Object awake, so every doc ever opened, or touched by an agent's update_doc, stayed in memory for good:
+    // ~2.4M s of DocRoom duration in 12 days (Nov 2026), the one line over the Workers Paid plan. The server has no
+    // local awareness state to renew, and a closing socket already removes its cursors (unregisterWebSocket).
+    clearInterval((this.doc.awareness as unknown as { _checkInterval: ReturnType<typeof setInterval> })._checkInterval);
     await super.onStart();
     this.watch();
   }
