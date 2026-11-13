@@ -149,3 +149,8 @@ export function createRoomConnection(options: RoomConnectionOptions) {
     },
   };
 }
+
+/** Await a correlated server acknowledgement without changing the legacy Boolean send contract. */
+export type RequestRoomCommand = ReturnType<
+  typeof createRoomConnection
+>["request"];

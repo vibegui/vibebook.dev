@@ -522,6 +522,10 @@ const EN = {
   "O que a sala decidir e cada aprovação aparecem aqui. Os agents registram conforme a conversa anda.": "What the room decides and every approval show up here. The agents log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
   "Lembretes": "Reminders",
+  "Texto do lembrete": "Reminder text",
+  "Quando o lembrete roda, o @vibe publica o texto aqui para seu agent.": "When the reminder runs, @vibe posts its text here for your agent.",
+  "Aguardando confirmação…": "Waiting for confirmation…",
+  "Ainda não recebi a confirmação. Confira antes de tentar de novo.": "Confirmation has not arrived yet. Check before trying again.",
   "(pelo agent)": "(through their agent)",
   "quer usar": "wants to use",
   "abrir um link": "open a link",
@@ -1686,6 +1690,7 @@ function openBook(id) {
 }
 
 const send = (m) => roomConnection?.send(m) ?? false;
+const request = (m) => roomConnection?.request(m) ?? Promise.resolve({ ok:false, error:"offline" });
 
 const viewMounts = new Map();
 let boardLayoutCleanup = () => {};
@@ -2934,7 +2939,7 @@ function renderKanban() {
   const book = $app.querySelector(".book");
   const el = book && getBoardContainer(book);
   if (!el || (!book.classList.contains("boardview") && book.querySelector(":scope > .doc")?.dataset.pane !== "board")) return;
-  renderView("board", el, { room:S, thread, vb:panelBridge(), send, onopen:selectThread });
+  renderView("board", el, { room:S, thread, vb:panelBridge(), send, request, onopen:selectThread });
 }
 
 function renameThread() {
@@ -3060,7 +3065,7 @@ function renderTasks() {
   if (!list) return;
   if (epic) document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
   if (epic) document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
-  renderView("tasks", el, {room:S, thread, vb:panelBridge(), send, waits:myWaits});
+  renderView("tasks", el, {room:S, thread, vb:panelBridge(), send, request, waits:myWaits});
 }
 
 
@@ -3783,14 +3788,14 @@ function renderReminders() {
   renderPeek();
   const list=S.reminders || [], bad=list.filter(r=>r.error).length;
   document.getElementById("remCount").textContent=list.length ? ` ${list.length}${bad ? " ⚠" : ""}` : "";
-  renderView("reminders",el,{room:S,thread,vb:panelBridge(),send});
+  renderView("reminders",el,{room:S,thread,vb:panelBridge(),send,request});
 }
 function renderFiles() {
   const el=document.getElementById("filesPane"); if(!el || !S) return;
   renderPeek();
   const n=S.filesN ?? S.files?.length ?? 0;
   document.getElementById("fileCount").textContent=n ? ` ${n}` : "";
-  renderView("files",el,{room:S,thread,vb:panelBridge(),send});
+  renderView("files",el,{room:S,thread,vb:panelBridge(),send,request});
 }
 // 📌 on a file tile or app card: pins it to the sidebar (or unpins).
 const pinOf = (kind, ref) => (S.pins || []).find((p) => p.kind === kind && p.ref === ref);

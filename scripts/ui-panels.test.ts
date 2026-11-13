@@ -154,6 +154,10 @@ function render(
       events.push(event);
       return true;
     },
+    request: async (event) => {
+      events.push(event);
+      return { ok: true };
+    },
     ...extra,
   };
   const view = mountView(kind, target, props);
@@ -678,6 +682,145 @@ describe("native Svelte room panels", () => {
     expect(target.querySelectorAll("a.ftile").length).toBe(1);
     expect(target.querySelector("a.ftile")?.getAttribute("data-name")).toBe(
       "photo.png",
+    );
+  }, 30_000);
+
+  test("native reminder disclosure and controlled switches wait for server acknowledgement", async () => {
+    const room = fixture();
+    room.reminders = [
+      {
+        id: "rem",
+        name: "daily",
+        text: "Every Monday at 9am UTC: report",
+        owner: "me@test",
+        enabled: true,
+      },
+    ];
+    let answer!: (value: { ok: false; error: string }) => void;
+    const pending = new Promise<{ ok: false; error: string }>((resolve) => {
+      answer = resolve;
+    });
+    const { target, update } = render("reminders", room, {
+      request: () => pending,
+    });
+    const disclosure =
+      target.querySelector<HTMLButtonElement>("[data-rem-open]")!;
+    expect(disclosure.tagName).toBe("BUTTON");
+    expect(disclosure.type).toBe("button");
+    expect(disclosure.getAttribute("aria-expanded")).toBe("false");
+    disclosure.click();
+    flushSync();
+    expect(disclosure.getAttribute("aria-expanded")).toBe("true");
+    expect(target.querySelector<HTMLPreElement>("pre")?.hidden).toBe(false);
+    const enabled = target.querySelector<HTMLInputElement>("[data-rem-on]")!;
+    enabled.checked = false;
+    change(enabled);
+    expect(enabled.checked).toBe(true);
+    expect(enabled.disabled).toBe(true);
+    answer({ ok: false, error: "offline" });
+    await tick();
+    flushSync();
+    expect(enabled.checked).toBe(true);
+    expect(enabled.disabled).toBe(false);
+    expect(target.textContent).toContain("sem conexão");
+    update({
+      ...room,
+      reminders: room.reminders.map((r) => ({ ...r, enabled: false })),
+    });
+    expect(enabled.checked).toBe(false);
+  }, 30_000);
+  test("reminder deletion requires its native alert dialog and restores focus after cancellation", async () => {
+    const room = fixture();
+    room.reminders = [
+      {
+        id: "rem",
+        name: "daily",
+        text: "Every Monday at 9am UTC: report",
+        owner: "me@test",
+        enabled: true,
+      },
+    ];
+    const { target, events } = render("reminders", room);
+    const trigger = target.querySelector<HTMLButtonElement>("[data-rem-del]")!;
+    trigger.focus();
+    trigger.click();
+    flushSync();
+    await tick();
+    expect(events).toEqual([]);
+    const dialog = document.querySelector<HTMLElement>('[role="alertdialog"]')!;
+    expect(dialog).not.toBeNull();
+    const cancel = Array.from(
+      dialog.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((button) => button.textContent?.includes("Cancelar"))!;
+    expect(document.activeElement).toBe(cancel);
+    cancel.click();
+    flushSync();
+    await tick();
+    expect(events).toEqual([]);
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    trigger.click();
+    flushSync();
+    await tick();
+    const confirm = Array.from(
+      document
+        .querySelector('[role="alertdialog"]')!
+        .querySelectorAll<HTMLButtonElement>("button"),
+    ).find((button) => button.textContent?.includes("Apagar lembrete"))!;
+    confirm.click();
+    flushSync();
+    await tick();
+    expect(events).toEqual([{ t: "reminder.delete", id: "rem" }]);
+  }, 30_000);
+  test("late upload completion cannot close the draft in another room", async () => {
+    let finish!: (response: Response) => void;
+    const response = new Promise<Response>((resolve) => {
+      finish = resolve;
+    });
+    globalThis.fetch = Object.assign(async () => response, {
+      preconnect: originalFetch.preconnect,
+    });
+    const { target, update } = render("reminders", fixture());
+    target.querySelector<HTMLElement>("#remNew")!.click();
+    flushSync();
+    for (const [selector, value] of [
+      ["input[name=name]", "daily"],
+      ["textarea", "Every Monday at 9am UTC: old"],
+    ]) {
+      const input = target.querySelector<HTMLInputElement>(selector)!;
+      input.value = value;
+      input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    }
+    target
+      .querySelector("form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    flushSync();
+    update({ ...fixture(), id: "other" });
+    target.querySelector<HTMLElement>("#remNew")!.click();
+    flushSync();
+    const text = target.querySelector<HTMLTextAreaElement>("textarea")!;
+    text.value = "new room draft";
+    text.dispatchEvent(new window.Event("input", { bubbles: true }));
+    finish(
+      new Response(
+        JSON.stringify({
+          id: "file",
+          name: "reminders/daily.md",
+          type: "text/markdown",
+          size: 12,
+          author: "me@test",
+          ts: 1,
+          reminder: { ok: true },
+        }),
+        { status: 200 },
+      ),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    flushSync();
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "new room draft",
     );
   }, 30_000);
   test("reminders preserve draft across a server reminder update", () => {
