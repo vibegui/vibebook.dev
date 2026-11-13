@@ -481,3 +481,12 @@ export const EmailVerifyResult = z.object({
   next: z.string(),
 });
 export type EmailVerifyResult = z.infer<typeof EmailVerifyResult>;
+
+/** A room link's page for someone who may not be in it (the access page): the title is readable by whoever holds the
+ *  link, on purpose (the shared card). state: missing room, signed out, can ask, already asked, or already a member. */
+export const AccessContext = z.object({
+  state: z.enum(["missing", "out", "ask", "asked", "member"]),
+  title: z.nullable(z.string()),
+  email: z.nullable(z.string()),
+});
+export type AccessContext = z.infer<typeof AccessContext>;

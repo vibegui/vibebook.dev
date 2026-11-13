@@ -76,6 +76,7 @@ import {
   LoginContextQuery,
   EmailVerifyBody,
   type EmailVerifyResult,
+  type AccessContext,
 } from "../shared/schemas";
 
 export type Bind = string | number | null;
@@ -183,6 +184,8 @@ export interface AuthServices {
   logout(): void;
   /** Sign out every browser of the signed-in person. */
   logoutAll(): Promise<OkResult | AuthFail>;
+  /** Where the caller (signed in or not) stands with a room, from its link: the access page's context. */
+  roomAccess(roomId: string): Promise<AccessContext>;
 }
 export type AuthFail = { error: string; status: 400 | 401 | 403 | 429 | 502 };
 export type AuthCtx = { Variables: { auth: AuthServices } };
@@ -657,6 +660,7 @@ export const authApi = new Hono<AuthCtx>()
       return c.json({ providers: auth.providers, next: auth.safeNext(q.next), error } satisfies LoginContext, 200);
     },
   )
+  .get("/auth/room/:id", async (c) => c.json((await c.get("auth").roomAccess(c.req.param("id"))) satisfies AccessContext, 200))
   .post("/auth/email/start", body(EmailBody, "invalid email"), async (c) => {
     const auth = c.get("auth");
     if (!auth.sameOrigin) return c.json(badOrigin, 403);

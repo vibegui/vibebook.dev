@@ -95,10 +95,11 @@ export async function identify(c: Context<any>): Promise<string | null> {
 
 /** The public auth routes' side (src/api.ts authApi): every check and write of the old handlers, answering a value
  *  or { error, status }. Built per request; the route only validates the body and turns the answer into JSON. */
-export function authServices<E extends { Bindings: Env }>(c: Context<E>): AuthServices {
+export function authServices<E extends { Bindings: Env }>(c: Context<E>, deps: Pick<AuthServices, "roomAccess">): AuthServices {
   const fail = (error: string, status: AuthFail["status"]): AuthFail => ({ error, status });
   const OK = { ok: true as const };
   return {
+    ...deps,
     providers: { google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET), email: true },
     sameOrigin: sameOrigin(c),
     safeNext,

@@ -56,7 +56,16 @@ test("the consent page's sign-out form returns to the login in the same UI", asy
   // The real services (logout and loginUrl need no bindings) behind the typed route.
   const app = new Hono<AuthCtx>()
     .use("/auth/*", async (c, next) => {
-      c.set("auth", authServices(c as never));
+      c.set(
+        "auth",
+        authServices(c as never, {
+          roomAccess: async () => ({
+            state: "missing",
+            title: null,
+            email: null,
+          }),
+        }),
+      );
       await next();
     })
     .route("/", authApi);
@@ -94,6 +103,10 @@ function authFixture(over: Partial<AuthServices> = {}) {
     ),
     logout: () => void calls.push("logout"),
     logoutAll: async () => ({ error: "unauthenticated", status: 401 }),
+    roomAccess: async (id) =>
+      id === "abc123"
+        ? { state: "ask", title: "Room", email: "a@x.dev" }
+        : { state: "missing", title: null, email: null },
     ...over,
   };
   const app = new Hono<AuthCtx>()
@@ -171,6 +184,22 @@ test("email start and verify: body checked, origin checked, service status passe
     ).status,
   ).toBe(403);
   expect(cross.calls).toHaveLength(0);
+});
+
+test("a room link's context for the access page", async () => {
+  const { client } = authFixture();
+  const r = await client.auth.room[":id"].$get({ param: { id: "abc123" } });
+  expect(r.status).toBe(200);
+  expect(await r.json()).toEqual({
+    state: "ask",
+    title: "Room",
+    email: "a@x.dev",
+  });
+  expect(
+    await (
+      await client.auth.room[":id"].$get({ param: { id: "zzz999" } })
+    ).json(),
+  ).toEqual({ state: "missing", title: null, email: null });
 });
 
 test("logout answers JSON to the app; logout-all reports a signed-out caller", async () => {
