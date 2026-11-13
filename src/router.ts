@@ -9,12 +9,13 @@ import { RouterStats } from "../shared/schemas";
 /**
  * The hub's router (Nov 2026, A/B test asked by Gui in room f94aedb83899 #1959): for a person who turned it on
  * (`users.router`), a new message in a room where their Claude listens no longer wakes that Claude by itself. Each one
- * is decided first: ignore, answer it here from the room's memory, or wake the Claude. Arm by message id parity:
- * A = Jev decides (three yes/no questions, ~1s, input-only billing) and Haiku writes only when it says "answer";
- * B = Haiku decides and writes (the POC). Every decision is a D1 `router_log` row (`router_stats`, the room app).
+ * is decided first: ignore, answer it here from the room's memory, or wake the Claude. Three arms by message id % 3
+ * (Gui, #1961 "compara os 3"): jev = Jev decides alone (three yes/no questions, ~1s, input-only billing; it can't
+ * write, so its "answer" wakes the Claude); hybrid = Jev decides and Haiku writes only the answers; haiku = Haiku
+ * decides and writes (the POC). Every decision is a D1 `router_log` row (`router_stats`, the room app).
  * Fails safe: a model that errs or times out means "wake", and an answer with no source in the memory means "wake".
  */
-export type Arm = "jev" | "haiku" | "rule";
+export type Arm = "jev" | "hybrid" | "haiku" | "rule";
 export type Decision = "ignore" | "answer" | "wake";
 type In = Awaited<ReturnType<ReturnType<typeof bookStub>["routerInput"]>>;
 type Msg = In["messages"][number] & { mine?: boolean };
@@ -79,7 +80,7 @@ async function jev(env: Env, name: string, memory: string, m: Msg) {
 /** One message through its arm. Never throws: a failure is "wake". */
 async function route(env: Env, name: string, memory: string, m: Msg): Promise<Out> {
   const t0 = Date.now();
-  const arm: Arm = m.id % 2 === 0 ? "jev" : "haiku";
+  const arm: Arm = (["jev", "hybrid", "haiku"] as const)[m.id % 3];
   try {
     if (arm === "haiku") {
       const o = await haiku(env, name, memory, m);
@@ -89,6 +90,7 @@ async function route(env: Env, name: string, memory: string, m: Msg): Promise<Ou
     const j = await jev(env, name, memory, m);
     if (!j) return { arm, decision: "wake", why: "Jev falhou", ms: Date.now() - t0, cost: 0 };
     if (j.decision !== "answer") return { arm, ...j, ms: Date.now() - t0 };
+    if (arm === "jev") return { arm, decision: "wake", why: `${j.why} · Jev não escreve`, ms: Date.now() - t0, cost: j.cost };
     const w = await haiku(env, name, memory, m, true);
     const ok = w.action === "answer" && w.reply.trim() && w.source.trim();
     return { arm, decision: ok ? "answer" : "wake", why: ok ? j.why : `${j.why} · sem fonte`, reply: ok ? w.reply : undefined, source: ok ? w.source : undefined, ms: Date.now() - t0, cost: j.cost + w.cost };
@@ -129,7 +131,7 @@ export async function gate(env: Env, me: { email: string; agent: string }, bookI
     if (!ins.meta.changes) continue;
     wake ||= out.decision === "wake";
     if (out.decision === "wake") continue;
-    const label = out.arm === "jev" ? "roteador · Jev" : "roteador · Haiku";
+    const label = `roteador · ${{ jev: "Jev", hybrid: "Jev + Haiku", haiku: "Haiku", rule: "regra" }[out.arm]}`;
     if (out.decision === "answer" && out.reply) {
       const posted = await stub.agentPost(bookId, me.email, `${out.reply}\n\n*${label} · fonte: ${out.source}*`, m.thread, [], label, false, false, m.id, undefined, undefined, me.agent);
       if (posted.ok && posted.id) await db.prepare(`UPDATE router_log SET reply_id = ? WHERE book_id = ? AND msg_id = ? AND email = ?`).bind(posted.id, bookId, m.id, me.email).run();
@@ -167,7 +169,7 @@ export async function routerStats(db: D1Database, email: string, room?: string, 
   // D1 rows are untyped: checked against the schema the room app reads, before they leave.
   return RouterStats.parse({
     since: new Date(from).toISOString(),
-    arms: { jev: { ...by("jev"), ...(await lat("jev")) }, haiku: { ...by("haiku"), ...(await lat("haiku")) }, rule: by("rule") },
+    arms: { jev: { ...by("jev"), ...(await lat("jev")) }, hybrid: { ...by("hybrid"), ...(await lat("hybrid")) }, haiku: { ...by("haiku"), ...(await lat("haiku")) }, rule: by("rule") },
     recent: recent.results,
   });
 }

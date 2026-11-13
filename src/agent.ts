@@ -60,12 +60,12 @@ const TOOLS = [
   },
   {
     name: "router",
-    description: "Your human's hub router (A/B test, Nov 2026): when on, a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude), half by Jev and half by Haiku, and wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
+    description: "Your human's hub router (A/B test, Nov 2026): when on, a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude), a third each by Jev alone, Jev deciding + Haiku writing, and Haiku alone, and wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { on: { type: "boolean" } } },
   },
   {
     name: "router_stats",
-    description: "The router A/B so far for your human: per arm (jev, haiku, rule) how many messages were ignored, answered or woke the Claude, latency p50/p95, cost, and the last 40 decisions. room_id narrows it to one room.",
+    description: "The router A/B so far for your human: per arm (jev, hybrid, haiku, rule) how many messages were ignored, answered or woke the Claude, latency p50/p95, cost, and the last 40 decisions. room_id narrows it to one room.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, days: { type: "number" } } },
   },
   {

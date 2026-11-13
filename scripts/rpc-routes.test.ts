@@ -166,6 +166,7 @@ function fixture(overrides: Partial<ApiServices> = {}) {
         since: "2026-11-01T00:00:00.000Z",
         arms: {
           jev: { ...arm, p50: 300, p95: 500 },
+          hybrid: { ...arm, p50: 900, p95: 1500 },
           haiku: { ...arm, p50: 1800, p95: 2100 },
           rule: { n: 0, ignore: 0, answer: 0, wake: 0, cost: 0 },
         },

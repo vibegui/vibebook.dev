@@ -544,7 +544,7 @@ const RouterArm = z.object({
 });
 export const RouterStats = z.object({
   since: z.string(),
-  arms: z.object({ jev: RouterArm, haiku: RouterArm, rule: RouterArm }),
+  arms: z.object({ jev: RouterArm, hybrid: RouterArm, haiku: RouterArm, rule: RouterArm }),
   recent: z.array(
     z.object({
       book_id: z.string(),
