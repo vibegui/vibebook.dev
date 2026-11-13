@@ -1,6 +1,7 @@
-import { existsSync, realpathSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { createClientBoundaryPolicy } from "./clientBoundary.ts";
+import { canonicalFilesystemPath } from "./filesystemPaths";
 
 /** Origin-form only. Never allow an incoming authority to choose a fetch target. */
 export function localRequestUrl(request: string): URL {
@@ -33,8 +34,9 @@ export function createDevelopmentRequestPolicy(root: string) {
     resolve(root, path),
   );
   const dependencies = resolve(root, "node_modules");
-  const canonical = (file: string) =>
-    existsSync(file) ? realpathSync(file) : resolve(file);
+  const canonical = canonicalFilesystemPath;
+  const projectRoots = [...new Set([resolve(root), canonical(root)])];
+  const lexical = projectRoots.map((base) => ({ roots: ["svelte", "shared", "collab", "public"].map((path) => resolve(base, path)), deps: resolve(base, "node_modules") }));
   const actualFrontend = frontend.map(canonical);
   const actualDependencies = canonical(dependencies);
   const within = (file: string, directory: string) => {
@@ -83,10 +85,8 @@ export function createDevelopmentRequestPolicy(root: string) {
     const actual = canonical(file);
     boundary.assertClient(actual);
     if (
-      !(
-        allowed(resolve(file), frontend, dependencies) ||
-        allowed(resolve(file), actualFrontend, actualDependencies)
-      ) ||
+      (projectRoots.some((base) => within(resolve(file), base)) &&
+        !lexical.some(({ roots, deps }) => allowed(resolve(file), roots, deps))) ||
       !allowed(actual, actualFrontend, actualDependencies)
     )
       throw new Error("[client-boundary] File is outside browser source roots");

@@ -1,4 +1,5 @@
 import { relative, resolve } from "node:path";
+import { canonicalFilesystemPath } from "./filesystemPaths";
 import type {
   IncomingHttpHeaders,
   IncomingMessage,
@@ -218,7 +219,7 @@ function postBody(request: IncomingMessage): ReadableStream<Uint8Array> {
 /** Runtime/contract edits need fresh connections; component/CSS edits use HMR. */
 export function requiresAppReload(root: string, file: string): boolean {
   return /^(?:src|shared|collab)\//.test(
-    relative(root, file).replaceAll("\\", "/"),
+    relative(canonicalFilesystemPath(root), canonicalFilesystemPath(file)).replaceAll("\\", "/"),
   );
 }
 
