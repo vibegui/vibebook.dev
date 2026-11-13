@@ -528,6 +528,7 @@ export type Me = AgentProps & { agent: string };
 // Tools a room-scoped (sandbox) grant can't call: they reach other rooms, the person's machine or their sandboxes.
 const ROOM_SCOPED_DENY = new Set(["claude_rooms", "switch_claude", "create_room", "notify_url", "sandboxes", "sandbox_create", "sandbox_setup", "sandbox_exec", "sandbox_power", "metrics"]);
 
+const WRITES_AS_MODEL = new Set(["post", "upload_file", "upload_link", "save_reminder"]);
 async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: Me, origin: string): Promise<unknown> {
   const db = env.DB;
   // A cloud sandbox's grant (props.room) reaches only its own room: a compromised VM can't read the person's other rooms.
@@ -539,6 +540,12 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
     return id;
   };
   const unread = (only = "") => unreadRooms(db, me.email, me.agent, me.room || only);
+  // Anything that writes a message carries the agent's model; a call without one (a plain `vibebook upload`) uses the
+  // model this agent last reported, so one agent isn't "agent de X" on one message and "Claude Opus 5.5 de X" on the next.
+  if (!str(a.model) && WRITES_AS_MODEL.has(name)) {
+    const m = (await db.prepare(`SELECT model FROM agents WHERE id = ?`).bind(me.agent).first<{ model: string | null }>())?.model;
+    if (m) a.model = m;
+  }
   switch (name) {
     case "wait_for_messages": {
       // ponytail: polls D1 every 3s for one person (≤17 light reads per call); a per-person DO with push is the upgrade.

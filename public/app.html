@@ -948,6 +948,14 @@
   .embedOpen:hover { opacity: 1; }
   .embedWrap.clipped::after { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 36px; border-radius: 0 0 12px 12px; background: linear-gradient(transparent, rgb(0 0 0 / .18)); pointer-events: none; }
   .atts:has(.embedBox) { display: block; }
+  .htmlCard { gap: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+  .hcHead { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; font-size: 13px; min-width: 0; }
+  .hcName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .hcHead small { color: var(--mute); flex: none; }
+  .hcOpen { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; }
+  .hcOpen:hover { border-color: var(--accent); }
+  .htmlCard iframe.embed { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
+  .htmlCard .embedWrap.clipped::after { border-radius: 0; }
+  .htmlCard .appAsk { margin: 8px; }
   iframe.embed { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: block; }
   .embedBox .appAsk { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklch, #e3b505 14%, var(--panel)); border: 1px solid color-mix(in oklch, #e3b505 40%, transparent); font-size: 14px; }
   .embedBox .appAsk q { font-weight: 600; overflow-wrap: anywhere; } .embedBox .appAsk div { display: flex; gap: 8px; }
@@ -2011,6 +2019,8 @@ const EN = {
   "aguardando {who}": "waiting on {who}",
   "{who} parou": "{who} stopped",
   "lido por {who}": "read by {who}",
+  "Abrir": "Open",
+  "Prévia": "Preview",
   "Fechar galho": "Collapse branch",
   "Abrir galho": "Expand branch",
   "visto por {n}": "seen by {n}",
@@ -4728,8 +4738,11 @@ document.addEventListener("click", (e) => {
   openViewer(u.pathname, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || l.textContent.trim() || "arquivo");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
-const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
-  ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe><a class="embedOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 15)}</a></div></div>`
+// An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
+// the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
+const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
+  ? htmlCard(f)
   : f.type.startsWith("audio/")
   ? `<div class="audioAtt"><audio controls preload="metadata" src="${fileUrl(f)}"></audio><a href="${fileUrl(f)}" target="_blank" rel="noopener" download="${esc(f.name)}">${icon("mic", 14)} ${esc(f.name)} <small>${kb(f.size)}</small></a></div>`
   : f.type.startsWith("image/")
