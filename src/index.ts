@@ -1,4 +1,4 @@
-import { meApi, type ApiServices } from "./api";
+import { uploadsApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -405,38 +405,6 @@ app.get("/api/dev/as", (c) => {
 // Native notifications: this device's push subscription (the app's 🔔). One row per endpoint, owned by whoever subscribed last.
 
 
-// Profile picture: the app resizes it to a small square before sending. R2 `avatars/<email>`, users.avatar = version.
-const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
-app.post("/api/me/avatar", async (c) => {
-  const email = c.get("email");
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!AVATAR_TYPES.includes(type)) return c.json({ error: "Use uma imagem PNG, JPEG ou WebP." }, 415);
-  const body = await c.req.arrayBuffer();
-  if (!body.byteLength || body.byteLength > 1_000_000) return c.json({ error: "Imagem vazia ou maior que 1MB." }, 413);
-  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
-  await c.env.FILES.put(`avatars/${email}`, body, { httpMetadata: { contentType: type } });
-  const v = Date.now();
-  await c.env.DB.prepare(`UPDATE users SET avatar = ? WHERE email = ?`).bind(v, email).run();
-  c.executionCtx.waitUntil(track(c.env, "avatar_set", { user: email }));
-  return c.json({ ok: true, avatar: v });
-});
-// Room icon: the app sends a small PNG (it resizes first); members only. ?v=<books.icon> caches it for good.
-app.post("/api/books/:id/icon", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
-  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  try {
-    const v = await setRoomIcon(c.env, id, type === "application/json" ? null : { type, body: await c.req.arrayBuffer() });
-    c.executionCtx.waitUntil(track(c.env, "room_icon", { user: email, dims: { book: id, set: v !== null } }));
-    return c.json({ ok: true, icon: v });
-  } catch (e) {
-    return c.json({ error: (e as Error).message }, 400);
-  }
-});
 // Versioned URLs (?v=) never change: after the access check, the edge cache (Cache API) answers instead of R2.
 async function edgeCached(c: Context<Ctx>, load: () => Promise<Response | null>) {
   const url = new URL(c.req.url);
@@ -483,7 +451,7 @@ app.get("/api/avatar/:email", (c) =>
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", meApi);
+app.route("/", uploadsApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.

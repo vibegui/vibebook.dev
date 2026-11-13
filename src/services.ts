@@ -9,7 +9,7 @@ import { uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import { MeData, MeResult } from "../shared/schemas";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
-import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
+import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, setRoomIcon, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
 import { track } from "./track";
 import { pushTo } from "./webpush";
 import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
@@ -157,6 +157,14 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     listenFresh: LISTEN_FRESH,
     sandboxes: sandboxOps(env, ctx, email, new URL(req0.url).origin),
     me: () => meFor(env, ctx, email, req0),
+    allowUpload: async () => (await env.UPLOAD_LIMIT.limit({ key: email })).success,
+    saveAvatar: async (type, bytes) => {
+      await env.FILES.put(`avatars/${email}`, bytes, { httpMetadata: { contentType: type } });
+      const v = Date.now();
+      await env.DB.prepare(`UPDATE users SET avatar = ? WHERE email = ?`).bind(v, email).run();
+      return v;
+    },
+    setRoomIcon: (roomId, img) => setRoomIcon(env, roomId, img),
     connections: connOps(env, ctx, email, new URL(req0.url).origin, track),
   };
 }

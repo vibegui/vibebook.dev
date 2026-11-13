@@ -426,3 +426,17 @@ export const MeResult = z.extend(MeData, {
   cached: z.optional(z.literal(true)),
 });
 export type MeResult = z.infer<typeof MeResult>;
+
+// Slice 11: the two image uploads (raw bytes; the app resizes first). Their type is the request's content-type.
+export const ImageHeaders = z.object({
+  "content-type": z.optional(z.string()),
+});
+export const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+export const AvatarResult = z.object({
+  ok: z.literal(true),
+  avatar: z.number(),
+});
+export type AvatarResult = z.infer<typeof AvatarResult>;
+/** icon = the new version, or null when the icon was removed (a JSON body). */
+export const RoomIconResult = z.object({ ok: z.literal(true), icon: num });
+export type RoomIconResult = z.infer<typeof RoomIconResult>;

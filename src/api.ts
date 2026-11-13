@@ -23,6 +23,10 @@ import {
   CreateConnectionBody,
   type CreateConnectionResult,
   type MeResult,
+  AVATAR_TYPES,
+  type AvatarResult,
+  ImageHeaders,
+  type RoomIconResult,
   type RefreshConnectionResult,
   type CreateSandboxResult,
   type SandboxesResult,
@@ -137,6 +141,12 @@ export interface ApiServices {
   };
   /** The home and rail's one read: your rooms, friends and waits, plus the app shell's version. */
   me(): Promise<MeResult>;
+  /** Per-person upload rate limit (UPLOAD_LIMIT): false = over it. */
+  allowUpload(): Promise<boolean>;
+  /** Store your profile picture (R2 avatars/<email>); returns its new version. */
+  saveAvatar(type: string, bytes: ArrayBuffer): Promise<number>;
+  /** Set (or with null remove) a room's icon; returns its version or null. Throws a user-facing Error. */
+  setRoomIcon(roomId: string, img: { type: string; body: ArrayBuffer } | null): Promise<number | null>;
   /** The room's MCP connections as this person sees them (src/mcpconn.ts connOps); membership is checked by the route. */
   connections: {
     list(roomId: string): Promise<ConnectionsResult>;
@@ -566,4 +576,40 @@ export const connectionsApi = sandboxApi
 // Slice 10: GET /api/me (POST /api/me, your name, is slice 5).
 export const meApi = connectionsApi.get("/api/me", async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
 
-export type AppType = typeof meApi;
+// Slice 11: the profile picture and the room icon, raw image bytes (the app resizes them first). Same-origin only.
+const imageHeaders = validator("header", (value, c) => {
+  const r = ImageHeaders.safeParse(value);
+  return r.success ? r.data : c.json({ error: "bad request" } satisfies ErrorBody, 400);
+});
+const mediaType = (h: { "content-type"?: string }) => (h["content-type"] ?? "").split(";")[0].trim().toLowerCase();
+const slowDown = { error: "Muitos uploads. Espera um minuto." } satisfies ErrorBody;
+export const uploadsApi = meApi
+  .post("/api/me/avatar", imageHeaders, async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    const type = mediaType(c.req.valid("header"));
+    if (!AVATAR_TYPES.includes(type)) return c.json({ error: "Use uma imagem PNG, JPEG ou WebP." } satisfies ErrorBody, 415);
+    const bytes = await c.req.arrayBuffer();
+    if (!bytes.byteLength || bytes.byteLength > 1_000_000) return c.json({ error: "Imagem vazia ou maior que 1MB." } satisfies ErrorBody, 413);
+    if (!(await svc.allowUpload())) return c.json(slowDown, 429);
+    const avatar = await svc.saveAvatar(type, bytes);
+    svc.track("avatar_set");
+    return c.json({ ok: true as const, avatar } satisfies AvatarResult, 200);
+  })
+  .post("/api/books/:id/icon", imageHeaders, async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    if (!(await svc.allowUpload())) return c.json(slowDown, 429);
+    const type = mediaType(c.req.valid("header"));
+    try {
+      // A JSON body removes the icon; anything else is the image (setRoomIcon checks type and size).
+      const icon = await svc.setRoomIcon(id, type === "application/json" ? null : { type, body: await c.req.arrayBuffer() });
+      svc.track("room_icon", { book: id, set: icon !== null });
+      return c.json({ ok: true as const, icon } satisfies RoomIconResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 400);
+    }
+  });
+
+export type AppType = typeof uploadsApi;

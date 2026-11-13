@@ -23,7 +23,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/books/:id/connections/:cid/ui` | `src/api.ts` | JSON RPC (`{ html, tool }`: the app HTML travels as a string for srcdoc) | 37 | tested (slice 9; was listed as an HTML resource, but it answers JSON) |
 | POST | `/api/books/:id/files` | `src/api.ts` | binary upload (typed adapter) | 37 | tested (slice 1) |
 | GET | `/api/books/:id/files/:fid` | `src/index.ts:813` | binary GET (asset) | 37 | n/a (documented) |
-| POST | `/api/books/:id/icon` | `src/index.ts:507` | binary upload (typed adapter) | 37 | todo |
+| POST | `/api/books/:id/icon` | `src/api.ts` | binary upload (typed adapter) | 37 | tested (slice 11) |
 | GET | `/api/books/:id/icon` | `src/index.ts:539` | binary GET (asset) | 37 | n/a (documented) |
 | POST | `/api/books/:id/members` | `src/api.ts` | JSON RPC | 37 | tested (slice 3) |
 | DELETE | `/api/books/:id/members/:email` | `src/api.ts` | JSON RPC | 37 | tested (slice 3) |
@@ -47,7 +47,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/mcp-oauth/callback` | `src/mcpconn.ts:245` | browser navigation / redirect | 0 | n/a (documented) |
 | GET | `/api/me` | `src/api.ts` | JSON RPC | 14 | tested (slice 10) |
 | POST | `/api/me` | `src/api.ts` | JSON RPC | 14 | tested (slice 5) |
-| POST | `/api/me/avatar` | `src/index.ts:492` | binary upload (typed adapter) | 1 | todo |
+| POST | `/api/me/avatar` | `src/api.ts` | binary upload (typed adapter) | 1 | tested (slice 11) |
 | GET | `/api/me/logins` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
 | GET | `/api/notify` | `src/index.ts:310` | agent long-poll (CLI), not the app | 0 | n/a (documented) |
 | GET | `/api/push/key` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
@@ -87,5 +87,7 @@ Slice 5 (your name, create room, start room in one step, home router): the model
 Slice 9 (MCP connections: list, create, delete, refresh, ui, call, context, signout): `mountConnections` keeps only the two browser redirects (sign-in on the server, its OAuth callback); the rest is `connOps` in `src/mcpconn.ts` behind `ApiServices.connections`, every connection still looked up by room + the signed-in person (`getConn`/`canUse`). Failures keep `{ error }` and their status (400/404/429/502), and a server that wants its own sign-in still answers 401 with `sign_in: true`. `/ui` was inventoried as an HTML resource but answers JSON (`{ html, tool }`, the page puts the HTML in srcdoc), so it is typed too (`tool` as a validated query). 46 of 49 JSON routes typed and tested; left: `GET /api/me` and the two binary uploads (room icon, avatar).
 
 Slice 10 (`GET /api/me`): the handler moves to `ApiServices.me` (`src/services.ts`, with the shell-version lookup); the Person DO cache is checked against `MeData` before it is served (an entry from an older deploy that no longer fits is recomputed), and the D1 rows are checked before they leave the Worker. Every D1 column is nullable, so a row off the schema is logged ("/api/me rows off schema") and served as before instead of failing every home. Checked locally: uncached then cached answer, same keys and counts, vanilla and `?ui=svelte` homes load with no page errors. 47 of 49; left: the two binary uploads (room icon, avatar).
+
+Slice 11 (profile picture, room icon): raw image bytes with a validated `content-type` header, same checks in the same order as before (same origin, type 415, size 413, `UPLOAD_LIMIT` 429; the icon: membership 403, a JSON body removes it, `setRoomIcon`'s own errors 400); the R2/D1 writes sit behind `ApiServices.saveAvatar` / `setRoomIcon`. Checked locally with a real PNG: set, wrong type, other origin, set icon + GET it back, remove, outsider. **49 of 49 JSON routes typed and tested**; the rest of the inventory is redirects, assets and external protocols, documented as n/a.
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.

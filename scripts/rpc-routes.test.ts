@@ -1,10 +1,6 @@
 import { expect, test } from "bun:test";
 import { Hono } from "hono";
-import {
-  connectionsApi as api,
-  type ApiCtx,
-  type ApiServices,
-} from "../src/api";
+import { uploadsApi as api, type ApiCtx, type ApiServices } from "../src/api";
 
 // Exercise the real handlers/validators without Worker bindings or unchecked Env casts.
 // Authentication middleware and persistence are separate Worker integration gates.
@@ -101,6 +97,16 @@ function fixture(overrides: Partial<ApiServices> = {}) {
       remove: async (sid) => sid === "mine",
       terminal: async (sid) =>
         sid === "mine" ? { token: "t", url: "wss://x" } : null,
+    },
+    allowUpload: async () => true,
+    saveAvatar: async (type, bytes) => {
+      saved.push({ table: "avatar", value: `${type}:${bytes.byteLength}` });
+      return 7;
+    },
+    setRoomIcon: async (_room, img) => {
+      if (img && img.type !== "image/png")
+        throw new Error("Use PNG, JPEG, WebP, GIF ou ICO.");
+      return img ? 9 : null;
     },
     me: async () => ({
       email: "test@example.com",
@@ -572,4 +578,68 @@ test("me: the home's one read, typed end to end", async () => {
   const f = fixture();
   const r = await f.app.request("/api/me");
   expect([r.status, (await r.json()).v]).toEqual([200, "v1"]);
+});
+
+test("avatar and room icon: same origin, type, size and rate limits keep their old answers", async () => {
+  const f = fixture();
+  const send = (path: string, type: string, body: BodyInit, origin?: string) =>
+    f.app.request(path, {
+      method: "POST",
+      headers: { "content-type": type, ...(origin ? { origin } : {}) },
+      body,
+    });
+  const png = new Uint8Array([137, 80, 78, 71]);
+  expect(await (await send("/api/me/avatar", "image/png", png)).json()).toEqual(
+    { ok: true, avatar: 7 },
+  );
+  expect(f.saved).toContainEqual({ table: "avatar", value: "image/png:4" });
+  expect((await send("/api/me/avatar", "image/svg+xml", png)).status).toBe(415);
+  expect(
+    (await send("/api/me/avatar", "image/png", new Uint8Array(0))).status,
+  ).toBe(413);
+  expect(
+    (await send("/api/me/avatar", "image/png", new Uint8Array(1_000_001)))
+      .status,
+  ).toBe(413);
+  const crossSite = fixture({ sameOrigin: false });
+  expect(
+    (
+      await crossSite.app.request("/api/me/avatar", {
+        method: "POST",
+        headers: { "content-type": "image/png" },
+        body: png,
+      })
+    ).status,
+  ).toBe(403);
+  const limited = fixture({ allowUpload: async () => false });
+  expect(
+    (
+      await limited.app.request("/api/me/avatar", {
+        method: "POST",
+        headers: { "content-type": "image/png" },
+        body: png,
+      })
+    ).status,
+  ).toBe(429);
+  expect(
+    await (await send("/api/books/room/icon", "image/png", png)).json(),
+  ).toEqual({ ok: true, icon: 9 });
+  expect(
+    await (await send("/api/books/room/icon", "application/json", "{}")).json(),
+  ).toEqual({ ok: true, icon: null });
+  const bad = await send("/api/books/room/icon", "image/bmp", png);
+  expect([bad.status, await bad.json()]).toEqual([
+    400,
+    { error: "Use PNG, JPEG, WebP, GIF ou ICO." },
+  ]);
+  const outsider = fixture({ isMember: async () => false });
+  expect(
+    (
+      await outsider.app.request("/api/books/room/icon", {
+        method: "POST",
+        headers: { "content-type": "image/png" },
+        body: png,
+      })
+    ).status,
+  ).toBe(403);
 });

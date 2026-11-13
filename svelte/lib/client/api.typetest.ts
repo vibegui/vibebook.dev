@@ -6,6 +6,8 @@ import type {
   SandboxesResult,
   ConnectionsResult,
   MeResult,
+  AvatarResult,
+  RoomIconResult,
   ConnectionCallResult,
   SandboxTerminalResult,
   AgentsResult,
@@ -246,3 +248,14 @@ void api.api.books[":id"].connections[":cid"].ui.$get({
 
 // Slice 10: GET /api/me.
 sameAs<Equal<InferResponseType<typeof api.api.me.$get, 200>, MeResult>>(true);
+
+// Slice 11: avatar and room icon (raw bytes; the typed client sees the JSON answers).
+sameAs<
+  Equal<InferResponseType<typeof api.api.me.avatar.$post, 200>, AvatarResult>
+>(true);
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["icon"]["$post"], 200>,
+    RoomIconResult
+  >
+>(true);
