@@ -1,0 +1,11 @@
+$ bun scripts/navigation-browser.ts
+Creating real nested epics through local OAuth and MCP
+Checking nested metadata, keyboard disclosure and live draft retention
+Checking archived hierarchy, owner changes and keyboard ordering
+Checking real sibling drag without changing hierarchy
+Checking disconnected draft retention, owner rollback and retry
+Checking responsive Studio tokens and native navigation accessibility
+Checking the mobile form stays reachable with expanded epic actions
+Checking the mobile form stays reachable with expanded epic actions
+Checking Portuguese input and navigation accessibility
+PASS native epic navigation: hierarchy, disclosure, live draft state, archive, owner, ordering/drag, persistence, disconnect/retry, responsive EN/PT axe

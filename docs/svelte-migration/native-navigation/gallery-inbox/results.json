@@ -1,0 +1,146 @@
+{
+  "scope": "Gallery and Inbox",
+  "fixtures": [
+    "legacy-only Google CSS isolated",
+    "local runner: no active rooms/directory",
+    "deterministic profile waits",
+    "held resolve responses and explicit HTTP 500",
+    "native outer boxes frozen only during CSS containment comparison; fixture itself must preserve surrounding layout"
+  ],
+  "fonts": {
+    "faces": [
+      {
+        "family": "Inter var",
+        "status": "loaded"
+      },
+      {
+        "family": "Inter var",
+        "status": "unloaded"
+      },
+      {
+        "family": "CommitMono",
+        "status": "loaded"
+      }
+    ],
+    "body": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+    "code": "CommitMono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+    "weight": "500"
+  },
+  "tabStructure": [
+    {
+      "section": "OverlaysFocus trap, Escape dismissal and focus restoration are provided by Bits UI. Open dialog  Open sheet  GeneralMembersUnavailable General settingsRoom membersRoom members",
+      "parent": "<div aria-label=\"Room settings\" class=\"tw:flex tw:shrink-0 tw:gap-1 tw:rounded-control tw:bg-muted tw:p-1\" id=\"bits-c6\" role=\"tablist\" aria-orientation=\"horizontal\" data-orientation=\"horizontal\" data-tabs-list=\"\"><!----><!----><!----><button class=\"tw:flex-1 tw:rounded-md tw:border tw:border-transparent tw:bg-transparent tw:px-3 tw:py-1.5 tw:text-sm tw:font-medium tw:leading-5 tw:text-muted-foreground tw:outline-none tw:transition-colors tw:hover:text-foreground tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:disabled:pointer-events-none tw:disabled:opacity-50 tw:data-[state=active]:bg-card tw:data-[state=active]:text-card-foreground tw:data-[state=active]:shadow-xs tw:motion-reduce:transition-none\" id=\"bits-c7\" role=\"tab\" data-state=\"active\" data-value=\"general\" data-orientation=\"horizontal\" aria-selected=\"true\" data-tabs-trigger=\"\" tabindex=\"0\" type=\"button\" aria-controls=\"bits-c10\">General<!----></button><!----><!----><button class=\"tw:flex-1 tw:rounded-md tw:border tw:border-transparent tw:bg-transparent tw:px-3 tw:py-1.5 tw:text-sm tw:font-medium tw:leading-5 tw:text-muted-foreground tw:outline-none tw:transition-colors tw:hover:text-foreground tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:disabled:pointer-events-none tw:disabled:opacity-50 tw:data-[state=active]:bg-card tw:data-[state=active]:text-card-foreground tw:data-[state=active]:shadow-xs tw:motion-reduce:transition-none\" id=\"bits-c8\" role=\"tab\" data-state=\"inactive\" data-value=\"members\" data-orientation=\"horizontal\" aria-selected=\"false\" data-tabs-trigger=\"\" tabindex=\"-1\" type=\"button\" aria-controls=\"bits-c11\">Members<!----></button><!----><!----><button class=\"tw:flex-1 tw:rounded-md tw:border tw:border-transparent tw:bg-transparent tw:px-3 tw:py-1.5 tw:text-sm tw:font-medium tw:leading-5 tw:text-muted-foreground tw:outline-none tw:transition-colors tw:hover:text-foreground tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:disabled:pointer-events-none tw:disabled:opacity-50 tw:data-[state=active]:bg-card tw:data-[state=active]:text-card-foreground tw:data-[state=active]:shadow-xs tw:motion-reduce:transition-none\" id=\"bits-c9\" role=\"tab\" data-state=\"inactive\" data-value=\"disabled\" data-orientation=\"horizontal\" data-disabled=\"\" aria-selected=\"false\" data-tabs-trigger=\"\" disabled=\"\" tabindex=\"-1\" type=\"button\" aria-controls=\"bits-c12\">Unavailable<!----></button><!----></div>"
+    }
+  ],
+  "lightStudioPalette": {
+    "theme": "light",
+    "devicePixelRatio": 1,
+    "tokens": 134,
+    "colorTokens": 92,
+    "roles": 9,
+    "mismatches": []
+  },
+  "lightAccessibility": [],
+  "darkStudioPalette": {
+    "theme": "dark",
+    "devicePixelRatio": 1,
+    "tokens": 134,
+    "colorTokens": 92,
+    "roles": 9,
+    "mismatches": []
+  },
+  "darkAccessibility": [],
+  "mobileAccessibility": [],
+  "darkRetinaStudioPalette": {
+    "theme": "dark",
+    "devicePixelRatio": 2,
+    "tokens": 134,
+    "colorTokens": 92,
+    "roles": 9,
+    "mismatches": []
+  },
+  "lightRetinaStudioPalette": {
+    "theme": "light",
+    "devicePixelRatio": 2,
+    "tokens": 134,
+    "colorTokens": 92,
+    "roles": 9,
+    "mismatches": []
+  },
+  "legacyLayout": [
+    {
+      "width": 1440,
+      "theme": "light",
+      "elements": 532,
+      "nativeFrames": [
+        {
+          "tag": "SECTION",
+          "id": "",
+          "label": "Epics",
+          "width": 239,
+          "height": 166
+        }
+      ],
+      "fixtureMismatches": [],
+      "mismatches": []
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "elements": 532,
+      "nativeFrames": [
+        {
+          "tag": "SECTION",
+          "id": "",
+          "label": "Epics",
+          "width": 239,
+          "height": 166
+        }
+      ],
+      "fixtureMismatches": [],
+      "mismatches": []
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "elements": 532,
+      "nativeFrames": [
+        {
+          "tag": "SECTION",
+          "id": "",
+          "label": "Epics",
+          "width": 358,
+          "height": 146
+        }
+      ],
+      "fixtureMismatches": [],
+      "mismatches": []
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "elements": 532,
+      "nativeFrames": [
+        {
+          "tag": "SECTION",
+          "id": "",
+          "label": "Epics",
+          "width": 358,
+          "height": 146
+        }
+      ],
+      "fixtureMismatches": [],
+      "mismatches": []
+    }
+  ],
+  "inboxAccessibility": [],
+  "inboxLifecycle": "close/reopen during resolve, recoverable failure, native switcher Escape passed",
+  "crossRoomNavigation": "Actual Inbox link retained ui=svelte and entered the second room",
+  "room": "66f08c21a9ac",
+  "errors": [],
+  "status": "pass",
+  "expectedNetworkFailures": [
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+  ],
+  "requestFailures": []
+}
