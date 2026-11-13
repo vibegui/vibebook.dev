@@ -16,15 +16,16 @@ self.addEventListener("push", (event) => {
   }
   const parsed = PushPayload.safeParse(input),
     data = parsed.success ? parsed.data : {};
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: data.tag || "vibebook",
+    renotify: true,
+    data: { url: notificationTarget(data.url, self.location.origin) },
+  } satisfies NotificationOptions & { renotify: boolean };
   event.waitUntil(
-    self.registration.showNotification(data.title || "vibebook", {
-      body: data.body || "",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      tag: data.tag || "vibebook",
-      renotify: true,
-      data: { url: notificationTarget(data.url, self.location.origin) },
-    }),
+    self.registration.showNotification(data.title || "vibebook", options),
   );
 });
 self.addEventListener("notificationclick", (event) => {

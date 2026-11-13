@@ -44,6 +44,7 @@ if (native) {
     "svelte/features/home",
     "svelte/features/app-navigation",
     "svelte/features/rooms",
+    "svelte/features/file-viewer",
   ])
     await collect(directory);
   files.push(
