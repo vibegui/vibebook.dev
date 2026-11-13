@@ -23,6 +23,7 @@ import {
   CreateConnectionBody,
   type CreateConnectionResult,
   type MeResult,
+  MeQuery,
   AVATAR_TYPES,
   type AvatarResult,
   ImageHeaders,
@@ -57,6 +58,7 @@ import {
   EmailBody,
   LoginsResult,
   type SearchResult,
+  SearchQuery,
   type ErrorBody,
   type OkResult,
   PostMessageBody,
@@ -317,8 +319,12 @@ export const accountApi = api
     );
     return c.json({ books: zm.array(ArchivedRoom).parse(rows) } satisfies ArchivedResult, 200);
   })
-  .get("/api/search", async (c) => {
-    const q = (c.req.query("q") ?? "").trim().slice(0, 120);
+  .get("/api/search", validator("query", (value,c) => {
+    // Hono gives repeated keys as arrays; query() previously used the first.
+    const r=SearchQuery.safeParse({q:Array.isArray(value.q)?value.q[0]:value.q});
+    return r.success?r.data:c.json({error:"bad request"} satisfies ErrorBody,400);
+  }), async (c) => {
+    const q = (c.req.valid("query").q ?? "").trim().slice(0, 120);
     const none: SearchResult = { rooms: 0, epics: [], messages: [] }; // typed, so both answers are one SearchResult
     if (q.length < 2) return c.json(none, 200);
     const out = await c.get("svc").search(q);
@@ -613,7 +619,10 @@ export const connectionsApi = sandboxApi
   });
 
 // Slice 10: GET /api/me (POST /api/me, your name, is slice 5).
-export const meApi = connectionsApi.get("/api/me", async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
+export const meApi = connectionsApi.get("/api/me", validator("query", (value,c) => {
+  const r=MeQuery.safeParse({ui:Array.isArray(value.ui)?value.ui[0]:value.ui});
+  return r.success?r.data:c.json({error:"bad request"} satisfies ErrorBody,400);
+}), async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
 
 // Slice 11: the profile picture and the room icon, raw image bytes (the app resizes them first). Same-origin only.
 const imageHeaders = validator("header", (value, c) => {

@@ -128,6 +128,9 @@ export const SearchResult = z.object({
   ),
 });
 export type SearchResult = z.infer<typeof SearchResult>;
+/** Query values remain permissive strings; the existing handler trims/slices q. */
+export const SearchQuery = z.object({ q:z.optional(z.string()) });
+export type SearchQuery = z.infer<typeof SearchQuery>;
 export const LoginsResult = z.object({
   logins: z.array(
     z.object({ method: z.string(), last: z.number(), n: z.number() }),
@@ -426,6 +429,9 @@ export const MeResult = z.extend(MeData, {
   cached: z.optional(z.literal(true)),
 });
 export type MeResult = z.infer<typeof MeResult>;
+/** Unknown UI names intentionally retain the existing vanilla fallback. */
+export const MeQuery = z.object({ ui:z.optional(z.string()) });
+export type MeQuery = z.infer<typeof MeQuery>;
 
 // Slice 11: the two image uploads (raw bytes; the app resizes first). Their type is the request's content-type.
 export const ImageHeaders = z.object({

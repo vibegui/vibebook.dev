@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";
+import type { PersonEvent } from "../shared/person";
 
 /** One per person (idFromName(email)): the app's push channel for what lives outside an open room (the rail's unread
  * dots and ✻, "esperando você", the room's Claudes and sandboxes). Sockets hibernate; a poke tells every open tab
@@ -45,7 +46,7 @@ export class Person extends DurableObject<Env> {
 }
 
 /** Tell these people's open apps that something changed. Fire and forget, ≤50 people per call. */
-export function poke(env: Env, emails: Iterable<string>, msg: { t: "me"; book?: string; msg?: 1 } | { t: "agents"; book: string }) {
+export function poke(env: Env, emails: Iterable<string>, msg: PersonEvent) {
   const body = JSON.stringify(msg);
   return Promise.all(
     [...new Set(emails)].slice(0, 50).map((e) =>
@@ -54,7 +55,7 @@ export function poke(env: Env, emails: Iterable<string>, msg: { t: "me"; book?: 
   );
 }
 /** Everyone in a room. */
-export async function pokeRoom(env: Env, bookId: string, msg: Parameters<typeof poke>[2]) {
+export async function pokeRoom(env: Env, bookId: string, msg: PersonEvent) {
   const r = await env.DB.prepare(`SELECT email FROM members WHERE book_id = ?`).bind(bookId).all<{ email: string }>();
   return poke(env, r.results.map((x) => x.email), msg);
 }
