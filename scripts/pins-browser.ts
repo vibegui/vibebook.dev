@@ -610,6 +610,20 @@ try {
     const key = `pins-${language}-${dark ? "dark" : "light"}-${width}`;
     result[key] = { native, violations: accessibility.violations };
     await pins.screenshot({ path: `${output}/${key}.png` });
+    if (width <= 900) {
+      const lastControl = pins
+        .locator("[data-pin-id]")
+        .last()
+        .getByRole("button", { name: /^(Unpin|Desafixar) / });
+      await lastControl.scrollIntoViewIfNeeded();
+      await expect(lastControl).toBeInViewport({ ratio: 0.95 });
+      await lastControl.click({ trial: true });
+      result[`${key}-scroll`] = {
+        lastControl: await lastControl.boundingBox(),
+        viewport: page.viewportSize(),
+      };
+      await page.screenshot({ path: `${output}/${key}-scroll.png` });
+    }
     const beforeKeyboardCancel = count("pin.add");
     await name.press("Escape");
     await expect(pins.getByRole("form")).toHaveCount(0);
