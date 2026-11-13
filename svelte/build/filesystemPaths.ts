@@ -10,7 +10,12 @@ export function canonicalFilesystemPath(file: string): string {
     try {
       return resolve(realpathSync(current), ...missing);
     } catch (error) {
-      if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+      if (
+        !(error instanceof Error) ||
+        !("code" in error) ||
+        error.code !== "ENOENT"
+      )
+        throw error;
       const parent = dirname(current);
       if (parent === current) throw error;
       missing.unshift(current.slice(parent.length).replace(/^[/\\]/, ""));
