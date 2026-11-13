@@ -317,3 +317,37 @@ test("supervisor reaps already-started watchers when a later spawn throws", asyn
     error.mockRestore();
   }
 });
+
+test("completed startup groups are released before later watcher shutdown", async () => {
+  const { runDevelopmentProcesses } = await import("./dev-app");
+  const signals = new EventEmitter();
+  const children: { kills: number; end(code: number): void }[] = [];
+  let notifyWatchers!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    notifyWatchers = resolve;
+  });
+  const result = runDevelopmentProcesses(() => {
+    let end!: (code: number) => void;
+    const exited = new Promise<number>((resolve) => {
+      end = resolve;
+    });
+    const state = { kills: 0, end };
+    children.push(state);
+    if (children.length <= 2) end(0);
+    if (children.length === 5) notifyWatchers();
+    return {
+      exited,
+      kill() {
+        state.kills++;
+        end(143);
+      },
+    };
+  }, signals);
+  await ready;
+  expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
+  expect(children.slice(2).map((child) => child.kills)).toEqual([0, 0, 0]);
+  signals.emit("SIGTERM");
+  expect(await result).toBe(130);
+  expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
+  expect(children.slice(2).map((child) => child.kills)).toEqual([1, 1, 1]);
+});

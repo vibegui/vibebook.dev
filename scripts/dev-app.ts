@@ -11,7 +11,7 @@ export async function runDevelopmentProcesses(
   spawn: (cmd: string[]) => Child,
   signals: Signals = process,
 ): Promise<number> {
-  const children: Child[] = [];
+  const children = new Set<Child>();
   let stopped = false;
   let cancel!: (code: number) => void;
   const cancelled = new Promise<number>((resolve) => {
@@ -25,8 +25,33 @@ export async function runDevelopmentProcesses(
   const start = (cmd: string[]) => {
     if (stopped) throw new Error("Development startup cancelled");
     const child = spawn(cmd);
-    children.push(child);
-    return child;
+    let signalled = false;
+    const owned: Child = {
+      exited: child.exited,
+      kill() {
+        if (signalled) return;
+        signalled = true;
+        child.kill();
+      },
+    };
+    children.add(owned);
+    const release = () => {
+      // Reap residual descendants while this completed group's ownership is
+      // current. Never retain its numeric PGID for a later shutdown signal.
+      children.delete(owned);
+      owned.kill();
+    };
+    owned.exited = child.exited.then(
+      (code) => {
+        release();
+        return code;
+      },
+      (error) => {
+        release();
+        throw error;
+      },
+    );
+    return owned;
   };
   signals.on("SIGINT", stop);
   signals.on("SIGTERM", stop);
@@ -82,7 +107,7 @@ export async function runDevelopmentProcesses(
     signals.off("SIGINT", stop);
     signals.off("SIGTERM", stop);
     for (const child of children) child.kill();
-    await Promise.allSettled(children.map((child) => child.exited));
+    await Promise.allSettled(Array.from(children, (child) => child.exited));
   }
 }
 
