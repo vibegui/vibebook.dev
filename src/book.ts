@@ -3,7 +3,13 @@ import { reorderEpics } from "./epic-order";
 import { TASK_STATUSES } from "../shared/room";
 import type { PostMessageResponse } from "../shared/rpc";
 import type { RoomEvent, Room, BookMeta, Attachment, Message, Poll, Suggestion } from "../shared/room";
-import { parseRoomCommand } from "../shared/validation";
+import { parseCommandEnvelope } from "../shared/validation";
+import type { CommandOutcome, CommandResult, RoomCommand } from "../shared/commands";
+
+/** A room command the server turned down: its reason goes back to a correlated sender (see webSocketMessage). */
+class Refused {
+  constructor(readonly error: string) {}
+}
 import { type Card, cardText } from "./card";
 import { poke } from "./person";
 import { parseBlock, reconcile, renderBlock } from "./taskblock";
@@ -1676,21 +1682,38 @@ export class Book extends DurableObject<Env> {
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer) {
     const email = this.ctx.getTags(ws)[0];
-    let m;
+    const { cid, command } = parseCommandEnvelope(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
+    // Correlated commands (shared/commands.ts): only a command that carried a cid gets its one `result` back.
+    const answer = (r: CommandOutcome) => {
+      if (!cid) return;
+      try { ws.send(JSON.stringify({ t: "result", cid, ...r } satisfies CommandResult)); } catch { /* socket already gone */ }
+    };
+    if (!command) return answer({ ok: false, error: "invalid command" });
+    let out: unknown;
     try {
-      m = parseRoomCommand(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
-    } catch {
-      return;
+      out = await this.runCommand(ws, email, command);
+    } catch (e) {
+      answer({ ok: false, error: "server error" });
+      throw e;
     }
+    answer(out instanceof Refused ? { ok: false, error: out.error } : { ok: true });
+  }
+
+  /** One room command from a person's socket. Returns a Refused when the command was turned down (the old events,
+   *  `blocked` / `error`, still go out as before); anything else counts as done. */
+  private async runCommand(ws: WebSocket, email: string, m: RoomCommand): Promise<unknown> {
     switch (m.t) {
       case "msg": {
         const text = String(m.text ?? "").trim().slice(0, 4000);
         const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
         const ids = Array.isArray(m.files) ? m.files.map(String).slice(0, 10) : [];
         const files = ids.length ? this.files().filter((f) => ids.includes(f.id)) : [];
-        if ((!text && !files.length) || !thread) return;
+        if ((!text && !files.length) || !thread) return new Refused(thread ? "empty message" : "unknown thread");
         const secret = findSecret(text);
-        if (secret) return ws.send(JSON.stringify({ t: "blocked", text, reason: secret }));
+        if (secret) {
+          ws.send(JSON.stringify({ t: "blocked", text, reason: secret }));
+          return new Refused(`blocked: ${secret}`);
+        }
         this.addMessage(thread, email, text, { files, replyTo: Number(m.reply_to) || undefined });
         // Picking a button (choices or a card's) answers a question; it isn't new work: an archived epic stays archived.
         const answers = Number(m.reply_to) && this.sql.exec(`SELECT 1 FROM messages WHERE id = ? AND (choices IS NOT NULL OR card IS NOT NULL)`, Number(m.reply_to)).toArray().length;
@@ -1738,7 +1761,10 @@ export class Book extends DurableObject<Env> {
       }
       case "pin.add": {
         const r = await this.pinAdd(email, String(m.kind ?? ""), String(m.ref ?? ""), String(m.title ?? ""));
-        if (!r.ok) ws.send(JSON.stringify({ t: "error", error: r.error }));
+        if (!r.ok) {
+          ws.send(JSON.stringify({ t: "error", error: r.error }));
+          return new Refused(r.error);
+        }
         return;
       }
       case "pin.del":

@@ -1,4 +1,5 @@
 // JSON DTOs shared by the Cloudflare Worker and browser. Keep this module free of backend imports.
+import type { CommandResult } from "./commands";
 export interface BookMeta {
   title: string;
   owner: string;
@@ -191,4 +192,5 @@ export type RoomEvent =
   | { t: "online"; online: string[] }
   | { t: "conns" }
   | { t: "error"; error?: string }
-  | { t: "blocked"; text: string; reason: string };
+  | { t: "blocked"; text: string; reason: string }
+  | CommandResult;

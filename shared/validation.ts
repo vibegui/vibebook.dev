@@ -14,7 +14,12 @@ import type {
   Suggestion,
   Task,
 } from "./room";
-import type { RoomCommand } from "./commands";
+import {
+  CommandId,
+  CommandResultSchema,
+  RoomCommandSchema,
+  type RoomCommand,
+} from "./commands";
 
 // Small JSON validators: no Worker or UI dependency, and no unchecked JSON.parse casts at transport boundaries.
 type Check = (value: unknown) => boolean;
@@ -247,6 +252,7 @@ const eventChecks = {
   conns: shape({}),
   error: shape({}, { error: str }),
   blocked: shape({ text: str, reason: str }),
+  result: (value: unknown) => CommandResultSchema.safeParse(value).success,
 } satisfies Record<RoomEvent["t"], Check>;
 export function isRoomEvent(value: unknown): value is RoomEvent {
   if (
@@ -305,58 +311,26 @@ export function parseRoomEvent(raw: string): RoomEvent {
   return value;
 }
 
-const commandChecks = {
-  msg: shape(
-    { thread: str },
-    { text: str, files: strings, reply_to: nullable(num) },
-  ),
-  "files.get": shape({}),
-  "doc.get": shape({}, { epic: nullable(str) }),
-  doc: shape({ text: str }, { epic: nullable(str) }),
-  title: shape({ title: str }),
-  epic: shape({ title: str }),
-  "epic.owner": shape({ id: str, owner: str }),
-  "task.add": shape({ epic: str, title: str }),
-  older: shape({ thread: str }, { before: num }),
-  "pin.add": shape(
-    { kind: oneOf("link", "file", "app"), ref: str },
-    { title: str },
-  ),
-  "pin.del": shape({ id: str }),
-  "reminder.delete": shape({ id: str }),
-  "ack.dismiss": shape({ id: num }),
-  "reminder.enable": shape({ id: str, on: bool }),
-  "task.toggle": shape({ id: str }),
-  "task.status": shape({ id: str, status }),
-  "task.rename": shape({ id: str, title: str }),
-  "task.del": shape({ id: str }),
-  "task.assign": shape({ id: str }, { owner: str, due: str }),
-  "decision.del": shape({ id: num }),
-  "epic.rename": shape({ id: str, title: str }),
-  "epic.del": shape({ id: str }),
-  "epic.archive": shape({ id: str }, { archived: bool }),
-  "epic.order": shape({ ids: strings }),
-  "poll.create": shape({
-    thread: str,
-    question: str,
-    options: strings,
-    multi: bool,
-  }),
-  vote: shape({ id: str, opt: num }),
-  "poll.close": shape({ id: str }),
-  suggestion: shape({ i: num }, { accept: bool }),
-} satisfies Record<RoomCommand["t"], Check>;
+// The command schemas live in commands.ts; a valid command is passed on as sent (extra keys are ignored, as before).
 export function isRoomCommand(value: unknown): value is RoomCommand {
-  if (
-    !record(value) ||
-    typeof value.t !== "string" ||
-    !Object.hasOwn(commandChecks, value.t)
-  )
-    return false;
-  return commandChecks[value.t as keyof typeof commandChecks](value);
+  return RoomCommandSchema.safeParse(value).success;
 }
-export function parseRoomCommand(raw: string): RoomCommand {
-  let value: unknown = JSON.parse(raw);
+/** A command off the wire plus its correlation id, if it carried a valid one. `cid` is read even when the command is
+ *  invalid, so the sender still gets its answer; a malformed `cid` counts as none. */
+export function parseCommandEnvelope(raw: string): {
+  cid?: string;
+  command: RoomCommand | null;
+} {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return { command: null };
+  }
+  const cid =
+    record(value) && CommandId.safeParse(value.cid).success
+      ? (value.cid as string)
+      : undefined;
   // Already-open pre-migration browser tabs sent decision IDs from dataset
   // as strings. Preserve that wire format while exposing a numeric command.
   if (
@@ -368,8 +342,15 @@ export function parseRoomCommand(raw: string): RoomCommand {
     const id = Number(value.id);
     if (Number.isSafeInteger(id)) value = { ...value, id };
   }
-  if (!isRoomCommand(value)) throw new TypeError("Invalid room command");
-  return value;
+  return {
+    ...(cid ? { cid } : {}),
+    command: isRoomCommand(value) ? value : null,
+  };
+}
+export function parseRoomCommand(raw: string): RoomCommand {
+  const { command } = parseCommandEnvelope(raw);
+  if (!command) throw new TypeError("Invalid room command");
+  return command;
 }
 
 export function isPostMessageRequest(

@@ -276,3 +276,33 @@ assert(
 assert(isRoomEvent({ t: "doc", text: "" }));
 assert(isRoomEvent({ t: "doc", epic: "epic", stale: true }));
 assert.throws(() => parseRoomEvent('{"t":"doc"}'), /Invalid room event/);
+
+// Correlated commands (#1899): cid travels beside the command, results are their own event.
+{
+  const { parseCommandEnvelope, isRoomEvent: isEvent } =
+    await import("../shared/validation");
+  assert.deepEqual(parseCommandEnvelope('{"t":"files.get","cid":"c1"}'), {
+    cid: "c1",
+    command: { t: "files.get", cid: "c1" },
+  });
+  assert.deepEqual(parseCommandEnvelope('{"t":"files.get"}'), {
+    command: { t: "files.get" },
+  });
+  assert.deepEqual(parseCommandEnvelope('{"t":"nope","cid":"c2"}'), {
+    cid: "c2",
+    command: null,
+  });
+  assert.deepEqual(parseCommandEnvelope("not json"), { command: null });
+  assert.equal(
+    parseCommandEnvelope(`{"t":"files.get","cid":"${"x".repeat(65)}"}`).cid,
+    undefined,
+  );
+  assert.equal(
+    parseCommandEnvelope('{"t":"decision.del","id":"7","cid":"c3"}').command?.t,
+    "decision.del",
+  );
+  assert(isEvent({ t: "result", cid: "c1", ok: true }));
+  assert(isEvent({ t: "result", cid: "c1", ok: false, error: "x" }));
+  assert(!isEvent({ t: "result", cid: "c1", ok: false }));
+  console.log("PASS correlated command envelope and result events");
+}
