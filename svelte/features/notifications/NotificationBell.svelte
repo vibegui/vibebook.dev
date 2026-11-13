@@ -6,8 +6,8 @@
   import Button from "../../lib/ui/Button.svelte";
   import Icon from "../../lib/ui/Icon.svelte";
   let { owner, lang }: { owner: PwaService; lang: string } = $props();
-  const view = owner.state,
-    push = owner.push;
+  const view = $derived(owner.state),
+    push = $derived(owner.push);
   let open = $state(false),
     active = true;
   onDestroy(() => {
