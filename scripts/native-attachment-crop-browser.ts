@@ -178,7 +178,7 @@ try {
     assert(actual.width <= 321 && actual.height <= 261 && actual.width >= 219);
     assert.equal(actual.fit, "cover");
     assert.equal(actual.position, "50% 0%");
-    const reference = await page.evaluate(
+    const reference: { width: number; height: number } = await page.evaluate(
       async ({ imageRule, src }) => {
         const parent = document.createElement("div"),
           style = document.createElement("style"),

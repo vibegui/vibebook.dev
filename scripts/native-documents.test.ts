@@ -43,7 +43,10 @@ afterAll(() => {
   else Reflect.deleteProperty(globalThis, "document");
   void environment.happyDOM.close();
 });
-const room = (id = "aaaaaa", me = "owner@example.test"): Room => ({
+const room = (
+  id = "aaaaaa",
+  me = "owner@example.test",
+): Room & { doc: string } => ({
   id,
   me,
   book: { title: "Room", owner: me },
