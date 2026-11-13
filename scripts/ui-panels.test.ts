@@ -17,6 +17,7 @@ import {
 } from "../svelte/features/pins/session";
 import { createFilesSession } from "../svelte/features/files/session";
 import type { FilesProps } from "../svelte/features/files/types";
+import type { PeopleAction } from "../svelte/features/people/model";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -2304,7 +2305,7 @@ describe("native People interactions", () => {
       const reply = pendingPeopleRequest();
       const calls: { action: string; email: string }[] = [];
       const rendered = people(room, {
-        request: (kind, email) => {
+        request: (kind: PeopleAction, email: string) => {
           calls.push({ action: kind, email });
           return reply.promise;
         },
@@ -2376,7 +2377,7 @@ describe("native People interactions", () => {
       throw new Error("clipboard denied");
     };
     const rendered = people(room, {
-      request: (action, email) => {
+      request: (action: PeopleAction, email: string) => {
         calls.push(`${action}:${email}`);
         return reply.promise;
       },
@@ -2443,7 +2444,7 @@ describe("native People interactions", () => {
     const calls: string[] = [];
     window.navigator.clipboard.writeText = () => clipboard.promise;
     const rendered = people(room, {
-      request: (action, email) => {
+      request: (action: PeopleAction, email: string) => {
         calls.push(`${action}:${email}`);
         return reply.promise;
       },

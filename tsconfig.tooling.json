@@ -57,7 +57,6 @@
     "scripts/native-files.test.ts",
     "scripts/decisions.test.ts",
     "scripts/epic-order.test.ts",
-    "scripts/auth-ui.test.ts",
     "scripts/files-browser.ts",
     "scripts/native-people.test.ts"
   ]
