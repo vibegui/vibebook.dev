@@ -2007,6 +2007,25 @@ describe("native Svelte chat", () => {
     expect(iframe.getAttribute("sandbox")).toBe("allow-scripts");
     expect(iframe.hasAttribute("srcdoc")).toBe(false);
   }, 30_000);
+  test("image attachment previews preserve exact file actions and detached removed images stay inert", () => {
+    const first = { id: "aa11", name: "tall.png", type: "image/png", author: "you@test", size: 10, ts: 1 };
+    const second = { ...first, id: "bb22", name: "normal.png" };
+    const row = { ...message(8, "Images"), files: [first, second] };
+    const room = { ...fixture(), files: [first, second], messages: [row] };
+    const opened: import("../shared/room").Attachment[] = [];
+    const { target, update } = renderChat(room, {
+      actions: { request: async () => ({ ok: true }), draftReply: () => {}, reply: () => {}, navigate: () => {}, openFile: (file) => opened.push(file) },
+    });
+    const old = target.querySelector<HTMLAnchorElement>('[data-message-image][href$="aa11"]')!;
+    old.click();
+    expect(opened).toEqual([first]);
+    update({ ...room, messages: [{ ...row, files: [second] }] });
+    expect(old.isConnected).toBe(false);
+    old.click();
+    expect(opened).toEqual([first]);
+    target.querySelector<HTMLAnchorElement>('[data-message-image][href$="bb22"]')!.click();
+    expect(opened).toEqual([first, second]);
+  });
   test("compact native receipts show five faces, overflow and read/delivery details on focus and tap", async () => {
     const room: Room = {
       ...fixture(),

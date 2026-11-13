@@ -25,7 +25,7 @@
   const url = (file: Attachment) =>
     `/api/books/${encodeURIComponent(roomId)}/files/${encodeURIComponent(file.id)}`;
   function open(event: MouseEvent, file: Attachment) {
-    if (!active) {
+    if (!active || !(event.currentTarget instanceof HTMLElement) || !event.currentTarget.isConnected) {
       event.preventDefault();
       return;
     }
@@ -73,16 +73,17 @@
           >
         </div>
       {:else if file.type.startsWith("image/")}<a
+          data-message-image
           href={url(file)}
           target="_blank"
           rel="noopener"
           onclick={(event) => open(event, file)}
-          class="tw:rounded-control tw:focus-visible:outline-2 tw:focus-visible:outline-ring"
+          class="tw:block tw:min-w-[min(220px,100%)] tw:max-w-[min(320px,100%)] tw:rounded-control tw:focus-visible:outline-2 tw:focus-visible:outline-ring"
           ><img
             src={url(file)}
             alt={file.name}
             loading="lazy"
-            class="tw:max-h-80 tw:max-w-full tw:rounded-control tw:object-contain"
+            class="tw:box-border tw:block tw:max-h-[260px] tw:min-w-full tw:max-w-full tw:rounded-control tw:border tw:border-border tw:object-cover tw:object-top"
           /></a
         >
       {:else}<a
