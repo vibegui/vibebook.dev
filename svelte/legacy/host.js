@@ -1125,7 +1125,7 @@ document.addEventListener("click", (e) => {
 // The last /api/me (any page fetches it): going back home draws it at once, then the fresh one replaces it only if
 // something changed, keeping what you were typing in the ask box.
 let meCache = null, meJson = "";
-const keepMe = (me) => { meCache = me; meJson = JSON.stringify(me); newVersion(me.v); connectMe(); };
+const keepMe = (me) => { nativePwa.account(me.email); meCache = me; meJson = JSON.stringify(me); newVersion(me.v); connectMe(); };
 // A newer app is out (this page's <meta name="vb-v"> differs from the server's): a small bar, tap to reload.
 function newVersion(v) {
   const mine = document.querySelector('meta[name="vb-v"]')?.content;
@@ -1161,7 +1161,7 @@ function homeWith(me) {
     <header class="top">
       <div class="brand"><a href="/">vibebook</a></div>
       <button class="me" id="myName" title="${t("Seu perfil: email, como você entra, sair")}">${avatar(me.email)}<span>${esc(me.name || me.email)}</span></button>
-      <button class="ghost bell" data-bell></button>
+      <span data-native-pwa-bell></span>
       <button class="ghost homeTheme" id="homeTheme" aria-label="${t("Tema")}">${THEMES[theme()].icon}</button>
       ${langSwitch()}
     </header>
@@ -1236,7 +1236,7 @@ function phoneHome(me) {
       <button class="me" id="myName" aria-label="${t("Seu perfil")}">${avatar(me.email)}</button>
     </header>
     <main class="pmain">
-      <div id="setupCard"></div>
+      <div id="setupCard"></div><div data-native-install-slot></div>
       ${me.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${t("Como seus amigos te chamam?")}</b><span class="muted">${t("O pessoal e os agents vão te chamar assim.")}</span>
         <div class="row"><input name="n" required maxlength="60" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Salvar")}</button></div></form>`}
       <div class="pgrid">
@@ -1257,7 +1257,7 @@ function phoneHome(me) {
     <nav class="pdNav">
       <a data-nav href="/archived">${t("Arquivo")}</a>
       <div class="pdRow"><button class="ghost" id="homeTheme">${THEMES[theme()].icon}<span>${THEMES[theme()].label}</span></button>${langSwitch()}</div>
-      <div class="pdBell"><button class="ghost bell" data-bell></button><span>${t("Notificações")}</span></div>
+      <div class="pdBell"><span data-native-pwa-bell></span><span>${t("Notificações")}</span></div>
       ${window.PublicKeyCredential ? `<label class="pdLock"><input type="checkbox" id="lockToggle" ${lockId() ? "checked" : ""} /> <span>${t("Exigir Face ID ao abrir")}</span></label>` : ""}
     </nav>
     <section class="agentBox" id="agentBox" aria-live="polite"></section>
@@ -1315,10 +1315,10 @@ function wireHome(me) {
   document.querySelector("[data-pic]")?.addEventListener("click", pickPic);
   document.getElementById("nameAsk")?.addEventListener("submit", (e) => { e.preventDefault(); saveName(e.target.n.value); });
   document.getElementById("homeTheme").onclick = (e) => { setTheme(THEMES[theme()].next); e.currentTarget.innerHTML = THEMES[theme()].icon; };
-  document.getElementById("logout").onclick = async () => { await fetch("/auth/logout", { method: "POST" }); location.href = "/"; };
+  document.getElementById("logout").onclick = () => void logoutWithPwa(false);
   document.getElementById("logoutAll").onclick = async () => {
     if (!confirm(t("Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam."))) return;
-    await fetch("/auth/logout-all", { method: "POST" }); location.href = uiNavigationUrl("/login", location.href, "svelte");
+    await logoutWithPwa(true);
   };
   document.getElementById("new").onclick = () => newRoom();
   document.querySelectorAll("[data-unfriend]").forEach((b) => b.onclick = async () => {
@@ -1720,6 +1720,7 @@ function renderView(kind, target, props, remount = false) {
 }
 let nativeFilesSession = null;
 function clearViews() {
+  disposePwaMounts();
   nativeFilesSession?.dispose();
   nativeFilesSession=null;
   sideNavigation = null;
@@ -1752,6 +1753,7 @@ function onEvent(ev, id) {
   if (S) roomCache.set(id, S);
   switch (ev.t) {
     case "state": {
+      nativePwa.account(S.me);
       const firstLoad = !previousState;
       typingNotes.clear();
       liveState = true;
@@ -1838,61 +1840,30 @@ function onEvent(ev, id) {
 
 const modeLabel = { route: t("escolhendo o modelo"), fast: t("rápido"), smart: t("com calma") };
 
-// 🔔 Browser notifications + a chime when a message arrives while this tab is in the background
-// (or in another thread). Needs the app open in a tab; push with the tab closed would need Web Push.
-// ponytail: tab-open only; add a service worker + VAPID push when people ask for closed-tab alerts.
-const BELL = {
-  on: icon("bell", 20),
-  off: icon("bellOff", 20),
-};
-const notifyPerm = () => ("Notification" in window ? Notification.permission : "unsupported");
-const notifyMuted = () => { try { return localStorage.getItem("vb.mute") === "1"; } catch { return false; } };
-function renderBells() {
-  const p = notifyPerm(), muted = notifyMuted();
-  const state = p === "granted" ? (muted ? "muted" : "on") : p;
-  const title = { on: t("Notificações ligadas: clique pra silenciar"), muted: t("Notificações silenciadas: clique pra ligar"), default: t("Ativar notificações de mensagem"), denied: t("Notificações bloqueadas no navegador"), unsupported: t("Este navegador não tem notificações") }[state];
-  document.querySelectorAll("[data-bell]").forEach((b) => {
-    b.className = `ghost bell ${state}`;
-    b.innerHTML = state === "on" ? BELL.on : BELL.off;
-    b.title = title; b.setAttribute("aria-label", title);
-    b.onclick = async () => {
-      unlockChime();
-      if (state === "default") { await Notification.requestPermission(); if (notifyPerm() === "granted") { try { localStorage.removeItem("vb.mute"); } catch {} chime(); } }
-      else if (state === "denied") alert(t("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página."));
-      else if (state === "on" || state === "muted") { try { localStorage.setItem("vb.mute", state === "on" ? "1" : ""); } catch {} if (state === "muted") chime(); }
-      renderBells();
-    };
-  });
-}
-let audioCtx = null;
-const unlockChime = () => { try { audioCtx ??= new AudioContext(); audioCtx.resume(); } catch {} };
-document.addEventListener("pointerdown", unlockChime, { once: true });
-function chime() {
-  if (!audioCtx) return;
-  const t0 = audioCtx.currentTime;
-  [[880, 0], [1318.5, 0.12]].forEach(([f, d]) => {
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = "sine"; o.frequency.value = f;
-    g.gain.setValueAtTime(0, t0 + d); g.gain.linearRampToValueAtTime(0.18, t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t0 + d + 0.5);
-    o.connect(g).connect(audioCtx.destination); o.start(t0 + d); o.stop(t0 + d + 0.55);
-  });
-}
-function notifyMsg(m) {
-  const bot = m.kind === "agent" || m.author === "ai";
-  // Your own messages never ring; your own Claude's do (it's working for you).
-  if ((m.author === S.me && !bot) || m.quiet || notifyMuted()) return; // quiet: @vibe's routine, for the catch-up
-  const mentioned = m.text && [...m.text.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((x) => mentionTarget(x[1]) === S.me);
-  // Someone else's Claude (or @vibe) rings only when it talks to you: a mention, a reply to your message, or meant for you.
-  if (bot && m.author !== S.me && !mentioned && m.for_who !== S.me && S.messages.find((x) => x.id === m.reply_to)?.author !== S.me) return;
-  const away = document.hidden || m.thread !== thread;
-  if (!away && !mentioned) return;
-  chime();
-  if (notifyPerm() === "granted" && document.hidden) {
-    const who = m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: m.via || "agent", who: name(m.author) }) : name(m.author);
-    const n = new Notification(`${mentioned ? `${t("Te mencionaram")} · ` : ""}${who} · ${S.book?.title ?? "vibebook"}`, { body: (m.text || (m.author === "ai" ? t("respondendo…") : `📎 ${t("anexo")}`)).slice(0, 180), tag: `vb-${S.id}`, icon: "/apple-touch-icon.png" });
-    n.onclick = () => { window.focus(); n.close(); };
+// Native document-owned PWA/notifications; route mounts never duplicate listeners.
+const nativePwa=UI.createPwaService();
+async function logoutWithPwa(all){
+  try{
+    const cleanup=await nativePwa.beforeLogout();
+    if(!cleanup.confirmed)alert(UI.pwaLogoutWarning(LANG));
+    const response=await fetch(all?"/auth/logout-all":"/auth/logout",{method:"POST"});
+    if(!response.ok)throw new Error("logout-unconfirmed");
+    location.href=all?uiNavigationUrl("/login",location.href,"svelte"):"/";
+  }catch{
+    // A failed response may still have changed the session. A fresh document
+    // must establish the account before any further endpoint reconciliation.
+    alert(UI.pwaLogoutFailure(LANG));location.reload();
   }
 }
+let nativePwaMounts=[];
+function disposePwaMounts(){for(const dispose of nativePwaMounts)dispose();nativePwaMounts=[];}
+function renderBells(){
+  disposePwaMounts();
+  document.querySelectorAll('[data-native-pwa-bell]').forEach(target=>nativePwaMounts.push(UI.mountPwa(target,'bell',nativePwa,LANG)));
+  document.querySelectorAll('[data-native-install-slot]').forEach(target=>nativePwaMounts.push(UI.mountPwa(target,'install',nativePwa,LANG)));
+}
+function notifyMsg(message){if(S)nativePwa.notify(message,S,thread,mentionTarget,m=>m.author==='ai'?'@vibe':m.kind==='agent'?t('{via} de {who}',{via:m.via||'agent',who:name(m.author)}):name(m.author));}
+if(import.meta.hot)import.meta.hot.dispose(()=>{disposePwaMounts();nativePwa.dispose();});
 
 function renderBook() {
   clearViews();
@@ -1901,7 +1872,7 @@ function renderBook() {
   <div class="book ${railMode ? "rail" : ""}">
     <aside class="side tw:[@media(max-width:900px)]:max-h-[calc(var(--vvh,100dvh)_-_max(96px,var(--vvh,100dvh)*.2))]!" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><span data-native-pwa-bell></span><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>

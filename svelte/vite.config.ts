@@ -1,3 +1,4 @@
+import { serviceWorkerDevelopment } from "./build/serviceWorkerDevelopment.ts";
 import tailwindcss from "@tailwindcss/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
@@ -67,7 +68,10 @@ export default defineConfig(({ mode, command }) => ({
   },
   plugins: [
     ...(mode === "app"
-      ? [appDevelopment(projectRoot, "http://127.0.0.1:8787")]
+      ? [
+          appDevelopment(projectRoot, "http://127.0.0.1:8787"),
+          serviceWorkerDevelopment(projectRoot),
+        ]
       : []),
     clientBoundary({ projectRoot }),
     uiVariantBoundary(projectRoot, mode === "vanilla" ? "vanilla" : "svelte"),

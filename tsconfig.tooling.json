@@ -19,6 +19,8 @@
     "scripts/app-development.test.ts",
     "scripts/client-boundary-policy.test.ts",
     "scripts/app-hmr-browser.ts",
+    "scripts/build-service-worker.ts",
+    "scripts/native-pwa.test.ts",
     "scripts/browser-build.ts",
     "scripts/browser-check.ts",
     "scripts/build-collab.ts",

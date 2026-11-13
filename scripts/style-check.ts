@@ -35,6 +35,8 @@ if (native) {
     "svelte/features/files",
     "svelte/features/decisions",
     "svelte/features/people",
+    "svelte/features/pwa",
+    "svelte/features/notifications",
   ])
     await collect(directory);
   files.push(

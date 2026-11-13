@@ -67,3 +67,27 @@ export function mountInbox(
     },
   });
 }
+
+export { createPwaService } from "./features/pwa/service";
+import type { PwaService } from "./features/pwa/service";
+import NotificationBell from "./features/notifications/NotificationBell.svelte";
+import InstallCard from "./features/pwa/InstallCard.svelte";
+export function mountPwa(
+  target: Element,
+  kind: "bell" | "install",
+  owner: PwaService,
+  lang: string,
+) {
+  const instance = flushSync(() =>
+    mount(kind === "bell" ? NotificationBell : InstallCard, {
+      target,
+      props: { owner, lang },
+    }),
+  );
+  return () => {
+    flushSync(() => {
+      void unmount(instance);
+    });
+  };
+}
+export { pwaLogoutWarning, pwaLogoutFailure } from "./features/pwa/copy";

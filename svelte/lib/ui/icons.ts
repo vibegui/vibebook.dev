@@ -1,5 +1,12 @@
 // Native SVG data, kept independent of the legacy markup renderer and application state.
 export const iconPaths = {
+  bell: ["M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9", "M10 21h4"],
+  bellOff: [
+    "m3 3 18 18",
+    "M6 6a6 6 0 0 0 0 2c0 7-3 7-3 9h14",
+    "M18 8a6 6 0 0 0-8-5",
+    "M10 21h4",
+  ],
   folder: [
     "M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z",
   ],
