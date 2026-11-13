@@ -2,6 +2,11 @@ import tailwindcss from "@tailwindcss/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 import { join } from "node:path";
+import {
+  appDevelopment,
+  workerProxy,
+  workerRoutes,
+} from "./build/appDevelopment.ts";
 import { uiVersion } from "./build/uiVersion.ts";
 import { clientBoundary, projectRoot } from "./build/clientBoundary.ts";
 import { uiVariantBoundary } from "./build/uiVariantBoundary.ts";
@@ -25,6 +30,17 @@ export default defineConfig(({ mode, command }) => ({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
+    ...(mode === "app"
+      ? {
+          origin: "http://127.0.0.1:5173",
+          proxy: {
+            [workerRoutes]: workerProxy(
+              "http://127.0.0.1:8787",
+              "http://127.0.0.1:5173",
+            ),
+          },
+        }
+      : {}),
     fs: {
       allow: [projectRoot],
       deny: [
@@ -41,6 +57,9 @@ export default defineConfig(({ mode, command }) => ({
     },
   },
   plugins: [
+    ...(mode === "app"
+      ? [appDevelopment(projectRoot, "http://127.0.0.1:8787")]
+      : []),
     clientBoundary({ projectRoot }),
     uiVariantBoundary(projectRoot, mode === "vanilla" ? "vanilla" : "svelte"),
     ...(mode === "vanilla" ? [] : [tailwindcss()]),
