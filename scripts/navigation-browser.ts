@@ -330,48 +330,53 @@ try {
   await audit("navigation-dark-768");
   await page.setViewportSize({ width: 390, height: 844 });
   await audit("navigation-dark-390");
-  step("Checking the mobile form stays reachable with expanded epic actions");
-  await draft.scrollIntoViewIfNeeded();
-  await expect(draft).toBeInViewport({ ratio: 0.95 });
-  await page.evaluate(() => {
-    if (document.activeElement instanceof HTMLElement)
-      document.activeElement.blur();
-  });
-  await submit.hover();
-  const sheetHeight = await page
-    .locator("#side")
-    .evaluate((el) => el.clientHeight);
-  const sheetScroll = await page
-    .locator("#side")
-    .evaluate((el) => el.scrollTop);
-  const submitBounds = await submit.boundingBox();
-  await page.mouse.down();
-  assert.equal(
-    await page.locator("#side").evaluate((el) => el.clientHeight),
-    sheetHeight,
-  );
-  assert.equal(
-    await page.locator("#side").evaluate((el) => el.scrollTop),
-    sheetScroll,
-  );
-  assert.deepEqual(await submit.boundingBox(), submitBounds);
-  await page.mouse.up(); // Empty submission focuses the field without writing a new epic.
-  await expect(draft).toBeFocused();
-  assert.equal(
-    await page.locator("#side").evaluate((el) => el.clientHeight),
-    sheetHeight,
-    "Focusing the mobile form must not resize its scrollport mid-click",
-  );
-  await expect(submit).toBeInViewport({ ratio: 0.95 });
-  result.mobileForm = {
-    sheetHeight,
-    bounds: await draft.boundingBox(),
-    viewport: page.viewportSize(),
-    focused: await draft.evaluate(
-      (element) => element === document.activeElement,
-    ),
-  };
-  await page.screenshot({ path: `${output}/navigation-form-dark-390.png` });
+  for (const width of [900, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    step("Checking the mobile form stays reachable with expanded epic actions");
+    await draft.scrollIntoViewIfNeeded();
+    await expect(draft).toBeInViewport({ ratio: 0.95 });
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement)
+        document.activeElement.blur();
+    });
+    await submit.hover();
+    const sheetHeight = await page
+      .locator("#side")
+      .evaluate((el) => el.clientHeight);
+    const sheetScroll = await page
+      .locator("#side")
+      .evaluate((el) => el.scrollTop);
+    const submitBounds = await submit.boundingBox();
+    await page.mouse.down();
+    assert.equal(
+      await page.locator("#side").evaluate((el) => el.clientHeight),
+      sheetHeight,
+    );
+    assert.equal(
+      await page.locator("#side").evaluate((el) => el.scrollTop),
+      sheetScroll,
+    );
+    assert.deepEqual(await submit.boundingBox(), submitBounds);
+    await page.mouse.up(); // Empty submission focuses the field without writing a new epic.
+    await expect(draft).toBeFocused();
+    assert.equal(
+      await page.locator("#side").evaluate((el) => el.clientHeight),
+      sheetHeight,
+      "Focusing the mobile form must not resize its scrollport mid-click",
+    );
+    await expect(submit).toBeInViewport({ ratio: 0.95 });
+    result[`mobileForm${width}`] = {
+      sheetHeight,
+      bounds: await draft.boundingBox(),
+      viewport: page.viewportSize(),
+      focused: await draft.evaluate(
+        (element) => element === document.activeElement,
+      ),
+    };
+    await page.screenshot({
+      path: `${output}/navigation-form-dark-${width}.png`,
+    });
+  }
   step("Checking Portuguese input and navigation accessibility");
   await context.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
   await page.reload();
