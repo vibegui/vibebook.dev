@@ -54,3 +54,16 @@ log has no observed send-after-close errors. Optional local explorer/tracing wer
 disabled; application and storage behavior were preserved. The overall run still
 **fails** in the final navigation/account/mobile phase with a blank owner page.
 That failure remains under focused diagnosis and cannot be treated as acceptance.
+
+The subsequent complete rerun is [documents-passed.json](documents-passed.json).
+It passes **all seven phases**, including the original direct owner restoration
+to the 390px phone viewport without a desktop detour. Positive Home and foreign
+access initialization now precede privacy/teardown assertions. The measured app
+asset SHA remains `4d9d4e09d0732fba5da49911c04870e99c344a9df831f2a2cbb3ee0e8a7b8d74`;
+harness revision is `5ce9ba3`. It records ten real 4003 closes across both peers,
+zero whole-text fallback commands, fresh document/access reads and no browser
+page errors. The corresponding Worker log has no observed send-after-close
+errors. Earlier failed raw reports remain intact; there was no separate product
+fix for the historical blank-phone observation. This single passing rerun is
+scoped Chromium evidence, not a claim about hardware touch, production login,
+crash durability or every same-document account transition.
