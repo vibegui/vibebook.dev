@@ -7,12 +7,14 @@
     next,
     lang,
     onBegin,
+    blocked = false,
     cleanup = async () =>
       (await import("../notifications/logout")).cleanupCurrentDevicePush(),
   }: {
     next: string;
     lang: AuthLanguage;
     onBegin: () => void;
+    blocked?: boolean;
     cleanup?: () => Promise<PushCleanupResult>;
   } = $props();
   let active = true;
@@ -25,7 +27,7 @@
     event: SubmitEvent & { currentTarget: HTMLFormElement },
   ) {
     const form = event.currentTarget;
-    if (!active || !form.isConnected) {
+    if (!active || !form.isConnected || (phase === "idle" && blocked)) {
       event.preventDefault();
       return;
     }
@@ -59,6 +61,7 @@
     variant="link"
     type="submit"
     loading={phase === "pending"}
+    disabled={phase === "idle" && blocked}
     class="tw:h-auto tw:whitespace-normal tw:p-0 tw:text-left"
     >{text(phase === "unconfirmed" ? "continueLogout" : "other")}</Button
   >

@@ -23,6 +23,7 @@
     ),
     view = session.state;
   let submitted = $state(false);
+  let leaving = $state(false);
   const text = (
     key: Parameters<typeof authText>[1],
     vars?: Record<string, string>,
@@ -72,7 +73,7 @@
       aria-busy={submitted}
       class="tw:flex tw:flex-wrap tw:gap-2"
       onsubmit={(event) => {
-        if (submitted) event.preventDefault();
+        if (submitted || leaving) event.preventDefault();
         else submitted = true;
       }}
     >
@@ -82,13 +83,13 @@
         name="decision"
         value="deny"
         variant="outline"
-        aria-disabled={submitted}>{text("cancel")}</Button
+        aria-disabled={submitted || leaving}>{text("cancel")}</Button
       >
       <Button
         type="submit"
         name="decision"
         value="approve"
-        aria-disabled={submitted}>{text("allow")}</Button
+        aria-disabled={submitted || leaving}>{text("allow")}</Button
       >
     </form>
     {#if submitted}<p role="status" class="tw:m-0 tw:text-muted-foreground">
@@ -97,8 +98,9 @@
     <AuthLogoutForm
       next={`/authorize${search}`}
       {lang}
+      blocked={submitted}
       onBegin={() => {
-        submitted = true;
+        leaving = true;
       }}
     />
   {:else}<p role="alert" class="tw:m-0 tw:break-words tw:text-destructive">

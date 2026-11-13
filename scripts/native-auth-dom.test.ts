@@ -478,3 +478,33 @@ test("disposed consent sign-out cleanup cannot submit its detached form", async 
   expect(form.isConnected).toBe(false);
   expect(automatic).toBe(0);
 });
+
+test("an already submitted consent blocks idle account-switch cleanup", async () => {
+  const target = document.createElement("div");
+  document.body.append(target);
+  let calls = 0;
+  mounted.push(
+    flushSync(() =>
+      mount(AuthLogoutForm, {
+        target,
+        props: {
+          next: "/authorize?ui=svelte",
+          lang: "en",
+          blocked: true,
+          onBegin: () => {},
+          cleanup: async () => {
+            calls++;
+            return { local: true, settled: true, confirmed: true };
+          },
+        },
+      }),
+    ),
+  );
+  const form = target.querySelector<HTMLFormElement>("form")!;
+  const event = new Event("submit", { bubbles: true, cancelable: true });
+  form.dispatchEvent(event);
+  await settle();
+  expect(event.defaultPrevented).toBe(true);
+  expect(target.querySelector("button")?.disabled).toBe(true);
+  expect(calls).toBe(0);
+});
