@@ -165,7 +165,7 @@
 </script>
 
 <section
-  class="pinsSec tw:space-y-2 tw:border-t tw:border-border tw:bg-sidebar tw:px-3 tw:py-3 tw:font-sans tw:text-sm tw:text-sidebar-foreground"
+  class="tw:space-y-2 tw:border-t tw:border-border tw:bg-sidebar tw:px-3 tw:py-3 tw:font-sans tw:text-sm tw:text-sidebar-foreground"
   aria-labelledby={`pins-title-${room.id}`}
   data-native-pins
   data-vb-native
