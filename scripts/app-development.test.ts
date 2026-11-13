@@ -1066,3 +1066,39 @@ test("only explicit native denied file navigations transform; successful bytes a
     globalThis.fetch = previousFetch;
   }
 });
+
+test("whole project and external dependency aliases share one physical source boundary without allowing lexical escapes", async () => {
+  const { mkdtemp, mkdir, writeFile, symlink, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { createDevelopmentRequestPolicy } = await import("../svelte/build/developmentRequests");
+  const base = await mkdtemp(resolve(tmpdir(), "vb-project-root-alias-"));
+  const physical = resolve(base, "physical-project"), project = resolve(base, "logical-project"), deps = resolve(base, "physical-dependencies"), depAlias = resolve(base, "logical-dependencies");
+  try {
+    for (const directory of ["svelte/lib", "shared", "collab", "public", "src", "scripts", ".wrangler/tmp"]) await mkdir(resolve(physical, directory), { recursive: true });
+    await mkdir(resolve(deps, ".vite/deps"), { recursive: true });
+    for (const file of ["svelte/lib/ok.ts", "shared/contracts.ts", "src/secret.ts", "scripts/build.ts", ".wrangler/tmp/worker.js"]) await writeFile(resolve(physical, file), "export const value = 1");
+    await writeFile(resolve(deps, ".vite/deps/svelte.js"), "export const browser = true");
+    await symlink(physical, project); await symlink(deps, depAlias); await symlink(depAlias, resolve(physical, "node_modules"));
+    await symlink(resolve(physical, "src/secret.ts"), resolve(physical, "svelte/lib/backend.ts"));
+    await symlink(resolve(physical, "scripts/build.ts"), resolve(physical, "public/escape.js"));
+    await symlink(resolve(physical, ".wrangler/tmp/worker.js"), resolve(physical, "svelte/lib/generated.js"));
+    await symlink(resolve(physical, "shared/contracts.ts"), resolve(physical, "shared/.hidden-alias.ts"));
+    const policy = createDevelopmentRequestPolicy(project);
+    for (const file of [resolve(project, "shared/contracts.ts"), resolve(physical, "shared/contracts.ts"), resolve(project, "node_modules/.vite/deps/svelte.js"), resolve(physical, "node_modules/.vite/deps/svelte.js"), resolve(depAlias, ".vite/deps/svelte.js"), resolve(deps, ".vite/deps/svelte.js")]) expect(() => policy.assertRequest(`/@fs/${file}`)).not.toThrow();
+    expect(() => policy.assertRequest("/lib/ok.ts")).not.toThrow();
+    for (const root of [project, physical]) for (const file of ["src/secret.ts", "src/not-created.ts", "scripts/build.ts", "scripts/not-created.ts", ".wrangler/tmp/worker.js", ".wrangler/not-created/worker.js", "svelte/build/not-created.ts", "svelte/lib/backend.ts", "svelte/lib/generated.js", "shared/.hidden-alias.ts", "shared/private.key", "public/escape.js"]) expect(() => policy.assertRequest(`/@fs/${resolve(root, file)}?raw`)).toThrow("[client-boundary]");
+    for (const root of [depAlias, deps]) expect(() => policy.assertRequest(`/@fs/${resolve(root, ".cache/private.js")}`)).toThrow("[client-boundary]");
+  } finally { await rm(base, { recursive: true, force: true }); }
+});
+
+test("contract watcher recognizes logical and physical project-root paths, including deleted source files", async () => {
+  const { mkdtemp, mkdir, symlink, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const base = await mkdtemp(resolve(tmpdir(), "vb-reload-root-alias-"));
+  const physical = resolve(base, "physical"), logical = resolve(base, "logical");
+  try {
+    await mkdir(resolve(physical, "src"), { recursive: true }); await symlink(physical, logical);
+    for (const file of ["src/not-created.ts", "shared/not-created.ts", "collab/not-created.ts"]) for (const candidate of [logical, physical]) expect(requiresAppReload(logical, resolve(candidate, file))).toBe(true);
+    for (const candidate of [logical, physical]) expect(requiresAppReload(logical, resolve(candidate, "svelte/Chat.svelte"))).toBe(false);
+  } finally { await rm(base, { recursive: true, force: true }); }
+});

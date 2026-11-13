@@ -4,17 +4,15 @@ import { readdir, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ResolverFunction } from "vite";
+import { canonicalFilesystemPath } from "./filesystemPaths";
 
 /** Shared by browser builders; keep backend and private configuration out of emitted assets. */
 export function createClientBoundaryPolicy(options: { projectRoot: string }) {
-  const root = realpathSync(resolve(options.projectRoot));
-  const serverRoots = [
-    resolve(root, "src"),
-    resolve(root, "packages/server-only"),
-  ];
-  const toolingRoots = ["scripts", "cli", "svelte/build"].map((path) =>
-    resolve(root, path),
-  );
+  const logicalRoot = resolve(options.projectRoot);
+  const root = realpathSync(logicalRoot);
+  const roots = [...new Set([logicalRoot, root])];
+  const serverRoots = roots.flatMap((base) => ["src", "packages/server-only"].flatMap((path) => { const file = resolve(base, path); return [file, canonicalFilesystemPath(file)]; }));
+  const toolingRoots = roots.flatMap((base) => ["scripts", "cli", "svelte/build"].flatMap((path) => { const file = resolve(base, path); return [file, canonicalFilesystemPath(file)]; }));
   const builtins = new Set(
     builtinModules.flatMap((name) => [name, `node:${name}`]),
   );
@@ -39,16 +37,19 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
   // The server/ directory convention belongs to this project. Dependencies can
   // legitimately publish browser-safe helpers under their own server/ directory.
   const serverDirectory = (id: string) => {
-    if (!within(id, root)) return false;
-    const path = relative(root, id);
+    const base = roots.find((directory) => within(id, directory));
+    if (!base) return false;
+    const path = relative(base, id);
     return (
       !/(?:^|[/\\])node_modules[/\\]/.test(path) &&
       /(?:^|[/\\])server[/\\]/.test(path)
     );
   };
   const toolingFile = (id: string) => {
-    if (!within(id, root)) return false;
-    const path = relative(root, id).replaceAll("\\", "/");
+    if (toolingRoots.some((directory) => within(id, directory))) return true;
+    const base = roots.find((directory) => within(id, directory));
+    if (!base) return false;
+    const path = relative(base, id).replaceAll("\\", "/");
     if (/(?:^|\/)node_modules\//.test(path)) return false;
     return (
       toolingRoots.some((directory) => within(id, directory)) ||
@@ -71,12 +72,7 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
     if (serverFile(id)) return "a server-only file";
     if (!isAbsolute(id)) return;
     // Check real paths too: an alias or symlink must not hide a backend module.
-    let file = id;
-    try {
-      file = realpathSync(id);
-    } catch {
-      /* Vite will report missing modules itself. */
-    }
+    const file = canonicalFilesystemPath(id);
     if (privatePath(file))
       return "private configuration or credential metadata";
     if (/\.(?:pem|key)$/i.test(file)) return "private key material";
