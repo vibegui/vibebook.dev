@@ -3236,7 +3236,7 @@ function $r() {
 	return e?.dataset.sheet ? (e.querySelector(".doc[data-view=\"edit\"] .seg [data-view=\"preview\"]")?.click(), delete e.dataset.sheet, !0) : !1;
 }
 document.addEventListener("keydown", (e) => {
-	e.key === "Escape" && !e.defaultPrevented && _.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]") && U();
+	e.key === "Escape" && !e.defaultPrevented && _.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content], [data-alert-dialog-content]") && U();
 });
 function ei(e, t, n, r) {
 	if (!e) return;
@@ -3247,11 +3247,11 @@ function ei(e, t, n, r) {
 		let a = _.querySelector(".book")?.querySelector(t === "doc" ? ".doc" : ".side"), o = document.getElementById("sheetDim");
 		if (!a || !H.matches) return;
 		let s = r.clientY, c = a.offsetHeight, l = 0, u = !1;
-		i = !1, e.setPointerCapture(r.pointerId), e.onpointermove = (e) => {
-			if (l = (e.clientY - s) * -1, !u && Math.abs(l) < 6) return;
-			u = !0, a.classList.add("sheetDrag"), o.style.transition = "none";
-			let t = Math.min(c, Math.max(0, n ? c + l : l));
-			a.style.transform = `translateY(${t * -1}px)`, o.style.opacity = String(1 - t / c);
+		i = !1, e.onpointermove = (t) => {
+			if (l = (t.clientY - s) * -1, !u && Math.abs(l) < 6) return;
+			u || e.setPointerCapture(r.pointerId), u = !0, a.classList.add("sheetDrag"), o.style.transition = "none";
+			let i = Math.min(c, Math.max(0, n ? c + l : l));
+			a.style.transform = `translateY(${i * -1}px)`, o.style.opacity = String(1 - i / c);
 		}, e.onpointerup = e.onpointercancel = () => {
 			e.onpointermove = e.onpointerup = e.onpointercancel = null, u && (i = !0, setTimeout(() => i = !1, 400), a.classList.remove("sheetDrag"), a.style.transform = "", o.style.transition = "", o.style.opacity = "", (n ? -l > c / 4 : l <= c / 4) ? Qr(t) : U());
 		};

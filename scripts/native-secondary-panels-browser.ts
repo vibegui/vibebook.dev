@@ -67,6 +67,9 @@ async function identity(email: string, clipboardFailure = false) {
     viewport: { width: 1440, height: 1000 },
     reducedMotion: "reduce",
   });
+  // Match the established Files/Pins/navigation suites on the local Worker.
+  context.setDefaultTimeout(60_000);
+  context.setDefaultNavigationTimeout(120_000);
   contexts.push(context);
   await nativeBrowserFixtures(context, base);
   await context.addCookies([
@@ -94,7 +97,18 @@ async function identity(email: string, clipboardFailure = false) {
   return context;
 }
 async function openPane(target: Page, pane: "decisions" | "reminders") {
-  await target.locator(`[data-pane="${pane}"]:visible`).first().click();
+  const book = target.locator(".book");
+  const mobile = (target.viewportSize()?.width ?? 1440) <= 900;
+  const tab = target.locator(
+    `${mobile ? "#docPeek" : ".ptabs"} button[data-pane="${pane}"]`,
+  );
+  if (
+    (await book.getAttribute("data-pane")) !== pane ||
+    (mobile && (await book.getAttribute("data-sheet")) !== "doc")
+  )
+    await tab.click();
+  await expect(book).toHaveAttribute("data-pane", pane);
+  if (mobile) await expect(book).toHaveAttribute("data-sheet", "doc");
   await expect(target.locator(`[data-${pane}-panel]`)).toBeVisible();
 }
 async function openPeople(target: Page) {
@@ -399,10 +413,10 @@ try {
     "Audit native panels across EN/PT, desktop/mobile and light/dark, including keyboard dialogs",
   );
   for (const profile of [
-    { lang: "en", width: 1440, dark: false },
-    { lang: "pt", width: 1440, dark: true },
     { lang: "en", width: 390, dark: true },
     { lang: "pt", width: 390, dark: false },
+    { lang: "en", width: 1440, dark: false },
+    { lang: "pt", width: 1440, dark: true },
   ]) {
     await owner.addCookies([
       { name: "vb_lang", value: profile.lang, url: base },
@@ -415,7 +429,14 @@ try {
     await page.reload();
     await expect(page.locator("#input")).toBeVisible();
     for (const panel of ["people", "decisions", "reminders"] as const) {
-      if (profile.width <= 900) await page.keyboard.press("Escape");
+      if (
+        profile.width <= 900 &&
+        (await page.locator(".book").getAttribute("data-sheet"))
+      ) {
+        await page.keyboard.press("Escape");
+        await expect(page.locator(".book")).not.toHaveAttribute("data-sheet");
+        await page.waitForFunction(() => !history.state?.sheet);
+      }
       if (panel === "people") await openPeople(page);
       else await openPane(page, panel);
       const selector = `[data-${panel}-panel]`;
@@ -475,6 +496,12 @@ try {
           page.getByRole("alertdialog").getByRole("button").first(),
         ).toBeFocused();
         await page.keyboard.press("Escape");
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        if (profile.width <= 900)
+          await expect(page.locator(".book")).toHaveAttribute(
+            "data-sheet",
+            "doc",
+          );
         await expect(deleteButton).toBeFocused();
       }
       if (panel === "reminders" && reminderFailureVerified) {
@@ -484,6 +511,10 @@ try {
         await expect(target.locator("#remNew")).toBeFocused();
       }
     }
+    await page.screenshot({
+      path: `${output}/room-${profile.lang}-${profile.width}-${profile.dark ? "dark" : "light"}.png`,
+      fullPage: true,
+    });
   }
   assert.deepEqual(errors, []);
   assert(

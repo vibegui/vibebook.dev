@@ -2958,7 +2958,7 @@ function sheetPop() {
   delete bk.dataset.sheet;
   return true;
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content], [data-alert-dialog-content]")) closeSheet(); });
 // Drag a sheet by its handle (or the peek bar): it follows the finger, and lets go open or closed past a quarter.
 // A tap (no drag) is a plain click: opens from the peek bar, closes from the handle.
 function sheetDrag(handle, which, opening, onTap) {
@@ -2971,10 +2971,11 @@ function sheetDrag(handle, which, opening, onTap) {
     const y0 = e.clientY, H = el.offsetHeight; let dy = 0, moving = false;
     const up = -1; // both sheets hang from the top: dragging up closes, down opens
     dragged = false;
-    handle.setPointerCapture(e.pointerId);
     handle.onpointermove = (ev) => {
       dy = (ev.clientY - y0) * up;
       if (!moving && Math.abs(dy) < 6) return;
+      // Capturing a toolbar tap would retarget its child-button click to the handle.
+      if (!moving) handle.setPointerCapture(e.pointerId);
       moving = true; el.classList.add("sheetDrag"); dim.style.transition = "none";
       const y = Math.min(H, Math.max(0, opening ? H + dy : dy));
       el.style.transform = `translateY(${y * up}px)`; dim.style.opacity = String(1 - y / H);

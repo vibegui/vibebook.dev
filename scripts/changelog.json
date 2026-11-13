@@ -19,6 +19,11 @@
         "text": {
           "pt": "Na prévia, navegue pelos arquivos e suas versões, fixe itens na lateral e gerencie convites e pedidos de acesso. Remover uma pessoa, decisão ou lembrete pede confirmação; erros mantêm o que você estava preenchendo.",
           "en": "In the preview, browse files and their versions, pin items in the sidebar, and manage invitations and access requests. Removing a person, decision or reminder asks for confirmation; errors preserve what you were entering."
+        },
+        "image": "changelog/svelte-native-panels.webp",
+        "alt": {
+          "pt": "Sala de teste na prévia Svelte, com pessoas e lembretes nativos ao lado da conversa.",
+          "en": "Test room in the Svelte preview, with native People and Reminders panels beside the conversation."
         }
       }
     ],
@@ -34,12 +39,16 @@
       "pt": [
         "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior.",
         "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo.",
-        "O campo de texto dos lembretes permanece visível mesmo quando o editor do documento está fechado."
+        "O campo de texto dos lembretes permanece visível mesmo quando o editor do documento está fechado.",
+        "Na prévia móvel, tocar nas abas abre o painel escolhido sem confundir o toque com o gesto de arrastar.",
+        "Fechar uma confirmação com Escape mantém o painel móvel aberto e devolve o foco ao botão de origem."
       ],
       "en": [
         "A new file version no longer leaves detached buttons able to open or pin the previous version.",
         "The version picker appears when opening a file after its complete history has loaded.",
-        "The reminder text field stays visible even when the document editor is closed."
+        "The reminder text field stays visible even when the document editor is closed.",
+        "In the mobile preview, tapping a tab opens the selected panel without confusing a tap with a drag gesture.",
+        "Dismissing a confirmation with Escape keeps the mobile panel open and returns focus to its original button."
       ]
     }
   },
@@ -872,12 +881,8 @@
       ]
     },
     "fixes": {
-      "pt": [
-        "Salas novas ganham título e resumo depois da primeira mensagem"
-      ],
-      "en": [
-        "New rooms get a title and summary after the first message"
-      ]
+      "pt": ["Salas novas ganham título e resumo depois da primeira mensagem"],
+      "en": ["New rooms get a title and summary after the first message"]
     }
   },
   {
