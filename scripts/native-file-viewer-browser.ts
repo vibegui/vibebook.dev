@@ -284,7 +284,8 @@ try {
   result.ui =
     "PASS exact Markdown versions, Back/Forward, image decode, audio metadata, HTML sandbox/Escape, PDF resource URL and desktop/mobile keyboard close";
   // No context.route/routeWebSocket calls: interception disables Chromium HTTP cache and would invalidate this gate.
-  const cacheContext = await browser.newContext();
+  const cacheContext = await browser.newContext({ locale: "en-US" });
+  await cacheContext.addCookies([{ name: "vb_lang", value: "en", url: base }]);
   const cachePage = await cacheContext.newPage();
   await cachePage.goto(base + "/login");
   const raw = `/api/books/${id}/files/${image.id}?ui=svelte`;
@@ -335,7 +336,13 @@ try {
   await expect(
     cachePage.getByText("Only room members can open this file"),
   ).toBeVisible();
-  result.access = "PASS real signed-in non-member403 native file-access shell";
+  await cacheContext.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
+  await cachePage.goto(base + raw);
+  await expect(
+    cachePage.getByRole("button", { name: "Pedir acesso", exact: true }),
+  ).toBeVisible();
+  result.access =
+    "PASS real signed-in non-member403 native file-access shell in English and Portuguese";
   await cacheContext.close();
   result.pass = true;
 } catch (error) {
