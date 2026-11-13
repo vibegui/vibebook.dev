@@ -1053,7 +1053,6 @@ export class Book extends DurableObject<Env> {
     const mentionsMe = (t: string) => [...t.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((m) => mine.has(fold(m[1])));
     const epics = this.epics().filter((e) => !(Number(e.archived) > 0));
     const rows = this.sql.exec(`SELECT id, thread, author, kind, tag, for_who, text, reply_to FROM messages WHERE id > ? ORDER BY id LIMIT 30`, since).toArray();
-    const by = (id: unknown) => (id ? this.sql.exec<{ author: string; kind: string | null }>(`SELECT author, kind FROM messages WHERE id = ?`, id).toArray()[0] : undefined);
     const messages = rows.map((m) => {
       const thread = m.thread as string;
       const recent = this.sql
@@ -1062,7 +1061,6 @@ export class Book extends DurableObject<Env> {
         .reverse()
         .map((x) => `${who(x.author)}${x.kind === "agent" ? " (Claude)" : ""}: ${x.text}`)
         .join("\n");
-      const parent = by(m.reply_to);
       const epic = epics.find((e) => e.id === thread);
       return {
         id: m.id as number,
@@ -1074,7 +1072,6 @@ export class Book extends DurableObject<Env> {
         tag: (m.tag as string | null) ?? null,
         for_who: (m.for_who as string | null) ?? null,
         text: ((m.text as string | null) ?? "").slice(0, 1500),
-        reply_to_my_claude: !!parent && parent.author === email && parent.kind === "agent",
         mentions_you: m.author !== email && mentionsMe((m.text as string | null) ?? ""),
         recent,
         epic_doc: epic ? (this.get(`doc:${epic.id}`) ?? "").slice(0, 1200) : "",
