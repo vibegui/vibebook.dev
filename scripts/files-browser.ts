@@ -12,7 +12,10 @@ import {
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
 import { createRoomApi } from "../svelte/transport";
-import { nativeBrowserFixtures, openNativeRoomPane } from "./native-browser-fixtures";
+import {
+  nativeBrowserFixtures,
+  openNativeRoomPane,
+} from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
@@ -187,7 +190,7 @@ try {
   const pin = (fileID: string) => tile(fileID).locator("button[aria-pressed]");
   const openTile = (fileID: string) => tile(fileID).locator("button").first();
   const show = async () => {
-    await openNativeRoomPane(page,"files");
+    await openNativeRoomPane(page, "files");
     await expect(panel).toBeVisible();
   };
   const canonicalPins = async () =>

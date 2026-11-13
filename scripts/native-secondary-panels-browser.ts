@@ -15,7 +15,11 @@ import * as z from "zod/mini";
 import { UploadFileResult } from "../shared/schemas";
 import { parseRoomEvent } from "../shared/validation";
 import { createRoomStore } from "../svelte/roomStore";
-import { nativeBrowserFixtures, openNativeRoomPane, openNativeSidebar } from "./native-browser-fixtures";
+import {
+  nativeBrowserFixtures,
+  openNativeRoomPane,
+  openNativeSidebar,
+} from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -97,7 +101,7 @@ async function identity(email: string, clipboardFailure = false) {
   return context;
 }
 async function openPane(target: Page, pane: "decisions" | "reminders") {
-  await openNativeRoomPane(target,pane);
+  await openNativeRoomPane(target, pane);
   await expect(target.locator(`[data-${pane}-panel]`)).toBeVisible();
 }
 async function openPeople(target: Page) {

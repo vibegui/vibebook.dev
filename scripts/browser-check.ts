@@ -5,7 +5,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { parseRoomEvent } from "../shared/validation";
 import { createRoomStore } from "../svelte/roomStore";
 import * as z from "zod/mini";
-import {openNativeRoomPane,openNativeSidebar,nativeTaskRegion,showNativeTasks,nativeDocumentMode} from "./native-browser-fixtures";
+import {
+  openNativeRoomPane,
+  openNativeSidebar,
+  nativeTaskRegion,
+  showNativeTasks,
+  nativeDocumentMode,
+} from "./native-browser-fixtures";
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL || "http://127.0.0.1:8797";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
@@ -33,7 +39,7 @@ try {
   });
   if (!created.ok())
     throw Error(`Create room ${created.status()}: ${await created.text()}`);
-  const { id } = z.object({id:z.string()}).parse(await created.json());
+  const { id } = z.object({ id: z.string() }).parse(await created.json());
   const second = await browser.newContext({
     locale: "pt-BR",
     viewport: { width: 390, height: 844 },
@@ -91,14 +97,18 @@ try {
   if (!eid) throw Error("Missing epic");
   await epic.click();
   await showNativeTasks(a);
-  const aTasks=nativeTaskRegion(a);
-  await expect(aTasks.locator("#newTask input")).toBeVisible({ timeout: 90_000 });
+  const aTasks = nativeTaskRegion(a);
+  await expect(aTasks.locator("#newTask input")).toBeVisible({
+    timeout: 90_000,
+  });
   await aTasks.locator("#newTask input").fill("Check two-session updates");
   await aTasks.locator("#newTask input").press("Enter");
   await expect(aTasks.locator("[data-task-title]").first()).toContainText(
     "Check two-session updates",
   );
-  await aTasks.locator("#newTask input").fill("Keep epic open during verification");
+  await aTasks
+    .locator("#newTask input")
+    .fill("Keep epic open during verification");
   await aTasks.locator("#newTask input").press("Enter");
   await expect(aTasks.locator("[data-task]")).toHaveCount(2);
   console.log("PASS desktop renders; native epic and tasks created");
@@ -107,8 +117,8 @@ try {
     timeout: 120_000,
   });
   await expect(b.locator("#composer")).toBeVisible({ timeout: 120_000 });
-  await showNativeTasks(b,"Tarefas");
-  const bTasks=nativeTaskRegion(b,"Tarefas");
+  await showNativeTasks(b, "Tarefas");
+  const bTasks = nativeTaskRegion(b, "Tarefas");
   await expect(bTasks.locator("[data-task-title]").first()).toContainText(
     "Check two-session updates",
   );
@@ -117,7 +127,9 @@ try {
     .filter({ hasText: "Check two-session updates" })
     .getAttribute("data-task");
   if (!taskId) throw Error("Missing task id");
-  const checkbox = aTasks.locator(`[data-task="${taskId}"] input[type=checkbox]`);
+  const checkbox = aTasks.locator(
+    `[data-task="${taskId}"] input[type=checkbox]`,
+  );
   const remoteCheckbox = bTasks.locator(
     `[data-task="${taskId}"] input[type=checkbox]`,
   );
@@ -160,8 +172,12 @@ try {
     desktop.request.get(`${base}/api/me?ui=svelte`),
     desktop.request.get(`${base}/b/${id}?ui=svelte`),
   ]);
-  const vanillaVersion = z.object({v:z.string()}).parse(await vanillaMe.json()).v;
-  const previewVersion = z.object({v:z.string()}).parse(await previewMe.json()).v;
+  const vanillaVersion = z
+    .object({ v: z.string() })
+    .parse(await vanillaMe.json()).v;
+  const previewVersion = z
+    .object({ v: z.string() })
+    .parse(await previewMe.json()).v;
   expect(vanillaVersion).not.toBe(previewVersion);
   expect(await previewShell.text()).toContain(
     `name="vb-v" content="${previewVersion}"`,
@@ -177,8 +193,8 @@ try {
     "PASS vanilla default, isolated assets/versions, preview reload and cross-variant task fan-out",
   );
   // Native composer/chat selectors are scoped separately from the deliberate vanilla tab.
-  const composer=a.locator("[data-native-composer]");
-  const send=composer.locator("[data-composer-send]");
+  const composer = a.locator("[data-native-composer]");
+  const send = composer.locator("[data-composer-send]");
   // A native keyed message row preserves escaping, actions and reply context.
   await composer
     .locator("#input")
@@ -215,39 +231,60 @@ try {
   await expect(send).toBeEnabled({ timeout: 90_000 });
   await composer.locator("#input").fill("Attached verification");
   await send.click();
-  await openNativeRoomPane(a,"files");
-  const fileTile=a.locator('[data-vb-native="files"] [data-file-id]').filter({hasText:"verification.txt"});
-  await expect(fileTile).toHaveCount(1, {timeout:90_000});
+  await openNativeRoomPane(a, "files");
+  const fileTile = a
+    .locator('[data-vb-native="files"] [data-file-id]')
+    .filter({ hasText: "verification.txt" });
+  await expect(fileTile).toHaveCount(1, { timeout: 90_000 });
   console.log("PASS typed file upload");
-  await fileTile.locator('button[aria-pressed]').click();
+  await fileTile.locator("button[aria-pressed]").click();
   await openNativeSidebar(b);
-  await expect(b.locator("[data-native-pins]")).toContainText("verification.txt", {timeout:90_000});
-  await openNativeRoomPane(a,"board");
-  const board=a.getByRole("region",{name:"Task board",exact:true});
-  const card=board.locator(`[data-board-task="${taskId}"]`);
+  await expect(b.locator("[data-native-pins]")).toContainText(
+    "verification.txt",
+    { timeout: 90_000 },
+  );
+  await openNativeRoomPane(a, "board");
+  const board = a.getByRole("region", { name: "Task board", exact: true });
+  const card = board.locator(`[data-board-task="${taskId}"]`);
   await expect(card).toBeVisible();
-  const openCard=card.locator("[data-board-open]");
-  await openCard.focus();await openCard.press("ArrowRight");
-  await expect(card).toHaveAttribute("data-status","doing",{timeout:90_000});
-  await board.getByRole("tab",{name:"List",exact:true}).click();
-  await expect(board.getByRole("tab",{name:"List",exact:true})).toHaveAttribute("aria-selected","true");
-  await expect(board.locator(`[data-board-task="${taskId}"]`).filter({hasText:"Check two-session updates"})).toHaveCount(1);
-  await openNativeRoomPane(a,"doc");
+  const openCard = card.locator("[data-board-open]");
+  await openCard.focus();
+  await openCard.press("ArrowRight");
+  await expect(card).toHaveAttribute("data-status", "doing", {
+    timeout: 90_000,
+  });
+  await board.getByRole("tab", { name: "List", exact: true }).click();
+  await expect(
+    board.getByRole("tab", { name: "List", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    board
+      .locator(`[data-board-task="${taskId}"]`)
+      .filter({ hasText: "Check two-session updates" }),
+  ).toHaveCount(1);
+  await openNativeRoomPane(a, "doc");
   await a.locator("#inboxBtn").click();
-  const inbox = a.getByRole("dialog",{name:"Inbox",exact:true});
+  const inbox = a.getByRole("dialog", { name: "Inbox", exact: true });
   await expect(inbox).toBeVisible();
   await inbox.getByRole("button", { name: "Close", exact: true }).click();
   console.log("PASS files/pins, board keyboard/list and Inbox");
   await a.screenshot({ path: `${output}/desktop-after.png`, fullPage: true });
   await b.screenshot({ path: `${output}/mobile-after.png`, fullPage: true });
   // Both CodeMirror instances edit the same Yjs document; the backend mirrors it to Book.
-  await nativeDocumentMode(a,"edit");await nativeDocumentMode(b,"edit");
-  const aEditor=a.locator("[data-document-editor] .cm-content"),bEditor=b.locator("[data-document-editor] .cm-content");
-  await expect(aEditor).toBeVisible();await expect(bEditor).toBeVisible();
-  await expect(aEditor).toHaveAttribute("contenteditable","true");
-  await aEditor.click();await a.keyboard.press("ControlOrMeta+End");
+  await nativeDocumentMode(a, "edit");
+  await nativeDocumentMode(b, "edit");
+  const aEditor = a.locator("[data-document-editor] .cm-content"),
+    bEditor = b.locator("[data-document-editor] .cm-content");
+  await expect(aEditor).toBeVisible();
+  await expect(bEditor).toBeVisible();
+  await expect(aEditor).toHaveAttribute("contenteditable", "true");
+  await aEditor.click();
+  await a.keyboard.press("ControlOrMeta+End");
   await a.keyboard.insertText("\n\nLive document synchronization verified");
-  await expect(bEditor).toContainText("Live document synchronization verified",{timeout:90_000});
+  await expect(bEditor).toContainText(
+    "Live document synchronization verified",
+    { timeout: 90_000 },
+  );
   console.log("PASS two live Yjs document editors");
   // Exercise real SPA navigation while an editor owns a live provider.
   await a.locator('a[data-nav][href="/app?ui=svelte"]:visible').first().click();
@@ -259,9 +296,14 @@ try {
   expect(new URL(a.url()).searchParams.get("ui")).toBe("svelte");
   await a.locator('a[data-nav][href="/app?ui=svelte"]:visible').first().click();
   await expect(
-    a.locator(`[data-room-id="${id}"] a[href="/b/${id}?ui=svelte"]:visible`).first(),
+    a
+      .locator(`[data-room-id="${id}"] a[href="/b/${id}?ui=svelte"]:visible`)
+      .first(),
   ).toBeVisible({ timeout: 90_000 });
-  await a.locator(`[data-room-id="${id}"] a[href="/b/${id}?ui=svelte"]:visible`).first().click();
+  await a
+    .locator(`[data-room-id="${id}"] a[href="/b/${id}?ui=svelte"]:visible`)
+    .first()
+    .click();
   await expect(a.locator("#composer")).toBeVisible({ timeout: 120_000 });
   expect(new URL(a.url()).searchParams.get("ui")).toBe("svelte");
   console.log(

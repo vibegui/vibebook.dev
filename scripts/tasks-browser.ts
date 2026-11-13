@@ -8,7 +8,11 @@ import {
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
-import { nativeBrowserFixtures, nativeTaskRegion, showNativeTasks } from "./native-browser-fixtures";
+import {
+  nativeBrowserFixtures,
+  nativeTaskRegion,
+  showNativeTasks,
+} from "./native-browser-fixtures";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -152,9 +156,17 @@ try {
   await expect(due).toHaveValue("Friday");
   await page.keyboard.press("Control+k");
   await expect(dueDialog).toHaveCount(0);
-  const searchDialog=page.getByRole("dialog",{name:"Go to a vibebook",exact:true});
+  const searchDialog = page.getByRole("dialog", {
+    name: "Go to a vibebook",
+    exact: true,
+  });
   await expect(searchDialog).toBeVisible();
-  await expect(searchDialog.getByRole("combobox",{name:"Go to a vibebook",exact:true})).toBeFocused();
+  await expect(
+    searchDialog.getByRole("combobox", {
+      name: "Go to a vibebook",
+      exact: true,
+    }),
+  ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(searchDialog).not.toBeVisible();
   await dueButton().click();

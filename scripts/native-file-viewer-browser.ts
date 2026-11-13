@@ -249,7 +249,7 @@ try {
   // Actual mobile Files sheet remains the underlying history/UI owner.
   await expect.poll(() => new URL(page.url()).hash).toBe("");
   const book = page.locator(".book");
-  await openNativeRoomPane(page,"files");
+  await openNativeRoomPane(page, "files");
   await expect(book).toHaveAttribute("data-sheet", "doc");
   await expect(book).toHaveAttribute("data-pane", "files");
   await page

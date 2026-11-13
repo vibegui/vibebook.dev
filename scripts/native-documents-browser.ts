@@ -4,6 +4,10 @@ import { createHash, randomBytes } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { mkdir, writeFile } from "node:fs/promises";
 import {
+  nativeDocumentMode,
+  openNativeRoomPane,
+} from "./native-browser-fixtures";
+import {
   chromium,
   expect as baseExpect,
   type BrowserContext,
@@ -186,11 +190,7 @@ const nativeEditor = (page: Page) =>
 const oldEditor = (page: Page) => page.locator("#cm .cm-content");
 async function edit(page: Page, native: boolean) {
   if (native) {
-    await page.locator('[data-document-pane="doc"]:visible').first().click();
-    const button = page
-      .locator("[data-native-document] > footer")
-      .getByRole("button", { name: "Edit", exact: true });
-    if (await button.count()) await button.click();
+    await nativeDocumentMode(page, "edit");
   } else {
     if ((await page.locator(".doc").getAttribute("data-view")) !== "edit")
       await page.locator("#docEditBar").click();
@@ -266,17 +266,15 @@ try {
     assert(response.ok(), `Invite status ${response.status()}`);
   }
   await invite(peerEmail);
-  const epic = z
-    .object({ epic_id: z.string() })
-    .parse(
-      await agent("start_epic", {
-        room_id: room,
-        title: "Document scope",
-        why: "Real CRDT verification",
-        tasks: ["Canonical task"],
-        backlog: true,
-      }),
-    ).epic_id;
+  const epic = z.object({ epic_id: z.string() }).parse(
+    await agent("start_epic", {
+      room_id: room,
+      title: "Document scope",
+      why: "Real CRDT verification",
+      tasks: ["Canonical task"],
+      backlog: true,
+    }),
+  ).epic_id;
   async function setDoc(markdown: string, epicId?: string) {
     await agent("update_doc", {
       room_id: room,
@@ -448,11 +446,7 @@ try {
     `# Real preview\n\n![safe image](${imageUrl})\n\n\`\`\`mermaid\ngraph TD\nA-->B\n\`\`\`\n\n\`\`\`mermaid\ngraph TD\nA-->B\n\`\`\`\n\n## Tarefas\n- [ ] Canonical root task\n`,
   );
   await a.goto(`${app}/b/${room}?ui=svelte`);
-  await a.locator('[data-document-pane="doc"]:visible').first().click();
-  const done = a
-    .locator("[data-native-document] > footer")
-    .getByRole("button", { name: "Done", exact: true });
-  if (await done.count()) await done.click();
+  await nativeDocumentMode(a, "preview");
   await expect(a.locator("[data-document-tasks]")).toHaveCount(1);
   const preview = a.locator("[data-document-preview]");
   await expect(preview.locator("img")).toHaveCount(1);
@@ -547,7 +541,7 @@ try {
   await identity(owner, ownerEmail);
   await a.setViewportSize({ width: 390, height: 844 });
   await a.goto(`${app}/b/${room}?ui=svelte`);
-  await a.locator('[data-document-pane="doc"]:visible').first().click();
+  await openNativeRoomPane(a, "doc");
   await expect(a.locator("[data-native-document]")).toBeVisible();
   await a.locator('[data-document-pane="doc"]:visible').first().focus();
   await a.keyboard.press("ArrowRight");
