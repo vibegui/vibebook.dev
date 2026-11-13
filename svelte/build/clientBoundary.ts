@@ -11,8 +11,18 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
   const logicalRoot = resolve(options.projectRoot);
   const root = realpathSync(logicalRoot);
   const roots = [...new Set([logicalRoot, root])];
-  const serverRoots = roots.flatMap((base) => ["src", "packages/server-only"].flatMap((path) => { const file = resolve(base, path); return [file, canonicalFilesystemPath(file)]; }));
-  const toolingRoots = roots.flatMap((base) => ["scripts", "cli", "svelte/build"].flatMap((path) => { const file = resolve(base, path); return [file, canonicalFilesystemPath(file)]; }));
+  const serverRoots = roots.flatMap((base) =>
+    ["src", "packages/server-only"].flatMap((path) => {
+      const file = resolve(base, path);
+      return [file, canonicalFilesystemPath(file)];
+    }),
+  );
+  const toolingRoots = roots.flatMap((base) =>
+    ["scripts", "cli", "svelte/build"].flatMap((path) => {
+      const file = resolve(base, path);
+      return [file, canonicalFilesystemPath(file)];
+    }),
+  );
   const builtins = new Set(
     builtinModules.flatMap((name) => [name, `node:${name}`]),
   );

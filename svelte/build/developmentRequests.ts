@@ -36,7 +36,12 @@ export function createDevelopmentRequestPolicy(root: string) {
   const dependencies = resolve(root, "node_modules");
   const canonical = canonicalFilesystemPath;
   const projectRoots = [...new Set([resolve(root), canonical(root)])];
-  const lexical = projectRoots.map((base) => ({ roots: ["svelte", "shared", "collab", "public"].map((path) => resolve(base, path)), deps: resolve(base, "node_modules") }));
+  const lexical = projectRoots.map((base) => ({
+    roots: ["svelte", "shared", "collab", "public"].map((path) =>
+      resolve(base, path),
+    ),
+    deps: resolve(base, "node_modules"),
+  }));
   const actualFrontend = frontend.map(canonical);
   const actualDependencies = canonical(dependencies);
   const within = (file: string, directory: string) => {
@@ -86,7 +91,9 @@ export function createDevelopmentRequestPolicy(root: string) {
     boundary.assertClient(actual);
     if (
       (projectRoots.some((base) => within(resolve(file), base)) &&
-        !lexical.some(({ roots, deps }) => allowed(resolve(file), roots, deps))) ||
+        !lexical.some(({ roots, deps }) =>
+          allowed(resolve(file), roots, deps),
+        )) ||
       !allowed(actual, actualFrontend, actualDependencies)
     )
       throw new Error("[client-boundary] File is outside browser source roots");

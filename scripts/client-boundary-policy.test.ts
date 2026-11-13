@@ -83,11 +83,39 @@ test("whole project-root aliases retain lexical and physical backend/tooling den
     const physical = await realpath(root);
     const policy = createClientBoundaryPolicy({ projectRoot: alias });
     for (const base of [root, alias, physical]) {
-      for (const path of ["src/not-created.ts", "scripts/build.ts", "scripts/not-created.ts", "cli/not-created.ts", "svelte/build/not-created.ts", "svelte/vite.config.ts", "package.json", ".wrangler/not-created/worker.js", "shared/private.key", "shared/font.woff2", "shared/tool.ts"])
-        for (const query of ["", "?raw", "?url"]) expect(() => policy.assertClient(join(base, path) + query)).toThrow("[client-boundary]");
-      expect(() => policy.assertClient("../scripts/not-created.ts?raw", join(base, "client/main.ts"))).toThrow("[client-boundary]");
-      expect(() => policy.assertClient(join(base, "shared/value.ts"))).not.toThrow();
-      expect(() => policy.assertClient(join(base, "node_modules/package/scripts/browser.js"))).not.toThrow();
+      for (const path of [
+        "src/not-created.ts",
+        "scripts/build.ts",
+        "scripts/not-created.ts",
+        "cli/not-created.ts",
+        "svelte/build/not-created.ts",
+        "svelte/vite.config.ts",
+        "package.json",
+        ".wrangler/not-created/worker.js",
+        "shared/private.key",
+        "shared/font.woff2",
+        "shared/tool.ts",
+      ])
+        for (const query of ["", "?raw", "?url"])
+          expect(() => policy.assertClient(join(base, path) + query)).toThrow(
+            "[client-boundary]",
+          );
+      expect(() =>
+        policy.assertClient(
+          "../scripts/not-created.ts?raw",
+          join(base, "client/main.ts"),
+        ),
+      ).toThrow("[client-boundary]");
+      expect(() =>
+        policy.assertClient(join(base, "shared/value.ts")),
+      ).not.toThrow();
+      expect(() =>
+        policy.assertClient(
+          join(base, "node_modules/package/scripts/browser.js"),
+        ),
+      ).not.toThrow();
     }
-  } finally { await rm(alias, { force: true }); }
+  } finally {
+    await rm(alias, { force: true });
+  }
 });
