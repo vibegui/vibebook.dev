@@ -1,7 +1,10 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 import { createClientBoundaryPolicy } from "./clientBoundary.ts";
-import { canonicalFilesystemPath } from "./filesystemPaths";
+import {
+  canonicalFilesystemPath,
+  projectFilesystemPath,
+} from "./filesystemPaths";
 
 /** Origin-form only. Never allow an incoming authority to choose a fetch target. */
 export function localRequestUrl(request: string): URL {
@@ -35,7 +38,8 @@ export function createDevelopmentRequestPolicy(root: string) {
   );
   const dependencies = resolve(root, "node_modules");
   const canonical = canonicalFilesystemPath;
-  const projectRoots = [...new Set([resolve(root), canonical(root)])];
+  const physicalRoot = canonical(root);
+  const projectRoots = [...new Set([resolve(root), physicalRoot])];
   const lexical = projectRoots.map((base) => ({
     roots: ["svelte", "shared", "collab", "public"].map((path) =>
       resolve(base, path),
@@ -87,12 +91,14 @@ export function createDevelopmentRequestPolicy(root: string) {
   };
   const assertFile = (file: string) => {
     boundary.assertClient(file);
+    const projectFile = projectFilesystemPath(file, physicalRoot);
+    if (projectFile) boundary.assertClient(projectFile);
     const actual = canonical(file);
     boundary.assertClient(actual);
     if (
-      (projectRoots.some((base) => within(resolve(file), base)) &&
+      (projectFile !== undefined &&
         !lexical.some(({ roots, deps }) =>
-          allowed(resolve(file), roots, deps),
+          allowed(projectFile, roots, deps),
         )) ||
       !allowed(actual, actualFrontend, actualDependencies)
     )
