@@ -189,6 +189,12 @@ const nativeEditor = (page: Page) =>
   page.locator("[data-document-editor] .cm-content");
 const oldEditor = (page: Page) => page.locator("#cm .cm-content");
 async function edit(page: Page, native: boolean) {
+  await expect(page.locator(".book:not(.skel)")).toBeAttached();
+  const welcome = page.locator("dialog.welcome[open]");
+  if (await welcome.isVisible()) {
+    await welcome.getByRole("button", { name: /^(Skip|Pular)$/ }).click();
+    await expect(welcome).toHaveCount(0);
+  }
   if (native) {
     await nativeDocumentMode(page, "edit");
   } else {
@@ -335,10 +341,14 @@ try {
       "Recognizable compiled or source entry required",
     );
   phase = "unicode and collaborative undo";
+  phase = "unicode: open native editor";
   await edit(a, true);
+  phase = "unicode: open vanilla editor";
   await edit(b, false);
+  phase = "unicode: native write reaches vanilla";
   await append(a, true, "\nNative café 日本語 🧪");
   await expect(oldEditor(b)).toContainText("Native café 日本語 🧪");
+  phase = "unicode: vanilla write reaches native";
   await append(b, false, "\nVanilla Ω🚀");
   await expect(nativeEditor(a)).toContainText("Vanilla Ω🚀");
   // Separate real editor undo capture groups; no fake timer or direct Y.Doc mutation.
@@ -352,6 +362,7 @@ try {
   await setDoc((await readDoc()) + "\nAGENT_CANONICAL_UPDATE\n");
   await expect(nativeEditor(a)).toContainText("AGENT_CANONICAL_UPDATE");
   await expect(oldEditor(b)).toContainText("AGENT_CANONICAL_UPDATE");
+  phase = "unicode and collaborative undo";
   phases.push(phase);
   phase = "scoped epic, crumbs and >8k offline reconnect";
   await a.goto(`${app}/b/${room}?ui=svelte&t=${epic}`);
@@ -565,6 +576,15 @@ try {
   results.failedPhase = phase;
   results.failure =
     "An assertion or live operation failed; inspect the named phase interactively against disposable local persistence.";
+  for (const [index, context] of contexts.entries()) {
+    const page = context
+      .pages()
+      .find((page) => new URL(page.url()).pathname.startsWith("/b/"));
+    if (page)
+      await page
+        .screenshot({ path: `${output}/failure-room-${index}.png` })
+        .catch(() => {});
+  }
   process.exitCode = 1;
 } finally {
   await browser.close();

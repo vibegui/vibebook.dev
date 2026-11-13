@@ -1,0 +1,32 @@
+{
+  "status": "failed",
+  "servedRevisionSuppliedByRunner": "aa50c3f",
+  "harnessRevision": "0d66e644f5be376d27c6817dde1f43ec4983dd67",
+  "phases": [
+    "unicode and collaborative undo",
+    "scoped epic, crumbs and >8k offline reconnect",
+    "all-editor4003 authorized recovery",
+    "deleted open epic cannot retarget room document",
+    "task slot, real Mermaid and uploaded image"
+  ],
+  "fixtures": [
+    "legacy font/local runner isolation",
+    "Yjs transport disconnect only; server frames forwarded unchanged"
+  ],
+  "gaps": [
+    "Chromium only; mobile viewport is not Safari/iOS, hardware IME or touch-device acceptance",
+    "DEV identities do not verify email/session issuance",
+    "Mirror convergence is observable; crash durability/replication is not proven",
+    "No backend database/KV seeding or fabricated canonical events",
+    "Harness leaves uniquely named local rooms and its real OAuth grant for inspection; use disposable Worker persistence"
+  ],
+  "version": "c4e6ea7fceff83b04a95d2d2745c70ab",
+  "room": "ca0e41d297fc",
+  "shellVersion": "6032eebcf8f4591994893b364f6b9b03",
+  "asset": {
+    "path": "/svelte-preview/app.js",
+    "sha256": "a6657ebb68f6c20b00fe6cfdf4b148bd1046127abb100980d684099c0273eb6b"
+  },
+  "failedPhase": "removed member privacy and authorized peer resume",
+  "failure": "An assertion or live operation failed; inspect the named phase interactively against disposable local persistence."
+}

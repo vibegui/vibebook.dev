@@ -29,5 +29,18 @@ and alarm execution remain unverified. Whole-room screenshots were visually
 reviewed locally; the surrounding hybrid shell still needs final migration and
 Studio-theme acceptance.
 
-Neither result proves real document collaboration, final RootApp retirement,
+`documents-partial.json` records a **failed overall document run** against these
+same assets. Five phases pass: native/vanilla Unicode collaboration and undo,
+scoped documents with more than 8 KB of offline edits and concurrent peer
+changes, all-editor 4003 recovery, deleted-epic refusal, and real uploaded-image
+plus Mermaid rendering/safety. The captured [preview](document-preview.png) was
+visually inspected. The run stops before removing the peer because its second
+native editor enters the visible fallback instead of mounting CodeMirror.
+Consequently member-removal privacy and final account/mobile disposal are
+**unverified**. A previous fixture failure was separately traced to vanilla's
+normal first-invitation welcome dialog; the harness now uses its real Skip
+button. Worker closed-socket broadcast errors observed during recovery also
+remain under investigation. These limitations cannot be labeled passing gates.
+
+These results do not prove complete document lifecycle coverage, final RootApp retirement,
 production performance, hardware keyboard behavior or overall M0–M8 completion.

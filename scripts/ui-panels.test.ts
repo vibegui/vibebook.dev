@@ -2381,7 +2381,7 @@ describe("native Svelte chat", () => {
 test("native document task slots dispose across suggestion scope and detached controls cannot write", async () => {
   const room = fixture();
   room.doc = "# Room document";
-  room.epics[0].doc = "# Epic document\n\n## Tarefas\n";
+  room.docs = { e: "# Epic document\n\n## Tarefas\n" };
   const events: RoomCommand[] = [];
   const owner = createDocumentSession({
     drafts: createDocumentDrafts(),
@@ -2444,7 +2444,9 @@ test("native document task slots dispose across suggestion scope and detached co
     expect(current === original).toBe(false);
     current!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await tick();
-    expect(events).toEqual([{ t: "task.toggle", id: "t" } satisfies RoomCommand]);
+    expect(events).toEqual([
+      { t: "task.toggle", id: "t" } satisfies RoomCommand,
+    ]);
   } finally {
     owner.dispose();
   }
