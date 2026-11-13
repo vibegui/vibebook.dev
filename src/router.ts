@@ -144,11 +144,12 @@ export async function gate(env: Env, me: { email: string; agent: string }, bookI
   return wake;
 }
 
-/** The A/B so far for one person (optionally one room): per arm, how many of each decision, latency and cost; the last 40. */
+/** The A/B so far: per arm, how many of each decision, latency and cost; the last 40. One room = every member's router there
+ * (the caller checked membership; Gimenes saw only zeros, his own router being off); no room = the person's own, all rooms. */
 export async function routerStats(db: D1Database, email: string, room?: string, days = 14): Promise<RouterStats> {
   const from = Date.now() - days * 86_400_000;
-  const where = `email = ? AND ts > ?${room ? " AND book_id = ?" : ""}`;
-  const binds = room ? [email, from, room] : [email, from];
+  const where = room ? "book_id = ? AND ts > ?" : "email = ? AND ts > ?";
+  const binds = [room ?? email, from];
   const arms = await db
     .prepare(`SELECT arm, decision, count(*) AS n, avg(ms) AS ms, sum(cost) AS cost FROM router_log WHERE ${where} GROUP BY arm, decision`)
     .bind(...binds)
@@ -159,7 +160,7 @@ export async function routerStats(db: D1Database, email: string, room?: string, 
     return { p50: v[Math.floor(v.length * 0.5)] ?? null, p95: v[Math.floor(v.length * 0.95)] ?? null };
   };
   const recent = await db
-    .prepare(`SELECT r.book_id, b.title AS room, r.msg_id, r.arm, r.decision, r.why, r.source, r.reply_id, r.ms, r.cost, r.text, r.ts FROM router_log r LEFT JOIN books b ON b.id = r.book_id WHERE r.${where.replace(/ AND /g, " AND r.")} ORDER BY r.ts DESC LIMIT 40`)
+    .prepare(`SELECT r.book_id, b.title AS room, r.email AS who, r.msg_id, r.arm, r.decision, r.why, r.source, r.reply_id, r.ms, r.cost, r.text, r.ts FROM router_log r LEFT JOIN books b ON b.id = r.book_id WHERE r.${where.replace(/ AND /g, " AND r.")} ORDER BY r.ts DESC LIMIT 40`)
     .bind(...binds)
     .all();
   const by = (arm: Arm) => {
