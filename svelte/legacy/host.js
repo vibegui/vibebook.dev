@@ -2811,12 +2811,17 @@ function renderSide() {
   }
   const roomId = S.id;
   const pinsSession = sidePins;
+  /** @type {import("../roomConnection").RequestRoomCommand} */
+  const requestPinCommand = (command, timeoutMs) => {
+    if (!pinsSession.active || sidePins !== pinsSession || S?.id !== roomId) return Promise.resolve({ok:false,error:"offline"});
+    return roomConnection?.request(command, timeoutMs) ?? Promise.resolve({ok:false,error:"offline"});
+  };
   const openSideThread = (id) => {
     if (S?.id !== roomId) return;
     closeSheet(true);
     thread = id; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   };
-  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
+  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
   el.querySelector("#railToggle").onclick = toggleRail;
   // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
   el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.onclick = () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open));

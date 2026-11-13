@@ -2,6 +2,7 @@
   import { onDestroy, tick } from "svelte";
   import type { Attachment, Room } from "../../../shared/room";
   import type { SendRoomCommand } from "../../../shared/commands";
+  import type { RequestRoomCommand } from "../../roomConnection";
   import Button from "../../lib/ui/Button.svelte";
   import Icon from "../../lib/ui/Icon.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
@@ -25,6 +26,7 @@
     room,
     session,
     send,
+    request,
     onopenfile,
     onopenapp,
     t,
@@ -32,6 +34,7 @@
     room: Room;
     session: PinsSession;
     send: SendRoomCommand;
+    request: RequestRoomCommand;
     onopenfile: (file: Attachment) => void;
     onopenapp: (app: PinAppTarget) => void;
     t: (text: string, vars?: Record<string, string | number>) => string;
@@ -56,7 +59,7 @@
     if (interactive()) requestPinnedFiles(session, room, send, true);
   }
   function remove(id: string) {
-    if (interactive()) removePinnedItem(session, room.id, id, send);
+    if (interactive()) void removePinnedItem(session, room.id, id, request);
   }
   const pinState = $derived(session.state);
   const rows = $derived(
@@ -80,6 +83,7 @@
         unconfirmed:
           "Ainda não recebi confirmação. Confira os fixados antes de tentar de novo.",
         "already-pinned": "Este link já está nos fixados.",
+        rejected: "Não deu pra atualizar os fixados. Tente de novo.",
       }[issue.kind],
     );
 
@@ -142,7 +146,7 @@
   }
   function submit(event: SubmitEvent) {
     event.preventDefault();
-    if (interactive()) submitPinDraft(session, room.id, send);
+    if (interactive()) void submitPinDraft(session, room.id, request);
   }
   function activate(id: string) {
     if (!interactive()) return;

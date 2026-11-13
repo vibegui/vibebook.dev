@@ -11,6 +11,7 @@
     friends = [],
     vb,
     send,
+    request,
     onopen,
     onarchchange,
     navigation,
@@ -174,6 +175,7 @@
   {room}
   session={pins}
   {send}
+  {request}
   onopenfile={onopenpinfile}
   onopenapp={onopenpinapp}
   t={vb.t}

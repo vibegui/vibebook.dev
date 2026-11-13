@@ -1,4 +1,5 @@
 import type { Room, Epic, Attachment } from "../shared/room";
+import type { RequestRoomCommand } from "./roomConnection";
 import type { SendRoomCommand } from "../shared/commands";
 import type { NavigationSession } from "./features/navigation/session";
 import type { PinsSession } from "./features/pins/session";
@@ -28,6 +29,7 @@ export type SidebarProps = {
   friends?: string[];
   vb: SidebarBridge;
   send: SendRoomCommand;
+  request: RequestRoomCommand;
   onopen: (id: string) => void;
   onarchchange: (archived: boolean) => void;
   navigation: NavigationSession;
