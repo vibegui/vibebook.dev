@@ -22,6 +22,7 @@ import {
   type ConnectionUiResult,
   CreateConnectionBody,
   type CreateConnectionResult,
+  type MeResult,
   type RefreshConnectionResult,
   type CreateSandboxResult,
   type SandboxesResult,
@@ -134,6 +135,8 @@ export interface ApiServices {
     /** null = no such sandbox of yours; throws freestyle's error. */
     terminal(sid: string): Promise<SandboxTerminalResult | null>;
   };
+  /** The home and rail's one read: your rooms, friends and waits, plus the app shell's version. */
+  me(): Promise<MeResult>;
   /** The room's MCP connections as this person sees them (src/mcpconn.ts connOps); membership is checked by the route. */
   connections: {
     list(roomId: string): Promise<ConnectionsResult>;
@@ -560,4 +563,7 @@ export const connectionsApi = sandboxApi
     return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
   });
 
-export type AppType = typeof connectionsApi;
+// Slice 10: GET /api/me (POST /api/me, your name, is slice 5).
+export const meApi = connectionsApi.get("/api/me", async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
+
+export type AppType = typeof meApi;

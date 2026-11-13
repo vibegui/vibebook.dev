@@ -370,3 +370,59 @@ export const ConnectionError = z.object({
   sign_in: z.optional(z.literal(true)),
 });
 export type ConnectionError = z.infer<typeof ConnectionError>;
+
+// Slice 10: GET /api/me, the home and rail's one read (served from the Person DO's cache while nothing changed).
+export const MeBook = z.object({
+  id: z.string(),
+  title: str,
+  folder: str,
+  summary: str,
+  updated_at: num,
+  created_at: num,
+  icon: num,
+  busy_until: num,
+  position: num,
+  tint: str,
+  opened_at: num,
+  last_human_id: z.number(),
+  last_agent_id: z.number(),
+  read_id: z.number(),
+  sandboxes_running: z.number(),
+  /** The room's members' emails, comma-separated (D1 group_concat). */
+  members: str,
+});
+export const MeFriend = z.object({
+  email: z.string(),
+  name: str,
+  avatar: num,
+  /** 1 = has an account, 0 = invited only (D1 boolean). */
+  joined: z.number(),
+  shared: z.number(),
+});
+export const MeWait = z.object({
+  book_id: z.string(),
+  room: z.string(),
+  /** m<msg> an ask to you, t<task> your task in review, a/b<msg> your Claude waiting on you. */
+  ref: z.string(),
+  thread: z.string(),
+  topic: str,
+  author: z.string(),
+  author_name: str,
+  text: z.string(),
+  ts: z.number(),
+});
+export const MeData = z.object({
+  email: z.string(),
+  name: str,
+  avatar: num,
+  books: z.array(MeBook),
+  friends: z.array(MeFriend),
+  waits: z.array(MeWait),
+});
+export type MeData = z.infer<typeof MeData>;
+/** v = the app shell's version (a new deploy makes open tabs reload); cached = served from the Person DO. */
+export const MeResult = z.extend(MeData, {
+  v: z.string(),
+  cached: z.optional(z.literal(true)),
+});
+export type MeResult = z.infer<typeof MeResult>;

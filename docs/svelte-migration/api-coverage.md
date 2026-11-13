@@ -45,7 +45,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/friends` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | DELETE | `/api/friends/:email` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | GET | `/api/mcp-oauth/callback` | `src/mcpconn.ts:245` | browser navigation / redirect | 0 | n/a (documented) |
-| GET | `/api/me` | `src/index.ts:420` | JSON RPC | 14 | todo |
+| GET | `/api/me` | `src/api.ts` | JSON RPC | 14 | tested (slice 10) |
 | POST | `/api/me` | `src/api.ts` | JSON RPC | 14 | tested (slice 5) |
 | POST | `/api/me/avatar` | `src/index.ts:492` | binary upload (typed adapter) | 1 | todo |
 | GET | `/api/me/logins` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
@@ -85,5 +85,7 @@ Slice 4 (Ligar Claude, access request, approve/deny, access status): same gates;
 Slice 5 (your name, create room, start room in one step, home router): the model's answers (start, route) are parsed with their schemas before they leave the Worker; runtime run of each status (empty 400, AI limit 429, cross-site 403, model failure 502, success).
 
 Slice 9 (MCP connections: list, create, delete, refresh, ui, call, context, signout): `mountConnections` keeps only the two browser redirects (sign-in on the server, its OAuth callback); the rest is `connOps` in `src/mcpconn.ts` behind `ApiServices.connections`, every connection still looked up by room + the signed-in person (`getConn`/`canUse`). Failures keep `{ error }` and their status (400/404/429/502), and a server that wants its own sign-in still answers 401 with `sign_in: true`. `/ui` was inventoried as an HTML resource but answers JSON (`{ html, tool }`, the page puts the HTML in srcdoc), so it is typed too (`tool` as a validated query). 46 of 49 JSON routes typed and tested; left: `GET /api/me` and the two binary uploads (room icon, avatar).
+
+Slice 10 (`GET /api/me`): the handler moves to `ApiServices.me` (`src/services.ts`, with the shell-version lookup); the Person DO cache is checked against `MeData` before it is served (an entry from an older deploy that no longer fits is recomputed), and the D1 rows are checked before they leave the Worker. Every D1 column is nullable, so a row off the schema is logged ("/api/me rows off schema") and served as before instead of failing every home. Checked locally: uncached then cached answer, same keys and counts, vanilla and `?ui=svelte` homes load with no page errors. 47 of 49; left: the two binary uploads (room icon, avatar).
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.

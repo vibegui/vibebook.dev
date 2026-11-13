@@ -5,6 +5,7 @@ import type { Client } from "./api";
 import type {
   SandboxesResult,
   ConnectionsResult,
+  MeResult,
   ConnectionCallResult,
   SandboxTerminalResult,
   AgentsResult,
@@ -242,3 +243,6 @@ void api.api.books[":id"].connections[":cid"].ui.$get({
   param: { id: "r", cid: "c" },
   query: { tool: "board" },
 });
+
+// Slice 10: GET /api/me.
+sameAs<Equal<InferResponseType<typeof api.api.me.$get, 200>, MeResult>>(true);

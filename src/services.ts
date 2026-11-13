@@ -4,14 +4,73 @@ import type { ApiServices } from "./api";
 import type { Env } from "./index";
 import { LISTEN_FRESH, poke } from "./person";
 import { EMAIL_RE } from "./auth";
-import { reqLang } from "./lang";
+import { cookieLang, reqLang } from "./lang";
+import { uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
+import { MeData, MeResult } from "../shared/schemas";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
-import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR } from "./rooms";
+import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
 import { track } from "./track";
 import { pushTo } from "./webpush";
 import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
 import { connOps } from "./mcpconn";
+
+// The app shell's version per UI variant, per isolate (a deploy is a new isolate): open tabs compare it to reload.
+const appVersions = new Map<UiVariant, string>();
+async function currentVersion(env: Env, url: string) {
+  const variant = uiVariant(url);
+  let version = appVersions.get(variant);
+  if (version === undefined) {
+    version = ((await env.ASSETS.fetch(new Request(new URL(uiShellPath(url), url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, "");
+    appVersions.set(variant, version);
+  }
+  return version;
+}
+
+/** GET /api/me: served from your Person DO while nothing changed (rooms, waits and your own writes poke it stale). */
+async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req: Request): Promise<MeResult> {
+  const db = env.DB;
+  const person = env.PEOPLE.get(env.PEOPLE.idFromName(email));
+  const cached = await person.fetch("https://person/me").catch(() => null);
+  if (cached?.ok) {
+    // A cache written by an older deploy that no longer fits the schema is recomputed, not served.
+    const hit = MeData.safeParse(await cached.json().catch(() => null));
+    if (hit.success) return { ...hit.data, v: await currentVersion(env, req.url), cached: true };
+  }
+  // One round trip's worth: the four reads run together.
+  const [books, friends, me, waits] = await Promise.all([
+    db.prepare(
+      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, b.icon, b.busy_until, m.position, m.tint, m.opened_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
+         coalesce(r.last_id, 0) AS read_id,
+         (SELECT count(*) FROM sandboxes s WHERE s.book_id = b.id AND s.state = 'running') AS sandboxes_running,
+         (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
+       FROM books b JOIN members m ON m.book_id = b.id
+       LEFT JOIN human_reads r ON r.email = m.email AND r.book_id = b.id
+       WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC`,
+    ).bind(email).all(),
+    db.prepare(
+      `SELECT f.b AS email, u.name, u.avatar, u.email IS NOT NULL AS joined,
+         (SELECT count(*) FROM members x JOIN members y ON x.book_id = y.book_id
+           WHERE x.email = f.a AND y.email = f.b) AS shared
+       FROM friends f LEFT JOIN users u ON u.email = f.b
+       WHERE f.a = ? ORDER BY shared DESC, f.b`,
+    ).bind(email).all(),
+    db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>(),
+    waitsFor(db, email),
+  ]);
+  // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
+  const lang = cookieLang(req) ?? (me?.lang ? null : reqLang(req));
+  if (me && lang && lang !== me.lang) ctx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
+  // D1 rows are checked before they leave the Worker (and before they are cached). The columns are all nullable in
+  // D1, so a row the schema doesn't expect is logged and served as before rather than taking every home down.
+  const raw = { email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits };
+  const parsed = MeData.safeParse(raw);
+  if (!parsed.success) console.error("/api/me rows off schema", parsed.error.issues.slice(0, 3));
+  const out = parsed.success ? parsed.data : (raw as MeData);
+  const gen = cached?.headers.get("x-gen");
+  if (gen) ctx.waitUntil(person.fetch("https://person/me", { method: "PUT", body: JSON.stringify(out), headers: { "x-gen": gen } }).then(() => {}, () => {}));
+  return { ...out, v: await currentVersion(env, req.url) };
+}
 
 export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req0: Request): ApiServices {
   return {
@@ -97,6 +156,7 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     checkFreestyleKey: (key) => checkFreestyleKey(env, key),
     listenFresh: LISTEN_FRESH,
     sandboxes: sandboxOps(env, ctx, email, new URL(req0.url).origin),
+    me: () => meFor(env, ctx, email, req0),
     connections: connOps(env, ctx, email, new URL(req0.url).origin, track),
   };
 }

@@ -102,6 +102,15 @@ function fixture(overrides: Partial<ApiServices> = {}) {
       terminal: async (sid) =>
         sid === "mine" ? { token: "t", url: "wss://x" } : null,
     },
+    me: async () => ({
+      email: "test@example.com",
+      name: null,
+      avatar: null,
+      books: [],
+      friends: [],
+      waits: [],
+      v: "v1",
+    }),
     connections: {
       list: async () => ({ connections: [conn] }),
       create: async (_room, b) =>
@@ -557,4 +566,10 @@ test("connections: members only, typed bodies, sign_in on 401, errors keep { err
   expect(
     (await f.json("/api/books/room/connections/c1/signout", {})).status,
   ).toBe(200);
+});
+
+test("me: the home's one read, typed end to end", async () => {
+  const f = fixture();
+  const r = await f.app.request("/api/me");
+  expect([r.status, (await r.json()).v]).toEqual([200, "v1"]);
 });
