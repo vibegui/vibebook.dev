@@ -112,3 +112,26 @@ refuses to overwrite them. Original edited files are copied into the reported
 `source-backups-*` output directory before mutation. If externally interrupted,
 restore from those backups and inspect any remaining dev processes; caught
 failures run restoration and owned-process cleanup.
+
+Cold start is staged to reduce competing compilers: the initial API/MCP builds
+finish first, Wrangler must answer its fixed loopback favicon URL, Vite must
+answer its fixed loopback client module URL, and only then is the API declaration
+watcher launched. All three remain active afterward. A missed readiness probe
+waits; it never resets a process. Signals, a child exiting during any readiness
+wait, and the bounded startup deadline clean up the active owned process groups.
+Phase names, status and measured elapsed milliseconds appear as `[dev:app]` JSON
+lines in the log and are copied into the runtime harness result.
+
+`DEV_APP_STARTUP_TIMEOUT_MS` sets only the cold-start deadline (default 180000,
+maximum 1800000). On a constrained host, use for example:
+
+```sh
+DEV_APP_STARTUP_TIMEOUT_MS=600000 bun run test:app-hmr
+```
+
+Interaction, HMR, contract/backend reload and shutdown assertions retain their
+existing deadlines. Process observation uses Linux `/proc` once per second plus
+explicit startup-cancellation and shutdown snapshots, without spawning `ps` five
+times per second. The initial API-compiler cancellation probe still takes direct
+snapshots while waiting for that process, so cancellation is exercised before a
+ready server exists.

@@ -254,30 +254,36 @@ test("request allowlist excludes tooling, caches, encoded paths and real symlink
   }
 });
 
+const readyImmediately = { probeReady: async () => true, onPhase: () => {} };
+
 test("supervisor reaps startup children on cancellation and spawn failure", async () => {
   const { runDevelopmentProcesses } = await import("./dev-app");
   for (const stage of [1, 2, 3]) {
     const signals = new EventEmitter();
     let spawns = 0;
     const children: { killed: boolean }[] = [];
-    const result = runDevelopmentProcesses(() => {
-      spawns++;
-      let end!: (code: number) => void;
-      const exited = new Promise<number>((resolve) => {
-        end = resolve;
-      });
-      const state = { killed: false };
-      children.push(state);
-      if (spawns < stage) queueMicrotask(() => end(0));
-      else queueMicrotask(() => signals.emit("SIGTERM"));
-      return {
-        exited,
-        kill() {
-          state.killed = true;
-          end(143);
-        },
-      };
-    }, signals);
+    const result = runDevelopmentProcesses(
+      () => {
+        spawns++;
+        let end!: (code: number) => void;
+        const exited = new Promise<number>((resolve) => {
+          end = resolve;
+        });
+        const state = { killed: false };
+        children.push(state);
+        if (spawns < stage) queueMicrotask(() => end(0));
+        else queueMicrotask(() => signals.emit("SIGTERM"));
+        return {
+          exited,
+          kill() {
+            state.killed = true;
+            end(143);
+          },
+        };
+      },
+      signals,
+      readyImmediately,
+    );
     expect(await result).toBe(130);
     expect(children.every((child) => child.killed)).toBe(true);
     expect(signals.listenerCount("SIGTERM")).toBe(0);
@@ -291,23 +297,27 @@ test("supervisor reaps already-started watchers when a later spawn throws", asyn
   const children: { killed: boolean }[] = [];
   let count = 0;
   try {
-    const code = await runDevelopmentProcesses(() => {
-      if (++count === 4) throw new Error("spawn failed");
-      let end!: (code: number) => void;
-      const exited = new Promise<number>((resolve) => {
-        end = resolve;
-      });
-      const state = { killed: false };
-      children.push(state);
-      if (count < 3) end(0);
-      return {
-        exited,
-        kill() {
-          state.killed = true;
-          end(143);
-        },
-      };
-    }, new EventEmitter());
+    const code = await runDevelopmentProcesses(
+      () => {
+        if (++count === 4) throw new Error("spawn failed");
+        let end!: (code: number) => void;
+        const exited = new Promise<number>((resolve) => {
+          end = resolve;
+        });
+        const state = { killed: false };
+        children.push(state);
+        if (count < 3) end(0);
+        return {
+          exited,
+          kill() {
+            state.killed = true;
+            end(143);
+          },
+        };
+      },
+      new EventEmitter(),
+      readyImmediately,
+    );
     expect(code).toBe(1);
     expect(children).toHaveLength(3);
     expect(children.every((child) => child.killed)).toBe(true);
@@ -324,23 +334,27 @@ test("completed startup groups are released before later watcher shutdown", asyn
   const ready = new Promise<void>((resolve) => {
     notifyWatchers = resolve;
   });
-  const result = runDevelopmentProcesses(() => {
-    let end!: (code: number) => void;
-    const exited = new Promise<number>((resolve) => {
-      end = resolve;
-    });
-    const state = { kills: 0, end };
-    children.push(state);
-    if (children.length <= 2) end(0);
-    if (children.length === 5) notifyWatchers();
-    return {
-      exited,
-      kill() {
-        state.kills++;
-        end(143);
-      },
-    };
-  }, signals);
+  const result = runDevelopmentProcesses(
+    () => {
+      let end!: (code: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        end = resolve;
+      });
+      const state = { kills: 0, end };
+      children.push(state);
+      if (children.length <= 2) end(0);
+      if (children.length === 5) notifyWatchers();
+      return {
+        exited,
+        kill() {
+          state.kills++;
+          end(143);
+        },
+      };
+    },
+    signals,
+    readyImmediately,
+  );
   await ready;
   expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
   expect(children.slice(2).map((child) => child.kills)).toEqual([0, 0, 0]);
@@ -348,4 +362,153 @@ test("completed startup groups are released before later watcher shutdown", asyn
   expect(await result).toBe(130);
   expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
   expect(children.slice(2).map((child) => child.kills)).toEqual([1, 1, 1]);
+});
+
+test("startup stages fixed Worker then Vite readiness before declaration watch without resetting missed probes", async () => {
+  const { runDevelopmentProcesses, DEVELOPMENT_READY_URLS } =
+    await import("./dev-app");
+  const signals = new EventEmitter();
+  const commands: string[][] = [];
+  const probes: string[] = [];
+  const phases: { name: string; status: string; elapsedMs: number }[] = [];
+  const code = await runDevelopmentProcesses(
+    (command) => {
+      commands.push(command);
+      let end!: (value: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        end = resolve;
+      });
+      if (commands.length <= 2) end(0);
+      return {
+        exited,
+        kill() {
+          end(143);
+        },
+      };
+    },
+    signals,
+    {
+      probeReady: async (url) => {
+        probes.push(url);
+        expect(commands.length).toBe(
+          url === DEVELOPMENT_READY_URLS.worker ? 3 : 4,
+        );
+        return probes.filter((value) => value === url).length > 1;
+      },
+      pause: async () => {},
+      onPhase: (phase) => {
+        phases.push(phase);
+        if (phase.name === "startup" && phase.status === "ready")
+          queueMicrotask(() => signals.emit("SIGTERM"));
+      },
+    },
+  );
+  expect(code).toBe(130);
+  expect(commands).toHaveLength(5);
+  expect(commands[2]).toContain("wrangler");
+  expect(commands[3]).toContain("vite");
+  expect(commands[4]).toContain("--watch");
+  expect(probes).toEqual([
+    DEVELOPMENT_READY_URLS.worker,
+    DEVELOPMENT_READY_URLS.worker,
+    DEVELOPMENT_READY_URLS.vite,
+    DEVELOPMENT_READY_URLS.vite,
+  ]);
+  expect(
+    phases
+      .filter((phase) => phase.status === "ready")
+      .map((phase) => phase.name),
+  ).toEqual(["build:api-types", "build:mcp", "worker", "vite", "startup"]);
+  expect(phases.every((phase) => phase.elapsedMs >= 0)).toBe(true);
+});
+
+test("startup cancellation aborts an in-flight readiness probe and never spawns later stages", async () => {
+  const { runDevelopmentProcesses } = await import("./dev-app");
+  const signals = new EventEmitter();
+  let count = 0,
+    kills = 0;
+  let probeSignal: AbortSignal | undefined;
+  const code = await runDevelopmentProcesses(
+    () => {
+      let end!: (code: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        end = resolve;
+      });
+      if (++count <= 2) end(0);
+      return {
+        exited,
+        kill() {
+          kills++;
+          end(143);
+        },
+      };
+    },
+    signals,
+    {
+      probeReady: async (_url, signal) => {
+        probeSignal = signal;
+        queueMicrotask(() => signals.emit("SIGTERM"));
+        return await new Promise<boolean>(() => {});
+      },
+      onPhase: () => {},
+    },
+  );
+  expect(code).toBe(130);
+  expect(count).toBe(3);
+  expect(kills).toBe(3);
+  expect(probeSignal?.aborted).toBe(true);
+});
+
+test("an earlier server exit and startup deadline both terminate readiness and reap active children", async () => {
+  const { runDevelopmentProcesses, DEVELOPMENT_READY_URLS, startupTimeout } =
+    await import("./dev-app");
+  const { spyOn } = await import("bun:test");
+  const error = spyOn(console, "error").mockImplementation(() => {});
+  try {
+    for (const cause of ["worker-exit", "deadline"]) {
+      let count = 0,
+        kills = 0;
+      const ends: ((code: number) => void)[] = [];
+      const code = await runDevelopmentProcesses(
+        () => {
+          let end!: (code: number) => void;
+          const exited = new Promise<number>((resolve) => {
+            end = resolve;
+          });
+          ends.push(end);
+          if (++count <= 2) end(0);
+          return {
+            exited,
+            kill() {
+              kills++;
+              end(143);
+            },
+          };
+        },
+        new EventEmitter(),
+        {
+          startupTimeoutMs: 30,
+          onPhase: () => {},
+          probeReady: async (url) => {
+            if (
+              cause === "worker-exit" &&
+              url === DEVELOPMENT_READY_URLS.worker
+            )
+              return true;
+            if (cause === "worker-exit") queueMicrotask(() => ends[2]!(0));
+            return await new Promise<boolean>(() => {});
+          },
+        },
+      );
+      expect(code).toBe(1);
+      expect(count).toBe(cause === "worker-exit" ? 4 : 3);
+      expect(kills).toBe(count);
+    }
+    expect(startupTimeout()).toBe(180000);
+    expect(startupTimeout("600000")).toBe(600000);
+    for (const value of ["0", "NaN", "-1", "1800001"])
+      expect(() => startupTimeout(value)).toThrow();
+  } finally {
+    error.mockRestore();
+  }
 });

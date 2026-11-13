@@ -2,7 +2,7 @@
 // checkout sources; never run beside another editor/server in this checkout.
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { closeSync, openSync, readFileSync } from "node:fs";
+import { closeSync, openSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { request as httpRequest } from "node:http";
 import { dirname, resolve } from "node:path";
@@ -13,6 +13,7 @@ import {
   type Browser,
   type Page,
 } from "@playwright/test";
+import { startupTimeout, DEVELOPMENT_READY_URLS } from "./dev-app";
 import { nativeBrowserFixtures } from "./native-browser-fixtures";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -21,6 +22,7 @@ const worker = "http://127.0.0.1:8787";
 const output = process.env.TEST_OUTPUT_DIR ?? "/tmp/vibebook-app-hmr-runtime";
 const expect = baseExpect.configure({ timeout: 60_000 });
 const token = randomBytes(6).toString("hex");
+const coldStartMs = startupTimeout(process.env.DEV_APP_STARTUP_TIMEOUT_MS);
 const backupRoot = resolve(output, `source-backups-${token}`);
 const result: Record<string, unknown> = {
   scope:
@@ -80,6 +82,16 @@ const responds = async (origin: string) => {
     return false;
   }
 };
+const readyEndpoint = async (url: string) => {
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(1500) });
+    const ready = response.status === 200;
+    await response.body?.cancel();
+    return ready;
+  } catch {
+    return false;
+  }
+};
 const identity = (pid: number) => {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
@@ -91,15 +103,17 @@ const identity = (pid: number) => {
 };
 function sample() {
   if (!child) return;
-  const listing = Bun.spawnSync(["ps", "-eo", "pid=,ppid=,pgid="], {
-    stdout: "pipe",
-  });
-  assert.equal(listing.exitCode, 0, "ps process listing failed");
-  const rows = listing.stdout
-    .toString()
-    .trim()
-    .split("\n")
-    .map((line) => line.trim().split(/\s+/).map(Number));
+  const rows: number[][] = [];
+  for (const name of readdirSync("/proc")) {
+    if (!/^\d+$/.test(name)) continue;
+    try {
+      const stat = readFileSync(`/proc/${name}/stat`, "utf8");
+      const fields = stat.slice(stat.lastIndexOf(")") + 2).split(/\s+/);
+      rows.push([Number(name), Number(fields[1]), Number(fields[2])]);
+    } catch {
+      /* A process may exit between the directory and stat read. */
+    }
+  }
   const parents = new Set(
     [...observed]
       .filter(([pid, value]) => identity(pid) === value.start)
@@ -129,7 +143,7 @@ async function launch(label: string) {
   });
   launcherStart = identity(child.pid);
   assert(launcherStart, "Launched dev:app identity missing");
-  sampler = setInterval(sample, 200);
+  sampler = setInterval(sample, 1000);
 }
 async function stopOwned() {
   if (!child) return;
@@ -251,9 +265,11 @@ try {
   step("Start real dev:app and wait for Worker plus source Vite");
   await launch("dev-app");
   await poll(
-    async () => (await responds(worker)) && (await responds(base)),
+    async () =>
+      (await readyEndpoint(DEVELOPMENT_READY_URLS.worker)) &&
+      (await readyEndpoint(DEVELOPMENT_READY_URLS.vite)),
     "Worker and Vite ready",
-    180_000,
+    coldStartMs,
   );
   browser = await chromium.launch({
     headless: true,
@@ -587,6 +603,32 @@ try {
   for (const path of created.reverse())
     await rm(path, { recursive: true, force: true });
   if (logFd !== undefined) closeSync(logFd);
+  const startupLog = await readFile(
+    resolve(output, "dev-app.log"),
+    "utf8",
+  ).catch(() => "");
+  result.startupPhases = startupLog.split("\n").flatMap((line) => {
+    if (!line.startsWith("[dev:app] ")) return [];
+    try {
+      const value: unknown = JSON.parse(line.slice(10));
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        "name" in value &&
+        typeof value.name === "string" &&
+        "status" in value &&
+        typeof value.status === "string" &&
+        "elapsedMs" in value &&
+        typeof value.elapsedMs === "number" &&
+        Number.isFinite(value.elapsedMs)
+      )
+        return [value];
+    } catch {
+      /* Keep child logs as evidence even if one phase line is incomplete. */
+    }
+    return [];
+  });
+  result.startupDeadlineMs = coldStartMs;
   result.sourceBackups = backupRoot;
   result.shutdowns = shutdowns;
   result.steps = steps;
