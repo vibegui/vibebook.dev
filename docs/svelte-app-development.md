@@ -71,3 +71,44 @@ declaration regeneration. Revisit the unselected room URL and verify vanilla
 assets. Check foreign-origin API writes and WebSocket handshakes still fail,
 and protected `/@fs/.../src/api.ts?raw` and private-file URLs return 403. Do not
 mark the M7 runtime gate complete solely from the pure test suite.
+
+## Opt-in runtime harness
+
+When no other memory-heavy check is running, use an isolated checkout with
+installed browser dependencies/Chromium, migrated local D1 and `DEV_EMAIL` in
+`.dev.vars`. Ports 5173 and 8787 must be free. Run:
+
+```sh
+bun run test:app-hmr
+```
+
+The harness owns the actual `dev:app` command; do not start servers separately.
+It first cancels startup during API generation and checks observed descendants
+exit. It then cold-starts the full stack, creates a local fixture room, verifies
+identity-cookie forwarding, selected source/default vanilla HTML, inaccessible
+room behavior, exact/foreign Origin API writes and room/personal/editor WebSocket
+handshakes. It probes forbidden raw/URL/config/generated/symlink/encoded paths
+against real Vite, and uses a local HTTP trap to detect cookie-bearing fetches
+caused by hostile absolute/network request targets.
+
+It temporarily edits and restores `svelte/Sidebar.svelte`, the sole stylesheet,
+`shared/schemas.ts`, `src/index.ts` and `src/api.ts`. Component/style edits must
+update the live DOM/CSS without a document navigation or room reconnect and
+preserve the existing composer draft. Shared/backend edits must regenerate real
+API declarations, reload/reconnect the room, and expose a temporary changed
+Worker route without manual builds or restarts. This does not claim preservation
+of component-local Svelte state. No generic DOM draft restoration is installed.
+
+Logs, failure screenshots and `results.json` go to
+`/tmp/vibebook-app-hmr-runtime` (override with `TEST_OUTPUT_DIR`). Linux `/proc`
+identities distinguish observed descendants from reused PIDs during shutdown.
+Short-lived descendants missed between samples are explicitly outside that
+process observation claim. OAuth provider flows, editor content collaboration,
+mobile/accessibility parity and production bundle checks remain separate gates.
+The fixture room remains in the local test database; synthetic source fixtures
+are removed. Generated API/MCP outputs follow the normal development workflow.
+Do not run beside source editors: restoration detects concurrent edits and
+refuses to overwrite them. Original edited files are copied into the reported
+`source-backups-*` output directory before mutation. If externally interrupted,
+restore from those backups and inspect any remaining dev processes; caught
+failures run restoration and owned-process cleanup.

@@ -25,6 +25,7 @@
     "scripts/dev-app.ts",
     "scripts/app-development.test.ts",
     "scripts/client-boundary-policy.test.ts",
+    "scripts/app-hmr-browser.ts",
     "scripts/browser-build.ts",
     "scripts/browser-check.ts",
     "scripts/build-collab.ts",
@@ -63,6 +64,7 @@
     "scripts/native-files.test.ts",
     "scripts/decisions.test.ts",
     "scripts/epic-order.test.ts",
-    "scripts/auth-ui.test.ts"
+    "scripts/auth-ui.test.ts",
+    "scripts/files-browser.ts"
   ]
 }
