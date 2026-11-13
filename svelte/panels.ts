@@ -1,4 +1,5 @@
 import type { Bridge, Wait } from "./types";
+import type { RequestRoomCommand } from "./roomConnection";
 import type { SendRoomCommand } from "../shared/commands";
 import type { Attachment, Room } from "./roomStore";
 export type { Task, Epic, Reminder } from "./roomStore";
@@ -29,6 +30,7 @@ export type PanelProps = {
   thread: string;
   vb: PanelBridge;
   send: Send;
+  request: RequestRoomCommand;
   waits?: Wait[];
   onopen?: (epic: string) => void;
 };

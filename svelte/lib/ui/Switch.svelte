@@ -3,6 +3,7 @@
   import { cn } from "./utils";
   let {
     checked = $bindable(false),
+    controlled = false,
     class: className,
     onchange,
     onCheckedChange,
@@ -12,6 +13,8 @@
     "type" | "checked" | "value" | "style" | "class" | "role" | "aria-checked"
   > & {
     checked?: boolean;
+    /** Reject local changes until the owner supplies the canonical checked value. */
+    controlled?: boolean;
     value?: string;
     class?: string;
     onCheckedChange?: (checked: boolean) => void;
@@ -23,11 +26,18 @@
     type="checkbox"
     role="switch"
     aria-checked={checked}
-    bind:checked
+    bind:checked={
+      () => checked,
+      (value) => {
+        if (!controlled) checked = value;
+      }
+    }
     {...rest}
     onchange={(event) => {
+      const desired = event.currentTarget.checked;
+      if (controlled) event.currentTarget.checked = checked;
       onchange?.(event);
-      onCheckedChange?.(event.currentTarget.checked);
+      onCheckedChange?.(desired);
     }}
     class={cn(
       "tw:m-0 tw:h-5 tw:w-9 tw:appearance-none tw:rounded-full tw:border tw:border-transparent tw:bg-input tw:p-0 tw:outline-none tw:transition-colors tw:checked:bg-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:motion-reduce:transition-none",
