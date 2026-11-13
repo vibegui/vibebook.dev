@@ -1,22 +1,22 @@
 {
-  "scope": "Incremental M0/M2 and native Studio/Tailwind foundation, not full migration acceptance",
-  "sourceCommit": "7023667e7485e46dd86d1ed071b964feab019ff8",
-  "capturedAt": "2026-11-12T22:34:45.522Z",
+  "scope": "Incremental native Studio task panel and shared UI; not full migration acceptance",
+  "sourceCommit": "0099513658ebb40c3d1e8f37dfae22bf4ccb935c",
+  "capturedAt": "2026-11-13T00:19:34.066Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
-    "passed": 75,
+    "passed": 77,
     "failed": 0,
-    "assertions": 349
+    "assertions": 361
   },
   "svelteCheck": {
     "preview": "0 errors and 0 warnings",
     "vanilla": "0 errors and 0 warnings"
   },
-  "logSha256": "32b8a7d6388d43ca521474d88db5552284122039f3b1eff8f43b428319990a90",
+  "logSha256": "1409dc6036b221a1def2ec6c468b0d7714e3c7e9e9bcb236d1d68108862172a8",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
-    "files": 404,
+    "files": 405,
     "backendRuntimeSources": [],
     "cloudflareWorkerTypes": [],
     "apiDeclarations": [
@@ -37,10 +37,12 @@
     "changed": []
   },
   "browserProof": {
-    "file": "docs/svelte-migration/native-foundation/browser.json",
-    "testedSourceCommit": "aa15890cf60539a3b51d063d97eb69210e136e13",
-    "identicalEmittedAssetsAt": "7023667e7485e46dd86d1ed071b964feab019ff8",
-    "scope": "Gallery and Inbox",
+    "file": "docs/svelte-migration/native-tasks/verification.json",
+    "sourceCommit": "0099513658ebb40c3d1e8f37dfae22bf4ccb935c",
+    "scopes": [
+      "Native task panel, not full feature parity/production acceptance",
+      "Gallery and Inbox"
+    ],
     "status": "pass"
   },
   "cssBoundary": {
@@ -49,10 +51,10 @@
     "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures"
   },
   "limits": [
-    "Actual authenticated Studio workspace comparison remains pending.",
-    "Full application still contains legacy host/presentation; check:styles (full) remains failing.",
-    "Gallery and Inbox browser suite uses explicit local fixtures, not authenticated production.",
-    "Gallery HMR passes with scoped resolver guard; full application/backend/shared-contract HMR remains pending.",
-    "No final performance/font budget, complete feature parity or M8 sign-off is claimed."
+    "Local DEV_EMAIL and explicit fixtures; no authenticated production acceptance.",
+    "Vanilla auto-archive is preserved; a second unfinished task isolates task-toggle verification.",
+    "A successful send means queued WebSocket data, not a server acknowledgment; actual UI persistence/reconnect is tested separately.",
+    "Full application remains transitional: legacy host/CSS, complete protocol/RPC migration and all-feature parity remain pending.",
+    "Actual authenticated Studio workspace comparisons, full app/backend/shared-contract HMR and final performance budgets remain pending."
   ]
 }
