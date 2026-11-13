@@ -196,7 +196,7 @@ export function createRoomMutations(
                   result.error === "invalid command" ||
                   result.error === "changed" ||
                   result.error === "suggestion changed" ||
-                result.error === "unknown epic"
+                  result.error === "unknown epic"
                 ) {
                   cancel();
                   state.set({ phase: "error", error: result.error });

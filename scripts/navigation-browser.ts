@@ -10,7 +10,7 @@ import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
 import { nativeBrowserFixtures } from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
-import { PostMessageResult } from "../shared/schemas";
+import { AgentsResult, MeResult, PostMessageResult } from "../shared/schemas";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -377,6 +377,65 @@ try {
       path: `${output}/navigation-form-dark-${width}.png`,
     });
   }
+  step(
+    "Checking mobile sandbox presence opens Agents and reuses the sidebar history entry",
+  );
+  const meResponse = await context.request.get(`${base}/api/me`);
+  assert(meResponse.ok());
+  const me = MeResult.parse(await meResponse.json());
+  const agentsURL = `${base}/api/books/${id}/agents`;
+  await page.route(agentsURL, async (route) => {
+    const response = await route.fetch();
+    const live = AgentsResult.parse(await response.json());
+    const presentation: AgentsResult = {
+      ...live,
+      sandboxes: [
+        ...live.sandboxes,
+        {
+          id: "readonly-presence-fixture",
+          email: me.email,
+          name: "Native sandbox presence fixture",
+          state: "running",
+          run_s: 0,
+          rate: 0.13,
+          disk_rate: 0,
+          checked_at: Date.now(),
+          created_at: Date.now(),
+        },
+      ],
+    };
+    await route.fulfill({ response, json: presentation });
+  });
+  await page.reload();
+  await show();
+  await expect(page.locator(".book")).toHaveAttribute("data-sheet", "side");
+  const sidebarHistoryLength = await page.evaluate(() => history.length);
+  await page
+    .locator("#side")
+    .getByRole("button", { name: /Native sandbox presence fixture/ })
+    .click();
+  await expect(page.locator(".book")).toHaveAttribute("data-sheet", "doc");
+  await expect(page.locator("#agentsPane")).toBeVisible();
+  assert.equal(
+    await page.evaluate(() => history.length),
+    sidebarHistoryLength,
+    "Sidebar→Agents must reuse the existing sheet entry",
+  );
+  await page.goBack();
+  await expect(page.locator(".book")).not.toHaveAttribute("data-sheet", /.+/);
+  await expect(page.locator("#agentsPane")).not.toBeVisible();
+  assert.equal(
+    new URL(page.url()).pathname,
+    `/b/${id}`,
+    "One Back closes the sheet without leaving the room",
+  );
+  await page.unroute(agentsURL);
+  result.mobileSandboxAgents = {
+    width: 390,
+    oneBackClosesSheet: true,
+    fixture:
+      "read-only typed sandbox presence metadata; no sandbox backend setup/mutation is claimed",
+  };
   step("Checking Portuguese input and navigation accessibility");
   await context.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
   await page.reload();

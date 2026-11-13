@@ -95,7 +95,9 @@
       room.epics.filter((epic) => vb.epicBusy(epic)).map((epic) => epic.id),
     ),
   );
-  const rows = $derived(visibleEpics(forest, $navigation.closed, workingEpics, true));
+  const rows = $derived(
+    visibleEpics(forest, $navigation.closed, workingEpics, true),
+  );
   const rowIds = $derived(
     new Map(rows.map((row, index) => [row.epic.id, `${uid}-row-${index}`])),
   );

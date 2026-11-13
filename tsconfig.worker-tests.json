@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["bun", "@cloudflare/workers-types"]
+    "types": [
+      "bun",
+      "@cloudflare/workers-types"
+    ]
   },
   "include": [
     "scripts/me-cache.test.ts",
@@ -10,6 +13,7 @@
     "scripts/auth-ui.test.ts",
     "scripts/native-auth.test.ts",
     "scripts/native-auth-post.test.ts",
-    "scripts/document-scope-guards.test.ts"
+    "scripts/document-scope-guards.test.ts",
+    "scripts/epic-delete-guards.test.ts"
   ]
 }
