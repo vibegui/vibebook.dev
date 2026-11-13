@@ -1,4 +1,5 @@
 import "server-only";
+import { reorderEpics } from "./epic-order";
 import { TASK_STATUSES } from "../shared/room";
 import type { PostMessageResponse } from "../shared/rpc";
 import type { RoomEvent, Room, BookMeta, Attachment, Message, Poll, Suggestion } from "../shared/room";
@@ -1775,7 +1776,12 @@ export class Book extends DurableObject<Env> {
         return this.archiveEpic(String(m.id), m.archived !== false);
       case "epic.order": // the sidebar's drag: the room's epics in this order (shared); epics left out keep theirs, new ones go last
         if (!Array.isArray(m.ids)) return;
-        m.ids.slice(0, 500).forEach((id: unknown, i: number) => this.sql.exec(`UPDATE epics SET pos = ? WHERE id = ?`, i, String(id)));
+        {
+          const now = this.sql.exec<{ id: string; pos: number | null }>(`SELECT id, pos FROM epics ORDER BY pos IS NULL, pos, ts`).toArray();
+          const order = reorderEpics(now.map((e) => e.id), m.ids);
+          // Every epic gets its index (so unplaced ones stop sorting by ts after this); only changed rows are written.
+          order.forEach((id, i) => { if (now[i].id !== id || now[i].pos !== i) this.sql.exec(`UPDATE epics SET pos = ? WHERE id = ?`, i, id); });
+        }
         return this.epicsChanged();
       case "poll.create": {
         const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
