@@ -2,7 +2,32 @@
 
 This is partial source verification, not M0–M8 completion or deployment acceptance.
 Vanilla remains the default. The Svelte preview still contains legacy integration
-code, and its generated assets require rebuilding after the remaining ports land.
+code. Remaining source ports require a fresh build and their own verification.
+
+## Opt-in release checkpoint
+
+[PR #1](https://github.com/vibegui/vibebook.dev/pull/1) is open. The complete
+repository check passed at `5e557cd` in
+[GitHub CI](https://github.com/vibegui/vibebook.dev/actions/runs/43520656881).
+At `112e264`, the expanded Linux/macOS matrix passes on Linux but fails one
+negative file-serving case on macOS. The failure is under investigation; this
+revision is not merge-ready. Neither a Linux pass nor the earlier targeted alias
+fixtures establish macOS acceptance.
+
+The production Vite build at `112e264` passed (1,054 modules, 2m 2s). Its generated
+public assets are byte-identical to the committed preview assets. The path-policy
+change therefore needs no claim of a fresh feature-browser run. Browser evidence
+and its actual source/artifact revisions are recorded in [browser/README.md](browser/README.md).
+
+Both Cloudflare preview build checks are failing. GitHub exposes dashboard links
+without the build error; the cause remains unknown pending dashboard logs. No
+deployment or production acceptance is claimed.
+
+The [controlled performance report](../performance/2026-11-13/README.md) records
+measured readiness, navigation and byte-budget regressions. It is diagnostic
+evidence, not a passing M7 result. Account/Agents/Apps and other subsequent source
+ports remain separate from this release checkpoint. The older sections below
+are historical receipts for the revisions they name.
 
 ## Combined document/sidebar checkpoint
 
