@@ -3696,7 +3696,7 @@ function J() {
       ${t.length ? r("room", t) : `<small class="mute">${h("Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu agent: “faz um app apps/enquete.html pra esta sala”.")}</small>`}</div>
     ${K.map((e) => `<div class="conn"><div class="connTop"><b>${_(e.title)}</b>${qi(e)}<small>${_(e.host)} · ${_(y(e.owner))}</small>
         <button type="button" class="ghost" data-conn-ref="${e.id}" title="${h("Atualizar")}" aria-label="${h("Atualizar")}">↻</button>${e.mine ? `<button type="button" class="ghost" data-conn-del="${e.id}" title="${h("Remover conexão")}" aria-label="${h("Remover conexão")}">${D("x", 14)}</button>` : ""}</div>
-        ${e.auth === "identity" ? e.signed_in ? `<small class="mute connWho">${h("Você entrou em {host} com a sua conta.", { host: _(e.host) })} <button type="button" class="link" data-conn-out="${e.id}">${h("Sair")}</button></small>` : `<div class="connSign"><small>${h("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: _(e.host) })}</small><a class="primary" href="/api/books/${j.id}/connections/${e.id}/signin">${h("Entrar em {host}", { host: _(e.host) })}</a></div>` : ""}
+        ${e.auth === "identity" ? e.signed_in ? `<small class="mute connWho">${h("Você entrou em {host} com a sua conta.", { host: _(e.host) })} <button type="button" class="link" data-conn-out="${e.id}">${h("Sair")}</button></small>` : `<div class="connSign"><small>${h("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: _(e.host) })}</small><a class="primary" href="/api/books/${j.id}/connections/${e.id}/signin?ui=svelte">${h("Entrar em {host}", { host: _(e.host) })}</a></div>` : ""}
         ${e.apps.length ? (() => {
 		let t = e.apps.filter((e) => e.screen), n = t.length && !Gi.has(e.id);
 		return r(e.id, n ? t : e.apps) + (t.length && t.length < e.apps.length ? `<button type="button" class="link connMore" data-conn-more="${e.id}">${n ? h("ver todas ({n})", { n: e.apps.length }) : h("só as telas")}</button>` : "");
@@ -3716,7 +3716,7 @@ function J() {
 				url: i.url.value.trim(),
 				scope: i.scope.value
 			});
-			if (e.connection?.needs_sign_in) return void (location.href = `/api/books/${j.id}/connections/${e.connection.id}/signin`);
+			if (e.connection?.needs_sign_in) return void (location.href = `/api/books/${j.id}/connections/${e.connection.id}/signin?ui=svelte`);
 			Wi = !1, K = null, J();
 		} catch (e) {
 			B(_(e.message)), t.disabled = !1, t.textContent = h("Conectar");

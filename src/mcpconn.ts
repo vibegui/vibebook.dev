@@ -9,6 +9,7 @@
 // - Agents: MCP tools `connections`, `app_call`, `app_open` (src/agent.ts).
 import * as z from "zod/mini";
 import { ConnectionContext } from "../shared/schemas";
+import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 import type { Env } from "./index";
 import { checkUrl } from "./reader";
 import { findSecret } from "./secrets";
@@ -255,7 +256,7 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
     if (!(await c.env.LOGIN_LIMIT.limit({ key: `mcpauth:${c.get("email")}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
     try {
       const w = who(c);
-      return c.redirect(await startAuth(c.env, w.origin, { email: w.email, book: x.book_id, cid: x.id, resource: x.url, back: `/b/${x.book_id}#app:${x.id}` }));
+      return c.redirect(await startAuth(c.env, w.origin, { email: w.email, book: x.book_id, cid: x.id, resource: x.url, back: uiNavigationUrl(`/b/${x.book_id}#app:${x.id}`, c.req.url, uiVariant(c.req.url)) }));
     } catch (e) { return c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String((e as Error).message).replace(/</g, "&lt;")}. <a href="/b/${x.book_id}">Voltar</a></p>`, 400); }
   });
   app.get("/api/mcp-oauth/callback", async (c: any) => {
