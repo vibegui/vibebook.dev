@@ -51,6 +51,8 @@ const pt = {
   other: "Não é você? Entrar com outro email",
   return: "Voltar ao aplicativo",
   consentError: "Não foi possível conectar este aplicativo.",
+  consentFailed:
+    "A conexão não foi concluída. Tente novamente para revisar um novo pedido, ou volte ao seu agent e conecte de novo.",
   configError:
     "Esta página não tem uma configuração válida. Recarregue ou tente abrir o link de novo.",
 } as const;
@@ -108,6 +110,8 @@ const en: Record<keyof typeof pt, string> = {
   other: "Not you? Sign in with another email",
   return: "Return to the app",
   consentError: "Couldn't connect this app.",
+  consentFailed:
+    "The connection was not completed. Retry to review a new request, or return to your agent and connect again.",
   configError:
     "This page has an invalid configuration. Reload or open the link again.",
 };
@@ -124,6 +128,7 @@ export function authText(
 }
 export function authIssue(lang: AuthLanguage, error: string) {
   const keys = {
+    "consent-failed": "consentFailed",
     timeout: "timeout",
     network: "network",
     "invalid-email": "invalidEmail",

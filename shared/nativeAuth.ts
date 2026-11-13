@@ -4,5 +4,6 @@ export const NativeAuthMetadata = z.object({
   page: z.enum(["login", "access", "consent"]),
   lang: z.enum(["pt", "en"]),
   autoAccess: z.boolean(),
+  consentFailure: z.optional(z.boolean()),
 });
 export type NativeAuthMetadata = z.infer<typeof NativeAuthMetadata>;

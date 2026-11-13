@@ -16,7 +16,11 @@ import {
   authContinuation,
   consentReturn,
 } from "../svelte/features/auth/navigation";
-import { nativeAuthHtml } from "../src/native-page";
+import {
+  nativeAuthHtml,
+  nativeAuthPage,
+  consentLoginUrl,
+} from "../src/native-page";
 import { authIssue } from "../svelte/features/auth/copy";
 import { NativeAuthMetadata } from "../shared/nativeAuth";
 const login = {
@@ -506,4 +510,51 @@ test("native shell rejects mixed asset generations and escapes the standard no-J
     'href="/authorize?client_id=x&amp;state=&quot;quoted&quot;"',
   );
   expect(html).toContain("<noscript>");
+});
+
+test("failed consent metadata creates no handle and retry remains explicit;500 presentation stays500", async () => {
+  const time = timer();
+  let calls = 0;
+  const session = createConsentSession(
+    api({
+      consent: async () => {
+        calls++;
+        return consent;
+      },
+    }),
+    "?client_id=x",
+    time.clock,
+    true,
+  );
+  expect(get(session.state)).toMatchObject({
+    context: null,
+    error: "consent-failed",
+    loading: false,
+  });
+  expect(calls).toBe(0);
+  await session.load();
+  expect(calls).toBe(1);
+  expect(get(session.state).context?.handle).toBe(consent.handle);
+  session.dispose();
+  const version = "a".repeat(20),
+    shell = `<link href="/svelte-preview/ui.css?v=${version}"><script src="/svelte-preview/app.js?v=${version}"></script>`;
+  const response = await nativeAuthPage(
+    { ASSETS: { fetch: async () => new Response(shell) } },
+    new Request("https://vibebook.test/authorize?ui=svelte&client_id=x"),
+    "consent",
+    { status: 500, consentFailure: true },
+  );
+  expect(response.status).toBe(500);
+  expect(await response.text()).toContain(
+    'name="vb-consent-failure" content="1"',
+  );
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  const login = new URL(
+    consentLoginUrl("https://vibebook.test/authorize?ui=svelte&client_id=x"),
+    "https://vibebook.test",
+  );
+  expect(login.searchParams.get("ui")).toBe("svelte");
+  expect(login.searchParams.get("next")).toBe(
+    "/authorize?ui=svelte&client_id=x",
+  );
 });

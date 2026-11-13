@@ -10,8 +10,16 @@
     api,
     search,
     lang,
-  }: { api: AuthApi; search: string; lang: AuthLanguage } = $props();
-  const session = untrack(() => createConsentSession(api, search)),
+    initialFailure = false,
+  }: {
+    api: AuthApi;
+    search: string;
+    lang: AuthLanguage;
+    initialFailure?: boolean;
+  } = $props();
+  const session = untrack(() =>
+      createConsentSession(api, search, undefined, initialFailure),
+    ),
     view = session.state;
   let submitted = $state(false);
   const text = (
@@ -19,7 +27,7 @@
     vars?: Record<string, string>,
   ) => authText(lang, key, vars);
   onMount(() => {
-    void session.load();
+    if (!initialFailure) void session.load();
     return () => session.dispose();
   });
 </script>

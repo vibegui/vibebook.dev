@@ -19,15 +19,26 @@ The native consent form requires JavaScript to fetch its context. The shell's
 standard server consent page, which works without JavaScript. Native login and
 access flows also require JavaScript; this is not a claim that the entire app
 works without it. OAuth callback navigation and provider consent POST results
-stay owned by the backend/provider. A server-rejected, expired POST may still
-return the existing provider error page; the POST behavior is preserved.
+stay owned by the backend/provider. Successful approval/denial responses and
+provider-validated OAuth error redirects retain their existing status, headers
+and cookie behavior. An opt-in POST failure without a validated redirect now
+renders a native error shell: 400 for known authorization/metadata errors, 500
+for unexpected failures (also logged server-side). Only a public
+`vb-consent-failure=1` boolean enters the HTML; no provider error detail or old
+handle is exposed. This page makes no context request on mount. Explicit Retry
+revalidates the original authorization query through the context API, creates a
+fresh transaction and asks for a new explicit decision. A signed-out POST opens
+selected login carrying only that local query, never the old POST body/handle.
+These native failure paths are implemented and unit-tested; actual expired,
+replayed, denied and infrastructure-error cookie/provider lifecycles still
+require real-browser verification.
 
 The minimal shell copies exactly one matching versioned generated app module and
 Tailwind CSS reference from the existing preview shell. Missing, duplicate,
 unversioned, or mismatched references fail visibly with 503. The shared
 `UI_VERSION_HEX_LENGTH` is used by both the builder and reference validator.
 `vb-v` equals the selected module/CSS `?v` digest. Native pages have only public
-`vb-page`, `vb-auto-access`, UI selection and locale metadata. Session cookies,
+`vb-page`, `vb-auto-access`, `vb-consent-failure`, UI selection and locale metadata. Session cookies,
 email codes, consent handles and identities are not embedded in the initial
 HTML. Room titles remain public link-preview metadata, matching existing access
 behavior. Context data arrives through schema-validated typed endpoints.
@@ -48,6 +59,8 @@ and `pedir` rule; a bare room link does not send a request.
 `native-auth.test.ts` exercises navigation safety, shell isolation/versioning,
 actual Hono adapter response validation, OAuth query preservation, deadlines,
 duplicate/error/draft handling, access polling and stale/disposed result guards.
+`native-auth-post.test.ts` checks route presentation/status/redirect choices with
+explicitly substituted provider helpers; it is not cookie/KV/provider E2E proof.
 `native-auth-dom.test.ts` compiles the actual components for DOM-level form,
 provider-link, escaping, focus, and default-denial checks; these are component
 fixtures, not E2E evidence. Run it with `bun test --conditions=browser`.

@@ -23,7 +23,7 @@
   );
 </script>
 
-{#key metadata ? metadata.page + url.origin + url.pathname + url.search + String(metadata.autoAccess) : "invalid"}
+{#key metadata ? metadata.page + url.origin + url.pathname + url.search + String(metadata.autoAccess) + String(metadata.consentFailure) : "invalid"}
   {#if !metadata}<AuthFrame title="vibebook"
       ><p role="alert">{authText("en", "configError")}</p></AuthFrame
     >
@@ -44,5 +44,10 @@
       />{:else}<AuthFrame title={authText(metadata.lang, "missing")}
         ><p>{authText(metadata.lang, "missingBody")}</p></AuthFrame
       >{/if}
-  {:else}<ConsentPage {api} search={url.search} lang={metadata.lang} />{/if}
+  {:else}<ConsentPage
+      {api}
+      search={url.search}
+      lang={metadata.lang}
+      initialFailure={!!metadata.consentFailure}
+    />{/if}
 {/key}

@@ -2,7 +2,13 @@ import { mount } from "svelte";
 import { NativeAuthMetadata } from "../../../shared/nativeAuth";
 import AuthRoot from "./AuthRoot.svelte";
 export function readNativeAuthMetadata(document: Document) {
+  const consentFailure = document.querySelector(
+    'meta[name="vb-consent-failure"]',
+  );
   const parsed = NativeAuthMetadata.safeParse({
+    ...(consentFailure
+      ? { consentFailure: consentFailure.getAttribute("content") === "1" }
+      : {}),
     page: document
       .querySelector('meta[name="vb-page"]')
       ?.getAttribute("content"),

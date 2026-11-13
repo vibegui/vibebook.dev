@@ -2,7 +2,7 @@
 // /authorize signs the person in with the normal vibebook session and asks for consent; the grant's
 // props carry only their email. The app lists and revokes grants through /api/agents.
 import { reqLang } from "./lang";
-import { nativeAuthPage } from "./native-page";
+import { nativeAuthPage,consentLoginUrl } from "./native-page";
 import { AuthorizationError, CimdFetchError, type ConsentDescription, OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { type Context, Hono } from "hono";
 import { handleAgentMcp } from "./agent";
@@ -142,7 +142,7 @@ connect.get("/authorize", async (c) => {
 
 connect.post("/authorize", async (c) => {
   const email = await identify(c);
-  if (!email) return c.redirect("/login");
+  if (!email) return c.redirect(consentLoginUrl(c.req.url));
   try {
     const oauth = c.env.OAUTH_PROVIDER;
     const form = await c.req.raw.clone().formData();
@@ -166,6 +166,13 @@ connect.post("/authorize", async (c) => {
     approved.headers.set("location", redirectTo);
     return new Response(null, { status: 302, headers: approved.headers });
   } catch (e) {
+    if (uiVariant(c.req.url) === 'svelte' && !(e instanceof AuthorizationError && e.redirectTo)) {
+      const known=e instanceof AuthorizationError || e instanceof CimdFetchError;
+      // Presentation only: the provider still owns all validation/consumption and success headers.
+      // Keep unexpected failures visible in server logs without disclosing details in the browser.
+      if(!known)console.error('Native consent POST failed',e);
+      return nativeAuthPage(c.env,c.req.raw,'consent',{status:known?400:500,consentFailure:true});
+    }
     return fail(c, e);
   }
 });

@@ -214,11 +214,12 @@ export function createConsentSession(
   api: AuthApi,
   search: string,
   clock: AuthClock = authClock,
+  initialFailure = false,
 ) {
   const state = writable({
     context: null as ConsentContext | null,
     loading: false,
-    error: "",
+    error: initialFailure ? "consent-failed" : "",
     returnTo: null as string | null,
     signedOut: false,
   });

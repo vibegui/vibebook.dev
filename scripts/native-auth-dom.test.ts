@@ -100,6 +100,7 @@ async function render(
   page: "login" | "access" | "consent",
   http: AuthApi = api(),
   lang: "pt" | "en" = "en",
+  consentFailure = false,
 ) {
   const target = document.createElement("div");
   document.body.append(target);
@@ -109,7 +110,7 @@ async function render(
       mount(AuthRoot, {
         target,
         props: {
-          metadata: { page, lang, autoAccess: false },
+          metadata: { page, lang, autoAccess: false, consentFailure },
           href:
             page === "access"
               ? "https://vibebook.test/b/abcdef?ui=svelte"
@@ -227,6 +228,14 @@ test("public metadata rejects unknown page discriminants and never routes them i
     lang: "pt",
     autoAccess: true,
   });
+  document.head.innerHTML =
+    '<meta name="vb-page" content="consent"><meta name="vb-consent-failure" content="1">';
+  expect(readNativeAuthMetadata(document)).toEqual({
+    page: "consent",
+    lang: "pt",
+    autoAccess: false,
+    consentFailure: true,
+  });
   document.head.replaceChildren();
 });
 
@@ -292,4 +301,41 @@ test("changing a native page URL disposes the old context before a late response
     target.querySelector<HTMLInputElement>('input[name="handle"]')?.value,
   ).toBe("new-handle");
   expect(navigations).toEqual([]);
+});
+
+test("native POST failure marker renders an error without context creation until explicit Retry", async () => {
+  let calls = 0;
+  const { target } = await render(
+    "consent",
+    api({
+      consent: async () => {
+        calls++;
+        return { ...consent, handle: "fresh-retry-handle" };
+      },
+    }),
+    "en",
+    true,
+  );
+  expect(calls).toBe(0);
+  expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+    "not completed",
+  );
+  expect(target.querySelector('input[name="handle"]')).toBeNull();
+  expect(target.querySelector('form[action^="/authorize"]')).toBeNull();
+  const retry = Array.from(
+    target.querySelectorAll<HTMLButtonElement>("button"),
+  ).find((button) => button.textContent?.includes("Try again"))!;
+  retry.click();
+  await settle();
+  expect(calls).toBe(1);
+  expect(
+    target.querySelector<HTMLInputElement>('input[name="handle"]')?.value,
+  ).toBe("fresh-retry-handle");
+  const form = target.querySelector<HTMLFormElement>(
+    'form[action^="/authorize"]',
+  )!;
+  expect(new FormData(form).get("decision")).toBeNull();
+  expect(
+    form.querySelector<HTMLButtonElement>('button[name="decision"]')!.value,
+  ).toBe("deny");
 });
