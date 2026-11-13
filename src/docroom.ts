@@ -1,6 +1,7 @@
 import { YDurableObjects } from "y-durableobjects";
 import type { Env } from "./index";
 import { bookStub } from "./rooms";
+import { registerDocSocket } from "./docroom-socket";
 
 /**
  * One live co-editing relay per doc (the room's, or an epic's): a Yjs CRDT on a Durable Object, speaking the
@@ -12,6 +13,13 @@ import { bookStub } from "./rooms";
  * @vibe/agent writes flow back in through setText.
  */
 export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
+  protected registerWebSocket(ws: WebSocket) {
+    // 1.0.5's setup and notification listener send without checking readyState.
+    // Hibernation can enumerate closing sockets; awareness removal broadcasts
+    // while other kicked peers are already closed. Keep actual socket identity
+    // for inherited unregister/storage cleanup, and guard every dependency send.
+    registerDocSocket(ws, this.sessions, (view) => super.registerWebSocket(view));
+  }
   // A socket closing threw a bare "close" 3× on 10/11 (hibernatable WebSocket, no stack): name the DO in the log so the
   // next one says where it came from, and don't let it surface as a Worker exception.
   async webSocketClose(ws: WebSocket) {
