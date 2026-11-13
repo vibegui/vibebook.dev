@@ -1,10 +1,17 @@
 /** Temporary DOM ownership adapter for the legacy shell; never remount the native board. */
+export function getBoardContainer(book: HTMLElement) {
+  // Message HTML may contain duplicate IDs/classes. Only shell-owned children count.
+  return book.querySelector<HTMLElement>(
+    ":scope > .chat > #kanban, :scope > .doc > #kanban",
+  );
+}
+
 export function moveBoardContainer(
   book: HTMLElement,
   target: Element | null,
   before: Node | null = null,
 ) {
-  const board = book.querySelector<HTMLElement>("#kanban");
+  const board = getBoardContainer(book);
   if (!board || !target || board.parentElement === target) return;
   const active = book.ownerDocument.activeElement;
   const focused =

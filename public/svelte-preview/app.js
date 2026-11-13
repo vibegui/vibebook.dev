@@ -4,4 +4,4 @@ if (new URLSearchParams(location.search).get("gallery") === "1") {
 	if (!e) throw Error("Missing gallery root");
 	let { mountGallery: t } = await import("./main-BHByzGQQ.js");
 	t(e);
-} else await import("./host-BoTce2PF.js");
+} else await import("./host-CkJJzsOn.js");

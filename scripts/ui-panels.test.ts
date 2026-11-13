@@ -8,6 +8,7 @@ import type { RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
 import { boardModel } from "../svelte/features/board/model";
 import {
+  getBoardContainer,
   moveBoardContainer,
   watchBoardLayout,
 } from "../svelte/legacy/boardLayout";
@@ -572,7 +573,13 @@ describe("native Svelte room panels", () => {
     const book = document.createElement("div");
     book.className = "book boardview";
     const chat = document.createElement("main");
+    chat.className = "chat";
     const doc = document.createElement("aside");
+    doc.className = "doc";
+    const messages = document.createElement("div");
+    messages.innerHTML =
+      '<div id="kanban" class="doc">Untrusted markdown</div>';
+    chat.append(messages);
     const board = document.createElement("div");
     board.id = "kanban";
     const composer = document.createElement("form");
@@ -584,12 +591,15 @@ describe("native Svelte room panels", () => {
     book.append(chat, doc);
     document.body.append(book);
     draft.focus();
+    expect(getBoardContainer(book)).toBe(board);
     moveBoardContainer(book, chat, composer);
+    expect(messages.firstElementChild?.parentElement).toBe(messages);
     expect(board.parentElement).toBe(chat);
     expect(board.nextSibling).toBe(composer);
     expect(draft.value).toBe("Preserved layout draft");
     expect(document.activeElement).toBe(draft);
     moveBoardContainer(book, doc);
+    expect(getBoardContainer(book)).toBe(board);
     expect(board.parentElement).toBe(doc);
     expect(document.activeElement).toBe(draft);
     const callbacks: (() => void)[] = [];

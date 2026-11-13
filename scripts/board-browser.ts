@@ -80,7 +80,7 @@ try {
     if (message.type() === "error") errors.push(message.text());
   });
   const board = page.getByRole("region", { name: "Task board", exact: true });
-  const showBoard = async () => {
+  const showBoard = async (region = board) => {
     const toggle = page.locator("#toggleBoard");
     await expect(toggle).toBeAttached();
     if (await toggle.isVisible()) {
@@ -95,7 +95,7 @@ try {
       }
       await tab.click();
     }
-    await expect(board).toBeVisible();
+    await expect(region).toBeVisible();
     await expect.poll(() => ready).toBe(true);
   };
   const navigate = async (path: string) => {
@@ -347,14 +347,13 @@ try {
   await board.screenshot({ path: `${output}/board-scroll-390.png` });
   step("Checking Portuguese labels, accented input and list accessibility");
   await context.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
+  ready = false;
   await page.reload();
-  await expect(page.locator("#toggleBoard")).toBeVisible();
-  await page.locator("#toggleBoard").click();
   const portuguese = page.getByRole("region", {
     name: "Quadro de tarefas",
     exact: true,
   });
-  await expect(portuguese).toBeVisible();
+  await showBoard(portuguese);
   await expect(
     portuguese
       .locator("[data-board-task]")
