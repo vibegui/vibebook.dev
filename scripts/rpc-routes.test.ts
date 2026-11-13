@@ -198,6 +198,7 @@ function fixture(overrides: Partial<ApiServices> = {}) {
               {
                 book_id: "r1",
                 room: "Room",
+                who: "a@test.vibebook.dev",
                 msg_id: 8,
                 arm: "jev",
                 decision: "ignore",

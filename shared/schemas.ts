@@ -554,6 +554,7 @@ export const RouterStats = z.object({
     z.object({
       book_id: z.string(),
       room: z.nullable(z.string()),
+      who: z.string(),
       msg_id: z.number(),
       arm: z.string(),
       decision: z.string(),
