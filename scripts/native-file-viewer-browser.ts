@@ -134,7 +134,7 @@ try {
       "image/png",
     ),
     audio = await upload("viewer.wav", wav(), "audio/wav"),
-    document = await upload("viewer.pdf", pdf(), "application/pdf");
+    pdfFile = await upload("viewer.pdf", pdf(), "application/pdf");
   result.files = {
     old: old.id,
     newest: newest.id,
@@ -142,7 +142,7 @@ try {
     csv: csv.id,
     image: image.id,
     audio: audio.id,
-    pdf: document.id,
+    pdf: pdfFile.id,
   };
   const vanilla = await context.request.get(`${base}/b/${id}`);
   assert(
@@ -233,10 +233,10 @@ try {
     .locator("body")
     .press("Escape");
   await expect(page.locator("[data-file-viewer]")).not.toBeVisible();
-  await open(document.id);
+  await open(pdfFile.id);
   await expect(page.locator("[data-file-viewer] iframe")).toHaveAttribute(
     "src",
-    `/api/books/${id}/files/${document.id}?ui=svelte`,
+    `/api/books/${id}/files/${pdfFile.id}?ui=svelte`,
   );
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });

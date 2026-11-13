@@ -205,9 +205,12 @@ test("CSV pagination bounds active cells and reports omitted parsed columns with
   expect(document.querySelector("[data-file-viewer]")?.textContent).toContain(
     "Preview shortened",
   );
-  const next = [...document.querySelectorAll("button")].find(
-    (button) => button.textContent === "Next rows",
-  )!;
+  const next = [...document.querySelectorAll("[data-file-viewer] button")].find(
+    (button) => button.textContent?.trim() === "Next rows",
+  );
+  expect(next).toBeInstanceOf(HTMLButtonElement);
+  if (!(next instanceof HTMLButtonElement))
+    throw new Error("CSV next-page control is missing");
   next.click();
   await settle();
   expect(document.querySelector("[data-file-viewer] th")?.textContent).toBe(
