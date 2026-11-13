@@ -187,3 +187,62 @@ export const RouteResult = z.object({
   cost: z.number(),
 });
 export type RouteResult = z.infer<typeof RouteResult>;
+
+// Slice 6: the person's freestyle API key and Claude subscription token (sealed on the server, never sent back).
+export const ConnectedResult = z.object({ connected: z.boolean() });
+export type ConnectedResult = z.infer<typeof ConnectedResult>;
+export const FreestyleKeyBody = z.object({ key: z.optional(z.string()) });
+export const ClaudeTokenBody = z.object({ token: z.optional(z.string()) });
+
+// Slice 7: a room's Claudes (people's own agents) and cloud sandboxes, for Pessoas and the ✻ pane.
+const num = z.nullable(z.number());
+const str = z.nullable(z.string());
+export const AgentLimits = z.record(
+  z.string(),
+  z.object({ p: z.number(), r: z.number() }),
+);
+export const AgentContext = z.object({
+  tokens: z.number(),
+  window: z.number(),
+  at: num,
+  limits: z.nullable(AgentLimits),
+});
+export const RoomAgent = z.object({
+  email: z.string(),
+  who: z.string(),
+  repo: str,
+  seen_at: num,
+  listening: z.boolean(),
+  all_rooms: z.boolean(),
+  context: z.nullable(AgentContext),
+});
+export const RoomSandbox = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: str,
+  state: str,
+  run_s: num,
+  rate: num,
+  disk_rate: num,
+  checked_at: num,
+  created_at: num,
+});
+export const AgentsResult = z.object({
+  claude_on: z.boolean(),
+  sandboxes: z.array(RoomSandbox),
+  agents: z.array(RoomAgent),
+});
+export type AgentsResult = z.infer<typeof AgentsResult>;
+/** One agents row as D1 returns it (parsed on the server before it becomes a RoomAgent). */
+export const AgentDbRow = z.object({
+  email: z.string(),
+  who: str,
+  repo: str,
+  seen_at: num,
+  listening_at: num,
+  listen_room: str,
+  ctx_tokens: num,
+  ctx_window: num,
+  ctx_at: num,
+  ctx_limits: str,
+});

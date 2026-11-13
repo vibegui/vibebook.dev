@@ -3,6 +3,8 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  AgentsResult,
+  ConnectedResult,
   CreateRoomResult,
   RouteResult,
   SetNameResult,
@@ -159,3 +161,26 @@ sameAs<
 sameAs<Equal<InferResponseType<typeof api.api.route.$post, 200>, RouteResult>>(
   true,
 );
+
+// Slice 6: freestyle key and Claude token.
+void api.api.freestyle.$post({ json: { key: "fs-key" } });
+void api.api["claude-token"].$post({ json: { token: "sk-ant-x" } });
+// @ts-expect-error key is a string
+void api.api.freestyle.$post({ json: { key: 5 } });
+sameAs<
+  Equal<InferResponseType<typeof api.api.freestyle.$get, 200>, ConnectedResult>
+>(true);
+sameAs<
+  Equal<InferResponseType<typeof api.api.freestyle.$delete, 200>, OkResult>
+>(true);
+
+// Slice 7: a room's Claudes and sandboxes.
+void api.api.books[":id"].agents.$get({ param: { id: "r" } });
+// @ts-expect-error the room id is required
+void api.api.books[":id"].agents.$get({ param: {} });
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["agents"]["$get"], 200>,
+    AgentsResult
+  >
+>(true);

@@ -49,6 +49,16 @@ export async function loadKey(env: Env, email: string, table: Vault = "freestyle
   return new TextDecoder().decode(pt);
 }
 
+/** Does freestyle accept this API key? null = yes, else its reason (POST /api/freestyle, before sealing it). */
+export async function checkFreestyleKey(env: Env, key: string): Promise<string | null> {
+  useEnv(env);
+  try {
+    await fs(key, "GET", "/v5/vms?limit=1");
+    return null;
+  } catch (e) {
+    return (e as Error).message;
+  }
+}
 /** One freestyle REST call with the person's key. Throws an Error with freestyle's message. */
 const useEnv = (env: Env) => { if (env.FREESTYLE_API) API = env.FREESTYLE_API; };
 export async function fs<T = any>(key: string, method: string, path: string, body?: unknown): Promise<T> {
@@ -233,43 +243,7 @@ export function mountSandbox(app: any, deps: { isMember: (db: D1Database, id: st
   const key = async (c: any): Promise<string | null> => loadKey(c.env, c.get("email")).catch(() => null);
   const mine = (c: any, sid: string) => c.env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, c.get("email")).first() as Promise<Row | null>;
 
-  app.get("/api/freestyle", async (c: any) => c.json({ connected: !!(await c.env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(c.get("email")).first()) }));
-  // The person's Claude subscription token (from `claude setup-token` in their own terminal): sandboxes start logged in.
-  app.post("/api/claude-token", async (c: any) => {
-    const email = c.get("email");
-    if (!(await c.env.LOGIN_LIMIT.limit({ key: `ct:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
-    const { token } = await c.req.json().catch(() => ({}));
-    // The terminal wraps the long token over lines: copied, it comes with spaces/newlines in the middle.
-    const tok = String(token ?? "").replace(/\s+/g, "");
-    if (!/^sk-ant-[A-Za-z0-9_.-]{20,2000}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." }, 400);
-    await saveKey(c.env, email, tok, "claude_tokens");
-    c.executionCtx.waitUntil(deps.track(c.env, "claude_token_saved", { user: email }));
-    return c.json({ ok: true });
-  });
-  app.delete("/api/claude-token", async (c: any) => {
-    await c.env.DB.prepare(`DELETE FROM claude_tokens WHERE email = ?`).bind(c.get("email")).run();
-    return c.json({ ok: true });
-  });
-  app.post("/api/freestyle", async (c: any) => {
-    const email = c.get("email");
-    if (!(await c.env.LOGIN_LIMIT.limit({ key: `fs:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
-    const { key: k } = await c.req.json().catch(() => ({}));
-    const apiKey = String(k ?? "").trim();
-    if (apiKey.length < 16 || apiKey.length > 400) return c.json({ error: "Essa não parece uma API key do freestyle." }, 400);
-    try {
-      await fs(apiKey, "GET", "/v5/vms?limit=1");
-    } catch (e) {
-      return c.json({ error: `O freestyle recusou a key: ${(e as Error).message}` }, 400);
-    }
-    await saveKey(c.env, email, apiKey);
-    c.executionCtx.waitUntil(deps.track(c.env, "freestyle_connected", { user: email }));
-    return c.json({ ok: true });
-  });
-  app.delete("/api/freestyle", async (c: any) => {
-    await c.env.DB.prepare(`DELETE FROM freestyle_keys WHERE email = ?`).bind(c.get("email")).run();
-    return c.json({ ok: true });
-  });
-
+  // /api/freestyle and /api/claude-token are typed routes now (src/api.ts, slice 6).
   app.get("/api/books/:id/sandboxes", async (c: any) => {
     const email = c.get("email"), id = c.req.param("id");
     if (!(await deps.isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);

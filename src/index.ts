@@ -1,4 +1,4 @@
-import { homeApi, type ApiServices } from "./api";
+import { agentsApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -25,7 +25,7 @@ import { requestContext, track } from "./track";
 import { pushTo } from "./webpush";
 export { Book } from "./book";
 export { Person } from "./person";
-import { LISTEN_FRESH, markListening, poke, pokeRoom } from "./person";
+import { markListening, poke, pokeRoom } from "./person";
 export { DocRoom } from "./docroom";
 
 export type Env = {
@@ -527,47 +527,14 @@ app.get("/api/avatar/:email", (c) =>
 
 // The agents of this room's members: model/client, last seen, and whether they're listening to this room now.
 // Search everything of yours (⌘K): messages, epics (archived too) and attached files across your rooms.
-app.get("/api/books/:id/agents", async (c) => {
-  const id = c.req.param("id");
-  const now = Date.now();
-  // In parallel; your own members row is also the membership check.
-  const [r, mine, sbx] = await Promise.all([c.env.DB.prepare(
-    // Only the sessions connected to this room: listening to it (or to all their rooms), or that read/posted here in the last hour.
-    `SELECT a.id, a.email, coalesce(a.model, a.client) AS who, a.repo, a.seen_at, a.listening_at, a.listen_room, a.ctx_tokens, a.ctx_window, a.ctx_at, a.ctx_limits
-     FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?1
-     LEFT JOIN agent_reads r ON r.agent = a.id AND r.book_id = ?1
-     WHERE substr(a.id, 1, 2) != 'n_' AND (((a.listen_room = ?1 OR a.listen_room IS NULL) AND a.listening_at > ?2) OR r.seen_at > ?3)
-     ORDER BY a.seen_at DESC LIMIT 40`,
-  )
-    .bind(id, now - LISTEN_FRESH, now - 3600_000)
-    .all<{ id: string; email: string; who: string; repo: string | null; seen_at: number; listening_at: number | null; listen_room: string | null; ctx_tokens: number | null; ctx_window: number | null; ctx_at: number | null; ctx_limits: string | null }>(),
-  c.env.DB.prepare(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`).bind(id, c.get("email")).first<{ claude_on: number | null }>(),
-  // Everyone's cloud sandboxes in this room, as last seen by their owner's list (src/sandbox.ts): they cost money.
-  c.env.DB.prepare(`SELECT id, email, name, state, run_s, rate, disk_rate, checked_at, created_at FROM sandboxes WHERE book_id = ? ORDER BY created_at`).bind(id).all()]);
-  if (!mine) return c.json({ error: "forbidden" }, 403);
-  return c.json({
-    claude_on: !!mine?.claude_on,
-    sandboxes: sbx.results,
-    agents: r.results.map((a) => ({
-      email: a.email,
-      who: a.who || "agent",
-      repo: a.repo,
-      seen_at: a.seen_at,
-      // A listener long-polls every ≤50s; 2 minutes of silence means it stopped.
-      listening: !!a.listening_at && now - a.listening_at < LISTEN_FRESH && (a.listen_room === id || !a.listen_room),
-      all_rooms: !a.listen_room,
-      // How full its context was at its last call (only from the CLI inside Claude Code); older than 1h = unknown.
-      context: a.ctx_tokens != null && a.ctx_window && now - (a.ctx_at ?? 0) < 3600_000 ? { tokens: a.ctx_tokens, window: a.ctx_window, at: a.ctx_at, limits: a.ctx_limits ? JSON.parse(a.ctx_limits) : null } : null,
-    })),
-  });
-});
+// GET /api/books/:id/agents is a typed route now (src/api.ts, slice 7).
 
 // Home composer: suggest where a message should go, then post it there.
 
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", homeApi);
+app.route("/", agentsApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.

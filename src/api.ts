@@ -12,6 +12,13 @@ import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  AgentDbRow,
+  AgentLimits,
+  type AgentsResult,
+  RoomSandbox,
+  ClaudeTokenBody,
+  type ConnectedResult,
+  FreestyleKeyBody,
   CreateRoomBody,
   type CreateRoomResult,
   RouteResult,
@@ -90,6 +97,14 @@ export interface ApiServices {
   routeHome(text: string): Promise<unknown | false>;
   /** The request came from our own pages (no Origin, or ours). */
   sameOrigin: boolean;
+  /** Per-person rate limit for pasting secrets (LOGIN_LIMIT): false = over it. */
+  allowSecretTry(key: string): Promise<boolean>;
+  /** Seal and keep one of the person's secrets (replaces the old one). */
+  saveSecret(table: "freestyle_keys" | "claude_tokens", value: string): Promise<void>;
+  /** Ask freestyle whether this API key works: null = it does, else freestyle's reason. */
+  checkFreestyleKey(key: string): Promise<string | null>;
+  /** How recent a listener's last call must be to count as listening (ms). */
+  listenFresh: number;
 }
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
@@ -311,4 +326,92 @@ export const homeApi = roomApi
     }
   });
 
-export type AppType = typeof homeApi;
+// Slice 6: your freestyle.sh key and Claude subscription token (cloud agents). Only "connected" ever comes back.
+const tooMany = { error: "Muitas tentativas. Espera um minuto." } satisfies ErrorBody;
+export const keysApi = homeApi
+  .get("/api/freestyle", async (c) => {
+    const rows = await c.get("svc").sqlAll(`SELECT 1 FROM freestyle_keys WHERE email = ?`, c.get("email"));
+    return c.json({ connected: rows.length > 0 } satisfies ConnectedResult, 200);
+  })
+  .post("/api/freestyle", body(FreestyleKeyBody), async (c) => {
+    const svc = c.get("svc");
+    if (!(await svc.allowSecretTry(`fs:${c.get("email")}`))) return c.json(tooMany, 429);
+    const key = (c.req.valid("json").key ?? "").trim();
+    if (key.length < 16 || key.length > 400) return c.json({ error: "Essa não parece uma API key do freestyle." } satisfies ErrorBody, 400);
+    const refused = await svc.checkFreestyleKey(key);
+    if (refused !== null) return c.json({ error: `O freestyle recusou a key: ${refused}` } satisfies ErrorBody, 400);
+    await svc.saveSecret("freestyle_keys", key);
+    svc.track("freestyle_connected");
+    return c.json(ok, 200);
+  })
+  .delete("/api/freestyle", async (c) => {
+    await c.get("svc").sql(`DELETE FROM freestyle_keys WHERE email = ?`, c.get("email"));
+    return c.json(ok, 200);
+  })
+  // The person's Claude subscription token (from `claude setup-token` in their own terminal): sandboxes start logged in.
+  .post("/api/claude-token", body(ClaudeTokenBody), async (c) => {
+    const svc = c.get("svc");
+    if (!(await svc.allowSecretTry(`ct:${c.get("email")}`))) return c.json(tooMany, 429);
+    // The terminal wraps the long token over lines: copied, it comes with spaces/newlines in the middle.
+    const tok = (c.req.valid("json").token ?? "").replace(/\s+/g, "");
+    if (!/^sk-ant-[A-Za-z0-9_.-]{20,2000}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." } satisfies ErrorBody, 400);
+    await svc.saveSecret("claude_tokens", tok);
+    svc.track("claude_token_saved");
+    return c.json(ok, 200);
+  })
+  .delete("/api/claude-token", async (c) => {
+    await c.get("svc").sql(`DELETE FROM claude_tokens WHERE email = ?`, c.get("email"));
+    return c.json(ok, 200);
+  });
+
+// Slice 7: the room's Claudes (sessions connected to this room) and everyone's cloud sandboxes in it.
+const limitsOf = (s: string | null) => {
+  try {
+    const r = AgentLimits.safeParse(s ? JSON.parse(s) : null);
+    return r.success ? r.data : null;
+  } catch {
+    return null;
+  }
+};
+export const agentsApi = keysApi.get("/api/books/:id/agents", async (c) => {
+  const svc = c.get("svc"), id = c.req.param("id"), now = Date.now();
+  // In parallel; your own members row is also the membership check.
+  const [rows, mine, sbx] = await Promise.all([
+    // Only the sessions connected to this room: listening to it (or to all their rooms), or that read/posted here in the last hour.
+    svc.sqlAll(
+      `SELECT a.email, coalesce(a.model, a.client) AS who, a.repo, a.seen_at, a.listening_at, a.listen_room, a.ctx_tokens, a.ctx_window, a.ctx_at, a.ctx_limits
+       FROM agents a JOIN members m ON m.email = a.email AND m.book_id = ?1
+       LEFT JOIN agent_reads r ON r.agent = a.id AND r.book_id = ?1
+       WHERE substr(a.id, 1, 2) != 'n_' AND (((a.listen_room = ?1 OR a.listen_room IS NULL) AND a.listening_at > ?2) OR r.seen_at > ?3)
+       ORDER BY a.seen_at DESC LIMIT 40`,
+      id,
+      now - svc.listenFresh,
+      now - 3600_000,
+    ),
+    svc.sqlAll(`SELECT claude_on FROM members WHERE book_id = ? AND email = ?`, id, c.get("email")),
+    // Everyone's cloud sandboxes in this room, as last seen by their owner's list (src/sandbox.ts): they cost money.
+    svc.sqlAll(`SELECT id, email, name, state, run_s, rate, disk_rate, checked_at, created_at FROM sandboxes WHERE book_id = ? ORDER BY created_at`, id),
+  ]);
+  const me = mine[0] as { claude_on?: number | null } | undefined;
+  if (!me) return c.json(forbidden, 403);
+  const out: AgentsResult = {
+    claude_on: !!me.claude_on,
+    sandboxes: sbx.map((s) => RoomSandbox.parse(s)),
+    agents: rows.map((row) => {
+      const a = AgentDbRow.parse(row);
+      return {
+        email: a.email,
+        who: a.who || "agent",
+        repo: a.repo,
+        seen_at: a.seen_at,
+        listening: !!a.listening_at && now - a.listening_at < svc.listenFresh && (a.listen_room === id || !a.listen_room),
+        all_rooms: !a.listen_room,
+        // How full its context was at its last call (only from the CLI inside Claude Code); older than 1h = unknown.
+        context: a.ctx_tokens != null && a.ctx_window && now - (a.ctx_at ?? 0) < 3600_000 ? { tokens: a.ctx_tokens, window: a.ctx_window, at: a.ctx_at, limits: limitsOf(a.ctx_limits) } : null,
+      };
+    }),
+  };
+  return c.json(out, 200);
+});
+
+export type AppType = typeof agentsApi;
