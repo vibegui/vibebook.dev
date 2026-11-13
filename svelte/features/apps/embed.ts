@@ -23,9 +23,11 @@ export function mountNativeChatApp(options: {
   locale: string;
   open(url: string): void;
 }) {
-  const initial = options.room(),
-    authority = options.authority;
-  if (!initial || !authority) return () => {};
+  const candidate = options.room(),
+    candidateAuthority = options.authority;
+  if (!candidate || !candidateAuthority) return () => {};
+  const initial: Room = candidate,
+    authority: AppsAuthority = candidateAuthority;
   const roomId = initial.id,
     account = initial.me,
     frame = options.frame,

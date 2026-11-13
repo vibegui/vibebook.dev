@@ -193,7 +193,7 @@ export function createTerminalSession(
       let created: TerminalRenderer | null = null,
         acceptingRenderer = true;
       try {
-        created = await lease.run(
+        created = await lease.run<TerminalRenderer>(
           () =>
             factory(
               {

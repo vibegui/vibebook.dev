@@ -139,10 +139,11 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
   bridge.oninitialized = () => {
     if (initialized || !current()) return;
     initialized = true;
-    if (!options.first) return;
+    const first = options.first;
+    if (!first) return;
     void (async () => {
       await bridge.sendToolInput({ arguments: {} });
-      const result = await options.first;
+      const result = await first;
       if (current()) await bridge.sendToolResult(result);
     })().catch(() => {});
   };

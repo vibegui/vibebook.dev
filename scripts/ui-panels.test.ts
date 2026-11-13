@@ -1834,20 +1834,44 @@ describe("native Svelte chat", () => {
     expect(target.querySelectorAll('[data-native-reply="1"]')).toHaveLength(1);
   }, 30_000);
   test("empty failed initial history mounts the real older control and clicks explicit retry", async () => {
-    const { createChatViewport } = await import("../svelte/features/chat-viewport/controller");
+    const { createChatViewport } =
+      await import("../svelte/features/chat-viewport/controller");
     const room = { ...fixture(), messages: [] };
     let queued = false;
     const sent: RoomCommand[] = [];
-    const owner = createChatViewport({ current: () => true, send: (command) => { sent.push(command); return queued; }, render: () => {}, selectThread: () => {}, notice: () => {}, schedule: () => 0, cancel: () => {} });
+    const owner = createChatViewport({
+      current: () => true,
+      send: (command) => {
+        sent.push(command);
+        return queued;
+      },
+      render: () => {},
+      selectThread: () => {},
+      notice: () => {},
+      schedule: () => 0,
+      cancel: () => {},
+    });
     try {
-      owner.sync(room, "e", 1, true); owner.ensureFilled();
-      const { target } = renderChat(room, { ...owner.selection(), onloadolder: () => owner.loadOlder() });
+      owner.sync(room, "e", 1, true);
+      owner.ensureFilled();
+      const { target } = renderChat(room, {
+        ...owner.selection(),
+        onloadolder: () => owner.loadOlder(),
+      });
       const button = target.querySelector<HTMLButtonElement>("#olderBtn");
-      expect(button).not.toBeNull(); expect(button?.disabled).toBe(false);
-      owner.ensureFilled(); expect(sent).toHaveLength(1);
-      queued = true; button!.click();
-      expect(sent).toEqual([{ t: "older", thread: "e", before: 0 }, { t: "older", thread: "e", before: 0 }]);
-    } finally { owner.dispose(); }
+      expect(button).not.toBeNull();
+      expect(button?.disabled).toBe(false);
+      owner.ensureFilled();
+      expect(sent).toHaveLength(1);
+      queued = true;
+      button!.click();
+      expect(sent).toEqual([
+        { t: "older", thread: "e", before: 0 },
+        { t: "older", thread: "e", before: 0 },
+      ]);
+    } finally {
+      owner.dispose();
+    }
   }, 30_000);
   test("quotes, native actions, origin and quiet notices survive chat refresh", () => {
     const origin = message(7, "Original request");

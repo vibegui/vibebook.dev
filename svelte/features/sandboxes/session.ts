@@ -20,6 +20,14 @@ import {
 } from "../agents/model";
 import type { SandboxCredentials } from "./credentials";
 export type SandboxCard = SandboxesResult["sandboxes"][number];
+type SandboxWriteResult = Awaited<
+  ReturnType<
+    | AgentsApi["create"]
+    | AgentsApi["setup"]
+    | AgentsApi["remove"]
+    | AgentsApi["power"]
+  >
+>;
 export type SandboxState = {
   data: SandboxesResult | null;
   loading: boolean;
@@ -272,7 +280,7 @@ export function createSandboxSession(
       created: null,
     }));
     try {
-      const result = await writer.run(
+      const result = await writer.run<SandboxWriteResult>(
         (signal) =>
           kind === "create"
             ? api.create(roomId, input, signal)
