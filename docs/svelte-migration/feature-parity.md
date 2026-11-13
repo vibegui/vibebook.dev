@@ -10,6 +10,8 @@ Ongoing vanilla additions are mandatory parity requirements: `2d5dbfe` adds comp
 
 Incremental native task evidence is recorded in [native-tasks](native-tasks/README.md). It covers local task actions, persistence, reconnect, dialogs and selected theme/accessibility profiles; F27 remains pending until every applicable final-parity dimension above passes.
 
+Incremental native board/list evidence is recorded in [native-board](native-board/README.md). It covers room and epic task creation, status controls, keyboard and real mouse drag, focus, board/list persistence, responsive layout transitions, English/Portuguese, accessibility and disconnected-send recovery. F28 remains pending until every applicable final-parity dimension and the final deployed revision are verified.
+
 Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) add consistent agent/file/embed presentation, Escape inside viewer frames and a versioned HTML panel alongside chat. The viewer must follow incoming versions until an older version is selected, support fullscreen and return-to-doc controls, and preserve chat interaction. Include these in F15/F34/F35/F49; local baseline integration and native verification remain pending.
 
 | ID | Capability and required actions | Baseline owner / current integration | Native target | Final evidence |
@@ -30,7 +32,7 @@ Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) a
 | F14 | Room connection, complete snapshots, patches, reconnect/backoff and stale callback rejection | `roomConnection.ts`, `roomStore.ts`, `openBook`, `onEvent` | typed room session service | Pending |
 | F15 | Chat window, continuity/grouping, dates, origins and origin-thread navigation | `Chat.svelte`, `Message.svelte`, `renderChat` | `features/chat` | Pending |
 | F16 | Older history, loading/error/end states, scroll anchoring and deep-message paging | `pullOlder`, `loadOlder`, `goToMsg`, `syncEnd` | `features/chat` | Pending |
-| F17 | Compose/send, typing, send errors/retry and draft retention scoped to room/thread | `renderBook` composer event wiring | `features/composer` | Pending |
+| F17 | Compose/send, typing, Hold-Space speech, microphone permission/cancellation, send errors/retry and draft retention scoped to room/thread | `renderBook` composer event wiring | `features/composer` | Pending |
 | F18 | Mentions, emoji picker/autocomplete, paste and safe rich text/links | `renderPop`, `renderTray`, `mentions`, `md`, `emojify` | `features/composer` + typed rich content | Pending |
 | F19 | Replies, quote navigation, copy message/link and share hashes | `startReply`, `renderReply`, `copyMsg`, `copyLink` | `features/chat` | Pending |
 | F20 | Poll creation, options/multi-select, votes and close | `addOpt`, `pollHtml`, chat action wiring | `features/polls` | Pending |

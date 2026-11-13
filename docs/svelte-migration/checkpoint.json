@@ -1,31 +1,29 @@
 {
-  "scope": "Native reset containment, Gallery/Inbox and task regression; incremental evidence only",
-  "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
-  "capturedAt": "2026-11-13T01:08:05.091Z",
+  "scope": "Incremental native board/list and browser type environment; not full migration or production acceptance",
+  "sourceCommit": "2a0aeda1d16d0086cdcfcf9b12b367c7b005f38c",
+  "capturedAt": "2026-11-13T04:20:19.220Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
-    "passed": 77,
+    "passed": 84,
     "failed": 0,
-    "assertions": 364
+    "assertions": 428
   },
-  "svelteCheck": {
-    "preview": "0 errors and 0 warnings",
-    "vanilla": "0 errors and 0 warnings"
-  },
-  "logSha256": "265641bedf9889cf0d1d26568d15a11ce4cd77ec8890777dd727a2465526a61a",
+  "logSha256": "5a4f01c8e9d9b1887cfb0f72e1fe929256a2394e3beb305d70624981cd772581",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
-    "files": 405,
-    "backendRuntimeSources": [],
+    "files": 225,
+    "nodeTypes": [],
+    "bunTypes": [],
     "cloudflareWorkerTypes": [],
+    "backendRuntimeSources": [],
     "apiDeclarations": [
-      ".api-types/shared/schemas.d.ts",
-      ".api-types/src/api.d.ts"
+      "shared/schemas.d.ts",
+      "src/api.d.ts"
     ]
   },
   "defaultAssetDiff": {
-    "baseline": "12b202f",
+    "baseline": "8f01bbf",
     "paths": [
       "public/app.html",
       "public/svelte/ui.js",
@@ -37,25 +35,20 @@
     "changed": []
   },
   "browserProof": {
-    "file": "docs/svelte-migration/native-coexistence/verification.json",
-    "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
+    "file": "docs/svelte-migration/native-board/verification.json",
+    "sourceCommit": "2a0aeda1d16d0086cdcfcf9b12b367c7b005f38c",
+    "status": "pass",
     "scopes": [
-      "Gallery and Inbox",
-      "Native task panel, not full feature parity/production acceptance"
-    ],
-    "status": "pass"
+      "Native board/list incremental verification; not production or full feature parity"
+    ]
   },
-  "cssBoundary": {
-    "vite": "Plain CSS and actual Tailwind: private/backend URLs, aliases, symlinks, public symlinks, nested imports reject; safe fonts pass; server positive/client negative fixtures pass",
-    "bun": "Native CSS resolution rejects private font, backend URL, nested backend import and private symlink; safe font passes",
-    "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures",
-    "nativeReset": "All49 emitted base rules confined to native descendants; no unlowered @scope; real legacy room CSS/geometry unchanged for445desktop/467mobile elements in both themes"
-  },
+  "previousProof": "docs/svelte-migration/native-coexistence/verification.json",
   "limits": [
-    "Local DEV_EMAIL and explicit browser fixtures; no authenticated production acceptance.",
-    "Vanilla remains default; the Svelte application still has a legacy host and styling outside migrated surfaces.",
-    "Actual authenticated Studio workspace comparison, complete native features/schema/RPC migration, full-app/backend/contract HMR and final performance budgets remain pending.",
-    "Baseline is12b202f; later peer-reported API/viewer changes must be integrated and verified separately.",
-    "WebSocket send success means queued data, not server acknowledgment; browser persistence and reconnect are tested separately."
+    "Loopback Worker with DEV_EMAIL and documented browser fixtures; no authenticated production acceptance.",
+    "Board/list remains inside a transitional legacy host. Full native shell/styling/parity, schema/RPC coverage, performance and HMR gates remain pending.",
+    "Studio reference comes from frozen public assets; authenticated workspace comparison remains pending.",
+    "Successful WebSocket send means queued data, not durable server acknowledgment. Real persistence/reconnect checked separately.",
+    "Backend/API baseline is 8f01bbf (25 operations); later peer-published backend slices require combined verification.",
+    "Vanilla remains default; protected assets unchanged from the tested baseline."
   ]
 }
