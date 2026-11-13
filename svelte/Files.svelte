@@ -15,8 +15,10 @@
       mounted = false;
     };
   });
-  const state = $derived(session.state);
-  const view = $derived(filesModel(room, $state.kind, $state.directory));
+  const fileState = $derived(session.state);
+  const view = $derived(
+    filesModel(room, $fileState.kind, $fileState.directory),
+  );
   $effect(() => {
     session.sync(room);
   });
@@ -114,8 +116,8 @@
             icon="pin"
             label={vb.t(pinned ? "Desafixar" : "Fixar na lateral")}
             aria-pressed={pinned}
-            disabled={!!$state.pending}
-            loading={$state.pending?.id === file.id}
+            disabled={!!$fileState.pending}
+            loading={$fileState.pending?.id === file.id}
             onclick={() => {
               if (mounted) void session.toggle(file, request);
             }}
@@ -126,14 +128,14 @@
     {#if !view.list.length && !view.folders.length}<p>
         {vb.t("Nada aqui.")}
       </p>{/if}
-  {:else if !$state.loading && !$state.loadError}<p>
+  {:else if !$fileState.loading && !$fileState.loadError}<p>
       {vb.t(
         "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.",
       )}
     </p>{/if}
-  {#if $state.loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
-  {#if $state.loadError}<p role="alert" class="tw:text-destructive">
-      {issueText($state.loadError)}
+  {#if $fileState.loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
+  {#if $fileState.loadError}<p role="alert" class="tw:text-destructive">
+      {issueText($fileState.loadError)}
     </p>
     <Button
       variant="outline"
@@ -141,7 +143,7 @@
         if (mounted) void session.load(request);
       }}>{vb.t("Tentar novamente")}</Button
     >{/if}
-  {#if $state.error}<p role="alert" class="tw:text-destructive">
-      {issueText($state.error)}
+  {#if $fileState.error}<p role="alert" class="tw:text-destructive">
+      {issueText($fileState.error)}
     </p>{/if}
 </section>

@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun", "@cloudflare/workers-types"]
+  },
+  "include": ["scripts/me-cache.test.ts", "scripts/service-boundaries.test.ts"]
+}

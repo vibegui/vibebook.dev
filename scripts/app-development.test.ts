@@ -79,11 +79,9 @@ test("HTTP and websocket proxy trust the configured Vite origin, never a supplie
         },
         { headers: { origin, host: "evil.test" } },
       );
-      expect(headers.origin).toBe(
-        origin === "http://127.0.0.1:5173"
-          ? "http://127.0.0.1:8787"
-          : undefined,
-      );
+      if (origin === "http://127.0.0.1:5173")
+        expect(headers.origin).toBe("http://127.0.0.1:8787");
+      else expect(headers.origin).toBeUndefined();
     }
   for (const target of [
     "https://example.com",

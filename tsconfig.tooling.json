@@ -3,15 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun",
-      "svelte"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -62,8 +55,6 @@
     "scripts/reminders.test.ts",
     "scripts/native-files.test.ts",
     "scripts/decisions.test.ts",
-    "scripts/me-cache.test.ts",
-    "scripts/service-boundaries.test.ts",
     "scripts/epic-order.test.ts"
   ]
 }

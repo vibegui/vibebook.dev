@@ -157,8 +157,17 @@ function render(
       events.push(event);
       return true;
     },
-    request: async (event: RoomCommand) => { events.push(event); return { ok: true } as const; },
-    ...(kind === "files" ? { session: filesSession, onfolderchange: () => {}, onopenfile: () => {} } : {}),
+    request: async (event: RoomCommand) => {
+      events.push(event);
+      return { ok: true } as const;
+    },
+    ...(kind === "files"
+      ? {
+          session: filesSession,
+          onfolderchange: () => {},
+          onopenfile: () => {},
+        }
+      : {}),
     ...extra,
   };
   const view = mountView(kind, target, props);
@@ -704,7 +713,7 @@ describe("native Svelte room panels", () => {
           props: {
             checked: true,
             controlled,
-            onCheckedChange: (value) => desired.push(value),
+            onCheckedChange: (value: boolean) => desired.push(value),
           },
         }),
       );

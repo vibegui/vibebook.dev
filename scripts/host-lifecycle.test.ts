@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
+import { get } from "svelte/store";
+import { createFilesSession } from "../svelte/features/files/session";
 import {
   createPinsSession,
   disposePinsSession,
@@ -35,6 +37,8 @@ function harness() {
     doc: "original",
   };
   const pinsSession = createPinsSession(state.id);
+  const filesSession = createFilesSession(state.id);
+  filesSession.select("txt", "docs");
   const api = Function(
     "$app",
     "document",
@@ -50,7 +54,8 @@ function harness() {
     "boardLayoutCleanup",
     "disposePinsSession",
     "initialPinsSession",
-    "let sideNavigation = null, sidePins = initialPinsSession;\n" +
+    "initialFilesSession",
+    "let sideNavigation = null, sidePins = initialPinsSession, nativeFilesSession = initialFilesSession;\n" +
       editor +
       cleanup +
       `
@@ -71,6 +76,7 @@ function harness() {
     () => layoutCleanups++,
     disposePinsSession,
     pinsSession,
+    filesSession,
   );
   return {
     api,
@@ -78,6 +84,7 @@ function harness() {
     renders: () => renders,
     layoutCleanups: () => layoutCleanups,
     pinsSession,
+    filesSession,
   };
 }
 
@@ -93,6 +100,8 @@ test("room cleanup invalidates a pending editor import before it can mount", asy
   h.api.ensureCollab();
   h.api.clearViews();
   expect(h.pinsSession.active).toBe(false);
+  h.filesSession.select("img", "");
+  expect(get(h.filesSession.state).kind).toBe("txt");
   expect(h.layoutCleanups()).toBe(1);
   h.api.clearViews();
   expect(h.layoutCleanups()).toBe(1);
