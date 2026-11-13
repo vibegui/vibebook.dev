@@ -1020,7 +1020,8 @@
   .audioAtt a { display: flex; gap: 6px; align-items: center; color: var(--mute); text-decoration: none; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .audioAtt a small { margin-left: auto; }
   .atts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-  .atts img { display: block; max-width: min(320px, 100%); max-height: 260px; border-radius: 12px; border: 1px solid var(--line); }
+  /* a long page screenshot kept its ratio and shrank to a 30px strip: narrow images get a usable width, cropped from the top (the viewer shows it whole) */
+  .atts img { display: block; max-width: min(320px, 100%); min-width: 220px; max-height: 260px; object-fit: cover; object-position: top; border-radius: 12px; border: 1px solid var(--line); }
   .fileChip { display: inline-flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: inherit; background: var(--panel); }
   .fileChip small { color: var(--mute); }
 
