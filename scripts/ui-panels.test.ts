@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { plugin } from "bun";
+import type { Component, ComponentProps } from "svelte";
+import { writable } from "svelte/store";
 import { readFileSync } from "node:fs";
 import { compile, compileModule } from "svelte/compiler";
 import { Window as HappyDOMWindow } from "happy-dom";
@@ -34,6 +36,7 @@ for (const key of [
   "window",
   "document",
   "navigator",
+  "location",
   "Node",
   "Element",
   "HTMLElement",
@@ -96,6 +99,8 @@ plugin({
 });
 const { flushSync, tick, mount, unmount } = await import("svelte");
 const { mountView, dismissDialogs } = await import("../svelte/main");
+const { default: People } = await import("../svelte/People.svelte");
+const { default: PeopleView } = await import("../svelte/View.svelte");
 const vb: PanelBridge = {
   t: (s, vars) =>
     s.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[key] ?? "")),
@@ -134,8 +139,12 @@ const fixture = (): Room => ({
 });
 const active: ReturnType<typeof mountView>[] = [];
 const originalFetch = globalThis.fetch;
+const originalClipboardWrite = window.navigator.clipboard.writeText;
+const peopleCleanups: (() => void)[] = [];
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  window.navigator.clipboard.writeText = originalClipboardWrite;
+  for (const destroy of peopleCleanups.splice(0)) destroy();
   for (const c of active.splice(0)) c.destroy();
   window.document.body.innerHTML = "";
   window.localStorage.clear();
@@ -2168,4 +2177,307 @@ describe("stable native sidebar integration", () => {
     flushSync();
     expect(opened).toEqual([]);
   }, 30_000);
+});
+
+describe("native People interactions", () => {
+  type PeopleProps = ComponentProps<typeof People>;
+  const personRoom = (): Room => ({
+    ...fixture(),
+    me: "owner@test.com",
+    book: { title: "People room", owner: "owner@test.com" },
+    members: ["owner@test.com", "member@test.com", "pending@test.com"],
+    online: ["member@test.com"],
+    pending: ["pending@test.com"],
+    requests: [
+      { email: "ask@test.com", name: "<script>untrusted()</script>", ts: 1 },
+    ],
+  });
+  function pendingPeopleRequest() {
+    let resolve!: () => void;
+    let reject!: (error: Error) => void;
+    const promise = new Promise<void>((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    return { promise, resolve, reject };
+  }
+  function people(room: Room, extra: Partial<PeopleProps> = {}) {
+    const target = document.createElement("div");
+    document.body.append(target);
+    const props: PeopleProps = {
+      room,
+      vb,
+      friends: ["friend@test.com"],
+      ...extra,
+    };
+    const values = writable<Record<string, unknown>>(props);
+    // As in mountView, the prop bag is checked before this dynamic forwarding boundary.
+    const component = People as unknown as Component<Record<string, unknown>>;
+    const instance = flushSync(() =>
+      mount(PeopleView, { target, props: { component, values } }),
+    );
+    let active = true;
+    const destroy = () => {
+      if (!active) return;
+      active = false;
+      flushSync(() => {
+        void unmount(instance);
+      });
+      target.remove();
+    };
+    peopleCleanups.push(destroy);
+    return {
+      target,
+      update(next: Room) {
+        flushSync(() => values.set({ ...props, room: next }));
+      },
+      destroy,
+    };
+  }
+  async function settlePeopleDialogClose() {
+    // Bits keeps closed content through an exit animation frame; tick only drains Svelte work.
+    for (
+      let frame = 0;
+      frame < 10 && document.querySelector('[role="alertdialog"]');
+      frame++
+    ) {
+      await new Promise<void>((resolve) =>
+        window.requestAnimationFrame(() => resolve()),
+      );
+      flushSync();
+      await tick();
+    }
+    expect(document.querySelector('[role="alertdialog"]') === null).toBe(true);
+  }
+  function submitPeopleInvite(target: HTMLElement, email: string) {
+    const input = target.querySelector<HTMLInputElement>(
+      '#invite input[type="email"]',
+    )!;
+    input.value = email;
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    flushSync();
+    target
+      .querySelector<HTMLFormElement>("#invite")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    flushSync();
+    return input;
+  }
+  test("owner and member see the authorized removal controls and plain-text access requests", () => {
+    const room = personRoom();
+    const rendered = people(room);
+    expect(
+      rendered.target.querySelector('[data-remove="owner@test.com"]') === null,
+    ).toBe(true);
+    expect(
+      rendered.target.querySelector('[data-remove="member@test.com"]') !== null,
+    ).toBe(true);
+    expect(
+      rendered.target.querySelector('[data-remove="pending@test.com"]') !==
+        null,
+    ).toBe(true);
+    expect(rendered.target.querySelector("script") === null).toBe(true);
+    expect(rendered.target.textContent).toContain(
+      "<script>untrusted()</script>",
+    );
+    rendered.update({ ...room, me: "member@test.com" });
+    expect(
+      rendered.target.querySelector('[data-remove="owner@test.com"]') === null,
+    ).toBe(true);
+    expect(
+      rendered.target.querySelector('[data-remove="member@test.com"]') === null,
+    ).toBe(true);
+    expect(
+      rendered.target.querySelector('[data-remove="pending@test.com"]') !==
+        null,
+    ).toBe(true);
+    expect(
+      rendered.target.querySelector(
+        '[data-ask="ask@test.com"][data-ok="1"]',
+      ) !== null,
+    ).toBe(true);
+  });
+  for (const action of ["remove", "deny"] as const) {
+    test(`People ${action} confirms, restores cancel focus, and ignores late failure after canonical disappearance`, async () => {
+      const room = personRoom();
+      const reply = pendingPeopleRequest();
+      const calls: { action: string; email: string }[] = [];
+      const rendered = people(room, {
+        request: (kind, email) => {
+          calls.push({ action: kind, email });
+          return reply.promise;
+        },
+      });
+      const email = action === "remove" ? "member@test.com" : "ask@test.com";
+      const selector =
+        action === "remove"
+          ? `[data-remove="${email}"]`
+          : `[data-ask="${email}"][data-ok=""]`;
+      const trigger =
+        rendered.target.querySelector<HTMLButtonElement>(selector)!;
+      trigger.focus();
+      trigger.click();
+      flushSync();
+      await tick();
+      const cancel = document.querySelector<HTMLButtonElement>(
+        "[data-alert-dialog-cancel]",
+      )!;
+      expect(document.activeElement === cancel).toBe(true);
+      expect(calls).toEqual([]);
+      cancel.click();
+      flushSync();
+      await tick();
+      await settlePeopleDialogClose();
+      expect(document.activeElement === trigger).toBe(true);
+      expect(calls).toEqual([]);
+      trigger.click();
+      flushSync();
+      await tick();
+      document
+        .querySelector<HTMLButtonElement>("[data-alert-dialog-action]")!
+        .click();
+      flushSync();
+      await tick();
+      expect(calls).toEqual([{ action, email }]);
+      expect(trigger.disabled).toBe(true);
+      expect(rendered.target.querySelector(selector) !== null).toBe(true);
+      rendered.update(
+        action === "remove"
+          ? {
+              ...room,
+              members: room.members.filter((member) => member !== email),
+            }
+          : { ...room, requests: [] },
+      );
+      await tick();
+      await settlePeopleDialogClose();
+      expect(rendered.target.querySelector(selector) === null).toBe(true);
+      expect(
+        document.activeElement ===
+          rendered.target.querySelector("[data-people-panel]"),
+      ).toBe(true);
+      reply.reject(new Error("obsolete request rejected"));
+      await tick();
+      flushSync();
+      expect(rendered.target.textContent).not.toContain(
+        "obsolete request rejected",
+      );
+      expect(rendered.target.querySelector('[role="alert"]') === null).toBe(
+        true,
+      );
+    }, 30_000);
+  }
+  test("successful invitation stays separate from clipboard denial and canonical membership", async () => {
+    const room = personRoom();
+    const reply = pendingPeopleRequest();
+    const calls: string[] = [];
+    window.navigator.clipboard.writeText = async () => {
+      throw new Error("clipboard denied");
+    };
+    const rendered = people(room, {
+      request: (action, email) => {
+        calls.push(`${action}:${email}`);
+        return reply.promise;
+      },
+    });
+    const input = submitPeopleInvite(rendered.target, "NEW@TEST.COM");
+    await tick();
+    flushSync();
+    expect(calls).toEqual(["invite:new@test.com"]);
+    expect(rendered.target.textContent).toContain("Não consegui copiar.");
+    expect(rendered.target.textContent).not.toContain("enviado ✓");
+    expect(
+      rendered.target.querySelector('[data-person="new@test.com"]') === null,
+    ).toBe(true);
+    expect(input.value).toBe("NEW@TEST.COM");
+    reply.resolve();
+    await tick();
+    flushSync();
+    expect(input.value).toBe("");
+    expect(rendered.target.textContent).toContain("new@test.com · enviado ✓");
+    expect(rendered.target.textContent).toContain("Não consegui copiar.");
+    expect(
+      rendered.target.querySelector('[data-person="new@test.com"]') === null,
+    ).toBe(true);
+    rendered.update({
+      ...room,
+      members: [...room.members, "new@test.com"],
+      pending: [...room.pending!, "new@test.com"],
+    });
+    expect(
+      rendered.target.querySelector('[data-person="new@test.com"]') !== null,
+    ).toBe(true);
+    expect(rendered.target.textContent).not.toContain(
+      "Aguardando confirmação…",
+    );
+  });
+  test("copied invite text does not report backend success when invitation is rejected", async () => {
+    const copied: string[] = [];
+    window.navigator.clipboard.writeText = async (text) => {
+      copied.push(text);
+    };
+    const rendered = people(personRoom(), {
+      request: async () => {
+        throw new Error("invitation rejected");
+      },
+    });
+    const input = submitPeopleInvite(rendered.target, "new@test.com");
+    await tick();
+    flushSync();
+    expect(copied).toHaveLength(1);
+    expect(copied[0]).toContain("/b/r");
+    expect(copied[0]).toContain("new@test.com");
+    expect(rendered.target.textContent).toContain("Copiei a mensagem");
+    expect(rendered.target.textContent).toContain("invitation rejected");
+    expect(rendered.target.textContent).not.toContain("enviado ✓");
+    expect(input.value).toBe("new@test.com");
+    expect(
+      rendered.target.querySelector('[data-person="new@test.com"]') === null,
+    ).toBe(true);
+  });
+  test("keyed room replacement disposes old invitation and clipboard callbacks and detached actions", async () => {
+    const room = personRoom();
+    const reply = pendingPeopleRequest();
+    const clipboard = pendingPeopleRequest();
+    const calls: string[] = [];
+    window.navigator.clipboard.writeText = () => clipboard.promise;
+    const rendered = people(room, {
+      request: (action, email) => {
+        calls.push(`${action}:${email}`);
+        return reply.promise;
+      },
+    });
+    const staleFriend = rendered.target.querySelector<HTMLButtonElement>(
+      '[data-add="friend@test.com"]',
+    )!;
+    submitPeopleInvite(rendered.target, "old@test.com");
+    expect(calls).toEqual(["invite:old@test.com"]);
+    rendered.update({
+      ...room,
+      id: "next",
+      book: { ...room.book, title: "Next room" },
+    });
+    const currentInput =
+      rendered.target.querySelector<HTMLInputElement>("#invite input")!;
+    currentInput.value = "fresh@test.com";
+    currentInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+    flushSync();
+    staleFriend.click();
+    reply.resolve();
+    clipboard.reject(new Error("late clipboard failure"));
+    await tick();
+    flushSync();
+    expect(calls).toEqual(["invite:old@test.com"]);
+    expect(currentInput.value).toBe("fresh@test.com");
+    expect(rendered.target.textContent).not.toContain("old@test.com");
+    expect(rendered.target.textContent).not.toContain("Não consegui copiar.");
+    expect(rendered.target.textContent).not.toContain("enviado ✓");
+    const staleCurrentFriend = rendered.target.querySelector<HTMLButtonElement>(
+      '[data-add="friend@test.com"]',
+    )!;
+    rendered.destroy();
+    staleCurrentFriend.click();
+    expect(calls).toEqual(["invite:old@test.com"]);
+  });
 });
