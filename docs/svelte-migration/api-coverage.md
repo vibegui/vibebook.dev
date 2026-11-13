@@ -30,8 +30,8 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/books/:id/post` | `src/api.ts` | JSON RPC | 37 | tested (slice 1) |
 | POST | `/api/books/:id/request` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | POST | `/api/books/:id/requests` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
-| GET | `/api/books/:id/sandboxes` | `src/sandbox.ts:273` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/sandboxes` | `src/sandbox.ts:308` | JSON RPC | 37 | todo |
+| GET | `/api/books/:id/sandboxes` | `src/api.ts` | JSON RPC | 37 | tested (slice 8) |
+| POST | `/api/books/:id/sandboxes` | `src/api.ts` | JSON RPC | 37 | tested (slice 8) |
 | POST | `/api/books/:id/tint` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/start` | `src/api.ts` | JSON RPC | 2 | tested (slice 5) |
 | POST | `/api/claude-token` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
@@ -56,9 +56,11 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/push/unsubscribe` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
 | POST | `/api/rooms/order` | `src/api.ts` | JSON RPC | 1 | tested (slice 2) |
 | POST | `/api/route` | `src/api.ts` | JSON RPC | 1 | tested (slice 5) |
-| DELETE | `/api/sandboxes/:sid` | `src/sandbox.ts:340` | JSON RPC | 4 | todo |
-| POST | `/api/sandboxes/:sid/setup` | `src/sandbox.ts:333` | JSON RPC | 4 | todo |
-| POST | `/api/sandboxes/:sid/terminal` | `src/sandbox.ts:359` | JSON RPC | 4 | todo |
+| DELETE | `/api/sandboxes/:sid` | `src/api.ts` | JSON RPC | 4 | tested (slice 8) |
+| POST | `/api/sandboxes/:sid/pause` | `src/api.ts` | JSON RPC | 1 | tested (slice 8; was loop-registered, missing from the first inventory) |
+| POST | `/api/sandboxes/:sid/start` | `src/api.ts` | JSON RPC | 1 | tested (slice 8; was loop-registered, missing from the first inventory) |
+| POST | `/api/sandboxes/:sid/setup` | `src/api.ts` | JSON RPC | 4 | tested (slice 8) |
+| POST | `/api/sandboxes/:sid/terminal` | `src/api.ts` | JSON RPC | 4 | tested (slice 8) |
 | GET | `/api/search` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | PUT | `/api/upload/:token` | `src/index.ts:286` | binary PUT (agent upload link) | 0 | n/a (documented) |
 | POST | `/api/waits/resolve` | `src/api.ts` | JSON RPC | 2 | tested (slice 2) |

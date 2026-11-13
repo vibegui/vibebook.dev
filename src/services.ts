@@ -10,7 +10,7 @@ import { startRoom } from "./start-room";
 import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, storeFile, TYPES_ERROR } from "./rooms";
 import { track } from "./track";
 import { pushTo } from "./webpush";
-import { checkFreestyleKey, saveKey } from "./sandbox";
+import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
 
 export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req0: Request): ApiServices {
   return {
@@ -95,5 +95,6 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     saveSecret: (table, value) => saveKey(env, email, value, table),
     checkFreestyleKey: (key) => checkFreestyleKey(env, key),
     listenFresh: LISTEN_FRESH,
+    sandboxes: sandboxOps(env, ctx, email, new URL(req0.url).origin),
   };
 }

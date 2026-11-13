@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { Hono } from "hono";
-import { agentsApi as api, type ApiCtx, type ApiServices } from "../src/api";
+import { sandboxApi as api, type ApiCtx, type ApiServices } from "../src/api";
 
 // Exercise the real handlers/validators without Worker bindings or unchecked Env casts.
 // Authentication middleware and persistence are separate Worker integration gates.
@@ -63,6 +63,26 @@ function fixture(overrides: Partial<ApiServices> = {}) {
       saved.push({ table, value });
     },
     listenFresh: 720_000,
+    sandboxes: {
+      list: async () => ({ connected: true, claude: false, sandboxes: [] }),
+      create: async (_room, name) => {
+        if (name === "boom") throw new Error("Limite de 3 sandboxes por sala.");
+        return { id: "sb1", vm_id: "vm1", name: name || "auto" };
+      },
+      power: async (sid) =>
+        sid === "mine"
+          ? null
+          : sid === "flaky"
+            ? "502: freestyle down"
+            : "not_found",
+      setup: async (sid) => {
+        if (sid !== "mine") throw new Error("not found");
+        return { ok: true, log: "done" };
+      },
+      remove: async (sid) => sid === "mine",
+      terminal: async (sid) =>
+        sid === "mine" ? { token: "t", url: "wss://x" } : null,
+    },
     checkFreestyleKey: async (key) =>
       key.startsWith("good") ? null : "401 unauthorized",
     ...overrides,
@@ -347,4 +367,56 @@ test("room agents: members only, listening and context derived from the rows, ba
     five_hour: { p: 40, r: 1 },
   });
   expect(body.agents[1].context?.limits).toBeNull();
+});
+
+test("sandboxes: members only, errors keep their old status and shape", async () => {
+  const outsider = fixture({ isMember: async () => false });
+  expect((await outsider.app.request("/api/books/room/sandboxes")).status).toBe(
+    403,
+  );
+  expect((await outsider.json("/api/books/room/sandboxes", {})).status).toBe(
+    403,
+  );
+  const f = fixture();
+  expect(
+    await (await f.app.request("/api/books/room/sandboxes")).json(),
+  ).toEqual({ connected: true, claude: false, sandboxes: [] });
+  expect(await (await f.json("/api/books/room/sandboxes", {})).json()).toEqual({
+    ok: true,
+    id: "sb1",
+    vm_id: "vm1",
+    name: "auto",
+  });
+  const limit = await f.json("/api/books/room/sandboxes", { name: "boom" });
+  expect([limit.status, await limit.json()]).toEqual([
+    400,
+    { error: "Limite de 3 sandboxes por sala." },
+  ]);
+  expect((await f.json("/api/books/room/sandboxes", { name: 3 })).status).toBe(
+    400,
+  );
+  const post = (path: string) => f.app.request(path, { method: "POST" });
+  expect((await post("/api/sandboxes/mine/pause")).status).toBe(200);
+  expect((await post("/api/sandboxes/other/start")).status).toBe(404);
+  const down = await post("/api/sandboxes/flaky/pause");
+  expect([down.status, await down.json()]).toEqual([
+    502,
+    { error: "502: freestyle down" },
+  ]);
+  expect(await (await post("/api/sandboxes/mine/setup")).json()).toEqual({
+    ok: true,
+    log: "done",
+  });
+  expect((await post("/api/sandboxes/other/setup")).status).toBe(502);
+  expect(
+    (await f.app.request("/api/sandboxes/other", { method: "DELETE" })).status,
+  ).toBe(404);
+  expect(
+    (await f.app.request("/api/sandboxes/mine", { method: "DELETE" })).status,
+  ).toBe(200);
+  expect(await (await post("/api/sandboxes/mine/terminal")).json()).toEqual({
+    token: "t",
+    url: "wss://x",
+  });
+  expect((await post("/api/sandboxes/other/terminal")).status).toBe(404);
 });

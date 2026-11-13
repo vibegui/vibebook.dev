@@ -12,6 +12,11 @@ import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  CreateSandboxBody,
+  type CreateSandboxResult,
+  type SandboxesResult,
+  type SandboxSetupResult,
+  type SandboxTerminalResult,
   AgentDbRow,
   AgentLimits,
   type AgentsResult,
@@ -105,6 +110,20 @@ export interface ApiServices {
   checkFreestyleKey(key: string): Promise<string | null>;
   /** How recent a listener's last call must be to count as listening (ms). */
   listenFresh: number;
+  /** The signed-in person's own sandboxes (by id + email); room membership is checked by the route. */
+  sandboxes: {
+    list(roomId: string): Promise<SandboxesResult>;
+    /** Throws an Error whose message is user-facing. */
+    create(roomId: string, name: string): Promise<{ id: string; vm_id: string; name: string }>;
+    /** null = done; "not_found"; else freestyle's error. */
+    power(sid: string, act: "pause" | "start"): Promise<string | null>;
+    /** Throws freestyle's error. */
+    setup(sid: string): Promise<SandboxSetupResult>;
+    /** false = no such sandbox of yours. */
+    remove(sid: string): Promise<boolean>;
+    /** null = no such sandbox of yours; throws freestyle's error. */
+    terminal(sid: string): Promise<SandboxTerminalResult | null>;
+  };
 }
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
@@ -414,4 +433,51 @@ export const agentsApi = keysApi.get("/api/books/:id/agents", async (c) => {
   return c.json(out, 200);
 });
 
-export type AppType = typeof agentsApi;
+// Slice 8: your cloud sandboxes (freestyle.sh). Errors keep the old shape: { error } with 400/404/502.
+const notFound = { error: "not found" } satisfies ErrorBody;
+const failed = (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }) satisfies ErrorBody;
+const power = (act: "pause" | "start") => async (c: import("hono").Context<ApiCtx, "/api/sandboxes/:sid/pause" | "/api/sandboxes/:sid/start">) => {
+  const r = await c.get("svc").sandboxes.power(c.req.param("sid"), act);
+  if (r === "not_found") return c.json(notFound, 404);
+  if (r !== null) return c.json({ error: r } satisfies ErrorBody, 502);
+  return c.json(ok, 200);
+};
+export const sandboxApi = agentsApi
+  .get("/api/books/:id/sandboxes", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    return c.json((await svc.sandboxes.list(id)) satisfies SandboxesResult, 200);
+  })
+  .post("/api/books/:id/sandboxes", body(CreateSandboxBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    try {
+      const r = await svc.sandboxes.create(id, c.req.valid("json").name ?? "");
+      return c.json({ ok: true as const, ...r } satisfies CreateSandboxResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 400);
+    }
+  })
+  .post("/api/sandboxes/:sid/pause", (c) => power("pause")(c))
+  .post("/api/sandboxes/:sid/start", (c) => power("start")(c))
+  .post("/api/sandboxes/:sid/setup", async (c) => {
+    try {
+      return c.json((await c.get("svc").sandboxes.setup(c.req.param("sid"))) satisfies SandboxSetupResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 502);
+    }
+  })
+  .delete("/api/sandboxes/:sid", async (c) => {
+    if (!(await c.get("svc").sandboxes.remove(c.req.param("sid")))) return c.json(notFound, 404);
+    return c.json(ok, 200);
+  })
+  .post("/api/sandboxes/:sid/terminal", async (c) => {
+    try {
+      const t = await c.get("svc").sandboxes.terminal(c.req.param("sid"));
+      return t ? c.json(t satisfies SandboxTerminalResult, 200) : c.json(notFound, 404);
+    } catch (e) {
+      return c.json(failed(e), 502);
+    }
+  });
+
+export type AppType = typeof sandboxApi;

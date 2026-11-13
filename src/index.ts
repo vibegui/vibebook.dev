@@ -1,4 +1,4 @@
-import { agentsApi, type ApiServices } from "./api";
+import { sandboxApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -14,7 +14,6 @@ import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
-import { mountSandbox } from "./sandbox";
 import { mountConnections, retireTokens } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
@@ -534,7 +533,7 @@ app.get("/api/avatar/:email", (c) =>
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", agentsApi);
+app.route("/", sandboxApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
@@ -620,7 +619,6 @@ app.get("/ws/:id", async (c) => {
 // Everything else (app, /authorize, /oauth/*, discovery) goes through the OAuth provider to the Hono app.
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
-mountSandbox(app, { isMember, track });
 mountConnections(app, { isMember, track });
 
 export default {

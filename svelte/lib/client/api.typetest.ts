@@ -3,6 +3,8 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  SandboxesResult,
+  SandboxTerminalResult,
   AgentsResult,
   ConnectedResult,
   CreateRoomResult,
@@ -184,3 +186,29 @@ sameAs<
     AgentsResult
   >
 >(true);
+
+// Slice 8: sandboxes.
+void api.api.books[":id"].sandboxes.$post({
+  param: { id: "r" },
+  json: { name: "box" },
+});
+const sbxPost = api.api.books[":id"].sandboxes.$post;
+const notName = { name: 3 };
+// @ts-expect-error name is a string
+void sbxPost({ param: { id: "r" }, json: notName });
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["sandboxes"]["$get"], 200>,
+    SandboxesResult
+  >
+>(true);
+sameAs<
+  Equal<
+    InferResponseType<
+      (typeof api.api.sandboxes)[":sid"]["terminal"]["$post"],
+      200
+    >,
+    SandboxTerminalResult
+  >
+>(true);
+void api.api.sandboxes[":sid"].pause.$post({ param: { sid: "s" } });

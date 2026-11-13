@@ -246,3 +246,42 @@ export const AgentDbRow = z.object({
   ctx_at: num,
   ctx_limits: str,
 });
+
+// Slice 8: the person's own cloud sandboxes in a room (freestyle.sh VMs; the key never leaves the server).
+export const SandboxCard = z.object({
+  id: z.string(),
+  name: z.string(),
+  vm_id: z.string(),
+  ready: z.boolean(),
+  state: z.string(),
+  error: z.optional(z.string()),
+  log: z.optional(z.string()),
+  created_at: z.number(),
+  rate: z.number(),
+  cost: z.number(),
+});
+export const SandboxesResult = z.object({
+  connected: z.boolean(),
+  claude: z.boolean(),
+  sandboxes: z.array(SandboxCard),
+});
+export type SandboxesResult = z.infer<typeof SandboxesResult>;
+export const CreateSandboxBody = z.object({ name: z.optional(z.string()) });
+export const CreateSandboxResult = z.object({
+  ok: z.literal(true),
+  id: z.string(),
+  vm_id: z.string(),
+  name: z.string(),
+});
+export type CreateSandboxResult = z.infer<typeof CreateSandboxResult>;
+export const SandboxSetupResult = z.object({
+  ok: z.boolean(),
+  log: z.string(),
+  error: z.optional(z.string()),
+});
+export type SandboxSetupResult = z.infer<typeof SandboxSetupResult>;
+export const SandboxTerminalResult = z.object({
+  token: z.string(),
+  url: z.string(),
+});
+export type SandboxTerminalResult = z.infer<typeof SandboxTerminalResult>;
