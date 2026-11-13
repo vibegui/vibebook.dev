@@ -2,6 +2,7 @@
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
 import { createUiNavigation } from "../navigation";
+import { getBoardContainer, moveBoardContainer, watchBoardLayout } from "./boardLayout";
 import { uiNavigationUrl } from "../../shared/uiVariant";
 const navigation = createUiNavigation(history, () => location.href, "svelte");
 import {createRoomApi} from "../transport";
@@ -555,6 +556,9 @@ const EN = {
   "Todos os épicos": "All epics",
   "Sem épico": "No epic",
   "Nenhuma tarefa aberta.": "No open tasks.",
+  "Escolha um épico.": "Choose an epic.",
+  "Épico não encontrado.": "Epic not found.",
+  "Status": "Status",
   "Sair de todos os aparelhos": "Sign out everywhere",
   "Sai em todos os navegadores e celulares onde você entrou": "Signs you out of every browser and phone you signed in on",
   "Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam.": "Sign out everywhere? Every browser and phone you signed in on will ask you to log in again, this one too. Your connected agents stay.",
@@ -1661,6 +1665,7 @@ function openBook(id) {
 const send = (m) => roomConnection?.send(m) ?? false;
 
 const viewMounts = new Map();
+let boardLayoutCleanup = () => {};
 const sidebarDragHandles = new WeakSet();
 function disposeView(kind) {
   const mounted = viewMounts.get(kind);
@@ -1676,6 +1681,8 @@ function renderView(kind, target, props, remount = false) {
   else mounted.update(props);
 }
 function clearViews() {
+  boardLayoutCleanup();
+  boardLayoutCleanup = () => {};
   disposeCollab();
   // Svelte subscriptions and observers must stop when leaving a room, including
   // navigation to home/login where renderBook will not run again.
@@ -1921,6 +1928,8 @@ function renderBook() {
   document.getElementById("sheetDim").onclick = () => closeSheet();
   document.getElementById("toggleDoc").onclick = () => book.classList.toggle("nodoc");
   const setBoard = (on) => {
+    if (!document.body.contains(book)) return;
+    if (on) moveBoardContainer(book, book.querySelector(":scope > .chat"), book.querySelector(":scope > .chat > #composer"));
     book.classList.toggle("boardview", on);
     book.classList.toggle("nodoc", on); // the board wants the width
     document.getElementById("toggleBoard").setAttribute("aria-pressed", String(on));
@@ -2116,17 +2125,20 @@ function renderBook() {
 
   // Right panel: Documento / Arquivos
   const setPane = (pane) => {
-    $app.querySelector(".doc").dataset.pane = pane;
-    $app.querySelector(".book").dataset.pane = pane; // the phone's toolbar marks the open tab
-    $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
+    const doc = book.querySelector(":scope > .doc");
+    if (!doc) return;
+    doc.dataset.pane = pane;
+    book.dataset.pane = pane; // the phone's toolbar marks the open tab
+    doc.querySelectorAll(":scope > header .ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
     if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
     if (pane === "agents") { renderMyClaude(); loadSandboxes(); }
-    if (pane === "board") { const k = document.getElementById("kanban"), d = $app.querySelector(".doc"); if (k.parentElement !== d) d.append(k); renderKanban(); }
+    if (pane === "board") { moveBoardContainer(book, doc); renderKanban(); }
   };
+  boardLayoutCleanup = watchBoardLayout(book, ROOM_PHONE, () => { setBoard(false); setPane("board"); });
   $app.querySelectorAll(".ptabs button").forEach((b) => b.onclick = () => setPane(b.dataset.pane));
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
   // One pair of document listeners for the room on screen (replaced, not piled up, as rooms open).
@@ -2946,8 +2958,9 @@ let boardEpic = null;
 // The phone's full-screen board closes when you open an epic from it; the desktop's lives in the doc panel and stays.
 const leaveBoard = () => { if ($app.querySelector(".book.boardview")) document.getElementById("toggleBoard").click(); };
 function renderKanban() {
-  const el = document.getElementById("kanban");
-  if (!el || !$app.querySelector(".book.boardview, .doc[data-pane='board']")) return;
+  const book = $app.querySelector(".book");
+  const el = book && getBoardContainer(book);
+  if (!el || (!book.classList.contains("boardview") && book.querySelector(":scope > .doc")?.dataset.pane !== "board")) return;
   renderView("board", el, { room:S, thread, vb:panelBridge(), send, onopen:selectThread });
 }
 

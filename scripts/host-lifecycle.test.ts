@@ -23,6 +23,7 @@ function harness() {
     classList: { remove() {}, toggle() {} },
   };
   let renders = 0;
+  let layoutCleanups = 0;
   const state = {
     id: "a",
     me: "person",
@@ -41,6 +42,7 @@ function harness() {
     "viewMounts",
     "disposeView",
     "pinRO",
+    "boardLayoutCleanup",
     editor +
       cleanup +
       `
@@ -58,8 +60,14 @@ function harness() {
     new Map(),
     () => {},
     { disconnect() {} },
+    () => layoutCleanups++,
   );
-  return { api, state, renders: () => renders };
+  return {
+    api,
+    state,
+    renders: () => renders,
+    layoutCleanups: () => layoutCleanups,
+  };
 }
 
 test("room cleanup invalidates a pending editor import before it can mount", async () => {
@@ -73,6 +81,9 @@ test("room cleanup invalidates a pending editor import before it can mount", asy
   let mounts = 0;
   h.api.ensureCollab();
   h.api.clearViews();
+  expect(h.layoutCleanups()).toBe(1);
+  h.api.clearViews();
+  expect(h.layoutCleanups()).toBe(1);
   complete({
     mountCollab() {
       mounts++;

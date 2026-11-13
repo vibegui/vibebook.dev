@@ -28,6 +28,7 @@ if (native) {
     "svelte/lib/components",
     "svelte/gallery",
     "svelte/styles",
+    "svelte/features/board",
   ])
     await collect(directory);
   files.push(
@@ -35,6 +36,8 @@ if (native) {
     "svelte/InboxMount.svelte",
     "svelte/TaskList.svelte",
     "svelte/Tasks.svelte",
+    "svelte/Board.svelte",
+    "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",
   );
