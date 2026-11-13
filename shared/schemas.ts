@@ -154,3 +154,36 @@ export const DecideRequestBody = z.object({
 });
 export const AccessResult = z.object({ member: z.boolean() });
 export type AccessResult = z.infer<typeof AccessResult>;
+
+// Slice 5: your name, new rooms and the home's router.
+export const SetNameBody = z.object({ name: z.optional(z.string()) });
+export const SetNameResult = z.object({
+  ok: z.literal(true),
+  name: z.string(),
+});
+export type SetNameResult = z.infer<typeof SetNameResult>;
+export const CreateRoomBody = z.object({ title: z.optional(z.string()) });
+export const CreateRoomResult = z.object({ id: z.string() });
+export type CreateRoomResult = z.infer<typeof CreateRoomResult>;
+export const TextBody = z.object({ text: z.optional(z.string()) });
+export const StartRoomResult = z.object({
+  id: z.string(),
+  invited: z.array(z.string()),
+  unknown: z.array(z.string()),
+  cost: z.number(),
+});
+export type StartRoomResult = z.infer<typeof StartRoomResult>;
+export const RoomPick = z.object({
+  book_id: z.string(),
+  book_title: z.string(),
+  epic_id: z.nullable(z.string()),
+  epic_title: z.nullable(z.string()),
+});
+export const RouteResult = z.object({
+  pick: z.nullable(RoomPick),
+  reason: z.optional(z.string()),
+  alternatives: z.array(RoomPick),
+  new_room_title: z.string(),
+  cost: z.number(),
+});
+export type RouteResult = z.infer<typeof RouteResult>;
