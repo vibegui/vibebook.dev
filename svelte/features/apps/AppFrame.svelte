@@ -16,6 +16,7 @@
     toolError,
   } from "./tools";
   import Button from "../../lib/ui/Button.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   let { props }: { props: AppsProps } = $props();
   const view = untrack(() => props.owner.state),
     requests = createAppRequests();
@@ -249,7 +250,8 @@
         }}>{props.t("Tentar de novo")}</Button
       >
     </div>{/if}
-  {#if $question}{#key $question}{@const intent = $question}
+  {#if $question}{#key $question}<Snapshot value={$question}>
+      {#snippet children(intent)}
       <section
         aria-label={props.t("Permissão do app")}
         class="tw:space-y-2 tw:rounded-control tw:border tw:border-border tw:bg-card tw:p-3"
@@ -275,7 +277,7 @@
             }}>{props.t("Permitir")}</Button
           >
         </div>
-      </section>{/key}{/if}
+      </section>{/snippet}</Snapshot>{/key}{/if}
   {#if signinNeeded && selected && selected.connection !== "room"}<p
       role="alert"
       class="tw:text-sm"

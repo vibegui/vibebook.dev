@@ -4,6 +4,7 @@
   import type { ChatActions, ChatBridge } from "../../chatTypes";
   import { createAppConsent } from "../apps/consent";
   import Button from "../../lib/ui/Button.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   let {
     url,
     file,
@@ -106,7 +107,8 @@
   {#if clipped}<p class="tw:m-0 tw:text-xs tw:text-muted-foreground">
       {file.name}
     </p>{/if}
-  {#if $question}{#key $question}{@const intent = $question}
+  {#if $question}{#key $question}<Snapshot value={$question}>
+      {#snippet children(intent)}
       <div
         role="group"
         aria-label={vb.t("Confirmar")}
@@ -133,5 +135,5 @@
             }}>{vb.t("Cancelar")}</Button
           >
         </div>
-      </div>{/key}{/if}
+      </div>{/snippet}</Snapshot>{/key}{/if}
 </div>
