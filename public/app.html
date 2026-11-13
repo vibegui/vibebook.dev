@@ -4638,6 +4638,13 @@ const viewAttrs = (f) => `data-view="${f.type.startsWith("image/") ? "img" : "fr
 // hands the URL to Safari instead. Safari has its own cookies, so a file asks to sign in there once (filePage).
 const IOS_PWA = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
 const outside = (u) => IOS_PWA ? `x-safari-${new URL(u, location.href).href}` : u;
+// Esc pressed inside an HTML file in the viewer (the frame has the focus, so the app never sees the key): the file is
+// served with ?esc=1, which adds a listener that posts { vbViewer: "esc" } to us; only the viewer's own frame counts.
+addEventListener("message", (e) => {
+  if (e.data?.vbViewer !== "esc") return;
+  const d = document.querySelector("dialog.viewer[open]");
+  if (d && d.querySelector(".vbody iframe")?.contentWindow === e.source) d.close();
+});
 function openViewer(url, kind, fname) {
   let d = document.getElementById("viewer");
   if (!d) {
@@ -4696,7 +4703,7 @@ function loadViewer(d, url, kind, fname) {
         : `<pre class="vdoc">${esc(txt.slice(0, 300_000))}</pre>`;
     }).catch(() => { body.innerHTML = `<p class="vdoc">${t("Não consegui abrir este arquivo.")}</p>`; });
   }
-  else { const fr = document.createElement("iframe"); fr.src = url; fr.title = fname; if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
+  else { const fr = document.createElement("iframe"), pdf = /\.pdf$/i.test(fname); fr.src = pdf ? url : `${url}${url.includes("?") ? "&" : "?"}esc=1`; fr.title = fname; if (!pdf) fr.sandbox = "allow-scripts"; body.replaceChildren(fr); }
 }
 // CSV → rows (quotes and "" escapes; ≤2000 rows × 50 columns for the viewer).
 function csvRows(txt) {
