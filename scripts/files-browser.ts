@@ -191,18 +191,21 @@ try {
     // Clipped panel content can have a visible bounding box while the document
     // owner is collapsed. Navigate through the visible controls instead.
     const tab = page.locator('.ptabs [data-pane="files"]');
-    if (!(await tab.isVisible())) {
-      const peek = page.locator('#docPeek [data-pane="files"]');
-      if (await peek.isVisible()) await peek.click();
-      else {
-        await page.locator("#toggleDoc").click();
-        await tab.click();
-      }
-    } else if (
-      (await page.locator(".book").getAttribute("data-pane")) !== "files"
-    )
+    const peek = page.locator('#docPeek [data-pane="files"]');
+    const book = page.locator(".book");
+    if (await peek.isVisible()) {
+      // The mobile toolbar toggles an already open sheet closed.
+      if (
+        (await book.getAttribute("data-sheet")) !== "doc" ||
+        (await book.getAttribute("data-pane")) !== "files"
+      )
+        await peek.click();
+    } else if (!(await tab.isVisible())) {
+      await page.locator("#toggleDoc").click();
       await tab.click();
-    await expect(page.locator(".book")).toHaveAttribute("data-pane", "files");
+    } else if ((await book.getAttribute("data-pane")) !== "files")
+      await tab.click();
+    await expect(book).toHaveAttribute("data-pane", "files");
     await expect(panel).toBeVisible();
   };
   const canonicalPins = async () =>
