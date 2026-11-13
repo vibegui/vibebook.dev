@@ -1045,10 +1045,11 @@ test("only explicit native denied file navigations transform; successful bytes a
     expect([...Buffer.concat(chunks)]).toEqual([...bytes]);
     expect(res.headers["content-security-policy"]).toBe("sandbox");
     expect(res.headers.vary).toBe("Cookie");
-    for (const headers of [
+    const bypassHeaders: Record<string, string>[] = [
       { accept: "application/octet-stream" },
       { accept: "text/html", range: "bytes=0-0" },
-    ]) {
+    ];
+    for (const headers of bypassHeaders) {
       const request = consentRequest(
         "",
         "/api/books/aaaaaa/files/aa?ui=svelte",
