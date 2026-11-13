@@ -8,7 +8,8 @@ import { handleAgentMcp } from "./agent";
 import { escapeHtml, identify } from "./auth";
 import type { Env } from "./index";
 import { track } from "./track";
-import type { AgentGrantsResult } from "../shared/schemas";
+import type { AgentGrantsResult, ConsentContext, ConsentError } from "../shared/schemas";
+import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 
 export const SCOPE = "rooms";
 export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string; room?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
@@ -121,7 +122,7 @@ const fail = (c: Context, e: unknown) => {
 connect.get("/authorize", async (c) => {
   const email = await identify(c);
   const url = new URL(c.req.url);
-  if (!email) return c.redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  if (!email) return c.redirect(uiNavigationUrl(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, url, uiVariant(url)));
   try {
     const oauth = c.env.OAUTH_PROVIDER;
     const request = await oauth.parseAuthRequest(c.req.raw);
@@ -165,6 +166,29 @@ connect.post("/authorize", async (c) => {
 });
 
 // App side: which agents are connected, when each was last used, and revoke.
+/** The consent page's context for a native page (src/api.ts GET /api/authorize/context): the same parse, description and
+ *  consent transaction as GET /authorize, on a request rebuilt at /authorize with the query unchanged (the library only
+ *  accepts requests at its authorize endpoint). The transaction's binding cookie goes back with the answer; approving
+ *  is still the form POST /authorize. A refused request answers its error, plus the client's error redirect when the
+ *  library built one from a request it validated. */
+export async function consentContext(env: Env, req: Request, email: string): Promise<{ context: ConsentContext; headers: [string, string][] } | (ConsentError & { status: 400 })> {
+  const url = new URL(req.url);
+  try {
+    const oauth = env.OAUTH_PROVIDER;
+    const request = await oauth.parseAuthRequest(new Request(new URL(`/authorize${url.search}`, url.origin), { headers: req.headers }));
+    const d = await oauth.describeConsent(request);
+    const consent = await oauth.beginConsent(request);
+    return {
+      context: { client_name: d.clientName, client_domain: d.clientDomain ?? null, redirect_host: d.redirectHost, redirect_is_loopback: !!d.redirectIsLoopback, scope: d.scope, email, handle: consent.handle },
+      headers: [...consent.headers],
+    };
+  } catch (e) {
+    if (e instanceof AuthorizationError) return { error: e.description ?? e.code ?? "invalid_request", ...(e.redirectTo ? { redirect_to: e.redirectTo } : {}), status: 400 };
+    if (e instanceof CimdFetchError) return { error: "client metadata unavailable", status: 400 };
+    throw e;
+  }
+}
+
 /** Your Claudes' OAuth grants (the home's "connected agents" box): typed routes in src/api.ts call these. */
 export function grantOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string) {
   return {

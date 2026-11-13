@@ -511,3 +511,23 @@ export const RevokeAgentsResult = z.object({
   removed: z.number(),
 });
 export type RevokeAgentsResult = z.infer<typeof RevokeAgentsResult>;
+
+/** The agent-connect consent page's context (GET /api/authorize/context with the /authorize query): what the page must
+ *  show (who asks, where the tokens go, a local redirect warning) and the one-time handle the existing form posts back
+ *  to POST /authorize. Getting it grants nothing. */
+export const ConsentContext = z.object({
+  client_name: z.string(),
+  client_domain: z.nullable(z.string()),
+  redirect_host: z.string(),
+  redirect_is_loopback: z.boolean(),
+  scope: z.array(z.string()),
+  email: z.string(),
+  handle: z.string(),
+});
+export type ConsentContext = z.infer<typeof ConsentContext>;
+/** A refused authorization request: the error, and the client's own error redirect when the library built one. */
+export const ConsentError = z.object({
+  error: z.string(),
+  redirect_to: z.optional(z.string()),
+});
+export type ConsentError = z.infer<typeof ConsentError>;

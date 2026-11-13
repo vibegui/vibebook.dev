@@ -80,6 +80,8 @@ import {
   type AgentGrantsResult,
   RevokeAgentsBody,
   type RevokeAgentsResult,
+  type ConsentContext,
+  type ConsentError,
 } from "../shared/schemas";
 
 export type Bind = string | number | null;
@@ -169,6 +171,9 @@ export interface ApiServices {
   };
   /** Your Claudes' OAuth grants (src/connect.ts grantOps): list them, revoke some (at most 100 per call). */
   grants: { list(): Promise<AgentGrantsResult>; revoke(ids: string[]): Promise<number> };
+  /** The consent page's context for this request's /authorize query (src/connect.ts consentContext); headers carry the
+   *  consent transaction's binding cookie. */
+  consentContext(): Promise<{ context: ConsentContext; headers: [string, string][] } | (ConsentError & { status: 400 })>;
 }
 /** A failed connection call and its status; sign_in = sign in on that server first (401). */
 export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
@@ -658,6 +663,13 @@ export const uploadsApi = meApi
     if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
     await svc.grants.revoke([c.req.param("id")]);
     return c.json(ok, 200);
+  })
+  // Slice 14: the agent-connect consent page's context (the approval itself stays the form POST /authorize).
+  .get("/api/authorize/context", async (c) => {
+    const r = await c.get("svc").consentContext();
+    if ("error" in r) return c.json({ error: r.error, ...(r.redirect_to ? { redirect_to: r.redirect_to } : {}) } satisfies ConsentError, 400);
+    for (const [k, v] of r.headers) c.header(k, v, { append: k.toLowerCase() === "set-cookie" });
+    return c.json(r.context satisfies ConsentContext, 200);
   });
 
 export type AppType = typeof uploadsApi;
