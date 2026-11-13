@@ -491,6 +491,7 @@ try {
     svgSafety.unique && !svgSafety.active && !svgSafety.unsafe,
     "Native Mermaid SVG must be inert with private diagram IDs",
   );
+  await preview.screenshot({ path: `${output}/document-preview.png` });
   phases.push(phase);
   phase = "removed member privacy and authorized peer resume";
   await b.goto(`${app}/b/${room}?ui=svelte`);
