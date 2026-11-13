@@ -72,6 +72,9 @@
     "scripts/native-chat.test.ts",
     "scripts/rich-text.test.ts",
     "scripts/native-interactive.test.ts",
-    "scripts/native-auth-dom.test.ts"
+    "scripts/native-auth-dom.test.ts",
+    "scripts/native-home.test.ts",
+    "scripts/native-home-dom.test.ts",
+    "scripts/native-home-fixtures.ts"
   ]
 }
