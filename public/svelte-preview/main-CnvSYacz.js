@@ -1,42 +1,42 @@
-import { $t as e, A as t, At as n, B as r, Bt as i, C as a, Ct as o, D as s, Dt as c, E as l, Et as u, F as d, Ft as f, G as p, Gt as m, H as h, Ht as g, I as _, It as v, J as y, Jt as b, K as x, Kt as S, L as C, Lt as w, M as T, N as E, Nt as D, O, Ot as k, P as ee, Pt as A, Qt as j, R as M, Rt as te, S as ne, St as re, T as ie, Tt as N, U as P, Ut as ae, V as oe, Vt as se, W as F, Wt as I, X as L, Xt as R, Y as ce, Yt as le, Zt as z, _ as ue, a as de, at as fe, b as pe, c as me, d as he, en as B, g as ge, gt as V, h as _e, ht as ve, i as ye, it as be, j as xe, jt as Se, k as Ce, kt as H, l as we, m as Te, mt as Ee, n as De, nt as Oe, o as ke, ot as Ae, p as je, pt as Me, q as Ne, r as Pe, rt as Fe, s as Ie, st as Le, t as Re, tt as ze, u as Be, v as Ve, vt as He, w as Ue, wt as We, x as Ge, xt as U, y as Ke, yt as qe, z as Je, zt as W } from "./Field-BcGmxIzD.js";
-// node_modules/svelte-toolbelt/dist/utils/on-mount-effect.svelte.js
-function Ye(e) {
-	w(() => f(() => e()));
+import { $t as e, A as t, At as n, B as r, Bt as i, C as a, Ct as o, D as s, Dt as c, E as l, Et as u, F as d, Ft as f, G as p, Gt as m, H as h, Ht as g, I as _, It as v, Jt as y, K as b, Kt as x, L as S, Lt as C, M as w, Mt as T, N as E, Nt as D, O, Ot as k, P as ee, Q as A, Qt as j, R as te, Rt as ne, S as re, St as M, T as ie, Tt as N, U as ae, Ut as oe, V as P, Vt as se, W as F, Wt as I, X as L, Xt as R, Y as ce, Yt as le, Z as ue, Zt as z, _ as de, _t as fe, a as pe, at as me, b as he, bt as B, c as ge, ct as _e, d as ve, dt as ye, en as V, f as be, ft as xe, g as Se, h as Ce, ht as H, i as we, it as Te, j as Ee, k as De, kt as Oe, l as ke, lt as Ae, m as je, mt as Me, o as Ne, ot as Pe, q as Fe, r as Ie, rt as Le, s as Re, st as ze, t as Be, u as Ve, v as He, vt as Ue, w as We, wt as U, x as Ge, xt as Ke, y as qe, z as W, zt as G } from "./Field-B3YRfu8S.js";
+// ../vibebook/node_modules/svelte-toolbelt/dist/utils/on-mount-effect.svelte.js
+function Je(e) {
+	C(() => f(() => e()));
 }
-// node_modules/bits-ui/dist/bits/utilities/floating-layer/floating-root.svelte.js
-var Xe = new Je("Floating.Root"), Ze = new Je("Floating.Root"), Qe = class e {
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/floating-layer/floating-root.svelte.js
+var Ye = new r("Floating.Root"), Xe = new r("Floating.Root"), Ze = class e {
 	static create(t = !1) {
-		return t ? Ze.set(new e()) : Xe.set(new e());
+		return t ? Xe.set(new e()) : Ye.set(new e());
 	}
-	anchorNode = F(null);
-	customAnchorNode = F(null);
-	triggerNode = F(null);
+	anchorNode = p(null);
+	customAnchorNode = p(null);
+	triggerNode = p(null);
 	constructor() {
-		w(() => {
+		C(() => {
 			this.customAnchorNode.current ? typeof this.customAnchorNode.current == "string" ? this.anchorNode.current = document.querySelector(this.customAnchorNode.current) : this.anchorNode.current = this.customAnchorNode.current : this.anchorNode.current = this.triggerNode.current;
 		});
 	}
 };
-// node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer.svelte
-function $e(e, t) {
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer.svelte
+function Qe(e, t) {
 	z(t, !0);
-	let n = y(t, "tooltip", 3, !1);
-	Qe.create(f(() => n()));
-	var r = u(), a = i(r);
-	V(a, () => t.children ?? B), N(e, r), R();
+	let n = L(t, "tooltip", 3, !1);
+	Ze.create(f(() => n()));
+	var r = N(), a = i(r);
+	H(a, () => t.children ?? V), U(e, r), R();
 }
-// node_modules/bits-ui/dist/internal/floating-svelte/floating-utils.svelte.js
-function et(e) {
+// ../vibebook/node_modules/bits-ui/dist/internal/floating-svelte/floating-utils.svelte.js
+function $e(e) {
 	return typeof e == "function" ? e() : e;
 }
-function tt(e) {
+function et(e) {
 	return typeof window > "u" ? 1 : (e.ownerDocument.defaultView || window).devicePixelRatio || 1;
 }
-function nt(e, t) {
-	let n = tt(e);
+function tt(e, t) {
+	let n = et(e);
 	return Math.round(t * n) / n;
 }
-function rt(e) {
+function nt(e) {
 	return {
 		[`--bits-${e}-content-transform-origin`]: "var(--bits-floating-transform-origin)",
 		[`--bits-${e}-content-available-width`]: "var(--bits-floating-available-width)",
@@ -45,13 +45,13 @@ function rt(e) {
 		[`--bits-${e}-anchor-height`]: "var(--bits-floating-anchor-height)"
 	};
 }
-// node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
-var it = [
+// ../vibebook/node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
+var rt = [
 	"top",
 	"right",
 	"bottom",
 	"left"
-], G = Math.min, K = Math.max, at = Math.round, ot = Math.floor, q = (e) => ({
+], it = Math.min, K = Math.max, at = Math.round, ot = Math.floor, q = (e) => ({
 	x: e,
 	y: e
 }), st = {
@@ -61,7 +61,7 @@ var it = [
 	top: "bottom"
 };
 function ct(e, t, n) {
-	return K(e, G(t, n));
+	return K(e, it(t, n));
 }
 function J(e, t) {
 	return typeof e == "function" ? e(t) : e;
@@ -148,7 +148,7 @@ function Et(e) {
 		y: n
 	};
 }
-// node_modules/@floating-ui/core/dist/floating-ui.core.mjs
+// ../vibebook/node_modules/@floating-ui/core/dist/floating-ui.core.mjs
 function Dt(e, t, n) {
 	let { reference: r, floating: i } = e, a = Y(t), o = pt(t), s = ft(o), c = lt(t), l = a === "y", u = r.x + r.width / 2 - i.width / 2, d = r.y + r.height / 2 - i.height / 2, f = r[s] / 2 - i[s] / 2, p;
 	switch (c) {
@@ -265,7 +265,7 @@ var kt = 50, At = async (e, t, n) => {
 			y: r
 		}, p = pt(i), m = ft(p), h = await o.getDimensions(l), g = p === "y", _ = g ? "top" : "left", v = g ? "bottom" : "right", y = g ? "clientHeight" : "clientWidth", b = a.reference[m] + a.reference[p] - f[p] - a.floating[m], x = f[p] - a.reference[p], S = await (o.getOffsetParent == null ? void 0 : o.getOffsetParent(l)), C = S ? S[y] : 0;
 		C && await (o.isElement == null ? void 0 : o.isElement(S)) || (C = s.floating[y] || a.floating[m]);
-		let w = b / 2 - x / 2, T = C / 2 - h[m] / 2 - 1, E = G(d[_], T), D = G(d[v], T), O = C - h[m] - D, k = C / 2 - h[m] / 2 + w, ee = ct(E, k, O), A = !c.arrow && ut(i) != null && k !== ee && a.reference[m] / 2 - (k < E ? E : D) - h[m] / 2 < 0, j = A ? k < E ? k - E : k - O : 0;
+		let w = b / 2 - x / 2, T = C / 2 - h[m] / 2 - 1, E = it(d[_], T), D = it(d[v], T), O = C - h[m] - D, k = C / 2 - h[m] / 2 + w, ee = ct(E, k, O), A = !c.arrow && ut(i) != null && k !== ee && a.reference[m] / 2 - (k < E ? E : D) - h[m] / 2 < 0, j = A ? k < E ? k - E : k - O : 0;
 		return {
 			[p]: f[p] + j,
 			data: {
@@ -333,7 +333,7 @@ function Nt(e, t) {
 	};
 }
 function Pt(e) {
-	return it.some((t) => e[t] >= 0);
+	return rt.some((t) => e[t] >= 0);
 }
 var Ft = function(e) {
 	return e === void 0 && (e = {}), {
@@ -471,7 +471,7 @@ var Rt = function(e) {
 		async fn(t) {
 			let { placement: n, rects: r, platform: i, elements: a } = t, { apply: o = () => {}, ...s } = J(e, t), c = await i.detectOverflow(t, s), l = lt(n), u = ut(n), d = Y(n) === "y", { width: f, height: p } = r.floating, m, h;
 			l === "top" || l === "bottom" ? (m = l, h = u === (await (i.isRTL == null ? void 0 : i.isRTL(a.floating)) ? "start" : "end") ? "left" : "right") : (h = l, m = u === "end" ? "top" : "bottom");
-			let g = p - c.top - c.bottom, _ = f - c.left - c.right, v = G(p - c[m], g), y = G(f - c[h], _), b = t.middlewareData.shift, x = !b, S = v, C = y;
+			let g = p - c.top - c.bottom, _ = f - c.left - c.right, v = it(p - c[m], g), y = it(f - c[h], _), b = t.middlewareData.shift, x = !b, S = v, C = y;
 			b != null && b.enabled.x && (C = _), b != null && b.enabled.y && (S = g), x && !u && (d ? C = f - 2 * K(c.left, c.right) : S = p - 2 * K(c.top, c.bottom)), await o({
 				...t,
 				availableWidth: C,
@@ -482,7 +482,7 @@ var Rt = function(e) {
 		}
 	};
 };
-// node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
+// ../vibebook/node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs
 function Ht() {
 	return typeof window < "u";
 }
@@ -578,7 +578,7 @@ function cn(e, t, n) {
 function ln(e) {
 	return e.parent && Object.getPrototypeOf(e.parent) ? e.frameElement : null;
 }
-// node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
+// ../vibebook/node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs
 function un(e) {
 	let t = $(e), n = parseFloat(t.width) || 0, r = parseFloat(t.height) || 0, i = Gt(e), a = i ? e.offsetWidth : n, o = i ? e.offsetHeight : r, s = at(n) !== a || at(r) !== o;
 	return s && (n = a, r = o), {
@@ -729,7 +729,7 @@ function Dn(e) {
 	let { element: t, boundary: n, rootBoundary: r, strategy: i } = e, a = [...n === "clippingAncestors" ? Yt(t) ? [] : En(t, this._c) : [].concat(n), r], o = Tn(t, a[0], i), s = o.top, c = o.right, l = o.bottom, u = o.left;
 	for (let e = 1; e < a.length; e++) {
 		let n = Tn(t, a[e], i);
-		s = K(n.top, s), c = G(n.right, c), l = G(n.bottom, l), u = K(n.left, u);
+		s = K(n.top, s), c = it(n.right, c), l = it(n.bottom, l), u = K(n.left, u);
 	}
 	return {
 		width: c - u,
@@ -829,7 +829,7 @@ function Ln(e, t, n) {
 		if (n || t(), !f || !p) return;
 		let m = ot(d), h = ot(a.clientWidth - (u + f)), g = ot(a.clientHeight - (d + p)), _ = ot(u), v = {
 			rootMargin: -m + "px " + -h + "px " + -g + "px " + -_ + "px",
-			threshold: K(0, G(1, c)) || 1
+			threshold: K(0, it(1, c)) || 1
 		}, y = !0;
 		function b(t) {
 			let n = t[0].intersectionRatio;
@@ -895,160 +895,160 @@ var zn = Rt, Bn = zt, Vn = Mt, Hn = Vt, Un = Ft, Wn = jt, Gn = Bt, Kn = (e, t, n
 		platform: a
 	});
 };
-// node_modules/bits-ui/dist/internal/floating-svelte/use-floating.svelte.js
+// ../vibebook/node_modules/bits-ui/dist/internal/floating-svelte/use-floating.svelte.js
 function qn(e) {
-	let t = e.whileElementsMounted, n = b(() => et(e.open) ?? !0), r = b(() => et(e.middleware)), i = b(() => et(e.transform) ?? !0), a = b(() => et(e.placement) ?? "bottom"), o = b(() => et(e.strategy) ?? "absolute"), s = b(() => et(e.sideOffset) ?? 0), c = b(() => et(e.alignOffset) ?? 0), l = e.reference, u;
-	te(() => {
+	let t = e.whileElementsMounted, n = y(() => $e(e.open) ?? !0), r = y(() => $e(e.middleware)), i = y(() => $e(e.transform) ?? !0), a = y(() => $e(e.placement) ?? "bottom"), o = y(() => $e(e.strategy) ?? "absolute"), s = y(() => $e(e.sideOffset) ?? 0), c = y(() => $e(e.alignOffset) ?? 0), l = e.reference, u;
+	ne(() => {
 		u = {
-			middleware: A(r),
-			placement: A(a),
-			strategy: A(o),
-			open: A(n),
-			sideOffset: A(s),
-			alignOffset: A(c)
+			middleware: D(r),
+			placement: D(a),
+			strategy: D(o),
+			open: D(n),
+			sideOffset: D(s),
+			alignOffset: D(c)
 		};
 	});
-	let d = m(0), f = m(0), p = F(null), h = m(ae(A(o))), g = m(ae(A(a))), _ = m(ae({})), v = m(!1), y = !1, x = 0, S = !1, C = b(() => {
-		let e = p.current ? nt(p.current, A(d)) : A(d), t = p.current ? nt(p.current, A(f)) : A(f);
-		return A(i) ? {
-			position: A(h),
+	let d = m(0), f = m(0), h = p(null), g = m(oe(D(o))), _ = m(oe(D(a))), v = m(oe({})), b = m(!1), x = !1, S = 0, w = !1, T = y(() => {
+		let e = h.current ? tt(h.current, D(d)) : D(d), t = h.current ? tt(h.current, D(f)) : D(f);
+		return D(i) ? {
+			position: D(g),
 			left: "0",
 			top: "0",
 			transform: `translate(${e}px, ${t}px)`,
-			...p.current && tt(p.current) >= 1.5 && { willChange: "transform" }
+			...h.current && et(h.current) >= 1.5 && { willChange: "transform" }
 		} : {
-			position: A(h),
+			position: D(g),
 			left: `${e}px`,
 			top: `${t}px`
 		};
-	}), T;
-	function E() {
-		if (S || l.current === null || p.current === null) return;
-		let e = l.current, t = p.current, n = ++x;
+	}), E;
+	function O() {
+		if (w || l.current === null || h.current === null) return;
+		let e = l.current, t = h.current, n = ++S;
 		Kn(e, t, {
 			middleware: u.middleware,
 			placement: u.placement,
 			strategy: u.strategy
 		}).then((r) => {
-			if (n === x && l.current === e && p.current === t) {
-				if (Jn(e)) I(_, {
-					...A(_),
+			if (n === S && l.current === e && h.current === t) {
+				if (Jn(e)) I(v, {
+					...D(v),
 					hide: {
-						...A(_).hide,
+						...D(v).hide,
 						referenceHidden: !0
 					}
 				}, !0);
 				else {
-					if (!u.open && A(d) !== 0 && A(f) !== 0) {
+					if (!u.open && D(d) !== 0 && D(f) !== 0) {
 						let e = Math.max(Math.abs(u.sideOffset), Math.abs(u.alignOffset), 15);
 						if (r.x <= e && r.y <= e) return;
 					}
-					I(d, r.x, !0), I(f, r.y, !0), I(h, r.strategy, !0), I(g, r.placement, !0), I(_, r.middlewareData, !0), I(v, !0);
+					I(d, r.x, !0), I(f, r.y, !0), I(g, r.strategy, !0), I(_, r.placement, !0), I(v, r.middlewareData, !0), I(b, !0);
 				}
 			}
 		});
 	}
-	function D() {
-		typeof T == "function" && (T(), T = void 0), x++;
-	}
-	function O() {
-		D(), t === void 0 ? (k(), E()) : A(n) && l.current !== null && p.current !== null && (k(), T = t(l.current, p.current, E));
-	}
 	function k() {
-		return [
-			A(r),
-			A(a),
-			A(o)
-		];
+		typeof E == "function" && (E(), E = void 0), S++;
 	}
 	function ee() {
-		!A(n) && p.current === null && I(v, !1);
+		k(), t === void 0 ? (A(), O()) : D(n) && l.current !== null && h.current !== null && (A(), E = t(l.current, h.current, O));
 	}
-	function j() {
+	function A() {
 		return [
-			A(r),
-			A(a),
-			A(o),
-			A(s),
-			A(c),
-			A(n)
+			D(r),
+			D(a),
+			D(o)
 		];
 	}
-	return w(() => {
-		t === void 0 && A(n) && (k(), E());
-	}), w(O), w(() => {
-		t !== void 0 && (j(), A(n) && A(v) ? y ? E() : y = !0 : y = !1);
-	}), w(ee), w(() => () => {
-		S = !0, D();
+	function j() {
+		!D(n) && h.current === null && I(b, !1);
+	}
+	function te() {
+		return [
+			D(r),
+			D(a),
+			D(o),
+			D(s),
+			D(c),
+			D(n)
+		];
+	}
+	return C(() => {
+		t === void 0 && D(n) && (A(), O());
+	}), C(ee), C(() => {
+		t !== void 0 && (te(), D(n) && D(b) ? x ? O() : x = !0 : x = !1);
+	}), C(j), C(() => () => {
+		w = !0, k();
 	}), {
-		floating: p,
+		floating: h,
 		reference: l,
 		get strategy() {
-			return A(h);
+			return D(g);
 		},
 		get placement() {
-			return A(g);
+			return D(_);
 		},
 		get middlewareData() {
-			return A(_);
+			return D(v);
 		},
 		get isPositioned() {
-			return A(v);
+			return D(b);
 		},
 		get floatingStyles() {
-			return A(C);
+			return D(T);
 		},
 		get update() {
-			return E;
+			return O;
 		}
 	};
 }
 function Jn(e) {
 	return e instanceof Element ? !e.isConnected || e instanceof HTMLElement && e.hidden ? !0 : e.getClientRects().length === 0 : !1;
 }
-// node_modules/bits-ui/dist/bits/utilities/floating-layer/use-floating-layer.svelte.js
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/floating-layer/use-floating-layer.svelte.js
 var Yn = {
 	top: "bottom",
 	right: "left",
 	bottom: "top",
 	left: "right"
-}, Xn = new Je("Floating.Content"), Zn = class e {
+}, Xn = new r("Floating.Content"), Zn = class e {
 	static create(t, n = !1) {
-		return n ? Xn.set(new e(t, Ze.get())) : Xn.set(new e(t, Xe.get()));
+		return n ? Xn.set(new e(t, Xe.get())) : Xn.set(new e(t, Ye.get()));
 	}
 	opts;
 	root;
-	contentRef = F(null);
-	wrapperRef = F(null);
-	arrowRef = F(null);
-	contentAttachment = T(this.contentRef);
-	wrapperAttachment = T(this.wrapperRef);
-	arrowAttachment = T(this.arrowRef);
-	arrowId = F(ge());
-	#e = b(() => {
-		if (typeof this.opts.style == "string") return h(this.opts.style);
+	contentRef = p(null);
+	wrapperRef = p(null);
+	arrowRef = p(null);
+	contentAttachment = E(this.contentRef);
+	wrapperAttachment = E(this.wrapperRef);
+	arrowAttachment = E(this.arrowRef);
+	arrowId = p(de());
+	#e = y(() => {
+		if (typeof this.opts.style == "string") return ae(this.opts.style);
 		if (!this.opts.style) return {};
 	});
 	#t = void 0;
-	#n = new C(() => this.arrowRef.current ?? void 0);
-	#r = b(() => this.#n?.width ?? 0);
-	#i = b(() => this.#n?.height ?? 0);
-	#a = b(() => this.opts.side?.current + (this.opts.align.current === "center" ? "" : `-${this.opts.align.current}`));
-	#o = b(() => (Array.isArray(this.opts.collisionBoundary.current) ? this.opts.collisionBoundary.current : [this.opts.collisionBoundary.current]).filter(O));
-	#s = b(() => A(this.#o).length > 0);
+	#n = new te(() => this.arrowRef.current ?? void 0);
+	#r = y(() => this.#n?.width ?? 0);
+	#i = y(() => this.#n?.height ?? 0);
+	#a = y(() => this.opts.side?.current + (this.opts.align.current === "center" ? "" : `-${this.opts.align.current}`));
+	#o = y(() => (Array.isArray(this.opts.collisionBoundary.current) ? this.opts.collisionBoundary.current : [this.opts.collisionBoundary.current]).filter(De));
+	#s = y(() => D(this.#o).length > 0);
 	get hasExplicitBoundaries() {
-		return A(this.#s);
+		return D(this.#s);
 	}
 	set hasExplicitBoundaries(e) {
 		I(this.#s, e);
 	}
-	#c = b(() => ({
+	#c = y(() => ({
 		padding: this.opts.collisionPadding.current,
-		boundary: A(this.#o),
+		boundary: D(this.#o),
 		altBoundary: this.hasExplicitBoundaries
 	}));
 	get detectOverflowOptions() {
-		return A(this.#c);
+		return D(this.#c);
 	}
 	set detectOverflowOptions(e) {
 		I(this.#c, e);
@@ -1057,9 +1057,9 @@ var Yn = {
 	#u = m(void 0);
 	#d = m(void 0);
 	#f = m(void 0);
-	#p = b(() => [
+	#p = y(() => [
 		zn({
-			mainAxis: this.opts.sideOffset.current + A(this.#i),
+			mainAxis: this.opts.sideOffset.current + D(this.#i),
 			alignmentAxis: this.opts.alignOffset.current
 		}),
 		this.opts.avoidCollisions.current && Bn({
@@ -1081,8 +1081,8 @@ var Yn = {
 			padding: this.opts.arrowPadding.current
 		}),
 		Qn({
-			arrowWidth: A(this.#r),
-			arrowHeight: A(this.#i)
+			arrowWidth: D(this.#r),
+			arrowHeight: D(this.#i)
 		}),
 		this.opts.hideWhenDetached.current && Un({
 			strategy: "referenceHidden",
@@ -1097,62 +1097,62 @@ var Yn = {
 		}
 	].filter(Boolean));
 	get middleware() {
-		return A(this.#p);
+		return D(this.#p);
 	}
 	set middleware(e) {
 		I(this.#p, e);
 	}
 	floating;
-	#m = b(() => er(this.floating.placement));
+	#m = y(() => er(this.floating.placement));
 	get placedSide() {
-		return A(this.#m);
+		return D(this.#m);
 	}
 	set placedSide(e) {
 		I(this.#m, e);
 	}
-	#h = b(() => tr(this.floating.placement));
+	#h = y(() => tr(this.floating.placement));
 	get placedAlign() {
-		return A(this.#h);
+		return D(this.#h);
 	}
 	set placedAlign(e) {
 		I(this.#h, e);
 	}
-	#g = b(() => this.floating.middlewareData.arrow?.x ?? 0);
+	#g = y(() => this.floating.middlewareData.arrow?.x ?? 0);
 	get arrowX() {
-		return A(this.#g);
+		return D(this.#g);
 	}
 	set arrowX(e) {
 		I(this.#g, e);
 	}
-	#_ = b(() => this.floating.middlewareData.arrow?.y ?? 0);
+	#_ = y(() => this.floating.middlewareData.arrow?.y ?? 0);
 	get arrowY() {
-		return A(this.#_);
+		return D(this.#_);
 	}
 	set arrowY(e) {
 		I(this.#_, e);
 	}
-	#v = b(() => this.floating.middlewareData.arrow?.centerOffset !== 0);
+	#v = y(() => this.floating.middlewareData.arrow?.centerOffset !== 0);
 	get cannotCenterArrow() {
-		return A(this.#v);
+		return D(this.#v);
 	}
 	set cannotCenterArrow(e) {
 		I(this.#v, e);
 	}
 	#y = m("auto");
 	get contentZIndex() {
-		return A(this.#y);
+		return D(this.#y);
 	}
 	set contentZIndex(e) {
 		I(this.#y, e, !0);
 	}
-	#b = b(() => Yn[this.placedSide]);
+	#b = y(() => Yn[this.placedSide]);
 	get arrowBaseSide() {
-		return A(this.#b);
+		return D(this.#b);
 	}
 	set arrowBaseSide(e) {
 		I(this.#b, e);
 	}
-	#x = b(() => ({
+	#x = y(() => ({
 		id: this.opts.wrapperId.current,
 		"data-bits-floating-content-wrapper": "",
 		style: {
@@ -1161,38 +1161,38 @@ var Yn = {
 			minWidth: "max-content",
 			zIndex: this.contentZIndex,
 			"--bits-floating-transform-origin": `${this.floating.middlewareData.transformOrigin?.x} ${this.floating.middlewareData.transformOrigin?.y}`,
-			"--bits-floating-available-width": `${A(this.#l)}px`,
-			"--bits-floating-available-height": `${A(this.#u)}px`,
-			"--bits-floating-anchor-width": `${A(this.#d)}px`,
-			"--bits-floating-anchor-height": `${A(this.#f)}px`,
+			"--bits-floating-available-width": `${D(this.#l)}px`,
+			"--bits-floating-available-height": `${D(this.#u)}px`,
+			"--bits-floating-anchor-width": `${D(this.#d)}px`,
+			"--bits-floating-anchor-height": `${D(this.#f)}px`,
 			...(this.floating.middlewareData.hide?.referenceHidden || this.floating.middlewareData.hideClipping?.referenceHidden) && {
 				visibility: "hidden",
 				"pointer-events": "none"
 			},
-			...A(this.#e)
+			...D(this.#e)
 		},
 		dir: this.opts.dir.current,
 		...this.wrapperAttachment
 	}));
 	get wrapperProps() {
-		return A(this.#x);
+		return D(this.#x);
 	}
 	set wrapperProps(e) {
 		I(this.#x, e);
 	}
-	#S = b(() => ({
+	#S = y(() => ({
 		"data-side": this.placedSide,
 		"data-align": this.placedAlign,
-		style: oe({ ...A(this.#e) }),
+		style: h({ ...D(this.#e) }),
 		...this.contentAttachment
 	}));
 	get props() {
-		return A(this.#S);
+		return D(this.#S);
 	}
 	set props(e) {
 		I(this.#S, e);
 	}
-	#C = b(() => ({
+	#C = y(() => ({
 		position: "absolute",
 		left: this.arrowX ? `${this.arrowX}px` : void 0,
 		top: this.arrowY ? `${this.arrowY}px` : void 0,
@@ -1212,28 +1212,28 @@ var Yn = {
 		visibility: this.cannotCenterArrow ? "hidden" : void 0
 	}));
 	get arrowStyle() {
-		return A(this.#C);
+		return D(this.#C);
 	}
 	set arrowStyle(e) {
 		I(this.#C, e);
 	}
 	constructor(e, t) {
-		this.opts = e, this.root = t, this.#t = e.updatePositionStrategy, e.customAnchor && (this.root.customAnchorNode.current = e.customAnchor.current), M(() => e.customAnchor.current, (e) => {
+		this.opts = e, this.root = t, this.#t = e.updatePositionStrategy, e.customAnchor && (this.root.customAnchorNode.current = e.customAnchor.current), W(() => e.customAnchor.current, (e) => {
 			this.root.customAnchorNode.current = e;
 		}), this.floating = qn({
 			strategy: () => this.opts.strategy.current,
-			placement: () => A(this.#a),
+			placement: () => D(this.#a),
 			middleware: () => this.middleware,
 			reference: this.root.anchorNode,
 			whileElementsMounted: (...e) => Rn(...e, { animationFrame: this.#t?.current === "always" }),
 			open: () => this.opts.enabled.current,
 			sideOffset: () => this.opts.sideOffset.current,
 			alignOffset: () => this.opts.alignOffset.current
-		}), w(() => {
+		}), C(() => {
 			this.floating.isPositioned && this.opts.onPlaced?.current();
-		}), M([() => this.contentRef.current, () => this.opts.enabled.current], ([e, t]) => {
+		}), W([() => this.contentRef.current, () => this.opts.enabled.current], ([e, t]) => {
 			if (!e || !t) return;
-			let n = d(e), r = n.requestAnimationFrame(() => {
+			let n = _(e), r = n.requestAnimationFrame(() => {
 				if (this.contentRef.current !== e || !this.opts.enabled.current) return;
 				let t = n.getComputedStyle(e).zIndex;
 				t !== this.contentZIndex && (this.contentZIndex = t);
@@ -1241,7 +1241,7 @@ var Yn = {
 			return () => {
 				n.cancelAnimationFrame(r);
 			};
-		}), w(() => {
+		}), C(() => {
 			this.floating.floating.current = this.wrapperRef.current;
 		});
 	}
@@ -1273,48 +1273,48 @@ function er(e) {
 function tr(e) {
 	return $n(e)[1];
 }
-// node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer-content.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer-content.svelte
 function nr(e, t) {
 	z(t, !0);
-	let n = y(t, "side", 3, "bottom"), a = y(t, "sideOffset", 3, 0), o = y(t, "align", 3, "center"), s = y(t, "alignOffset", 3, 0), c = y(t, "arrowPadding", 3, 0), l = y(t, "avoidCollisions", 3, !0), d = y(t, "collisionBoundary", 19, () => []), p = y(t, "collisionPadding", 3, 0), m = y(t, "hideWhenDetached", 3, !1), h = y(t, "onPlaced", 3, () => {}), g = y(t, "sticky", 3, "partial"), _ = y(t, "updatePositionStrategy", 3, "optimized"), v = y(t, "strategy", 3, "fixed"), x = y(t, "dir", 3, "ltr"), S = y(t, "style", 19, () => ({})), C = y(t, "wrapperId", 19, ge), w = y(t, "customAnchor", 3, null), T = y(t, "tooltip", 3, !1), E = Zn.create({
-		side: P(() => n()),
-		sideOffset: P(() => a()),
-		align: P(() => o()),
-		alignOffset: P(() => s()),
-		id: P(() => t.id),
-		arrowPadding: P(() => c()),
-		avoidCollisions: P(() => l()),
-		collisionBoundary: P(() => d()),
-		collisionPadding: P(() => p()),
-		hideWhenDetached: P(() => m()),
-		onPlaced: P(() => h()),
-		sticky: P(() => g()),
-		updatePositionStrategy: P(() => _()),
-		strategy: P(() => v()),
-		dir: P(() => x()),
-		style: P(() => S()),
-		enabled: P(() => t.enabled),
-		wrapperId: P(() => C()),
-		customAnchor: P(() => w())
-	}, f(() => T())), D = b(() => r(E.wrapperProps, { style: { pointerEvents: "auto" } }));
-	var O = u(), k = i(O);
-	V(k, () => t.content ?? B, () => ({
-		props: E.props,
-		wrapperProps: A(D)
-	})), N(e, O), R();
+	let n = L(t, "side", 3, "bottom"), r = L(t, "sideOffset", 3, 0), a = L(t, "align", 3, "center"), o = L(t, "alignOffset", 3, 0), s = L(t, "arrowPadding", 3, 0), c = L(t, "avoidCollisions", 3, !0), l = L(t, "collisionBoundary", 19, () => []), u = L(t, "collisionPadding", 3, 0), d = L(t, "hideWhenDetached", 3, !1), p = L(t, "onPlaced", 3, () => {}), m = L(t, "sticky", 3, "partial"), h = L(t, "updatePositionStrategy", 3, "optimized"), g = L(t, "strategy", 3, "fixed"), _ = L(t, "dir", 3, "ltr"), v = L(t, "style", 19, () => ({})), b = L(t, "wrapperId", 19, de), x = L(t, "customAnchor", 3, null), S = L(t, "tooltip", 3, !1), C = Zn.create({
+		side: F(() => n()),
+		sideOffset: F(() => r()),
+		align: F(() => a()),
+		alignOffset: F(() => o()),
+		id: F(() => t.id),
+		arrowPadding: F(() => s()),
+		avoidCollisions: F(() => c()),
+		collisionBoundary: F(() => l()),
+		collisionPadding: F(() => u()),
+		hideWhenDetached: F(() => d()),
+		onPlaced: F(() => p()),
+		sticky: F(() => m()),
+		updatePositionStrategy: F(() => h()),
+		strategy: F(() => g()),
+		dir: F(() => _()),
+		style: F(() => v()),
+		enabled: F(() => t.enabled),
+		wrapperId: F(() => b()),
+		customAnchor: F(() => x())
+	}, f(() => S())), w = y(() => P(C.wrapperProps, { style: { pointerEvents: "auto" } }));
+	var T = N(), E = i(T);
+	H(E, () => t.content ?? V, () => ({
+		props: C.props,
+		wrapperProps: D(w)
+	})), U(e, T), R();
 }
-// node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer-content-static.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/floating-layer/components/floating-layer-content-static.svelte
 function rr(e, t) {
-	z(t, !0), Ne(() => {
+	z(t, !0), ce(() => {
 		t.onPlaced?.();
 	});
-	var n = u(), r = i(n);
-	V(r, () => t.content ?? B, () => ({
+	var n = N(), r = i(n);
+	H(r, () => t.content ?? V, () => ({
 		props: {},
 		wrapperProps: {}
-	})), N(e, n), R();
+	})), U(e, n), R();
 }
-// node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-content.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-content.svelte
 var ir = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -1324,8 +1324,8 @@ var ir = /* @__PURE__ */ new Set([
 	"onPlaced"
 ]);
 function ar(e, t) {
-	let n = y(t, "isStatic", 3, !1), r = ce(t, ir);
-	var a = u(), o = i(a), s = (e) => {
+	let n = L(t, "isStatic", 3, !1), r = ue(t, ir);
+	var a = N(), o = i(a), s = (e) => {
 		rr(e, {
 			get content() {
 				return t.content;
@@ -1335,7 +1335,7 @@ function ar(e, t) {
 			}
 		});
 	}, c = (e) => {
-		nr(e, L({
+		nr(e, A({
 			get content() {
 				return t.content;
 			},
@@ -1344,18 +1344,18 @@ function ar(e, t) {
 			}
 		}, () => r));
 	};
-	U(o, (e) => {
+	B(o, (e) => {
 		n() ? e(s) : e(c, -1);
-	}), N(e, a);
+	}), U(e, a);
 }
-// node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer-inner.svelte
-var or = /* @__PURE__ */ new Set(/* @__PURE__ */ "$$slots.$$events.$$legacy.popper.onEscapeKeydown.escapeKeydownBehavior.preventOverflowTextSelection.id.onPointerDown.onPointerUp.side.sideOffset.align.alignOffset.arrowPadding.avoidCollisions.collisionBoundary.collisionPadding.sticky.hideWhenDetached.updatePositionStrategy.strategy.dir.preventScroll.wrapperId.style.onPlaced.onInteractOutside.onCloseAutoFocus.onOpenAutoFocus.onFocusOutside.interactOutsideBehavior.loop.trapFocus.isValidEvent.customAnchor.isStatic.enabled.forceMount.ref.tooltip.contentPointerEvents".split(".")), sr = c("<!> <!>", 1);
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer-inner.svelte
+var or = /* @__PURE__ */ new Set(/* @__PURE__ */ "$$slots.$$events.$$legacy.popper.onEscapeKeydown.escapeKeydownBehavior.preventOverflowTextSelection.id.onPointerDown.onPointerUp.side.sideOffset.align.alignOffset.arrowPadding.avoidCollisions.collisionBoundary.collisionPadding.sticky.hideWhenDetached.updatePositionStrategy.strategy.dir.preventScroll.wrapperId.style.onPlaced.onInteractOutside.onCloseAutoFocus.onOpenAutoFocus.onFocusOutside.interactOutsideBehavior.loop.trapFocus.isValidEvent.customAnchor.isStatic.enabled.forceMount.ref.tooltip.contentPointerEvents".split(".")), sr = u("<!> <!>", 1);
 function cr(e, t) {
 	z(t, !0);
-	let n = y(t, "interactOutsideBehavior", 3, "close"), a = y(t, "trapFocus", 3, !0), o = y(t, "isValidEvent", 3, () => !1), s = y(t, "customAnchor", 3, null), c = y(t, "isStatic", 3, !1), l = y(t, "tooltip", 3, !1), d = y(t, "contentPointerEvents", 3, "auto"), f = ce(t, or), p = b(() => t.preventScroll ?? !0), m = b(() => t.strategy ?? (A(p) ? "fixed" : "absolute"));
+	let n = L(t, "interactOutsideBehavior", 3, "close"), r = L(t, "trapFocus", 3, !0), a = L(t, "isValidEvent", 3, () => !1), o = L(t, "customAnchor", 3, null), s = L(t, "isStatic", 3, !1), c = L(t, "tooltip", 3, !1), l = L(t, "contentPointerEvents", 3, "auto"), u = ue(t, or), d = y(() => t.preventScroll ?? !0), f = y(() => t.strategy ?? (D(d) ? "fixed" : "absolute"));
 	ar(e, {
 		get isStatic() {
-			return c();
+			return s();
 		},
 		get id() {
 			return t.id;
@@ -1394,7 +1394,7 @@ function cr(e, t) {
 			return t.updatePositionStrategy;
 		},
 		get strategy() {
-			return A(m);
+			return D(f);
 		},
 		get dir() {
 			return t.dir;
@@ -1409,30 +1409,30 @@ function cr(e, t) {
 			return t.onPlaced;
 		},
 		get customAnchor() {
-			return s();
+			return o();
 		},
 		get enabled() {
 			return t.enabled;
 		},
 		get tooltip() {
-			return l();
+			return c();
 		},
-		content: (e, s) => {
-			let c = () => (s?.()).props, l = () => (s?.()).wrapperProps;
-			var m = sr(), h = i(m), _ = (e) => {
-				_e(e, { get preventScroll() {
-					return A(p);
+		content: (e, o) => {
+			let s = () => (o?.()).props, c = () => (o?.()).wrapperProps;
+			var f = sr(), p = i(f), m = (e) => {
+				Se(e, { get preventScroll() {
+					return D(d);
 				} });
-			}, v = (e) => {
-				_e(e, { get preventScroll() {
-					return A(p);
+			}, h = (e) => {
+				Se(e, { get preventScroll() {
+					return D(d);
 				} });
 			};
-			U(h, (e) => {
-				t.forceMount && t.enabled ? e(_) : t.forceMount || e(v, 1);
+			B(p, (e) => {
+				t.forceMount && t.enabled ? e(m) : t.forceMount || e(h, 1);
 			});
-			var y = g(h, 2);
-			Ve(y, {
+			var _ = g(p, 2);
+			qe(_, {
 				get onOpenAutoFocus() {
 					return t.onOpenAutoFocus;
 				},
@@ -1446,7 +1446,7 @@ function cr(e, t) {
 					return t.enabled;
 				},
 				get trapFocus() {
-					return a();
+					return r();
 				},
 				get forceMount() {
 					return t.forceMount;
@@ -1454,9 +1454,9 @@ function cr(e, t) {
 				get ref() {
 					return t.ref;
 				},
-				focusScope: (e, a) => {
-					let s = () => (a?.()).props;
-					Ke(e, {
+				focusScope: (e, r) => {
+					let o = () => (r?.()).props;
+					he(e, {
 						get onEscapeKeydown() {
 							return t.onEscapeKeydown;
 						},
@@ -1469,8 +1469,8 @@ function cr(e, t) {
 						get ref() {
 							return t.ref;
 						},
-						children: (e, a) => {
-							pe(e, {
+						children: (e, r) => {
+							Ge(e, {
 								get id() {
 									return t.id;
 								},
@@ -1484,7 +1484,7 @@ function cr(e, t) {
 									return n();
 								},
 								get isValidEvent() {
-									return o();
+									return a();
 								},
 								get enabled() {
 									return t.enabled;
@@ -1493,8 +1493,8 @@ function cr(e, t) {
 									return t.ref;
 								},
 								children: (e, n) => {
-									let a = () => (n?.()).props;
-									ue(e, {
+									let r = () => (n?.()).props;
+									He(e, {
 										get id() {
 											return t.id;
 										},
@@ -1514,18 +1514,18 @@ function cr(e, t) {
 											return t.ref;
 										},
 										children: (e, n) => {
-											var o = u(), p = i(o);
+											var a = N(), d = i(a);
 											{
-												let e = b(() => ({
-													props: r(f, c(), a(), s(), {
+												let e = y(() => ({
+													props: P(u, s(), r(), o(), {
 														id: t.id,
-														style: { pointerEvents: d() }
+														style: { pointerEvents: l() }
 													}),
-													wrapperProps: l()
+													wrapperProps: c()
 												}));
-												V(p, () => t.popper ?? B, () => A(e));
+												H(d, () => t.popper ?? V, () => D(e));
 											}
-											N(e, o);
+											U(e, a);
 										},
 										$$slots: { default: !0 }
 									});
@@ -1537,17 +1537,17 @@ function cr(e, t) {
 					});
 				},
 				$$slots: { focusScope: !0 }
-			}), N(e, m);
+			}), U(e, f);
 		},
 		$$slots: { content: !0 }
 	}), R();
 }
-// node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer.svelte
 var lr = /* @__PURE__ */ new Set(/* @__PURE__ */ "$$slots.$$events.$$legacy.popper.open.onEscapeKeydown.escapeKeydownBehavior.preventOverflowTextSelection.id.onPointerDown.onPointerUp.side.sideOffset.align.alignOffset.arrowPadding.avoidCollisions.collisionBoundary.collisionPadding.sticky.hideWhenDetached.updatePositionStrategy.strategy.dir.preventScroll.wrapperId.style.onPlaced.onInteractOutside.onCloseAutoFocus.onOpenAutoFocus.onFocusOutside.interactOutsideBehavior.loop.trapFocus.isValidEvent.customAnchor.isStatic.ref.shouldRender".split("."));
 function ur(e, t) {
-	let n = y(t, "interactOutsideBehavior", 3, "close"), r = y(t, "trapFocus", 3, !0), a = y(t, "isValidEvent", 3, () => !1), o = y(t, "customAnchor", 3, null), s = y(t, "isStatic", 3, !1), c = ce(t, lr);
-	var l = u(), d = i(l), f = (e) => {
-		cr(e, L({
+	let n = L(t, "interactOutsideBehavior", 3, "close"), r = L(t, "trapFocus", 3, !0), a = L(t, "isValidEvent", 3, () => !1), o = L(t, "customAnchor", 3, null), s = L(t, "isStatic", 3, !1), c = ue(t, lr);
+	var l = N(), u = i(l), d = (e) => {
+		cr(e, A({
 			get popper() {
 				return t.popper;
 			},
@@ -1659,15 +1659,15 @@ function ur(e, t) {
 			}
 		}, () => c));
 	};
-	U(d, (e) => {
-		t.shouldRender && e(f);
-	}), N(e, l);
+	B(u, (e) => {
+		t.shouldRender && e(d);
+	}), U(e, l);
 }
-// node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer-force-mount.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/utilities/popper-layer/popper-layer-force-mount.svelte
 var dr = /* @__PURE__ */ new Set(/* @__PURE__ */ "$$slots.$$events.$$legacy.popper.onEscapeKeydown.escapeKeydownBehavior.preventOverflowTextSelection.id.onPointerDown.onPointerUp.side.sideOffset.align.alignOffset.arrowPadding.avoidCollisions.collisionBoundary.collisionPadding.sticky.hideWhenDetached.updatePositionStrategy.strategy.dir.preventScroll.wrapperId.style.onPlaced.onInteractOutside.onCloseAutoFocus.onOpenAutoFocus.onFocusOutside.interactOutsideBehavior.loop.trapFocus.isValidEvent.customAnchor.isStatic.enabled".split("."));
 function fr(e, t) {
-	let n = y(t, "interactOutsideBehavior", 3, "close"), r = y(t, "trapFocus", 3, !0), i = y(t, "isValidEvent", 3, () => !1), a = y(t, "customAnchor", 3, null), o = y(t, "isStatic", 3, !1), s = ce(t, dr);
-	cr(e, L({
+	let n = L(t, "interactOutsideBehavior", 3, "close"), r = L(t, "trapFocus", 3, !0), i = L(t, "isValidEvent", 3, () => !1), a = L(t, "customAnchor", 3, null), o = L(t, "isStatic", 3, !1), s = ue(t, dr);
+	cr(e, A({
 		get popper() {
 			return t.popper;
 		},
@@ -1775,7 +1775,7 @@ function fr(e, t) {
 		}
 	}, () => s, { forceMount: !0 }));
 }
-// node_modules/bits-ui/dist/internal/safe-polygon.svelte.js
+// ../vibebook/node_modules/bits-ui/dist/internal/safe-polygon.svelte.js
 function pr(e, t) {
 	let [n, r] = e, i = !1, a = t.length;
 	for (let e = 0, o = a - 1; e < a; o = e++) {
@@ -1820,7 +1820,7 @@ var gr = class {
 	constructor(e) {
 		this.#e = e, this.#t = e.buffer ?? 1;
 		let t = e.transitIntentTimeout;
-		this.#n = typeof t == "number" && t > 0 ? t : null, M([
+		this.#n = typeof t == "number" && t > 0 ? t : null, W([
 			e.triggerNode,
 			e.contentNode,
 			e.enabled
@@ -1830,26 +1830,26 @@ var gr = class {
 				return;
 			}
 			this.#o && this.#o !== e && this.#m(), this.#o = e;
-			let r = ee(e);
+			let r = d(e);
 			return [
-				D(r, "pointermove", (n) => {
+				T(r, "pointermove", (n) => {
 					this.#p([n.clientX, n.clientY], e, t);
 				}),
-				D(e, "pointerleave", (e) => {
+				T(e, "pointerleave", (e) => {
 					let n = e.relatedTarget;
-					if (l(n) && t.contains(n)) return;
+					if (s(n) && t.contains(n)) return;
 					let r = this.#e.ignoredTargets?.() ?? [];
-					l(n) && r.some((e) => e === n || e.contains(n)) || (this.#a = l(n) && r.length > 0 ? r.filter((e) => n.contains(e)) : [], this.#r = [e.clientX, e.clientY], this.#i = "content", this.#u());
+					s(n) && r.some((e) => e === n || e.contains(n)) || (this.#a = s(n) && r.length > 0 ? r.filter((e) => n.contains(e)) : [], this.#r = [e.clientX, e.clientY], this.#i = "content", this.#u());
 				}),
-				D(e, "pointerenter", () => {
+				T(e, "pointerenter", () => {
 					this.#m();
 				}),
-				D(t, "pointerenter", () => {
+				T(t, "pointerenter", () => {
 					this.#m();
 				}),
-				D(t, "pointerleave", (t) => {
+				T(t, "pointerleave", (t) => {
 					let n = t.relatedTarget;
-					l(n) && e.contains(n) || (this.#r = [t.clientX, t.clientY], this.#i = "trigger", this.#u());
+					s(n) && e.contains(n) || (this.#r = [t.clientX, t.clientY], this.#i = "trigger", this.#u());
 				})
 			].reduce((e, t) => () => {
 				e(), t();
@@ -1957,7 +1957,7 @@ var gr = class {
 	#t;
 	#n = null;
 	constructor(e, t) {
-		this.#t = e, this.#e = t, this.stop = this.stop.bind(this), this.start = this.start.bind(this), _(this.stop);
+		this.#t = e, this.#e = t, this.stop = this.stop.bind(this), this.start = this.start.bind(this), S(this.stop);
 	}
 	#r() {
 		this.#n !== null && (window.clearTimeout(this.#n), this.#n = null);
@@ -1970,43 +1970,43 @@ var gr = class {
 			this.#n = null, this.#t(...e);
 		}, this.#e);
 	}
-}, vr = t({
+}, vr = Ee({
 	component: "tooltip",
 	parts: ["content", "trigger"]
-}), yr = new Je("Tooltip.Provider"), br = new Je("Tooltip.Root"), xr = class {
+}), yr = new r("Tooltip.Provider"), br = new r("Tooltip.Root"), xr = class {
 	triggers = /* @__PURE__ */ new Map();
 	#e = m(0);
 	#t = m(null);
 	get activeTriggerId() {
-		return A(this.#t);
+		return D(this.#t);
 	}
 	set activeTriggerId(e) {
 		I(this.#t, e, !0);
 	}
-	#n = b(() => {
-		A(this.#e);
+	#n = y(() => {
+		D(this.#e);
 		let e = this.activeTriggerId;
 		return e === null ? null : this.triggers.get(e)?.node ?? null;
 	});
 	get activeTriggerNode() {
-		return A(this.#n);
+		return D(this.#n);
 	}
 	set activeTriggerNode(e) {
 		I(this.#n, e);
 	}
-	#r = b(() => {
-		A(this.#e);
+	#r = y(() => {
+		D(this.#e);
 		let e = this.activeTriggerId;
 		return e === null ? null : this.triggers.get(e)?.payload ?? null;
 	});
 	get activePayload() {
-		return A(this.#r);
+		return D(this.#r);
 	}
 	set activePayload(e) {
 		I(this.#r, e);
 	}
 	register = (e) => {
-		this.triggers.set(e.id, e), e.id === this.activeTriggerId && S(this.#e);
+		this.triggers.set(e.id, e), e.id === this.activeTriggerId && x(this.#e);
 	};
 	update = this.register;
 	unregister = (e) => {
@@ -2028,20 +2028,20 @@ var gr = class {
 	opts;
 	#e = m(!0);
 	get isOpenDelayed() {
-		return A(this.#e);
+		return D(this.#e);
 	}
 	set isOpenDelayed(e) {
 		I(this.#e, e, !0);
 	}
-	isPointerInTransit = F(!1);
+	isPointerInTransit = p(!1);
 	#t;
 	#n = m(null);
 	#r = !1;
 	constructor(e) {
 		this.opts = e, this.#t = new _r(() => {
 			this.isOpenDelayed = !0;
-		}, this.opts.skipDelayDuration.current), Ye(() => D(window, "scroll", (e) => {
-			let t = A(this.#n);
+		}, this.opts.skipDelayDuration.current), Je(() => T(window, "scroll", (e) => {
+			let t = D(this.#n);
 			if (!t || this.#r) return;
 			let n = t.triggerNode;
 			if (!n) return;
@@ -2064,49 +2064,49 @@ var gr = class {
 		this.#t.stop();
 	};
 	onOpen = (e) => {
-		A(this.#n) && A(this.#n) !== e && A(this.#n).handleClose(), this.#a(), this.isOpenDelayed = !1, I(this.#n, e, !0);
+		D(this.#n) && D(this.#n) !== e && D(this.#n).handleClose(), this.#a(), this.isOpenDelayed = !1, I(this.#n, e, !0);
 	};
 	onClose = (e) => {
-		A(this.#n) === e && (I(this.#n, null), this.#i());
+		D(this.#n) === e && (I(this.#n, null), this.#i());
 	};
-	isTooltipOpen = (e) => A(this.#n) === e;
+	isTooltipOpen = (e) => D(this.#n) === e;
 }, Cr = class e {
 	static create(t) {
 		return br.set(new e(t, yr.get()));
 	}
 	opts;
 	provider;
-	#e = b(() => this.opts.delayDuration.current ?? this.provider.opts.delayDuration.current);
+	#e = y(() => this.opts.delayDuration.current ?? this.provider.opts.delayDuration.current);
 	get delayDuration() {
-		return A(this.#e);
+		return D(this.#e);
 	}
 	set delayDuration(e) {
 		I(this.#e, e);
 	}
-	#t = b(() => this.opts.disableHoverableContent.current ?? this.provider.opts.disableHoverableContent.current);
+	#t = y(() => this.opts.disableHoverableContent.current ?? this.provider.opts.disableHoverableContent.current);
 	get disableHoverableContent() {
-		return A(this.#t);
+		return D(this.#t);
 	}
 	set disableHoverableContent(e) {
 		I(this.#t, e);
 	}
-	#n = b(() => this.opts.disableCloseOnTriggerClick.current ?? this.provider.opts.disableCloseOnTriggerClick.current);
+	#n = y(() => this.opts.disableCloseOnTriggerClick.current ?? this.provider.opts.disableCloseOnTriggerClick.current);
 	get disableCloseOnTriggerClick() {
-		return A(this.#n);
+		return D(this.#n);
 	}
 	set disableCloseOnTriggerClick(e) {
 		I(this.#n, e);
 	}
-	#r = b(() => this.opts.disabled.current ?? this.provider.opts.disabled.current);
+	#r = y(() => this.opts.disabled.current ?? this.provider.opts.disabled.current);
 	get disabled() {
-		return A(this.#r);
+		return D(this.#r);
 	}
 	set disabled(e) {
 		I(this.#r, e);
 	}
-	#i = b(() => this.opts.ignoreNonKeyboardFocus.current ?? this.provider.opts.ignoreNonKeyboardFocus.current);
+	#i = y(() => this.opts.ignoreNonKeyboardFocus.current ?? this.provider.opts.ignoreNonKeyboardFocus.current);
 	get ignoreNonKeyboardFocus() {
-		return A(this.#i);
+		return D(this.#i);
 	}
 	set ignoreNonKeyboardFocus(e) {
 		I(this.#i, e);
@@ -2115,7 +2115,7 @@ var gr = class {
 	tether;
 	#a = m(null);
 	get contentNode() {
-		return A(this.#a);
+		return D(this.#a);
 	}
 	set contentNode(e) {
 		I(this.#a, e, !0);
@@ -2124,15 +2124,15 @@ var gr = class {
 	#o = m(!1);
 	#s = m(!1);
 	get openedViaFocus() {
-		return A(this.#s);
+		return D(this.#s);
 	}
 	set openedViaFocus(e) {
 		I(this.#s, e, !0);
 	}
 	#c;
-	#l = b(() => this.opts.open.current ? A(this.#o) ? "delayed-open" : "instant-open" : "closed");
+	#l = y(() => this.opts.open.current ? D(this.#o) ? "delayed-open" : "instant-open" : "closed");
 	get stateAttr() {
-		return A(this.#l);
+		return D(this.#l);
 	}
 	set stateAttr(e) {
 		I(this.#l, e);
@@ -2140,23 +2140,23 @@ var gr = class {
 	constructor(e, t) {
 		this.opts = e, this.provider = t, this.tether = e.tether.current?.state ?? null, this.registry = this.tether?.registry ?? new xr(), this.#c = new _r(() => {
 			I(this.#o, !0), this.opts.open.current = !0;
-		}, this.delayDuration ?? 0), this.tether && (this.tether.root = this, Ye(() => () => {
+		}, this.delayDuration ?? 0), this.tether && (this.tether.root = this, Je(() => () => {
 			this.tether?.root === this && (this.tether.root = null);
-		})), this.contentPresence = new ie({
+		})), this.contentPresence = new l({
 			open: this.opts.open,
-			ref: P(() => this.contentNode),
+			ref: F(() => this.contentNode),
 			onComplete: () => {
 				this.opts.onOpenChangeComplete.current(this.opts.open.current);
 			}
-		}), M(() => this.delayDuration, () => {
+		}), W(() => this.delayDuration, () => {
 			this.delayDuration !== void 0 && (this.#c = new _r(() => {
 				I(this.#o, !0), this.opts.open.current = !0;
 			}, this.delayDuration));
-		}), M(() => this.opts.open.current, (e) => {
+		}), W(() => this.opts.open.current, (e) => {
 			e ? (this.ensureActiveTrigger(), this.provider.onOpen(this)) : (this.openedViaFocus = !1, this.provider.onClose(this));
-		}, { lazy: !0 }), M(() => this.opts.triggerId.current, (e) => {
+		}, { lazy: !0 }), W(() => this.opts.triggerId.current, (e) => {
 			e !== this.registry.activeTriggerId && this.registry.setActiveTrigger(e);
-		}), M(() => this.registry.activeTriggerId, (e) => {
+		}), W(() => this.registry.activeTriggerId, (e) => {
 			this.opts.triggerId.current !== e && (this.opts.triggerId.current = e);
 		});
 	}
@@ -2220,7 +2220,7 @@ var gr = class {
 	root;
 	tether;
 	attachment;
-	#e = F(!1);
+	#e = p(!1);
 	#t = null;
 	#n = m(!1);
 	domContext;
@@ -2228,13 +2228,13 @@ var gr = class {
 	#i = !1;
 	#a = null;
 	constructor(e, t, n) {
-		this.opts = e, this.root = t, this.tether = n, this.domContext = new E(e.ref), this.attachment = T(this.opts.ref, (e) => e ? this.#c(e) : this.#l()), M(() => this.opts.id.current, () => {
+		this.opts = e, this.root = t, this.tether = n, this.domContext = new ee(e.ref), this.attachment = E(this.opts.ref, (e) => e ? this.#c(e) : this.#l()), W(() => this.opts.id.current, () => {
 			this.#c(this.opts.ref.current);
-		}), M(() => this.opts.payload.current, () => {
+		}), W(() => this.opts.payload.current, () => {
 			this.#c(this.opts.ref.current);
-		}), M(() => this.opts.disabled.current, () => {
+		}), W(() => this.opts.disabled.current, () => {
 			this.#c(this.opts.ref.current);
-		}), Ye(() => (this.#i = !0, this.#c(this.opts.ref.current), () => {
+		}), Je(() => (this.#i = !0, this.#c(this.opts.ref.current), () => {
 			let e = this.#o(), t = this.#a?.id;
 			t && (this.tether ? this.tether.registry.unregister(t) : e?.unregisterTrigger(t)), this.#a = null, this.#i = !1;
 		}));
@@ -2292,7 +2292,7 @@ var gr = class {
 	};
 	#h = (e) => {
 		let t = this.#o();
-		t && (this.#s() ? t.opts.open.current && t.handleClose() : e.pointerType !== "touch" && (A(this.#n) || (this.#d(), t.provider.isPointerInTransit.current = !1, t.onTriggerEnter(this.opts.id.current), I(this.#n, !0))));
+		t && (this.#s() ? t.opts.open.current && t.handleClose() : e.pointerType !== "touch" && (D(this.#n) || (this.#d(), t.provider.isPointerInTransit.current = !1, t.onTriggerEnter(this.opts.id.current), I(this.#n, !0))));
 	};
 	#g = (e) => {
 		let t = this.#o();
@@ -2302,7 +2302,7 @@ var gr = class {
 			return;
 		}
 		let n = e.relatedTarget;
-		if (l(n)) {
+		if (s(n)) {
 			for (let e of t.registry.triggers.values()) if (e.node === n) {
 				if (t.provider.opts.skipDelayDuration.current > 0) {
 					I(this.#n, !1);
@@ -2316,7 +2316,7 @@ var gr = class {
 	};
 	#_ = (e) => {
 		let t = this.#o();
-		t && (this.#e.current || this.#t !== "touch" && (this.#s() ? t.opts.open.current && t.handleClose() : (!t.ignoreNonKeyboardFocus || s(e.currentTarget)) && (t.setActiveTrigger(this.opts.id.current), t.openedViaFocus = !0, t.handleOpen(), t.provider.ignoreFocusScroll())));
+		t && (this.#e.current || this.#t !== "touch" && (this.#s() ? t.opts.open.current && t.handleClose() : (!t.ignoreNonKeyboardFocus || O(e.currentTarget)) && (t.setActiveTrigger(this.opts.id.current), t.openedViaFocus = !0, t.handleOpen(), t.provider.ignoreFocusScroll())));
 	};
 	#v = () => {
 		this.#t = null;
@@ -2327,16 +2327,16 @@ var gr = class {
 		let e = this.#o();
 		!e || e.disableCloseOnTriggerClick || this.#s() || e.handleClose();
 	};
-	#b = b(() => {
-		let e = this.#o(), t = !!(e?.opts.open.current && e.isActiveTrigger(this.opts.id.current)), n = this.#s();
+	#b = y(() => {
+		let e = this.#o(), n = !!(e?.opts.open.current && e.isActiveTrigger(this.opts.id.current)), r = this.#s();
 		return {
 			id: this.opts.id.current,
-			"aria-describedby": t ? e?.contentNode?.id : void 0,
-			"data-state": t ? e?.stateAttr : "closed",
-			"data-disabled": Ce(n),
+			"aria-describedby": n ? e?.contentNode?.id : void 0,
+			"data-state": n ? e?.stateAttr : "closed",
+			"data-disabled": t(r),
 			"data-delay-duration": `${e?.delayDuration ?? 0}`,
 			[vr.trigger]: "",
-			tabindex: n ? void 0 : this.opts.tabindex.current,
+			tabindex: r ? void 0 : this.opts.tabindex.current,
 			disabled: this.opts.disabled.current,
 			onpointerup: this.#f,
 			onpointerdown: this.#p,
@@ -2350,7 +2350,7 @@ var gr = class {
 		};
 	});
 	get props() {
-		return A(this.#b);
+		return D(this.#b);
 	}
 	set props(e) {
 		I(this.#b, e);
@@ -2363,7 +2363,7 @@ var gr = class {
 	root;
 	attachment;
 	constructor(e, t) {
-		this.opts = e, this.root = t, this.attachment = T(this.opts.ref, (e) => this.root.contentNode = e), new gr({
+		this.opts = e, this.root = t, this.attachment = E(this.opts.ref, (e) => this.root.contentNode = e), new gr({
 			triggerNode: () => this.root.triggerNode,
 			contentNode: () => this.root.contentNode,
 			enabled: () => this.root.opts.open.current && !this.root.disableHoverableContent && !this.root.openedViaFocus,
@@ -2380,7 +2380,7 @@ var gr = class {
 		});
 	}
 	onInteractOutside = (e) => {
-		Ge(e, this.root.triggerNode) && this.root.disableCloseOnTriggerClick ? e.preventDefault() : (this.opts.onInteractOutside.current(e), e.defaultPrevented || this.root.handleClose());
+		re(e, this.root.triggerNode) && this.root.disableCloseOnTriggerClick ? e.preventDefault() : (this.opts.onInteractOutside.current(e), e.defaultPrevented || this.root.handleClose());
 	};
 	onEscapeKeydown = (e) => {
 		this.opts.onEscapeKeydown.current?.(e), e.defaultPrevented || this.root.handleClose();
@@ -2394,24 +2394,24 @@ var gr = class {
 	get shouldRender() {
 		return this.root.contentPresence.shouldRender;
 	}
-	#e = b(() => ({ open: this.root.opts.open.current }));
+	#e = y(() => ({ open: this.root.opts.open.current }));
 	get snippetProps() {
-		return A(this.#e);
+		return D(this.#e);
 	}
 	set snippetProps(e) {
 		I(this.#e, e);
 	}
-	#t = b(() => ({
+	#t = y(() => ({
 		id: this.opts.id.current,
 		"data-state": this.root.stateAttr,
-		"data-disabled": Ce(this.root.disabled),
-		...xe(this.root.contentPresence.transitionStatus),
+		"data-disabled": t(this.root.disabled),
+		...w(this.root.contentPresence.transitionStatus),
 		style: { outline: "none" },
 		[vr.content]: "",
 		...this.attachment
 	}));
 	get props() {
-		return A(this.#t);
+		return D(this.#t);
 	}
 	set props(e) {
 		I(this.#t, e);
@@ -2423,38 +2423,38 @@ var gr = class {
 		onCloseAutoFocus: this.onCloseAutoFocus
 	};
 };
-// node_modules/bits-ui/dist/bits/tooltip/components/tooltip.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/tooltip/components/tooltip.svelte
 function Er(e, t) {
 	z(t, !0);
-	let n = y(t, "open", 15, !1), r = y(t, "triggerId", 15, null), a = y(t, "onOpenChange", 3, Ue), o = y(t, "onOpenChangeComplete", 3, Ue), s = Cr.create({
-		open: P(() => n(), (e) => {
+	let n = L(t, "open", 15, !1), r = L(t, "triggerId", 15, null), a = L(t, "onOpenChange", 3, ie), o = L(t, "onOpenChangeComplete", 3, ie), s = Cr.create({
+		open: F(() => n(), (e) => {
 			n(e), a()(e);
 		}),
-		triggerId: P(() => r(), (e) => {
+		triggerId: F(() => r(), (e) => {
 			r(e);
 		}),
-		delayDuration: P(() => t.delayDuration),
-		disableCloseOnTriggerClick: P(() => t.disableCloseOnTriggerClick),
-		disableHoverableContent: P(() => t.disableHoverableContent),
-		ignoreNonKeyboardFocus: P(() => t.ignoreNonKeyboardFocus),
-		disabled: P(() => t.disabled),
-		onOpenChangeComplete: P(() => o()),
-		tether: P(() => t.tether)
+		delayDuration: F(() => t.delayDuration),
+		disableCloseOnTriggerClick: F(() => t.disableCloseOnTriggerClick),
+		disableHoverableContent: F(() => t.disableHoverableContent),
+		ignoreNonKeyboardFocus: F(() => t.ignoreNonKeyboardFocus),
+		disabled: F(() => t.disabled),
+		onOpenChangeComplete: F(() => o()),
+		tether: F(() => t.tether)
 	});
-	$e(e, {
+	Qe(e, {
 		tooltip: !0,
 		children: (e, n) => {
-			var r = u(), a = i(r);
-			V(a, () => t.children ?? B, () => ({
+			var r = N(), a = i(r);
+			H(a, () => t.children ?? V, () => ({
 				open: s.opts.open.current,
 				triggerId: s.activeTriggerId,
 				payload: s.activePayload
-			})), N(e, r);
+			})), U(e, r);
 		},
 		$$slots: { default: !0 }
 	}), R();
 }
-// node_modules/bits-ui/dist/bits/tooltip/components/tooltip-content.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/tooltip/components/tooltip-content.svelte
 var Dr = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -2477,137 +2477,137 @@ var Dr = /* @__PURE__ */ new Set([
 	"onEscapeKeydown",
 	"forceMount",
 	"style"
-]), Or = c("<div><div><!></div></div>");
+]), Or = u("<div><div><!></div></div>");
 function kr(t, n) {
-	let o = k();
+	let r = c();
 	z(n, !0);
-	let s = y(n, "id", 19, () => a(o)), c = y(n, "ref", 15, null), l = y(n, "side", 3, "top"), d = y(n, "sideOffset", 3, 0), f = y(n, "align", 3, "center"), p = y(n, "avoidCollisions", 3, !0), m = y(n, "arrowPadding", 3, 0), h = y(n, "sticky", 3, "partial"), g = y(n, "hideWhenDetached", 3, !1), _ = y(n, "collisionPadding", 3, 0), v = y(n, "onInteractOutside", 3, Ue), x = y(n, "onEscapeKeydown", 3, Ue), S = y(n, "forceMount", 3, !1), C = ce(n, Dr), w = Tr.create({
-		id: P(() => s()),
-		ref: P(() => c(), (e) => c(e)),
-		onInteractOutside: P(() => v()),
-		onEscapeKeydown: P(() => x())
-	}), T = b(() => ({
-		side: l(),
-		sideOffset: d(),
-		align: f(),
-		avoidCollisions: p(),
-		arrowPadding: m(),
-		sticky: h(),
-		hideWhenDetached: g(),
-		collisionPadding: _(),
+	let a = L(n, "id", 19, () => We(r)), o = L(n, "ref", 15, null), s = L(n, "side", 3, "top"), l = L(n, "sideOffset", 3, 0), u = L(n, "align", 3, "center"), d = L(n, "avoidCollisions", 3, !0), f = L(n, "arrowPadding", 3, 0), p = L(n, "sticky", 3, "partial"), m = L(n, "hideWhenDetached", 3, !1), h = L(n, "collisionPadding", 3, 0), g = L(n, "onInteractOutside", 3, ie), _ = L(n, "onEscapeKeydown", 3, ie), v = L(n, "forceMount", 3, !1), b = ue(n, Dr), x = Tr.create({
+		id: F(() => a()),
+		ref: F(() => o(), (e) => o(e)),
+		onInteractOutside: F(() => g()),
+		onEscapeKeydown: F(() => _())
+	}), S = y(() => ({
+		side: s(),
+		sideOffset: l(),
+		align: u(),
+		avoidCollisions: d(),
+		arrowPadding: f(),
+		sticky: p(),
+		hideWhenDetached: m(),
+		collisionPadding: h(),
 		strategy: n.strategy,
-		customAnchor: n.customAnchor ?? w.root.triggerNode
-	})), E = b(() => r(C, A(T), w.props));
-	var D = u(), O = i(D), ee = (t) => {
+		customAnchor: n.customAnchor ?? x.root.triggerNode
+	})), C = y(() => P(b, D(S), x.props));
+	var w = N(), T = i(w), E = (t) => {
 		{
-			let a = (t, a) => {
-				let o = () => (a?.()).props, s = () => (a?.()).wrapperProps, c = b(() => r(s(), { style: { pointerEvents: w.root.disableHoverableContent ? "none" : void 0 } })), l = b(() => r(o(), { style: rt("tooltip") }, { style: n.style }));
-				var d = u(), f = i(d), p = (e) => {
-					var t = u(), r = i(t);
+			let r = (t, r) => {
+				let a = () => (r?.()).props, o = () => (r?.()).wrapperProps, s = y(() => P(o(), { style: { pointerEvents: x.root.disableHoverableContent ? "none" : void 0 } })), c = y(() => P(a(), { style: nt("tooltip") }, { style: n.style }));
+				var l = N(), u = i(l), d = (e) => {
+					var t = N(), r = i(t);
 					{
-						let e = b(() => ({
-							props: A(l),
-							wrapperProps: A(c),
-							...w.snippetProps
+						let e = y(() => ({
+							props: D(c),
+							wrapperProps: D(s),
+							...x.snippetProps
 						}));
-						V(r, () => n.child, () => A(e));
+						H(r, () => n.child, () => D(e));
 					}
-					N(e, t);
-				}, m = (t) => {
+					U(e, t);
+				}, f = (t) => {
 					var r = Or();
-					fe(r, () => ({ ...A(c) }));
-					var i = W(r);
-					fe(i, () => ({ ...A(l) }));
-					var a = W(i);
-					V(a, () => n.children ?? B), e(i), e(r), N(t, r);
+					ze(r, () => ({ ...D(s) }));
+					var i = G(r);
+					ze(i, () => ({ ...D(c) }));
+					var a = G(i);
+					H(a, () => n.children ?? V), e(i), e(r), U(t, r);
 				};
-				U(f, (e) => {
-					n.child ? e(p) : e(m, -1);
-				}), N(t, d);
-			}, o = b(() => w.root.disableHoverableContent ? "none" : "auto");
-			fr(t, L(() => A(E), () => w.popperProps, {
+				B(u, (e) => {
+					n.child ? e(d) : e(f, -1);
+				}), U(t, l);
+			}, o = y(() => x.root.disableHoverableContent ? "none" : "auto");
+			fr(t, A(() => D(C), () => x.popperProps, {
 				get enabled() {
-					return w.root.opts.open.current;
+					return x.root.opts.open.current;
 				},
 				get id() {
-					return s();
+					return a();
 				},
 				trapFocus: !1,
 				loop: !1,
 				preventScroll: !1,
 				forceMount: !0,
 				get ref() {
-					return w.opts.ref;
+					return x.opts.ref;
 				},
 				tooltip: !0,
 				get shouldRender() {
-					return w.shouldRender;
+					return x.shouldRender;
 				},
 				get contentPointerEvents() {
-					return A(o);
+					return D(o);
 				},
-				popper: a,
+				popper: r,
 				$$slots: { popper: !0 }
 			}));
 		}
-	}, j = (t) => {
+	}, O = (t) => {
 		{
-			let a = (t, a) => {
-				let o = () => (a?.()).props, s = () => (a?.()).wrapperProps, c = b(() => r(s(), { style: { pointerEvents: w.root.disableHoverableContent ? "none" : void 0 } })), l = b(() => r(o(), { style: rt("tooltip") }, { style: n.style }));
-				var d = u(), f = i(d), p = (e) => {
-					var t = u(), r = i(t);
+			let r = (t, r) => {
+				let a = () => (r?.()).props, o = () => (r?.()).wrapperProps, s = y(() => P(o(), { style: { pointerEvents: x.root.disableHoverableContent ? "none" : void 0 } })), c = y(() => P(a(), { style: nt("tooltip") }, { style: n.style }));
+				var l = N(), u = i(l), d = (e) => {
+					var t = N(), r = i(t);
 					{
-						let e = b(() => ({
-							props: A(l),
-							wrapperProps: A(c),
-							...w.snippetProps
+						let e = y(() => ({
+							props: D(c),
+							wrapperProps: D(s),
+							...x.snippetProps
 						}));
-						V(r, () => n.child, () => A(e));
+						H(r, () => n.child, () => D(e));
 					}
-					N(e, t);
-				}, m = (t) => {
+					U(e, t);
+				}, f = (t) => {
 					var r = Or();
-					fe(r, () => ({ ...A(c) }));
-					var i = W(r);
-					fe(i, () => ({ ...A(l) }));
-					var a = W(i);
-					V(a, () => n.children ?? B), e(i), e(r), N(t, r);
+					ze(r, () => ({ ...D(s) }));
+					var i = G(r);
+					ze(i, () => ({ ...D(c) }));
+					var a = G(i);
+					H(a, () => n.children ?? V), e(i), e(r), U(t, r);
 				};
-				U(f, (e) => {
-					n.child ? e(p) : e(m, -1);
-				}), N(t, d);
-			}, o = b(() => w.root.disableHoverableContent ? "none" : "auto");
-			ur(t, L(() => A(E), () => w.popperProps, {
+				B(u, (e) => {
+					n.child ? e(d) : e(f, -1);
+				}), U(t, l);
+			}, o = y(() => x.root.disableHoverableContent ? "none" : "auto");
+			ur(t, A(() => D(C), () => x.popperProps, {
 				get open() {
-					return w.root.opts.open.current;
+					return x.root.opts.open.current;
 				},
 				get id() {
-					return s();
+					return a();
 				},
 				trapFocus: !1,
 				loop: !1,
 				preventScroll: !1,
 				forceMount: !1,
 				get ref() {
-					return w.opts.ref;
+					return x.opts.ref;
 				},
 				tooltip: !0,
 				get shouldRender() {
-					return w.shouldRender;
+					return x.shouldRender;
 				},
 				get contentPointerEvents() {
-					return A(o);
+					return D(o);
 				},
-				popper: a,
+				popper: r,
 				$$slots: { popper: !0 }
 			}));
 		}
 	};
-	U(O, (e) => {
-		S() ? e(ee) : S() || e(j, 1);
-	}), N(t, D), R();
+	B(T, (e) => {
+		v() ? e(E) : v() || e(O, 1);
+	}), U(t, w), R();
 }
-// node_modules/bits-ui/dist/bits/tooltip/components/tooltip-trigger.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/tooltip/components/tooltip-trigger.svelte
 var Ar = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -2621,45 +2621,45 @@ var Ar = /* @__PURE__ */ new Set([
 	"type",
 	"tabindex",
 	"ref"
-]), jr = c("<button><!></button>");
+]), jr = u("<button><!></button>");
 function Mr(t, n) {
-	let o = k();
+	let r = c();
 	z(n, !0);
-	let s = y(n, "id", 19, () => a(o)), c = y(n, "disabled", 3, !1), l = y(n, "type", 3, "button"), d = y(n, "tabindex", 3, 0), f = y(n, "ref", 15, null), p = ce(n, Ar), m = wr.create({
-		id: P(() => s()),
-		disabled: P(() => c() ?? !1),
-		tabindex: P(() => d() ?? 0),
-		payload: P(() => n.payload),
-		tether: P(() => n.tether),
-		ref: P(() => f(), (e) => f(e))
-	}), h = b(() => r(p, m.props, { type: l() }));
-	var g = u(), _ = i(g), v = (e) => {
-		var t = u(), r = i(t);
-		V(r, () => n.child, () => ({ props: A(h) })), N(e, t);
-	}, x = (t) => {
+	let a = L(n, "id", 19, () => We(r)), o = L(n, "disabled", 3, !1), s = L(n, "type", 3, "button"), l = L(n, "tabindex", 3, 0), u = L(n, "ref", 15, null), d = ue(n, Ar), f = wr.create({
+		id: F(() => a()),
+		disabled: F(() => o() ?? !1),
+		tabindex: F(() => l() ?? 0),
+		payload: F(() => n.payload),
+		tether: F(() => n.tether),
+		ref: F(() => u(), (e) => u(e))
+	}), p = y(() => P(d, f.props, { type: s() }));
+	var m = N(), h = i(m), g = (e) => {
+		var t = N(), r = i(t);
+		H(r, () => n.child, () => ({ props: D(p) })), U(e, t);
+	}, _ = (t) => {
 		var r = jr();
-		fe(r, () => ({ ...A(h) }));
-		var i = W(r);
-		V(i, () => n.children ?? B), e(r), N(t, r);
+		ze(r, () => ({ ...D(p) }));
+		var i = G(r);
+		H(i, () => n.children ?? V), e(r), U(t, r);
 	};
-	U(_, (e) => {
-		n.child ? e(v) : e(x, -1);
-	}), N(t, g), R();
+	B(h, (e) => {
+		n.child ? e(g) : e(_, -1);
+	}), U(t, m), R();
 }
-// node_modules/bits-ui/dist/bits/tooltip/components/tooltip-provider.svelte
+// ../vibebook/node_modules/bits-ui/dist/bits/tooltip/components/tooltip-provider.svelte
 function Nr(e, t) {
 	z(t, !0);
-	let n = y(t, "delayDuration", 3, 700), r = y(t, "disableCloseOnTriggerClick", 3, !1), a = y(t, "disableHoverableContent", 3, !1), o = y(t, "disabled", 3, !1), s = y(t, "ignoreNonKeyboardFocus", 3, !1), c = y(t, "skipDelayDuration", 3, 300);
+	let n = L(t, "delayDuration", 3, 700), r = L(t, "disableCloseOnTriggerClick", 3, !1), a = L(t, "disableHoverableContent", 3, !1), o = L(t, "disabled", 3, !1), s = L(t, "ignoreNonKeyboardFocus", 3, !1), c = L(t, "skipDelayDuration", 3, 300);
 	Sr.create({
-		delayDuration: P(() => n()),
-		disableCloseOnTriggerClick: P(() => r()),
-		disableHoverableContent: P(() => a()),
-		disabled: P(() => o()),
-		ignoreNonKeyboardFocus: P(() => s()),
-		skipDelayDuration: P(() => c())
+		delayDuration: F(() => n()),
+		disableCloseOnTriggerClick: F(() => r()),
+		disableHoverableContent: F(() => a()),
+		disabled: F(() => o()),
+		ignoreNonKeyboardFocus: F(() => s()),
+		skipDelayDuration: F(() => c())
 	});
-	var l = u(), d = i(l);
-	V(d, () => t.children ?? B), N(e, l), R();
+	var l = N(), u = i(l);
+	H(u, () => t.children ?? V), U(e, l), R();
 }
 // svelte/lib/ui/Textarea.svelte
 var Pr = /* @__PURE__ */ new Set([
@@ -2669,15 +2669,15 @@ var Pr = /* @__PURE__ */ new Set([
 	"value",
 	"class",
 	"ref"
-]), Fr = c("<textarea></textarea>");
+]), Fr = u("<textarea></textarea>");
 function Ir(e, t) {
 	z(t, !0);
-	let n = y(t, "value", 15, ""), r = y(t, "ref", 15, null), i = ce(t, Pr);
+	let n = L(t, "value", 15, ""), r = L(t, "ref", 15, null), i = ue(t, Pr);
 	var a = Fr();
-	le(a), fe(a, (e) => ({
+	le(a), ze(a, (e) => ({
 		class: e,
 		...i
-	}), [() => x("tw:min-h-24 tw:w-full tw:min-w-0 tw:rounded-control tw:border tw:border-input tw:bg-studio-input-background tw:px-3 tw:py-2 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:tracking-normal tw:text-foreground tw:outline-none tw:placeholder:text-muted-foreground tw:focus-visible:border-ring tw:focus-visible:ring-2 tw:focus-visible:ring-ring/30 tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:aria-invalid:border-destructive tw:aria-invalid:ring-destructive/30", t.class)]), ze(a, (e) => r(e), () => r()), be(a, n), N(e, a), R();
+	}), [() => Fe("tw:min-h-24 tw:w-full tw:min-w-0 tw:rounded-control tw:border tw:border-input tw:bg-studio-input-background tw:px-3 tw:py-2 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:tracking-normal tw:text-foreground tw:outline-none tw:placeholder:text-muted-foreground tw:focus-visible:border-ring tw:focus-visible:ring-2 tw:focus-visible:ring-ring/30 tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:aria-invalid:border-destructive tw:aria-invalid:ring-destructive/30", t.class)]), Le(a, (e) => r(e), () => r()), Pe(a, n), U(e, a), R();
 }
 // svelte/lib/ui/Switch.svelte
 var Lr = /* @__PURE__ */ new Set([
@@ -2688,175 +2688,175 @@ var Lr = /* @__PURE__ */ new Set([
 	"class",
 	"onchange",
 	"onCheckedChange"
-]), Rr = c("<span class=\"tw:relative tw:inline-flex tw:shrink-0 tw:align-middle\"><input/> <span aria-hidden=\"true\"></span></span>");
+]), Rr = u("<span class=\"tw:relative tw:inline-flex tw:shrink-0 tw:align-middle\"><input/> <span aria-hidden=\"true\"></span></span>");
 function zr(t, n) {
 	z(n, !0);
-	let r = y(n, "checked", 15, !1), i = ce(n, Lr);
-	var a = Rr(), o = W(a), s = (e) => {
+	let r = L(n, "checked", 15, !1), i = ue(n, Lr);
+	var a = Rr(), o = G(a), s = (e) => {
 		n.onchange?.(e), n.onCheckedChange?.(e.currentTarget.checked);
 	};
-	fe(o, (e) => ({
+	ze(o, (e) => ({
 		type: "checkbox",
 		role: "switch",
 		"aria-checked": r(),
 		...i,
 		onchange: s,
 		class: e
-	}), [() => x("tw:m-0 tw:h-5 tw:w-9 tw:appearance-none tw:rounded-full tw:border tw:border-transparent tw:bg-input tw:p-0 tw:outline-none tw:transition-colors tw:checked:bg-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:motion-reduce:transition-none", n.class)], void 0, void 0, void 0, !0);
+	}), [() => Fe("tw:m-0 tw:h-5 tw:w-9 tw:appearance-none tw:rounded-full tw:border tw:border-transparent tw:bg-input tw:p-0 tw:outline-none tw:transition-colors tw:checked:bg-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:motion-reduce:transition-none", n.class)], void 0, void 0, void 0, !0);
 	var c = g(o, 2);
-	e(a), v((e) => Me(c, 1, e), [() => Ee(x("tw:pointer-events-none tw:absolute tw:left-0.5 tw:top-0.5 tw:size-4 tw:rounded-full tw:bg-card tw:shadow-xs tw:transition-transform tw:motion-reduce:transition-none", r() ? "tw:translate-x-4" : "tw:translate-x-0"))]), Oe(o, r), N(t, a), R();
+	e(a), v((e) => ye(c, 1, e), [() => xe(Fe("tw:pointer-events-none tw:absolute tw:left-0.5 tw:top-0.5 tw:size-4 tw:rounded-full tw:bg-card tw:shadow-xs tw:transition-transform tw:motion-reduce:transition-none", r() ? "tw:translate-x-4" : "tw:translate-x-0"))]), Te(o, r), U(t, a), R();
 }
 // svelte/lib/ui/RadioGroup.svelte
-var Br = c("<span aria-hidden=\"true\" class=\"tw:pointer-events-none tw:absolute tw:inset-1 tw:rounded-full tw:bg-primary\"></span>"), Vr = c("<label class=\"tw:flex tw:items-center tw:gap-2\"><span class=\"tw:relative tw:inline-flex tw:size-4 tw:shrink-0\"><input type=\"radio\" class=\"tw:m-0 tw:size-4 tw:appearance-none tw:rounded-full tw:border tw:border-input tw:bg-card tw:p-0 tw:outline-none tw:checked:border-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:opacity-50\"/> <!></span> <span> </span></label>"), Hr = c("<div role=\"radiogroup\"></div>");
-function Ur(t, n) {
-	let r = k();
-	z(n, !0);
-	let i = [], a = y(n, "value", 15, ""), s = y(n, "name", 3, r), c = y(n, "disabled", 3, !1);
-	var l = Hr();
-	He(l, 21, () => n.items, (e) => e.value, (t, r) => {
-		var l = Vr(), u = W(l), d = W(u);
-		Ae(d);
+var Br = u("<span aria-hidden=\"true\" class=\"tw:pointer-events-none tw:absolute tw:inset-1 tw:rounded-full tw:bg-primary\"></span>"), Vr = u("<label class=\"tw:flex tw:items-center tw:gap-2\"><span class=\"tw:relative tw:inline-flex tw:size-4 tw:shrink-0\"><input type=\"radio\" class=\"tw:m-0 tw:size-4 tw:appearance-none tw:rounded-full tw:border tw:border-input tw:bg-card tw:p-0 tw:outline-none tw:checked:border-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:opacity-50\"/> <!></span> <span> </span></label>"), Hr = u("<div role=\"radiogroup\"></div>");
+function Ur(t, r) {
+	let i = c();
+	z(r, !0);
+	let a = [], o = L(r, "value", 15, ""), s = L(r, "name", 3, i), l = L(r, "disabled", 3, !1);
+	var u = Hr();
+	fe(u, 21, () => r.items, (e) => e.value, (t, i) => {
+		var c = Vr(), u = G(c), d = G(u);
+		_e(d);
 		var f, p = g(d, 2), m = (e) => {
 			var t = Br();
-			N(e, t);
+			U(e, t);
 		};
-		U(p, (e) => {
-			a() === A(r).value && e(m);
+		B(p, (e) => {
+			o() === D(i).value && e(m);
 		}), e(u);
 		var h = g(u, 2), _ = se(h, !0);
-		e(l), v(() => {
-			Le(d, "name", s()), d.disabled = c() || A(r).disabled, f !== (f = A(r).value) && (d.value = (d.__value = f) ?? ""), o(_, A(r).label);
-		}), Se("change", d, () => n.onValueChange?.(A(r).value)), Fe(i, [], d, () => (A(r).value, a()), a), N(t, l);
-	}), e(l), v((e) => {
-		Le(l, "aria-label", n.label), Me(l, 1, e);
-	}, [() => Ee(x("tw:grid tw:grid-cols-1 tw:gap-2 tw:font-sans tw:text-sm tw:text-foreground", n.class))]), N(t, l), R();
+		e(c), v(() => {
+			Ae(d, "name", s()), d.disabled = l() || D(i).disabled, f !== (f = D(i).value) && (d.value = (d.__value = f) ?? ""), M(_, D(i).label);
+		}), n("change", d, () => r.onValueChange?.(D(i).value)), me(a, [], d, () => (D(i).value, o()), o), U(t, c);
+	}), e(u), v((e) => {
+		Ae(u, "aria-label", r.label), ye(u, 1, e);
+	}, [() => xe(Fe("tw:grid tw:grid-cols-1 tw:gap-2 tw:font-sans tw:text-sm tw:text-foreground", r.class))]), U(t, u), R();
 }
-n(["change"]);
+Oe(["change"]);
 // svelte/lib/ui/Tooltip.svelte
-var Wr = c("<!> <!>", 1);
+var Wr = u("<!> <!>", 1);
 function Gr(e, t) {
 	z(t, !0);
-	var n = u(), r = i(n);
-	ve(r, () => Nr, (e, n) => {
+	var n = N(), r = i(n);
+	Me(r, () => Nr, (e, n) => {
 		n(e, {
 			delayDuration: 250,
 			children: (e, n) => {
-				var r = u(), a = i(r);
-				ve(a, () => Er, (e, n) => {
+				var r = N(), o = i(r);
+				Me(o, () => Er, (e, n) => {
 					n(e, {
 						children: (e, n) => {
-							var r = Wr(), a = i(r);
+							var r = Wr(), o = i(r);
 							{
-								let e = b(() => je({
+								let e = y(() => je({
 									variant: "ghost",
 									size: "icon"
 								}));
-								ve(a, () => Mr, (n, r) => {
+								Me(o, () => Mr, (n, r) => {
 									r(n, {
 										type: "button",
 										get "aria-label"() {
 											return t.label;
 										},
 										get class() {
-											return A(e);
+											return D(e);
 										},
 										children: (e, n) => {
-											var r = u(), a = i(r);
-											V(a, () => t.children), N(e, r);
+											var r = N(), a = i(r);
+											H(a, () => t.children), U(e, r);
 										},
 										$$slots: { default: !0 }
 									});
 								});
 							}
-							var s = g(a, 2);
-							ve(s, () => ne, (e, n) => {
+							var s = g(o, 2);
+							Me(s, () => a, (e, n) => {
 								n(e, {
 									children: (e, n) => {
-										var r = u(), a = i(r);
-										ve(a, () => kr, (e, n) => {
+										var r = N(), a = i(r);
+										Me(a, () => kr, (e, n) => {
 											n(e, {
 												"data-vb-native": !0,
 												sideOffset: 6,
 												class: "tw:z-50 tw:m-0 tw:box-border tw:max-w-xs tw:rounded-control tw:border tw:border-solid tw:border-border tw:bg-popover tw:px-3 tw:py-1.5 tw:font-sans tw:text-xs tw:leading-4 tw:text-popover-foreground tw:shadow-md",
 												children: (e, n) => {
 													j();
-													var r = H();
-													v(() => o(r, t.label)), N(e, r);
+													var r = k();
+													v(() => M(r, t.label)), U(e, r);
 												},
 												$$slots: { default: !0 }
 											});
-										}), N(e, r);
+										}), U(e, r);
 									},
 									$$slots: { default: !0 }
 								});
-							}), N(e, r);
+							}), U(e, r);
 						},
 						$$slots: { default: !0 }
 					});
-				}), N(e, r);
+				}), U(e, r);
 			},
 			$$slots: { default: !0 }
 		});
-	}), N(e, n), R();
+	}), U(e, n), R();
 }
 // svelte/lib/ui/Card.svelte
-var Kr = c("<h2 class=\"tw:m-0 tw:font-sans tw:text-base tw:font-semibold tw:leading-6 tw:tracking-normal\"> </h2>"), qr = c("<p class=\"tw:m-0 tw:text-sm tw:leading-5 tw:text-muted-foreground\"> </p>"), Jr = c("<div class=\"tw:space-y-1\"><!><!></div>"), Yr = c("<section><!> <!></section>");
+var Kr = u("<h2 class=\"tw:m-0 tw:font-sans tw:text-base tw:font-semibold tw:leading-6 tw:tracking-normal\"> </h2>"), qr = u("<p class=\"tw:m-0 tw:text-sm tw:leading-5 tw:text-muted-foreground\"> </p>"), Jr = u("<div class=\"tw:space-y-1\"><!><!></div>"), Yr = u("<section><!> <!></section>");
 function Xr(t, n) {
 	z(n, !0);
-	var r = Yr(), i = W(r), a = (t) => {
-		var r = Jr(), i = W(r), a = (e) => {
+	var r = Yr(), i = G(r), a = (t) => {
+		var r = Jr(), i = G(r), a = (e) => {
 			var t = Kr(), r = se(t, !0);
-			v(() => o(r, n.title)), N(e, t);
+			v(() => M(r, n.title)), U(e, t);
 		};
-		U(i, (e) => {
+		B(i, (e) => {
 			n.title && e(a);
 		});
-		var s = g(i), c = (e) => {
+		var o = g(i), s = (e) => {
 			var t = qr(), r = se(t, !0);
-			v(() => o(r, n.description)), N(e, t);
+			v(() => M(r, n.description)), U(e, t);
 		};
-		U(s, (e) => {
-			n.description && e(c);
-		}), e(r), N(t, r);
+		B(o, (e) => {
+			n.description && e(s);
+		}), e(r), U(t, r);
 	};
-	U(i, (e) => {
+	B(i, (e) => {
 		(n.title || n.description) && e(a);
 	});
-	var s = g(i, 2);
-	V(s, () => n.children), e(r), v((e) => Me(r, 1, e), [() => Ee(x("tw:space-y-4 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-5 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-xs", n.class))]), N(t, r), R();
+	var o = g(i, 2);
+	H(o, () => n.children), e(r), v((e) => ye(r, 1, e), [() => xe(Fe("tw:space-y-4 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-5 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-xs", n.class))]), U(t, r), R();
 }
 // svelte/lib/ui/Separator.svelte
-var Zr = c("<div role=\"separator\"></div>");
+var Zr = u("<div role=\"separator\"></div>");
 function Qr(e, t) {
 	z(t, !0);
-	let n = y(t, "vertical", 3, !1);
+	let n = L(t, "vertical", 3, !1);
 	var r = Zr();
 	v((e) => {
-		Le(r, "aria-orientation", n() ? "vertical" : "horizontal"), Me(r, 1, e);
-	}, [() => Ee(x("tw:shrink-0 tw:bg-border", n() ? "tw:h-full tw:w-px" : "tw:h-px tw:w-full", t.class))]), N(e, r), R();
+		Ae(r, "aria-orientation", n() ? "vertical" : "horizontal"), ye(r, 1, e);
+	}, [() => xe(Fe("tw:shrink-0 tw:bg-border", n() ? "tw:h-full tw:w-px" : "tw:h-px tw:w-full", t.class))]), U(e, r), R();
 }
 // svelte/lib/ui/Skeleton.svelte
-var $r = c("<div aria-hidden=\"true\"></div>");
+var $r = u("<div aria-hidden=\"true\"></div>");
 function ei(e, t) {
 	z(t, !0);
 	var n = $r();
-	v((e) => Me(n, 1, e), [() => Ee(x("tw:animate-pulse tw:rounded-control tw:bg-muted tw:motion-reduce:animate-none", t.class))]), N(e, n), R();
+	v((e) => ye(n, 1, e), [() => xe(Fe("tw:animate-pulse tw:rounded-control tw:bg-muted tw:motion-reduce:animate-none", t.class))]), U(e, n), R();
 }
 // svelte/lib/components/LoadingState.svelte
-var ti = c("<div role=\"status\" class=\"tw:inline-flex tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:text-muted-foreground\"><span aria-hidden=\"true\" class=\"tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-current tw:border-r-transparent tw:motion-reduce:animate-none\"></span> </div>");
+var ti = u("<div role=\"status\" class=\"tw:inline-flex tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:text-muted-foreground\"><span aria-hidden=\"true\" class=\"tw:size-4 tw:animate-spin tw:rounded-full tw:border-2 tw:border-current tw:border-r-transparent tw:motion-reduce:animate-none\"></span> </div>");
 function ni(t, n) {
-	var r = ti(), i = g(W(r), 1, !0);
-	e(r), v(() => o(i, n.label)), N(t, r);
+	var r = ti(), i = g(G(r), 1, !0);
+	e(r), v(() => M(i, n.label)), U(t, r);
 }
 // svelte/gallery/Gallery.svelte
-var ri = c("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div> <div class=\"tw:flex tw:flex-wrap tw:items-center tw:gap-2\"><!><!><!><!><!></div> <p class=\"tw:m-0 tw:text-xs tw:text-muted-foreground\"> </p>", 1), ii = c("<!> <!> <!> <!>", 1), ai = c("<div class=\"tw:flex tw:items-center tw:gap-2\"><!><label for=\"gallery-checkbox\">Include archived rooms</label></div> <div class=\"tw:flex tw:items-center tw:gap-2\"><!><label for=\"gallery-switch\">Notifications</label></div> <!> <!> <output data-selection-state=\"\" class=\"tw:block tw:text-xs tw:text-muted-foreground\" aria-live=\"polite\"> </output>", 1), oi = c("<!><!>", 1), si = c("<p class=\"tw:m-0 tw:text-muted-foreground\">The same dialog primitives support mobile and desktop layouts.</p> <!>", 1), ci = c("<p class=\"tw:m-0 tw:rounded-control tw:border tw:border-border tw:p-3\"> </p>"), li = c("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!> <!></div> <!>", 1), ui = c("<div class=\"tw:flex tw:items-center tw:gap-3\"><!><!><!><span class=\"tw:text-muted-foreground\">Images and initials share one frame.</span></div> <!> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!><!><!><!></div> <div class=\"tw:flex tw:items-center tw:gap-3\"><!> <div class=\"tw:flex-1 tw:space-y-2\"><!><!></div></div>", 1), di = c("<h3 class=\"tw:m-0 tw:font-sans tw:text-xl tw:font-semibold tw:leading-7 tw:tracking-tight\">Inter variable — headings and UI</h3> <p class=\"tw:m-0 tw:text-sm tw:leading-5\">Body 400 · medium 500 · semibold 500 · bold 600. English and\n          Portuguese: Olá, colaboração, ações.</p> <p class=\"tw:m-0 tw:text-muted-foreground\">Muted text uses the Studio semantic role.</p> <pre class=\"tw:m-0 tw:overflow-auto tw:rounded-control tw:border tw:border-border tw:bg-muted tw:p-3 tw:font-mono tw:text-sm tw:leading-6\"><code>const room = \"fully typed\";</code></pre>", 1), fi = c("<main data-vb-native=\"\" class=\"tw:m-0 tw:box-border tw:min-h-dvh tw:bg-background tw:px-4 tw:py-8 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:text-foreground tw:sm:px-8\" data-gallery=\"\"><div class=\"tw:mx-auto tw:max-w-6xl tw:space-y-6\"><header class=\"tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-4\"><div class=\"tw:space-y-2\"><a href=\"/app?ui=svelte\" class=\"tw:text-sm tw:text-link tw:underline-offset-4 tw:hover:underline\">vibebook</a> <h1 class=\"tw:m-0 tw:font-sans tw:text-2xl tw:font-semibold tw:leading-8 tw:tracking-tight\">Component gallery</h1> <p class=\"tw:m-0 tw:text-muted-foreground\">Shared primitives, Studio tokens, and one Tailwind entry.</p></div> <div class=\"tw:flex tw:items-center tw:gap-2\"><!><!></div></header> <div class=\"tw:grid tw:grid-cols-1 tw:gap-5 tw:md:grid-cols-2\"><!> <!> <!> <!> <!> <!> <!> <!></div> <p role=\"status\" class=\"tw:min-h-5 tw:text-sm tw:text-muted-foreground\"> </p></div></main>");
+var ri = u("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div> <div class=\"tw:flex tw:flex-wrap tw:items-center tw:gap-2\"><!><!><!><!><!></div> <p class=\"tw:m-0 tw:text-xs tw:text-muted-foreground\"> </p>", 1), ii = u("<!> <!> <!> <!>", 1), ai = u("<div class=\"tw:flex tw:items-center tw:gap-2\"><!><label for=\"gallery-checkbox\">Include archived rooms</label></div> <div class=\"tw:flex tw:items-center tw:gap-2\"><!><label for=\"gallery-switch\">Notifications</label></div> <!> <!> <output data-selection-state=\"\" class=\"tw:block tw:text-xs tw:text-muted-foreground\" aria-live=\"polite\"> </output>", 1), oi = u("<!><!>", 1), si = u("<p class=\"tw:m-0 tw:text-muted-foreground\">The same dialog primitives support mobile and desktop layouts.</p> <!>", 1), ci = u("<p class=\"tw:m-0 tw:rounded-control tw:border tw:border-border tw:p-3\"> </p>"), li = u("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!> <!></div> <!>", 1), ui = u("<div class=\"tw:flex tw:items-center tw:gap-3\"><!><!><!><span class=\"tw:text-muted-foreground\">Images and initials share one frame.</span></div> <!> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!><!><!><!></div> <div class=\"tw:flex tw:items-center tw:gap-3\"><!> <div class=\"tw:flex-1 tw:space-y-2\"><!><!></div></div>", 1), di = u("<h3 class=\"tw:m-0 tw:font-sans tw:text-xl tw:font-semibold tw:leading-7 tw:tracking-tight\">Inter variable — headings and UI</h3> <p class=\"tw:m-0 tw:text-sm tw:leading-5\">Body 400 · medium 500 · semibold 500 · bold 600. English and\n          Portuguese: Olá, colaboração, ações.</p> <p class=\"tw:m-0 tw:text-muted-foreground\">Muted text uses the Studio semantic role.</p> <pre class=\"tw:m-0 tw:overflow-auto tw:rounded-control tw:border tw:border-border tw:bg-muted tw:p-3 tw:font-mono tw:text-sm tw:leading-6\"><code>const room = \"fully typed\";</code></pre>", 1), fi = u("<main data-vb-native=\"\" class=\"tw:m-0 tw:box-border tw:min-h-dvh tw:bg-background tw:px-4 tw:py-8 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:text-foreground tw:sm:px-8\" data-gallery=\"\"><div class=\"tw:mx-auto tw:max-w-6xl tw:space-y-6\"><header class=\"tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-4\"><div class=\"tw:space-y-2\"><a href=\"/app?ui=svelte\" class=\"tw:text-sm tw:text-link tw:underline-offset-4 tw:hover:underline\">vibebook</a> <h1 class=\"tw:m-0 tw:font-sans tw:text-2xl tw:font-semibold tw:leading-8 tw:tracking-tight\">Component gallery</h1> <p class=\"tw:m-0 tw:text-muted-foreground\">Shared primitives, Studio tokens, and one Tailwind entry.</p></div> <div class=\"tw:flex tw:items-center tw:gap-2\"><!><!></div></header> <div class=\"tw:grid tw:grid-cols-1 tw:gap-5 tw:md:grid-cols-2\"><!> <!> <!> <!> <!> <!> <!> <!></div> <p role=\"status\" class=\"tw:min-h-5 tw:text-sm tw:text-muted-foreground\"> </p></div></main>");
 function pi(t, n) {
 	z(n, !0);
-	let r = m("light"), a = m(""), s = m(""), c = m(!1), l = m(!1), u = m("room"), d = m("general"), f = m("all"), h = m(0), _ = m("");
-	w(() => {
-		document.documentElement.dataset.theme = A(r);
+	let r = m("light"), a = m(""), o = m(""), s = m(!1), c = m(!1), l = m("room"), u = m("general"), d = m("all"), f = m(0), p = m("");
+	C(() => {
+		document.documentElement.dataset.theme = D(r);
 	});
-	let y = [
+	let h = [
 		"primary",
 		"secondary",
 		"outline",
@@ -2864,114 +2864,114 @@ function pi(t, n) {
 		"destructive",
 		"link"
 	];
-	var x = fi(), S = W(x), C = W(S), T = g(W(C), 2), E = W(T);
+	var _ = fi(), x = G(_), S = G(x), w = g(G(S), 2), T = G(w);
 	{
-		let e = b(() => A(r) === "light" ? "Use dark theme" : "Use light theme"), t = b(() => A(r) === "light" ? "moon" : "sun");
-		we(E, {
+		let e = y(() => D(r) === "light" ? "Use dark theme" : "Use light theme"), t = y(() => D(r) === "light" ? "moon" : "sun");
+		Ve(T, {
 			get label() {
-				return A(e);
+				return D(e);
 			},
 			get icon() {
-				return A(t);
+				return D(t);
 			},
 			variant: "outline",
-			onclick: () => I(r, A(r) === "light" ? "dark" : "light", !0)
+			onclick: () => I(r, D(r) === "light" ? "dark" : "light", !0)
 		});
 	}
-	var D = g(E);
-	De(D, {
+	var E = g(T);
+	Ie(E, {
 		children: (e, t) => {
 			j();
-			var n = H();
-			v(() => o(n, A(r))), N(e, n);
+			var n = k();
+			v(() => M(n, D(r))), U(e, n);
 		},
 		$$slots: { default: !0 }
-	}), e(T), e(C);
-	var O = g(C, 2), k = W(O);
-	Xr(k, {
+	}), e(w), e(S);
+	var O = g(S, 2), ee = G(O);
+	Xr(ee, {
 		title: "Actions",
 		description: "Variants share focus, disabled and loading behavior.",
 		children: (t, n) => {
 			var r = ri(), a = i(r);
-			He(a, 21, () => y, qe, (e, t) => {
-				Be(e, {
+			fe(a, 21, () => h, Ue, (e, t) => {
+				ve(e, {
 					get variant() {
-						return A(t);
+						return D(t);
 					},
 					onclick: () => {
-						I(h, A(h) + 1), I(_, `${A(t)} activated`);
+						I(f, D(f) + 1), I(p, `${D(t)} activated`);
 					},
 					children: (e, n) => {
 						j();
-						var r = H();
-						v(() => o(r, A(t))), N(e, r);
+						var r = k();
+						v(() => M(r, D(t))), U(e, r);
 					},
 					$$slots: { default: !0 }
 				});
 			}), e(a);
-			var s = g(a, 2), c = W(s);
-			Be(c, {
+			var o = g(a, 2), s = G(o);
+			ve(s, {
 				disabled: !0,
 				children: (e, t) => {
 					j();
-					var n = H("Disabled");
-					N(e, n);
+					var n = k("Disabled");
+					U(e, n);
+				},
+				$$slots: { default: !0 }
+			});
+			var c = g(s);
+			ve(c, {
+				loading: !0,
+				children: (e, t) => {
+					j();
+					var n = k("Saving");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			});
 			var l = g(c);
-			Be(l, {
-				loading: !0,
-				children: (e, t) => {
-					j();
-					var n = H("Saving");
-					N(e, n);
-				},
-				$$slots: { default: !0 }
-			});
-			var u = g(l);
-			Be(u, {
+			ve(l, {
 				size: "sm",
 				variant: "outline",
 				children: (e, t) => {
 					j();
-					var n = H("Small");
-					N(e, n);
+					var n = k("Small");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			});
-			var d = g(u);
-			we(d, {
+			var u = g(l);
+			Ve(u, {
 				label: "Add item",
 				icon: "plus",
-				onclick: () => I(h, A(h) + 1)
-			}), Gr(g(d), {
+				onclick: () => I(f, D(f) + 1)
+			}), Gr(g(u), {
 				label: "Search rooms",
 				children: (e, t) => {
-					Te(e, { name: "search" });
+					Ce(e, { name: "search" });
 				},
 				$$slots: { default: !0 }
-			}), e(s);
-			var f = g(s, 2), p = se(f);
-			v(() => o(p, `Actions: ${A(h) ?? ""}`)), N(t, r);
+			}), e(o);
+			var d = g(o, 2), m = se(d);
+			v(() => M(m, `Actions: ${D(f) ?? ""}`)), U(t, r);
 		},
 		$$slots: { default: !0 }
 	});
-	var ee = g(k, 2);
-	Xr(ee, {
+	var te = g(ee, 2);
+	Xr(te, {
 		title: "Fields",
 		description: "Labels, hints and errors have explicit associations.",
 		children: (e, t) => {
 			var n = ii(), r = i(n);
-			Re(r, {
+			Be(r, {
 				id: "gallery-title",
 				label: "Room name",
 				hint: "Choose a name your team recognizes.",
-				children: (e, t = B) => {
-					de(e, L(t, {
+				children: (e, t = V) => {
+					Ne(e, A(t, {
 						placeholder: "Project room",
 						get value() {
-							return A(a);
+							return D(a);
 						},
 						set value(e) {
 							I(a, e, !0);
@@ -2980,78 +2980,78 @@ function pi(t, n) {
 				},
 				$$slots: { default: !0 }
 			});
-			var o = g(r, 2);
-			Re(o, {
+			var s = g(r, 2);
+			Be(s, {
 				id: "gallery-email",
 				label: "Email",
 				error: "Enter a valid email address.",
-				children: (e, t = B) => {
-					de(e, L(t, {
+				children: (e, t = V) => {
+					Ne(e, A(t, {
 						type: "email",
 						value: "invalid"
 					}));
 				},
 				$$slots: { default: !0 }
 			});
-			var c = g(o, 2);
-			Re(c, {
+			var c = g(s, 2);
+			Be(c, {
 				id: "gallery-notes",
 				label: "Notes",
-				children: (e, t = B) => {
-					Ir(e, L(t, {
+				children: (e, t = V) => {
+					Ir(e, A(t, {
 						placeholder: "Write a note",
 						get value() {
-							return A(s);
+							return D(o);
 						},
 						set value(e) {
-							I(s, e, !0);
+							I(o, e, !0);
 						}
 					}));
 				},
 				$$slots: { default: !0 }
 			});
 			var l = g(c, 2);
-			Re(l, {
+			Be(l, {
 				id: "gallery-disabled",
 				label: "Unavailable",
-				children: (e, t = B) => {
-					de(e, L(t, {
+				children: (e, t = V) => {
+					Ne(e, A(t, {
 						disabled: !0,
 						value: "Disabled input"
 					}));
 				},
 				$$slots: { default: !0 }
-			}), N(e, n);
+			}), U(e, n);
 		},
 		$$slots: { default: !0 }
 	});
-	var M = g(ee, 2);
-	Xr(M, {
+	var ne = g(te, 2);
+	Xr(ne, {
 		title: "Selection",
 		description: "Keyboard controls use native semantics or Bits UI behavior.",
 		children: (t, n) => {
-			var r = ai(), a = i(r), s = W(a);
-			Pe(s, {
+			var r = ai(), a = i(r), o = G(a);
+			we(o, {
 				id: "gallery-checkbox",
 				get checked() {
-					return A(c);
+					return D(s);
+				},
+				set checked(e) {
+					I(s, e, !0);
+				}
+			}), j(), e(a);
+			var u = g(a, 2);
+			zr(G(u), {
+				id: "gallery-switch",
+				get checked() {
+					return D(c);
 				},
 				set checked(e) {
 					I(c, e, !0);
 				}
-			}), j(), e(a);
-			var d = g(a, 2);
-			zr(W(d), {
-				id: "gallery-switch",
-				get checked() {
-					return A(l);
-				},
-				set checked(e) {
-					I(l, e, !0);
-				}
-			}), j(), e(d);
-			var p = g(d, 2);
-			Ur(p, {
+			}), j(), e(u);
+			var f = g(u, 2);
+			Ur(f, {
 				label: "Room visibility",
 				items: [
 					{
@@ -3069,18 +3069,18 @@ function pi(t, n) {
 					}
 				],
 				get value() {
-					return A(u);
+					return D(l);
 				},
 				set value(e) {
-					I(u, e, !0);
+					I(l, e, !0);
 				}
 			});
-			var m = g(p, 2);
-			Re(m, {
+			var p = g(f, 2);
+			Be(p, {
 				id: "gallery-filter",
 				label: "Show",
-				children: (e, t = B) => {
-					ye(e, L(t, {
+				children: (e, t = V) => {
+					pe(e, A(t, {
 						items: [{
 							value: "all",
 							label: "All rooms"
@@ -3089,44 +3089,44 @@ function pi(t, n) {
 							label: "Active rooms"
 						}],
 						get value() {
-							return A(f);
+							return D(d);
 						},
 						set value(e) {
-							I(f, e, !0);
+							I(d, e, !0);
 						}
 					}));
 				},
 				$$slots: { default: !0 }
 			});
-			var h = g(m, 2), _ = se(h);
-			v(() => o(_, `${A(u) ?? ""} · ${A(f) ?? ""}`)), N(t, r);
+			var m = g(p, 2), h = se(m);
+			v(() => M(h, `${D(l) ?? ""} · ${D(d) ?? ""}`)), U(t, r);
 		},
 		$$slots: { default: !0 }
 	});
-	var te = g(M, 2);
-	Xr(te, {
+	var re = g(ne, 2);
+	Xr(re, {
 		title: "Overlays",
 		description: "Focus trap, Escape dismissal and focus restoration are provided by Bits UI.",
 		children: (t, n) => {
-			var r = li(), s = i(r), c = W(s);
-			he(c, {
+			var r = li(), o = i(r), s = G(o);
+			be(s, {
 				title: "Edit room",
 				description: "Changes apply to the current room.",
 				closeLabel: "Close dialog",
 				trigger: (e) => {
 					j();
-					var t = H("Open dialog");
-					N(e, t);
+					var t = k("Open dialog");
+					U(e, t);
 				},
 				children: (e) => {
 					var t = oi(), n = i(t);
-					Re(n, {
+					Be(n, {
 						id: "dialog-name",
 						label: "Name",
-						children: (e, t = B) => {
-							de(e, L(t, {
+						children: (e, t = V) => {
+							Ne(e, A(t, {
 								get value() {
-									return A(a);
+									return D(a);
 								},
 								set value(e) {
 									I(a, e, !0);
@@ -3136,46 +3136,46 @@ function pi(t, n) {
 						$$slots: { default: !0 }
 					});
 					var r = g(n);
-					Be(r, {
-						onclick: () => I(_, "Dialog action completed"),
+					ve(r, {
+						onclick: () => I(p, "Dialog action completed"),
 						children: (e, t) => {
 							j();
-							var n = H("Save name");
-							N(e, n);
+							var n = k("Save name");
+							U(e, n);
 						},
 						$$slots: { default: !0 }
-					}), N(e, t);
+					}), U(e, t);
 				},
 				$$slots: {
 					trigger: !0,
 					default: !0
 				}
 			});
-			var l = g(c, 2);
-			he(l, {
+			var c = g(s, 2);
+			be(c, {
 				title: "Room details",
 				description: "A responsive sheet shares the dialog behavior.",
 				closeLabel: "Close sheet",
 				sheet: !0,
 				trigger: (e) => {
 					j();
-					var t = H("Open sheet");
-					N(e, t);
+					var t = k("Open sheet");
+					U(e, t);
 				},
 				children: (e) => {
 					var t = si(), n = g(i(t), 2);
-					de(n, {
+					Ne(n, {
 						"aria-label": "Sheet note",
 						placeholder: "Add a note"
-					}), N(e, t);
+					}), U(e, t);
 				},
 				$$slots: {
 					trigger: !0,
 					default: !0
 				}
-			}), e(s);
-			var u = g(s, 2);
-			me(u, {
+			}), e(o);
+			var l = g(o, 2);
+			ke(l, {
 				label: "Room settings",
 				items: [
 					{
@@ -3193,106 +3193,106 @@ function pi(t, n) {
 					}
 				],
 				get value() {
-					return A(d);
+					return D(u);
 				},
 				set value(e) {
-					I(d, e, !0);
+					I(u, e, !0);
 				},
-				children: (e, t = B) => {
+				children: (e, t = V) => {
 					var n = ci(), r = se(n, !0);
-					v(() => o(r, t() === "general" ? "General settings" : "Room members")), N(e, n);
+					v(() => M(r, t() === "general" ? "General settings" : "Room members")), U(e, n);
 				},
 				$$slots: { default: !0 }
-			}), N(t, r);
+			}), U(t, r);
 		},
 		$$slots: { default: !0 }
 	});
-	var ne = g(te, 2);
-	Xr(ne, {
+	var ie = g(re, 2);
+	Xr(ie, {
 		title: "Identity and feedback",
 		children: (t, n) => {
-			var r = ui(), a = i(r), o = W(a);
-			p(o, { name: "Gimenes" });
+			var r = ui(), a = i(r), o = G(a);
+			b(o, { name: "Gimenes" });
 			var s = g(o);
-			p(s, { name: "Guilherme Rodrigues" });
+			b(s, { name: "Guilherme Rodrigues" });
 			var c = g(s);
-			p(c, {
+			b(c, {
 				name: "Sample user",
 				src: "/favicon.svg"
 			}), j(), e(a);
 			var l = g(a, 2);
 			Qr(l, {});
-			var u = g(l, 2), d = W(u);
-			De(d, {
+			var u = g(l, 2), d = G(u);
+			Ie(d, {
 				children: (e, t) => {
 					j();
-					var n = H("Default");
-					N(e, n);
+					var n = k("Default");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			});
 			var f = g(d);
-			De(f, {
+			Ie(f, {
 				variant: "primary",
 				children: (e, t) => {
 					j();
-					var n = H("Selected");
-					N(e, n);
+					var n = k("Selected");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			});
-			var m = g(f);
-			De(m, {
+			var p = g(f);
+			Ie(p, {
 				variant: "success",
 				children: (e, t) => {
 					j();
-					var n = H("Complete");
-					N(e, n);
+					var n = k("Complete");
+					U(e, n);
+				},
+				$$slots: { default: !0 }
+			});
+			var m = g(p);
+			Ie(m, {
+				variant: "warning",
+				children: (e, t) => {
+					j();
+					var n = k("Waiting");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			});
 			var h = g(m);
-			De(h, {
-				variant: "warning",
-				children: (e, t) => {
-					j();
-					var n = H("Waiting");
-					N(e, n);
-				},
-				$$slots: { default: !0 }
-			});
-			var _ = g(h);
-			De(_, {
+			Ie(h, {
 				variant: "destructive",
 				children: (e, t) => {
 					j();
-					var n = H("Failed");
-					N(e, n);
+					var n = k("Failed");
+					U(e, n);
 				},
 				$$slots: { default: !0 }
 			}), e(u);
-			var v = g(u, 2), y = W(v);
-			ei(y, { class: "tw:size-9 tw:rounded-full" });
-			var b = g(y, 2), x = W(b);
-			ei(x, { class: "tw:h-3 tw:w-3/4" }), ei(g(x), { class: "tw:h-3 tw:w-1/2" }), e(b), e(v), N(t, r);
+			var _ = g(u, 2), v = G(_);
+			ei(v, { class: "tw:size-9 tw:rounded-full" });
+			var y = g(v, 2), x = G(y);
+			ei(x, { class: "tw:h-3 tw:w-3/4" }), ei(g(x), { class: "tw:h-3 tw:w-1/2" }), e(y), e(_), U(t, r);
 		},
 		$$slots: { default: !0 }
 	});
-	var re = g(ne, 2);
-	Xr(re, {
+	var N = g(ie, 2);
+	Xr(N, {
 		title: "Empty states",
 		children: (e, t) => {
-			Ie(e, {
+			ge(e, {
 				title: "Nothing waiting for you",
 				description: "New requests and tasks in review will appear here.",
 				children: (e, t) => {
-					Be(e, {
+					ve(e, {
 						variant: "outline",
-						onclick: () => I(_, "Empty state action completed"),
+						onclick: () => I(p, "Empty state action completed"),
 						children: (e, t) => {
 							j();
-							var n = H("Explore rooms");
-							N(e, n);
+							var n = k("Explore rooms");
+							U(e, n);
 						},
 						$$slots: { default: !0 }
 					});
@@ -3302,36 +3302,36 @@ function pi(t, n) {
 		},
 		$$slots: { default: !0 }
 	});
-	var ie = g(re, 2);
-	Xr(ie, {
+	var ae = g(N, 2);
+	Xr(ae, {
 		title: "Status feedback",
 		children: (e, t) => {
 			var n = oi(), r = i(n);
 			ni(r, { label: "Saving changes" });
 			var a = g(r);
-			ke(a, {
+			Re(a, {
 				title: "Could not save changes",
 				description: "Your draft is still available.",
 				retryLabel: "Try again",
-				onretry: () => I(_, "Retry requested")
-			}), N(e, n);
+				onretry: () => I(p, "Retry requested")
+			}), U(e, n);
 		},
 		$$slots: { default: !0 }
-	}), Xr(g(ie, 2), {
+	}), Xr(g(ae, 2), {
 		title: "Typography",
 		class: "tw:md:col-span-2",
 		children: (e, t) => {
 			var n = di();
-			j(6), N(e, n);
+			j(6), U(e, n);
 		},
 		$$slots: { default: !0 }
 	}), e(O);
-	var P = g(O, 2), ae = se(P, !0);
-	e(S), e(x), v(() => o(ae, A(_))), N(t, x), R();
+	var oe = g(O, 2), P = se(oe, !0);
+	e(x), e(_), v(() => M(P, D(p))), U(t, _), R();
 }
 // svelte/gallery/main.ts
 function mi(e) {
-	let t = re(pi, { target: e });
-	return () => We(t);
+	let t = Ke(pi, { target: e });
+	return () => o(t);
 }
 export { mi as mountGallery };

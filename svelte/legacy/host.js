@@ -555,6 +555,8 @@ const EN = {
   "Todos os épicos": "All epics",
   "Sem épico": "No epic",
   "Nenhuma tarefa aberta.": "No open tasks.",
+  "Escolha um épico.": "Choose an epic.",
+  "Épico não encontrado.": "Epic not found.",
   "Sair de todos os aparelhos": "Sign out everywhere",
   "Sai em todos os navegadores e celulares onde você entrou": "Signs you out of every browser and phone you signed in on",
   "Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam.": "Sign out everywhere? Every browser and phone you signed in on will ask you to log in again, this one too. Your connected agents stay.",
