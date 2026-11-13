@@ -150,3 +150,170 @@ test("raw source middleware denies backend and private reads before Vite serves 
       expect(body).toBe("Source access denied");
     }
 });
+
+test("request allowlist excludes tooling, caches, encoded paths and real symlink escapes", async () => {
+  const { createDevelopmentRequestPolicy, localRequestUrl, workerRequestUrl } =
+    await import("../svelte/build/developmentRequests");
+  const { mkdtemp, mkdir, writeFile, symlink, rename, rm } =
+    await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const root = await mkdtemp(resolve(tmpdir(), "vb-dev-requests-"));
+  const deps = await mkdtemp(resolve(tmpdir(), "vb-dev-dependencies-"));
+  try {
+    for (const dir of [
+      "svelte/build",
+      "svelte/lib",
+      "shared",
+      "collab",
+      "public",
+      "src",
+      "scripts",
+      "node_modules/.vite/deps",
+      ".wrangler/tmp",
+    ])
+      await mkdir(resolve(root, dir), { recursive: true });
+    for (const file of [
+      "svelte/lib/ok.ts",
+      "shared/contracts.ts",
+      "collab/editor.ts",
+      "src/secret.ts",
+      "scripts/build.ts",
+      ".wrangler/tmp/worker.js",
+      "node_modules/.vite/deps/svelte.js",
+    ])
+      await writeFile(resolve(root, file), "export const value = 1");
+    await symlink(
+      resolve(root, "src/secret.ts"),
+      resolve(root, "svelte/lib/backend.ts"),
+    );
+    await symlink(
+      resolve(root, "scripts/build.ts"),
+      resolve(root, "public/escape.js"),
+    );
+    await symlink(
+      resolve(root, ".wrangler/tmp/worker.js"),
+      resolve(root, "svelte/lib/cache.js"),
+    );
+    await rename(resolve(root, "node_modules"), resolve(deps, "node_modules"));
+    await symlink(resolve(deps, "node_modules"), resolve(root, "node_modules"));
+    const policy = createDevelopmentRequestPolicy(root);
+    expect(() =>
+      policy.assertRequest(`/@fs/${deps}/node_modules/.vite/deps/svelte.js`),
+    ).not.toThrow();
+    for (const path of [
+      "/lib/ok.ts",
+      "/@vite/client",
+      "/@vite/env",
+      `/@fs/${root}/shared/contracts.ts`,
+      `/@fs/${root}/collab/editor.ts`,
+      `/@fs/${root}/node_modules/.vite/deps/svelte.js`,
+    ])
+      expect(() => policy.assertRequest(path)).not.toThrow();
+    for (const path of [
+      "scripts/build.ts",
+      "wrangler.jsonc",
+      ".wrangler/tmp/worker.js",
+      ".wrangler/qa-test/worker.js",
+      "svelte/build/appDevelopment.ts",
+      "svelte/vite.config.ts",
+      "svelte/tsconfig.json",
+      "svelte/lib/backend.ts",
+      "svelte/lib/cache.js",
+      "public/escape.js",
+      "node_modules/.cache/worker.js",
+    ])
+      expect(() => policy.assertRequest(`/@fs/${root}/${path}?raw`)).toThrow(
+        "[client-boundary]",
+      );
+    for (const path of [
+      "/build/appDevelopment.ts?raw",
+      "/vite.config.ts?url",
+      "/escape.js?raw",
+      `/@fs/${root}/%73cripts/build.ts?raw`,
+      `/@fs/${root}/%252e%252e/src/secret.ts`,
+      `/@id/${root}/scripts/build.ts?raw`,
+    ])
+      expect(() => policy.assertRequest(path)).toThrow("[client-boundary]");
+    for (const path of [
+      "//evil.example/app?ui=svelte",
+      "/\t/evil.example/app?ui=svelte",
+      "http://evil.example/app?ui=svelte",
+      "https://evil.example/app?ui=svelte",
+      "/\\evil.example/app?ui=svelte",
+    ]) {
+      expect(isSourceApp(path)).toBe(false);
+      expect(() => localRequestUrl(path)).toThrow("[client-boundary]");
+      expect(() => workerRequestUrl(path, "http://127.0.0.1:8787")).toThrow(
+        "[client-boundary]",
+      );
+    }
+    expect(
+      workerRequestUrl("/app?ui=svelte", "http://127.0.0.1:8787").href,
+    ).toBe("http://127.0.0.1:8787/app?ui=svelte");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(deps, { recursive: true, force: true });
+  }
+});
+
+test("supervisor reaps startup children on cancellation and spawn failure", async () => {
+  const { runDevelopmentProcesses } = await import("./dev-app");
+  for (const stage of [1, 2, 3]) {
+    const signals = new EventEmitter();
+    let spawns = 0;
+    const children: { killed: boolean }[] = [];
+    const result = runDevelopmentProcesses(() => {
+      spawns++;
+      let end!: (code: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        end = resolve;
+      });
+      const state = { killed: false };
+      children.push(state);
+      if (spawns < stage) queueMicrotask(() => end(0));
+      else queueMicrotask(() => signals.emit("SIGTERM"));
+      return {
+        exited,
+        kill() {
+          state.killed = true;
+          end(143);
+        },
+      };
+    }, signals);
+    expect(await result).toBe(130);
+    expect(children.every((child) => child.killed)).toBe(true);
+    expect(signals.listenerCount("SIGTERM")).toBe(0);
+  }
+});
+
+test("supervisor reaps already-started watchers when a later spawn throws", async () => {
+  const { runDevelopmentProcesses } = await import("./dev-app");
+  const { spyOn } = await import("bun:test");
+  const error = spyOn(console, "error").mockImplementation(() => {});
+  const children: { killed: boolean }[] = [];
+  let count = 0;
+  try {
+    const code = await runDevelopmentProcesses(() => {
+      if (++count === 4) throw new Error("spawn failed");
+      let end!: (code: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        end = resolve;
+      });
+      const state = { killed: false };
+      children.push(state);
+      if (count < 3) end(0);
+      return {
+        exited,
+        kill() {
+          state.killed = true;
+          end(143);
+        },
+      };
+    }, new EventEmitter());
+    expect(code).toBe(1);
+    expect(children).toHaveLength(3);
+    expect(children.every((child) => child.killed)).toBe(true);
+  } finally {
+    error.mockRestore();
+  }
+});

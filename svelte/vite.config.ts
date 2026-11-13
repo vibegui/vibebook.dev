@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vite";
 import { join } from "node:path";
+import { realpathSync } from "node:fs";
 import {
   appDevelopment,
   workerProxy,
@@ -42,13 +43,21 @@ export default defineConfig(({ mode, command }) => ({
         }
       : {}),
     fs: {
-      allow: [projectRoot],
+      allow: ["svelte", "shared", "collab", "public", "node_modules"].map(
+        (path) => realpathSync(join(projectRoot, path)),
+      ),
       deny: [
         "**/.env",
         "**/.env.*",
         "**/.dev.vars",
         "**/.dev.vars.*",
         "**/.vibebook/**",
+        "**/.wrangler/**",
+        "**/.api-types/**",
+        "**/scripts/**",
+        "**/svelte/build/**",
+        "**/wrangler*.json*",
+        "**/vite.config.*",
         "**/.git/**",
         "**/.ssh/**",
         "**/*.pem",

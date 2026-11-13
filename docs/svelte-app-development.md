@@ -48,8 +48,12 @@ The source shell removes the production `vb-v` meta marker: production
 banner for this source session. Production shell versioning, assets and the
 Worker CSRF middleware are unchanged. Only the exact configured Vite Origin is
 translated for HTTP and WebSocket proxy requests; other origins reach the
-Worker unchanged. The existing client boundary also guards direct Vite file
-requests, including `?raw` and `?url` attempts to read backend/private files.
+Worker unchanged. The development request allowlist exposes only browser source roots, published
+assets, dependencies and Vite runtime modules. It checks both lexical and real
+symlink targets, denying backend/tooling/configuration files and hidden Worker
+bundles/caches, including `?raw`, `?url` and encoded-path attempts. Incoming
+absolute or network-path request targets are rejected before forwarding cookies;
+the Worker fetch target is always constructed from a local pathname and query.
 The target is restricted to a loopback HTTP Worker. Provider OAuth callbacks
 still use the Worker's origin (8787); use the local `DEV_EMAIL` identity for this
 workflow, or configure provider callbacks separately for local OAuth testing.

@@ -1,12 +1,21 @@
 import { relative, resolve } from "node:path";
 import type { Plugin, ProxyOptions } from "vite";
-import { createClientBoundaryPolicy } from "./clientBoundary";
+import {
+  createDevelopmentRequestPolicy,
+  localRequestUrl,
+  workerRequestUrl,
+} from "./developmentRequests";
 
 export const workerRoutes =
   "^/(?:api(?:/|$)|ws(?:/|-)|yjs/|auth(?:/|$)|oauth/|authorize(?:[/?]|$)|token(?:[/?]|$)|register(?:[/?]|$)|logout(?:[/?]|$)|login(?:[/?]|$)|app(?:[/?]|$)|archived(?:[/?]|$)|b/|mail/|\\.well-known/)";
 
 export function isSourceApp(url: string): boolean {
-  const parsed = new URL(url, "http://localhost");
+  let parsed: URL;
+  try {
+    parsed = localRequestUrl(url);
+  } catch {
+    return false;
+  }
   return (
     parsed.searchParams.get("ui") === "svelte" &&
     (/^\/(?:app|archived|login)$/.test(parsed.pathname) ||
@@ -73,7 +82,7 @@ export function requiresAppReload(root: string, file: string): boolean {
 
 /** Development only: authorized Worker HTML and source modules on one origin. */
 export function appDevelopment(root: string, worker: string): Plugin {
-  const policy = createClientBoundaryPolicy({ projectRoot: root });
+  const policy = createDevelopmentRequestPolicy(root);
   return {
     name: "vibebook-app-development",
     apply: "serve",
@@ -96,14 +105,13 @@ export function appDevelopment(root: string, worker: string): Plugin {
       server.middlewares.use(async (req, res, next) => {
         if (!req.url) return next();
         try {
-          const pathname = decodeURIComponent(
-            new URL(req.url, "http://localhost").pathname,
-          );
-          const file = pathname.startsWith("/@fs/")
-            ? pathname.slice(4)
-            : resolve(root, "svelte", `.${pathname}`);
-          // Apply the same boundary to raw HTTP as to module imports.
-          policy.assertClient(file);
+          const parsed = localRequestUrl(req.url);
+          const pathname = decodeURIComponent(parsed.pathname);
+          if (
+            !new RegExp(workerRoutes).test(pathname) &&
+            pathname !== "/collab-svelte.js"
+          )
+            policy.assertRequest(req.url);
           if (pathname === "/collab-svelte.js") {
             res.setHeader("content-type", "text/javascript");
             res.setHeader("cache-control", "no-store");
@@ -120,7 +128,7 @@ export function appDevelopment(root: string, worker: string): Plugin {
               "accept-language",
               String(req.headers["accept-language"]),
             );
-          const response = await fetch(new URL(req.url, worker), {
+          const response = await fetch(workerRequestUrl(req.url, worker), {
             headers,
             redirect: "manual",
           });
