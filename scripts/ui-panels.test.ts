@@ -139,7 +139,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 function render(
-  kind: "tasks" | "board" | "files" | "reminders",
+  kind: "tasks" | "board" | "files" | "reminders" | "decisions",
   room: Room,
   extra: Partial<PanelProps> = {},
 ) {
@@ -714,6 +714,185 @@ describe("native Svelte room panels", () => {
       }
     }
   }, 30_000);
+  test("native decisions render escaped canonical rows in reverse order and preserve empty state", () => {
+    const room = fixture();
+    room.decisions = [
+      {
+        id: 7,
+        kind: "decision",
+        text: "<script>bad()</script>",
+        who: "<who>",
+        ts: 1,
+      },
+      { id: 8, kind: "approval", text: "approved", who: "you@test", ts: 2 },
+    ];
+    const { target, update } = render("decisions", room);
+    expect(
+      Array.from(target.querySelectorAll("[data-decision-id]"), (el) =>
+        el.getAttribute("data-decision-id"),
+      ),
+    ).toEqual(["8", "7"]);
+    expect(target.querySelector("script")).toBeNull();
+    expect(target.textContent).toContain("<script>bad()</script>");
+    expect(target.textContent).toContain("<who>");
+    expect(target.textContent).toContain("✓ aprovado");
+    expect(target.textContent).toContain("decidido");
+    update({ ...room, decisions: [] });
+    expect(target.querySelector("[data-ddel]")).toBeNull();
+    expect(target.textContent).toContain("O que a sala decidir");
+  });
+  test("decision deletion requires confirmation, restores cancellation focus and waits for canonical removal", async () => {
+    const room = fixture();
+    room.decisions = [
+      {
+        id: 7,
+        kind: "decision",
+        text: "Keep this until canonical removal",
+        who: "me@test",
+        ts: 1,
+      },
+    ];
+    let answer!: (value: { ok: true }) => void;
+    const response = new Promise<{ ok: true }>((resolve) => {
+      answer = resolve;
+    });
+    const events: RoomCommand[] = [];
+    const { target, update } = render("decisions", room, {
+      request: (command) => {
+        events.push(command);
+        return response;
+      },
+      send: () => {
+        throw new Error("Decisions must use correlated request");
+      },
+    });
+    const trigger = target.querySelector<HTMLButtonElement>("[data-ddel]")!;
+    trigger.focus();
+    trigger.click();
+    flushSync();
+    await tick();
+    let dialog = document.querySelector<HTMLElement>('[role="alertdialog"]')!;
+    const cancel = Array.from(
+      dialog.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((b) => b.textContent?.includes("Cancelar"))!;
+    expect(document.activeElement).toBe(cancel);
+    expect(events).toEqual([]);
+    cancel.click();
+    flushSync();
+    await tick();
+    expect(document.activeElement).toBe(trigger);
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    trigger.click();
+    flushSync();
+    await tick();
+    dialog = document.querySelector<HTMLElement>('[role="alertdialog"]')!;
+    const confirm = Array.from(
+      dialog.querySelectorAll<HTMLButtonElement>("button"),
+    ).find((b) => b.textContent?.includes("Apagar registro"))!;
+    confirm.click();
+    flushSync();
+    await tick();
+    expect(events).toEqual([{ t: "decision.del", id: 7 }]);
+    expect(trigger.disabled).toBe(true);
+    expect(confirm.disabled).toBe(true);
+    answer({ ok: true });
+    await tick();
+    flushSync();
+    expect(target.querySelector("[data-decision-id]")).not.toBeNull();
+    expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
+    update({ ...room, decisions: [] });
+    await tick();
+    flushSync();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.activeElement).toBe(
+      target.querySelector("[data-decisions-panel]"),
+    );
+  }, 30_000);
+  test("decision failure remains visible for retry; canonical removal and room changes clear issues", async () => {
+    const room = fixture();
+    room.decisions = [
+      { id: 7, kind: "decision", text: "record", who: "me@test", ts: 1 },
+    ];
+    let answer!: (value: { ok: false; error: string }) => void;
+    const response = new Promise<{ ok: false; error: string }>((resolve) => {
+      answer = resolve;
+    });
+    const { target, update } = render("decisions", room, {
+      request: () => response,
+    });
+    target.querySelector<HTMLButtonElement>("[data-ddel]")!.click();
+    flushSync();
+    await tick();
+    const confirm = Array.from(
+      document
+        .querySelector('[role="alertdialog"]')!
+        .querySelectorAll<HTMLButtonElement>("button"),
+    ).find((b) => b.textContent?.includes("Apagar registro"))!;
+    confirm.click();
+    flushSync();
+    await tick();
+    answer({ ok: false, error: "forbidden" });
+    await tick();
+    flushSync();
+    expect(
+      document.querySelector('[role="alertdialog"]')!.textContent,
+    ).toContain("forbidden");
+    expect(confirm.disabled).toBe(false);
+    expect(target.querySelector("[data-decision-id]")).not.toBeNull();
+    update({ ...room, decisions: [] });
+    await tick();
+    flushSync();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    update({ ...room, id: "other-room" });
+    await tick();
+    flushSync();
+    expect(target.textContent).not.toContain("forbidden");
+    expect(
+      target.querySelector<HTMLButtonElement>("[data-ddel]")!.disabled,
+    ).toBe(false);
+  }, 30_000);
+  for (const transition of ["remote removal", "room switch"] as const) {
+    test(`decision pending dialog closes on ${transition} and ignores late rejection`, async () => {
+      const room = fixture();
+      room.decisions = [
+        { id: 7, kind: "decision", text: "record", who: "me@test", ts: 1 },
+      ];
+      let answer!: (value: { ok: false; error: string }) => void;
+      const response = new Promise<{ ok: false; error: string }>((resolve) => {
+        answer = resolve;
+      });
+      const { target, update } = render("decisions", room, {
+        request: () => response,
+      });
+      target.querySelector<HTMLButtonElement>("[data-ddel]")!.click();
+      flushSync();
+      await tick();
+      const confirm = Array.from(
+        document
+          .querySelector('[role="alertdialog"]')!
+          .querySelectorAll<HTMLButtonElement>("button"),
+      ).find((b) => b.textContent?.includes("Apagar registro"))!;
+      confirm.click();
+      flushSync();
+      await tick();
+      update(
+        transition === "remote removal"
+          ? { ...room, decisions: [] }
+          : { ...room, id: "other" },
+      );
+      await tick();
+      flushSync();
+      expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+      answer({ ok: false, error: "late failure" });
+      await tick();
+      flushSync();
+      expect(target.textContent).not.toContain("late failure");
+      if (transition === "room switch")
+        expect(
+          target.querySelector<HTMLButtonElement>("[data-ddel]")!.disabled,
+        ).toBe(false);
+    }, 30_000);
+  }
   test("native reminder disclosure and controlled switches wait for server acknowledgement", async () => {
     const room = fixture();
     room.reminders = [
