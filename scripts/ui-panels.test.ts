@@ -8,7 +8,7 @@ import type { RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
 import type { SidebarProps } from "../svelte/sidebar";
 import { createNavigationSession } from "../svelte/features/navigation/session";
-import { disposePinsSession, syncPinsSession } from "../svelte/features/pins/session";
+import { disposePinsSession, requestPinnedFiles, syncPinsSession } from "../svelte/features/pins/session";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -1314,6 +1314,43 @@ describe("stable native sidebar integration", () => {
     rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=app] button')!.click();
     rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=missing] button')!.click();
     expect(files).toHaveLength(1);expect(apps).toHaveLength(1);expect(rendered.events).toEqual([]);
+  },30_000);
+
+  test("partial pinned-file metadata loads once and opens the current file after canonical resolution", () => {
+    const newest={id:"new",name:"new.txt",type:"text/plain",size:5,author:"me@test",ts:2};
+    const old={...newest,id:"old",name:"older-report.pdf",type:"application/pdf",ts:1};
+    const room={...fixture(),files:[newest],filesAll:false,pins:[{id:"p",kind:"file",ref:"old",title:"Older report"}]};
+    const opened:typeof old[]=[];
+    const rendered=sidebar(room,{onopenpinfile:file=>opened.push(file)});
+    expect(rendered.target.querySelector('[data-pin-id=p]')?.textContent).not.toContain("Arquivo indisponível");
+    expect(rendered.target.querySelector('[data-native-pins]')?.hasAttribute('data-vb-native')).toBe(true);
+    requestPinnedFiles(rendered.props.pins,room,rendered.props.send);flushSync();
+    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
+    requestPinnedFiles(rendered.props.pins,{...room},rendered.props.send);
+    expect(rendered.events).toEqual([{t:"files.get"}]);expect(opened).toEqual([]);
+    const full={...room,files:[newest,old],filesAll:true};
+    syncPinsSession(rendered.props.pins,full);rendered.view.update({...rendered.props,room:full});flushSync();
+    expect(opened).toEqual([old]);
+    rendered.view.update({...rendered.props,room:{...full}});flushSync();expect(opened).toHaveLength(1);
+    // Fresh socket snapshots return to a partial index. An explicit click must recover it.
+    syncPinsSession(rendered.props.pins,room);rendered.view.update({...rendered.props,room});flushSync();
+    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
+    expect(rendered.events).toEqual([{t:"files.get"},{t:"files.get"}]);expect(opened).toHaveLength(1);
+    const latest={...old,name:"latest-report.pdf"};const reloaded={...room,files:[newest,latest],filesAll:true};
+    syncPinsSession(rendered.props.pins,reloaded);rendered.view.update({...rendered.props,room:reloaded});flushSync();
+    expect(opened).toEqual([old,latest]);
+    disposePinsSession(rendered.props.pins);
+  },30_000);
+  test("metadata received after room disposal does not open a formerly requested pin", () => {
+    const file={id:"old",name:"old.pdf",type:"application/pdf",size:20,author:"me@test",ts:1};
+    const room={...fixture(),files:[],filesAll:false,pins:[{id:"p",kind:"file",ref:"old"}]};
+    const opened:typeof file[]=[];
+    const rendered=sidebar(room,{onopenpinfile:file=>opened.push(file)});
+    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
+    expect(rendered.events).toEqual([{t:"files.get"}]);
+    disposePinsSession(rendered.props.pins);
+    rendered.view.update({...rendered.props,room:{...room,files:[file],filesAll:true}});flushSync();
+    expect(opened).toEqual([]);
   },30_000);
 
 });

@@ -4,6 +4,7 @@ export type PinAppTarget = { connectionId: string; tool: string };
 export type PinTarget =
   | { kind: "link"; href: string; label: string; detail: string }
   | { kind: "file"; file: Attachment; label: string; detail: "arquivo" }
+  | { kind: "file-unloaded"; id: string; label: string }
   | { kind: "app"; app: PinAppTarget; label: string; detail: "app" | "app da sala" }
   | { kind: "unavailable"; label: string; reason: "Link inválido" | "Arquivo indisponível" | "App indisponível" | "Item indisponível" };
 
@@ -33,7 +34,8 @@ export function resolvePin(pin: Pin, room: Pick<Room, "files" | "filesAll">): Pi
   if (pin.kind === "file") {
     const file = room.files?.find(file => file.id === pin.ref);
     return file ? { kind: "file", file, label: pin.title || file.name, detail: "arquivo" }
-      : { kind: "unavailable", label: pin.title || pin.ref, reason: "Arquivo indisponível" };
+      : room.filesAll ? { kind: "unavailable", label: pin.title || pin.ref, reason: "Arquivo indisponível" }
+        : { kind: "file-unloaded", id: pin.ref, label: pin.title || pin.ref };
   }
   if (pin.kind === "app") {
     const app = pinAppTarget(pin.ref);

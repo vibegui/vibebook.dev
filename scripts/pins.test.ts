@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { get } from "svelte/store";
-import type { Attachment, Pin } from "../shared/room";
+import { reduceRoom } from "../svelte/roomStore";
+import type { Attachment, Pin, Room } from "../shared/room";
 import type { RoomCommand } from "../shared/commands";
 import { normalizePinLink, pinAppTarget, resolvePin } from "../svelte/features/pins/model";
-import { createPinsSession, disposePinsSession, openPinDraft, closePinDraft, rejectPinRequest, removePinnedItem, submitPinDraft, syncPinsSession, updatePinDraft, type PinsClock } from "../svelte/features/pins/session";
+import { createPinsSession, disposePinsSession, openPinDraft, closePinDraft, requestPinnedFiles, removePinnedItem, submitPinDraft, syncPinsSession, updatePinDraft, type PinsClock } from "../svelte/features/pins/session";
 
 const pin = (id: string, ref = "https://example.com/", title = "Example"): Pin => ({ id, kind: "link", ref, title });
 const file: Attachment = { id: "f", name: "report.pdf", type: "application/pdf", author: "me@test", size: 100, ts: 1 };
@@ -34,7 +35,8 @@ describe("native pinned target resolution", () => {
   });
   test("resolves typed file/app targets and exposes missing/unknown targets without hrefs", () => {
     expect(resolvePin({ id: "f-pin", kind: "file", ref: "f" }, { files: [file] })).toEqual({ kind: "file", file, label: "report.pdf", detail: "arquivo" });
-    expect(resolvePin({ id: "gone", kind: "file", ref: "gone" }, { files: [file] }).kind).toBe("unavailable");
+    expect(resolvePin({ id: "gone", kind: "file", ref: "gone" }, { files: [file], filesAll: true }).kind).toBe("unavailable");
+    expect(resolvePin({ id: "old", kind: "file", ref: "old", title: "Older report" }, { files: [], filesAll: false })).toEqual({kind:"file-unloaded",id:"old",label:"Older report"});
     expect(pinAppTarget("chart")).toEqual({ connectionId: "room", tool: "chart" });
     expect(pinAppTarget("123456abcdef/chart")).toEqual({ connectionId: "123456abcdef", tool: "chart" });
     expect(pinAppTarget("room/chart")).toEqual({ connectionId: "room", tool: "chart" });
@@ -120,14 +122,67 @@ describe("native pin mutation session", () => {
     disposePinsSession(next);
     expect(next.active).toBe(false);
   });
-  test("only recognizable pin errors release a queued pin, retaining the draft", () => {
-    const { session, timer, send } = draft();
-    submitPinDraft(session, "room-a", send);
-    expect(rejectPinRequest(session, "task not found")).toBe(false);
+  test("unrelated command errors never settle a queued pin mutation", () => {
+    const {session,send} = draft();
+    let room:Room={id:"room-a",me:"me@test",book:{title:"Room",owner:"me@test"},messages:[],epics:[],typing:{},members:[],online:[],suggestions:[],pins:[]};
+    syncPinsSession(session,room);submitPinDraft(session,"room-a",send);
+    const pending=get(session.state).pending;
+    for(const error of ["blocked: looks like a secret (token)","20 pins max: unpin one first","task not found"]) {
+      room=reduceRoom(room,{t:"error",error},"room-a")!;
+      syncPinsSession(session,room);
+      expect(get(session.state).pending).toBe(pending);
+      expect(get(session.state).draft.url).toBe("example.com");
+    }
+  });
+  test("pre-existing identical pins are a no-op only on explicit submit", () => {
+    const {session,commands,send}=draft();const pins=[pin("existing")];
+    syncPinsSession(session,{id:"room-a",pins});
+    syncPinsSession(session,{id:"room-a",pins});
+    expect(get(session.state)).toMatchObject({adding:true,draft:{url:"example.com",title:"Example"},pending:null});
+    expect(submitPinDraft(session,"room-a",send)).toBe(false);
+    expect(commands).toEqual([]);
+    expect(get(session.state)).toMatchObject({adding:false,draft:{url:"",title:""},issue:{kind:"already-pinned"}});
+  });
+  test("matching data on the same observed pins array is not a fresh receipt", () => {
+    const {session,send}=draft();const pins:Pin[]=[];syncPinsSession(session,{id:"room-a",pins});
+    submitPinDraft(session,"room-a",send);pins.push(pin("p"));
+    syncPinsSession(session,{id:"room-a",pins});
     expect(get(session.state).pending).not.toBeNull();
-    expect(rejectPinRequest(session, "20 pins max: unpin one first")).toBe(true);
-    expect(get(session.state)).toMatchObject({ pending: null, adding: true, issue: { kind: "rejected" }, draft: { url: "example.com" } });
-    expect(timer.tasks.size).toBe(0);
+    syncPinsSession(session,{id:"room-a",pins:[...pins]});
+    expect(get(session.state).pending).toBeNull();
+  });
+  test("an already queued cancelled callback cannot erase a newer timer handle", () => {
+    const {session,timer,send}=draft();submitPinDraft(session,"room-a",send);
+    const oldCallback=[...timer.tasks.values()][0];
+    syncPinsSession(session,{id:"room-a",pins:[pin("first")]});
+    openPinDraft(session);updatePinDraft(session,{url:"second.example.com",title:"Second"});
+    submitPinDraft(session,"room-a",send);const newerHandle=session.timer;
+    oldCallback();expect(session.timer).toBe(newerHandle);expect(get(session.state).pending).not.toBeNull();
+    disposePinsSession(session);expect(timer.tasks.size).toBe(0);expect(timer.cancelled).toContain(Number(newerHandle));
+  });
+  test("missing partial-page files request complete metadata once, with explicit retry after offline", () => {
+    const {session,commands,send}=draft();const room={id:"room-a",pins:[{id:"older",kind:"file",ref:"old"}],files:[file],filesAll:false};
+    syncPinsSession(session,room);
+    expect(requestPinnedFiles(session,room,send)).toBe(true);
+    expect(requestPinnedFiles(session,{...room},send)).toBe(false);
+    expect(commands).toEqual([{t:"files.get"}]);
+    expect(get(session.state).filesPending).toBe(true);
+    const full={...room,files:[file,{...file,id:"old",name:"old.pdf"}],filesAll:true};
+    syncPinsSession(session,full);expect(get(session.state).filesPending).toBe(false);
+    expect(resolvePin(room.pins[0],full).kind).toBe("file");
+    expect(requestPinnedFiles(session,full,send)).toBe(false);
+    // A reconnect can replace the full file index with its initial partial page.
+    syncPinsSession(session,room);
+    expect(requestPinnedFiles(session,room,send)).toBe(false);
+    expect(resolvePin(room.pins[0],room).kind).toBe("file-unloaded");
+    expect(requestPinnedFiles(session,room,send,!get(session.state).filesPending)).toBe(true);
+    expect(commands).toEqual([{t:"files.get"},{t:"files.get"}]);
+    const offline=createPinsSession("room-a",fakeClock().clock);
+    expect(requestPinnedFiles(offline,room,()=>false)).toBe(false);
+    expect(get(offline.state).fileIssue).toBe("offline");
+    expect(requestPinnedFiles(offline,room,send)).toBe(false);
+    expect(requestPinnedFiles(offline,room,send,true)).toBe(true);
+    disposePinsSession(offline);expect(requestPinnedFiles(offline,room,send,true)).toBe(false);
   });
   test("a synchronous canonical reply does not leave a stray confirmation timer", () => {
     const { session, timer } = draft();

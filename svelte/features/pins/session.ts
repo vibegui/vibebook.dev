@@ -5,12 +5,14 @@ import { normalizePinLink } from "./model";
 
 type PinMutation = Extract<RoomCommand, { t: "pin.add" | "pin.del" }>;
 export type PinDraft = { url: string; title: string };
-export type PinIssue = { kind: "invalid-link" | "offline" | "send-failed" | "unconfirmed" | "rejected"; detail?: string };
+export type PinIssue = { kind: "invalid-link" | "offline" | "send-failed" | "unconfirmed" | "already-pinned"; detail?: string };
 export type PinsState = {
   adding: boolean;
   draft: PinDraft;
-  pending: { sequence: number; command: PinMutation; draft?: PinDraft } | null;
+  pending: { sequence: number; command: PinMutation; draft?: PinDraft; pinsBefore: readonly Pin[] } | null;
   issue: PinIssue | null;
+  filesPending: boolean;
+  fileIssue: "offline" | "send-failed" | null;
 };
 /** One timer per queued mutation releases the retry lock without declaring server failure or retrying it. */
 export type PinsClock = { schedule(callback: () => void, ms: number): unknown; cancel(handle: unknown): void };
@@ -23,14 +25,15 @@ export type PinsSession = {
   readonly state: Writable<PinsState>;
   active: boolean;
   pins: readonly Pin[];
+  filesRequested: boolean;
   sequence: number;
   timer: unknown | null;
   readonly clock: PinsClock;
 };
 const emptyDraft = (): PinDraft => ({ url: "", title: "" });
 export function createPinsSession(roomId: string, timer: PinsClock = clock): PinsSession {
-  return { roomId, active: true, pins: [], sequence: 0, timer: null, clock: timer,
-    state: writable<PinsState>({ adding: false, draft: emptyDraft(), pending: null, issue: null }) };
+  return { roomId, active: true, pins: [], filesRequested: false, sequence: 0, timer: null, clock: timer,
+    state: writable<PinsState>({ adding: false, draft: emptyDraft(), pending: null, issue: null, filesPending: false, fileIssue: null }) };
 }
 function cancelTimer(session: PinsSession) {
   if (session.timer !== null) session.clock.cancel(session.timer);
@@ -56,15 +59,21 @@ function confirmed(command: PinMutation, pins: readonly Pin[]) {
   return command.t === "pin.del" ? !pins.some(pin => pin.id === command.id)
     : pins.some(pin => pin.kind === command.kind && pin.ref === command.ref && (!command.title || pin.title === command.title));
 }
-export function syncPinsSession(current: PinsSession | null, room: Pick<Room, "id" | "pins">): PinsSession {
+export function syncPinsSession(current: PinsSession | null, room: Pick<Room, "id" | "pins" | "files" | "filesAll">): PinsSession {
   let session = current;
   if (!session?.active || session.roomId !== room.id) {
     disposePinsSession(session);
     session = createPinsSession(room.id);
   }
   session.pins = room.pins ?? [];
-  const state = get(session.state), pending = state.pending;
-  if (pending && confirmed(pending.command, session.pins)) {
+  let state = get(session.state);
+  const unknownFile = room.pins?.some(pin => pin.kind === "file" && !room.files?.some(file => file.id === pin.ref));
+  if ((room.filesAll || !unknownFile) && (state.filesPending || state.fileIssue)) {
+    state = { ...state, filesPending: false, fileIssue: null };
+    session.state.set(state);
+  }
+  const pending = state.pending;
+  if (pending && session.pins !== pending.pinsBefore && confirmed(pending.command, session.pins)) {
     cancelTimer(session);
     const clearDraft = pending.command.t === "pin.add" && pending.draft && matchesDraft(state.draft, pending.draft);
     session.state.set({ ...state, pending: null, issue: null,
@@ -75,7 +84,7 @@ export function syncPinsSession(current: PinsSession | null, room: Pick<Room, "i
 function queue(session: PinsSession, roomId: string, send: SendRoomCommand, command: PinMutation, draft?: PinDraft): boolean {
   if (!session.active || session.roomId !== roomId || get(session.state).pending) return false;
   const sequence = ++session.sequence;
-  session.state.update(state => ({ ...state, pending: { sequence, command, draft }, issue: null }));
+  session.state.update(state => ({ ...state, pending: { sequence, command, draft, pinsBefore: session.pins }, issue: null }));
   let sent = false;
   try { sent = send(command); } catch {
     session.state.update(state => state.pending?.sequence === sequence ? { ...state, pending: null, issue: { kind: "send-failed" } } : state);
@@ -88,8 +97,8 @@ function queue(session: PinsSession, roomId: string, send: SendRoomCommand, comm
   // A synchronous test transport may already have applied the canonical response.
   if (session.active && get(session.state).pending?.sequence === sequence) {
     session.timer = session.clock.schedule(() => {
+      if (!session.active || get(session.state).pending?.sequence !== sequence) return;
       session.timer = null;
-      if (!session.active) return;
       session.state.update(state => state.pending?.sequence === sequence
         ? { ...state, pending: null, issue: { kind: "unconfirmed" } } : state);
     }, 20_000);
@@ -103,16 +112,29 @@ export function submitPinDraft(session: PinsSession, roomId: string, send: SendR
   const ref = normalizePinLink(state.draft.url);
   if (!ref) { session.state.update(state => ({ ...state, issue: { kind: "invalid-link" } })); return false; }
   const title = state.draft.title.trim().slice(0, 80);
+  if (confirmed({ t: "pin.add", kind: "link", ref, title }, session.pins)) {
+    // Explicit user submission may finish as a no-op; an incidental room refresh must not do this.
+    session.state.set({ ...state, adding: false, draft: emptyDraft(), issue: { kind: "already-pinned" } });
+    return false;
+  }
   return queue(session, roomId, send, { t: "pin.add", kind: "link", ref, title }, { ...state.draft });
 }
 export function removePinnedItem(session: PinsSession, roomId: string, id: string, send: SendRoomCommand): boolean {
   if (!session.pins.some(pin => pin.id === id)) return false;
   return queue(session, roomId, send, { t: "pin.del", id });
 }
-/** Book's WS errors have no request id. Only pin-specific messages may settle this slice's pending action. */
-export function rejectPinRequest(session: PinsSession | null, message: string): boolean {
-  if (!session?.active || !get(session.state).pending || !/^(?:not a valid URL|only http\(s\) links|20 pins max|blocked: looks like a secret|no pin )/.test(message)) return false;
-  cancelTimer(session);
-  session.state.update(state => ({ ...state, pending: null, issue: { kind: "rejected", detail: message } }));
-  return true;
+/** Load missing pinned-file metadata once, including across temporary rail unmounts. No automatic retries. */
+export function requestPinnedFiles(session: PinsSession, room: Pick<Room, "id" | "pins" | "files" | "filesAll">, send: SendRoomCommand, retry = false): boolean {
+  if (!session.active || session.roomId !== room.id || room.filesAll) return false;
+  const unknown = room.pins?.some(pin => pin.kind === "file" && !room.files?.some(file => file.id === pin.ref));
+  if (!unknown || (session.filesRequested && !retry)) return false;
+  session.filesRequested = true;
+  session.state.update(state => ({ ...state, filesPending: true, fileIssue: null }));
+  try {
+    if (send({ t: "files.get" })) return true;
+    session.state.update(state => ({ ...state, filesPending: false, fileIssue: "offline" }));
+  } catch {
+    session.state.update(state => ({ ...state, filesPending: false, fileIssue: "send-failed" }));
+  }
+  return false;
 }

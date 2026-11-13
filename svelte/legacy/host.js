@@ -2,7 +2,7 @@
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
 import { syncNavigationSession } from "../features/navigation/session";
-import { syncPinsSession, disposePinsSession, rejectPinRequest } from "../features/pins/session";
+import { syncPinsSession, disposePinsSession, requestPinnedFiles } from "../features/pins/session";
 import { createUiNavigation } from "../navigation";
 import { getBoardContainer, moveBoardContainer, watchBoardLayout } from "./boardLayout";
 import { uiNavigationUrl } from "../../shared/uiVariant";
@@ -25,6 +25,10 @@ const EN = {
   "Arquivo indisponível": "File unavailable",
   "App indisponível": "App unavailable",
   "Item indisponível": "Item unavailable",
+  "Este link já está nos fixados.": "This link is already pinned.",
+  "Carregando arquivo…": "Loading file…",
+  "Carregar arquivo": "Load file",
+  "Tentar carregar novamente": "Try loading again",
   "Não deu pra resolver agora. Tente de novo.": "Couldn't resolve this request. Try again.",
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -1781,13 +1785,13 @@ function onEvent(ev, id) {
     }
     case "requests": renderSide(); return;
     case "members": renderSide(); return;
-    case "files": renderFiles(); connsFilesChanged(); refreshVersions(); return;
-    case "fileAdd": renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
+    case "files": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); return;
+    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": renderReminders(); return;
     case "decisions": renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
     case "pins": renderSide(); renderFiles(); renderApps(); return;
-    case "error": rejectPinRequest(sidePins, ev.error || ""); toast(esc(ev.error || t("falhou"))); return;
+    case "error": toast(esc(ev.error || t("falhou"))); return;
     case "receipts": renderReceipts(); return;
     case "older": {
       olderBusy = false;
@@ -2800,6 +2804,7 @@ function renderSide() {
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   sideNavigation = syncNavigationSession(sideNavigation, S, thread, archOpen);
   sidePins = syncPinsSession(sidePins, S);
+  if (liveState) requestPinnedFiles(sidePins, S, send);
   if (railMode && window.innerWidth > 900) {
     disposeView("sidebar");
     return renderRail(el);

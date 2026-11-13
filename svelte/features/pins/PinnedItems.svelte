@@ -9,7 +9,7 @@
   import Label from "../../lib/ui/Label.svelte";
   import ErrorState from "../../lib/components/ErrorState.svelte";
   import { resolvePin, type PinAppTarget } from "./model";
-  import { closePinDraft, openPinDraft, removePinnedItem, submitPinDraft, updatePinDraft, type PinIssue, type PinsSession } from "./session";
+  import { closePinDraft, openPinDraft, removePinnedItem, requestPinnedFiles, submitPinDraft, updatePinDraft, type PinIssue, type PinsSession } from "./session";
 
   let { room, session, send, onopenfile, onopenapp, t }: {
     room: Room;
@@ -21,6 +21,9 @@
   } = $props();
   const pinState = $derived(session.state);
   const rows = $derived((room.pins ?? []).map(pin => ({ pin, target: resolvePin(pin, room) })));
+  const unknownFiles = $derived(rows.some(row => row.target.kind === "file-unloaded"));
+  let fileToOpen: string | null = $state(null);
+  let requestedFrom = $state.raw<PinsSession | null>(null);
   const live = $derived(session.active && session.roomId === room.id);
   let urlInput: HTMLInputElement | null = $state(null);
   let addButton: HTMLButtonElement | null = $state(null);
@@ -30,9 +33,22 @@
     offline: "Sem conexão. Seu rascunho foi mantido.",
     "send-failed": "Não deu pra enviar agora. Tente de novo.",
     unconfirmed: "Ainda não recebi confirmação. Confira os fixados antes de tentar de novo.",
-    rejected: "Não deu pra atualizar os fixados. Tente de novo.",
+    "already-pinned": "Este link já está nos fixados.",
   }[issue.kind]);
 
+  $effect(() => {
+    if (!fileToOpen) return;
+    if (requestedFrom !== session || !session.active || session.roomId !== room.id) {
+      fileToOpen = null; requestedFrom = null; return;
+    }
+    const pin = room.pins?.find(pin => pin.id === fileToOpen && pin.kind === "file");
+    if (!pin) { fileToOpen = null; requestedFrom = null; return; }
+    const target = resolvePin(pin, room);
+    if (target.kind === "file") {
+      fileToOpen = null; requestedFrom = null;
+      onopenfile(target.file);
+    } else if (room.filesAll) { fileToOpen = null; requestedFrom = null; }
+  });
   async function open() {
     const current = session;
     if (!live) return;
@@ -58,10 +74,14 @@
     const target = resolvePin(pin, room);
     if (target.kind === "file") onopenfile(target.file);
     if (target.kind === "app") onopenapp(target.app);
+    if (target.kind === "file-unloaded") {
+      requestedFrom = session; fileToOpen = id;
+      requestPinnedFiles(session, room, send, !$pinState.filesPending);
+    }
   }
 </script>
 
-<section class="pinsSec tw:space-y-2 tw:border-t tw:border-border tw:px-3 tw:py-3" aria-labelledby={`pins-title-${room.id}`} data-native-pins>
+<section class="pinsSec tw:space-y-2 tw:border-t tw:border-border tw:px-3 tw:py-3" aria-labelledby={`pins-title-${room.id}`} data-native-pins data-vb-native>
   <div class="tw:flex tw:items-center tw:justify-between tw:gap-2">
     <h2 id={`pins-title-${room.id}`} class="tw:m-0 tw:font-sans tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground">{t("Fixados")}</h2>
     {#if !$pinState.adding}
@@ -89,7 +109,13 @@
   {#if $pinState.pending}
     <p role="status" class="tw:m-0 tw:font-sans tw:text-xs tw:leading-5 tw:text-muted-foreground">{t("Aguardando confirmação…")}</p>
   {/if}
-  {#if $pinState.issue}<ErrorState compact title={issueTitle($pinState.issue)} description={$pinState.issue.detail} />{/if}
+  {#if $pinState.issue?.kind === "already-pinned"}
+    <p role="status" class="tw:m-0 tw:font-sans tw:text-xs tw:leading-5 tw:text-muted-foreground">{issueTitle($pinState.issue)}</p>
+  {:else if $pinState.issue}<ErrorState compact title={issueTitle($pinState.issue)} description={$pinState.issue.detail} />{/if}
+  {#if $pinState.fileIssue}<ErrorState compact title={issueTitle({kind:$pinState.fileIssue})} />{/if}
+  {#if unknownFiles && ($pinState.filesPending || $pinState.fileIssue)}
+    <Button variant="ghost" size="sm" disabled={!live} onclick={() => requestPinnedFiles(session, room, send, true)}>{t("Tentar carregar novamente")}</Button>
+  {/if}
 
   {#if rows.length}
     <ul class="tw:m-0 tw:list-none tw:space-y-1 tw:p-0">
@@ -99,9 +125,9 @@
             <a href={target.href} target="_blank" rel="noopener noreferrer" onclick={event => { if (!session.active || session.roomId !== room.id) event.preventDefault(); }} class="tw:flex tw:min-w-0 tw:flex-1 tw:items-center tw:gap-2 tw:rounded-control tw:px-2 tw:py-2 tw:font-sans tw:text-sm tw:text-foreground tw:no-underline tw:hover:bg-accent tw:focus-visible:outline-none tw:focus-visible:ring-2 tw:focus-visible:ring-ring" title={target.href}>
               <Icon name="chevronRight" /><span class="tw:min-w-0"><span class="tw:block tw:truncate">{target.label}</span><span class="tw:block tw:truncate tw:text-xs tw:text-muted-foreground">{target.detail}</span></span>
             </a>
-          {:else if target.kind === "file" || target.kind === "app"}
+          {:else if target.kind === "file" || target.kind === "app" || target.kind === "file-unloaded"}
             <Button variant="ghost" class="tw:h-auto tw:min-w-0 tw:flex-1 tw:justify-start tw:whitespace-normal tw:px-2 tw:py-2 tw:text-left" disabled={!live} onclick={() => activate(pin.id)}>
-              <Icon name="chevronRight" /><span class="tw:min-w-0"><span class="tw:block tw:truncate">{target.label}</span><span class="tw:block tw:truncate tw:text-xs tw:font-normal tw:text-muted-foreground">{t(target.detail)}</span></span>
+              <Icon name="chevronRight" /><span class="tw:min-w-0"><span class="tw:block tw:truncate">{target.label}</span><span class="tw:block tw:truncate tw:text-xs tw:font-normal tw:text-muted-foreground">{target.kind === "file-unloaded" ? t($pinState.filesPending ? "Carregando arquivo…" : "Carregar arquivo") : t(target.detail)}</span></span>
             </Button>
           {:else}
             <div class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-2 tw:px-2 tw:py-2 tw:font-sans tw:text-sm tw:text-muted-foreground">
