@@ -156,10 +156,22 @@ try {
     "Keyboard workflow task",
   );
   step("Checking real drag and drop");
-  await target.dragTo(board.locator('[data-lane="doing"]'), {
-    sourcePosition: { x: 20, y: 20 },
-    targetPosition: { x: 20, y: 20 },
-  });
+  const grip = target.locator("[data-board-drag]");
+  await grip.hover();
+  const bounds = await grip.boundingBox();
+  assert(bounds, "Drag grip has no geometry");
+  await page.mouse.down();
+  // Activate before target hover autoscrolls the narrow lane viewport.
+  await page.mouse.move(
+    bounds.x + bounds.width / 2 + 8,
+    bounds.y + bounds.height / 2 + 8,
+    { steps: 5 },
+  );
+  const doingLane = board.locator('[data-lane="doing"]');
+  // Two movements reliably deliver dragover: https://playwright.dev/docs/input#dragging-manually
+  await doingLane.hover({ position: { x: 20, y: 20 } });
+  await doingLane.hover({ position: { x: 25, y: 25 } });
+  await page.mouse.up();
   await expect(target).toHaveAttribute("data-status", "doing");
   await status.selectOption("review");
   await expect(target).toHaveAttribute("data-status", "review");
@@ -198,12 +210,23 @@ try {
       const expected = getComputedStyle(probe).backgroundColor;
       probe.remove();
       const style = getComputedStyle(element);
+      const headings = [...element.querySelectorAll("h3")].map((heading) => {
+        const typography = getComputedStyle(heading);
+        return {
+          family: typography.fontFamily,
+          weight: typography.fontWeight,
+          size: typography.fontSize,
+          leading: typography.lineHeight,
+          tracking: typography.letterSpacing,
+        };
+      });
       return {
         expected,
         actual: style.backgroundColor,
         family: style.fontFamily,
         pageWidth: document.documentElement.scrollWidth,
         viewport: innerWidth,
+        headings,
       };
     });
     assert.equal(
@@ -212,6 +235,16 @@ try {
       "Legacy background leaked into native board",
     );
     assert(theme.family.includes("Inter var"));
+    for (const heading of theme.headings) {
+      assert(
+        heading.family.includes("Inter var"),
+        "Legacy heading font leaked into board",
+      );
+      assert.equal(heading.weight, "500");
+      assert.equal(heading.size, "14px");
+      assert.equal(heading.leading, "20px");
+      assert(["0px", "normal"].includes(heading.tracking));
+    }
     assert(
       theme.pageWidth <= theme.viewport,
       "Board overflow escaped its horizontal scroller",
@@ -225,6 +258,10 @@ try {
     await board.screenshot({ path: `${output}/${name}.png` });
   };
   step("Checking light/dark responsive board and list accessibility");
+  await board.evaluate((element) => {
+    element.setAttribute("data-layout-proof", "preserved");
+  });
+  await draft.fill("Preserved layout draft");
   await audit("board-light-1440");
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "dark";
@@ -237,6 +274,23 @@ try {
   await audit("board-dark-390");
   await board.getByRole("tab", { name: "List", exact: true }).click();
   await audit("list-dark-390");
+  step("Checking layout round trip without remount or draft/focus loss");
+  await draft.focus();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute("data-layout-proof", "preserved");
+  await expect(draft).toHaveValue("Preserved layout draft");
+  await expect(draft).toBeFocused();
+  await expect(
+    board.getByRole("tab", { name: "List", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await showBoard();
+  await expect(board).toHaveAttribute("data-layout-proof", "preserved");
+  await expect(draft).toHaveValue("Preserved layout draft");
+  await draft.fill("");
+  result.layoutRoundTrip =
+    "1440→768→390→1440→390 preserves native DOM, draft and mode; automatic desktop return preserves focus";
   step("Checking disconnected drafts, status rollback and retry");
   assert(sockets.length > 0);
   disconnected = true;
@@ -270,6 +324,27 @@ try {
   await navigate(`/b/${id}?ui=svelte&t=${epicID}`);
   await expect(card("Retained board draft")).toBeVisible();
   await expect(status).toHaveValue("review");
+  step("Checking board scrolling keeps the form and final card reachable");
+  for (const title of [
+    "Scroll task one",
+    "Scroll task two",
+    "Final scroll task",
+  ])
+    await add(title);
+  const last = card("Final scroll task");
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport({ ratio: 0.95 });
+  const formBounds = await board.locator("form").boundingBox();
+  const viewport = page.viewportSize();
+  assert(
+    formBounds &&
+      viewport &&
+      formBounds.y >= 0 &&
+      formBounds.y + formBounds.height <= viewport.height,
+    "Board content pushed the task form outside the viewport",
+  );
+  result.scrolling = { formBounds, viewport };
+  await board.screenshot({ path: `${output}/board-scroll-390.png` });
   assert.deepEqual(errors, []);
   result.status = "pass";
   console.log(

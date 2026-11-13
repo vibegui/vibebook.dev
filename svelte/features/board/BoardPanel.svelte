@@ -235,7 +235,7 @@
   data-vb-native
   data-board-scope={model.scope ?? "all"}
   aria-label={vb.t("Quadro de tarefas")}
-  class="tw:m-0 tw:box-border tw:flex tw:min-h-0 tw:min-w-0 tw:flex-col tw:gap-3 tw:rounded-surface tw:bg-background tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
+  class="tw:m-0 tw:box-border tw:flex tw:min-h-0 tw:min-w-0 tw:flex-1 tw:flex-col tw:gap-3 tw:rounded-surface tw:bg-background tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
 >
   <p class="tw:m-0 tw:text-xs tw:text-muted-foreground">
     {model.title ??
@@ -254,6 +254,7 @@
     {vb.t("Arraste, ou use ← →. Clique pra abrir o épico.")}
   </p>
   <Tabs
+    class="tw:flex-1 tw:overflow-hidden"
     label={vb.t("Quadro de tarefas")}
     items={[
       { value: "board", label: vb.t("Quadro") },
@@ -265,7 +266,7 @@
     {#snippet children(value)}
       {#if value === mode}
         {#if value === "board"}
-          <div class="tw:min-w-0 tw:overflow-x-auto tw:pb-2">
+          <div class="tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-auto tw:pb-2">
             <div
               class="tw:grid tw:grid-cols-[repeat(4,minmax(15rem,1fr))] tw:gap-3"
             >
@@ -296,7 +297,7 @@
                   )}
                 >
                   <h3
-                    class="tw:m-0 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:text-sm tw:font-semibold"
+                    class="tw:m-0 tw:flex tw:items-center tw:justify-between tw:gap-2 tw:font-sans tw:text-sm tw:font-semibold tw:leading-5 tw:tracking-normal"
                   >
                     {vb.t(lane.label)}<Badge>{tasks.length}</Badge>
                   </h3>
@@ -321,13 +322,13 @@
             </div>
           </div>
         {:else}
-          <div class="tw:space-y-5">
+          <div class="tw:h-full tw:min-h-0 tw:space-y-5 tw:overflow-auto">
             {#if mine.length}<section
                 class="tw:space-y-2"
                 aria-label={vb.t("Esperando você")}
               >
                 <h3
-                  class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-sm tw:font-semibold"
+                  class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:font-semibold tw:leading-5 tw:tracking-normal"
                 >
                   {vb.t("Esperando você")}<Badge variant="warning"
                     >{mine.length}</Badge
@@ -344,7 +345,7 @@
                 aria-label={group.title}
               >
                 <h3
-                  class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:text-sm tw:font-semibold"
+                  class="tw:m-0 tw:flex tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:font-semibold tw:leading-5 tw:tracking-normal"
                 >
                   {group.title}<Badge>{group.tasks.length}</Badge>
                 </h3>
@@ -363,7 +364,7 @@
   </Tabs>
   <form
     onsubmit={add}
-    class="tw:flex tw:flex-wrap tw:items-end tw:gap-2"
+    class="tw:flex tw:shrink-0 tw:flex-wrap tw:items-end tw:gap-2"
     data-board-add
   >
     <div class="tw:min-w-36 tw:flex-1 tw:space-y-1">
@@ -407,7 +408,11 @@
         event.preventDefault();
         return;
       }
-      event.dataTransfer?.setData("application/x-vibebook-task", task.id);
+      if (event.dataTransfer) {
+        event.dataTransfer.setData("application/x-vibebook-task", task.id);
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setDragImage(event.currentTarget, 20, 20);
+      }
       dragging = task.id;
     }}
     ondragend={() => {
@@ -415,7 +420,7 @@
       over = null;
     }}
     class={cn(
-      "tw:min-w-0 tw:rounded-control tw:border tw:border-border tw:bg-card tw:text-card-foreground tw:shadow-xs",
+      "tw:relative tw:min-w-0 tw:rounded-control tw:border tw:border-border tw:bg-card tw:text-card-foreground tw:shadow-xs",
       row && "tw:flex tw:flex-wrap tw:items-center",
       dragging === task.id && "tw:opacity-50",
       task.status !== "done" &&
@@ -430,7 +435,10 @@
       aria-describedby={`${uid}-keys`}
       onclick={() => onopen?.(task.epicId)}
       onkeydown={(event) => keyboard(event, task, key)}
-      class="tw:block tw:w-full tw:min-w-0 tw:flex-1 tw:space-y-2 tw:rounded-control tw:border-0 tw:bg-transparent tw:p-3 tw:text-left tw:font-sans tw:text-sm tw:text-card-foreground tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
+      class={cn(
+        "tw:block tw:w-full tw:min-w-0 tw:flex-1 tw:space-y-2 tw:rounded-control tw:border-0 tw:bg-transparent tw:p-3 tw:text-left tw:font-sans tw:text-sm tw:text-card-foreground tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring",
+        !row && "tw:pr-10",
+      )}
     >
       <span
         class={cn(
@@ -461,6 +469,14 @@
           >{/if}
       </span>
     </button>
+    {#if !row}<span
+        data-board-drag
+        draggable="true"
+        aria-hidden="true"
+        title={vb.t("Arraste, ou use ← →. Clique pra abrir o épico.")}
+        class="tw:absolute tw:right-2 tw:top-2 tw:grid tw:size-7 tw:cursor-grab tw:place-items-center tw:rounded-md tw:text-muted-foreground tw:active:cursor-grabbing"
+        ><Icon name="grip" /></span
+      >{/if}
     <div
       class={cn(
         "tw:min-w-32 tw:space-y-1 tw:p-3",

@@ -7,6 +7,10 @@ import type { Room } from "../svelte/roomStore";
 import type { RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
 import { boardModel } from "../svelte/features/board/model";
+import {
+  moveBoardContainer,
+  watchBoardLayout,
+} from "../svelte/legacy/boardLayout";
 
 // Compile the real components, then run their DOM events with the browser Svelte
 // runtime. Run with: bun test --conditions=browser scripts/ui-panels.test.ts
@@ -564,6 +568,59 @@ describe("native Svelte room panels", () => {
     drop("t");
     expect(events).toHaveLength(1);
   }, 30_000);
+  test("board layout moves preserve native input identity/focus and dispose media callbacks", () => {
+    const book = document.createElement("div");
+    book.className = "book boardview";
+    const chat = document.createElement("main");
+    const doc = document.createElement("aside");
+    const board = document.createElement("div");
+    board.id = "kanban";
+    const composer = document.createElement("form");
+    const draft = document.createElement("input");
+    draft.value = "Preserved layout draft";
+    board.append(draft);
+    doc.append(board);
+    chat.append(composer);
+    book.append(chat, doc);
+    document.body.append(book);
+    draft.focus();
+    moveBoardContainer(book, chat, composer);
+    expect(board.parentElement).toBe(chat);
+    expect(board.nextSibling).toBe(composer);
+    expect(draft.value).toBe("Preserved layout draft");
+    expect(document.activeElement).toBe(draft);
+    moveBoardContainer(book, doc);
+    expect(board.parentElement).toBe(doc);
+    expect(document.activeElement).toBe(draft);
+    const callbacks: (() => void)[] = [];
+    let removals = 0,
+      desktop = 0;
+    const media = {
+      matches: true,
+      addEventListener(_type: "change", listener: () => void) {
+        callbacks.push(listener);
+      },
+      removeEventListener(_type: "change", listener: () => void) {
+        expect(listener).toBe(callbacks[0]);
+        removals++;
+      },
+    };
+    const stop = watchBoardLayout(book, media, () => desktop++);
+    callbacks[0]();
+    expect(desktop).toBe(0);
+    media.matches = false;
+    callbacks[0]();
+    expect(desktop).toBe(1);
+    book.remove();
+    callbacks[0]();
+    expect(desktop).toBe(1);
+    document.body.append(book);
+    stop();
+    stop();
+    callbacks[0]();
+    expect(removals).toBe(1);
+    expect(desktop).toBe(1);
+  });
   test("files group versions in folders, filter and send pin events", () => {
     const room = fixture();
     room.files = [

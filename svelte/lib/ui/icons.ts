@@ -6,6 +6,7 @@ export const iconPaths = {
   chevronRight: ["m9 6 6 6-6 6"],
   search: ["M21 21l-4.35-4.35", "M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0"],
   plus: ["M12 5v14M5 12h14"],
+  grip: ["M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01"],
   calendar: [
     "M8 2v4M16 2v4M3 10h18",
     "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2",

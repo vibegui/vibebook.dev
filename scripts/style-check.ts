@@ -37,6 +37,7 @@ if (native) {
     "svelte/TaskList.svelte",
     "svelte/Tasks.svelte",
     "svelte/Board.svelte",
+    "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",
   );
