@@ -29,10 +29,12 @@
     ],
     "improvements": {
       "pt": [
-        "Os painéis nativos usam a mesma tipografia e os mesmos componentes de interface."
+        "Os painéis nativos usam a mesma tipografia e os mesmos componentes de interface.",
+        "A versão Svelte mantém o email e o código após erros, mostra pedidos de acesso e confirma a conexão de agents com os mesmos controles de segurança do servidor."
       ],
       "en": [
-        "Native panels share consistent typography and interface components."
+        "Native panels share consistent typography and interface components.",
+        "The Svelte preview retains email and code after errors, shows access requests and confirms agent connections through the same server security checks."
       ]
     },
     "fixes": {
@@ -881,8 +883,12 @@
       ]
     },
     "fixes": {
-      "pt": ["Salas novas ganham título e resumo depois da primeira mensagem"],
-      "en": ["New rooms get a title and summary after the first message"]
+      "pt": [
+        "Salas novas ganham título e resumo depois da primeira mensagem"
+      ],
+      "en": [
+        "New rooms get a title and summary after the first message"
+      ]
     }
   },
   {

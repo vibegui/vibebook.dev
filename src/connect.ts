@@ -2,6 +2,7 @@
 // /authorize signs the person in with the normal vibebook session and asks for consent; the grant's
 // props carry only their email. The app lists and revokes grants through /api/agents.
 import { reqLang } from "./lang";
+import { nativeAuthPage } from "./native-page";
 import { AuthorizationError, CimdFetchError, type ConsentDescription, OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { type Context, Hono } from "hono";
 import { handleAgentMcp } from "./agent";
@@ -127,10 +128,14 @@ connect.get("/authorize", async (c) => {
     const oauth = c.env.OAUTH_PROVIDER;
     const request = await oauth.parseAuthRequest(c.req.raw);
     const details = await oauth.describeConsent(request);
+    // Validate the original request before serving native UI. Its typed context GET creates the consent transaction.
+    if (uiVariant(url) === "svelte") return nativeAuthPage(c.env, c.req.raw, "consent");
     const consent = await oauth.beginConsent(request);
     consent.headers.set("content-type", "text/html; charset=utf-8");
     return new Response(consentHtml(T[lang(c)], details, email, consent.handle, url.pathname + url.search), { headers: consent.headers });
   } catch (e) {
+    if (uiVariant(url) === "svelte" && (e instanceof AuthorizationError || e instanceof CimdFetchError) && !(e instanceof AuthorizationError && e.redirectTo))
+      return nativeAuthPage(c.env, c.req.raw, "consent", {status:400});
     return fail(c, e);
   }
 });

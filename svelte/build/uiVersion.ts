@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Plugin } from "vite";
+import { UI_VERSION_HEX_LENGTH } from "../../shared/uiVersion";
 
 async function browserAssets(
   directory: string,
@@ -53,7 +54,7 @@ export async function versionAppShell(
     hash.update(`${names[i]}\0${content.length}\0`);
     hash.update(content);
   });
-  const version = hash.digest("hex").slice(0, 20);
+  const version = hash.digest("hex").slice(0, UI_VERSION_HEX_LENGTH);
   const shellPath = join(publicDirectory, "app-svelte.html");
   const shell = await readFile(shellPath, "utf8");
   // Do not hash the shell or inject another line: that would either make each

@@ -8,6 +8,7 @@ import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { accessPage, filePage, roomAccess, roomMeta } from "./access";
+import { nativeAuthPage } from "./native-page";
 import { auth, authServices, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -247,7 +248,10 @@ for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
     return res;
   });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
-app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url))) : pageview(c, await shell(c))));
+app.get("/login", async (c) => {
+  if ((await identify(c)) && !c.req.query("next")) return c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url)));
+  return pageview(c, uiVariant(c.req.url) === "svelte" ? await nativeAuthPage(c.env, c.req.raw, "login") : await shell(c));
+});
 app.get("/app", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl("/login", c.req.url, uiVariant(c.req.url)));
@@ -266,6 +270,12 @@ app.get("/b/*", async (c) => {
   const { state, title } = await roomAccess(c.env.DB, id, email ?? null);
   if (state === "member")
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, title ?? ""), { html: true }); } }).transform(await shell(c)), email ?? undefined);
+  if (uiVariant(url) === "svelte") {
+    const autoAccess = url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`);
+    const native = await nativeAuthPage(c.env, c.req.raw, "access", {autoAccess,status:state === "missing" ? 404 : 200});
+    const res = native.status === 503 ? native : new HTMLRewriter().on("title", {element: (el) => {el.replace(roomMeta(url.origin,id,state === "missing" ? null : title),{html:true});}}).transform(native);
+    return pageview(c,res,email ?? undefined);
+  }
   const res = c.html(accessPage({ origin: url.origin, id, title, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), state === "missing" ? 404 : 200);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
