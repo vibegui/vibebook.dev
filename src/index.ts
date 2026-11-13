@@ -1,4 +1,4 @@
-import { uploadsApi, type ApiServices } from "./api";
+import { authApi, uploadsApi, type ApiServices, type AuthServices } from "./api";
 import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
@@ -8,7 +8,7 @@ import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { accessPage, filePage, roomMeta } from "./access";
-import { auth, EMAIL_RE, identify } from "./auth";
+import { auth, authServices, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
@@ -72,7 +72,7 @@ export type Env = {
   MCP_AUTH_TOKEN?: string;
 };
 
-type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices } };
+type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, created_at INTEGER)`,
@@ -186,6 +186,8 @@ app.use("*", async (c, next) => {
   }
 });
 
+app.use("/auth/*", async (c, next) => { c.set("auth", authServices(c)); await next(); });
+app.route("/", authApi);
 app.route("/auth", auth);
 app.route("/", connect);
 

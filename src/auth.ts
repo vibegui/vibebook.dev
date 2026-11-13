@@ -4,6 +4,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./index";
 import { track } from "./track";
+import type { AuthFail, AuthServices } from "./api";
 import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 
 const COOKIE = "vb_session";
@@ -56,7 +57,7 @@ async function sessionAfter(env: Env, email: string) {
   return row?.session_after ?? 0;
 }
 
-async function startSession(c: Context<{ Bindings: Env }>, email: string) {
+async function startSession<E extends { Bindings: Env }>(c: Context<E>, email: string) {
   const payload = b64url(enc.encode(JSON.stringify({ email: email.toLowerCase(), iat: Date.now() })));
   setCookie(c, COOKIE, `${payload}.${await hmac(c.env.SESSION_SECRET, payload)}`, {
     httpOnly: true,
@@ -92,83 +93,101 @@ export async function identify(c: Context<any>): Promise<string | null> {
   return (as && EMAIL_RE.test(as) ? as : env.DEV_EMAIL).toLowerCase();
 }
 
+/** The public auth routes' side (src/api.ts authApi): every check and write of the old handlers, answering a value
+ *  or { error, status }. Built per request; the route only validates the body and turns the answer into JSON. */
+export function authServices<E extends { Bindings: Env }>(c: Context<E>): AuthServices {
+  const fail = (error: string, status: AuthFail["status"]): AuthFail => ({ error, status });
+  const OK = { ok: true as const };
+  return {
+    providers: { google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET), email: true },
+    sameOrigin: sameOrigin(c),
+    safeNext,
+    loginUrl: (next, query) => loginUrl(c, next, query),
+    async emailStart(raw) {
+      const ip = c.req.header("cf-connecting-ip") ?? "local";
+      const email = raw.trim().toLowerCase();
+      const en = reqLang(c.req.raw) === "en";
+      if (!EMAIL_RE.test(email)) return fail(en ? "Invalid email." : "Email inválido.", 400);
+      const [byIp, byEmail] = await Promise.all([
+        c.env.LOGIN_LIMIT.limit({ key: `ip:${ip}` }),
+        c.env.LOGIN_LIMIT.limit({ key: `email:${email}` }),
+      ]);
+      if (!byIp.success || !byEmail.success) return fail(en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto.", 429);
+
+      const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+      await c.env.DB.prepare(
+        // Asking for a new code doesn't reset the wrong guesses while the last code is still valid: at most
+        // MAX_CODE_ATTEMPTS guesses per CODE_TTL per email, however many codes are requested.
+        `INSERT INTO login_codes (email, hash, expires_at, attempts) VALUES (?, ?, ?, 0)
+         ON CONFLICT(email) DO UPDATE SET hash = excluded.hash, expires_at = excluded.expires_at,
+           attempts = CASE WHEN login_codes.expires_at > ?4 THEN login_codes.attempts ELSE 0 END`,
+      )
+        .bind(email, await codeHash(c.env, email, code), Date.now() + CODE_TTL_MS, Date.now())
+        .run();
+
+      c.executionCtx.waitUntil(track(c.env, "login_code_sent", { user: email }));
+      if (c.env.DEV_EMAIL) {
+        console.log(`[dev] login code for ${email}: ${code}`);
+        return OK;
+      }
+      try {
+        await c.env.EMAIL.send({
+          to: email,
+          from: { email: "login@vibebook.dev", name: "vibebook" },
+          subject: en ? `${code} is your vibebook code` : `${code} é seu código do vibebook`,
+          text: en ? `Your code to sign in to vibebook: ${code}\n\nIt works for 10 minutes. If this wasn't you, ignore this email.` : `Seu código para entrar no vibebook: ${code}\n\nVale por 10 minutos. Se não foi você, ignore este email.`,
+          html: emailHtml(
+            en ? "Your sign-in code" : "Seu código para entrar",
+            `<p style="font-size:40px;letter-spacing:8px;font-weight:700;margin:24px 0;color:#14305e">${code}</p><p>${en ? "It works for 10 minutes. If this wasn't you, ignore this email." : "Vale por 10 minutos. Se não foi você, ignore este email."}</p>`,
+          ),
+        });
+      } catch (e) {
+        console.error("login email failed", { email, error: String(e) });
+        return fail(en ? "We couldn't send the email right now. Try again in a moment." : "Não conseguimos enviar o email agora. Tenta de novo em instantes.", 502);
+      }
+      return OK;
+    },
+    async emailVerify(body) {
+      const email = (body.email ?? "").trim().toLowerCase();
+      const code = (body.code ?? "").replace(/\D/g, "");
+      const en = reqLang(c.req.raw) === "en";
+      const ip = c.req.header("cf-connecting-ip") ?? "local";
+      const lim = await Promise.all([c.env.LOGIN_LIMIT.limit({ key: `verify-ip:${ip}` }), c.env.LOGIN_LIMIT.limit({ key: `verify:${email}` })]);
+      if (lim.some((r) => !r.success)) return fail(en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto.", 429);
+      // Count the attempt before comparing, atomically: parallel guesses can't all read "attempts < 5".
+      const row = await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ? RETURNING hash, expires_at, attempts - 1 AS attempts`).bind(email).first<{
+        hash: string;
+        expires_at: number;
+        attempts: number;
+      }>();
+      if (row && row.expires_at > Date.now() && row.attempts >= MAX_CODE_ATTEMPTS)
+        return fail(en ? "Too many wrong codes. Wait 10 minutes and ask for a new one." : "Muitas tentativas erradas. Espera 10 minutos e pede um código novo.", 429);
+      if (!row || row.expires_at < Date.now()) return fail(en ? "Code expired. Ask for a new one." : "Código expirado. Pede um novo.", 400);
+      if (!safeEqual(row.hash, await codeHash(c.env, email, code))) {
+        return fail(en ? "Wrong code." : "Código errado.", 400);
+      }
+      await c.env.DB.prepare(`DELETE FROM login_codes WHERE email = ?`).bind(email).run();
+      await startSession(c, email);
+      c.executionCtx.waitUntil(track(c.env, "login", { user: email, dims: { method: "email" } }));
+      return { ok: true, next: safeNext(body.next) };
+    },
+    logout: () => deleteCookie(c, COOKIE, { path: "/" }),
+    async logoutAll() {
+      const email = await sessionEmail(c);
+      if (!email) return fail("unauthenticated", 401);
+      await c.env.DB.prepare(`UPDATE users SET session_after = ? WHERE email = ?`).bind(Date.now(), email).run();
+      afterSeen.delete(email);
+      deleteCookie(c, COOKIE, { path: "/" });
+      c.executionCtx.waitUntil(track(c.env, "logout_all", { user: email }));
+      return OK;
+    },
+  };
+}
+
 export const auth = new Hono<{ Bindings: Env }>();
 
-auth.get("/providers", (c) => c.json({ google: !!(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET), github: !!(c.env.GITHUB_CLIENT_ID && c.env.GITHUB_CLIENT_SECRET), email: true }));
 
-auth.post("/email/start", async (c) => {
-  if (!sameOrigin(c)) return c.json({ error: "bad origin" }, 403);
-  const ip = c.req.header("cf-connecting-ip") ?? "local";
-  const { email: raw } = await c.req.json<{ email?: string }>().catch(() => ({ email: "" }));
-  const email = (raw ?? "").trim().toLowerCase();
-  const en = reqLang(c.req.raw) === "en";
-  if (!EMAIL_RE.test(email)) return c.json({ error: en ? "Invalid email." : "Email inválido." }, 400);
-  const [byIp, byEmail] = await Promise.all([
-    c.env.LOGIN_LIMIT.limit({ key: `ip:${ip}` }),
-    c.env.LOGIN_LIMIT.limit({ key: `email:${email}` }),
-  ]);
-  if (!byIp.success || !byEmail.success) return c.json({ error: en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto." }, 429);
 
-  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
-  await c.env.DB.prepare(
-    // Asking for a new code doesn't reset the wrong guesses while the last code is still valid: at most
-    // MAX_CODE_ATTEMPTS guesses per CODE_TTL per email, however many codes are requested.
-    `INSERT INTO login_codes (email, hash, expires_at, attempts) VALUES (?, ?, ?, 0)
-     ON CONFLICT(email) DO UPDATE SET hash = excluded.hash, expires_at = excluded.expires_at,
-       attempts = CASE WHEN login_codes.expires_at > ?4 THEN login_codes.attempts ELSE 0 END`,
-  )
-    .bind(email, await codeHash(c.env, email, code), Date.now() + CODE_TTL_MS, Date.now())
-    .run();
-
-  c.executionCtx.waitUntil(track(c.env, "login_code_sent", { user: email }));
-  if (c.env.DEV_EMAIL) {
-    console.log(`[dev] login code for ${email}: ${code}`);
-    return c.json({ ok: true });
-  }
-  try {
-    await c.env.EMAIL.send({
-      to: email,
-      from: { email: "login@vibebook.dev", name: "vibebook" },
-      subject: en ? `${code} is your vibebook code` : `${code} é seu código do vibebook`,
-      text: en ? `Your code to sign in to vibebook: ${code}\n\nIt works for 10 minutes. If this wasn't you, ignore this email.` : `Seu código para entrar no vibebook: ${code}\n\nVale por 10 minutos. Se não foi você, ignore este email.`,
-      html: emailHtml(
-        en ? "Your sign-in code" : "Seu código para entrar",
-        `<p style="font-size:40px;letter-spacing:8px;font-weight:700;margin:24px 0;color:#14305e">${code}</p><p>${en ? "It works for 10 minutes. If this wasn't you, ignore this email." : "Vale por 10 minutos. Se não foi você, ignore este email."}</p>`,
-      ),
-    });
-  } catch (e) {
-    console.error("login email failed", { email, error: String(e) });
-    return c.json({ error: en ? "We couldn't send the email right now. Try again in a moment." : "Não conseguimos enviar o email agora. Tenta de novo em instantes." }, 502);
-  }
-  return c.json({ ok: true });
-});
-
-auth.post("/email/verify", async (c) => {
-  if (!sameOrigin(c)) return c.json({ error: "bad origin" }, 403);
-  const body = await c.req.json<{ email?: string; code?: string; next?: string }>().catch(() => ({}) as Record<string, string>);
-  const email = (body.email ?? "").trim().toLowerCase();
-  const code = (body.code ?? "").replace(/\D/g, "");
-  const en = reqLang(c.req.raw) === "en";
-  const ip = c.req.header("cf-connecting-ip") ?? "local";
-  const lim = await Promise.all([c.env.LOGIN_LIMIT.limit({ key: `verify-ip:${ip}` }), c.env.LOGIN_LIMIT.limit({ key: `verify:${email}` })]);
-  if (lim.some((r) => !r.success)) return c.json({ error: en ? "Too many tries. Wait a minute." : "Muitas tentativas. Espera um minuto." }, 429);
-  // Count the attempt before comparing, atomically: parallel guesses can't all read "attempts < 5".
-  const row = await c.env.DB.prepare(`UPDATE login_codes SET attempts = attempts + 1 WHERE email = ? RETURNING hash, expires_at, attempts - 1 AS attempts`).bind(email).first<{
-    hash: string;
-    expires_at: number;
-    attempts: number;
-  }>();
-  if (row && row.expires_at > Date.now() && row.attempts >= MAX_CODE_ATTEMPTS)
-    return c.json({ error: en ? "Too many wrong codes. Wait 10 minutes and ask for a new one." : "Muitas tentativas erradas. Espera 10 minutos e pede um código novo." }, 429);
-  if (!row || row.expires_at < Date.now()) return c.json({ error: en ? "Code expired. Ask for a new one." : "Código expirado. Pede um novo." }, 400);
-  if (!safeEqual(row.hash, await codeHash(c.env, email, code))) {
-    return c.json({ error: en ? "Wrong code." : "Código errado." }, 400);
-  }
-  await c.env.DB.prepare(`DELETE FROM login_codes WHERE email = ?`).bind(email).run();
-  await startSession(c, email);
-  c.executionCtx.waitUntil(track(c.env, "login", { user: email, dims: { method: "email" } }));
-  return c.json({ ok: true, next: safeNext(body.next) });
-});
 
 auth.get("/google/start", async (c) => {
   if (!c.env.GOOGLE_CLIENT_ID) return c.redirect(loginUrl(c, c.req.query("next"), ""));
@@ -250,24 +269,7 @@ auth.get("/invite", async (c) => {
   return c.redirect(safeNext(next));
 });
 
-auth.post("/logout", async (c) => {
-  deleteCookie(c, COOKIE, { path: "/" });
-  // A form post (the consent page's "Not you?") signs out and goes back to the login with where it came from.
-  if (!c.req.header("content-type")?.includes("form")) return c.json({ ok: true });
-  const next = safeNext(String((await c.req.parseBody()).next ?? ""));
-  return c.redirect(loginUrl(c, next, `?next=${encodeURIComponent(next)}`), 303);
-});
 // Every browser signed in as you (phone, laptop, a stolen cookie) is signed out; your Claudes' logins are separate.
-auth.post("/logout-all", async (c) => {
-  if (!sameOrigin(c)) return c.json({ error: "bad origin" }, 403);
-  const email = await sessionEmail(c);
-  if (!email) return c.json({ error: "unauthenticated" }, 401);
-  await c.env.DB.prepare(`UPDATE users SET session_after = ? WHERE email = ?`).bind(Date.now(), email).run();
-  afterSeen.delete(email);
-  deleteCookie(c, COOKIE, { path: "/" });
-  c.executionCtx.waitUntil(track(c.env, "logout_all", { user: email }));
-  return c.json({ ok: true });
-});
 
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
 

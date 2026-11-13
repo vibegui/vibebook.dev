@@ -451,3 +451,33 @@ export type GlobalFailure = {
   status: (typeof GLOBAL_FAILURE_STATUSES)[number];
   error: string;
 };
+
+// Public auth routes (/auth/*, src/api.ts authApi): what the login page needs, before anyone is signed in.
+export const AuthProviders = z.object({
+  google: z.boolean(),
+  github: z.boolean(),
+  email: z.literal(true),
+});
+export type AuthProviders = z.infer<typeof AuthProviders>;
+/** The login page's context: which buttons to show, where to go after (already made safe), and why a provider failed. */
+export const LoginContext = z.object({
+  providers: AuthProviders,
+  next: z.string(),
+  error: z.nullable(z.enum(["google", "github"])),
+});
+export type LoginContext = z.infer<typeof LoginContext>;
+export const LoginContextQuery = z.object({
+  next: z.optional(z.string()),
+  error: z.optional(z.string()),
+});
+export const EmailVerifyBody = z.object({
+  email: z.string(),
+  code: z.string(),
+  next: z.optional(z.string()),
+});
+export type EmailVerifyBody = z.infer<typeof EmailVerifyBody>;
+export const EmailVerifyResult = z.object({
+  ok: z.literal(true),
+  next: z.string(),
+});
+export type EmailVerifyResult = z.infer<typeof EmailVerifyResult>;
