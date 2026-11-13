@@ -82,6 +82,7 @@
     "scripts/native-documents.test.ts",
     "scripts/native-room-sidebar.test.ts",
     "scripts/native-attachment-crop-browser.ts",
-    "scripts/native-documents-browser.ts"
+    "scripts/native-documents-browser.ts",
+    "scripts/native-documents-ownership-browser.ts"
   ]
 }

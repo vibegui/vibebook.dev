@@ -7,6 +7,17 @@ import {
 import type { DocumentPane } from "../svelte/features/documents/types";
 const expect = baseExpect.configure({ timeout: 60_000 });
 
+/** Public local script locations only; never persist error text, auth URLs or query strings. */
+export function localBrowserError(error: Pick<Error, "name" | "stack">, origin: string | readonly string[]) {
+  const allowed = new Set(typeof origin === "string" ? [origin] : origin);
+  const locations = new Set<string>();
+  for (const match of (error.stack ?? "").matchAll(/https?:\/\/(?:127\.0\.0\.1|localhost):\d+\/[^\s)]+/g)) {
+    const frame = /^(.*?):(\d+):(\d+)$/.exec(match[0]);
+    try { const url = new URL(frame?.[1] ?? match[0]); if (allowed.has(url.origin) && /\.(?:js|ts)$/.test(url.pathname)) locations.add(`${url.pathname}${frame ? `:${frame[2]}:${frame[3]}` : ""}`); } catch { /* Ignore non-URL stack formatting. */ }
+  }
+  return { name: error.name, locations: [...locations] };
+}
+
 /** Shared only by incremental native UI suites, not production acceptance. */
 export async function nativeBrowserFixtures(
   context: BrowserContext,
