@@ -795,6 +795,13 @@
   .doc[data-pane="reminders"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="reminders"]) .remPane { display: none; }
   .doc.collab[data-view="edit"]:not([data-pane="doc"]) .cm { display: none; }
   .remPane { flex: 1; overflow: auto; padding: 20px 24px 40px; }
+  /* An HTML file opened beside the chat (Ao lado): replaces the doc panel's body, follows new versions. */
+  .doc[data-pane="view"] :is(.preview, #doc, .seg, .filesPane), .doc:not([data-pane="view"]) .viewPane { display: none; }
+  .viewPane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .viewPane .vpHead { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
+  .viewPane .vpHead b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .viewPane .vpHead select { max-width: 46%; font-size: 12px; }
+  .viewPane iframe { flex: 1; width: 100%; border: 0; background: #fff; }
   .connsPane { flex: 1; overflow: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; gap: 12px; }
   .connsPane:has(> .connFrame) { padding: 0; gap: 0; overflow: hidden; }
   .connHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -2019,6 +2026,8 @@ const EN = {
   "aguardando {who}": "waiting on {who}",
   "{who} parou": "{who} stopped",
   "lido por {who}": "read by {who}",
+  "Ao lado": "Beside",
+  "Abrir ao lado do chat, no lugar do doc": "Open beside the chat, in place of the doc",
   "Abrir": "Open",
   "Prévia": "Preview",
   "Fechar galho": "Collapse branch",
@@ -3295,6 +3304,7 @@ function renderBook() {
       <div class="decPane" id="decPane"></div>
       <div class="appsPane connsPane" id="appsPane"></div>
       <div class="remPane" id="remPane"></div>
+      <div class="viewPane" id="viewPane"></div>
       <div class="agentsPane" id="agentsPane"></div>
     </section>
     <div class="sheetDim" id="sheetDim"></div>
@@ -4673,7 +4683,33 @@ function fileVersions(name) {
   for (const m of allMsgs()) for (const f of m.files || []) if (f.name === name && !by.has(f.id)) by.set(f.id, { id: f.id, ts: m.ts });
   return [...by.values()].sort((a, b) => b.ts - a.ts);
 }
+// Ao lado: an HTML file in the doc panel instead of the full-screen viewer, so you can talk in the chat while you read
+// it. It follows the newest version of that name until you pick an older one in its selector.
+let sideView = null; // { room, name, fid, follow }
+function openSide(fid, name) {
+  sideView = { room: S.id, name, fid, follow: fileVersions(name)[0]?.id === fid || !fileVersions(name).length };
+  if (!S.filesAll) send({ t: "files.get" });
+  document.dispatchEvent(new CustomEvent("vb:pane", { detail: "view" }));
+  if (ROOM_PHONE.matches) openSheet("doc");
+  renderSideView();
+}
+function renderSideView() {
+  const el = document.getElementById("viewPane"); if (!el) return;
+  if (!sideView || sideView.room !== S.id) { el.innerHTML = ""; return; }
+  const vs = fileVersions(sideView.name);
+  if (sideView.follow && vs[0]) sideView.fid = vs[0].id;
+  const url = `/api/books/${S.id}/files/${sideView.fid}`;
+  const cur = el.querySelector("iframe");
+  const opts = vs.map((v, i) => `<option value="${v.id}"${v.id === sideView.fid ? " selected" : ""}>v${vs.length - i}${i === 0 ? ` · ${t("mais nova")}` : ""}</option>`).join("");
+  if (cur && el.dataset.fid === sideView.fid) { const sel = el.querySelector("select"); if (sel) { sel.innerHTML = opts; sel.hidden = vs.length < 2; } return; }
+  el.dataset.fid = sideView.fid;
+  el.innerHTML = `<div class="vpHead"><b title="${esc(sideView.name)}">${esc(sideView.name)}</b><select aria-label="${t("Versão")}"${vs.length < 2 ? " hidden" : ""}>${opts}</select><a class="iconBtn" href="${url}" data-view="frame" data-name="${esc(sideView.name)}" title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 16)}</a><button type="button" class="iconBtn" data-sideclose title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 16)}</button></div><iframe sandbox="allow-scripts" src="${url}" title="${esc(sideView.name)}"></iframe>`;
+  el.querySelector("select").onchange = (e) => { sideView.fid = e.target.value; sideView.follow = e.target.selectedIndex === 0; renderSideView(); };
+  el.querySelector("[data-sideclose]").onclick = () => { sideView = null; renderSideView(); document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })); };
+}
+document.addEventListener("click", (e) => { const b = e.target.closest?.("[data-side]"); if (!b) return; e.preventDefault(); openSide(b.dataset.side, b.dataset.name); });
 function refreshVersions() {
+  renderSideView();
   const d = document.getElementById("viewer"); if (!d?.open || !d.dataset.name) return;
   const sel = d.querySelector(".vsel"), vs = fileVersions(d.dataset.name), cur = d.dataset.fid;
   sel.hidden = vs.length < 2;
@@ -4747,7 +4783,7 @@ document.addEventListener("click", (e) => {
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 // An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
 // the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
-const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
   ? htmlCard(f)
   : f.type.startsWith("audio/")
