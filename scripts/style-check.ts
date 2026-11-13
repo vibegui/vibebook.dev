@@ -35,6 +35,7 @@ if (native) {
     "svelte/features/files",
     "svelte/features/decisions",
     "svelte/features/people",
+    "svelte/features/auth",
     "svelte/features/pwa",
     "svelte/features/notifications",
     "svelte/features/chat",
