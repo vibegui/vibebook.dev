@@ -3,7 +3,13 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  AccessRequestResult,
+  AccessResult,
+  ArchivedResult,
+  ClaudeToggleResult,
+  LoginsResult,
   OkResult,
+  SearchResult,
   PostMessageResult,
   PushKeyResult,
   PushTestResult,
@@ -86,3 +92,42 @@ sameAs<Equal<UploadOk, UploadFileResult>>(true);
 sameAs<Equal<Key, PushKeyResult>>(true);
 sameAs<Equal<Sent, PushTestResult>>(true);
 sameAs<Equal<InferResponseType<typeof archive, 200>, OkResult>>(true);
+
+// Slice 3: account and room lists.
+const friends = api.api.friends.$post;
+void friends({ json: { email: "a@b.co" } });
+const noEmail = {};
+// @ts-expect-error email is required
+void friends({ json: noEmail });
+type Archived = InferResponseType<typeof api.api.archived.$get, 200>;
+type Search = InferResponseType<typeof api.api.search.$get, 200>;
+type Logins = InferResponseType<typeof api.api.me.logins.$get, 200>;
+sameAs<Equal<Archived, ArchivedResult>>(true);
+sameAs<Equal<Search, SearchResult>>(true);
+sameAs<Equal<Logins, LoginsResult>>(true);
+declare const found: Search;
+const snippet: string = found.messages[0].snippet;
+// @ts-expect-error search hits carry a snippet, not the full text
+void found.messages[0].text;
+void snippet;
+void api.api.search.$get({ query: { q: "hi" } });
+
+// Slice 4: "Ligar Claude" and access requests.
+const room4 = api.api.books[":id"];
+void room4.claude.$post({ param: { id: "r" }, json: { on: true } });
+void room4.requests.$post({
+  param: { id: "r" },
+  json: { email: "a@b.co", ok: true },
+});
+const noDecision = { email: "a@b.co" };
+// @ts-expect-error approving or denying is required
+void room4.requests.$post({ param: { id: "r" }, json: noDecision });
+sameAs<
+  Equal<InferResponseType<typeof room4.claude.$post, 200>, ClaudeToggleResult>
+>(true);
+sameAs<
+  Equal<InferResponseType<typeof room4.request.$post, 200>, AccessRequestResult>
+>(true);
+sameAs<Equal<InferResponseType<typeof room4.access.$get, 200>, AccessResult>>(
+  true,
+);

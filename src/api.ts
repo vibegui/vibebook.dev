@@ -8,10 +8,21 @@
 // of Worker and Cloudflare types, and every response is checked against its shared schema type with `satisfies`, so a
 // handler and the schema the client validates with can't drift apart.
 import { Hono } from "hono";
+import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  type AccessRequestResult,
+  type AccessResult,
+  ClaudeToggleBody,
+  type ClaudeToggleResult,
+  DecideRequestBody,
   ArchiveBody,
+  ArchivedRoom,
+  type ArchivedResult,
+  EmailBody,
+  LoginsResult,
+  type SearchResult,
   type ErrorBody,
   type OkResult,
   PostMessageBody,
@@ -49,6 +60,22 @@ export interface ApiServices {
   pokeMe(): void;
   vapidKey: string | null;
   pushToMe(p: { title: string; body: string; url: string; tag: string }): Promise<number>;
+  /** Rows of one query, as the database returns them (routes parse them with a schema before answering). */
+  sqlAll(query: string, ...binds: Bind[]): Promise<unknown[]>;
+  /** Search the person's rooms (rate-limited per person: false = over the limit). */
+  search(q: string): Promise<SearchResult | false>;
+  loginProviders: { google: boolean; github: boolean };
+  isEmail(s: string): boolean;
+  befriend(email: string): Promise<void>;
+  invite(roomId: string, email: string): Promise<void>;
+  /** Remove someone from a room: the owner can't be removed; only the owner removes someone who already joined. */
+  removeMember(roomId: string, email: string): Promise<{ error: string; status: 400 | 403 } | null>;
+  /** Tell the person's tabs to refetch this room's agents (after the response). */
+  pokeAgents(roomId: string): void;
+  /** Ask to join a room: unknown room, already a member, over the rate limit, or asked (the owner is told once). */
+  requestAccess(roomId: string): Promise<"not_found" | "member" | "limited" | "asked">;
+  /** A member approves (invites) or denies a pending request; false = no such pending request. */
+  decideRequest(roomId: string, email: string, ok: boolean): Promise<boolean>;
 }
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
@@ -155,4 +182,85 @@ export const api = roomPosts
     return c.json(ok, 200);
   });
 
-export type AppType = typeof api;
+// Slice 3: account and room lists.
+export const accountApi = api
+  .get("/api/archived", async (c) => {
+    const rows = await c.get("svc").sqlAll(
+      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, m.archived_at,
+         (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
+       FROM books b JOIN members m ON m.book_id = b.id
+       WHERE m.email = ? AND m.archived_at IS NOT NULL ORDER BY m.archived_at DESC`,
+      c.get("email"),
+    );
+    return c.json({ books: zm.array(ArchivedRoom).parse(rows) } satisfies ArchivedResult, 200);
+  })
+  .get("/api/search", async (c) => {
+    const q = (c.req.query("q") ?? "").trim().slice(0, 120);
+    const none: SearchResult = { rooms: 0, epics: [], messages: [] }; // typed, so both answers are one SearchResult
+    if (q.length < 2) return c.json(none, 200);
+    const out = await c.get("svc").search(q);
+    if (!out) return c.json({ error: "rate limited" } satisfies ErrorBody, 429);
+    return c.json(out satisfies SearchResult, 200);
+  })
+  .get("/api/me/logins", async (c) => {
+    const svc = c.get("svc");
+    const rows = await svc.sqlAll(`SELECT COALESCE(json_extract(dims, '$.method'), 'email') AS method, MAX(ts) AS last, COUNT(*) AS n FROM events WHERE user = ? AND name = 'login' GROUP BY 1`, c.get("email"));
+    return c.json(LoginsResult.parse({ logins: rows, providers: svc.loginProviders }) satisfies LoginsResult, 200);
+  })
+  .post("/api/friends", body(EmailBody, "invalid email"), async (c) => {
+    const svc = c.get("svc"), who = c.req.valid("json").email.trim().toLowerCase();
+    if (!svc.isEmail(who) || who === c.get("email")) return c.json({ error: "invalid email" } satisfies ErrorBody, 400);
+    await svc.befriend(who);
+    return c.json(ok, 200);
+  })
+  .delete("/api/friends/:email", async (c) => {
+    const me = c.get("email"), who = decodeURIComponent(c.req.param("email")).toLowerCase();
+    await c.get("svc").sql(`DELETE FROM friends WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)`, me, who, who, me);
+    return c.json(ok, 200);
+  })
+  .post("/api/books/:id/members", body(EmailBody, "invalid email"), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const who = c.req.valid("json").email.trim().toLowerCase();
+    if (!svc.isEmail(who)) return c.json({ error: "invalid email" } satisfies ErrorBody, 400);
+    await svc.invite(id, who);
+    return c.json(ok, 200);
+  })
+  .delete("/api/books/:id/members/:email", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const no = await svc.removeMember(id, decodeURIComponent(c.req.param("email")).toLowerCase());
+    if (no?.status === 400) return c.json({ error: no.error } satisfies ErrorBody, 400);
+    if (no) return c.json({ error: no.error } satisfies ErrorBody, 403);
+    return c.json(ok, 200);
+  });
+
+// Slice 4: "Ligar Claude" and access requests.
+export const roomApi = accountApi
+  .post("/api/books/:id/claude", body(ClaudeToggleBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const on = !!c.req.valid("json").on;
+    await svc.sql(`UPDATE members SET claude_on = ? WHERE book_id = ? AND email = ?`, on ? 1 : 0, id, c.get("email"));
+    svc.pokeAgents(id);
+    svc.track(on ? "claude_on" : "claude_off", { book: id });
+    return c.json({ ok: true as const, claude_on: on } satisfies ClaudeToggleResult, 200);
+  })
+  .post("/api/books/:id/request", async (c) => {
+    const r = await c.get("svc").requestAccess(c.req.param("id"));
+    if (r === "not_found") return c.json({ error: "not found" } satisfies ErrorBody, 404);
+    if (r === "limited") return c.json({ error: "rate limited" } satisfies ErrorBody, 429);
+    const out: AccessRequestResult = r === "member" ? { ok: true, member: true } : { ok: true };
+    return c.json(out, 200);
+  })
+  .post("/api/books/:id/requests", body(DecideRequestBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const { email, ok: approve } = c.req.valid("json");
+    if (!(await svc.decideRequest(id, email.toLowerCase(), approve))) return c.json({ error: "no such request" } satisfies ErrorBody, 404);
+    svc.track(approve ? "access_approved" : "access_denied", { book: id });
+    return c.json(ok, 200);
+  })
+  .get("/api/books/:id/access", async (c) => c.json({ member: await c.get("svc").isMember(c.req.param("id")) } satisfies AccessResult, 200));
+
+export type AppType = typeof roomApi;
