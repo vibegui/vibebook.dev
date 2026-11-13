@@ -796,6 +796,10 @@ function at(e) {
 var ot = et(history, () => location.href, "svelte"), y = document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] || (/^pt/i.test(navigator.language) ? "pt" : /^en/i.test(navigator.language) ? "en" : "pt");
 document.documentElement.lang = y === "en" ? "en" : "pt-BR";
 var st = y === "en" ? "en-US" : "pt-BR", ct = {
+	reseta: "resets",
+	sandbox: "sandbox",
+	Apagar: "Delete",
+	"Conferi a sala": "I checked the room",
 	"Você não tem acesso a esta sala.": "You do not have access to this room.",
 	"Rascunhos de conversas removidas": "Drafts from deleted threads",
 	"Revisar rascunho": "Review draft",

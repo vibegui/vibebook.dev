@@ -9,4 +9,4 @@ if (document.querySelector("meta[name=\"vb-page\"]")) {
 	if (!e) throw Error("Missing gallery root");
 	let { mountGallery: t } = await import("./main-D_rJUewA.js");
 	t(e);
-} else await import("./host-BOoOLVQm.js");
+} else await import("./host-FmfKG_s1.js");
