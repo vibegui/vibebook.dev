@@ -1,0 +1,15 @@
+# Native document runtime verification
+
+Run against disposable loopback Worker persistence after the combined application build. The script never starts a server. It requires DEV_EMAIL, real D1/Book/DocRoom/R2 and the actual browser assets; it uses the existing supported DEV identity switch, HTTP membership/upload API and real DCR/PKCE agent MCP tools. No model credentials are needed.
+
+```
+TEST_BASE_URL=http://127.0.0.1:8797 TEST_APP_REVISION=<served-build-head> bun run test:documents:browser
+```
+
+For the source application, additionally set TEST_SOURCE_URL to the Vite loopback origin using the same hostname. The source proxy must reach that same Worker. The runner records the supplied build revision, harness revision, actual Me version and compiled entry SHA256 when present; a supplied revision alone is not proof of the served source.
+
+Only two Chromium contexts run concurrently. The harness grants Chromium clipboard read/write on the loopback origins and uses actual editor Select All/Copy for large-document assertions, because CodeMirror virtualizes off-screen lines. It never reads or mutates private editor/Y.Doc internals. The suite verifies vanilla remains the default, bidirectional Unicode edits and native undo, agent updates, an epic document with more than 8KiB of offline edits and simultaneous peer edits, canonical mirror convergence, stale/full-document delivery, root/epic breadcrumbs, native task placement, actual CDN/SRI Pele Mermaid SVG and real uploaded images. Transport routing forwards real Yjs bytes unchanged and only injects a declared connection outage; Book traffic remains live. A real membership addition must produce actual 4003 closes, fresh authorization and reuse of the native editor without a whole-text fallback write. Deletion must leave the root document unchanged and a real WebSocket upgrade to the deleted epic must return 404. Removal must clear the removed member's canonical preview/editor, reject its file read and preserve the authorized peer's ability to edit.
+
+The final phase checks owner disposal, a real cookie identity switch followed by navigation, and narrow mobile viewport/tab keyboard controls. Same-document queued account callbacks, hardware touch/drag/Back, IME, Safari/iOS, browser crashes and persistence durability remain separate gates. No screenshots, DOM dumps, raw frames, provider errors, cookies, handles, codes or tokens are written. Results contain only phase names, room/version/hash metadata and aggregate transport counts. Failures intentionally omit raw exception text to prevent accidental credential disclosure; use the named failed phase for an interactive local diagnosis.
+
+Actual Mermaid loading/rendering is mandatory: network/SRI failure is a failed gate, never a mocked success. The harness leaves uniquely named local rooms and its real OAuth grant for inspection. Use a disposable local database and delete its persistence after review. No email authentication or production acceptance is claimed by DEV identities. Formatting, strict tooling compilation and this real runtime command must pass separately before claiming acceptance.
