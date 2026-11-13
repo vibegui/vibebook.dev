@@ -1041,6 +1041,51 @@ export class Book extends DurableObject<Env> {
     this.set("lang_at", String(Date.now()));
   }
 
+  /** What the hub's router (src/router.ts) needs to decide on this person's new messages: each one after `since` with
+   *  its thread's last lines, and the room's memory (doc start, open epics, the thread's epic doc start). */
+  async routerInput(bookId: string, since: number, email: string) {
+    this.bind(bookId);
+    const names = await this.names();
+    const who = (e: string) => (e === "ai" ? "@vibe" : (names[e] ?? e.split("@")[0]).replace(/[<>"@\p{Cc}]/gu, "").slice(0, 40));
+    const fold = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, "");
+    const local = email.split("@")[0];
+    const mine = new Set([fold((names[email] ?? "").split(/\s+/)[0] ?? ""), fold(local.split(/[._+-]/)[0]), fold(local)].filter(Boolean));
+    const mentionsMe = (t: string) => [...t.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((m) => mine.has(fold(m[1])));
+    const epics = this.epics().filter((e) => !(Number(e.archived) > 0));
+    const rows = this.sql.exec(`SELECT id, thread, author, kind, tag, for_who, text, reply_to FROM messages WHERE id > ? ORDER BY id LIMIT 30`, since).toArray();
+    const by = (id: unknown) => (id ? this.sql.exec<{ author: string; kind: string | null }>(`SELECT author, kind FROM messages WHERE id = ?`, id).toArray()[0] : undefined);
+    const messages = rows.map((m) => {
+      const thread = m.thread as string;
+      const recent = this.sql
+        .exec<{ author: string; kind: string | null; text: string }>(`SELECT author, kind, substr(text, 1, 300) AS text FROM messages WHERE thread = ? AND id < ? AND coalesce(text, '') != '' ORDER BY id DESC LIMIT 6`, thread, m.id)
+        .toArray()
+        .reverse()
+        .map((x) => `${who(x.author)}${x.kind === "agent" ? " (Claude)" : ""}: ${x.text}`)
+        .join("\n");
+      const parent = by(m.reply_to);
+      const epic = epics.find((e) => e.id === thread);
+      return {
+        id: m.id as number,
+        thread,
+        topic: epic?.title ?? (thread === "main" ? "sala principal" : thread),
+        author: m.author as string,
+        from: who(m.author as string),
+        agent: m.kind === "agent",
+        tag: (m.tag as string | null) ?? null,
+        for_who: (m.for_who as string | null) ?? null,
+        text: ((m.text as string | null) ?? "").slice(0, 1500),
+        reply_to_my_claude: !!parent && parent.author === email && parent.kind === "agent",
+        mentions_you: m.author !== email && mentionsMe((m.text as string | null) ?? ""),
+        recent,
+        epic_doc: epic ? (this.get(`doc:${epic.id}`) ?? "").slice(0, 1200) : "",
+      };
+    });
+    return {
+      name: (names[email] ?? local).split(/\s+/)[0],
+      memory: `Room doc (start):\n${(this.get("doc") ?? "").slice(0, 1500)}\n\nOpen epics: ${epics.slice(0, 25).map((e) => `${e.title} (${e.tasks.filter((t) => t.status !== "done").length} open tasks)`).join(" | ")}`,
+      messages,
+    };
+  }
   async agentRead(bookId: string, since = 0, email = "", to: { agents: string[]; me?: string; docOf?: string } = { agents: [] }) {
     this.bind(bookId);
     const book = await this.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(bookId).first<{ title: string }>();

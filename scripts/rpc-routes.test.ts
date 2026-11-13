@@ -160,6 +160,35 @@ function fixture(overrides: Partial<ApiServices> = {}) {
         return ids.length;
       },
     },
+    routerStats: async (room) => {
+      const arm = { n: 2, ignore: 1, answer: 0, wake: 1, cost: 0.0001 };
+      return {
+        since: "2026-11-01T00:00:00.000Z",
+        arms: {
+          jev: { ...arm, p50: 300, p95: 500 },
+          haiku: { ...arm, p50: 1800, p95: 2100 },
+          rule: { n: 0, ignore: 0, answer: 0, wake: 0, cost: 0 },
+        },
+        recent: room
+          ? []
+          : [
+              {
+                book_id: "r1",
+                room: "Room",
+                msg_id: 8,
+                arm: "jev",
+                decision: "ignore",
+                why: "thanks",
+                source: null,
+                reply_id: null,
+                ms: 300,
+                cost: 0.00002,
+                text: "Gui: valeu",
+                ts: 1,
+              },
+            ],
+      };
+    },
     consentContext: async () => ({
       context: {
         client_name: "Claude",
@@ -769,4 +798,20 @@ test("consent context: the page's facts and handle, the binding cookie passed on
     redirect_to: "http://127.0.0.1:9123/cb?error=x",
   });
   expect(e.headers.get("set-cookie")).toBeNull();
+});
+
+test("router A/B stats: the person's numbers, one room only for its members", async () => {
+  const { app } = fixture();
+  const all = await app.request("/api/router/stats");
+  expect(all.status).toBe(200);
+  const body = await all.json();
+  expect(body.arms.jev.p50).toBe(300);
+  expect(body.recent).toHaveLength(1);
+  expect(
+    (await (await app.request("/api/router/stats?room=r1")).json()).recent,
+  ).toEqual([]);
+  const outsider = fixture({ isMember: async () => false });
+  expect((await outsider.app.request("/api/router/stats?room=r1")).status).toBe(
+    403,
+  );
 });

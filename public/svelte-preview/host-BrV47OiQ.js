@@ -3867,6 +3867,15 @@ var ta = [
 			},
 			required: ["connection_id", "tool"]
 		}
+	},
+	{
+		name: "vibebook_router_stats",
+		description: "The person's hub router A/B (Jev vs Haiku): per arm how many messages were ignored, answered or woke their Claude, latency p50/p95, cost, and the last 40 decisions. room: true = only this room.",
+		inputSchema: {
+			type: "object",
+			properties: { room: { type: "boolean" } }
+		},
+		annotations: { readOnlyHint: !0 }
 	}
 ];
 function na({ thread: e = "main", limit: t = 50 } = {}) {
@@ -3913,6 +3922,16 @@ async function ra(e, t = {}, n) {
 	let r = (e) => Qi(e), i = (e) => e && e !== "main" && !j.epics.some((t) => t.id === e) ? null : e || "main";
 	switch (e) {
 		case "vibebook_read": return r(na(t));
+		case "vibebook_router_stats": {
+			let e = await fetch(`/api/router/stats${t.room ? `?room=${j.id}` : ""}`).catch(() => null);
+			return e && e.ok ? r(await e.json()) : {
+				isError: !0,
+				content: [{
+					type: "text",
+					text: `router stats unavailable${e ? ` (${e.status})` : ""}`
+				}]
+			};
+		}
 		case "vibebook_connections": return Array.isArray(K) || await Ki(), r((K || []).map((e) => ({
 			id: e.id,
 			title: e.title,
