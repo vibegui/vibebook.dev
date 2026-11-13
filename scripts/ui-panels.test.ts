@@ -5141,6 +5141,30 @@ describe("native Apps catalog", () => {
     expect(input.value).toBe("https://server.example.test/mcp");
     expect(get(h.owner.state).scope).toBe("room");
   }, 30_000);
+  test("connected old app toolbar cannot reload or leave a replacement target before DOM flush", async () => {
+    const h = await appsFixture();
+    h.owner.open({ connection: "room", tool: "missing-a" });
+    flushSync();
+    await tick();
+    const button = (label: string) => [...h.target.querySelectorAll<HTMLButtonElement>("button")].find(value => value.textContent?.trim() === label);
+    const oldReload = button("Recarregar")!, oldBack = button("← Apps")!;
+    expect(!!oldReload && !!oldBack).toBe(true);
+    h.owner.open({ connection: "room", tool: "missing-b" });
+    const before = get(h.owner.state);
+    expect(oldReload.isConnected && oldBack.isConnected).toBe(true);
+    oldReload.click();
+    oldBack.click();
+    expect(get(h.owner.state).target === before.target).toBe(true);
+    expect(get(h.owner.state).frameRevision).toBe(before.frameRevision);
+    flushSync();
+    await tick();
+    button("Recarregar")!.click();
+    expect(get(h.owner.state).frameRevision).toBe(before.frameRevision + 1);
+    flushSync();
+    await tick();
+    button("← Apps")!.click();
+    expect(get(h.owner.state).target).toBeNull();
+  }, 30_000);
   test("known membership loss immediately fences still-connected forms and removes private catalog on DOM update", async () => {
     const h = await appsFixture();
     h.owner.form(true);

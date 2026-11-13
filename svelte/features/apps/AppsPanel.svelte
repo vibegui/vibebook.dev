@@ -16,6 +16,7 @@
   import Label from "../../lib/ui/Label.svelte";
   import RadioGroup from "../../lib/ui/RadioGroup.svelte";
   import AlertDialog from "../../lib/ui/AlertDialog.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   let { props }: { props: AppsProps } = $props();
   const owner = untrack(() => props.owner),
     view = untrack(() => owner.state),
@@ -91,12 +92,13 @@
         >
       </div>{/if}
     {#if target}
-      {@const rendered = target}{@const revision = $view.frameRevision}
+      {#key $view.frameRevision}<Snapshot value={{ target, revision: $view.frameRevision }}>
+        {#snippet children(rendered)}
       <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
         <Button
           variant="ghost"
           onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered, revision))
+            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision))
               owner.back();
           }}>← Apps</Button
         ><Heading
@@ -112,17 +114,18 @@
           disabled={$pinView.phase !== "idle" || !identity}
           aria-pressed={!!pin}
           onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered, revision) && pinRef)
+            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision) && pinRef)
               owner.pin.toggle(pinRef, props.request);
           }}>{pin ? props.t("Desafixar") : props.t("Fixar na lateral")}</Button
         ><Button
           variant="ghost"
           onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered, revision))
+            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision))
               owner.reload();
           }}>{props.t("Recarregar")}</Button
         >
       </div>
+        {/snippet}</Snapshot>{/key}
       {#if $view.error}<p
           role="alert"
           class="tw:break-words tw:text-sm tw:text-destructive"
@@ -375,7 +378,8 @@
         </section>{/each}
     {/if}
   </section>
-  {#if remove}{#key remove}{@const intent = remove}<AlertDialog
+  {#if remove}{#key remove}<Snapshot value={remove}>
+      {#snippet children(intent)}<AlertDialog
         open
         title={props.t("Remover conexão")}
         description={props.t(
@@ -394,7 +398,7 @@
             remove = null;
           }
         }}
-      />{/key}{/if}
+      />{/snippet}</Snapshot>{/key}{/if}
 {:else if $view.denied}<section
     data-native-apps-denied
     data-vb-native
