@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Plugin } from "vite";
-import { UI_VERSION_HEX_LENGTH } from "../../shared/uiVersion";
+import { UI_VERSION_HEX_LENGTH } from "../../shared/uiVersion.ts";
 
 async function browserAssets(
   directory: string,

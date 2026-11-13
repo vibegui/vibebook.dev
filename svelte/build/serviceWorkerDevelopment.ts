@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { build, type Plugin } from "vite";
-import { clientBoundary } from "./clientBoundary";
+import { clientBoundary } from "./clientBoundary.ts";
 /** One on-demand classic worker bundle; no extra watcher/compiler process. */
 export function serviceWorkerDevelopment(root: string): Plugin {
   let compiled: Promise<string> | null = null;

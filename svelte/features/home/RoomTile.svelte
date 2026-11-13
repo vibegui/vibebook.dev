@@ -110,9 +110,11 @@
     }}
   >
     <span
-      class={(compact ? "tw:size-11" : "tw:h-28 tw:w-full") +
-        " tw:relative tw:inline-grid tw:place-items-center tw:overflow-hidden tw:rounded-control tw:text-xl tw:font-semibold " +
-        roomTint(room)}
+      class={[
+        compact ? "tw:size-11" : "tw:h-28 tw:w-full",
+        "tw:relative tw:inline-grid tw:place-items-center tw:overflow-hidden tw:rounded-control tw:text-xl tw:font-semibold",
+        roomTint(room),
+      ]}
     >
       {#if roomIcon(room)}<img
           src={roomIcon(room)}

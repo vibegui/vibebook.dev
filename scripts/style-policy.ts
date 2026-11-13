@@ -172,6 +172,39 @@ export function auditPresentation(
       true,
       ts.ScriptKind.TS,
     );
+    // The card protocol's `props.style` is a closed semantic variant, not CSS.
+    // Permit only strict comparisons with its catalog values, never mutation,
+    // forwarding as inline CSS, computed access, or reading DOM style fields.
+    const cardVariantComparison = (node: ts.PropertyAccessExpression) => {
+      if (
+        node.name.text !== "style" ||
+        !ts.isPropertyAccessExpression(node.expression) ||
+        node.expression.name.text !== "props"
+      )
+        return false;
+      const parent = node.parent;
+      if (
+        !ts.isBinaryExpression(parent) ||
+        ![
+          ts.SyntaxKind.EqualsEqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsEqualsToken,
+        ].includes(parent.operatorToken.kind)
+      )
+        return false;
+      const other = parent.left === node ? parent.right : parent.left;
+      return (
+        ts.isStringLiteral(other) &&
+        [
+          "plain",
+          "bold",
+          "muted",
+          "code",
+          "default",
+          "primary",
+          "danger",
+        ].includes(other.text)
+      );
+    };
     const visit = (node: ts.Node) => {
       const at = offset + node.getStart(ast);
       if (
@@ -184,7 +217,8 @@ export function auditPresentation(
         add(at, "Destructured CSSOM access");
       if (
         ts.isPropertyAccessExpression(node) &&
-        ["style", "adoptedStyleSheets"].includes(node.name.text)
+        ["style", "adoptedStyleSheets"].includes(node.name.text) &&
+        !cardVariantComparison(node)
       )
         add(at, `CSSOM access: ${node.name.text}`);
       if (

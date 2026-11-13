@@ -52,6 +52,26 @@ test("native component audit rejects style blocks, directives, markup and CSSOM 
     ),
   ).toEqual([]);
 });
+test("closed card variants select Tailwind utilities without permitting CSSOM or inline CSS", () => {
+  const file = "svelte/features/chat-interactive/CardView.svelte";
+  expect(
+    auditPresentation(
+      file,
+      '<p class={element.props.style === "bold" ? "tw:font-semibold" : "tw:font-normal"}>Card</p>',
+    ),
+  ).toEqual([]);
+  for (const source of [
+    "<p style={element.props.style}>Card</p>",
+    '<script>element.props.style = "bold";</script>',
+    '<script>element.props.style.color = "red";</script>',
+    "<script>const variant = element.props.style === userInput;</script>",
+    '<script>const variant = element.props.style === "display:none";</script>',
+    '<script>const variant = document.body.style === "bold";</script>',
+    '<script>const variant = element.props["style"] === "bold";</script>',
+  ])
+    expect(auditPresentation(file, source).length).toBeGreaterThan(0);
+});
+
 test("stylesheet policy distinguishes tokens from custom selector and import escapes", () => {
   expect(
     auditTailwind(
