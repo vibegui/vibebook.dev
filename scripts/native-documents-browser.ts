@@ -61,13 +61,29 @@ const browser = await chromium.launch({
 const contexts: BrowserContext[] = [];
 let phase = "setup";
 let substep: string | null = null;
-const pageErrors: { phase: string; substep: string | null; name: string; locations: string[] }[] = [];
+const pageErrors: {
+  phase: string;
+  substep: string | null;
+  name: string;
+  locations: string[];
+}[] = [];
 const ownershipSteps: { name: string; status: string; ms?: number }[] = [];
 results.pageErrors = pageErrors;
 results.ownershipSteps = ownershipSteps;
 async function ownershipStep(name: string, run: () => Promise<void>) {
-  substep = name; const item = { name, status: "running", ms: 0 }; ownershipSteps.push(item); const start = Date.now();
-  try { await run(); item.status = "passed"; } catch (error) { item.status = "failed"; throw error; } finally { item.ms = Date.now() - start; }
+  substep = name;
+  const item = { name, status: "running", ms: 0 };
+  ownershipSteps.push(item);
+  const start = Date.now();
+  try {
+    await run();
+    item.status = "passed";
+  } catch (error) {
+    item.status = "failed";
+    throw error;
+  } finally {
+    item.ms = Date.now() - start;
+  }
 }
 const stopped = () => void browser.close();
 process.once("SIGINT", stopped);
@@ -247,7 +263,18 @@ try {
   });
   contexts.push(owner, peer);
   for (const context of contexts) {
-    context.on("page", (page) => page.on("pageerror", (error) => pageErrors.push({ phase, substep, ...localBrowserError(error, [new URL(app).origin, new URL(base).origin]) })));
+    context.on("page", (page) =>
+      page.on("pageerror", (error) =>
+        pageErrors.push({
+          phase,
+          substep,
+          ...localBrowserError(error, [
+            new URL(app).origin,
+            new URL(base).origin,
+          ]),
+        }),
+      ),
+    );
     await context.grantPermissions(["clipboard-read", "clipboard-write"], {
       origin: base,
     });
@@ -549,43 +576,117 @@ try {
   assert.equal(deniedFile.status(), 403);
   phases.push(phase);
   phase = "scope disposal, account replacement and mobile controls";
-  await ownershipStep("owner editor readiness, real Home readiness and prior editor disposal", async () => {
-    await expect(nativeEditor(a)).toBeVisible(); await expect(nativeEditor(a)).toHaveAttribute("contenteditable", "true");
-    const staleEditor = await nativeEditor(a).elementHandle(); assert(staleEditor);
-    await a.goto(`${app}/app?ui=svelte`, { waitUntil: "domcontentloaded" });
-    await expect(a.locator('[data-vb-native="home"]')).toBeVisible(); await expect(a.locator(".book")).toHaveCount(0);
-    assert(!(await staleEditor.evaluate((node) => node.isConnected).catch(() => false))); await expect(a.locator(".cm-editor")).toHaveCount(0);
-  });
-  await ownershipStep("foreign DEV identity, positive access UI and fresh matching AccessContext", async () => {
-    const foreign = `doc-foreign-${suffix}@example.test`; await identity(owner, foreign);
-    // Full navigation tests a real account boundary, not fabricated internal callbacks.
-    await a.goto(`${app}/b/${room}?ui=svelte`, { waitUntil: "domcontentloaded" });
-    await expect(a.locator('[data-vb-native="auth"]')).toBeVisible(); await expect(a.getByRole("button", { name: "Ask to join", exact: true })).toBeVisible();
-    const proof = await owner.request.get(`${base}/auth/room/${room}`); assert(proof.ok()); const access = AccessContext.parse(await proof.json()); assert.equal(access.email, foreign); assert.equal(access.state, "ask");
-    await expect(a.getByText(`You're signed in as ${foreign}. People in the room see your request and let you in.`, { exact: true })).toBeVisible();
-    await expect(a.locator("[data-document-preview], [data-document-editor], .cm-editor")).toHaveCount(0);
-    assert(!(await a.locator("body").innerText()).includes("PRIVATE_AFTER_REMOVAL"));
-  });
-  await ownershipStep("restore owner identity before direct phone navigation", async () => { await identity(owner, ownerEmail); });
-  await ownershipStep("direct 390px owner room app readiness without desktop restoration detour", async () => {
-    await a.setViewportSize({ width: 390, height: 844 });
-    await a.goto(`${app}/b/${room}?ui=svelte`, { waitUntil: "domcontentloaded" });
-    await expect(a.locator(".book:not(.skel)")).toBeAttached(); await expect(a.locator("[data-native-composer]")).toBeVisible(); await expect(a.locator("#nativeDocumentPeek")).toBeVisible();
-  });
-  await ownershipStep("open actual phone Doc sheet and prove visible native document", async () => {
-    await openNativeRoomPane(a, "doc"); await expect(a.locator(".book")).toHaveAttribute("data-sheet", "doc"); await expect(a.locator("[data-native-document]")).toBeVisible(); await a.screenshot({ path: `${output}/owner-phone-document.png` });
-  });
-  await ownershipStep("native phone Doc toolbar keyboard activation retains focus", async () => {
-    const tab = a.locator('#nativeDocumentPeek button[data-document-pane="doc"]'); await expect(tab).toBeVisible(); await tab.focus(); await a.keyboard.press("ArrowRight");
-    await expect(a.locator(".book")).toHaveAttribute("data-pane", "files"); assert.equal(await a.evaluate(() => document.activeElement?.getAttribute("data-document-pane")), "files"); await expect(a.locator(".book")).toHaveAttribute("data-sheet", "doc");
-  });
+  await ownershipStep(
+    "owner editor readiness, real Home readiness and prior editor disposal",
+    async () => {
+      await expect(nativeEditor(a)).toBeVisible();
+      await expect(nativeEditor(a)).toHaveAttribute("contenteditable", "true");
+      const staleEditor = await nativeEditor(a).elementHandle();
+      assert(staleEditor);
+      await a.goto(`${app}/app?ui=svelte`, { waitUntil: "domcontentloaded" });
+      await expect(a.locator('[data-vb-native="home"]')).toBeVisible();
+      await expect(a.locator(".book")).toHaveCount(0);
+      assert(
+        !(await staleEditor
+          .evaluate((node) => node.isConnected)
+          .catch(() => false)),
+      );
+      await expect(a.locator(".cm-editor")).toHaveCount(0);
+    },
+  );
+  await ownershipStep(
+    "foreign DEV identity, positive access UI and fresh matching AccessContext",
+    async () => {
+      const foreign = `doc-foreign-${suffix}@example.test`;
+      await identity(owner, foreign);
+      // Full navigation tests a real account boundary, not fabricated internal callbacks.
+      await a.goto(`${app}/b/${room}?ui=svelte`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(a.locator('[data-vb-native="auth"]')).toBeVisible();
+      await expect(
+        a.getByRole("button", { name: "Ask to join", exact: true }),
+      ).toBeVisible();
+      const proof = await owner.request.get(`${base}/auth/room/${room}`);
+      assert(proof.ok());
+      const access = AccessContext.parse(await proof.json());
+      assert.equal(access.email, foreign);
+      assert.equal(access.state, "ask");
+      await expect(
+        a.getByText(
+          `You're signed in as ${foreign}. People in the room see your request and let you in.`,
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(
+        a.locator(
+          "[data-document-preview], [data-document-editor], .cm-editor",
+        ),
+      ).toHaveCount(0);
+      assert(
+        !(await a.locator("body").innerText()).includes(
+          "PRIVATE_AFTER_REMOVAL",
+        ),
+      );
+    },
+  );
+  await ownershipStep(
+    "restore owner identity before direct phone navigation",
+    async () => {
+      await identity(owner, ownerEmail);
+    },
+  );
+  await ownershipStep(
+    "direct 390px owner room app readiness without desktop restoration detour",
+    async () => {
+      await a.setViewportSize({ width: 390, height: 844 });
+      await a.goto(`${app}/b/${room}?ui=svelte`, {
+        waitUntil: "domcontentloaded",
+      });
+      await expect(a.locator(".book:not(.skel)")).toBeAttached();
+      await expect(a.locator("[data-native-composer]")).toBeVisible();
+      await expect(a.locator("#nativeDocumentPeek")).toBeVisible();
+    },
+  );
+  await ownershipStep(
+    "open actual phone Doc sheet and prove visible native document",
+    async () => {
+      await openNativeRoomPane(a, "doc");
+      await expect(a.locator(".book")).toHaveAttribute("data-sheet", "doc");
+      await expect(a.locator("[data-native-document]")).toBeVisible();
+      await a.screenshot({ path: `${output}/owner-phone-document.png` });
+    },
+  );
+  await ownershipStep(
+    "native phone Doc toolbar keyboard activation retains focus",
+    async () => {
+      const tab = a.locator(
+        '#nativeDocumentPeek button[data-document-pane="doc"]',
+      );
+      await expect(tab).toBeVisible();
+      await tab.focus();
+      await a.keyboard.press("ArrowRight");
+      await expect(a.locator(".book")).toHaveAttribute("data-pane", "files");
+      assert.equal(
+        await a.evaluate(() =>
+          document.activeElement?.getAttribute("data-document-pane"),
+        ),
+        "files",
+      );
+      await expect(a.locator(".book")).toHaveAttribute("data-sheet", "doc");
+    },
+  );
   phases.push(phase);
   results.transport = { native: aWire.stats, peer: bWire.stats };
   results.additionalGaps = [
     "Account replacement is navigation-bound; same-document queued private callback protection needs its separate source/DOM evidence",
     "No hardware touch drag/Back, IME or multi-process browser crash acceptance",
   ];
-  assert.deepEqual(pageErrors, [], "Browser errors invalidate the document cohort");
+  assert.deepEqual(
+    pageErrors,
+    [],
+    "Browser errors invalidate the document cohort",
+  );
   results.status = "passed";
 } catch {
   // Never serialize provider errors, URLs, DOM, cookies, codes, tokens or handles.

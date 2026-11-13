@@ -8,6 +8,11 @@ This is a focused pass with a desktop owner restoration detour. It does **not** 
 
 The full Document harness final phase now has positive Home readiness, positive foreign native access readiness plus validated matching AccessContext, precise substeps, and safe pageerror names/public local asset locations with query strings removed. It preserves the original direct restore-owner→set390px→navigate sequence **without** the focused desktop detour. Missing private DOM is asserted only after positive access initialization. Its direct adverse path and diagnostics changes remain source-only/unrun. Other document phases, real relay/provider/membership and privacy assertions remain intact. Formatting and strict tooling for this checkpoint are also unrun; root owns their resource slot and the full adverse-path rerun.
 
+After integration as `d9ce3d3`, both browser harnesses were formatted and the
+strict tooling check passed. The committed focused raw result is
+[documents-ownership.json](native-app-integration/browser/documents-ownership.json).
+The updated full direct-phone path still needs its own runtime result.
+
 Run the focused cohort only against disposable loopback DEV persistence:
 
 ```sh

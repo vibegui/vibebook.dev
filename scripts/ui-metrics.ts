@@ -991,8 +991,14 @@ async function run(
     await checkpoint("inboxDeferred");
     await arm("inboxDeferred", undefined, "click");
     await page.locator("#inboxBtn").click();
-    const inbox = page.getByRole("dialog", { name: "Inbox", exact: true });
+    const inbox =
+      variant === "vanilla"
+        ? page.locator("dialog#inbox[open]")
+        : page.getByRole("dialog", { name: "Inbox", exact: true });
     await expect(inbox).toBeVisible();
+    await expect(
+      inbox.getByRole("heading", { name: "Inbox", exact: true }),
+    ).toBeVisible();
     await result("inboxDeferred", true);
     await inbox.getByRole("button", { name: "Close", exact: true }).click();
     await expect(inbox).not.toBeVisible();
