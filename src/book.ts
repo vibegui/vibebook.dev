@@ -862,10 +862,13 @@ export class Book extends DurableObject<Env> {
   }
   // Humans only: removes the epic, its tasks and its discussion.
   deleteEpic(id: string) {
+    const bookId = this.epics().some((epic) => epic.id === id) ? this.get("book_id") : null;
     this.sql.exec(`DELETE FROM tasks WHERE epic_id = ?`, id);
     this.sql.exec(`DELETE FROM messages WHERE thread = ?`, id);
     this.sql.exec(`DELETE FROM epics WHERE id = ?`, id);
     this.sql.exec(`DELETE FROM meta WHERE k = ?`, `doc:${id}`);
+    // The deleted relay is no longer among the epics that membership changes kick.
+    if (bookId) this.ctx.waitUntil(docRoomStub(this.env, bookId, id).kickAll().catch((error) => console.error("docroom deleted epic kick", String(error))));
     this.epicsChanged();
   }
   setTask(id: string, done?: boolean) {
@@ -981,6 +984,7 @@ export class Book extends DurableObject<Env> {
   }
   /** The co-editing relay's text, mirrored here (debounced) so @vibe, agents and the preview read it. */
   docFromYjs(bookId: string, text: string, epic?: string) {
+    if (epic && !this.epics().some((item) => item.id === epic)) return;
     this.bind(bookId);
     const key = epic ? `doc:${epic}` : "doc";
     if (this.get(key) === text) return;
@@ -1771,10 +1775,12 @@ export class Book extends DurableObject<Env> {
         return ws.send(JSON.stringify({ t: "files", files: this.files() }));
       case "doc.get": {
         const epic = String(m.epic ?? "");
-        return ws.send(JSON.stringify({ t: "doc", epic, text: this.get(`doc:${epic}`) ?? "", fetched: true }));
+        if (epic && !this.epics().some((item) => item.id === epic)) return new Refused("unknown epic");
+        return ws.send(JSON.stringify({ t: "doc", epic, text: this.get(epic ? `doc:${epic}` : "doc") ?? "", fetched: true }));
       }
       case "doc": {
-        const epic = m.epic && this.epics().some((e) => e.id === m.epic) ? String(m.epic) : undefined;
+        const epic = m.epic ? String(m.epic) : undefined;
+        if (epic && !this.epics().some((item) => item.id === epic)) return new Refused("unknown epic");
         return this.setDoc(String(m.text ?? ""), email, ws, epic);
       }
       case "title":
