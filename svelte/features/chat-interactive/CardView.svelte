@@ -24,10 +24,10 @@
     vb: ChatBridge;
   } = $props();
   let active = true,
-    state = $state(idleState()),
+    status = $state(idleState()),
     expanded = $state<string | null>(null);
   const inline = $derived(inlineCardNodes(card));
-  let previousCard = card;
+  let previousCard = untrack(() => card);
   $effect(() => {
     const current = card;
     if (current !== previousCard)
@@ -36,10 +36,8 @@
         expanded = null;
       });
   });
-  const session = createInteractiveSession(
-    room.id,
-    message.id,
-    (next) => (state = next),
+  const session = untrack(() =>
+    createInteractiveSession(room.id, message.id, (next) => (status = next)),
   );
   $effect(() => {
     const snapshot = room;
@@ -56,7 +54,7 @@
   const answer = $derived(answerOf(room, message));
   const actionable = $derived(canAnswer(room, message));
   const busy = $derived(
-    state.phase === "pending" || state.phase === "unconfirmed",
+    status.phase === "pending" || status.phase === "unconfirmed",
   );
   function reply(value: string, event: MouseEvent) {
     if (
@@ -203,16 +201,16 @@
   class="tw:space-y-2 tw:font-sans tw:text-sm tw:text-foreground"
 >
   {@render draw(card.elements[card.root])}
-  {#if state.phase !== "idle"}<p
-      role={state.phase === "error" ? "alert" : "status"}
+  {#if status.phase !== "idle"}<p
+      role={status.phase === "error" ? "alert" : "status"}
       class="tw:m-0 tw:text-xs tw:text-muted-foreground"
     >
-      {state.phase === "pending"
+      {status.phase === "pending"
         ? vb.t("Enviando…")
-        : state.phase === "unconfirmed"
+        : status.phase === "unconfirmed"
           ? vb.t(
               "Ainda sem confirmação. Confira a sala antes de enviar novamente.",
             )
-          : state.error}
+          : status.error}
     </p>{/if}
 </div>

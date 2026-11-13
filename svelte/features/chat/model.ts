@@ -1,5 +1,14 @@
-import type { Ack, Receipt, Room } from "../../../shared/room";
+import type { Ack, Room } from "../../../shared/room";
 import type { ChatMessage } from "../../chatTypes";
+type Receipt = NonNullable<Room["receipts"]>[number];
+function lastWhere<T>(
+  rows: readonly T[],
+  predicate: (row: T) => boolean,
+): T | undefined {
+  for (let index = rows.length - 1; index >= 0; index--)
+    if (predicate(rows[index])) return rows[index];
+  return undefined;
+}
 export const prettyModel = (value: string) =>
   value.replace(
     /^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i,
@@ -156,7 +165,8 @@ export function messageFooters(
     );
   }
   for (const receipt of readers.values()) {
-    const message = list.findLast(
+    const message = lastWhere(
+      list,
       (m) =>
         m.id <= Math.max(receipt.read, receipt.delivered) &&
         !(m.kind === "agent" && m.author === receipt.email),
@@ -228,7 +238,8 @@ export function threadWorkers(
   if (doing) return [{ who: doing.who, email: doing.email }];
   if (latest[0]?.status === "done" || latest[0]?.status === "dismissed")
     return [];
-  const last = room.messages.findLast(
+  const last = lastWhere(
+    room.messages,
     (m) => m.thread === thread && m.kind === "agent",
   );
   return last && last.tag !== "done" && now - last.ts < 3 * 60_000

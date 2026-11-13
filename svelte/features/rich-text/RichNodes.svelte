@@ -61,13 +61,16 @@
     if (tag === "audio" || tag === "video") return "tw:max-w-full";
     return "";
   }
-  function open(event: MouseEvent, node: Extract<RichNode, { kind: "link" }>) {
+  function open(
+    event: MouseEvent | KeyboardEvent,
+    node: Extract<RichNode, { kind: "link" }>,
+  ) {
     if (!active) {
       event.preventDefault();
       return;
     }
     if (
-      event.button !== 0 ||
+      ("button" in event && event.button !== 0) ||
       event.metaKey ||
       event.ctrlKey ||
       event.shiftKey ||
@@ -115,7 +118,12 @@
       >
     {:else if node.kind === "link"}
       {#if node.namespace !== HTML_NS}<svelte:element
-          this="a"
+          this={"a"}
+          role="link"
+          tabindex="0"
+          onkeydown={(event: KeyboardEvent) => {
+            if (event.key === "Enter") open(event, node);
+          }}
           xmlns={node.namespace}
           href={node.target.href}
           title={node.title}

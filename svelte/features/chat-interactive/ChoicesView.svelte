@@ -22,7 +22,7 @@
   let active = true,
     selected = $state<number[]>([]),
     radio = $state("");
-  let previous = message.choices;
+  let previous = untrack(() => message.choices);
   $effect(() => {
     const source = message.choices;
     if (source !== previous)

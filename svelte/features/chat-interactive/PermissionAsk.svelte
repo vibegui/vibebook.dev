@@ -21,7 +21,7 @@
     vb: ChatBridge;
   } = $props();
   let active = true,
-    state = $state(idleState()),
+    status = $state(idleState()),
     selection = $state<"Aprovar" | "Negar" | null>(null),
     focusTarget = $state<HTMLElement | null>(null),
     selectedIdentity = $state<string | undefined>();
@@ -34,12 +34,14 @@
       message.choices,
     ]),
   );
-  const session = createInteractiveSession(
-    room.id,
-    message.id,
-    (next) => (state = next),
-    undefined,
-    "permission",
+  const session = untrack(() =>
+    createInteractiveSession(
+      room.id,
+      message.id,
+      (next) => (status = next),
+      undefined,
+      "permission",
+    ),
   );
   const answer = $derived(answerOf(room, message));
   const approved = $derived(!!answer && /^\s*aprov/i.test(answer.text));
@@ -51,7 +53,7 @@
   $effect(() => {
     if (
       !actionable ||
-      state.phase === "unconfirmed" ||
+      status.phase === "unconfirmed" ||
       (selectedIdentity !== undefined && selectedIdentity !== identity)
     )
       selection = null;
@@ -99,12 +101,12 @@
   {:else if actionable}<div class="tw:flex tw:flex-wrap tw:gap-2">
       <Button
         data-native-permission-value="Aprovar"
-        disabled={state.phase === "pending" || state.phase === "unconfirmed"}
+        disabled={status.phase === "pending" || status.phase === "unconfirmed"}
         onclick={(event) => select("Aprovar", event)}>{vb.t("Aprovar")}</Button
       ><Button
         data-native-permission-value="Negar"
         variant="outline"
-        disabled={state.phase === "pending" || state.phase === "unconfirmed"}
+        disabled={status.phase === "pending" || status.phase === "unconfirmed"}
         onclick={(event) => select("Negar", event)}>{vb.t("Negar")}</Button
       >
     </div>
@@ -117,17 +119,17 @@
     <small class="tw:text-muted-foreground"
       >{vb.t("esperando {who}", { who: vb.name(message.author) })}</small
     >{/if}
-  {#if state.phase !== "idle"}<p
-      role={state.phase === "error" ? "alert" : "status"}
+  {#if status.phase !== "idle"}<p
+      role={status.phase === "error" ? "alert" : "status"}
       class="tw:m-0 tw:text-xs tw:text-muted-foreground"
     >
-      {state.phase === "pending"
+      {status.phase === "pending"
         ? vb.t("Enviando…")
-        : state.phase === "unconfirmed"
+        : status.phase === "unconfirmed"
           ? vb.t(
               "Ainda sem confirmação. Confira a sala antes de enviar novamente.",
             )
-          : state.error}
+          : status.error}
     </p>{/if}
 </div>
 <AlertDialog
@@ -137,8 +139,8 @@
     : vb.t("Negar este pedido?")}
   confirmLabel={vb.t("Confirmar")}
   cancelLabel={vb.t("Cancelar")}
-  busy={state.phase === "pending"}
-  error={state.phase === "error" ? state.error : ""}
+  busy={status.phase === "pending"}
+  error={status.phase === "error" ? status.error : ""}
   onconfirm={confirm}
   onOpenChange={(open) => {
     if (!open) selection = null;

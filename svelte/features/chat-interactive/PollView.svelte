@@ -23,7 +23,7 @@
     vb: ChatBridge;
   } = $props();
   let active = true,
-    state = $state(idleState()),
+    status = $state(idleState()),
     closing = $state(false),
     focusTarget = $state<HTMLElement | null>(null),
     selectedIdentity = $state<string | undefined>();
@@ -35,12 +35,14 @@
       pollIdentity(poll),
     ]),
   );
-  const session = createInteractiveSession(
-    room.id,
-    message.id,
-    (next) => (state = next),
-    undefined,
-    "poll",
+  const session = untrack(() =>
+    createInteractiveSession(
+      room.id,
+      message.id,
+      (next) => (status = next),
+      undefined,
+      "poll",
+    ),
   );
   const view = $derived(pollView(poll, room.me));
   const canClose = $derived(canClosePoll(room, poll));
@@ -52,7 +54,7 @@
   $effect(() => {
     if (
       !canClose ||
-      state.phase === "unconfirmed" ||
+      status.phase === "unconfirmed" ||
       (selectedIdentity !== undefined && selectedIdentity !== identity)
     )
       closing = false;
@@ -92,8 +94,8 @@
         data-native-vote={row.index}
         variant={row.mine ? "secondary" : "outline"}
         disabled={!canVote ||
-          state.phase === "pending" ||
-          state.phase === "unconfirmed"}
+          status.phase === "pending" ||
+          status.phase === "unconfirmed"}
         aria-pressed={row.mine}
         onclick={(event) => vote(row.index, event)}
         >{#if row.winner}<Icon name="trophy" />{:else if row.mine}<Icon
@@ -129,7 +131,7 @@
         size="sm"
         variant="link"
         data-native-poll-close
-        disabled={state.phase === "pending" || state.phase === "unconfirmed"}
+        disabled={status.phase === "pending" || status.phase === "unconfirmed"}
         onclick={(event) => {
           if (active && canClose && event.currentTarget.isConnected) {
             focusTarget = event.currentTarget;
@@ -139,17 +141,17 @@
         }}>{vb.t("encerrar")}</Button
       >{/if}
   </p>
-  {#if state.phase !== "idle"}<p
-      role={state.phase === "error" ? "alert" : "status"}
+  {#if status.phase !== "idle"}<p
+      role={status.phase === "error" ? "alert" : "status"}
       class="tw:m-0 tw:text-xs tw:text-muted-foreground"
     >
-      {state.phase === "pending"
+      {status.phase === "pending"
         ? vb.t("Enviando…")
-        : state.phase === "unconfirmed"
+        : status.phase === "unconfirmed"
           ? vb.t(
               "Ainda sem confirmação. Confira a sala antes de enviar novamente.",
             )
-          : state.error}
+          : status.error}
     </p>{/if}
 </section>
 <AlertDialog
@@ -157,8 +159,8 @@
   title={vb.t("Encerrar a votação?")}
   confirmLabel={vb.t("Confirmar")}
   cancelLabel={vb.t("Cancelar")}
-  busy={state.phase === "pending"}
-  error={state.phase === "error" ? state.error : ""}
+  busy={status.phase === "pending"}
+  error={status.phase === "error" ? status.error : ""}
   onconfirm={close}
   onOpenChange={(open) => {
     if (!open) closing = false;

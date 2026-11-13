@@ -60,6 +60,8 @@
   {/each}
   {#if footer.readers.length}
     <div
+      role="group"
+      aria-label={label}
       class="tw:relative"
       onpointerenter={() => {
         hovered = true;
