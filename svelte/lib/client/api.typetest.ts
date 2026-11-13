@@ -126,11 +126,13 @@ const snippet: string = found.messages[0].snippet;
 void found.messages[0].text;
 void snippet;
 void api.api.search.$get({ query: { q: "hi" } });
-sameAs<Equal<InferRequestType<typeof api.api.search.$get>["query"],SearchQuery>>(true);
+sameAs<
+  Equal<InferRequestType<typeof api.api.search.$get>["query"], SearchQuery>
+>(true);
 // @ts-expect-error search query input is inferred from its shared string schema
-void api.api.search.$get({query:{q:123}});
+void api.api.search.$get({ query: { q: 123 } });
 // @ts-expect-error this endpoint has no room query input
-void api.api.search.$get({query:{room:"room"}});
+void api.api.search.$get({ query: { room: "room" } });
 
 // Slice 4: "Ligar Claude" and access requests.
 const room4 = api.api.books[":id"];
@@ -255,11 +257,11 @@ void api.api.books[":id"].connections[":cid"].ui.$get({
 
 // Slice 10: GET /api/me.
 sameAs<Equal<InferResponseType<typeof api.api.me.$get, 200>, MeResult>>(true);
-sameAs<Equal<InferRequestType<typeof api.api.me.$get>["query"],MeQuery>>(true);
-void api.api.me.$get({query:{ui:"svelte"}});
-void api.api.me.$get({query:{ui:"unknown-still-vanilla"}});
+sameAs<Equal<InferRequestType<typeof api.api.me.$get>["query"], MeQuery>>(true);
+void api.api.me.$get({ query: { ui: "svelte" } });
+void api.api.me.$get({ query: { ui: "unknown-still-vanilla" } });
 // @ts-expect-error UI query is a permissive string, not unknown input
-void api.api.me.$get({query:{ui:123}});
+void api.api.me.$get({ query: { ui: 123 } });
 
 // Slice 11: avatar and room icon (raw bytes; the typed client sees the JSON answers).
 sameAs<
