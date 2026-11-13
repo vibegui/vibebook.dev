@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, openNativeSidebar } from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 import { AttachmentSchema } from "../shared/schemas";
 
@@ -288,12 +288,7 @@ try {
   const pins = page.locator("[data-native-pins]");
   const row = (pinID: string) => pins.locator(`[data-pin-id="${pinID}"]`);
   const show = async () => {
-    await expect(pins).toBeAttached();
-    if ((page.viewportSize()?.width ?? 1440) <= 900) {
-      if ((await page.locator(".book").getAttribute("data-sheet")) !== "side")
-        await page.locator("#roomName").click();
-    } else if (!(await pins.isVisible()))
-      await page.locator("#roomName").click();
+    await openNativeSidebar(page);
     await expect(pins).toBeVisible();
     await pins.scrollIntoViewIfNeeded();
   };

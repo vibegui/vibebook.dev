@@ -12,7 +12,7 @@ import {
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
 import { createRoomApi } from "../svelte/transport";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, openNativeRoomPane } from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
@@ -187,25 +187,7 @@ try {
   const pin = (fileID: string) => tile(fileID).locator("button[aria-pressed]");
   const openTile = (fileID: string) => tile(fileID).locator("button").first();
   const show = async () => {
-    await expect(panel).toBeAttached();
-    // Clipped panel content can have a visible bounding box while the document
-    // owner is collapsed. Navigate through the visible controls instead.
-    const tab = page.locator('.ptabs [data-pane="files"]');
-    const peek = page.locator('#docPeek [data-pane="files"]');
-    const book = page.locator(".book");
-    if (await peek.isVisible()) {
-      // The mobile toolbar toggles an already open sheet closed.
-      if (
-        (await book.getAttribute("data-sheet")) !== "doc" ||
-        (await book.getAttribute("data-pane")) !== "files"
-      )
-        await peek.click();
-    } else if (!(await tab.isVisible())) {
-      await page.locator("#toggleDoc").click();
-      await tab.click();
-    } else if ((await book.getAttribute("data-pane")) !== "files")
-      await tab.click();
-    await expect(book).toHaveAttribute("data-pane", "files");
+    await openNativeRoomPane(page,"files");
     await expect(panel).toBeVisible();
   };
   const canonicalPins = async () =>
@@ -471,12 +453,12 @@ try {
   const disposed = await openTile(latest.id).elementHandle();
   assert(disposed);
   const other = await createRoom("Native Files disposal verification");
-  // Real data-nav links keep the document/old handle alive while the room mount disposes.
+  // Actual shell/Home links keep the document and old handle alive while the room mount disposes.
   await page.keyboard.press("Escape");
   await page.locator(".phHome").click();
   await expect(page).toHaveURL(/\/app(?:\?|$)/);
   const otherLink = page
-    .locator(`#app a[data-nav][href="/b/${other}"]`)
+    .locator(`[data-room-id="${other}"] a[href="/b/${other}?ui=svelte"]`)
     .first();
   await expect(otherLink).toBeVisible();
   await otherLink.click();

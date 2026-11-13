@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, nativeTaskRegion, showNativeTasks } from "./native-browser-fixtures";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -82,22 +82,8 @@ try {
     .filter({ hasText: "Task workflow" });
   await expect(epic).toBeVisible();
   await epic.click();
-  const taskRegion = page.getByRole("region", {
-    name: "Tasks",
-    exact: true,
-    includeHidden: true,
-  });
-  const showTasks = async () => {
-    // A reload first paints the shell; wait for the socket snapshot/component
-    // before deciding whether to open the document pane.
-    await expect(taskRegion).toBeAttached();
-    if (!(await taskRegion.isVisible())) {
-      const peek = page.locator("#peekTxt");
-      if (await peek.isVisible()) await peek.click();
-      else await page.locator("#toggleDoc").click();
-    }
-    await expect(taskRegion).toBeVisible();
-  };
+  const taskRegion = nativeTaskRegion(page);
+  const showTasks = () => showNativeTasks(page);
   await showTasks();
   const draft = taskRegion.getByRole("textbox", {
     name: "new task",
@@ -166,9 +152,11 @@ try {
   await expect(due).toHaveValue("Friday");
   await page.keyboard.press("Control+k");
   await expect(dueDialog).toHaveCount(0);
-  await expect(page.locator("#swDlg")).toBeVisible();
+  const searchDialog=page.getByRole("dialog",{name:"Go to a vibebook",exact:true});
+  await expect(searchDialog).toBeVisible();
+  await expect(searchDialog.getByRole("combobox",{name:"Go to a vibebook",exact:true})).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#swDlg")).not.toBeVisible();
+  await expect(searchDialog).not.toBeVisible();
   await dueButton().click();
   await page.keyboard.press("Escape");
   await expect(dueDialog).toHaveCount(0);
@@ -192,7 +180,7 @@ try {
     assert(theme.family.includes("Inter var"));
     result[`${name}Theme`] = theme;
     const audit = await new AxeBuilder({ page })
-      .include('section[aria-label="Tasks"]')
+      .include('[data-document-tasks] section[aria-label="Tasks"]')
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
       .analyze();
     result[name] = audit.violations;

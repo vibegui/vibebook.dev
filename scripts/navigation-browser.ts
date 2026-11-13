@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, openNativeSidebar } from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 import { AgentsResult, MeResult, PostMessageResult } from "../shared/schemas";
 
@@ -138,8 +138,8 @@ try {
   const disclosure = (epic: string) =>
     row(epic).getByRole("button", { name: /^(Expand|Collapse) branch:/ });
   const show = async (region = nav) => {
+    await openNativeSidebar(current);
     await expect(region).toBeAttached();
-    if (!(await region.isVisible())) await current.locator("#roomName").click();
     await expect(region).toBeVisible();
   };
   const navigate = async (thread = "main") => {

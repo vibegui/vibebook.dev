@@ -8,7 +8,7 @@ import {
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, openNativeRoomPane } from "./native-browser-fixtures";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -86,15 +86,7 @@ try {
     if (await toggle.isVisible()) {
       if ((await toggle.getAttribute("aria-pressed")) !== "true")
         await toggle.click();
-    } else {
-      const tab = page.locator('button[data-pane="board"]');
-      if (!(await tab.isVisible())) {
-        const peek = page.locator("#peekTxt");
-        if (await peek.isVisible()) await peek.click();
-        else await page.locator("#toggleDoc").click();
-      }
-      await tab.click();
-    }
+    } else await openNativeRoomPane(page,"board");
     await expect(region).toBeVisible();
     await expect.poll(() => ready).toBe(true);
   };

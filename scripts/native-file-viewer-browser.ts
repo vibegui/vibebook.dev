@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { chromium, expect as baseExpect, type Page } from "@playwright/test";
 import * as z from "zod/mini";
+import { openNativeRoomPane } from "./native-browser-fixtures";
 import { createRoomApi } from "../svelte/transport";
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -248,10 +249,7 @@ try {
   // Actual mobile Files sheet remains the underlying history/UI owner.
   await expect.poll(() => new URL(page.url()).hash).toBe("");
   const book = page.locator(".book");
-  await page
-    .locator("#docPeek")
-    .getByRole("button", { name: /^(Files|Arquivos)/ })
-    .click();
+  await openNativeRoomPane(page,"files");
   await expect(book).toHaveAttribute("data-sheet", "doc");
   await expect(book).toHaveAttribute("data-pane", "files");
   await page

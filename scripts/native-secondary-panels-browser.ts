@@ -15,7 +15,7 @@ import * as z from "zod/mini";
 import { UploadFileResult } from "../shared/schemas";
 import { parseRoomEvent } from "../shared/validation";
 import { createRoomStore } from "../svelte/roomStore";
-import { nativeBrowserFixtures } from "./native-browser-fixtures";
+import { nativeBrowserFixtures, openNativeRoomPane, openNativeSidebar } from "./native-browser-fixtures";
 import { nativeTestAgent } from "./native-test-mcp";
 
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -97,26 +97,11 @@ async function identity(email: string, clipboardFailure = false) {
   return context;
 }
 async function openPane(target: Page, pane: "decisions" | "reminders") {
-  const book = target.locator(".book");
-  const mobile = (target.viewportSize()?.width ?? 1440) <= 900;
-  const tab = target.locator(
-    `${mobile ? "#docPeek" : ".ptabs"} button[data-pane="${pane}"]`,
-  );
-  if (
-    (await book.getAttribute("data-pane")) !== pane ||
-    (mobile && (await book.getAttribute("data-sheet")) !== "doc")
-  )
-    await tab.click();
-  await expect(book).toHaveAttribute("data-pane", pane);
-  if (mobile) await expect(book).toHaveAttribute("data-sheet", "doc");
+  await openNativeRoomPane(target,pane);
   await expect(target.locator(`[data-${pane}-panel]`)).toBeVisible();
 }
 async function openPeople(target: Page) {
-  if (
-    (target.viewportSize()?.width ?? 1440) <= 900 &&
-    !(await target.locator("[data-people-panel]").isVisible())
-  )
-    await target.locator("#roomName").click();
+  await openNativeSidebar(target);
   await expect(target.locator("[data-people-panel]")).toBeVisible();
   // Existing offline members live in an explicit, user-controlled disclosure.
   for (const disclosure of await target
