@@ -345,6 +345,48 @@ try {
   );
   result.scrolling = { formBounds, viewport };
   await board.screenshot({ path: `${output}/board-scroll-390.png` });
+  step("Checking Portuguese labels, accented input and list accessibility");
+  await context.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
+  await page.reload();
+  await expect(page.locator("#toggleBoard")).toBeVisible();
+  await page.locator("#toggleBoard").click();
+  const portuguese = page.getByRole("region", {
+    name: "Quadro de tarefas",
+    exact: true,
+  });
+  await expect(portuguese).toBeVisible();
+  await expect(
+    portuguese
+      .locator("[data-board-task]")
+      .filter({ hasText: "Final scroll task" }),
+  ).toBeVisible();
+  await portuguese
+    .getByRole("textbox", { name: "Nova tarefa", exact: true })
+    .fill("Criação verificada");
+  await portuguese
+    .getByRole("button", { name: "Nova tarefa", exact: true })
+    .click();
+  await expect(
+    portuguese
+      .locator("[data-board-task]")
+      .filter({ hasText: "Criação verificada" }),
+  ).toBeVisible();
+  await portuguese.getByRole("tab", { name: "Lista", exact: true }).click();
+  const accented = portuguese
+    .locator("[data-board-task]")
+    .filter({ hasText: "Criação verificada" });
+  await accented.scrollIntoViewIfNeeded();
+  await expect(accented).toBeInViewport({ ratio: 0.95 });
+  const portugueseAudit = await new AxeBuilder({ page })
+    .include('section[aria-label="Quadro de tarefas"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+    .analyze();
+  assert.deepEqual(portugueseAudit.violations, []);
+  result.portuguese = {
+    violations: portugueseAudit.violations,
+    input: "Criação verificada",
+  };
+  await portuguese.screenshot({ path: `${output}/list-pt-390.png` });
   assert.deepEqual(errors, []);
   result.status = "pass";
   console.log(
