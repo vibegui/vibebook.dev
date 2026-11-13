@@ -3818,7 +3818,7 @@ describe("native composer ownership and interactions", () => {
     Array.from(
       document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
     )
-      .find((button) => button.textContent === "Criar votação")!
+      .find((button) => button.textContent?.trim() === "Criar votação")!
       .click();
     expect(sent[0]).toMatchObject({
       t: "poll.create",
