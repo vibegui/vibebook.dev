@@ -1,5 +1,9 @@
 import { relative, resolve } from "node:path";
-import type { IncomingHttpHeaders, IncomingMessage } from "node:http";
+import type {
+  IncomingHttpHeaders,
+  IncomingMessage,
+  ServerResponse,
+} from "node:http";
 import type { Plugin, ProxyOptions } from "vite";
 import {
   createDevelopmentRequestPolicy,
@@ -40,6 +44,55 @@ export function sourceShell(html: string): string {
         'src="/bootstrap.ts"',
       )
   );
+}
+
+/** File bytes never pass through text/HTML rewriting, including successful PDF/media navigation. */
+async function rawFileResponse(response: Response, res: ServerResponse) {
+  res.statusCode = response.status;
+  for (const [name, value] of response.headers)
+    if (
+      ![
+        "connection",
+        "keep-alive",
+        "transfer-encoding",
+        "content-encoding",
+        "set-cookie",
+      ].includes(name) &&
+      !(name === "content-length" && response.headers.has("content-encoding"))
+    )
+      res.setHeader(name, value);
+  const cookies = response.headers.getSetCookie();
+  if (cookies.length) res.setHeader("set-cookie", cookies);
+  const reader = response.body?.getReader();
+  if (!reader) {
+    res.end();
+    return;
+  }
+  const cancel = () => {
+    void reader.cancel().catch(() => {});
+  };
+  res.once("close", cancel);
+  try {
+    while (!res.destroyed) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      if (!res.write(chunk.value))
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            res.off("drain", done);
+            res.off("close", done);
+            resolve();
+          };
+          res.once("drain", done);
+          res.once("close", done);
+        });
+    }
+    if (!res.destroyed) res.end();
+  } finally {
+    res.off("close", cancel);
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
 }
 
 function loopbackWorker(target: string): URL {
@@ -218,9 +271,21 @@ export function appDevelopment(
             req.method === "POST" &&
             parsed.pathname === "/authorize" &&
             parsed.searchParams.get("ui") === "svelte";
-          if (!isSourceApp(req.url) || (req.method !== "GET" && !consentPost))
+          const fileShell =
+            req.method === "GET" &&
+            parsed.searchParams.get("ui") === "svelte" &&
+            /^\/api\/books\/[a-z0-9]{6,40}\/files\/[0-9a-f]{1,64}$/.test(
+              parsed.pathname,
+            ) &&
+            !req.headers.range &&
+            String(req.headers.accept ?? "").includes("text/html");
+          if (
+            (!isSourceApp(req.url) && !fileShell) ||
+            (req.method !== "GET" && !consentPost)
+          )
             return next();
-          if (consentPost && (req.aborted || res.destroyed)) return;
+          if ((consentPost || fileShell) && (req.aborted || res.destroyed))
+            return;
           const headers = sourceHeaders(req.headers, workerOrigin, viteOrigin);
           if (!consentPost) {
             // Source shell GETs carry no body; keep their transport framing empty.
@@ -241,7 +306,7 @@ export function appDevelopment(
           const disconnected = () => {
             if (!res.writableEnded) abort();
           };
-          if (consentPost) {
+          if (consentPost || fileShell) {
             req.once("aborted", abort);
             res.once("close", disconnected);
           }
@@ -251,6 +316,7 @@ export function appDevelopment(
               headers,
               redirect: "manual",
             };
+            if (fileShell) options.signal = cancellation.signal;
             if (consentPost) {
               options.method = "POST";
               options.body = postBody(req);
@@ -261,9 +327,19 @@ export function appDevelopment(
               workerRequestUrl(req.url, workerOrigin),
               options,
             );
+            if (
+              fileShell &&
+              (![401, 403].includes(response.status) ||
+                !/^text\/html(?:;|$)/i.test(
+                  response.headers.get("content-type") ?? "",
+                ))
+            ) {
+              await rawFileResponse(response, res);
+              return;
+            }
             html = await response.text();
           } finally {
-            if (consentPost) {
+            if (consentPost || fileShell) {
               req.off("aborted", abort);
               res.off("close", disconnected);
             }
@@ -284,11 +360,15 @@ export function appDevelopment(
           const cookies = response.headers.getSetCookie();
           if (cookies.length) res.setHeader("set-cookie", cookies);
           if (!consentPost) res.setHeader("cache-control", "no-store");
-          const nativeErrorShell =
-            [400, 404, 500].includes(response.status) &&
-            /<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["'](?:login|access|consent)["'])[^>]*>/i.test(
-              html,
-            );
+          const nativeErrorShell = fileShell
+            ? [401, 403].includes(response.status) &&
+              /<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["']file-access["'])[^>]*>/i.test(
+                html,
+              )
+            : [400, 404, 500].includes(response.status) &&
+              /<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["'](?:login|access|consent)["'])[^>]*>/i.test(
+                html,
+              );
           if (
             (consentPost
               ? !nativeErrorShell ||
@@ -299,6 +379,10 @@ export function appDevelopment(
                   response.headers.get("content-type") ?? "",
                 )
               : !response.ok && !nativeErrorShell) ||
+            (fileShell &&
+              !/<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["']file-access["'])[^>]*>/i.test(
+                html,
+              )) ||
             !html.includes("/svelte-preview/app.js")
           ) {
             res.end(html);

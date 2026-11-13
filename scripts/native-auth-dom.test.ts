@@ -122,7 +122,7 @@ async function settle() {
   flushSync();
 }
 async function render(
-  page: "login" | "access" | "consent",
+  page: "login" | "access" | "consent" | "file-access",
   http: AuthApi = api(),
   lang: "pt" | "en" = "en",
   consentFailure = false,
@@ -137,9 +137,11 @@ async function render(
         props: {
           metadata: { page, lang, autoAccess: false, consentFailure },
           href:
-            page === "access"
-              ? "https://vibebook.test/b/abcdef?ui=svelte"
-              : `https://vibebook.test/${page === "consent" ? "authorize?ui=svelte&client_id=client" : "login?ui=svelte"}`,
+            page === "file-access"
+              ? "https://vibebook.test/api/books/abcdef/files/aa?ui=svelte"
+              : page === "access"
+                ? "https://vibebook.test/b/abcdef?ui=svelte"
+                : `https://vibebook.test/${page === "consent" ? "authorize?ui=svelte&client_id=client" : "login?ui=svelte"}`,
           api: http,
           navigate: (url: string) => navigations.push(url),
         },
@@ -532,4 +534,51 @@ test("an already submitted consent blocks idle account-switch cleanup", async ()
   expect(event.defaultPrevented).toBe(true);
   expect(target.querySelector("button")?.disabled).toBe(true);
   expect(calls).toBe(0);
+});
+
+test("native file access is a grant-free context with safe sign-in continuation", async () => {
+  let asks = 0;
+  const { target, navigations } = await render(
+    "file-access",
+    api({
+      ask: async () => {
+        asks++;
+        return { ok: true };
+      },
+    }),
+  );
+  await settle();
+  expect(asks).toBe(0);
+  expect(navigations).toEqual([]);
+  const link = target.querySelector<HTMLAnchorElement>('a[href^="/login"]')!;
+  expect(new URL(link.href).searchParams.get("next")).toBe(
+    "/b/abcdef?ui=svelte#faa",
+  );
+  expect(target.textContent).toContain("Only room members can open this file");
+});
+test("native file access asks only explicitly and retains exact version after the request", async () => {
+  let asks = 0;
+  const { target, navigations } = await render(
+    "file-access",
+    api({
+      access: async () => ({
+        state: "ask",
+        email: "me@test.com",
+        title: "Room",
+      }),
+      ask: async () => {
+        asks++;
+        return { ok: true };
+      },
+    }),
+  );
+  await settle();
+  expect(asks).toBe(0);
+  const button = [...target.querySelectorAll("button")].find((node) =>
+    node.textContent?.includes("Ask to join"),
+  )!;
+  button.click();
+  await settle();
+  expect(asks).toBe(1);
+  expect(navigations).toEqual(["/b/abcdef?ui=svelte#faa"]);
 });

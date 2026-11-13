@@ -123,6 +123,7 @@ export function createAccessSession(
   auto: boolean,
   navigate: (url: string) => void,
   clock: AuthClock = authClock,
+  continuation?: string,
 ) {
   const state = writable({
     context: null as AccessContext | null,
@@ -139,7 +140,10 @@ export function createAccessSession(
     if (poll !== null) clock.cancel(poll);
     poll = null;
   };
-  const target = `/b/${encodeURIComponent(id)}?ui=svelte`;
+  const target =
+    continuation && /^#f[0-9a-f]{1,64}$/.test(continuation)
+      ? `/b/${encodeURIComponent(id)}?ui=svelte${continuation}`
+      : `/b/${encodeURIComponent(id)}?ui=svelte`;
   const fail = (error: unknown) => {
     const signedOut = error instanceof AuthFailure && error.status === 401;
     state.update((s) => ({

@@ -37,11 +37,13 @@ export function createApplicationRouter(options: {
   sameRoom: (target: RoomTarget) => boolean;
   consumePop: () => boolean;
   document: (href: string) => void;
+  deferNavigation?: (callback: () => void) => boolean;
 }) {
   let generation = 0,
     active = true;
   function go(value: string | RoomTarget, replace = false) {
     if (!active) return;
+    if (options.deferNavigation?.(() => go(value, replace))) return;
     const target = typeof value === "string" ? value : targetHref(value),
       url = new URL(target, options.current());
     if (url.origin !== new URL(options.current()).origin) {

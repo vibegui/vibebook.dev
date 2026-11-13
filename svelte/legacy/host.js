@@ -1217,6 +1217,7 @@ function ensureNativeHome() {
       );
     },
     onIdentityChange: () => {
+      nativeViewer?.reset();
       myBooks = null;
       myWaits = [];
       friends = [];
@@ -1258,6 +1259,7 @@ function ensureNativeHome() {
     current: () => location.href,
     history,
     beforeChange: () => {
+      nativeViewer?.closeNavigation();
       UI.dismissDialogs();
       closeInbox();
       closeRoomOverlaysForNavigation();
@@ -1267,7 +1269,8 @@ function ensureNativeHome() {
     document: (href) => {
       location.href = href;
     },
-    consumePop: () => viewerPop() || sheetPop(),
+    consumePop: () => nativeViewer?.consumePop() || sheetPop(),
+    deferNavigation: (callback) => nativeViewer?.deferNavigation(callback) ?? false,
     sameRoom: (target) => {
       if (
         !S ||
@@ -1381,6 +1384,7 @@ function route() {
   clearTimeout(agentsRefreshTimer);
   clearTimeout(sbxTimer);
   closeRoomOverlaysForNavigation();
+  nativeViewer?.reset();
   homeSettingsCleanup();
   nativeAppNav.pageLeft();
   goPending = null;
@@ -2242,6 +2246,7 @@ function onEvent(ev, id) {
       summary: S.book.summary,
     });
   if (S) roomCache.set(id, S);
+  syncViewer(ev.t === "state");
   switch (ev.t) {
     case "state": {
       nativePwa.account(S.me);
@@ -2315,8 +2320,8 @@ function onEvent(ev, id) {
     }
     case "requests": renderSide(); return;
     case "members": renderSide(); return;
-    case "files": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); return;
-    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
+    case "files": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); return;
+    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); renderThreadFiles(); return;
     case "reminders": renderReminders(); return;
     case "decisions": renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
@@ -3061,33 +3066,10 @@ function renderBook() {
     }, 300);
   }
 }
-// A room file by id: its name and type from what's loaded (the newest 12, the messages), else asked for once.
-function openFile(
-  fid,
-  again,
-  ownership = { room: S?.id, generation: nativeRouter?.generation() },
-) {
-  if (
-    !S ||
-    S.id !== ownership.room ||
-    nativeRouter?.generation() !== ownership.generation ||
-    !$app.querySelector(".book")
-  )
-    return;
-  const f =
-    (S.files || []).find((x) => x.id === fid) ||
-    allMsgs()
-      .flatMap((x) => x.files || [])
-      .find((x) => x.id === fid);
-  if (!f && !again && !S.filesAll) {
-    send({ t: "files.get" });
-    return setTimeout(() => openFile(fid, true, ownership), 800);
-  }
-  openViewer(
-    `/api/books/${S.id}/files/${fid}`,
-    f?.type?.startsWith("image/") ? "img" : "frame",
-    f?.name || t("arquivo"),
-  );
+// Unknown deep-link versions load metadata through the bounded native index owner.
+function openFile(fid, again, ownership={room:S?.id,generation:nativeRouter?.generation()}) {
+ if(S?.id!==ownership.room||nativeRouter?.generation()!==ownership.generation)return;
+ openNativeFile(fid);
 }
 
 // First room someone opens after being invited (not their own room): a few steps on how vibebook works (each
@@ -4385,7 +4367,7 @@ function renderSide() {
     renderKanban();
     renderDoc();
   };
-  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, appNavigation:{controller:nativeAppNav,lang:LANG}, vb:{t,icon,avatar,ago,name,avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;},bookTitle,roomMark,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
+  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openNativeFile(file); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, appNavigation:{controller:nativeAppNav,lang:LANG}, vb:{t,icon,avatar,ago,name,avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;},bookTitle,roomMark,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
   el.querySelector("#railToggle").onclick = toggleRail;
   const grab = el.querySelector(".sheetGrab");
   if (grab && !sidebarDragHandles.has(grab)) {
@@ -4563,11 +4545,10 @@ function closeSheet(pick) {
 }
 // Leave legacy room overlays without triggering asynchronous history.back after a native navigation.
 function closeRoomOverlaysForNavigation() {
-  const viewer = document.getElementById("viewer"),
-    book = $app.querySelector(".book");
-  if (history.state?.viewer || history.state?.sheet)
+  nativeViewer?.closeNavigation();
+  const book = $app.querySelector(".book");
+  if (history.state?.sheet)
     navigation.replaceState(null, "", location.href);
-  if (viewer?.open) viewer.close();
   if (book?.dataset.sheet) {
     book
       .querySelector('.doc[data-view="edit"] .seg [data-view="preview"]')
@@ -4728,238 +4709,36 @@ function renderTasks() {
 }
 
 const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
-// Files open in an in-app viewer (a native <dialog>: name, ↗ open in a tab, ×) instead of navigating away, which in
-// the PWA meant no way back. Images are an <img>; HTML and PDF an iframe (HTML keeps the server's sandbox CSP and
-// gets sandbox="allow-scripts" here too). Cmd/Ctrl/middle click still opens a tab.
-const viewAttrs = (f) =>
-  `data-view="${f.type.startsWith("image/") ? "img" : "frame"}" data-name="${esc(f.name)}"`;
-// The iOS home-screen app keeps same-origin links inside itself, even with target=_blank; x-safari-https:// (iOS 17+)
-// hands the URL to Safari instead. Safari has its own cookies, so a file asks to sign in there once (filePage).
-const IOS_PWA =
-  (matchMedia("(display-mode: standalone)").matches ||
-    navigator.standalone === true) &&
-  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
-    (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
-const outside = (u) =>
-  IOS_PWA ? `x-safari-${new URL(u, location.href).href}` : u;
-function openViewer(url, kind, fname) {
-  let d = document.getElementById("viewer");
-  if (!d) {
-    d = document.createElement("dialog");
-    d.id = "viewer";
-    d.className = "viewer";
-    d.innerHTML = `<header><b></b><select class="vsel" aria-label="${t("Versão")}" hidden></select><a target="_blank" rel="noopener" title="${t("Abrir numa aba")}" aria-label="${t("Abrir numa aba")}">${icon("external", 20)}</a><button type="button" title="${t("Fechar")}" aria-label="${t("Fechar")}">${icon("x", 20)}</button></header><div class="vbody"></div>`;
-    d.querySelector("button").onclick = () => d.close();
-    d.querySelector("header a").onclick = () => d.close();
-    d.querySelector(".vsel").onchange = (e) => {
-      const v = e.target.value;
-      loadViewer(
-        d,
-        `/api/books/${S.id}/files/${v}`,
-        d.dataset.kind,
-        d.dataset.name,
-      );
-    };
-    d.addEventListener("click", (e) => {
-      if (e.target.classList.contains("vbody")) d.close();
-    });
-    // Closed by ×, Esc or a tap outside: drop the history entry it pushed, so Back doesn't reopen nothing.
-    d.addEventListener("close", () => {
-      if (d.open) return;
-      d.querySelector(".vbody").innerHTML = "";
-      if (history.state?.viewer) {
-        viewerSkip = true;
-        history.back();
-      }
-    });
-    document.body.appendChild(d);
-  }
-  loadViewer(d, url, kind, fname);
-  // Back (phone gesture, browser, PWA) closes it. A room file gets its own address (/b/<room>?t=…#f<id>): copy it and
-  // send it to someone in the room, it opens the same file for them.
-  if (!d.open)
-    navigation.pushState(
-      { viewer: 1 },
-      "",
-      d.dataset.fid
-        ? `${location.pathname}${location.search}#f${d.dataset.fid}`
-        : location.href,
-    );
-  d.showModal();
-  refreshVersions();
+// Native file presentation owns preview resources, version identity and history.
+let nativeViewer = null, nativeViewerMount = null, nativeViewerTarget = null;
+const IOS_PWA = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+function syncViewer(fresh=false) {
+  if (!nativeViewer || !S || !roomConnection || currentRoomId() !== S.id) return;
+  const roomId=S.id, account=S.me, connection=roomConnection;
+  nativeViewer.sync(S,(command)=>S?.id===roomId&&S.me===account&&roomConnection===connection&&currentRoomId()===roomId?connection.request(command):Promise.resolve({ok:false,error:"disconnected"}),fresh);
 }
-// Versions of a file = the room's files with the same name (each upload of report.html is one), newest first. The
-// state brings only the newest 12 files: what's loaded shows now, the rest once files.get answers (refreshVersions).
-function fileVersions(name) {
-  const by = new Map();
-  for (const f of S.files || [])
-    if (f.name === name) by.set(f.id, { id: f.id, ts: f.ts });
-  for (const m of allMsgs())
-    for (const f of m.files || [])
-      if (f.name === name && !by.has(f.id))
-        by.set(f.id, { id: f.id, ts: m.ts });
-  return [...by.values()].sort((a, b) => b.ts - a.ts);
+function ensureViewer() {
+  if(!nativeViewer){
+    nativeViewer=UI.createFileViewer({href:()=>location.href,state:()=>history.state,history});
+    nativeViewerTarget=document.createElement("div");
+    document.body.append(nativeViewerTarget);
+    nativeViewerMount=UI.mountView("fileViewer",nativeViewerTarget,{controller:nativeViewer,lang:LANG,iosStandalone:IOS_PWA,actions:{navigate:(id,target)=>goToMsg(id,target),openFile:(file)=>openNativeFile(file),navigateRich:(target)=>cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc"),openFileReference:(file)=>{if(S?.id===file.roomId)openNativeFile(file.id,undefined,file.name);}}});
+  }
+  syncViewer();return nativeViewer;
 }
-function refreshVersions() {
-  const d = document.getElementById("viewer");
-  if (!d?.open || !d.dataset.name) return;
-  const sel = d.querySelector(".vsel"),
-    vs = fileVersions(d.dataset.name),
-    cur = d.dataset.fid;
-  sel.hidden = vs.length < 2;
-  sel.innerHTML = vs
-    .map(
-      (v, i) =>
-        `<option value="${v.id}"${v.id === cur ? " selected" : ""}>v${vs.length - i}${i === 0 ? ` · ${t("mais nova")}` : ""} · ${new Date(v.ts).toLocaleString(LOCALE, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</option>`,
-    )
-    .join("");
+function openNativeFile(file,trigger,label) {
+  if(!S||!roomConnection||currentRoomId()!==S.id||!$app.querySelector(".book"))return false;
+  return ensureViewer().open(typeof file==="string"?{roomId:S.id,id:file,label}:{roomId:S.id,id:file.id,metadata:file},trigger);
 }
-function loadViewer(d, url, kind, fname) {
-  d.dataset.kind = kind;
-  d.dataset.name = typeof url === "string" ? fname : "";
-  d.dataset.fid =
-    typeof url === "string"
-      ? (/\/files\/([0-9a-f]+)/.exec(url)?.[1] ?? "")
-      : "";
-  d.querySelector("header b").textContent = fname;
-  d.querySelector("header a").href =
-    typeof url === "string" ? outside(url) : "";
-  const vsel = d.querySelector(".vsel");
-  vsel.hidden = true;
-  if (d.dataset.fid) {
-    refreshVersions();
-    if (!S.filesAll) send({ t: "files.get" });
-  }
-  if (d.open && d.dataset.fid && history.state?.viewer)
-    navigation.replaceState(
-      history.state,
-      "",
-      `${location.pathname}${location.search}#f${d.dataset.fid}`,
-    ); // another version picked
-  const body = d.querySelector(".vbody");
-  body.className = `vbody ${kind}`;
-  d.classList.toggle("noLink", kind === "table");
-  if (kind === "table")
-    body.replaceChildren(url.cloneNode(true)); // url is the <table> node here
-  else if (kind === "img") {
-    const img = new Image();
-    img.src = url;
-    img.alt = fname;
-    body.replaceChildren(img);
-  }
-  // Text files are drawn here, not in an iframe: a plain-text page in a frame came out blank on the dark viewer
-  // (Nov 2026). Markdown like the agents' messages (sanitized), CSV as a table, the rest as text.
-  else if (/\.(md|markdown|txt|csv)$/i.test(fname) && typeof url === "string") {
-    body.className = "vbody text";
-    body.replaceChildren();
-    fetch(url)
-      .then((r) => (r.ok ? r.text() : Promise.reject(r.status)))
-      .then((txt) => {
-        if (d.dataset.fid && !url.endsWith(d.dataset.fid)) return; // another file was opened meanwhile
-        body.innerHTML = /\.(md|markdown)$/i.test(fname)
-          ? `<div class="vdoc md">${md(txt.slice(0, 300_000))}</div>`
-          : /\.csv$/i.test(fname)
-            ? `<div class="vdoc"><table>${csvRows(txt)
-                .map(
-                  (r, i) =>
-                    `<tr>${r.map((c) => `<${i ? "td" : "th"}>${esc(c)}</${i ? "td" : "th"}>`).join("")}</tr>`,
-                )
-                .join("")}</table></div>`
-            : `<pre class="vdoc">${esc(txt.slice(0, 300_000))}</pre>`;
-      })
-      .catch(() => {
-        body.innerHTML = `<p class="vdoc">${t("Não consegui abrir este arquivo.")}</p>`;
-      });
-  } else {
-    const fr = document.createElement("iframe");
-    fr.src = url;
-    fr.title = fname;
-    if (!/\.pdf$/i.test(fname)) fr.sandbox = "allow-scripts";
-    body.replaceChildren(fr);
-  }
+function fileVersions(name){return S?UI.fileVersions(S,name):[];}
+// Retained legacy document/settings links enter the same typed target parser; native chat handles its own links.
+function fileLinkClick(event){
+ if(event.defaultPrevented||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||event.button!==0)return;
+ const link=event.target.closest?.("a[href]");if(!link?.isConnected||!S)return;
+ const target=UI.fileTargetFromURL(link.getAttribute("href"),location.origin);if(!target||target.roomId!==S.id)return;
+ if(openNativeFile(target.id,link,link.textContent?.trim()))event.preventDefault();
 }
-// CSV → rows (quotes and "" escapes; ≤2000 rows × 50 columns for the viewer).
-function csvRows(txt) {
-  const rows = [];
-  let row = [],
-    cell = "",
-    q = false;
-  for (let i = 0; i < txt.length && rows.length < 2000; i++) {
-    const ch = txt[i];
-    if (q) {
-      if (ch === '"') {
-        if (txt[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else q = false;
-      } else cell += ch;
-    } else if (ch === '"') q = true;
-    else if (ch === "," || (ch === ";" && !txt.slice(0, 200).includes(","))) {
-      row.push(cell);
-      cell = "";
-    } else if (ch === "\n") {
-      row.push(cell.replace(/\r$/, ""));
-      rows.push(row.slice(0, 50));
-      row = [];
-      cell = "";
-    } else cell += ch;
-  }
-  if (cell || row.length) {
-    row.push(cell);
-    rows.push(row.slice(0, 50));
-  }
-  return rows;
-}
-let viewerSkip = false;
-// popstate: Back while the viewer is open closes it; the pop that follows our own close is swallowed.
-function viewerPop() {
-  if (viewerSkip) {
-    viewerSkip = false;
-    return true;
-  }
-  const d = document.getElementById("viewer");
-  if (!d?.open) return false;
-  navigation.replaceState(null, "", location.href);
-  d.close();
-  return true;
-}
-document.addEventListener("click", (e) => {
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-  const a = e.target.closest?.("a[data-view]");
-  if (a) {
-    e.preventDefault();
-    return openViewer(
-      a.getAttribute("href"),
-      a.dataset.view,
-      a.dataset.name || "",
-    );
-  }
-  // A link to one of this room's files written in a message ([report.html](https://vibebook.dev/api/books/<room>/files/<id>))
-  // opens in the viewer too: as a plain link, the home-screen app navigated to the raw file with no bar and no way back.
-  const l = e.target.closest?.("a[href]");
-  if (!l || !S?.id) return;
-  let u;
-  try {
-    u = new URL(l.getAttribute("href"), location.href);
-  } catch {
-    return;
-  }
-  const m =
-    u.origin === location.origin &&
-    new RegExp(`^/api/books/${S.id}/files/([0-9a-f]+)$`).exec(u.pathname);
-  if (!m) return;
-  const f =
-    (S.files || []).find((x) => x.id === m[1]) ||
-    allMsgs()
-      .flatMap((x) => x.files || [])
-      .find((x) => x.id === m[1]);
-  e.preventDefault();
-  openViewer(
-    u.pathname,
-    f?.type?.startsWith("image/") ? "img" : "frame",
-    f?.name || l.textContent.trim() || "arquivo",
-  );
-});
+document.addEventListener("click",fileLinkClick);
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 const hhmm = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
@@ -5879,7 +5658,7 @@ function renderFiles(load = false, freshSnapshot = false) {
   const current=()=>nativeFilesSession===session&&S?.id===roomId&&roomConnection===connection&&currentRoomId()===roomId;
   const request=(command)=>current()&&connection?connection.request(command):Promise.resolve({ok:false,error:t("sem conexão")});
   if(load || (freshSnapshot && el.parentElement?.dataset.pane === "files"))void session.load(request);
-  renderView("files",el,{room:S,thread,vb:panelBridge(),send,session,request,onfolderchange:()=>{if(current())el.scrollTop=0;},onopenfile:(file)=>{if(current())openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}});
+  renderView("files",el,{room:S,thread,vb:panelBridge(),send,session,request,onfolderchange:()=>{if(current())el.scrollTop=0;},onopenfile:(file)=>{if(current())openNativeFile(file);}});
 }
 // 📌 on a file tile or app card: pins it to the sidebar (or unpins).
 const pinOf = (kind, ref) =>
@@ -5936,28 +5715,10 @@ function syncUrl() {
 // Inside an epic: what it produced (reports, prints, PDFs), newest version of each name, so a report is one tap away
 // instead of a scroll through the conversation. Built from the thread's loaded messages.
 function renderThreadFiles() {
-  const el = document.getElementById("thFiles");
-  if (!el) return;
-  const by = new Map();
-  if (thread !== "main" && !isPre())
-    for (const m of allMsgs())
-      if (m.thread === thread)
-        for (const f of m.files || []) {
-          const o = by.get(f.name);
-          if (!o) by.set(f.name, { f, ts: m.ts, n: 1 });
-          else {
-            o.n++;
-            if (m.ts > o.ts) {
-              o.f = f;
-              o.ts = m.ts;
-            }
-          }
-        }
-  const list = [...by.values()].sort((a, b) => b.ts - a.ts).slice(0, 8);
-  el.hidden = !list.length;
-  el.innerHTML = list.length
-    ? `<span class="thfL">${icon("paperclip", 14)} ${t("Arquivos deste épico")}</span>${list.map(({ f, n }) => `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)} title="${esc(f.name)}">${fileIcon(f, 14)}<span>${esc(f.name)}</span>${n > 1 ? `<small>v${n}</small>` : ""}</a>`).join("")}`
-    : "";
+ const el=document.getElementById("thFiles");if(!el||!S)return;
+ const roomId=S.id,account=S.me;
+ el.hidden=false;
+ renderView("threadFiles",el,{room:S,thread,lang:LANG,onopen:(file,trigger)=>{if(S?.id===roomId&&S.me===account&&trigger.isConnected)openNativeFile(file,trigger);}});
 }
 function renderChat(keep) {
   renderAskBar();
@@ -6030,7 +5791,7 @@ function renderChat(keep) {
   const roomId=S.id, chatThread=thread;
   let chatMount;
   const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
-  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;replyTo=q;renderReply();const box=document.getElementById("input");if(box){box.value=draft.text;box.dispatchEvent(new Event("input",{bubbles:true}));box.focus();}},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openViewer(`/api/books/${roomId}/files/${file.id}`,file.type?.startsWith("image/")?"img":"frame",file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}},onloadolder:()=>{if(current())loadOlder();}});
+  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;replyTo=q;renderReply();const box=document.getElementById("input");if(box){box.value=draft.text;box.dispatchEvent(new Event("input",{bubbles:true}));box.focus();}},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
   chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   if (keep === "stay") { el.scrollTop = t0; pinOnLoad(el); } // a state refresh while reading above
@@ -6338,6 +6099,10 @@ route();
 
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
+    document.removeEventListener("click",fileLinkClick);
+    nativeViewer?.dispose();
+    nativeViewerMount?.destroy();
+    nativeViewerTarget?.remove();
     clearTimeout(agentsRefreshTimer);
     homeSettingsCleanup();
     nativeRouter?.dispose();

@@ -10,6 +10,14 @@ import InboxMount from "./InboxMount.svelte";
 import Tasks from "./Tasks.svelte";
 import Board from "./Board.svelte";
 import Files from "./Files.svelte";
+import FileViewer from "./features/file-viewer/FileViewer.svelte";
+import ThreadFiles from "./features/file-viewer/ThreadFiles.svelte";
+export { createFileViewer } from "./features/file-viewer/session";
+export {
+  fileTargetFromURL,
+  knownViewerFiles,
+  fileVersions,
+} from "./features/file-viewer/model";
 import Decisions from "./Decisions.svelte";
 import Reminders from "./Reminders.svelte";
 import Sidebar from "./Sidebar.svelte";
@@ -23,6 +31,8 @@ const views = {
   tasks: Tasks,
   board: Board,
   files: Files,
+  fileViewer: FileViewer,
+  threadFiles: ThreadFiles,
   reminders: Reminders,
   decisions: Decisions,
   sidebar: Sidebar,

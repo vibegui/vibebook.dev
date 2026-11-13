@@ -31,7 +31,7 @@ const browser = await chromium.launch({
 const errors: string[] = [];
 const result: Record<string, unknown> = {
   scope:
-    "Incremental native Files panel against real local HTTP/R2/Book WebSockets. Legacy viewer is exercised through its typed exact-file callback; this is not full Files/upload/viewer migration acceptance.",
+    "Incremental native Files panel against real local HTTP/R2/Book WebSockets. Native viewer is exercised for Markdown version selection; media/PDF/HTML and file-access acceptance are separate viewer gates.",
   gaps: [
     "Uploads use the actual inferred Hono client and supported raw HTTP route, not drag/drop/paste UI.",
     "Folder/version verification uses the supported agents/ Markdown namespace. Arbitrary upload paths are flattened by storeFile; nested folder projection remains pure/DOM coverage.",
@@ -220,9 +220,13 @@ try {
     holdPins = false;
     for (const deliver of heldPins.splice(0)) deliver();
   };
-  const viewer = page.locator("#viewer");
+  const viewer = page
+    .getByRole("dialog")
+    .filter({ has: page.locator("[data-file-viewer]") });
   const closeViewer = async () => {
-    await viewer.getByRole("button", { name: "Close", exact: true }).click();
+    await viewer
+      .getByRole("button", { name: "Close file", exact: true })
+      .click();
     await expect(viewer).not.toBeVisible();
     await expect.poll(() => new URL(page.url()).hash).toBe("");
   };
@@ -281,18 +285,29 @@ try {
   await expect(tile(newest.id)).toBeVisible();
   await expect(tile(old.id)).toHaveCount(0);
   await expect(panel).toContainText(/2 (versions|versões)/);
-  step("Checking grouped versions and exact legacy viewer selection");
+  step("Checking grouped versions and exact native viewer selection");
   await openTile(newest.id).click();
-  await expect(viewer).toHaveAttribute("data-fid", newest.id);
-  await expect(viewer.locator(".vbody")).toContainText("Newest report body");
-  await viewer.locator(".vsel").selectOption(old.id);
-  await expect(viewer).toHaveAttribute("data-fid", old.id);
-  await expect(viewer.locator(".vbody")).toContainText(
+  await expect(viewer.locator("[data-file-id]")).toHaveAttribute(
+    "data-file-id",
+    newest.id,
+  );
+  await expect(viewer.locator("[data-file-viewer]")).toContainText(
+    "Newest report body",
+  );
+  await viewer.getByLabel("File version", { exact: true }).selectOption(old.id);
+  await expect(viewer.locator("[data-file-id]")).toHaveAttribute(
+    "data-file-id",
+    old.id,
+  );
+  await expect(viewer.locator("[data-file-viewer]")).toContainText(
     "Older immutable report body",
   );
   await closeViewer();
   await openTile(newest.id).click();
-  await expect(viewer).toHaveAttribute("data-fid", newest.id);
+  await expect(viewer.locator("[data-file-id]")).toHaveAttribute(
+    "data-file-id",
+    newest.id,
+  );
   await closeViewer();
   await panel.locator('[data-fkind="md"]').click();
   await expect(tile(markdown.id)).toBeVisible();
@@ -372,7 +387,10 @@ try {
   });
   await expect(viewer).not.toBeVisible();
   await openTile(latest.id).click();
-  await expect(viewer).toHaveAttribute("data-fid", latest.id);
+  await expect(viewer.locator("[data-file-id]")).toHaveAttribute(
+    "data-file-id",
+    latest.id,
+  );
   await closeViewer();
 
   step(
@@ -415,7 +433,10 @@ try {
     const target = openTile(latest.id);
     await target.focus();
     await target.press("Enter");
-    await expect(viewer).toHaveAttribute("data-fid", latest.id);
+    await expect(viewer.locator("[data-file-id]")).toHaveAttribute(
+      "data-file-id",
+      latest.id,
+    );
     await closeViewer();
     await show();
     const metrics = await panel.evaluate(async (element) => {
@@ -464,7 +485,11 @@ try {
   await disposed.evaluate((element) => {
     if (element instanceof HTMLElement) element.click();
   });
-  await expect(page.locator("#viewer")).not.toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .filter({ has: page.locator("[data-file-viewer]") }),
+  ).not.toBeVisible();
   assert.deepEqual(errors, []);
   result.commands = {
     filesGet: count("files.get"),

@@ -377,6 +377,7 @@ app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) {
     const file = fileLink(c);
+    if(file && uiVariant(c.req.url)==='svelte' && /^\/api\/books\/[a-z0-9]{6,40}\/files\/[0-9a-f]{1,64}$/.test(new URL(c.req.url).pathname))return nativeAuthPage(c.env,c.req.raw,'file-access',{status:401});
     return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json(UNAUTHENTICATED, 401);
   }
   // The users row once per isolate, off the request path: a D1 write here cost every request a round trip.
@@ -495,8 +496,10 @@ app.route("/", uploadsApi);
 
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, c.get("email"))))
+  if (!(await isMember(c.env.DB, id, c.get("email")))) {
+    if(fileLink(c) && uiVariant(c.req.url)==='svelte' && /^[a-z0-9]{6,40}$/.test(id) && /^[0-9a-f]{1,64}$/.test(c.req.param('fid')))return nativeAuthPage(c.env,c.req.raw,'file-access',{status:403});
     return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true, lang: reqLang(c.req.raw) }), 403) : c.json({ error: "forbidden" }, 403);
+  }
   // Range: iOS Safari's <audio> plays only what answers 206 to a byte range (also lets any player seek).
   const ranged = !!c.req.header("range");
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`, ranged ? { range: c.req.raw.headers } : undefined);

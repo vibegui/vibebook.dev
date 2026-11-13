@@ -983,3 +983,85 @@ test("an earlier server exit and startup deadline both terminate readiness and r
     error.mockRestore();
   }
 });
+
+test("only explicit native denied file navigations transform; successful bytes and Range remain raw", async () => {
+  const middleware = consentMiddleware(),
+    previousFetch = globalThis.fetch;
+  try {
+    for (const status of [401, 403]) {
+      const html =
+        '<meta name="vb-page" content="file-access"><meta name="vb-v" content="prod"><script src="/svelte-preview/app.js?v=abc"></script>';
+      globalThis.fetch = Object.assign(
+        async () =>
+          new Response(html, {
+            status,
+            headers: {
+              "content-type": "text/html",
+              "set-cookie": "session=next; HttpOnly",
+            },
+          }),
+        { preconnect: previousFetch.preconnect },
+      );
+      const req = consentRequest("", "/api/books/aaaaaa/files/aa?ui=svelte", {
+        accept: "text/html",
+      });
+      req.method = "GET";
+      const res = consentResponse();
+      await middleware(req, res, () => {
+        throw Error("native file bypassed");
+      });
+      expect(res.statusCode).toBe(status);
+      expect(res.body).toContain('src="/bootstrap.ts"');
+      expect(res.body).toContain("<!-- HMR -->");
+      expect(res.headers["set-cookie"]).toEqual(["session=next; HttpOnly"]);
+    }
+    const bytes = new Uint8Array([0, 255, 128, 10, 65]);
+    globalThis.fetch = Object.assign(
+      async () =>
+        new Response(bytes, {
+          headers: {
+            "content-type": "application/pdf",
+            "content-length": "5",
+            "content-security-policy": "sandbox",
+            vary: "Cookie",
+          },
+        }),
+      { preconnect: previousFetch.preconnect },
+    );
+    const req = consentRequest("", "/api/books/aaaaaa/files/aa?ui=svelte", {
+      accept: "text/html",
+    });
+    req.method = "GET";
+    const chunks: Uint8Array[] = [];
+    const res = Object.assign(consentResponse(), {
+      write(value: Uint8Array) {
+        chunks.push(value);
+        return true;
+      },
+    });
+    await middleware(req, res, () => {
+      throw Error("raw file bypassed");
+    });
+    expect([...Buffer.concat(chunks)]).toEqual([...bytes]);
+    expect(res.headers["content-security-policy"]).toBe("sandbox");
+    expect(res.headers.vary).toBe("Cookie");
+    for (const headers of [
+      { accept: "application/octet-stream" },
+      { accept: "text/html", range: "bytes=0-0" },
+    ]) {
+      const request = consentRequest(
+        "",
+        "/api/books/aaaaaa/files/aa?ui=svelte",
+        headers,
+      );
+      request.method = "GET";
+      let next = 0;
+      await middleware(request, consentResponse(), () => {
+        next++;
+      });
+      expect(next).toBe(1);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});

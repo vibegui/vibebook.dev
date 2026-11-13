@@ -120,7 +120,7 @@ test("continuations stay on supported local routes and preserve explicit selecti
 test("native shell allowlists only versioned emitted assets and public metadata", () => {
   const version = "0123456789abcdef0123";
   const shell = `<link href="https://fonts.googleapis.com/a"><link href="/app-svelte.css?v=${version}"><link rel="stylesheet" href="/svelte-preview/ui.css?v=${version}"><script src="/vendor/marked.js"></script><nav>legacy</nav><script type="module" src="/svelte-preview/app.js?v=${version}"></script>`;
-  for (const page of ["login", "access", "consent"] as const) {
+  for (const page of ["login", "access", "consent", "file-access"] as const) {
     const html = nativeAuthHtml(shell, { page, lang: "en", autoAccess: false });
     expect(html).toContain(`content="${page}"`);
     expect(html).toContain(`name="vb-v" content="${version}"`);
@@ -557,4 +557,47 @@ test("failed consent metadata creates no handle and retry remains explicit;500 p
   expect(login.searchParams.get("next")).toBe(
     "/authorize?ui=svelte&client_id=x",
   );
+});
+
+test("native file-access shell preserves denial status and no-store/frame boundary", async () => {
+  const version = "a".repeat(20),
+    shell = `<link href="/svelte-preview/ui.css?v=${version}"><script src="/svelte-preview/app.js?v=${version}"></script>`;
+  for (const status of [401, 403] as const) {
+    const response = await nativeAuthPage(
+      { ASSETS: { fetch: async () => new Response(shell) } },
+      new Request("https://vibebook.test/api/books/abcdef/files/aa?ui=svelte"),
+      "file-access",
+      { status },
+    );
+    expect(response.status).toBe(status);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    const html = await response.text();
+    expect(html).toContain('name="vb-page" content="file-access"');
+    expect(html).not.toMatch(/app-svelte\.css|vendor|<style/);
+  }
+});
+test("file access uses grant-free context and preserves exact file continuation only after explicit ask", async () => {
+  const destinations: string[] = [];
+  let asks = 0;
+  const session = createAccessSession(
+    api({
+      ask: async () => {
+        asks++;
+        return { ok: true };
+      },
+    }),
+    "abcdef",
+    false,
+    (url) => destinations.push(url),
+    undefined,
+    "#faa",
+  );
+  await session.load();
+  expect(asks).toBe(0);
+  expect(destinations).toEqual([]);
+  await session.ask();
+  expect(asks).toBe(1);
+  expect(destinations).toEqual(["/b/abcdef?ui=svelte#faa"]);
+  session.dispose();
 });

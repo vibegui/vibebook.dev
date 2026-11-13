@@ -77,7 +77,7 @@ export async function nativeAuthPage(
   page: NativeAuthMetadata["page"],
   options: {
     autoAccess?: boolean;
-    status?: 200 | 400 | 404 | 500;
+    status?: 200 | 400 | 401 | 403 | 404 | 500;
     consentFailure?: boolean;
   } = {},
 ) {
