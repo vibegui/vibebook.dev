@@ -8851,13 +8851,17 @@ function fh(e, t) {
 						children: (e, n) => {
 							var i = dh(), a = B(i);
 							Ci(a, () => xd, (e, t) => {
-								t(e, { class: "tw:fixed tw:inset-0 tw:z-40 tw:bg-scrim" });
+								t(e, {
+									"data-vb-native": !0,
+									class: "tw:fixed tw:inset-0 tw:z-40 tw:m-0 tw:box-border tw:bg-scrim"
+								});
 							});
 							var o = hn(a, 2);
 							{
-								let e = /* @__PURE__ */ F(() => us("tw:fixed tw:z-50 tw:flex tw:max-h-[90dvh] tw:flex-col tw:gap-4 tw:overflow-auto tw:border tw:border-border tw:bg-card tw:p-6 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-lg tw:outline-none", r() ? "tw:inset-x-0 tw:bottom-0 tw:rounded-t-surface tw:sm:inset-y-0 tw:sm:left-auto tw:sm:right-0 tw:sm:max-h-none tw:sm:w-96 tw:sm:rounded-none" : "tw:left-1/2 tw:top-1/2 tw:w-[calc(100%-2rem)] tw:max-w-lg tw:-translate-x-1/2 tw:-translate-y-1/2 tw:rounded-surface"));
+								let e = /* @__PURE__ */ F(() => us("tw:fixed tw:z-50 tw:m-0 tw:box-border tw:flex tw:max-h-[90dvh] tw:flex-col tw:gap-4 tw:overflow-auto tw:border tw:border-solid tw:border-border tw:bg-card tw:p-6 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-lg tw:outline-none", r() ? "tw:inset-x-0 tw:bottom-0 tw:rounded-t-surface tw:sm:inset-y-0 tw:sm:left-auto tw:sm:right-0 tw:sm:max-h-none tw:sm:w-96 tw:sm:rounded-none" : "tw:left-1/2 tw:top-1/2 tw:w-[calc(100%-2rem)] tw:max-w-lg tw:-translate-x-1/2 tw:-translate-y-1/2 tw:rounded-surface"));
 								Ci(o, () => Fd, (n, r) => {
 									r(n, {
+										"data-vb-native": !0,
 										onOpenAutoFocus: (e) => {
 											let n = t.initialFocus?.();
 											n && (e.preventDefault(), n.focus());

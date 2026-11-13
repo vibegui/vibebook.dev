@@ -270,6 +270,81 @@ try {
   const inboxTrigger = page.getByRole("button", { name: "Inbox", exact: true });
   await expect(inboxTrigger).toBeVisible();
   await expect(inboxTrigger.locator(".kN")).toHaveText("1");
+  const legacyLayout = [];
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 1000 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((value) => {
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      const comparison = await page.evaluate(() => {
+        const sheet = [...document.styleSheets].find((item) =>
+          item.href?.includes("/svelte-preview/ui.css"),
+        );
+        if (!sheet) throw new Error("Missing native stylesheet");
+        const elements = [...document.querySelectorAll("body, body *")].filter(
+          (element) => !element.closest("[data-vb-native]"),
+        );
+        const properties = [
+          "display",
+          "position",
+          "box-sizing",
+          "width",
+          "height",
+          "margin",
+          "padding",
+          "border-width",
+          "border-style",
+          "border-radius",
+          "font-family",
+          "font-size",
+          "font-weight",
+          "line-height",
+          "color",
+          "background-color",
+          "overflow",
+          "appearance",
+        ];
+        const snapshot = () =>
+          elements.map((element) => {
+            const style = getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return {
+              tag: element.tagName,
+              id: element.id,
+              rect: [rect.x, rect.y, rect.width, rect.height],
+              styles: properties.map((name) => style.getPropertyValue(name)),
+            };
+          });
+        try {
+          sheet.disabled = true;
+          const baseline = snapshot();
+          sheet.disabled = false;
+          const nativeLoaded = snapshot();
+          return {
+            elements: elements.length,
+            mismatches: baseline.flatMap((value, index) =>
+              JSON.stringify(value) === JSON.stringify(nativeLoaded[index])
+                ? []
+                : [{ baseline: value, nativeLoaded: nativeLoaded[index] }],
+            ),
+          };
+        } finally {
+          sheet.disabled = false;
+        }
+      });
+      assert(comparison.elements > 20, "Measure the real legacy room shell");
+      assert.deepEqual(
+        comparison.mismatches,
+        [],
+        "Native CSS changed legacy layout/defaults",
+      );
+      legacyLayout.push({ width, theme, ...comparison });
+      await page.screenshot({ path: `${output}/legacy-${theme}-${width}.png` });
+    }
+  }
+  results.legacyLayout = legacyLayout;
+  await page.setViewportSize({ width: 390, height: 844 });
   await inboxTrigger.click();
   const inbox = page.getByRole("dialog", { name: "Inbox", exact: true });
   await expect(

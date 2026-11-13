@@ -45,7 +45,8 @@
 </script>
 
 <main
-  class="tw:min-h-dvh tw:bg-background tw:px-4 tw:py-8 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:text-foreground tw:sm:px-8"
+  data-vb-native
+  class="tw:m-0 tw:box-border tw:min-h-dvh tw:bg-background tw:px-4 tw:py-8 tw:font-sans tw:text-sm tw:font-normal tw:leading-5 tw:text-foreground tw:sm:px-8"
   data-gallery
 >
   <div class="tw:mx-auto tw:max-w-6xl tw:space-y-6">

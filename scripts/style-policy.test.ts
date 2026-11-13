@@ -66,9 +66,17 @@ test("stylesheet policy distinguishes tokens from custom selector and import esc
     '@plugin "unlisted-theme-package";',
     '@config "../hidden-theme.js";',
     '@import "legacy.css";',
+    ":where([data-vb-native]) { color:red; }",
+    ':where([data-vb-native]) { @import "legacy.css"; }',
     ".button{@apply bg-card}",
   ])
     expect(auditTailwind("tailwind.css", source).length).toBeGreaterThan(0);
+  expect(
+    auditTailwind(
+      "tailwind.css",
+      ':where([data-vb-native]) { @import "tailwindcss/preflight.css" layer(base); }',
+    ),
+  ).toEqual([]);
   expect(
     auditPresentation("svelte/lib/ui/test.ts", 'import "./extra.css";'),
   ).toHaveLength(1);

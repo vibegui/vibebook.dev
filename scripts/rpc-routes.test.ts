@@ -43,6 +43,16 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     pokeMe: () => {},
     vapidKey: "public-key",
     pushToMe: async () => 1,
+    sqlAll: async () => [],
+    search: async () => ({ rooms: 0, epics: [], messages: [] }),
+    loginProviders: { google: false, github: false },
+    isEmail: (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+    befriend: async () => {},
+    invite: async () => {},
+    removeMember: async () => null,
+    pokeAgents: () => {},
+    requestAccess: async () => "asked",
+    decideRequest: async () => true,
     ...overrides,
   };
   const app = new Hono<ApiCtx>()

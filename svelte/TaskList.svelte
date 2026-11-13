@@ -107,7 +107,8 @@
 
 {#if list}
   <section
-    class="tw:space-y-3 tw:rounded-surface tw:bg-background tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
+    data-vb-native
+    class="tw:m-0 tw:box-border tw:space-y-3 tw:rounded-surface tw:bg-background tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
     aria-label={vb.t("Tarefas")}
   >
     <header class="tw:flex tw:items-center tw:gap-3">

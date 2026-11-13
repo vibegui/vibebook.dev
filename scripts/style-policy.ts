@@ -463,10 +463,27 @@ export function auditTailwind(file: string, source: string): StyleViolation[] {
       );
     if (["apply", "utility"].includes(rule.name))
       add(rule.source?.start?.line, "Custom utility/@apply escape");
-    if (rule.name === "import" && !/^"tailwindcss"(?:\s|;|$)/.test(rule.params))
+    if (
+      rule.name === "import" &&
+      !/^"tailwindcss(?:\/(?:theme|preflight|utilities)\.css)?"(?:\s|;|$)/.test(
+        rule.params,
+      )
+    )
       add(rule.source?.start?.line, "Unregistered stylesheet import");
   });
   ast.walkRules((rule) => {
+    // Only the unmodified upstream reset import may cross this migration boundary.
+    if (
+      rule.selector === ":where([data-vb-native])" &&
+      rule.nodes.every(
+        (node) =>
+          node.type === "comment" ||
+          (node.type === "atrule" &&
+            node.name === "import" &&
+            node.params === '"tailwindcss/preflight.css" layer(base)'),
+      )
+    )
+      return;
     // Rules in the sole entry may assign tokens, register fonts or define token animations.
     // Component selectors and declarations belong to utility classes in their components.
     if (

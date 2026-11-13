@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { createHash } from "node:crypto";
-import postcss from "postcss";
+import postcss, { type AnyNode } from "postcss";
 import { projectRoot } from "../svelte/build/clientBoundary";
 import {
   auditPresentation,
@@ -66,6 +66,27 @@ else {
     await readFile(join(projectRoot, "public/svelte-preview/ui.css"), "utf8"),
   );
   generated.walkRules((rule) => {
+    let parent: AnyNode | undefined = rule.parent;
+    let baseReset = false;
+    while (parent) {
+      if (
+        parent.type === "atrule" &&
+        parent.name === "layer" &&
+        parent.params === "base"
+      )
+        baseReset = true;
+      parent = parent.parent;
+    }
+    if (
+      baseReset &&
+      rule.selectors.some((selector) => !selector.includes("[data-vb-native]"))
+    )
+      issues.push({
+        file: "public/svelte-preview/ui.css",
+        line: rule.source?.start?.line ?? 1,
+        reason:
+          "Native reset escaped its migration boundary or retained unresolved nesting",
+      });
     if (
       rule.selectors.some((selector) =>
         /^\.(?:grid|table|flex|hidden|block)$/.test(selector),
@@ -76,6 +97,13 @@ else {
         line: rule.source?.start?.line ?? 1,
         reason: "Unnamespaced layout utility can override legacy views",
       });
+  });
+  generated.walkAtRules("scope", (rule) => {
+    issues.push({
+      file: "public/svelte-preview/ui.css",
+      line: rule.source?.start?.line ?? 1,
+      reason: "Unlowered @scope exceeds the supported browser baseline",
+    });
   });
   generated.walkDecls((declaration) => {
     if (/url\(["']?data:(?:font|application\/font)/.test(declaration.value))

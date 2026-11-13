@@ -15,8 +15,9 @@
     >
     <Tooltip.Portal>
       <Tooltip.Content
+        data-vb-native
         sideOffset={6}
-        class="tw:z-50 tw:max-w-xs tw:rounded-control tw:border tw:border-border tw:bg-popover tw:px-3 tw:py-1.5 tw:font-sans tw:text-xs tw:leading-4 tw:text-popover-foreground tw:shadow-md"
+        class="tw:z-50 tw:m-0 tw:box-border tw:max-w-xs tw:rounded-control tw:border tw:border-solid tw:border-border tw:bg-popover tw:px-3 tw:py-1.5 tw:font-sans tw:text-xs tw:leading-4 tw:text-popover-foreground tw:shadow-md"
         >{label}</Tooltip.Content
       >
     </Tooltip.Portal>

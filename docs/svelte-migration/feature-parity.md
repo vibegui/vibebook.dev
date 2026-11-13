@@ -6,7 +6,9 @@ Baseline architecture: native Svelte room views exist, but their bridges, page s
 
 Verification for every applicable row includes English/Portuguese, light/dark, 390/768/1440px layouts, keyboard access, loading/empty/error/permission states, persistence after reload and remote updates. Final evidence must name the commit and test/artifact; earlier hybrid results are only baseline evidence.
 
-Ongoing vanilla additions are mandatory parity requirements: `2d5dbfe` adds compact read/delivery receipts with profile/agent marks and hover/tap details (F22), plus working new-tab viewer navigation (F34/F35). `e0bce88` adds nested epic trees with per-room persisted expansion, current-branch expansion, busy-descendant indicators, archived-tree behavior and nested reordering (F24/F25). These are recorded in the change ledger; their native port is not yet verified.
+Ongoing vanilla additions are mandatory parity requirements: `2d5dbfe` adds compact read/delivery receipts with profile/agent marks and hover/tap details (F22), plus working new-tab viewer navigation (F34/F35). `e0bce88` adds nested epic trees with per-room persisted expansion, current-branch expansion, busy-descendant indicators, archived-tree behavior and nested reordering (F24/F25). The subsequent fixes through `12b202f` incorporate disclosure into the epic row, enlarge its target, permit closing the current branch and expand ancestors once on entry. These are recorded in the change ledger; their native port is not yet verified.
+
+Incremental native task evidence is recorded in [native-tasks](native-tasks/README.md). It covers local task actions, persistence, reconnect, dialogs and selected theme/accessibility profiles; F27 remains pending until every applicable final-parity dimension above passes.
 
 | ID | Capability and required actions | Baseline owner / current integration | Native target | Final evidence |
 | --- | --- | --- | --- | --- |

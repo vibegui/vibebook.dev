@@ -21,7 +21,13 @@ export function uiVariantBoundary(root: string, variant: UiVariant): Plugin {
   const forbiddenPaths = [
     forbiddenDirectory,
     ...forbiddenAssets.map((path) => resolve(root, "public", path)),
-  ];
+  ].flatMap((path) => {
+    try {
+      return [path, realpathSync(path)];
+    } catch {
+      return [path];
+    }
+  });
   const clean = (id: string) =>
     id.replace(/[?#].*$/, "").replace(/^\/@fs\//, "/");
   const within = (file: string, directory: string) => {

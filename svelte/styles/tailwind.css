@@ -1,6 +1,11 @@
 /* Studio source digest: eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb. Token names are namespaced during migration. */
 @layer theme, base, legacy, components, utilities;
-@import "tailwindcss" prefix(tw) source(none);
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+/* Keep upstream resets inside migrated surfaces while the legacy host remains. */
+:where([data-vb-native]) {
+  @import "tailwindcss/preflight.css" layer(base);
+}
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);
 @source "../";
 @source "../../public/app-svelte.html";
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
