@@ -2,6 +2,7 @@
   // The room's navigation is rendered by Svelte. The bridge keeps shared artwork,
   // formatting and the existing host actions in one place during the migration.
   import EpicTree from "./features/navigation/EpicTree.svelte";
+  import PinnedItems from "./features/pins/PinnedItems.svelte";
   import type { SidebarProps } from "./sidebar";
   let {
     room,
@@ -10,9 +11,13 @@
     friends = [],
     vb,
     send,
+    request,
     onopen,
     onarchchange,
     navigation,
+    pins,
+    onopenpinfile,
+    onopenpinapp,
   }: SidebarProps = $props();
 
   const count = (th: string) =>
@@ -166,7 +171,15 @@
     }}
   />
 </div>
-{@html vb.pinsSec()}
+<PinnedItems
+  {room}
+  session={pins}
+  {send}
+  {request}
+  onopenfile={onopenpinfile}
+  onopenapp={onopenpinapp}
+  t={vb.t}
+/>
 <div class="sec">
   {#if room.requests?.length}
     <div class="asks">

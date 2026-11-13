@@ -30,6 +30,7 @@ if (native) {
     "svelte/styles",
     "svelte/features/board",
     "svelte/features/navigation",
+    "svelte/features/pins",
   ])
     await collect(directory);
   files.push(

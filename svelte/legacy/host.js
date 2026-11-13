@@ -2,6 +2,7 @@
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
 import { syncNavigationSession } from "../features/navigation/session";
+import { syncPinsSession, disposePinsSession, requestPinnedFiles } from "../features/pins/session";
 import { createUiNavigation } from "../navigation";
 import { getBoardContainer, moveBoardContainer, watchBoardLayout } from "./boardLayout";
 import { uiNavigationUrl } from "../../shared/uiVariant";
@@ -15,6 +16,19 @@ document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
   "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
+  "Use um link http ou https válido.": "Enter a valid http or https link.",
+  "Sem conexão. Seu rascunho foi mantido.": "Offline. Your draft has been kept.",
+  "Ainda não recebi confirmação. Confira os fixados antes de tentar de novo.": "Still unconfirmed. Check the pinned items before trying again.",
+  "Não deu pra atualizar os fixados. Tente de novo.": "Couldn't update pinned items. Try again.",
+  "Aguardando confirmação…": "Waiting for confirmation…",
+  "Link inválido": "Invalid link",
+  "Arquivo indisponível": "File unavailable",
+  "App indisponível": "App unavailable",
+  "Item indisponível": "Item unavailable",
+  "Este link já está nos fixados.": "This link is already pinned.",
+  "Carregando arquivo…": "Loading file…",
+  "Carregar arquivo": "Load file",
+  "Tentar carregar novamente": "Try loading again",
   "Não deu pra resolver agora. Tente de novo.": "Couldn't resolve this request. Try again.",
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -1676,6 +1690,7 @@ const send = (m) => roomConnection?.send(m) ?? false;
 const viewMounts = new Map();
 let boardLayoutCleanup = () => {};
 let sideNavigation = null;
+let sidePins = null;
 const sidebarDragHandles = new WeakSet();
 function disposeView(kind) {
   const mounted = viewMounts.get(kind);
@@ -1692,6 +1707,8 @@ function renderView(kind, target, props, remount = false) {
 }
 function clearViews() {
   sideNavigation = null;
+  disposePinsSession(sidePins);
+  sidePins = null;
   boardLayoutCleanup();
   boardLayoutCleanup = () => {};
   disposeCollab();
@@ -1768,8 +1785,8 @@ function onEvent(ev, id) {
     }
     case "requests": renderSide(); return;
     case "members": renderSide(); return;
-    case "files": renderFiles(); connsFilesChanged(); refreshVersions(); return;
-    case "fileAdd": renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
+    case "files": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); return;
+    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": renderReminders(); return;
     case "decisions": renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
@@ -2769,38 +2786,6 @@ function ownerMenu(anchor, id) {
   m.querySelectorAll("[data-own]").forEach((b) => b.onclick = () => { send({ t: "epic.owner", id, owner: b.dataset.own }); close(); });
   m.querySelector("button")?.focus();
 }
-// Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
-const pinHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
-let pinAdding = false;
-function pinsSec() {
-  const pins = S.pins || [];
-  const row = (p) => {
-    let href, attrs = "", label = p.title, sub = "", ico;
-    if (p.kind === "link") { href = p.ref; attrs = `target="_blank" rel="noopener"`; sub = pinHost(p.ref); label ||= sub; ico = `<span class="ri pinIco" style="background:${color(sub)}">${esc(sub[0]?.toUpperCase() || "↗")}</span>`; }
-    else if (p.kind === "app") { const to = p.ref.includes("/") ? `#app:${p.ref}` : `#app:room/${p.ref}`; href = esc(to); attrs = `data-cardgo="${esc(to)}"`; label ||= p.ref.split("/").pop(); sub = p.ref.includes("/") ? "app" : t("app da sala"); ico = `<span class="ri pinIco app">${icon("grid", 14)}</span>`; }
-    else { const f = (S.files || []).find((x) => x.id === p.ref); if (!f) return ""; href = fileUrl(f); attrs = `target="_blank" rel="noopener" ${viewAttrs(f)}`; label ||= f.name; sub = t("arquivo"); ico = `<span class="ri pinIco app">${icon("file", 14)}</span>`; }
-    return `<div class="pinRow"><a class="thread pin" href="${esc(href)}" ${attrs} title="${esc(label)}${p.kind === "link" ? ` · ${esc(p.ref)}` : ""}">${ico}<span class="rt">${esc(label)}<small>${esc(sub)}</small></span></a><button type="button" class="ghost x" data-unpin="${esc(p.id)}" title="${t("Desafixar")}" aria-label="${t("Desafixar {name}", { name: esc(label) })}">${icon("x", 14)}</button></div>`;
-  };
-  return `<div class="sec pinsSec"><h4>${t("Fixados")}${pinAdding ? "" : `<button type="button" class="ghost pinPlus" id="pinPlus" title="${t("Fixar um link")}" aria-label="${t("Fixar um link")}">${icon("plus", 14)}</button>`}</h4>
-      ${pins.map(row).join("")}
-      ${pinAdding ? `<form id="pinForm" class="pinForm"><input name="url" required placeholder="${t("Cole um link (site, repo, painel…)")}" aria-label="${t("Link pra fixar")}" enterkeyhint="done" /><input name="title" maxlength="80" placeholder="${t("Nome (opcional)")}" aria-label="${t("Nome")}" /><div class="row"><button type="button" class="ghost" id="pinCancel">${t("Cancelar")}</button><button class="primary">${t("Fixar")}</button></div></form>`
-        : pins.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${icon("pin", 14)}<span>${t("Fixar site, repo ou app")}</span></button>`}
-    </div>`;
-}
-function wirePins(el) {
-  const open = () => { pinAdding = true; renderSide(); document.querySelector("#pinForm [name=url]")?.focus(); };
-  const plus = el.querySelector("#pinPlus"); if (plus) plus.onclick = open;
-  const empty = el.querySelector("#pinEmpty"); if (empty) empty.onclick = open;
-  const cancel = el.querySelector("#pinCancel"); if (cancel) cancel.onclick = () => { pinAdding = false; renderSide(); };
-  const form = el.querySelector("#pinForm"); if (form) form.onsubmit = (e) => {
-    e.preventDefault();
-    const f = e.target, url = f.elements.namedItem("url").value.trim();
-    if (!url) return;
-    send({ t: "pin.add", kind: "link", ref: url, title: f.elements.namedItem("title").value.trim() });
-    pinAdding = false; renderSide();
-  };
-  el.querySelectorAll("[data-unpin]").forEach((b) => b.onclick = () => send({ t: "pin.del", id: b.dataset.unpin }));
-}
 // Your Claude's open question (a<msg> wait) in another thread of this room: one line on top of whatever thread you're
 // in, so an approval never hides in a conversation you're not looking at. "Ver" jumps to it.
 function renderAskBar() {
@@ -2818,21 +2803,28 @@ function renderSide() {
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
   sideNavigation = syncNavigationSession(sideNavigation, S, thread, archOpen);
+  sidePins = syncPinsSession(sidePins, S);
+  if (liveState) requestPinnedFiles(sidePins, S, send);
   if (railMode && window.innerWidth > 900) {
     disposeView("sidebar");
     return renderRail(el);
   }
   const roomId = S.id;
+  const pinsSession = sidePins;
+  /** @type {import("../roomConnection").RequestRoomCommand} */
+  const requestPinCommand = (command, timeoutMs) => {
+    if (!pinsSession.active || sidePins !== pinsSession || S?.id !== roomId) return Promise.resolve({ok:false,error:"offline"});
+    return roomConnection?.request(command, timeoutMs) ?? Promise.resolve({ok:false,error:"offline"});
+  };
   const openSideThread = (id) => {
     if (S?.id !== roomId) return;
     closeSheet(true);
     thread = id; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   };
-  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
+  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
   el.querySelector("#railToggle").onclick = toggleRail;
   // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
   el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.onclick = () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open));
-  wirePins(el);
   const grab = el.querySelector(".sheetGrab");
   if (grab && !sidebarDragHandles.has(grab)) {
     sheetDrag(grab, "side", false);

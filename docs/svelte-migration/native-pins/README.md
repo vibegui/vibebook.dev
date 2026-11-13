@@ -1,0 +1,28 @@
+# Native pinned items verification
+
+Verified source: `28d784d0602dd117f22c95bc279b4f00717a24a8`; final application/assets: `9cdd6d937be4202e8eba78d2c73cb103e5ecb23a`. The complete repository check passed **143 tests and 744 assertions**, with zero failures, zero Svelte errors/warnings, and passing tooling, style, formatting and bundle-boundary checks. [verification.json](verification.json) records source/artifact hashes and [check.log](check.log) contains the exact run.
+
+Pinned items now use typed Svelte, shared atoms, Studio tokens and Tailwind utilities. Creation and removal use the separate Promise-only correlated `request()` API; the older Boolean `send` bridge remains unchanged. A canonical update alone does not impersonate a command reply. Successful replies unlock controls and clear only an unchanged submitted draft. Rejections preserve edits and show text errors; offline, timeout and disconnection have distinct recovery states. There is no automatic mutation retry or optimistic pin insertion/removal.
+
+The room-owned session survives temporary sidebar remounts. Component disposal blocks retained old form handlers; room disposal invalidates late replies. Explicit duplicate submission is a no-op with visible status. Missing pinned-file metadata triggers the real full-file lookup, including an older version outside the initial newest-12 snapshot; actions resolve against current metadata and retain exact version identity. Unknown/missing targets remain removable. Viewer and Apps activation still use narrow, guarded legacy adapters: this does not complete their native migration.
+
+The interactive atom change exposes IconButton's existing button ref as bindable. Native pin surfaces use `data-vb-native`, including the scoped reset; an obsolete legacy class was removed before final style acceptance.
+
+## Browser evidence
+
+- [Pinned items](pins/results.json): real OAuth/PKCE and MCP, 15 real R2/Book uploads, a loopback read-only MCP app, counted client commands, held authentic events/correlated replies, draft editing before reply, canonical writes, duplicate no-op, exact older-file lookup, app activation/unavailable connection, offline/reconnect/manual retry, and keyboard cancellation/focus.
+- Six profiles cover English/Portuguese at light 1440px, dark 900px and dark 390px, with zero axe violations or horizontal overflow. Four additional full-phone/tablet captures prove the final pin control can scroll clear of the sheet handle and pass a real hit-target trial while the form is open.
+- [Gallery/Inbox](gallery-inbox/results.json): loaded fonts, controls, keyboard tabs, modal focus/scroll handling, responsive accessibility and real Inbox flows pass. All four surrounding legacy comparisons have zero fixture/CSS-toggle differences. Those comparisons freeze only native boundaries, first proving that freezing itself does not alter the surrounding layout.
+- [Navigation](navigation/results.json): the full real hierarchy/draft/owner/order/drag/persistence/offline/responsive EN/PT suite passes with the final rebuilt assets and unchanged timeouts. An earlier Portuguese reload hit the 60-second loading timeout with no browser errors; the prebuilt Worker run passed. This is not a performance-budget result.
+
+Pinned-item and Gallery/Inbox runs used application `1c1e441`; navigation used final application `9cdd6d9`. The only intervening application-source change removes the unused `pinsSec` class; the generator checks that exact one-line delta and byte-identical emitted CSS. The final full check covers the rebuilt source. There are 25 screenshots across these reports.
+
+The frontend program contains **231 files**, with no Node, Bun, Worker declarations or backend runtime sources; generated API declarations remain available. Protected vanilla assets are unchanged against `f5e07b8`. Public asset delivery at peer revision `23eadf6` is separately recorded in [published-assets-23eadf6.json](../published-assets-23eadf6.json): eight assets match exactly. This is not authenticated production acceptance.
+
+## Reproduction and limits
+
+Run `bun run check`, then `bun run test:pins`, `bun run test:design-system` and `bun run test:epic-navigation` against a loopback Worker with a synthetic local `DEV_EMAIL` identity. The browser scripts refuse production targets. Chromium requires the documented local libraries/font configuration in this test environment. Legacy remote-font and runner services are explicit fixtures; native self-hosted fonts and actual HTTP/WebSocket traffic remain enabled.
+
+For the final navigation run, the backend was bundled with `wrangler deploy --dry-run --outdir .wrangler/qa-pins-worker`, then served with `wrangler dev .wrangler/qa-pins-worker/index.js --no-bundle` using the same bindings, state, local identity and port. Unused local explorer/observability were disabled. This is local verification, not a deployment or production performance claim.
+
+Missing-file and disposed/stale branches have unit/DOM coverage; no unsupported live file deletion was fabricated. The backend baseline includes schema-derived DTOs/events/commands, correlated outcomes and API review fixes through `f5e07b8`; the later external-service/raw-upload-adapter follow-up awaits combined integration. Reminders, Files, Decisions and HMR/build-policy hardening are separate reviewed source queues with unrun integration gates. Remaining shell/features, the complete single-stylesheet audit, authenticated Studio workspace, final HMR/performance budgets and authenticated production A/B acceptance remain open. Vanilla stays default, and the full migration goal is not complete.

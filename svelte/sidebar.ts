@@ -1,6 +1,9 @@
-import type { Room, Epic } from "../shared/room";
+import type { Room, Epic, Attachment } from "../shared/room";
+import type { RequestRoomCommand } from "./roomConnection";
 import type { SendRoomCommand } from "../shared/commands";
 import type { NavigationSession } from "./features/navigation/session";
+import type { PinsSession } from "./features/pins/session";
+import type { PinAppTarget } from "./features/pins/model";
 
 /** Temporary formatting bridge for sidebar sections that still await native migration. */
 export type SidebarBridge = {
@@ -12,7 +15,6 @@ export type SidebarBridge = {
   bookTitle: () => string;
   roomMark: (classes: string) => string;
   roomStrip: () => string;
-  pinsSec: () => string;
   sbxRows: () => string;
   agentRows: (email: string) => string;
   epicBusy: (epic: Epic) => string | null;
@@ -27,7 +29,11 @@ export type SidebarProps = {
   friends?: string[];
   vb: SidebarBridge;
   send: SendRoomCommand;
+  request: RequestRoomCommand;
   onopen: (id: string) => void;
   onarchchange: (archived: boolean) => void;
   navigation: NavigationSession;
+  pins: PinsSession;
+  onopenpinfile: (file: Attachment) => void;
+  onopenpinapp: (app: PinAppTarget) => void;
 };

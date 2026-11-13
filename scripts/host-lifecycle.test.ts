@@ -1,6 +1,10 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
+import {
+  createPinsSession,
+  disposePinsSession,
+} from "../svelte/features/pins/session";
 
 // The host has browser startup side effects. Execute only its real editor lifecycle
 // and cleanup functions, with a deferred module and provider standing in for Yjs.
@@ -30,6 +34,7 @@ function harness() {
     docs: {} as Record<string, string>,
     doc: "original",
   };
+  const pinsSession = createPinsSession(state.id);
   const api = Function(
     "$app",
     "document",
@@ -43,7 +48,9 @@ function harness() {
     "disposeView",
     "pinRO",
     "boardLayoutCleanup",
-    "let sideNavigation = null;\n" +
+    "disposePinsSession",
+    "initialPinsSession",
+    "let sideNavigation = null, sidePins = initialPinsSession;\n" +
       editor +
       cleanup +
       `
@@ -62,12 +69,15 @@ function harness() {
     () => {},
     { disconnect() {} },
     () => layoutCleanups++,
+    disposePinsSession,
+    pinsSession,
   );
   return {
     api,
     state,
     renders: () => renders,
     layoutCleanups: () => layoutCleanups,
+    pinsSession,
   };
 }
 
@@ -82,6 +92,7 @@ test("room cleanup invalidates a pending editor import before it can mount", asy
   let mounts = 0;
   h.api.ensureCollab();
   h.api.clearViews();
+  expect(h.pinsSession.active).toBe(false);
   expect(h.layoutCleanups()).toBe(1);
   h.api.clearViews();
   expect(h.layoutCleanups()).toBe(1);

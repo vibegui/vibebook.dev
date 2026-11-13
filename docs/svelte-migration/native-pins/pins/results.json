@@ -1,0 +1,155 @@
+{
+  "scope": "Incremental native pinned items against a real loopback Worker; not production or full sidebar acceptance",
+  "gaps": [
+    "No supported public file-deletion operation exists, so a truly deleted-file pin is covered by unit/DOM tests, not created by modifying the test database or fabricating room frames.",
+    "Unavailable-app acceptance covers the real disconnected MCP target through the existing Apps adapter; it does not claim that the remaining legacy Apps UI is native."
+  ],
+  "fixtures": [
+    "legacy-only Google CSS isolated",
+    "local runner: no active rooms/directory",
+    "real OAuth/PKCE agent uses supported local pin/unpin/connect/disconnect tools",
+    "real uploads populate R2 and Book's file index; no direct database edits",
+    "transparent WebSocket observer counts real client commands and real server snapshots",
+    "temporarily holds and releases authentic pins/files server messages without editing or fabricating their payloads",
+    "temporary browser-side room socket closure exercises offline sends/reconnection",
+    "actual loopback read-only MCP server serves the pinned app resource"
+  ],
+  "room": "886281b6b573",
+  "step": "Checking EN/PT responsive accessibility and keyboard focus",
+  "files": {
+    "older": "ab5c0576d43345a2",
+    "newer": "47b0de25fbe645e6",
+    "uploads": 15
+  },
+  "connection": "2bb6d08cd724",
+  "initialFiles": {
+    "count": 12,
+    "olderExcluded": true
+  },
+  "olderFile": {
+    "pin": "bf984263",
+    "filesRequests": 1,
+    "selectedVersionReturnsToPinnedID": true
+  },
+  "app": {
+    "activatedThroughRealMCP": true,
+    "disconnectedTargetHandledByExistingAppsAdapter": true,
+    "fixtureMethods": [
+      "initialize",
+      "notifications/initialized",
+      "tools/list",
+      "resources/read",
+      "tools/call"
+    ]
+  },
+  "pins-en-light-1440": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 1440,
+      "viewport": 1440
+    },
+    "violations": []
+  },
+  "pins-en-dark-900": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 900,
+      "viewport": 900
+    },
+    "violations": []
+  },
+  "pins-en-dark-900-scroll": {
+    "lastControl": {
+      "x": 836,
+      "y": 368.1875,
+      "width": 36,
+      "height": 36
+    },
+    "viewport": {
+      "width": 900,
+      "height": 844
+    }
+  },
+  "pins-en-dark-390": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 390,
+      "viewport": 390
+    },
+    "violations": []
+  },
+  "pins-en-dark-390-scroll": {
+    "lastControl": {
+      "x": 326,
+      "y": 368.1875,
+      "width": 36,
+      "height": 36
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "pins-pt-light-1440": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 1440,
+      "viewport": 1440
+    },
+    "violations": []
+  },
+  "pins-pt-dark-900": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 900,
+      "viewport": 900
+    },
+    "violations": []
+  },
+  "pins-pt-dark-900-scroll": {
+    "lastControl": {
+      "x": 836,
+      "y": 368.1875,
+      "width": 36,
+      "height": 36
+    },
+    "viewport": {
+      "width": 900,
+      "height": 844
+    }
+  },
+  "pins-pt-dark-390": {
+    "native": {
+      "boundary": true,
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 390,
+      "viewport": 390
+    },
+    "violations": []
+  },
+  "pins-pt-dark-390-scroll": {
+    "lastControl": {
+      "x": 326,
+      "y": 368.1875,
+      "width": 36,
+      "height": 36
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    }
+  },
+  "commands": {
+    "pinAdd": 3,
+    "pinDelete": 2,
+    "filesGet": 5,
+    "realRoomSnapshots": 9
+  },
+  "status": "pass",
+  "errors": []
+}

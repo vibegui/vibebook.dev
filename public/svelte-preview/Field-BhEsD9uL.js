@@ -9008,11 +9008,13 @@ var xh = /* @__PURE__ */ new Set([
 	"$$legacy",
 	"label",
 	"icon",
-	"variant"
+	"variant",
+	"ref"
 ]);
 function Sh(e, t) {
-	let n = Y(t, "variant", 3, "ghost"), r = /* @__PURE__ */ ja(t, xh);
-	bh(e, Na(() => r, {
+	M(t, !0);
+	let n = Y(t, "variant", 3, "ghost"), r = Y(t, "ref", 15, null), i = /* @__PURE__ */ ja(t, xh);
+	bh(e, Na(() => i, {
 		get variant() {
 			return n();
 		},
@@ -9023,13 +9025,19 @@ function Sh(e, t) {
 		get title() {
 			return t.label;
 		},
+		get ref() {
+			return r();
+		},
+		set ref(e) {
+			r(e);
+		},
 		children: (e, n) => {
 			lf(e, { get name() {
 				return t.icon;
 			} });
 		},
 		$$slots: { default: !0 }
-	}));
+	})), N();
 }
 // svelte/lib/ui/Tabs.svelte
 var Ch = /* @__PURE__ */ W("<!> <!>", 1);
