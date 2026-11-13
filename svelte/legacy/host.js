@@ -16,6 +16,9 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Tentar novamente": "Try again",
+  "online": "online",
+  "offline": "offline",
   "Email inválido.": "Invalid email.",
   "Esta pessoa já está na sala.": "This person is already in the room.",
   "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",

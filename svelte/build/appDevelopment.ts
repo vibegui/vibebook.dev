@@ -4,7 +4,7 @@ import {
   createDevelopmentRequestPolicy,
   localRequestUrl,
   workerRequestUrl,
-} from "./developmentRequests";
+} from "./developmentRequests.ts";
 
 export const workerRoutes =
   "^/(?:api(?:/|$)|ws(?:/|-)|yjs/|auth(?:/|$)|oauth/|authorize(?:[/?]|$)|token(?:[/?]|$)|register(?:[/?]|$)|logout(?:[/?]|$)|login(?:[/?]|$)|app(?:[/?]|$)|archived(?:[/?]|$)|b/|mail/|\\.well-known/)";

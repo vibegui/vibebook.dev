@@ -1,6 +1,6 @@
 import { existsSync, realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
-import { createClientBoundaryPolicy } from "./clientBoundary";
+import { createClientBoundaryPolicy } from "./clientBoundary.ts";
 
 /** Origin-form only. Never allow an incoming authority to choose a fetch target. */
 export function localRequestUrl(request: string): URL {
