@@ -1073,7 +1073,13 @@ test("whole project and external dependency aliases share one physical source bo
   const { tmpdir } = await import("node:os");
   const { createDevelopmentRequestPolicy } =
     await import("../svelte/build/developmentRequests");
-  const base = await mkdtemp(resolve(tmpdir(), "vb-project-root-alias-"));
+  const storage = await mkdtemp(resolve(tmpdir(), "vb-project-root-alias-"));
+  // Model macOS /tmp -> /private/tmp even when this test runs on Linux.
+  // A second alias ensures no finite list of root spellings is sufficient.
+  const ancestorAlias = `${storage}-tmp-alias`;
+  const base = `${storage}-nested-alias`;
+  await symlink(storage, ancestorAlias);
+  await symlink(ancestorAlias, base);
   const physical = resolve(base, "physical-project"),
     project = resolve(base, "logical-project"),
     deps = resolve(base, "physical-dependencies"),
@@ -1130,7 +1136,7 @@ test("whole project and external dependency aliases share one physical source bo
       resolve(depAlias, ".vite/deps/svelte.js"),
       resolve(deps, ".vite/deps/svelte.js"),
     ])
-      expect(() => policy.assertRequest(`/@fs/${file}`)).not.toThrow();
+      expect(() => policy.assertRequest(`/@fs/${file}`), file).not.toThrow();
     expect(() => policy.assertRequest("/lib/ok.ts")).not.toThrow();
     for (const root of [project, physical])
       for (const file of [
@@ -1147,15 +1153,18 @@ test("whole project and external dependency aliases share one physical source bo
         "shared/private.key",
         "public/escape.js",
       ])
-        expect(() =>
-          policy.assertRequest(`/@fs/${resolve(root, file)}?raw`),
+        expect(
+          () => policy.assertRequest(`/@fs/${resolve(root, file)}?raw`),
+          `/@fs/${resolve(root, file)}?raw`,
         ).toThrow("[client-boundary]");
     for (const root of [depAlias, deps])
       expect(() =>
         policy.assertRequest(`/@fs/${resolve(root, ".cache/private.js")}`),
       ).toThrow("[client-boundary]");
   } finally {
-    await rm(base, { recursive: true, force: true });
+    await rm(base, { force: true });
+    await rm(ancestorAlias, { force: true });
+    await rm(storage, { recursive: true, force: true });
   }
 });
 

@@ -23,3 +23,21 @@ export function canonicalFilesystemPath(file: string): string {
     }
   }
 }
+
+/** Resolve aliases above the project root without resolving away lexical names
+ * inside it (for example shared/.hidden.ts -> shared/public.ts). */
+export function projectFilesystemPath(
+  file: string,
+  physicalRoot: string,
+): string | undefined {
+  let current = resolve(file);
+  const suffix: string[] = [];
+  for (;;) {
+    if (canonicalFilesystemPath(current) === physicalRoot)
+      return resolve(physicalRoot, ...suffix);
+    const parent = dirname(current);
+    if (parent === current) return;
+    suffix.unshift(current.slice(parent.length).replace(/^[/\\]/, ""));
+    current = parent;
+  }
+}
