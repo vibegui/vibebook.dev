@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import type { Attachment } from "../../../shared/room";
   import type { ChatActions, ChatBridge } from "../../chatTypes";
+  import { createAppConsent } from "../apps/consent";
   import Button from "../../lib/ui/Button.svelte";
   let {
     url,
@@ -19,32 +20,29 @@
   let frame = $state<HTMLIFrameElement | null>(null),
     height = $state(320),
     clipped = $state(false);
-  let question = $state<{ what: string; detail: string } | null>(null);
-  const queue: {
-    what: string;
-    detail: string;
-    resolve: (answer: boolean) => void;
-  }[] = [];
-  let active = true;
-  function advance() {
-    const first = queue[0];
-    question = first ? { what: first.what, detail: first.detail } : null;
-  }
-  function choose(answer: boolean) {
-    queue.shift()?.resolve(answer);
-    advance();
-  }
-  function ask(what: string, detail: string): Promise<boolean> {
-    if (!active) return Promise.resolve(false);
-    return new Promise((resolve) => {
-      queue.push({ what, detail: detail.slice(0, 600), resolve });
-      if (queue.length === 1) advance();
-    });
-  }
+  let active = true,
+    bridgeDenied = $state(false),
+    bridgeFailed = $state(false),
+    bridgeReady = $state(untrack(() => !actions.mountEmbed));
+  const consent = createAppConsent(() => active && !bridgeDenied),
+    question = consent.question;
+  const ask = consent.ask;
   onMount(() => {
     const detach = frame
       ? actions.mountEmbed?.(frame, file, {
           ask,
+          ready: () => {
+            if (active && !bridgeDenied) bridgeReady = true;
+          },
+          cancel: consent.cancel,
+          deny: () => {
+            bridgeDenied = true;
+            consent.cancel();
+          },
+          fail: () => {
+            bridgeFailed = true;
+            consent.cancel();
+          },
           thread: messageThread,
           resize: (requested) => {
             if (!active || !Number.isFinite(requested)) return;
@@ -58,7 +56,7 @@
     return () => {
       active = false;
       detach?.();
-      for (const pending of queue.splice(0)) pending.resolve(false);
+      consent.dispose();
     };
   });
   function open(event: MouseEvent) {
@@ -77,15 +75,28 @@
 </script>
 
 <div data-chat-embed class="tw:w-full tw:space-y-2">
-  <iframe
-    bind:this={frame}
-    src={url}
-    sandbox="allow-scripts"
-    loading="lazy"
-    title={file.name}
-    {height}
-    class="tw:w-full tw:rounded-control tw:border tw:border-border"
-  ></iframe>
+  {#if !bridgeDenied}<iframe
+      bind:this={frame}
+      src={bridgeReady ? url : undefined}
+      sandbox="allow-scripts"
+      loading="lazy"
+      title={file.name}
+      {height}
+      class="tw:w-full tw:rounded-control tw:border tw:border-border"
+    ></iframe>{:else}<p
+      role="alert"
+      class="tw:m-0 tw:text-sm tw:text-muted-foreground"
+    >
+      {vb.t("Você não tem acesso a esta sala.")}
+    </p>{/if}
+  {#if bridgeFailed}<p
+      role="alert"
+      class="tw:m-0 tw:text-sm tw:text-muted-foreground"
+    >
+      {vb.t(
+        "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.",
+      )}
+    </p>{/if}
   <a
     href={url}
     onclick={open}
@@ -95,23 +106,32 @@
   {#if clipped}<p class="tw:m-0 tw:text-xs tw:text-muted-foreground">
       {file.name}
     </p>{/if}
-  {#if question}<div
-      role="group"
-      aria-label={vb.t("Confirmar")}
-      class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-3"
-    >
-      <p class="tw:m-0">
-        {vb.t("Este app quer {what}, como você:", { what: question.what })}
-      </p>
-      <q class="tw:block tw:break-words tw:text-xs tw:text-muted-foreground"
-        >{question.detail}</q
+  {#if $question}{#key $question}{@const intent = $question}
+      <div
+        role="group"
+        aria-label={vb.t("Confirmar")}
+        class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-3"
       >
-      <div class="tw:flex tw:flex-wrap tw:gap-2">
-        <Button size="sm" onclick={() => choose(true)}
-          >{vb.t("Permitir")}</Button
-        ><Button size="sm" variant="outline" onclick={() => choose(false)}
-          >{vb.t("Cancelar")}</Button
+        <p class="tw:m-0">
+          {vb.t("Este app quer {what}, como você:", { what: intent.what })}
+        </p>
+        <q class="tw:block tw:break-words tw:text-xs tw:text-muted-foreground"
+          >{intent.detail}</q
         >
-      </div>
-    </div>{/if}
+        <div class="tw:flex tw:flex-wrap tw:gap-2">
+          <Button
+            size="sm"
+            onclick={(event) => {
+              if (event.currentTarget.isConnected) consent.choose(intent, true);
+            }}>{vb.t("Permitir")}</Button
+          ><Button
+            size="sm"
+            variant="outline"
+            onclick={(event) => {
+              if (event.currentTarget.isConnected)
+                consent.choose(intent, false);
+            }}>{vb.t("Cancelar")}</Button
+          >
+        </div>
+      </div>{/key}{/if}
 </div>

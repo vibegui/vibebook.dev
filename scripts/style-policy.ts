@@ -1,3 +1,4 @@
+import { TERMINAL_RENDERER_SOURCE } from "./terminal-vendor-policy";
 import ts from "typescript";
 import { parse } from "svelte/compiler";
 import postcss from "postcss";
@@ -172,6 +173,11 @@ export function auditPresentation(
       true,
       ts.ScriptKind.TS,
     );
+    const approvedTerminalTheme = (value: ts.Node) =>
+      file === TERMINAL_RENDERER_SOURCE &&
+      ts.isCallExpression(value) &&
+      value.expression.getText(ast) === "resolveTerminalTheme" &&
+      value.arguments.length === 1;
     // The card protocol's `props.style` is a closed semantic variant, not CSS.
     // Permit only strict comparisons with its catalog values, never mutation,
     // forwarding as inline CSS, computed access, or reading DOM style fields.
@@ -223,6 +229,19 @@ export function auditPresentation(
     };
     const visit = (node: ts.Node) => {
       const at = offset + node.getStart(ast);
+      const imported = ts.isImportDeclaration(node)
+        ? node.moduleSpecifier
+        : ts.isCallExpression(node) &&
+            node.expression.kind === ts.SyntaxKind.ImportKeyword
+          ? node.arguments[0]
+          : undefined;
+      if (
+        imported &&
+        ts.isStringLiteralLike(imported) &&
+        /^@xterm\//.test(imported.text) &&
+        file !== TERMINAL_RENDERER_SOURCE
+      )
+        add(at, "Terminal vendor import outside the approved adapter");
       if (
         ts.isBindingElement(node) &&
         ts.isObjectBindingPattern(node.parent) &&
@@ -282,6 +301,55 @@ export function auditPresentation(
           node.arguments[0].text.toLowerCase() === "style"
         )
           add(at, "Inline style attribute mutation");
+      }
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+      ) {
+        const left = node.left;
+        const themeTarget =
+          ts.isPropertyAccessExpression(left) && left.name.text === "theme"
+            ? left.expression
+            : ts.isElementAccessExpression(left) &&
+                ts.isStringLiteralLike(left.argumentExpression) &&
+                left.argumentExpression.text === "theme"
+              ? left.expression
+              : null;
+        if (
+          themeTarget &&
+          /\.options$/.test(themeTarget.getText(ast)) &&
+          !approvedTerminalTheme(node.right)
+        )
+          add(at, "Unapproved vendor theme options");
+      }
+      if (
+        ts.isNewExpression(node) &&
+        /(?:^|\.)Terminal$/.test(node.expression.getText(ast))
+      ) {
+        const options = node.arguments?.[0];
+        if (
+          file !== TERMINAL_RENDERER_SOURCE ||
+          !options ||
+          !ts.isObjectLiteralExpression(options)
+        )
+          add(
+            at,
+            "Terminal construction outside the approved explicit adapter",
+          );
+        else
+          for (const property of options.properties) {
+            if (
+              ts.isSpreadAssignment(property) ||
+              ts.isShorthandPropertyAssignment(property)
+            )
+              add(at, "Unbounded terminal options");
+            else if (
+              ts.isPropertyAssignment(property) &&
+              property.name.getText(ast).replace(/["']/g, "") === "theme" &&
+              !approvedTerminalTheme(property.initializer)
+            )
+              add(at, "Unapproved vendor theme options");
+          }
       }
       if (
         ts.isNewExpression(node) &&
@@ -519,6 +587,11 @@ export function auditTailwind(file: string, source: string): StyleViolation[] {
       add(rule.source?.start?.line, "Custom utility/@apply escape");
     if (
       rule.name === "import" &&
+      !(
+        file === "svelte/styles/tailwind.css" &&
+        rule.parent?.type === "root" &&
+        rule.params === '"@xterm/xterm/css/xterm.css" layer(components)'
+      ) &&
       !/^"tailwindcss(?:\/(?:theme|preflight|utilities)\.css)?"(?:\s|;|$)/.test(
         rule.params,
       )

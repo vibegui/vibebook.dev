@@ -1,3 +1,9 @@
+import {
+  TERMINAL_VENDOR_FAMILY,
+  TERMINAL_ARTIFACTS,
+  terminalVendorProblems,
+  terminalArtifactMatches,
+} from "./terminal-vendor-policy";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { createHash } from "node:crypto";
@@ -45,9 +51,13 @@ if (native) {
     "svelte/features/app-navigation",
     "svelte/features/rooms",
     "svelte/features/documents",
+    "svelte/features/account",
+    "svelte/features/agents",
+    "svelte/features/sandboxes",
     "svelte/features/file-viewer",
     "svelte/features/composer",
     "svelte/features/room-sidebar",
+    "svelte/features/apps",
   ])
     await collect(directory);
   files.push(
@@ -205,6 +215,7 @@ const families = new Map([
   ["Bits UI/Floating UI internals", new Set(["bits-ui", "@floating-ui/dom"])],
   ["CodeMirror 6 view internals", new Set(["@codemirror/view", "style-mod"])],
   ["Yjs/y-codemirror.next integration", new Set(["y-codemirror.next"])],
+  [TERMINAL_VENDOR_FAMILY, new Set(["@xterm/xterm", "@xterm/addon-fit"])],
 ]);
 const vendor: unknown = JSON.parse(
   await readFile(join(projectRoot, "svelte/styles/vendor-css.json"), "utf8"),
@@ -214,7 +225,7 @@ if (
   typeof vendor !== "object" ||
   !("entries" in vendor) ||
   !Array.isArray(vendor.entries) ||
-  vendor.entries.length > 3
+  vendor.entries.length > 4
 )
   throw new Error("Invalid vendor CSS allowlist");
 const seen = new Set<string>();
@@ -235,6 +246,17 @@ for (const entry of vendor.entries) {
   )
     throw new Error("Invalid vendor CSS family");
   seen.add(entry.family);
+  if (entry.family === TERMINAL_VENDOR_FAMILY) {
+    const failures = terminalVendorProblems(entry);
+    if (failures.length) throw new Error(failures.join("; "));
+    for (const artifact of TERMINAL_ARTIFACTS) {
+      const bytes = await readFile(
+        join(projectRoot, "node_modules", artifact.path),
+      );
+      if (!terminalArtifactMatches(artifact.path, bytes))
+        throw new Error(`Terminal artifact changed: ${artifact.path}`);
+    }
+  }
   const declared = new Set<string>();
   for (const dependency of entry.packages) {
     if (

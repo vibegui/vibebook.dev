@@ -7,7 +7,7 @@ import type { DocumentProps } from "../svelte/features/documents/types";
 import { afterEach, describe, expect, test } from "bun:test";
 import { plugin } from "bun";
 import type { Component, ComponentProps } from "svelte";
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { readFileSync } from "node:fs";
 import { compile, compileModule } from "svelte/compiler";
 import { Window as HappyDOMWindow } from "happy-dom";
@@ -1833,6 +1833,22 @@ describe("native Svelte chat", () => {
     expect(target.querySelectorAll("[data-chat-message]")).toHaveLength(2);
     expect(target.querySelectorAll('[data-native-reply="1"]')).toHaveLength(1);
   }, 30_000);
+  test("empty failed initial history mounts the real older control and clicks explicit retry", async () => {
+    const { createChatViewport } = await import("../svelte/features/chat-viewport/controller");
+    const room = { ...fixture(), messages: [] };
+    let queued = false;
+    const sent: RoomCommand[] = [];
+    const owner = createChatViewport({ current: () => true, send: (command) => { sent.push(command); return queued; }, render: () => {}, selectThread: () => {}, notice: () => {}, schedule: () => 0, cancel: () => {} });
+    try {
+      owner.sync(room, "e", 1, true); owner.ensureFilled();
+      const { target } = renderChat(room, { ...owner.selection(), onloadolder: () => owner.loadOlder() });
+      const button = target.querySelector<HTMLButtonElement>("#olderBtn");
+      expect(button).not.toBeNull(); expect(button?.disabled).toBe(false);
+      owner.ensureFilled(); expect(sent).toHaveLength(1);
+      queued = true; button!.click();
+      expect(sent).toEqual([{ t: "older", thread: "e", before: 0 }, { t: "older", thread: "e", before: 0 }]);
+    } finally { owner.dispose(); }
+  }, 30_000);
   test("quotes, native actions, origin and quiet notices survive chat refresh", () => {
     const origin = message(7, "Original request");
     const reply = { ...message(8, "A response"), reply_to: 7 };
@@ -2267,6 +2283,10 @@ describe("native Svelte chat", () => {
     const original = controls!;
     const frame = target.querySelector("iframe")!;
     expect(mounted).toEqual(["embedded"]);
+    expect(frame.hasAttribute("src")).toBe(false);
+    original.ready();
+    flushSync();
+    expect(frame.getAttribute("src")).toContain("/embedded");
     original.resize(Number.POSITIVE_INFINITY);
     flushSync();
     expect(frame.getAttribute("height")).toBe("320");
@@ -2288,6 +2308,22 @@ describe("native Svelte chat", () => {
     ).find((button) => button.textContent?.includes("Cancelar"))!;
     cancel.click();
     await expect(consent).resolves.toBe(false);
+    const firstQuestion = original.ask("A", "visible A"),
+      secondQuestion = original.ask("B", "unseen B");
+    flushSync();
+    const oldAllow = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="group"] button'),
+    ).find((button) => button.textContent?.includes("Permitir"))!;
+    oldAllow.click();
+    oldAllow.click();
+    await expect(firstQuestion).resolves.toBe(true);
+    flushSync();
+    expect(target.querySelector("q")?.textContent).toBe("unseen B");
+    const nextCancel = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="group"] button'),
+    ).find((button) => button.textContent?.includes("Cancelar"))!;
+    nextCancel.click();
+    await expect(secondQuestion).resolves.toBe(false);
     const lateConsent = original.ask("write after switch", "old room");
     flushSync();
     update({ ...room, id: "next" });
@@ -4470,5 +4506,627 @@ describe("native collapsed sidebar and typed presence", () => {
     expect(target.querySelector("[data-legacy-chat-content]") === null).toBe(
       true,
     );
+  }, 30_000);
+});
+
+describe("native account", () => {
+  const cleanup: (() => void)[] = [];
+  afterEach(() => {
+    for (const dispose of cleanup.splice(0)) dispose();
+  });
+  async function account(withFriend = false) {
+    const { createAccountSession } =
+      await import("../svelte/features/account/session");
+    const { createDeviceLock } =
+      await import("../svelte/features/account/device");
+    const { createPersonalSession } =
+      await import("../svelte/features/home/personal");
+    const { homeApi, me, manualClock, deferred, settle } =
+      await import("./native-home-fixtures");
+    const time = manualClock(),
+      pending = deferred<{ ok: true; name: string }>();
+    let canonical = me(
+      withFriend
+        ? {
+            friends: [
+              {
+                email: "same@test",
+                name: "Same friend",
+                avatar: null,
+                joined: 1,
+                shared: 1,
+              },
+            ],
+          }
+        : {},
+    );
+    const personal = createPersonalSession(
+      homeApi({ me: async () => canonical }),
+      { clock: time.clock },
+    );
+    await personal.refresh();
+    const names: string[] = [],
+      removals: string[] = [];
+    const owner = createAccountSession(
+      personal,
+      {
+        logins: async () => ({
+          logins: [],
+          providers: { google: false, github: false },
+        }),
+        name: async (name) => {
+          names.push(name);
+          return pending.promise;
+        },
+        avatar: async () => ({ ok: true, avatar: 1 }),
+        addFriend: async () => ({ ok: true }),
+        removeFriend: async (email) => {
+          removals.push(email);
+          return { ok: true };
+        },
+      },
+      time.clock,
+    );
+    const device = createDeviceLock({
+      storage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+      credentials: null,
+      random: (size) => new Uint8Array(size),
+      clock: time.clock,
+    });
+    const target = document.createElement("div"),
+      trigger = document.createElement("button");
+    document.body.append(target, trigger);
+    trigger.focus();
+    const view = mountView("account", target, {
+      owner,
+      device,
+      lang: "en",
+      theme: "auto",
+      onTheme: () => {},
+      onLanguage: () => {},
+      onArchive: () => {},
+      onLogout: () => {},
+      mountBell: () => () => {},
+      mountAgentSettings: () => () => {},
+    });
+    active.push(view);
+    cleanup.push(() => {
+      owner.dispose();
+      personal.dispose();
+      device.dispose();
+      trigger.remove();
+    });
+    owner.open("profile", trigger);
+    flushSync();
+    await tick();
+    await tick();
+    return {
+      owner,
+      device,
+      personal,
+      pending,
+      names,
+      removals,
+      time,
+      trigger,
+      me,
+      settle,
+      canonical: (value: ReturnType<typeof me>) => {
+        canonical = value;
+      },
+    };
+  }
+  test("profile draft survives bounded uncertainty and explicit review; close fences detached submit", async () => {
+    const h = await account();
+    const input = document.querySelector<HTMLInputElement>("#account-name")!;
+    input.value = "My new name";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const form = input.closest("form")!;
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    await h.settle();
+    h.time.advance(20_000);
+    flushSync();
+    await tick();
+    expect(input.value).toBe("My new name");
+    expect(
+      document.querySelector("[data-native-account]")?.textContent,
+    ).toContain("unconfirmed");
+    expect(h.names).toEqual(["My new name"]);
+    h.owner.close();
+    flushSync();
+    await tick();
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    await h.settle();
+    expect(h.names).toHaveLength(1);
+    h.owner.open("profile");
+    flushSync();
+    await tick();
+    expect(
+      document.querySelector<HTMLInputElement>("#account-name")?.value,
+    ).toBe("My new name");
+  });
+  test("account replacement synchronously removes private dialog and invalidates old results", async () => {
+    const h = await account();
+    const input = document.querySelector<HTMLInputElement>("#account-name")!;
+    input.value = "Private A";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    input
+      .closest("form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    h.personal.acceptIdentity("b@test", false);
+    flushSync();
+    await tick();
+    expect(document.querySelector("[data-native-account]")).toBeNull();
+    h.pending.resolve({ ok: true, name: "Private A" });
+    await h.settle();
+    flushSync();
+    expect(document.body.textContent).not.toContain("Private A");
+  });
+  test("unsupported device lock is explicit, never invokes a prompt and has an accessible label", async () => {
+    await account();
+    const checkbox = document.querySelector<HTMLInputElement>(
+      '[data-native-account] input[type="checkbox"]',
+    );
+    expect(checkbox?.disabled).toBe(true);
+    expect(checkbox?.closest("label")?.textContent).toContain(
+      "Require Face ID",
+    );
+    expect(
+      document.querySelector("[data-native-account]")?.textContent,
+    ).toContain("Unavailable in this browser");
+  });
+  test("connected old account form is inert when account B reopens before a DOM flush", async () => {
+    const h = await account();
+    const input = document.querySelector<HTMLInputElement>("#account-name")!;
+    input.value = "Private A draft";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const oldForm = input.closest("form")!;
+    h.personal.state.update((value) => ({
+      ...value,
+      me: h.me({ email: "b@test", name: "Account B" }),
+      identityRevision: value.identityRevision + 1,
+    }));
+    h.owner.open("profile");
+    // Old DOM remains connected until Svelte flushes. Its captured open/account token must already be invalid.
+    expect(oldForm.isConnected).toBe(true);
+    oldForm.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    expect(h.names).toEqual([]);
+    flushSync();
+    await tick();
+    expect(
+      document.querySelector<HTMLInputElement>("#account-name")?.value,
+    ).toBe("Account B");
+    expect(document.body.textContent).not.toContain("Private A draft");
+  });
+
+  test("old remove confirmation cannot mutate the same friend in account B before DOM flush", async () => {
+    const h = await account(true);
+    const remove = [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        "[data-native-account] button",
+      ),
+    ].find((button) => button.textContent?.trim() === "Remove");
+    expect(remove).toBeDefined();
+    remove?.click();
+    flushSync();
+    await tick();
+    const confirm = [
+      ...document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ].find((button) => button.textContent?.trim() === "Remove");
+    expect(confirm).toBeDefined();
+    const next = h.me({
+      email: "b@test",
+      name: "B",
+      friends: [
+        {
+          email: "same@test",
+          name: "Same friend",
+          avatar: null,
+          joined: 1,
+          shared: 1,
+        },
+      ],
+    });
+    h.personal.state.update((value) => ({
+      ...value,
+      me: next,
+      identityRevision: value.identityRevision + 1,
+    }));
+    h.owner.open();
+    expect(confirm?.isConnected).toBe(true);
+    confirm?.click();
+    expect(h.removals).toEqual([]);
+    flushSync();
+    await tick();
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+});
+
+describe("native agent settings and sandbox ownership", () => {
+  test("native grant confirmation cancels on canonical removal and ignores a late revoke error", async () => {
+    const { createAgentsApi } = await import("../svelte/features/agents/api");
+    const { createAgentAccountSession } =
+      await import("../svelte/features/agents/account");
+    let grants = [
+      {
+        id: "grant-a",
+        client: "<script>client</script>",
+        connected_at: 1,
+        used_at: null,
+      },
+    ];
+    let reject!: (reason: Error) => void;
+    const api = createAgentsApi(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/revoke"))
+        return new Promise<Response>((_resolve, no) => {
+          reject = no;
+        });
+      return new Response(JSON.stringify({ agents: grants, last_used: null }), {
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const owner = createAgentAccountSession("me@test", { api });
+    await owner.refresh();
+    const target = document.createElement("div");
+    document.body.append(target);
+    const view = mountView("agentSettings", target, {
+      owner,
+      origin: "https://vibebook.dev",
+      vb,
+      lang: "en",
+    });
+    active.push(view);
+    peopleCleanups.push(() => owner.dispose());
+    flushSync();
+    await tick();
+    expect(target.querySelector("script") === null).toBe(true);
+    expect(target.textContent).toContain("<script>client</script>");
+    const remove = [
+      ...target.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((button) => button.textContent?.includes("Remove selected"))!;
+    remove.click();
+    flushSync();
+    await tick();
+    const confirm = document.querySelector<HTMLButtonElement>(
+      '[role="alertdialog"] button:last-child',
+    )!;
+    expect(!!confirm).toBe(true);
+    confirm.click();
+    await Promise.resolve();
+    await Promise.resolve();
+    flushSync();
+    grants = [];
+    await owner.refresh(true);
+    flushSync();
+    await tick();
+    await expectAlertDialogClosed();
+    reject(Error("late server failure"));
+    await Promise.resolve();
+    await Promise.resolve();
+    flushSync();
+    expect(target.querySelector('[role="alert"]') === null).toBe(true);
+  }, 30_000);
+  test("native sandbox delete confirmation cannot target a same-ID replacement and password clears before reply", async () => {
+    const { createAgentsApi } = await import("../svelte/features/agents/api");
+    const { createSandboxCredentials } =
+      await import("../svelte/features/sandboxes/credentials");
+    const { createSandboxSession } =
+      await import("../svelte/features/sandboxes/session");
+    const { createTerminalSession } =
+      await import("../svelte/features/sandboxes/terminalSession");
+    const { default: SandboxPanel } =
+      await import("../svelte/features/sandboxes/SandboxPanel.svelte");
+    let cards = [
+        {
+          id: "a",
+          vm_id: "old-vm",
+          name: "<img src=x>",
+          state: "running",
+          ready: true,
+          created_at: 1,
+          rate: 0.13,
+          cost: 0,
+        },
+      ],
+      deletes = 0;
+    let connected = true,
+      resolveKey!: (value: Response) => void;
+    const api = createAgentsApi(async (input, init) => {
+      const method = init?.method || "GET",
+        url = String(input);
+      if (method === "DELETE") {
+        deletes++;
+        return new Response('{"ok":true}');
+      }
+      if (url.endsWith("/freestyle") && method === "POST")
+        return new Promise<Response>((resolve) => {
+          resolveKey = resolve;
+        });
+      return new Response(
+        JSON.stringify({ connected, claude: true, sandboxes: cards }),
+        { headers: { "content-type": "application/json" } },
+      );
+    });
+    const credentials = createSandboxCredentials("me@test", api),
+      owner = createSandboxSession("me@test", "r", api, credentials),
+      terminal = createTerminalSession("me@test", "r", api, {
+        origin: "http://localhost",
+        current: () => true,
+        canOpen: () => false,
+      });
+    await owner.refresh();
+    const target = document.createElement("div");
+    document.body.append(target);
+    const instance = flushSync(() =>
+      mount(SandboxPanel, {
+        target,
+        props: { owner, credentials, terminal, lang: "en" },
+      }),
+    );
+    peopleCleanups.push(() => {
+      flushSync(() => {
+        void unmount(instance);
+      });
+      owner.dispose();
+      credentials.dispose();
+      terminal.dispose();
+    });
+    expect(target.querySelector("img") === null).toBe(true);
+    [...target.querySelectorAll<HTMLButtonElement>("article button")]
+      .find((button) => button.textContent === "Remove")!
+      .click();
+    flushSync();
+    await tick();
+    expect(document.querySelector('[role="alertdialog"]') !== null).toBe(true);
+    cards = [{ ...cards[0]!, vm_id: "replacement-vm" }];
+    await owner.refresh(true);
+    flushSync();
+    await tick();
+    await expectAlertDialogClosed();
+    expect(deletes).toBe(0);
+    connected = false;
+    await owner.refresh(true);
+    flushSync();
+    let password = target.querySelector<HTMLInputElement>(
+      'input[aria-label="Freestyle key"]',
+    )!;
+    password.value = "unsent-secret";
+    password.dispatchEvent(new Event("input", { bubbles: true }));
+    owner.authorize(false);
+    flushSync();
+    owner.authorize(true);
+    await owner.refresh(true);
+    flushSync();
+    password = target.querySelector<HTMLInputElement>(
+      'input[aria-label="Freestyle key"]',
+    )!;
+    expect(password.value).toBe("");
+    password.value = "secret-native-credential";
+    password.dispatchEvent(new Event("input", { bubbles: true }));
+    password.form!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(password.value).toBe("");
+    expect(target.textContent?.includes("secret-native-credential")).toBe(
+      false,
+    );
+    resolveKey(
+      new Response('{"ok":true}', {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    await Promise.resolve();
+  }, 30_000);
+});
+
+test("denied native agent metadata can recover through explicit read-only retry", async () => {
+  const { createAgentsApi } = await import("../svelte/features/agents/api"),
+    { createAgentAccountSession } =
+      await import("../svelte/features/agents/account"),
+    { UNAUTHENTICATED } = await import("../shared/schemas");
+  let denied = true;
+  const api = createAgentsApi(
+    async (input) =>
+      new Response(
+        JSON.stringify(
+          denied
+            ? UNAUTHENTICATED
+            : String(input).includes("/api/me?")
+              ? {
+                  email: "me@test",
+                  name: null,
+                  avatar: null,
+                  books: [],
+                  friends: [],
+                  waits: [],
+                  v: "fixture",
+                }
+              : {
+                  agents: [
+                    {
+                      id: "recovered",
+                      client: "Recovered agent",
+                      connected_at: Date.now(),
+                    },
+                  ],
+                  last_used: null,
+                },
+        ),
+        {
+          status: denied ? 401 : 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+  );
+  const owner = createAgentAccountSession("me@test", { api });
+  await owner.refresh();
+  expect(owner.current()).toBe(false);
+  const target = document.createElement("div");
+  document.body.append(target);
+  const view = mountView("agentSettings", target, {
+    owner,
+    origin: "https://vibebook.dev",
+    vb,
+    lang: "en",
+  });
+  active.push(view);
+  peopleCleanups.push(() => owner.dispose());
+  flushSync();
+  await tick();
+  await owner.refresh();
+  flushSync();
+  await tick();
+  denied = false;
+  [...target.querySelectorAll<HTMLButtonElement>("button")]
+    .find((button) => button.textContent === "Retry")!
+    .click();
+  for (let frame = 0; frame < 10 && !owner.current(); frame++) {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    flushSync();
+    await tick();
+  }
+  expect(owner.current()).toBe(true);
+  expect(target.textContent).toContain("Recovered agent");
+}, 30_000);
+// Source-only native MCP catalog ownership; real iframe/remote OAuth gates run separately.
+describe("native Apps catalog", () => {
+  async function appsFixture() {
+    const { createAppsSession } =
+      await import("../svelte/features/apps/session");
+    const { toolOutput } = await import("../svelte/features/apps/tools");
+    const connection = {
+      id: "abcdef123456",
+      title: "<img src=x onerror=alert(1)>",
+      host: "example.test",
+      scope: "me" as const,
+      owner: "me@test",
+      mine: true,
+      created_at: 1,
+      auth: "identity" as const,
+      signed_in: true,
+      apps: [
+        {
+          tool: "screen",
+          title: "Screen",
+          description: "<script>untrusted</script>",
+          screen: true,
+        },
+      ],
+      tools: [],
+      context: {},
+    };
+    let writes = 0;
+    const api = {
+      list: async () => ({ connections: [connection] }),
+      create: async () => {
+        writes++;
+        return {
+          ok: true as const,
+          connection: { ...connection, needs_sign_in: false },
+        };
+      },
+      remove: async () => ({ ok: true as const }),
+      refresh: async () => ({ ok: true as const, connection }),
+      signout: async () => ({ ok: true as const }),
+      ui: async () => ({ html: "<p>UI</p>", tool: { name: "screen" } }),
+      call: async () => ({ result: toolOutput("result") }),
+      context: async () => ({ ok: true as const }),
+    };
+    const canonical = fixture(),
+      owner = createAppsSession(api, {
+        current: () => true,
+        navigate: () => {},
+      });
+    owner.sync(canonical);
+    owner.load();
+    await Promise.resolve();
+    await tick();
+    flushSync();
+    const target = document.createElement("div");
+    document.body.append(target);
+    const props = {
+      owner,
+      api,
+      room: canonical,
+      thread: "main",
+      lang: "pt",
+      current: () => true,
+      checkAccess: () => {},
+      request: async () => ({ ok: true as const }),
+      t: (text: string) => text,
+      name: (email: string) => email,
+      ago: () => "now",
+      openLink: () => {},
+      metric: async () => ({}),
+    };
+    const view = mountView("apps", target, { props });
+    active.push(view);
+    peopleCleanups.push(() => owner.dispose());
+    await tick();
+    flushSync();
+    return { owner, target, canonical, writes: () => writes };
+  }
+  test("catalog text is escaped and form URL/scope drafts survive canonical catalog refresh", async () => {
+    const h = await appsFixture();
+    expect(h.target.textContent).toContain("<img src=x onerror=alert(1)>");
+    expect(h.target.querySelector("img,script") === null).toBe(true);
+    h.owner.form(true);
+    await tick();
+    flushSync();
+    const input = h.target.querySelector<HTMLInputElement>(
+      'input[placeholder="https://…/mcp"]',
+    )!;
+    input.value = "https://server.example.test/mcp";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    const scope = h.target.querySelector<HTMLInputElement>(
+      'input[value="room"]',
+    )!;
+    scope.checked = true;
+    scope.dispatchEvent(new Event("change", { bubbles: true }));
+    h.owner.load();
+    await Promise.resolve();
+    await tick();
+    flushSync();
+    expect(input.value).toBe("https://server.example.test/mcp");
+    expect(get(h.owner.state).scope).toBe("room");
+  }, 30_000);
+  test("known membership loss immediately fences still-connected forms and removes private catalog on DOM update", async () => {
+    const h = await appsFixture();
+    h.owner.form(true);
+    await tick();
+    flushSync();
+    const form = h.target.querySelector("form")!,
+      input = form.querySelector("input")!;
+    h.owner.sync({ ...h.canonical, members: [] });
+    input.value = "https://stale.example.test/mcp";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+    expect(h.writes()).toBe(0);
+    expect(get(h.owner.state).url).toBe("");
+    await tick();
+    flushSync();
+    expect(h.target.querySelector("[data-native-apps]") === null).toBe(true);
+    expect(h.target.querySelector("[data-native-apps-denied]") !== null).toBe(
+      true,
+    );
+    expect(h.target.textContent).not.toContain("example.test");
   }, 30_000);
 });

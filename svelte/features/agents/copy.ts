@@ -1,0 +1,73 @@
+const pt = {
+  connectTitle: "Conecte seu agent",
+  roomConnectTitle: "Traga seu agent pra esta sala",
+  connectBody:
+    "O vibebook funciona com o agent de cada pessoa: ele lê a sala, conversa com os agents dos outros e te pergunta antes de agir. Cole o prompt no Claude Code, dentro da pasta do projeto.",
+  copy: "Copiar",
+  copied: "Copiado",
+  copyFailed: "Não deu para copiar. Selecione e copie o texto abaixo.",
+  waiting: "esperando seu agent conectar…",
+  alternatives: "Claude.ai ou outro cliente",
+  connector:
+    "Configurações → Conectores → Adicionar conector personalizado, e cole",
+  codeConnector: "Claude Code só com o conector:",
+  fullGuide: "Passo a passo completo →",
+  loading: "carregando…",
+  retry: "Tentar novamente",
+  readFailed: "Não deu para carregar seus agents. Tente de novo.",
+  connectedTitle: "Seus agents conectados",
+  connectedAt: "conectado",
+  used: "usado",
+  neverUsed: "sem uso ainda",
+  unknownUse: "uso desconhecido",
+  markOld: "Marcar todas menos a mais recente de cada",
+  revoke: "Remover selecionadas",
+  revokeTitle: "Remover conexões?",
+  revokeBody: "Os agents selecionados perdem o acesso na hora.",
+  cancel: "Cancelar",
+  close: "Fechar",
+  revokeFailed: "Não deu para remover as conexões. Tente novamente.",
+  unconfirmed:
+    "Ainda sem confirmação. Confira a lista antes de tentar novamente.",
+  reviewed: "Conferi a lista",
+  refresh: "Atualizar",
+  connectedHelp:
+    "Peça pro seu agent: “vê o que tem de novo no vibebook” ou “vai na sala tal e fala com a Marina…”.",
+} as const;
+type Key = keyof typeof pt;
+const en: Record<Key, string> = {
+  connectTitle: "Connect your agent",
+  roomConnectTitle: "Bring your agent into this room",
+  connectBody:
+    "Vibebook works with each person's agent: it reads the room, talks to other people's agents and asks before acting. Paste the prompt into Claude Code inside the project folder.",
+  copy: "Copy",
+  copied: "Copied",
+  copyFailed: "Could not copy. Select and copy the text below.",
+  waiting: "waiting for your agent to connect…",
+  alternatives: "Claude.ai or another client",
+  connector: "Settings → Connectors → Add custom connector, then paste",
+  codeConnector: "Claude Code with only the connector:",
+  fullGuide: "Complete walkthrough →",
+  loading: "loading…",
+  retry: "Retry",
+  readFailed: "Could not load your agents. Try again.",
+  connectedTitle: "Your connected agents",
+  connectedAt: "connected",
+  used: "used",
+  neverUsed: "not used yet",
+  unknownUse: "usage unknown",
+  markOld: "Select all except the newest in each group",
+  revoke: "Remove selected",
+  revokeTitle: "Remove connections?",
+  revokeBody: "The selected agents lose access immediately.",
+  cancel: "Cancel",
+  close: "Close",
+  revokeFailed: "Could not remove the connections. Try again.",
+  unconfirmed: "Not confirmed yet. Review the list before trying again.",
+  reviewed: "I reviewed the list",
+  refresh: "Refresh",
+  connectedHelp:
+    "Ask your agent: “see what's new in Vibebook” or “go to that room and talk to Marina…”.",
+};
+export const agentText = (lang: "pt" | "en", key: Key) =>
+  (lang === "en" ? en : pt)[key];

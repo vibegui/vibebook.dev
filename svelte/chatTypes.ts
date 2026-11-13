@@ -21,6 +21,10 @@ export type ChatBridge = {
   typingNote?: (id: number) => string | undefined;
 };
 export type ChatEmbedControls = {
+  ready: () => void;
+  cancel?: () => void;
+  deny?: () => void;
+  fail?: () => void;
   thread: string;
   ask: (what: string, detail: string) => Promise<boolean>;
   resize: (height: number) => void;
