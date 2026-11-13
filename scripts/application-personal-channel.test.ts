@@ -127,6 +127,21 @@ test("same-email identity revision and explicit restart replace callbacks withou
   expect(h.unlistened()).toBe(1);
 });
 
+test("synchronous identity reset revokes callbacks before queued identity subscribers publish the new account", () => {
+  const h = harness(); h.owner.start();
+  const prior = h.connections[0]!;
+  prior.options.onAgents("*");
+  h.owner.resetIdentity();
+  h.calls.length = 0;
+  prior.options.onAccount(); prior.options.onConnected?.(); h.fire(1);
+  expect(h.calls).toEqual([]);
+  expect(prior.disposed).toBe(1);
+  expect(h.connections).toHaveLength(1);
+  h.identity({ account: "b@test", revision: 1 });
+  expect(h.connections).toHaveLength(2);
+  h.owner.dispose();
+});
+
 test("reentrant identity replacement during account refresh stops the old connected refresh sequence", () => {
   const h = harness(); h.owner.start();
   h.duringRefresh(() => h.identity({ account: "b@test", revision: 1 }));

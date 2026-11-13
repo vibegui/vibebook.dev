@@ -1242,7 +1242,7 @@ function ensureNativeHome() {
       roomAgents = { id: null, list: [] };
       nativeAgents.reset();nativeAgentOwner=null;
       disposeNativeApps();
-      nativePersonalChannel?.routeChanged();
+      nativePersonalChannel?.resetIdentity();
           roomConnection?.dispose();
       roomConnection = null;
       S = null;

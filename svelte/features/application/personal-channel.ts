@@ -117,6 +117,11 @@ export function createApplicationPersonalChannel(options: {
     restart() {
       if (active && started) connect(identity);
     },
+    /** PersonalSession's synchronous identity-reset hook can precede queued
+     * store subscribers. Revoke now; never reopen the old account while waiting. */
+    resetIdentity() {
+      if (active) connect({ account: null, revision: identity.revision });
+    },
     routeChanged,
     dispose() {
       if (!active) return;
