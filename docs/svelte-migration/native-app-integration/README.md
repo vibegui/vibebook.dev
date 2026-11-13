@@ -4,6 +4,28 @@ This is partial source verification, not M0–M8 completion or deployment accept
 Vanilla remains the default. The Svelte preview still contains legacy integration
 code, and its generated assets require rebuilding after the remaining ports land.
 
+## Combined document/sidebar checkpoint
+
+At `1a635aa`, the combined room component suite passes **82 tests and 563
+assertions** ([log](components.log)). It covers the integrated native chat,
+composer/poll/draft/speech capability fixtures, sidebar/header/suggestion ownership,
+and existing task/board/file/People/reminder/decision cases. These are compiled
+Svelte components in Happy DOM, not browser geometry or real service evidence.
+
+`bun run check:ui` passes **zero errors and zero warnings** at `7993c0d`
+([log](svelte-check.log)); subsequent changes through `1a635aa` only add/format
+browser fixtures and correct component-test synchronization/selectors. The
+production Svelte component source is unchanged. `check:tooling` passes at
+`7993c0d`; the later document browser fixture still requires its own tooling pass.
+
+The earlier full component run exposed premature focus assertions after the new
+ACK/canonical pipeline. A focused trace reached the assertion; formatting the
+mismatched DOM graph stalled Bun's diagnostic output. The corrected test waits
+for the actual expected focus across bounded animation frames, retains strict
+node identity and intervening-focus protection, and reports identity as a boolean.
+The remaining poll submit lookup now normalizes button whitespace. The final
+combined run passes with those assertions intact.
+
 ## Checked source
 
 Integration source: `3b178f2d74b3d7f2df9d7e4981d609a2aaeebae6`.

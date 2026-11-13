@@ -1,0 +1,5 @@
+$ svelte-check --tsconfig svelte/tsconfig.json
+Loading svelte-check in workspace: /home/zip76/code/vibebook-native-app
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
