@@ -1,3 +1,4 @@
+import {createFilesSession} from "../features/files/session";
 // Existing host integrations retained during the incremental TypeScript migration.
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
@@ -1705,7 +1706,10 @@ function renderView(kind, target, props, remount = false) {
   if (!mounted) { target.replaceChildren(); mounted = { ...UI.mountView(kind, target, props), target }; viewMounts.set(kind, mounted); }
   else mounted.update(props);
 }
+let nativeFilesSession = null;
 function clearViews() {
+  nativeFilesSession?.dispose();
+  nativeFilesSession=null;
   sideNavigation = null;
   disposePinsSession(sidePins);
   sidePins = null;
@@ -2159,7 +2163,7 @@ function renderBook() {
     book.dataset.pane = pane; // the phone's toolbar marks the open tab
     doc.querySelectorAll(":scope > header .ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
-    if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
+    if (pane === "files") renderFiles(true);
     if (pane === "decisions") renderDecisions();
     if (pane === "apps") renderApps();
     if (pane === "reminders") renderReminders();
@@ -3785,12 +3789,18 @@ function renderReminders() {
   document.getElementById("remCount").textContent=list.length ? ` ${list.length}${bad ? " ⚠" : ""}` : "";
   renderView("reminders",el,{room:S,thread,vb:panelBridge(),send});
 }
-function renderFiles() {
+function renderFiles(load = false) {
   const el=document.getElementById("filesPane"); if(!el || !S) return;
   renderPeek();
   const n=S.filesN ?? S.files?.length ?? 0;
   document.getElementById("fileCount").textContent=n ? ` ${n}` : "";
-  renderView("files",el,{room:S,thread,vb:panelBridge(),send});
+  if(nativeFilesSession?.roomId!==S.id){nativeFilesSession?.dispose();nativeFilesSession=createFilesSession(S.id);}
+  const session=nativeFilesSession, roomId=S.id, connection=roomConnection;
+  session.sync(S);
+  const current=()=>nativeFilesSession===session&&S?.id===roomId&&roomConnection===connection&&location.pathname===`/b/${roomId}`;
+  const request=(command)=>current()&&connection?connection.request(command):Promise.resolve({ok:false,error:t("sem conexão")});
+  if(load)void session.load(request);
+  renderView("files",el,{room:S,thread,vb:panelBridge(),send,session,request,onfolderchange:()=>{if(current())el.scrollTop=0;},onopenfile:(file)=>{if(current())openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}});
 }
 // 📌 on a file tile or app card: pins it to the sidebar (or unpins).
 const pinOf = (kind, ref) => (S.pins || []).find((p) => p.kind === kind && p.ref === ref);

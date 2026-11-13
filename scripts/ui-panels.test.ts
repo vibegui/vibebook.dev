@@ -13,6 +13,8 @@ import {
   requestPinnedFiles,
   syncPinsSession,
 } from "../svelte/features/pins/session";
+import { createFilesSession } from "../svelte/features/files/session";
+import type { FilesProps } from "../svelte/features/files/types";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -141,19 +143,31 @@ afterEach(() => {
 function render(
   kind: "tasks" | "board" | "files" | "reminders",
   room: Room,
-  extra: Partial<PanelProps> = {},
+  extra: Partial<PanelProps & FilesProps> = {},
 ) {
   const target = window.document.createElement("div");
   window.document.body.append(target);
   const events: RoomCommand[] = [];
-  const props: PanelProps = {
+  const filesSession = createFilesSession(room.id);
+  const props = {
     room,
     thread: "e",
     vb,
-    send: (event) => {
+    send: (event: RoomCommand) => {
       events.push(event);
       return true;
     },
+    ...(kind === "files"
+      ? {
+          session: filesSession,
+          request: async (event: RoomCommand) => {
+            events.push(event);
+            return { ok: true } as const;
+          },
+          onfolderchange: () => {},
+          onopenfile: () => {},
+        }
+      : {}),
     ...extra,
   };
   const view = mountView(kind, target, props);
@@ -162,6 +176,10 @@ function render(
   return {
     target,
     events,
+    destroy() {
+      active.splice(active.indexOf(view), 1);
+      view.destroy();
+    },
     update(next: Room, thread = props.thread) {
       view.update({ ...props, room: next, thread });
     },
@@ -669,17 +687,84 @@ describe("native Svelte room panels", () => {
     const { target, events } = render("files", room);
     target.querySelector<HTMLElement>("[data-fdir=docs]")!.click();
     flushSync();
-    expect(target.querySelectorAll("a.ftile").length).toBe(1);
+    expect(target.querySelectorAll("[data-file-id]").length).toBe(1);
     expect(target.textContent).toContain("2 versões");
-    target.querySelector<HTMLElement>(".pinBtn")!.click();
+    target
+      .querySelector<HTMLElement>('[data-file-id="new"] button[aria-pressed]')!
+      .click();
     expect(events).toEqual([{ t: "pin.add", kind: "file", ref: "new" }]);
     target.querySelector<HTMLElement>("[data-fkind=img]")!.click();
     flushSync();
-    expect(target.querySelectorAll("a.ftile").length).toBe(1);
-    expect(target.querySelector("a.ftile")?.getAttribute("data-name")).toBe(
-      "photo.png",
-    );
+    expect(target.querySelectorAll("[data-file-id]").length).toBe(1);
+    expect(
+      target.querySelector("[data-file-id]")?.getAttribute("data-file-id"),
+    ).toBe("img");
   }, 30_000);
+  test("native files preserve exact viewer selection, pin ACK errors and disposed callbacks", async () => {
+    const room = fixture();
+    const file = {
+      id: "v1",
+      name: "docs/report.md",
+      type: "text/markdown",
+      author: "me@test",
+      ts: 1,
+      size: 20,
+    };
+    room.files = [file];
+    room.filesAll = true;
+    const opened: string[] = [];
+    const session = createFilesSession(room.id);
+    let rejectPin = true;
+    const { target, update, destroy } = render("files", room, {
+      session,
+      onopenfile: (file) => opened.push(file.id),
+      request: async () =>
+        rejectPin ? { ok: false, error: "offline" } : { ok: true },
+    });
+    target.querySelector<HTMLElement>('[data-fdir="docs"]')!.click();
+    flushSync();
+    const oldTile = target.querySelector<HTMLElement>(
+      '[data-file-id="v1"] button',
+    )!;
+    oldTile.click();
+    expect(opened).toEqual(["v1"]);
+    target
+      .querySelector<HTMLElement>('[data-file-id="v1"] button[aria-pressed]')!
+      .click();
+    await tick();
+    flushSync();
+    expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+      "offline",
+    );
+    expect(target.textContent).toContain("docs/");
+    rejectPin = false;
+    target
+      .querySelector<HTMLElement>('[data-file-id="v1"] button[aria-pressed]')!
+      .click();
+    await tick();
+    flushSync();
+    expect(
+      target.querySelector('[data-file-id] button[aria-pressed="true"]'),
+    ).toBeNull();
+    const latest = { ...file, id: "v2", ts: 2 };
+    update({
+      ...room,
+      files: [latest, file],
+      pins: [{ id: "p", kind: "file", ref: "v1" }],
+    });
+    expect(target.querySelector('[data-file-id="v2"]')).not.toBeNull();
+    oldTile.click(); // The stale tile still identifies v1; it must never open v2.
+    expect(opened.every((id) => id === "v1")).toBe(true);
+    const latestTile = target.querySelector<HTMLElement>(
+      '[data-file-id="v2"] button',
+    )!;
+    latestTile.click();
+    expect(opened.at(-1)).toBe("v2");
+    const beforeDestroy = [...opened];
+    destroy();
+    latestTile.click();
+    expect(opened).toEqual(beforeDestroy);
+  });
   test("reminders preserve draft across a server reminder update", () => {
     const room = fixture();
     room.reminders = [
