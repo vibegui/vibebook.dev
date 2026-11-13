@@ -434,6 +434,8 @@ async function edgeCached(c: Context<Ctx>, load: () => Promise<Response | null>)
   }
   const out = new Response(res.body, res);
   out.headers.set("cache-control", "private, max-age=31536000, immutable");
+  // Also partition older edge entries created before fileHeaders varied by Cookie.
+  out.headers.set("vary", "Cookie");
   return out;
 }
 app.get("/api/books/:id/icon", async (c) => {

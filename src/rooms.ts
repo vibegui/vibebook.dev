@@ -154,6 +154,8 @@ export const fileHeaders = (type: string, name: string) => ({
   "referrer-policy": "no-referrer",
   "cross-origin-opener-policy": "same-origin",
   "cache-control": "private, max-age=86400",
+  // A private cache is still shared by successive accounts in this browser.
+  "vary": "Cookie",
 });
 
 /** "Esperando você": what people are waiting on this person for, newest first, in rooms they haven't archived.
