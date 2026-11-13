@@ -110,7 +110,7 @@ const flush = async () => {
   await Promise.resolve();
   await Promise.resolve();
 };
-test("file extension/MIME aliases and screenshot names preserve supported upload behavior", () => {
+test("file extension/MIME aliases and screenshot names preserve supported upload behavior", async () => {
   for (const [name, type, expected] of [
     ["report.html", "", "text/html"],
     ["report.md", "", "text/markdown"],
@@ -123,9 +123,13 @@ test("file extension/MIME aliases and screenshot names preserve supported upload
     expect(
       mediaType(normalizeFile(new File(["test"], name, { type }), 0).type),
     ).toBe(expected);
-  expect(
-    normalizeFile(new File(["x"], "image.png", { type: "image/png" }), 0).name,
-  ).toBe("print-1970-01-01-00-00.png");
+  const screenshot = normalizeFile(
+    new File(["x"], "image.png", { type: "image/png" }),
+    0,
+  );
+  expect(screenshot.name).toBe("print-1970-01-01-00-00.png");
+  expect(screenshot.type).toBe("image/png");
+  expect(await screenshot.text()).toBe("x");
   expect(fileIssue(new File([], "empty.txt", { type: "text/plain" }))).toBe(
     "empty",
   );
