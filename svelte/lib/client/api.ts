@@ -6,13 +6,20 @@ import {
   GLOBAL_FAILURE_STATUSES,
   type GlobalFailure,
 } from "../../../shared/schemas";
-import type { AppType } from "../../../.api-types/src/api";
+import type { AppType, AuthAppType } from "../../../.api-types/src/api";
 
 export const client = (
   base = "/",
   fetcher?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
 ) => hc<AppType>(base, fetcher ? { fetch: fetcher } : {});
 export type Client = ReturnType<typeof client>;
+
+/** The public /auth routes (login page, sign-out): their own app on the Worker, reachable signed out. */
+export const authClient = (
+  base = "/",
+  fetcher?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>,
+) => hc<AuthAppType>(base, fetcher ? { fetch: fetcher } : {});
+export type AuthClient = ReturnType<typeof authClient>;
 
 /** Statuses any /api call can get from the Worker's global middleware (not part of AppType, which comes from the route
  *  handlers): 401 when signed out, 403 when the cross-site guard refuses a write. Callers check this before reading a

@@ -71,6 +71,17 @@ import {
   TintBody,
   UploadHeaders,
   type UploadFileResult,
+  type AuthProviders,
+  type LoginContext,
+  LoginContextQuery,
+  EmailVerifyBody,
+  type EmailVerifyResult,
+  type AccessContext,
+  type AgentGrantsResult,
+  RevokeAgentsBody,
+  type RevokeAgentsResult,
+  type ConsentContext,
+  type ConsentError,
 } from "../shared/schemas";
 
 export type Bind = string | number | null;
@@ -158,10 +169,36 @@ export interface ApiServices {
     context(roomId: string, cid: string, tool: string, text: string): Promise<OkResult | ConnFail>;
     signout(roomId: string, cid: string): Promise<OkResult | ConnFail>;
   };
+  /** Your Claudes' OAuth grants (src/connect.ts grantOps): list them, revoke some (at most 100 per call). */
+  grants: { list(): Promise<AgentGrantsResult>; revoke(ids: string[]): Promise<number> };
+  /** The consent page's context for this request's /authorize query (src/connect.ts consentContext); headers carry the
+   *  consent transaction's binding cookie. */
+  consentContext(): Promise<{ context: ConsentContext; headers: [string, string][] } | (ConsentError & { status: 400 })>;
 }
 /** A failed connection call and its status; sign_in = sign in on that server first (401). */
 export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
+
+/** The public /auth routes' side (src/auth.ts authServices): no session needed, so it is its own app, mounted before
+ *  the Worker's sign-in middleware. Same checks as before the move: origin, rate limits, code hash, attempts. */
+export interface AuthServices {
+  providers: AuthProviders;
+  sameOrigin: boolean;
+  /** Where to go after login: a same-site app path, else /app. */
+  safeNext(next: string | undefined): string;
+  /** /login plus a query, in the UI (?ui=svelte) that `next` carries. */
+  loginUrl(next: string | undefined, query: string): string;
+  emailStart(email: string): Promise<OkResult | AuthFail>;
+  emailVerify(body: EmailVerifyBody): Promise<EmailVerifyResult | AuthFail>;
+  /** Drop this browser's session cookie. */
+  logout(): void;
+  /** Sign out every browser of the signed-in person. */
+  logoutAll(): Promise<OkResult | AuthFail>;
+  /** Where the caller (signed in or not) stands with a room, from its link: the access page's context. */
+  roomAccess(roomId: string): Promise<AccessContext>;
+}
+export type AuthFail = { error: string; status: 400 | 401 | 403 | 429 | 502 };
+export type AuthCtx = { Variables: { auth: AuthServices } };
 
 /** A JSON body checked against its shared schema; anything else is a 400 { error } before the handler runs. */
 const body = <S extends z.ZodMiniType>(schema: S, error = "bad request") =>
@@ -612,6 +649,73 @@ export const uploadsApi = meApi
     } catch (e) {
       return c.json(failed(e), 400);
     }
+  })
+  // Slice 13: your connected Claudes (OAuth grants), moved from src/connect.ts.
+  .get("/api/agents", async (c) => c.json((await c.get("svc").grants.list()) satisfies AgentGrantsResult, 200))
+  .post("/api/agents/revoke", body(RevokeAgentsBody, "ids must be a list"), async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    const removed = await svc.grants.revoke(c.req.valid("json").ids);
+    return c.json({ ok: true as const, removed } satisfies RevokeAgentsResult, 200);
+  })
+  .delete("/api/agents/:id", async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    await svc.grants.revoke([c.req.param("id")]);
+    return c.json(ok, 200);
+  })
+  // Slice 14: the agent-connect consent page's context (the approval itself stays the form POST /authorize).
+  .get("/api/authorize/context", async (c) => {
+    const r = await c.get("svc").consentContext();
+    if ("error" in r) return c.json({ error: r.error, ...(r.redirect_to ? { redirect_to: r.redirect_to } : {}) } satisfies ConsentError, 400);
+    for (const [k, v] of r.headers) c.header(k, v, { append: k.toLowerCase() === "set-cookie" });
+    return c.json(r.context satisfies ConsentContext, 200);
   });
 
 export type AppType = typeof uploadsApi;
+
+const authFail = (f: AuthFail) => ({ error: f.error }) satisfies ErrorBody;
+const badOrigin = { error: "bad origin" } satisfies ErrorBody;
+/** Public auth routes (the login page, the consent page's sign-out). index.ts mounts them before its sign-in check. */
+export const authApi = new Hono<AuthCtx>()
+  .get("/auth/providers", (c) => c.json(c.get("auth").providers satisfies AuthProviders, 200))
+  .get(
+    "/auth/context",
+    validator("query", (value, c) => {
+      const r = LoginContextQuery.safeParse(value);
+      return r.success ? r.data : c.json({ error: "bad request" } satisfies ErrorBody, 400);
+    }),
+    (c) => {
+      const auth = c.get("auth"), q = c.req.valid("query");
+      const error = q.error === "google" || q.error === "github" ? q.error : null;
+      return c.json({ providers: auth.providers, next: auth.safeNext(q.next), error } satisfies LoginContext, 200);
+    },
+  )
+  .get("/auth/room/:id", async (c) => c.json((await c.get("auth").roomAccess(c.req.param("id"))) satisfies AccessContext, 200))
+  .post("/auth/email/start", body(EmailBody, "invalid email"), async (c) => {
+    const auth = c.get("auth");
+    if (!auth.sameOrigin) return c.json(badOrigin, 403);
+    const r = await auth.emailStart(c.req.valid("json").email);
+    return "error" in r ? c.json(authFail(r), r.status) : c.json(r satisfies OkResult, 200);
+  })
+  .post("/auth/email/verify", body(EmailVerifyBody), async (c) => {
+    const auth = c.get("auth");
+    if (!auth.sameOrigin) return c.json(badOrigin, 403);
+    const r = await auth.emailVerify(c.req.valid("json"));
+    return "error" in r ? c.json(authFail(r), r.status) : c.json(r satisfies EmailVerifyResult, 200);
+  })
+  .post("/auth/logout", async (c) => {
+    const auth = c.get("auth");
+    auth.logout();
+    // A form post (the consent page's "Not you?") signs out and goes back to the login with where it came from.
+    if (!c.req.header("content-type")?.includes("form")) return c.json(ok, 200);
+    const next = auth.safeNext(String((await c.req.parseBody()).next ?? ""));
+    return c.redirect(auth.loginUrl(next, `?next=${encodeURIComponent(next)}`), 303);
+  })
+  .post("/auth/logout-all", async (c) => {
+    const auth = c.get("auth");
+    if (!auth.sameOrigin) return c.json(badOrigin, 403);
+    const r = await auth.logoutAll();
+    return "error" in r ? c.json(authFail(r), r.status) : c.json(r satisfies OkResult, 200);
+  });
+export type AuthAppType = typeof authApi;

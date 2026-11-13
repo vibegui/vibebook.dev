@@ -1,4 +1,4 @@
-import { uploadsApi, type ApiServices } from "./api";
+import { authApi, uploadsApi, type ApiServices, type AuthServices } from "./api";
 import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
@@ -7,8 +7,8 @@ import { type Context, Hono } from "hono";
 import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
-import { accessPage, filePage, roomMeta } from "./access";
-import { auth, EMAIL_RE, identify } from "./auth";
+import { accessPage, filePage, roomAccess, roomMeta } from "./access";
+import { auth, authServices, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
 import { handleMcp, isAdminMcp } from "./mcp";
@@ -72,7 +72,7 @@ export type Env = {
   MCP_AUTH_TOKEN?: string;
 };
 
-type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices } };
+type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, created_at INTEGER)`,
@@ -186,6 +186,8 @@ app.use("*", async (c, next) => {
   }
 });
 
+app.use("/auth/*", async (c, next) => { c.set("auth", authServices(c, { roomAccess: async (id) => roomAccess(c.env.DB, id, await identify(c)) })); await next(); });
+app.route("/", authApi);
 app.route("/auth", auth);
 app.route("/", connect);
 
@@ -261,12 +263,10 @@ app.get("/b/*", async (c) => {
   const email = await identify(c);
   const url = new URL(c.req.url);
   const id = url.pathname.match(/^\/b\/([a-z0-9]{6,40})/)?.[1] ?? "";
-  const book = id ? await c.env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(id).first<{ title: string }>() : null;
-  if (email && book && (await isMember(c.env.DB, id, email)))
-    return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, book.title), { html: true }); } }).transform(await shell(c)), email);
-  const asked = email && book ? await c.env.DB.prepare(`SELECT 1 FROM access_requests WHERE book_id = ? AND email = ?`).bind(id, email).first() : null;
-  const state = !book ? "missing" : !email ? "out" : asked ? "asked" : "ask";
-  const res = c.html(accessPage({ origin: url.origin, id, title: book?.title ?? null, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), book ? 200 : 404);
+  const { state, title } = await roomAccess(c.env.DB, id, email ?? null);
+  if (state === "member")
+    return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, title ?? ""), { html: true }); } }).transform(await shell(c)), email ?? undefined);
+  const res = c.html(accessPage({ origin: url.origin, id, title, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), state === "missing" ? 404 : 200);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
   return pageview(c, res, email ?? undefined);

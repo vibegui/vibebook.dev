@@ -451,3 +451,83 @@ export type GlobalFailure = {
   status: (typeof GLOBAL_FAILURE_STATUSES)[number];
   error: string;
 };
+
+// Public auth routes (/auth/*, src/api.ts authApi): what the login page needs, before anyone is signed in.
+export const AuthProviders = z.object({
+  google: z.boolean(),
+  github: z.boolean(),
+  email: z.literal(true),
+});
+export type AuthProviders = z.infer<typeof AuthProviders>;
+/** The login page's context: which buttons to show, where to go after (already made safe), and why a provider failed. */
+export const LoginContext = z.object({
+  providers: AuthProviders,
+  next: z.string(),
+  error: z.nullable(z.enum(["google", "github"])),
+});
+export type LoginContext = z.infer<typeof LoginContext>;
+export const LoginContextQuery = z.object({
+  next: z.optional(z.string()),
+  error: z.optional(z.string()),
+});
+export const EmailVerifyBody = z.object({
+  email: z.string(),
+  code: z.string(),
+  next: z.optional(z.string()),
+});
+export type EmailVerifyBody = z.infer<typeof EmailVerifyBody>;
+export const EmailVerifyResult = z.object({
+  ok: z.literal(true),
+  next: z.string(),
+});
+export type EmailVerifyResult = z.infer<typeof EmailVerifyResult>;
+
+/** A room link's page for someone who may not be in it (the access page): the title is readable by whoever holds the
+ *  link, on purpose (the shared card). state: missing room, signed out, can ask, already asked, or already a member. */
+export const AccessContext = z.object({
+  state: z.enum(["missing", "out", "ask", "asked", "member"]),
+  title: z.nullable(z.string()),
+  email: z.nullable(z.string()),
+});
+export type AccessContext = z.infer<typeof AccessContext>;
+
+/** Your connected Claudes (one per OAuth grant: each `vibebook login` or connector), on the home's side box.
+ *  used_at: last use of that grant; null = never seen, absent = an older grant with no per-grant record. */
+export const AgentGrant = z.object({
+  id: z.string(),
+  client: z.string(),
+  connected_at: z.number(),
+  used_at: z.optional(z.nullable(z.number())),
+});
+export type AgentGrant = z.infer<typeof AgentGrant>;
+export const AgentGrantsResult = z.object({
+  agents: z.array(AgentGrant),
+  last_used: z.nullable(z.number()),
+});
+export type AgentGrantsResult = z.infer<typeof AgentGrantsResult>;
+export const RevokeAgentsBody = z.object({ ids: z.array(z.string()) });
+export const RevokeAgentsResult = z.object({
+  ok: z.literal(true),
+  removed: z.number(),
+});
+export type RevokeAgentsResult = z.infer<typeof RevokeAgentsResult>;
+
+/** The agent-connect consent page's context (GET /api/authorize/context with the /authorize query): what the page must
+ *  show (who asks, where the tokens go, a local redirect warning) and the one-time handle the existing form posts back
+ *  to POST /authorize. Getting it grants nothing. */
+export const ConsentContext = z.object({
+  client_name: z.string(),
+  client_domain: z.nullable(z.string()),
+  redirect_host: z.string(),
+  redirect_is_loopback: z.boolean(),
+  scope: z.array(z.string()),
+  email: z.string(),
+  handle: z.string(),
+});
+export type ConsentContext = z.infer<typeof ConsentContext>;
+/** A refused authorization request: the error, and the client's own error redirect when the library built one. */
+export const ConsentError = z.object({
+  error: z.string(),
+  redirect_to: z.optional(z.string()),
+});
+export type ConsentError = z.infer<typeof ConsentError>;

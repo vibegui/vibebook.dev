@@ -147,6 +147,34 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     },
     checkFreestyleKey: async (key) =>
       key.startsWith("good") ? null : "401 unauthorized",
+    grants: {
+      list: async () => ({
+        agents: [
+          { id: "g1", client: "vibebook CLI", connected_at: 1, used_at: 2 },
+          { id: "g0", client: "Claude", connected_at: 0 },
+        ],
+        last_used: 2,
+      }),
+      revoke: async (ids) => {
+        saved.push({ table: "revoke", value: ids.join(",") });
+        return ids.length;
+      },
+    },
+    consentContext: async () => ({
+      context: {
+        client_name: "Claude",
+        client_domain: null,
+        redirect_host: "127.0.0.1",
+        redirect_is_loopback: true,
+        scope: ["vibebook"],
+        email: "test@example.com",
+        handle: "h1",
+      },
+      headers: [
+        ["Set-Cookie", "__Host-oauth-consent-x=y; Path=/; Secure; HttpOnly"],
+        ["Cache-Control", "no-store"],
+      ],
+    }),
     ...overrides,
   };
   const app = new Hono<ApiCtx>()
@@ -689,4 +717,56 @@ test("native raw-body adapters (icon, avatar) go through the typed routes and ch
   await expect(
     me.uploadAvatar({ type: "image/svg+xml", body: png }),
   ).rejects.toThrow("Use uma imagem PNG, JPEG ou WebP.");
+});
+
+test("connected Claudes (OAuth grants): list, revoke a list, revoke one; bad bodies and other origins refused", async () => {
+  const { app, json, saved } = fixture();
+  const list = await app.request("/api/agents");
+  expect(await list.json()).toEqual({
+    agents: [
+      { id: "g1", client: "vibebook CLI", connected_at: 1, used_at: 2 },
+      { id: "g0", client: "Claude", connected_at: 0 },
+    ],
+    last_used: 2,
+  });
+  const r = await json("/api/agents/revoke", { ids: ["g0", "g1"] });
+  expect(await r.json()).toEqual({ ok: true, removed: 2 });
+  expect((await json("/api/agents/revoke", { ids: "g0" })).status).toBe(400);
+  expect(
+    (await app.request("/api/agents/g1", { method: "DELETE" })).status,
+  ).toBe(200);
+  expect(saved.filter((x) => x.table === "revoke").map((x) => x.value)).toEqual(
+    ["g0,g1", "g1"],
+  );
+  const cross = fixture({ sameOrigin: false });
+  expect((await cross.json("/api/agents/revoke", { ids: ["g0"] })).status).toBe(
+    403,
+  );
+  expect(
+    (await cross.app.request("/api/agents/g0", { method: "DELETE" })).status,
+  ).toBe(403);
+  expect(cross.saved).toHaveLength(0);
+});
+
+test("consent context: the page's facts and handle, the binding cookie passed on, refusals with the client's redirect", async () => {
+  const { app } = fixture();
+  const r = await app.request("/api/authorize/context?client_id=c");
+  expect(r.status).toBe(200);
+  expect(r.headers.get("set-cookie")).toContain("__Host-oauth-consent-x=y");
+  expect(r.headers.get("cache-control")).toBe("no-store");
+  expect((await r.json()).handle).toBe("h1");
+  const refused = fixture({
+    consentContext: async () => ({
+      error: "unsupported_response_type",
+      redirect_to: "http://127.0.0.1:9123/cb?error=x",
+      status: 400,
+    }),
+  });
+  const e = await refused.app.request("/api/authorize/context?client_id=c");
+  expect(e.status).toBe(400);
+  expect(await e.json()).toEqual({
+    error: "unsupported_response_type",
+    redirect_to: "http://127.0.0.1:9123/cb?error=x",
+  });
+  expect(e.headers.get("set-cookie")).toBeNull();
 });

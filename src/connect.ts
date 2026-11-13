@@ -8,6 +8,8 @@ import { handleAgentMcp } from "./agent";
 import { escapeHtml, identify } from "./auth";
 import type { Env } from "./index";
 import { track } from "./track";
+import type { AgentGrantsResult, ConsentContext, ConsentError } from "../shared/schemas";
+import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 
 export const SCOPE = "rooms";
 export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string; room?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
@@ -120,7 +122,7 @@ const fail = (c: Context, e: unknown) => {
 connect.get("/authorize", async (c) => {
   const email = await identify(c);
   const url = new URL(c.req.url);
-  if (!email) return c.redirect(`/login?next=${encodeURIComponent(url.pathname + url.search)}`);
+  if (!email) return c.redirect(uiNavigationUrl(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, url, uiVariant(url)));
   try {
     const oauth = c.env.OAUTH_PROVIDER;
     const request = await oauth.parseAuthRequest(c.req.raw);
@@ -164,45 +166,57 @@ connect.post("/authorize", async (c) => {
 });
 
 // App side: which agents are connected, when each was last used, and revoke.
-connect.get("/api/agents", async (c) => {
-  const email = await identify(c);
-  if (!email) return c.json({ error: "unauthenticated" }, 401);
-  const { items } = await c.env.OAUTH_PROVIDER.listUserGrants(email);
-  const last = await c.env.DB.prepare(`SELECT max(ts) AS ts FROM events WHERE user = ? AND name = 'agent_call' AND ts > ?`)
-    .bind(email, Date.now() - 90 * 86_400_000)
-    .first<{ ts: number | null }>();
-  // Last use per grant: grants made since Nov 2026 carry a gid that handleAgentMcp stamps in D1 grant_seen; older
-  // ones only have the person-wide last call (null per grant = unknown).
-  const gids = items.map((g) => (g.metadata as { gid?: string } | undefined)?.gid).filter(Boolean) as string[];
-  const seen = gids.length
-    ? Object.fromEntries((await c.env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r) => [r.gid, r.ts]))
-    : {};
-  return c.json({
-    agents: items.map((g) => {
-      const gid = (g.metadata as { gid?: string } | undefined)?.gid;
-      return { id: g.id, client: g.metadata?.client ?? g.clientId, connected_at: g.createdAt * 1000, used_at: gid ? (seen[gid] ?? null) : undefined };
-    }),
-    last_used: last?.ts ?? null,
-  });
-});
+/** The consent page's context for a native page (src/api.ts GET /api/authorize/context): the same parse, description and
+ *  consent transaction as GET /authorize, on a request rebuilt at /authorize with the query unchanged (the library only
+ *  accepts requests at its authorize endpoint). The transaction's binding cookie goes back with the answer; approving
+ *  is still the form POST /authorize. A refused request answers its error, plus the client's error redirect when the
+ *  library built one from a request it validated. */
+export async function consentContext(env: Env, req: Request, email: string): Promise<{ context: ConsentContext; headers: [string, string][] } | (ConsentError & { status: 400 })> {
+  const url = new URL(req.url);
+  try {
+    const oauth = env.OAUTH_PROVIDER;
+    const request = await oauth.parseAuthRequest(new Request(new URL(`/authorize${url.search}`, url.origin), { headers: req.headers }));
+    const d = await oauth.describeConsent(request);
+    const consent = await oauth.beginConsent(request);
+    return {
+      context: { client_name: d.clientName, client_domain: d.clientDomain ?? null, redirect_host: d.redirectHost, redirect_is_loopback: !!d.redirectIsLoopback, scope: d.scope, email, handle: consent.handle },
+      headers: [...consent.headers],
+    };
+  } catch (e) {
+    if (e instanceof AuthorizationError) return { error: e.description ?? e.code ?? "invalid_request", ...(e.redirectTo ? { redirect_to: e.redirectTo } : {}), status: 400 };
+    if (e instanceof CimdFetchError) return { error: "client metadata unavailable", status: 400 };
+    throw e;
+  }
+}
 
-// Remove several at once (the app's checkbox list). At most 100 per call.
-connect.post("/api/agents/revoke", async (c) => {
-  const email = await identify(c);
-  if (!email) return c.json({ error: "unauthenticated" }, 401);
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  const { ids } = await c.req.json<{ ids?: unknown }>().catch(() => ({ ids: [] }));
-  const list = (Array.isArray(ids) ? ids : []).map(String).slice(0, 100);
-  for (const id of list) await c.env.OAUTH_PROVIDER.revokeGrant(id, email);
-  c.executionCtx.waitUntil(track(c.env, "agent_disconnected", { user: email, dims: { n: list.length } }));
-  return c.json({ ok: true, removed: list.length });
-});
-
-connect.delete("/api/agents/:id", async (c) => {
-  const email = await identify(c);
-  if (!email) return c.json({ error: "unauthenticated" }, 401);
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  await c.env.OAUTH_PROVIDER.revokeGrant(c.req.param("id"), email);
-  c.executionCtx.waitUntil(track(c.env, "agent_disconnected", { user: email }));
-  return c.json({ ok: true });
-});
+/** Your Claudes' OAuth grants (the home's "connected agents" box): typed routes in src/api.ts call these. */
+export function grantOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string) {
+  return {
+    async list(): Promise<AgentGrantsResult> {
+      const { items } = await env.OAUTH_PROVIDER.listUserGrants(email);
+      const last = await env.DB.prepare(`SELECT max(ts) AS ts FROM events WHERE user = ? AND name = 'agent_call' AND ts > ?`)
+        .bind(email, Date.now() - 90 * 86_400_000)
+        .first<{ ts: number | null }>();
+      // Last use per grant: grants made since Nov 2026 carry a gid that handleAgentMcp stamps in D1 grant_seen; older
+      // ones only have the person-wide last call (null per grant = unknown).
+      const gids = items.map((g) => (g.metadata as { gid?: string } | undefined)?.gid).filter(Boolean) as string[];
+      const seen = gids.length
+        ? Object.fromEntries((await env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r) => [r.gid, r.ts]))
+        : {};
+      return {
+        agents: items.map((g) => {
+          const gid = (g.metadata as { gid?: string } | undefined)?.gid;
+          return { id: g.id, client: String((g.metadata as { client?: string } | undefined)?.client ?? g.clientId), connected_at: g.createdAt * 1000, used_at: gid ? (seen[gid] ?? null) : undefined };
+        }),
+        last_used: last?.ts ?? null,
+      };
+    },
+    /** Remove several at once (the app's checkbox list), at most 100 per call. */
+    async revoke(ids: string[]) {
+      const list = ids.slice(0, 100);
+      for (const id of list) await env.OAUTH_PROVIDER.revokeGrant(id, email);
+      ctx.waitUntil(track(env, "agent_disconnected", { user: email, dims: { n: list.length } }));
+      return list.length;
+    },
+  };
+}
