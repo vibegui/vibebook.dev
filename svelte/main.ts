@@ -7,6 +7,7 @@ import InboxMount from "./InboxMount.svelte";
 import Tasks from "./Tasks.svelte";
 import Board from "./Board.svelte";
 import Files from "./Files.svelte";
+import Decisions from "./Decisions.svelte";
 import Reminders from "./Reminders.svelte";
 import Sidebar from "./Sidebar.svelte";
 import Chat from "./Chat.svelte";
@@ -17,6 +18,7 @@ const views = {
   board: Board,
   files: Files,
   reminders: Reminders,
+  decisions: Decisions,
   sidebar: Sidebar,
   chat: Chat,
 };

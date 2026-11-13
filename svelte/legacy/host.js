@@ -3533,10 +3533,8 @@ function renderDecisions() {
   const el = document.getElementById("decPane"); if (!el) return;
   const list = S.decisions || [];
   document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
-  el.innerHTML = list.length ? list.slice().reverse().map((d) => `<div class="dec ${d.kind === "approval" ? "approval" : ""}"><div>${esc(d.text)}<small>${d.kind === "approval" ? `✓ ${t("aprovado")}` : t("decidido")} · ${esc(d.who)} · ${ago(d.ts)}</small></div>
-      <button class="ghost x" data-ddel="${d.id}" aria-label="${t("Apagar registro")}" title="${t("Apagar registro")}">${icon("x")}</button></div>`).join("")
-    : `<div class="empty">${t("O que a sala decidir e cada aprovação aparecem aqui. Os agents registram conforme a conversa anda.")}</div>`;
-  el.querySelectorAll("[data-ddel]").forEach((b) => b.onclick = () => { if (confirm(t("Apagar esse registro?"))) send({ t: "decision.del", id: Number(b.dataset.ddel) }); });
+  const roomId = S.id;
+  renderView("decisions", el, {room:S, thread, vb:panelBridge(), send, request:(command) => S?.id === roomId ? request(command) : Promise.resolve({ok:false, error:"disconnected"})});
 }
 
 // The Apps tab: room apps (apps/*.html) and the room's MCP connections; renderConns below draws it.
