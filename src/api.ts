@@ -84,6 +84,8 @@ import {
   type RevokeAgentsResult,
   type ConsentContext,
   type ConsentError,
+  type RouterStats,
+  type AiSpend,
 } from "../shared/schemas";
 
 export type Bind = string | number | null;
@@ -175,6 +177,11 @@ export interface ApiServices {
   grants: { list(): Promise<AgentGrantsResult>; revoke(ids: string[]): Promise<number> };
   /** The consent page's context for this request's /authorize query (src/connect.ts consentContext); headers carry the
    *  consent transaction's binding cookie. */
+  /** The hub router's A/B for this person (src/router.ts), all rooms or one. */
+  routerStats(roomId?: string): Promise<RouterStats>;
+  /** vibebook's model spend (src/reports.ts aiSpend), only for members of the report rooms (METRICS_ROOMS). */
+  reportRoom(roomId: string): boolean;
+  aiSpend(): Promise<AiSpend>;
   consentContext(): Promise<{ context: ConsentContext; headers: [string, string][] } | (ConsentError & { status: 400 })>;
 }
 /** A failed connection call and its status; sign_in = sign in on that server first (401). */
@@ -679,6 +686,18 @@ export const uploadsApi = meApi
     if ("error" in r) return c.json({ error: r.error, ...(r.redirect_to ? { redirect_to: r.redirect_to } : {}) } satisfies ConsentError, 400);
     for (const [k, v] of r.headers) c.header(k, v, { append: k.toLowerCase() === "set-cookie" });
     return c.json(r.context satisfies ConsentContext, 200);
+  })
+  // The hub router's A/B (src/router.ts), for the room app apps/roteador-ab.html (vibebook_router_stats).
+  .get("/api/router/stats", async (c) => {
+    const svc = c.get("svc"), room = c.req.query("room") || undefined;
+    if (room && !(await svc.isMember(room))) return c.json(forbidden, 403);
+    return c.json((await svc.routerStats(room)) satisfies RouterStats, 200);
+  })
+  // vibebook's model spend, for the report rooms' app apps/gastos-ia.html (vibebook_ai_spend).
+  .get("/api/metrics/ai-spend", async (c) => {
+    const svc = c.get("svc"), room = c.req.query("room") ?? "";
+    if (!svc.reportRoom(room) || !(await svc.isMember(room))) return c.json(forbidden, 403);
+    return c.json((await svc.aiSpend()) satisfies AiSpend, 200);
   });
 
 export type AppType = typeof uploadsApi;

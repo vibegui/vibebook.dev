@@ -187,6 +187,58 @@ function fixture(overrides: Partial<ApiServices> = {}) {
         return ids.length;
       },
     },
+    reportRoom: (room) => room === "report",
+    aiSpend: async () => ({
+      recorded: {
+        jev: 0.01,
+        llm: 0.5,
+        router: 0.001,
+        since: "2026-10-01T00:00:00.000Z",
+      },
+      by_event: [
+        { event: "grade", kind: "jev", model: "jev", calls: 500, cost: 0.01 },
+      ],
+      router: [{ arm: "jev", n: 3, cost: 0.0001 }],
+      days: [{ day: "2026-11-12", jev: 0.001, llm: 0.02, router: 0 }],
+      openrouter_key: {
+        usage: 12.34,
+        limit: null,
+        daily: 0.5,
+        weekly: 2,
+        monthly: 9,
+      },
+      note: "n",
+    }),
+    routerStats: async (room) => {
+      const arm = { n: 2, ignore: 1, answer: 0, wake: 1, cost: 0.0001 };
+      return {
+        since: "2026-11-01T00:00:00.000Z",
+        arms: {
+          jev: { ...arm, p50: 300, p95: 500 },
+          hybrid: { ...arm, p50: 900, p95: 1500 },
+          haiku: { ...arm, p50: 1800, p95: 2100 },
+          rule: { n: 0, ignore: 0, answer: 0, wake: 0, cost: 0 },
+        },
+        recent: room
+          ? []
+          : [
+              {
+                book_id: "r1",
+                room: "Room",
+                msg_id: 8,
+                arm: "jev",
+                decision: "ignore",
+                why: "thanks",
+                source: null,
+                reply_id: null,
+                ms: 300,
+                cost: 0.00002,
+                text: "Gui: valeu",
+                ts: 1,
+              },
+            ],
+      };
+    },
     consentContext: async () => ({
       context: {
         client_name: "Claude",
@@ -910,4 +962,35 @@ test("consent context: the page's facts and handle, the binding cookie passed on
     redirect_to: "http://127.0.0.1:9123/cb?error=x",
   });
   expect(e.headers.get("set-cookie")).toBeNull();
+});
+
+test("router A/B stats: the person's numbers, one room only for its members", async () => {
+  const { app } = fixture();
+  const all = await app.request("/api/router/stats");
+  expect(all.status).toBe(200);
+  const body = await all.json();
+  expect(body.arms.jev.p50).toBe(300);
+  expect(body.recent).toHaveLength(1);
+  expect(
+    (await (await app.request("/api/router/stats?room=r1")).json()).recent,
+  ).toEqual([]);
+  const outsider = fixture({ isMember: async () => false });
+  expect((await outsider.app.request("/api/router/stats?room=r1")).status).toBe(
+    403,
+  );
+});
+
+test("model spend: only in the report rooms, for their members", async () => {
+  const { app } = fixture();
+  const r = await app.request("/api/metrics/ai-spend?room=report");
+  expect(r.status).toBe(200);
+  expect((await r.json()).openrouter_key.usage).toBe(12.34);
+  expect((await app.request("/api/metrics/ai-spend?room=other")).status).toBe(
+    403,
+  );
+  expect((await app.request("/api/metrics/ai-spend")).status).toBe(403);
+  const outsider = fixture({ isMember: async () => false });
+  expect(
+    (await outsider.app.request("/api/metrics/ai-spend?room=report")).status,
+  ).toBe(403);
 });

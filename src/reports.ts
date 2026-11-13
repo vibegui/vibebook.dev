@@ -5,6 +5,7 @@
 //   response bytes) and the zone (requests, bandwidth, cache). Needs CF_ANALYTICS_TOKEN (Account Analytics: Read,
 //   Zone Analytics: Read, Zone: Read); without it the report says so instead of showing numbers.
 // Test people (@test.vibebook.dev) are left out. Check: bun scripts/reports-check.ts (formatting only).
+import { AiSpend } from "../shared/schemas";
 import type { Env } from "./index";
 
 const DAY = 86_400_000;
@@ -275,4 +276,58 @@ async function zoneId(env: Env) {
   const r = await fetch("https://api.cloudflare.com/client/v4/zones?name=vibebook.dev", { headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}` } });
   const j = (await r.json().catch(() => ({}))) as { result?: { id: string }[] };
   return j.result?.[0]?.id ?? null;
+}
+
+// What vibebook spent on models (Gui, room #1965): every model call that records its cost in D1 events (by event and
+// model), the hub router's own log, and OpenRouter's word for the whole key (it also covers calls that don't record a
+// cost, like creating a room in one step). Jev is billed through OpenRouter too, on input only.
+const COST_EVENTS: Record<string, "jev" | "llm"> = {
+  grade: "jev",
+  waits: "jev",
+  embed_check: "jev",
+  suggest_check: "jev",
+  classify: "llm",
+  home_route: "llm",
+  reminder_parse: "llm",
+  mention_mail: "llm",
+  mention_mail_preview: "llm",
+  ai_run: "llm",
+};
+export async function aiSpend(env: Env, now = Date.now()): Promise<AiSpend> {
+  const names = Object.keys(COST_EVENTS);
+  const marks = names.map(() => "?").join(",");
+  // name IN (…) and ts: the (name, ts) index covers both.
+  const byEvent = await env.DB.prepare(
+    `SELECT name, coalesce(json_extract(dims, '$.model'), '') AS model, count(*) AS n, sum(coalesce(json_extract(dims, '$.cost'), 0)) AS cost, min(ts) AS first FROM events WHERE name IN (${marks}) GROUP BY name, model ORDER BY cost DESC`,
+  )
+    .bind(...names)
+    .all<{ name: string; model: string; n: number; cost: number; first: number }>();
+  const from = now - 30 * DAY;
+  const daily = await env.DB.prepare(
+    `SELECT CAST((ts - ?) / ${DAY} AS INTEGER) AS d, name, sum(coalesce(json_extract(dims, '$.cost'), 0)) AS cost FROM events WHERE name IN (${marks}) AND ts >= ? GROUP BY d, name`,
+  )
+    .bind(from, ...names, from)
+    .all<{ d: number; name: string; cost: number }>();
+  const router = await env.DB.prepare(`SELECT arm, count(*) AS n, sum(coalesce(cost, 0)) AS cost FROM router_log GROUP BY arm`)
+    .all<{ arm: string; n: number; cost: number }>()
+    .catch(() => ({ results: [] as { arm: string; n: number; cost: number }[] }));
+  let key: { usage: number; limit: number | null; daily: number | null; weekly: number | null; monthly: number | null } | null = null;
+  try {
+    const r = await fetch("https://openrouter.ai/api/v1/key", { headers: { authorization: `Bearer ${env.OPENROUTER_API_KEY}` }, signal: AbortSignal.timeout(5000) });
+    const j = r.ok ? ((await r.json()) as { data?: { usage?: number; limit?: number | null; usage_daily?: number; usage_weekly?: number; usage_monthly?: number } }) : null;
+    if (j?.data) key = { usage: j.data.usage ?? 0, limit: j.data.limit ?? null, daily: j.data.usage_daily ?? null, weekly: j.data.usage_weekly ?? null, monthly: j.data.usage_monthly ?? null };
+  } catch {}
+  const kind = (name: string) => COST_EVENTS[name] ?? "llm";
+  const days = Array.from({ length: 30 }, (_, d) => ({ day: new Date(from + d * DAY).toISOString().slice(0, 10), jev: 0, llm: 0, router: 0 }));
+  for (const r of daily.results) if (days[r.d]) days[r.d][kind(r.name)] += r.cost;
+  const routerTotal = router.results.reduce((s, r) => s + r.cost, 0);
+  const total = (k: "jev" | "llm") => byEvent.results.filter((r) => kind(r.name) === k).reduce((s, r) => s + r.cost, 0);
+  return AiSpend.parse({
+    recorded: { jev: total("jev"), llm: total("llm"), router: routerTotal, since: byEvent.results.length ? new Date(Math.min(...byEvent.results.map((r) => r.first))).toISOString() : null },
+    by_event: byEvent.results.map((r) => ({ event: r.name, kind: kind(r.name), model: r.model || (kind(r.name) === "jev" ? "jev" : ""), calls: r.n, cost: r.cost })),
+    router: router.results,
+    days,
+    openrouter_key: key,
+    note: "recorded = the calls that log their cost in vibebook's events; openrouter_key = OpenRouter's own total for the key (everything billed on it, including calls that don't log a cost).",
+  });
 }

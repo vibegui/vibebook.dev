@@ -537,3 +537,81 @@ export const ConsentError = z.object({
   redirect_to: z.optional(z.string()),
 });
 export type ConsentError = z.infer<typeof ConsentError>;
+
+/** The hub router's A/B for the signed-in person (src/router.ts routerStats), for the room app that shows it. */
+const RouterArm = z.object({
+  n: z.number(),
+  ignore: z.number(),
+  answer: z.number(),
+  wake: z.number(),
+  cost: z.number(),
+  p50: z.optional(z.nullable(z.number())),
+  p95: z.optional(z.nullable(z.number())),
+});
+export const RouterStats = z.object({
+  since: z.string(),
+  arms: z.object({
+    jev: RouterArm,
+    hybrid: RouterArm,
+    haiku: RouterArm,
+    rule: RouterArm,
+  }),
+  recent: z.array(
+    z.object({
+      book_id: z.string(),
+      room: z.nullable(z.string()),
+      msg_id: z.number(),
+      arm: z.string(),
+      decision: z.string(),
+      why: z.nullable(z.string()),
+      source: z.nullable(z.string()),
+      reply_id: z.nullable(z.number()),
+      ms: z.nullable(z.number()),
+      cost: z.nullable(z.number()),
+      text: z.nullable(z.string()),
+      ts: z.number(),
+    }),
+  ),
+});
+export type RouterStats = z.infer<typeof RouterStats>;
+
+/** What vibebook spent on models (src/reports.ts aiSpend), for the report rooms' app. */
+export const AiSpend = z.object({
+  recorded: z.object({
+    jev: z.number(),
+    llm: z.number(),
+    router: z.number(),
+    since: z.nullable(z.string()),
+  }),
+  by_event: z.array(
+    z.object({
+      event: z.string(),
+      kind: z.string(),
+      model: z.string(),
+      calls: z.number(),
+      cost: z.number(),
+    }),
+  ),
+  router: z.array(
+    z.object({ arm: z.string(), n: z.number(), cost: z.number() }),
+  ),
+  days: z.array(
+    z.object({
+      day: z.string(),
+      jev: z.number(),
+      llm: z.number(),
+      router: z.number(),
+    }),
+  ),
+  openrouter_key: z.nullable(
+    z.object({
+      usage: z.number(),
+      limit: z.nullable(z.number()),
+      daily: z.nullable(z.number()),
+      weekly: z.nullable(z.number()),
+      monthly: z.nullable(z.number()),
+    }),
+  ),
+  note: z.string(),
+});
+export type AiSpend = z.infer<typeof AiSpend>;

@@ -3319,6 +3319,8 @@ const VB_TOOLS = [
   { name: "vibebook_task_status", description: "Move a task: todo | doing | review | done; the person confirms.", inputSchema: { type: "object", properties: { task_id: { type: "string" }, status: { type: "string", enum: ["todo", "doing", "review", "done"] } }, required: ["task_id", "status"] } },
   { name: "vibebook_connections", description: "The room's MCP connections this person can use, with their tools.", inputSchema: { type: "object" }, annotations: { readOnlyHint: true } },
   { name: "vibebook_call_connection", description: "Call a tool of one of the room's MCP connections; tools that aren't read-only ask the person first.", inputSchema: { type: "object", properties: { connection_id: { type: "string" }, tool: { type: "string" }, arguments: { type: "object" } }, required: ["connection_id", "tool"] } },
+  { name: "vibebook_ai_spend", description: "vibebook's model spend: Jev and the LLMs by event and model, the hub router, the last 30 days and OpenRouter's total for the key. Only in vibebook's report rooms.", inputSchema: { type: "object", properties: {} }, annotations: { readOnlyHint: true } },
+  { name: "vibebook_router_stats", description: "The person's hub router A/B (Jev vs Haiku): per arm how many messages were ignored, answered or woke their Claude, latency p50/p95, cost, and the last 40 decisions. room: true = only this room.", inputSchema: { type: "object", properties: { room: { type: "boolean" } } }, annotations: { readOnlyHint: true } },
 ];
 function vbRead({ thread = "main", limit = 50 } = {}) {
   const msgs = allMsgs().filter((m) => m.thread === thread).slice(-Math.min(Math.max(Number(limit) || 50, 1), 100));
@@ -3336,6 +3338,8 @@ async function vbCall(name, a = {}, ask) {
   const thread = (x) => (x && x !== "main" && !S.epics.some((e) => e.id === x) ? null : x || "main");
   switch (name) {
     case "vibebook_read": return ok(vbRead(a));
+    case "vibebook_ai_spend": { const r = await fetch(`/api/metrics/ai-spend?room=${S.id}`).catch(() => null); return r && r.ok ? ok(await r.json()) : { isError: true, content: [{ type: "text", text: `spend unavailable${r ? ` (${r.status})` : ""}` }] }; }
+    case "vibebook_router_stats": { const r = await fetch(`/api/router/stats${a.room ? `?room=${S.id}` : ""}`).catch(() => null); return r && r.ok ? ok(await r.json()) : { isError: true, content: [{ type: "text", text: `router stats unavailable${r ? ` (${r.status})` : ""}` }] }; }
     case "vibebook_connections": { if (!Array.isArray(conns)) await loadConns(); return ok((conns || []).map((c) => ({ id: c.id, title: c.title, scope: c.scope, tools: c.tools }))); }
     case "vibebook_post": {
       const th = thread(a.thread), text = String(a.text || "").trim().slice(0, 4000);
