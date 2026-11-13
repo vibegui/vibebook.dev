@@ -314,8 +314,7 @@
                   compact={mobile.current}
                   now={$account.now}
                   seen={$account.seen[room.id] ?? 0}
-                  waits={me.waits.filter((wait) => wait.book_id === room.id)
-                    .length}
+                  {waits}
                   {onnavigate}
                   onsettings={onroomsettings}
                 />{#if mobile.current}<b

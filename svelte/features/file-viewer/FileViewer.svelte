@@ -195,6 +195,7 @@
               room={$view.room}
               actions={ownedActions}
               policy="file-preview"
+              fileLabel={text("file")}
               pageUrl={location.href}
             />
           {:else if $view.content.kind === "csv" && $view.phase === "ready"}<div

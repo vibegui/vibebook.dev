@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Badge from "../../lib/ui/Badge.svelte";
+  import WaitBadge from "../waits/WaitBadge.svelte";
+  import { waitIndicator, type WaitReference } from "../waits/model";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import {
     roomInitials,
@@ -16,7 +17,7 @@
     lang,
     now,
     seen = 0,
-    waits = 0,
+    waits = [],
     compact = false,
     selected = false,
     onnavigate,
@@ -30,7 +31,7 @@
     lang: HomeLanguage;
     now: number;
     seen?: number;
-    waits?: number;
+    waits?: readonly WaitReference[];
     compact?: boolean;
     selected?: boolean;
     onnavigate: (target: RoomTarget) => void;
@@ -41,6 +42,7 @@
     ondrop?: (event: DragEvent) => void;
   } = $props();
   const news = $derived(unread(room, seen));
+  const waiting = $derived(waitIndicator(waits));
   const title = $derived(room.title ?? "vibebook");
   const text = (
     key: Parameters<typeof homeText>[1],
@@ -52,7 +54,7 @@
       news ? text(news === "human" ? "newHuman" : "newAgent") : "",
       (room.busy_until ?? 0) > now ? text("busy") : "",
       room.sandboxes_running ? text("cloud") : "",
-      waits ? text("waiting", { n: waits }) : "",
+      waiting.asks ? text("waiting", { n: waiting.asks }) : waiting.tasks ? text("taskPending") : "",
     ]
       .filter(Boolean)
       .join(" · "),
@@ -149,10 +151,8 @@
       >
         {room.summary || text("summary")}
       </p>{/if}
-    {#if waits}<Badge
-        class={compact ? "tw:absolute tw:-bottom-1 tw:-right-1" : ""}
-        >{compact ? waits : text("waiting", { n: waits })}</Badge
-      >{/if}
+    <WaitBadge {waits} label={n => text("waiting", { n })} taskLabel={text("taskPending")}
+      class={compact ? "tw:absolute tw:-bottom-1 tw:-right-1" : ""} />
   </a>
   {#if onsettings && !compact}<IconButton
       icon="chevronDown"

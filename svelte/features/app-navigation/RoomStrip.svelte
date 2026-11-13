@@ -31,8 +31,7 @@
       now={$personal.now}
       selected={$nav.roomId === room.id}
       seen={$personal.seen[room.id] ?? 0}
-      waits={$personal.me?.waits.filter((wait) => wait.book_id === room.id)
-        .length ?? 0}
+      waits={$personal.me?.waits.filter((wait) => wait.book_id === room.id) ?? []}
       onnavigate={controller.callbacks.navigate}
       onsettings={(id, trigger) => controller.openSettings(id, trigger)}
     />{/each}<IconButton

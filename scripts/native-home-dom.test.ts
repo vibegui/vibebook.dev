@@ -262,3 +262,22 @@ test("room refresh keeps Home draft/focus, then unmount owns late routing result
   expect(navigation).toEqual([]);
   expect(target.textContent).toBe("");
 });
+test("canonical ask clearance changes native room count to a task dot without hiding the task", async () => {
+  const wait = (ref: string): ReturnType<typeof me>["waits"][number] => ({ book_id: "aaaaaa", room: "Room aaaaaa", ref, thread: "e", topic: "Epic", author: "other@test.com", author_name: "Other", text: "Task remains actionable", ts: 1 });
+  let latest = me({ waits: [wait("m1"), wait("t2")] });
+  const { personal, rooms, pwa } = await setup({ me: async () => latest });
+  const target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(Home, { target, props: { pwa, personal, rooms, lang: "en", ago: () => "now", onnavigate: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {} } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); }));
+  await flush();
+  const tile = () => target.querySelector('[data-room-id="aaaaaa"]')!;
+  expect(tile().querySelector('[data-wait-kind="asks"]')?.textContent?.trim()).toBe("1");
+  expect(tile().querySelector('[data-wait-kind="tasks"]')).toBeNull();
+  // The server's fresh /api/me result, not an optimistic local msg hook, clears m1.
+  latest = me({ waits: [wait("t2")] }); await personal.refresh(); await flush();
+  expect(tile().querySelector('[data-wait-kind="asks"]')).toBeNull();
+  const dot = tile().querySelector('[data-wait-kind="tasks"]')!;
+  expect(dot.getAttribute("aria-label")).toBe("A task of yours is pending");
+  expect(dot.textContent).toBe("");
+  expect(target.textContent).toContain("Task remains actionable");
+});

@@ -344,6 +344,7 @@ const EN = {
     "Remove {n} connections? Their agents lose access right away.",
   "Esperando você": "Waiting on you",
   "Tarefa sua esperando OK:": "Your task waiting for OK:",
+  "Tarefa sua pendente": "A task of yours is pending",
   "Já resolvi (respondi em outro lugar, ou não é comigo)":
     "Done (I answered elsewhere, or it's not for me)",
   "Seu agent conectou.": "Your agent is connected.",
@@ -1784,6 +1785,7 @@ let nativeDocumentOwner=null,nativeDocumentSetPane=null,documentScopeReset=false
 const nativeDocumentDrafts=UI.createDocumentDrafts();
 let nativeFilesSession = null;
 function clearViews() {
+  nativeFileChipIndex?.owner.dispose();nativeFileChipIndex=null;
   disposeNativeApps();
   disposePwaMounts();
   nativeAgents.detach();nativeAgentOwner=null;
@@ -1802,6 +1804,19 @@ function clearViews() {
   chatViewport.reset();chatSurfaceElement=null;chatSurface=null;
 }
 const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
+let nativeFileChipIndex=null;
+function syncFileChipIndex(fresh=false){
+ if(!S||!roomConnection||currentRoomId()!==S.id)return null;
+ if(nativeFileChipIndex&&(nativeFileChipIndex.roomId!==S.id||nativeFileChipIndex.account!==S.me||nativeFileChipIndex.connection!==roomConnection)){nativeFileChipIndex.owner.dispose();nativeFileChipIndex=null;}
+ if(!nativeFileChipIndex){
+  const roomId=S.id,account=S.me,connection=roomConnection;
+  const current=()=>S?.id===roomId&&S.me===account&&S.members.includes(account)&&roomConnection===connection&&currentRoomId()===roomId&&nativeFileChipIndex?.owner===owner;
+  const owner=UI.createFileChipIndex(roomId,account,current,command=>current()?connection.request(command):Promise.resolve({ok:false,error:"disconnected"}));
+  nativeFileChipIndex={roomId,account,connection,owner};
+ }
+ nativeFileChipIndex.owner.sync(S,fresh);return nativeFileChipIndex.owner;
+}
+function ensureFileChipIndex(){void syncFileChipIndex()?.load();}
 const chatBridge = () => ({ t, name, knownNames, pageUrl:location.href, locale:LOCALE, avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;}, ago, hhmm, typingLabel: (mode) => modeLabel[mode] ?? mode, typingNote: (id) => typingNotes.get(id), dateTime: (ts) => new Date(ts).toLocaleString(LOCALE), waiting: (id) => myWaits.some((w) => w.book_id === S.id && w.ref === `m${id}`) });
 function selectThread(id) { if(deferViewerIntent(()=>selectThread(id)))return; thread = id; boardEpic = id === "main" ? null : id; documentScopeReset = true; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
 
@@ -1813,6 +1828,7 @@ function onEvent({event:ev,previous:previousState,snapshot}) {
   if (currentRoomId() !== id) return;
   const suggestionIntent=nativeRoomMutations?.suggestionIntent();
   S=snapshot.room;typingNotes=snapshot.typingNotes;liveState=snapshot.phase==="live";
+  syncFileChipIndex(ev.t==="state");
   if (S && (ev.t === "meta" || ev.t === "state"))
     nativePersonal?.roomMeta(id, {
       title: S.book.title,
@@ -1886,8 +1902,8 @@ function onEvent({event:ev,previous:previousState,snapshot}) {
     }
     case "requests": renderSide(); return;
     case "members": renderSide(); renderComposer(); return;
-    case "files": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); return;
-    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); renderThreadFiles(); return;
+    case "files": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); renderChat("stay"); return;
+    case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); renderThreadFiles(); renderChat("stay"); return;
     case "reminders": renderReminders(); return;
     case "decisions": renderDecisions(); return;
     case "conns": if(nativeApps)nativeApps.owner.load();renderApps();return;
@@ -2848,7 +2864,7 @@ function renderChat(keep) {
   const roomId=S.id, chatThread=thread;
   let chatMount;
   const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
-  renderView("chat",el,{room:S,thread,list,previous,more,origin:origin||null,replyCount,vb:chatBridge(),actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;composerEntry()?.reply(q,draft.text);},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>UI.mountNativeChatApp({frame,file,controls,authority:ensureNativeAppAuthority(),room:()=>current()?{...S,messages:allMsgs()}:null,current,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),name,t,locale:LOCALE,open:url=>{if(current())window.open(url,"_blank","noopener");}}),reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
+  renderView("chat",el,{room:S,thread,list,previous,more,origin:origin||null,replyCount,vb:chatBridge(),actions:{ensureFileIndex:()=>{if(current())ensureFileChipIndex();},request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;composerEntry()?.reply(q,draft.text);},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>UI.mountNativeChatApp({frame,file,controls,authority:ensureNativeAppAuthority(),room:()=>current()?{...S,messages:allMsgs()}:null,current,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),name,t,locale:LOCALE,open:url=>{if(current())window.open(url,"_blank","noopener");}}),reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
   chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   chatViewport.afterRender(keep,before);
@@ -2873,7 +2889,7 @@ function renderDoc(fresh=false,authoritative=false) {
   function current(){return nativeDocumentOwner===owner&&S?.id===roomId&&S.me===account&&roomConnection===connection&&currentRoomId()===roomId&&book.isConnected;}
   owner.sync(S,thread,fresh,authoritative,activeDocumentConnectionGeneration);
   if(documentScopeReset){documentScopeReset=false;owner.chooseRoom(false);}
-  renderView("document",el,{owner,props:{room:S,thread,send:command=>current()?send(command):false,taskProps:{room:S,thread,vb:panelBridge(),send:command=>current()?send(command):false,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),waits:myWaits},actions:{navigate:(id,target)=>{if(current())goToMsg(id,target);},navigateRich:target=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFile:file=>{if(current()&&[...(S.files||[]),...allMsgs().flatMap(message=>message.files||[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.ts===file.ts&&f.size===file.size&&f.author===file.author))openNativeFile(file);},openFileReference:file=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);}},lang:LANG,onAuthorize:()=>{if(!current())return;roomConnection?.dispose();roomConnection=null;clearViews();roomCache.delete(roomId);openBook(roomId);},pane:book.querySelector(":scope > .doc")?.dataset.pane||"doc",onPane:pane=>{if(current())nativeDocumentSetPane?.(pane);}}});
+  renderView("document",el,{owner,props:{room:S,thread,send:command=>current()?send(command):false,taskProps:{room:S,thread,vb:panelBridge(),send:command=>current()?send(command):false,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),waits:myWaits},actions:{ensureFileIndex:()=>{if(current())ensureFileChipIndex();},navigate:(id,target)=>{if(current())goToMsg(id,target);},navigateRich:target=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFile:file=>{if(current()&&[...(S.files||[]),...allMsgs().flatMap(message=>message.files||[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.ts===file.ts&&f.size===file.size&&f.author===file.author))openNativeFile(file);},openFileReference:file=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);}},lang:LANG,onAuthorize:()=>{if(!current())return;roomConnection?.dispose();roomConnection=null;clearViews();roomCache.delete(roomId);openBook(roomId);},pane:book.querySelector(":scope > .doc")?.dataset.pane||"doc",onPane:pane=>{if(current())nativeDocumentSetPane?.(pane);}}});
   renderDocumentChrome();
 }
 function renderDocumentChrome(){

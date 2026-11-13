@@ -2,6 +2,7 @@ export function viewerText(lang: "pt" | "en", key: keyof typeof en) {
   return lang === "en" ? en[key] : pt[key];
 }
 const en = {
+  file: "file",
   column: "Column",
   previous: "Previous rows",
   next: "Next rows",
@@ -31,6 +32,7 @@ const en = {
     "The pin change is unconfirmed. Review the current pin before retrying.",
 };
 const pt: typeof en = {
+  file: "arquivo",
   column: "Coluna",
   previous: "Linhas anteriores",
   next: "Próximas linhas",

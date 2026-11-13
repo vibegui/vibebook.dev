@@ -45,6 +45,7 @@ export type ChatActions = {
   ) => () => void;
   navigateRich?: (target: RichNavigation) => void;
   openFileReference?: (file: RichFileReference) => void;
+  ensureFileIndex?: () => void;
   reply: (id: number) => void;
   navigate: (id: number, thread?: string) => void;
   openFile: (file: Attachment) => void;

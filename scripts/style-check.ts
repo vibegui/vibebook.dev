@@ -57,6 +57,7 @@ if (native) {
     "svelte/features/file-viewer",
     "svelte/features/composer",
     "svelte/features/room-sidebar",
+    "svelte/features/waits",
     "svelte/features/apps",
   ])
     await collect(directory);

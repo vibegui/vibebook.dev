@@ -85,6 +85,7 @@ test("room cleanup disposes native owners and layout exactly once", () => {
   files.select("txt", "docs");
   let documents = 0;
   let layouts = 0,
+    chipIndexes = 0,
     appOwners = 0,
     appRequests = 0;
   const views = new Map([
@@ -111,7 +112,8 @@ test("room cleanup disposes native owners and layout exactly once", () => {
     "disposePwaMounts",
     "chatViewport",
     "nativeAgents",
-    `let nativeApps=appsOwner,nativeAppAuthority=null;
+    "chipOwner",
+    `let nativeApps=appsOwner,nativeAppAuthority=null,nativeFileChipIndex={owner:chipOwner};
      ${appsCleanup}
      let nativeFilesSession = files, sidePins = pins, sideNavigation = null, nativeRoomMutations = null;
      let nativeDocumentOwner = documentOwner, nativeDocumentSetPane = null;
@@ -133,6 +135,7 @@ test("room cleanup disposes native owners and layout exactly once", () => {
     () => {},
     { reset() {} },
     { detach() {} },
+    { dispose: () => chipIndexes++ },
   );
   run();
   run();
@@ -143,5 +146,6 @@ test("room cleanup disposes native owners and layout exactly once", () => {
   expect(appOwners).toBe(1);
   expect(appRequests).toBe(1);
   expect(layouts).toBe(1);
+  expect(chipIndexes).toBe(1);
   expect(views.size).toBe(0);
 });
