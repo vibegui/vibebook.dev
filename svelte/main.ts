@@ -2,6 +2,13 @@ import { flushSync, mount, unmount } from "svelte";
 import type { Component, ComponentProps } from "svelte";
 import { writable } from "svelte/store";
 import View from "./View.svelte";
+import DocumentPanel from "./features/documents/DocumentPanel.svelte";
+import DocumentToolbar from "./features/documents/DocumentToolbar.svelte";
+export {
+  createDocumentSession,
+  createDocumentDrafts,
+} from "./features/documents/session";
+export { documentTarget } from "./features/documents/model";
 import Home from "./features/home/HomePanel.svelte";
 import Archived from "./features/home/ArchivedPanel.svelte";
 import AppNavigation from "./features/app-navigation/AppNavigation.svelte";
@@ -27,6 +34,9 @@ export { createComposerDrafts } from "./features/composer/drafts";
 export { createRoomStore } from "./roomStore";
 export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
+  document: DocumentPanel,
+  documentToolbar: DocumentToolbar,
+  documentPeek: DocumentToolbar,
   home: Home,
   archived: Archived,
   appNavigation: AppNavigation,

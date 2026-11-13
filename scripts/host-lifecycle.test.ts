@@ -7,150 +7,13 @@ import {
   createPinsSession,
   disposePinsSession,
 } from "../svelte/features/pins/session";
+import { createDocumentDrafts } from "../svelte/features/documents/session";
 
-// The host has browser startup side effects. Execute only its real editor lifecycle
-// and cleanup functions, with a deferred module and provider standing in for Yjs.
+// Editor lifecycle is covered directly by native-documents.test.ts; no source extraction of retired builders.
 const source = readFileSync(
   new URL("../svelte/legacy/host.js", import.meta.url),
   "utf8",
 );
-function harness() {
-  const editor = source.slice(
-    source.indexOf("let collab ="),
-    source.indexOf("const SIDEBAR_ICON"),
-  );
-  const cleanup = source.slice(
-    source.indexOf("function clearViews()"),
-    source.indexOf("const panelBridge"),
-  );
-  const host = { innerHTML: "" };
-  const panel = {
-    dataset: { view: "edit" },
-    classList: { remove() {}, toggle() {} },
-  };
-  let renders = 0;
-  let layoutCleanups = 0;
-  const state = {
-    id: "a",
-    me: "person",
-    docs: {} as Record<string, string>,
-    doc: "original",
-  };
-  const pinsSession = createPinsSession(state.id);
-  const filesSession = createFilesSession(state.id);
-  filesSession.select("txt", "docs");
-  const api = Function(
-    "$app",
-    "document",
-    "docEpic",
-    "isPre",
-    "S",
-    "name",
-    "color",
-    "renderDoc",
-    "viewMounts",
-    "disposeView",
-    "pinRO",
-    "boardLayoutCleanup",
-    "disposePinsSession",
-    "initialPinsSession",
-    "initialFilesSession",
-    "let sideNavigation = null, sidePins = initialPinsSession, nativeFilesSession = initialFilesSession;\n" +
-      editor +
-      cleanup +
-      `
-    return {ensureCollab,clearViews,setLoader(loader){collabLoad=loader;},setRoom(room){S=room;}};
-  `,
-  )(
-    { querySelector: () => panel },
-    { getElementById: () => host },
-    () => null,
-    () => false,
-    state,
-    (name: string) => name,
-    () => "#123456",
-    () => renders++,
-    new Map(),
-    () => {},
-    { disconnect() {} },
-    () => layoutCleanups++,
-    disposePinsSession,
-    pinsSession,
-    filesSession,
-  );
-  return {
-    api,
-    state,
-    renders: () => renders,
-    layoutCleanups: () => layoutCleanups,
-    pinsSession,
-    filesSession,
-  };
-}
-
-test("room cleanup invalidates a pending editor import before it can mount", async () => {
-  const h = harness();
-  let complete!: (module: unknown) => void;
-  h.api.setLoader(
-    new Promise((resolve) => {
-      complete = resolve;
-    }),
-  );
-  let mounts = 0;
-  h.api.ensureCollab();
-  h.api.clearViews();
-  expect(h.pinsSession.active).toBe(false);
-  h.filesSession.select("img", "");
-  expect(get(h.filesSession.state).kind).toBe("txt");
-  expect(h.layoutCleanups()).toBe(1);
-  h.api.clearViews();
-  expect(h.layoutCleanups()).toBe(1);
-  complete({
-    mountCollab() {
-      mounts++;
-      return { destroy() {} };
-    },
-  });
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(mounts).toBe(0);
-});
-
-test("room cleanup destroys the editor and blocks old provider callbacks into the next room", async () => {
-  const h = harness();
-  let destroys = 0;
-  let callbacks!: {
-    onText: (text: string) => void;
-    onStatus: (status: string) => void;
-  };
-  h.api.setLoader(
-    Promise.resolve({
-      mountCollab(_host: unknown, options: typeof callbacks) {
-        callbacks = options;
-        return {
-          destroy() {
-            destroys++;
-            callbacks.onStatus("disconnected");
-          },
-        };
-      },
-    }),
-  );
-  h.api.ensureCollab();
-  await Promise.resolve();
-  callbacks.onText("edited");
-  expect(h.state.doc).toBe("edited");
-  h.api.clearViews();
-  const next = { id: "b", me: "other", doc: "next room", docs: {} };
-  h.api.setRoom(next);
-  callbacks.onText("stale text");
-  callbacks.onStatus("disconnected");
-  expect(destroys).toBe(1);
-  expect(h.renders()).toBe(0);
-  expect(next.doc).toBe("next room");
-  h.api.clearViews();
-  expect(destroys).toBe(1);
-});
 
 test("suggestion view disposal releases Tasks anchors before the host clears its target", () => {
   // A DOM-backed view double isolates the host registry's ownership decisions.
@@ -165,6 +28,7 @@ test("suggestion view disposal releases Tasks anchors before the host clears its
   let mounts = 0,
     destroys = 0;
   const ui = {
+    createDocumentDrafts,
     mountView(_kind: string, host: typeof target, props: { title: string }) {
       mounts++;
       const anchor = window.document.createElement("div");
@@ -206,4 +70,53 @@ test("suggestion view disposal releases Tasks anchors before the host clears its
     suggestion.indexOf('el.innerHTML = ""'),
   );
   api.disposeView("tasks");
+});
+
+// The retired editor cases are tested directly in native-documents.test.ts.
+// Preserve their independent Files/Pins/layout host cleanup assertions here.
+test("room cleanup disposes native owners and layout exactly once", () => {
+  const pins = createPinsSession("aaaaaa");
+  const files = createFilesSession("aaaaaa");
+  files.select("txt", "docs");
+  let documents = 0;
+  let layouts = 0;
+  const views = new Map([["chat", {}]]);
+  const cleanup = source.slice(
+    source.indexOf("function clearViews()"),
+    source.indexOf("const panelBridge"),
+  );
+  const run = Function(
+    "files",
+    "pins",
+    "disposePinsSession",
+    "documentOwner",
+    "layoutCleanup",
+    "viewMounts",
+    "disposeView",
+    "disposePwaMounts",
+    "pinRO",
+    `let nativeFilesSession = files, sidePins = pins, sideNavigation = null;
+     let nativeDocumentOwner = documentOwner, nativeDocumentSetPane = null;
+     let boardLayoutCleanup = layoutCleanup;
+     ${cleanup}
+     return clearViews;`,
+  )(
+    files,
+    pins,
+    disposePinsSession,
+    { dispose: () => documents++ },
+    () => layouts++,
+    views,
+    (key: string) => views.delete(key),
+    () => {},
+    { disconnect() {} },
+  );
+  run();
+  run();
+  expect(pins.active).toBe(false);
+  files.select("img", "");
+  expect(get(files.state).kind).toBe("txt");
+  expect(documents).toBe(1);
+  expect(layouts).toBe(1);
+  expect(views.size).toBe(0);
 });

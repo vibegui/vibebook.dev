@@ -1252,6 +1252,7 @@ function ensureNativeHome() {
       );
     },
     onIdentityChange: () => {
+      nativeDocumentOwner?.dispose();nativeDocumentOwner=null;nativeDocumentDrafts.clear();
       nativeViewer?.reset();
       composerDrafts.reset();
       myBooks = null;
@@ -2085,6 +2086,7 @@ async function connectCard(el, room, current = () => true) {
 // ---------------- book ----------------
 const composerDrafts=UI.createComposerDrafts();
 let roomConnection = null;
+let documentConnectionGeneration=0,activeDocumentConnectionGeneration=0;
 const roomStore = UI.createRoomStore();
 let S = null; // compatibility bridge for host integrations; the typed store owns WS state
 const typingNotes = new Map(); // transient display notes, not persisted room data
@@ -2139,6 +2141,7 @@ function dropUnavailableRoom(id, connection) {
   return true;
 }
 function openBook(id) {
+  const documentEpoch=++documentConnectionGeneration;activeDocumentConnectionGeneration=documentEpoch;
   thread =
     pendingThread || new URLSearchParams(location.search).get("t") || "main";
   pendingThread = null;
@@ -2165,7 +2168,7 @@ function openBook(id) {
     url: (lastCode) =>
       `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${id}?t=${encodeURIComponent(isPre() ? "main" : thread)}${lastCode ? `&rc=${lastCode}` : ""}`,
     onEvent: (event) => {
-      if (roomConnection === connection) onEvent(event, id);
+      if (roomConnection === connection) onEvent(event, id,documentEpoch);
     },
     onRemoved: () => {
       if (!dropUnavailableRoom(id, connection)) return;
@@ -2197,16 +2200,18 @@ function disposeView(kind) {
 }
 function renderView(kind, target, props, remount = false) {
   let mounted = viewMounts.get(kind);
-  if (mounted && (mounted.target !== target || remount)) {
+  if (mounted && (mounted.target !== target || remount || (kind.startsWith("document")&&mounted.documentOwner!==props.owner))) {
     disposeView(kind);
     mounted = null;
   }
   if (!mounted) {
     target.replaceChildren();
-    mounted = { ...UI.mountView(kind, target, props), target };
+    mounted = { ...UI.mountView(kind, target, props), target,documentOwner:kind.startsWith("document")?props.owner:undefined };
     viewMounts.set(kind, mounted);
   } else mounted.update(props);
 }
+let nativeDocumentOwner=null,nativeDocumentSetPane=null,documentScopeReset=false;
+const nativeDocumentDrafts=UI.createDocumentDrafts();
 let nativeFilesSession = null;
 function clearViews() {
   disposePwaMounts();
@@ -2217,7 +2222,7 @@ function clearViews() {
   sidePins = null;
   boardLayoutCleanup();
   boardLayoutCleanup = () => {};
-  disposeCollab();
+  nativeDocumentOwner?.dispose();nativeDocumentOwner=null;nativeDocumentSetPane=null;
   // Svelte subscriptions and observers must stop when leaving a room, including
   // navigation to home/login where renderBook will not run again.
   for (const kind of viewMounts.keys()) disposeView(kind);
@@ -2225,10 +2230,10 @@ function clearViews() {
 }
 const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
 const chatBridge = () => ({ t, name, knownNames, pageUrl:location.href, locale:LOCALE, avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;}, ago, hhmm, typingLabel: (mode) => modeLabel[mode] ?? mode, typingNote: (id) => typingNotes.get(id), dateTime: (ts) => new Date(ts).toLocaleString(LOCALE), waiting: (id) => myWaits.some((w) => w.book_id === S.id && w.ref === `m${id}`) });
-function selectThread(id) { if(deferViewerIntent(()=>selectThread(id)))return; thread = id; boardEpic = id === "main" ? null : id; docRoom = false; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
+function selectThread(id) { if(deferViewerIntent(()=>selectThread(id)))return; thread = id; boardEpic = id === "main" ? null : id; documentScopeReset = true; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
 
 
-function onEvent(ev, id) {
+function onEvent(ev, id,documentEpoch) {
   // A callback already queued by a departed room's socket must not render into
   // the newly opened room (or its home screen).
   if (currentRoomId() !== id) return;
@@ -2253,6 +2258,9 @@ function onEvent(ev, id) {
       summary: S.book.summary,
     });
   if (S) roomCache.set(id, S);
+  const documentAuthorization=ev.t==="state"||ev.t==="members";
+  if(S&&documentAuthorization)nativeDocumentDrafts.authorize(S,documentEpoch);
+  if(S&&nativeDocumentOwner)renderDoc(false,documentAuthorization);
   syncViewer(ev.t === "state");
   switch (ev.t) {
     case "state": {
@@ -2263,7 +2271,7 @@ function onEvent(ev, id) {
       // A fresh state has only the open thread in full and only its doc: let other threads and docs load again.
       olderBusy = false;
       for (const k of [...fillOf]) if (k.startsWith(id)) fillOf.delete(k);
-      for (const k of [...docAsked]) if (k.startsWith(id)) docAsked.delete(k);
+
       roomCache.delete(id);
       roomCache.set(id, S);
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
@@ -2297,8 +2305,8 @@ function onEvent(ev, id) {
       // screen is redrawn (each task tick in another epic used to re-render the open doc).
       const shown = (ev.epic || null) === docEpic();
       if (ev.stale) {
-        if (shown) send({ t: "doc.get", epic: ev.epic });
-        else docAsked.delete(S.id + ev.epic);
+        nativeDocumentOwner?.invalidate(ev.epic);
+        if(shown)renderDoc();
         return;
       }
       if (shown || ev.fetched) renderDoc();
@@ -2416,7 +2424,7 @@ function renderBook() {
     <aside class="side tw:[@media(max-width:900px)]:max-h-[calc(var(--vvh,100dvh)_-_max(96px,var(--vvh,100dvh)*.2))]!" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><span data-native-pwa-bell></span><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
+      <div class="docPeek" id="docPeek"><div id="nativeDocumentPeek"></div></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -2424,14 +2432,10 @@ function renderBook() {
       <div id="composer"></div>
     </main>
     <section class="doc">
-      <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${t("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${t("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${icon("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${t("Quadro de tarefas")}" aria-label="${t("Quadro de tarefas")}">${icon("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${t("Modo do documento")}"><button type="button" data-view="preview">${t("Ver")}</button><button type="button" data-view="edit">${t("Editar")}</button></div></header>
-      <div class="docCrumb" id="docCrumb" hidden></div>
-      <div class="preview" id="preview"></div>
-      <textarea id="doc" placeholder="${t("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
-      <div class="cm" id="cm"></div>
+      <div id="nativeDocumentToolbar"></div>
+      <div id="nativeDocument" class="tw:flex tw:min-h-0 tw:flex-1 tw:flex-col" data-native-document-slot></div>
       <div class="filesPane" id="filesPane"></div>
       <div class="decPane" id="decPane"></div>
       <div class="appsPane connsPane" id="appsPane"></div>
@@ -2454,15 +2458,8 @@ function renderBook() {
   headObs.observe(document.getElementById("docPeek"));
   // Phones: the toolbar under the header is the doc sheet's own tab bar. A tab opens the sheet on it; the open tab
   // again closes it. Dragging the bar down opens the doc too.
-  sheetDrag(document.getElementById("docPeek"), "doc", true, (e) => {
-    const pane = e.target.closest("[data-pane]")?.dataset.pane || "doc";
-    if (book.dataset.sheet === "doc" && book.dataset.pane === pane)
-      return closeSheet();
-    if (book.classList.contains("boardview"))
-      document.getElementById("toggleBoard").click(); // doc and board: one at a time
-    setPane(pane);
-    openSheet("doc");
-  });
+  sheetDrag(document.getElementById("docPeek"), "doc", true, () => {});
+  document.getElementById("docPeek").onclick=null;
   sheetDrag(document.getElementById("docGrab"), "doc", false);
   document.getElementById("sheetDim").onclick = () => closeSheet();
   document.getElementById("toggleDoc").onclick = () =>
@@ -2525,11 +2522,8 @@ function renderBook() {
     const doc = book.querySelector(":scope > .doc");
     if (!doc) return;
     doc.dataset.pane = pane;
+    renderDoc();
     book.dataset.pane = pane; // the phone's toolbar marks the open tab
-    doc.querySelectorAll(":scope > header .ptabs button").forEach((b) => {
-      b.classList.toggle("sel", b.dataset.pane === pane);
-      b.setAttribute("aria-selected", b.dataset.pane === pane);
-    });
     // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
     if (pane === "files") renderFiles(true);
     if (pane === "decisions") renderDecisions();
@@ -2548,9 +2542,7 @@ function renderBook() {
     setBoard(false);
     setPane("board");
   });
-  $app
-    .querySelectorAll(".ptabs button")
-    .forEach((b) => (b.onclick = () => setPane(b.dataset.pane)));
+
   // The header's ✻ (desktop) shows the doc panel on Agents, where the switch for your Claude lives.
   // One pair of document listeners for the room on screen (replaced, not piled up, as rooms open).
   document.removeEventListener("click", roomDocClick);
@@ -2570,67 +2562,7 @@ function renderBook() {
   document.addEventListener("click", roomDocClick);
   document.addEventListener("vb:pane", roomDocPane);
   setPane("doc");
-  const doc = document.getElementById("doc");
-  let timer;
-  doc.oninput = () => {
-    clearTimeout(timer);
-    const generation = nativeRouter.generation(),
-      roomId = S.id;
-    timer = setTimeout(() => {
-      if (
-        !book.isConnected ||
-        S?.id !== roomId ||
-        nativeRouter.generation() !== generation
-      )
-        return;
-      const ep = docEpic();
-      if (ep) S.docs[ep] = doc.value;
-      else S.doc = doc.value;
-      send({ t: "doc", text: doc.value, epic: ep || undefined });
-    }, 400);
-  };
-  doc.onblur = () => renderDoc();
-  const docPanel = $app.querySelector(".doc");
-  // Phones: the doc's foot is "✎ Editar" (reading) or "✓ Pronto" (editing); closing the sheet goes back to reading.
-  function editBar(v) {
-    const b = document.getElementById("docEditBar");
-    if (b)
-      b.innerHTML =
-        v === "edit"
-          ? `${icon("check", 16)} ${t("Pronto")}`
-          : `${icon("pencil", 16)} ${t("Editar")}`;
-  }
-  document.getElementById("docEditBar").onclick = () =>
-    setView(docPanel.dataset.view === "edit" ? "preview" : "edit");
-  const setView = (v) => {
-    docPanel.dataset.view = v;
-    editBar(v);
-    docPanel
-      .querySelectorAll(".seg button")
-      .forEach((b) => b.classList.toggle("sel", b.dataset.view === v));
-    try {
-      localStorage.setItem("vb.docView", v);
-    } catch {}
-    if (v === "edit") {
-      ensureCollab();
-      (collab || doc).focus();
-    } else {
-      ensureCollab();
-      renderDoc();
-    }
-  };
-  docPanel
-    .querySelectorAll(".seg button")
-    .forEach((b) => (b.onclick = () => setView(b.dataset.view)));
-  let savedView = "preview";
-  try {
-    savedView = localStorage.getItem("vb.docView") || "preview";
-  } catch {}
-  docPanel.dataset.view = savedView;
-  editBar(savedView);
-  docPanel
-    .querySelectorAll(".seg button")
-    .forEach((b) => b.classList.toggle("sel", b.dataset.view === savedView));
+  nativeDocumentSetPane=setPane;
   renderSide();
   renderChat();
   renderDoc(true);
@@ -2751,64 +2683,6 @@ function welcome() {
   });
   show();
   d.showModal();
-}
-
-// Co-editing: in edit mode the doc is a CodeMirror bound to a Yjs doc on the room's DocRoom (/yjs/<room>[~<epic>]),
-// with everyone's cursors. Loaded on first edit; if it can't load or connect, the plain textarea keeps working.
-let collab = null,
-  collabKey = null,
-  collabLoad = null,
-  collabGen = 0;
-function disposeCollab() {
-  // Invalidate callbacks before provider.destroy(), which can emit disconnected.
-  ++collabGen;
-  const previous = collab;
-  collab = null;
-  collabKey = null;
-  previous?.destroy();
-}
-function ensureCollab() {
-  const panel = $app.querySelector(".doc"),
-    host = document.getElementById("cm");
-  const ep = docEpic();
-  const key =
-    panel?.dataset.view === "edit" && S?.id && !isPre()
-      ? ep
-        ? `${S.id}~${ep}`
-        : S.id
-      : null;
-  if (key === collabKey) return;
-  disposeCollab();
-  collabKey = key;
-  panel?.classList.remove("collab");
-  if (host) host.innerHTML = "";
-  // Only the newest request mounts: switching room/epic while the module loads (A → B → A) must not leave two editors.
-  const gen = collabGen;
-  if (!key || !host) return;
-  (collabLoad ??= import(/* @vite-ignore */ "/collab-svelte.js"))
-    .then((m) => {
-      if (gen !== collabGen) return;
-      collab?.destroy();
-      host.innerHTML = "";
-      collab = m.mountCollab(host, {
-        room: key,
-        name: name(S.me),
-        color: color(S.me),
-        onText: (t) => {
-          if (gen !== collabGen) return;
-          if (ep) S.docs[ep] = t;
-          else S.doc = t;
-        },
-        onStatus: (s) => {
-          if (gen !== collabGen) return;
-          panel.classList.toggle("collab", s === "connected");
-          if (s !== "connected") renderDoc(true);
-        },
-      });
-    })
-    .catch(() => {
-      collabLoad = null;
-    });
 }
 
 const SIDEBAR_ICON = icon("sidebar", 20);
@@ -2993,7 +2867,7 @@ function renderRail(el) {
     (b) =>
       (b.onclick = () => {
         thread = b.dataset.thread;
-        docRoom = false;
+        documentScopeReset = true;
         boardEpic = thread === "main" || isPre() ? null : thread;
         renderSide();
         renderChat();
@@ -3146,20 +3020,7 @@ function renderAgentsPane(on, live, path, w) {
   // your Claude is around with nothing queued, orange + count while something waits on it.
   const q = myQueue(),
     around = live || mine.some((a) => Date.now() - a.seen_at < 30 * 60e3);
-  document.querySelectorAll(".peekAgents, .ptAgents").forEach((b) => {
-    // Stopped at a permission prompt in its terminal: a red, pulsing dot and the prompt in the title.
-    const stuck = q.find((x) => x.st === "blocked");
-    b.dataset.q = stuck ? "blocked" : q.length ? "busy" : around ? "idle" : "";
-    b.querySelector(".qN").textContent = q.length ? String(q.length) : "";
-    b.title = stuck
-      ? t("Seu agent espera você no terminal")
-      : q.length
-        ? t("Fila do seu agent: {n}", { n: q.length })
-        : around
-          ? t("Seu agent está livre")
-          : "Agents";
-  });
-  document.getElementById("docPeek")?.classList.toggle("agLive", live);
+  renderDocumentChrome();
   // The rest is the pane itself: drawn only while it's open (renderSide calls this on every change).
   if (!document.querySelector('.doc[data-pane="agents"]')) {
     el.innerHTML = "";
@@ -3955,7 +3816,7 @@ function renderSide() {
     if(deferViewerIntent(()=>openSideThread(id)))return;
     closeSheet(true);
     thread = id;
-    docRoom = false;
+    documentScopeReset = true;
     boardEpic = thread === "main" || isPre() ? null : thread;
     renderSide();
     renderChat();
@@ -3981,7 +3842,7 @@ function renderSide() {
   const remove = el.querySelector("#sideDel"); if (remove) remove.onclick = () => { closeSheet(); document.getElementById("epicDel")?.click(); };
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     closeSheet(true);
-    thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
+    thread = b.dataset.thread; documentScopeReset = true; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   });
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   setFavicon(bookTitle());
@@ -4093,26 +3954,7 @@ function renameThread() {
   );
 }
 // Phones: the slim bar above the composer that pulls the doc sheet up: "Doc · <title> · d/n tarefas".
-function renderPeek() {
-  const el = document.getElementById("peekTxt");
-  if (!el || !S) return;
-  const ep = docEpic(),
-    epic = ep && S.epics.find((e) => e.id === ep);
-  const text = (ep ? S.docs?.[ep] : S.doc) || "";
-  const title =
-    text
-      .match(/^#\s+(.+)$/m)?.[1]
-      .replace(/[*_`]/g, "")
-      .trim() || (epic ? epic.title : bookTitle());
-  const n = epic?.tasks.length || 0,
-    d = n && epic.tasks.filter((x) => x.done).length;
-  el.innerHTML = `${icon("doc", 15)}<b>Doc</b>${n ? `<small>${d}/${n}</small>` : ""}`;
-  el.title = title;
-  const nf = S.filesN ?? S.files?.length ?? 0,
-    bad = (S.reminders || []).filter((r) => r.error).length;
-  document.getElementById("peekFiles").textContent = nf ? String(nf) : "";
-  document.getElementById("peekRem").textContent = bad ? "⚠" : "";
-}
+function renderPeek(){renderDocumentChrome();}
 // Phones (≤900px): the sidebar ("side": threads, people) and the doc are sheets that drop from the top over the chat. Opening one
 // pushes a history entry so Back closes it (like the file viewer); picking a thread reuses that entry for its URL.
 const ROOM_PHONE = matchMedia("(max-width: 900px)");
@@ -4128,9 +3970,7 @@ function closeSheet(pick) {
   if(deferViewerIntent(()=>closeSheet(pick)))return;
   const bk = $app.querySelector(".book");
   if (!bk?.dataset.sheet) return;
-  bk.querySelector(
-    '.doc[data-view="edit"] .seg [data-view="preview"]',
-  )?.click(); // closing the doc ends editing
+  nativeDocumentOwner?.mode("preview"); // closing the doc ends editing
   delete bk.dataset.sheet;
   if (!history.state?.sheet) return;
   if (pick)
@@ -4147,9 +3987,7 @@ function closeRoomOverlaysForNavigation() {
   if (history.state?.sheet)
     navigation.replaceState(null, "", location.href);
   if (book?.dataset.sheet) {
-    book
-      .querySelector('.doc[data-view="edit"] .seg [data-view="preview"]')
-      ?.click();
+    nativeDocumentOwner?.mode("preview");
     delete book.dataset.sheet;
   }
 }
@@ -4160,9 +3998,7 @@ function sheetPop() {
   }
   const bk = $app.querySelector(".book");
   if (!bk?.dataset.sheet) return false;
-  bk.querySelector(
-    '.doc[data-view="edit"] .seg [data-view="preview"]',
-  )?.click();
+  nativeDocumentOwner?.mode("preview");
   delete bk.dataset.sheet;
   return true;
 }
@@ -4217,6 +4053,7 @@ function sheetDrag(handle, which, opening, onTap) {
 function renderTasks() {
   const el = document.getElementById("tasks");
   if (!el) return;
+  renderDoc();
   const epic = S.epics.find((e) => e.id === thread);
   const head = document.getElementById("threadTitle");
   const chev = `<button type="button" class="thChev" aria-label="${t("Trocar de conversa")}" title="${t("Trocar de conversa")}">${icon("chevronDown", 18)}</button>`;
@@ -4256,11 +4093,6 @@ function renderTasks() {
       "beforeend",
       `<b class="kN" title="${t("Esperando você")}: ${mineN}">${mineN}</b>`,
     );
-  const pk = $app.querySelector(".ptBoard .kN");
-  if (pk) {
-    pk.hidden = !mineN;
-    pk.textContent = mineN || "";
-  }
   kb.title = mineN
     ? `${t("Quadro de tarefas")} · ${t("Esperando você")}: ${mineN}`
     : t("Quadro de tarefas (kanban)");
@@ -4296,7 +4128,7 @@ function renderTasks() {
   if (!list) return;
   if (epic) document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
   if (epic) document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
-  renderView("tasks", el, {room:S, thread, vb:panelBridge(), send, request, waits:myWaits});
+  disposeView("tasks");
 }
 
 const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
@@ -4438,7 +4270,7 @@ function goToMsg(id, th) {
   ) {
     thread = want;
     boardEpic = thread === "main" ? null : thread;
-    docRoom = false;
+    documentScopeReset = true;
     renderSide();
     renderChat();
     renderKanban();
@@ -4486,7 +4318,7 @@ function cardGo(to) {
   if (!target) return toast(t("Esse épico não existe mais nesta sala."));
   if (target !== thread) {
     thread = target;
-    docRoom = false;
+    documentScopeReset = true;
     boardEpic = thread === "main" ? null : thread;
     renderSide();
     renderChat();
@@ -4508,7 +4340,7 @@ function renderDecisions() {
   const el = document.getElementById("decPane");
   if (!el) return;
   const list = S.decisions || [];
-  document.getElementById("decCount").textContent = list.length ? ` ${list.length}` : "";
+  renderDocumentChrome();
   const roomId = S.id;
   renderView("decisions", el, {room:S, thread, vb:panelBridge(), send, request:(command) => S?.id === roomId ? request(command) : Promise.resolve({ok:false, error:"disconnected"})});
 }
@@ -4590,8 +4422,7 @@ function renderConns() {
   }
   if (conns === undefined) return; // loading
   const rapps = roomApps();
-  document.getElementById("appCount").textContent =
-    conns.length + rapps.length ? ` ${conns.length + rapps.length}` : "";
+  renderDocumentChrome();
   if (connApp) return renderConnApp(el);
   const keep =
     document.getElementById("connForm") &&
@@ -5210,14 +5041,14 @@ function renderReminders() {
   if (!el || !S) return;
   renderPeek();
   const list=S.reminders || [], bad=list.filter(r=>r.error).length;
-  document.getElementById("remCount").textContent=list.length ? ` ${list.length}${bad ? " ⚠" : ""}` : "";
+  renderDocumentChrome();
   renderView("reminders",el,{room:S,thread,vb:panelBridge(),send,request});
 }
 function renderFiles(load = false, freshSnapshot = false) {
   const el=document.getElementById("filesPane"); if(!el || !S) return;
   renderPeek();
   const n=S.filesN ?? S.files?.length ?? 0;
-  document.getElementById("fileCount").textContent=n ? ` ${n}` : "";
+  renderDocumentChrome();
   if(nativeFilesSession?.roomId!==S.id){nativeFilesSession?.dispose();nativeFilesSession=createFilesSession(S.id);}
   const session=nativeFilesSession, roomId=S.id, connection=roomConnection;
   session.sync(S, freshSnapshot);
@@ -5431,148 +5262,30 @@ function scrollDown(force) {
   if (force || el.scrollHeight - el.scrollTop - el.clientHeight < 200)
     el.scrollTop = el.scrollHeight;
 }
-// Mermaid via pele (obsidianmd/pele), loaded only when the doc has a ```mermaid block.
-const PELE = "https://cdn.jsdelivr.net/npm/pele@1.10.0/dist/pele.global.js";
-let peleP;
-const loadPele = () =>
-  (peleP ??= new Promise((ok, no) => {
-    const s = Object.assign(document.createElement("script"), {
-      src: PELE,
-      crossOrigin: "anonymous",
-      integrity:
-        "sha384-zwGYZK+/MVuyfItMWj4MERk2omW/eWEDLBEwuzSJd289OrEFwsdwQe+EqwJacKaA",
-    });
-    s.onload = () => ok(window.pele);
-    s.onerror = () => {
-      peleP = null;
-      no();
-    };
-    document.head.append(s);
-  }));
-async function renderMermaid(pv) {
-  const blocks = [...pv.querySelectorAll("pre > code.language-mermaid")];
-  if (!blocks.length) return;
-  const pele = await loadPele().catch(() => null);
-  if (!pele) return;
-  blocks.forEach((code, i) => {
-    const fig = document.createElement("figure");
-    fig.className = "mmd";
-    try {
-      const { svg } = pele.render(code.textContent, {
-        idPrefix: `mmd${i}-`,
-        fontFamily: '"Schibsted Grotesk", sans-serif',
-        fontSize: 14,
-        maxWidth: pv.clientWidth - 90,
-        links: false,
-        images: false,
-      });
-      // Doc is untrusted (people + AI): sanitize the SVG too.
-      fig.innerHTML = DOMPurify.sanitize(svg, {
-        USE_PROFILES: { svg: true, svgFilters: true },
-      });
-    } catch (e) {
-      fig.classList.add("err");
-      fig.textContent = `${t("Diagrama com erro")}${e.line ? ` ${t("na linha {n}", { n: e.line })}` : ""}: ${e.message}`;
-    }
-    code.parentElement.replaceWith(fig);
-  });
+// Native document owner; the remaining phone gesture/resizer is an explicit shell adapter.
+function docEpic() { return S ? UI.documentTarget(S,thread,nativeDocumentOwner?.roomDocument() ?? false).epicId : null; }
+function renderDoc(fresh=false,authoritative=false) {
+  const el=document.getElementById("nativeDocument");
+  if(!el||!S)return;
+  const roomId=S.id,account=S.me,connection=roomConnection,book=el.closest(".book");
+  if(!nativeDocumentOwner)nativeDocumentOwner=UI.createDocumentSession({drafts:nativeDocumentDrafts,authorizationEpoch:activeDocumentConnectionGeneration,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),name:room=>name(room.me),color:room=>color(room.me),label:LANG==="en"?"Document editor":"Editor do documento",readMode:()=>localStorage.getItem("vb.docView"),writeMode:value=>localStorage.setItem("vb.docView",value)});
+  const owner=nativeDocumentOwner;
+  function current(){return nativeDocumentOwner===owner&&S?.id===roomId&&S.me===account&&roomConnection===connection&&currentRoomId()===roomId&&book.isConnected;}
+  owner.sync(S,thread,fresh,authoritative,activeDocumentConnectionGeneration);
+  if(documentScopeReset){documentScopeReset=false;owner.chooseRoom(false);}
+  renderView("document",el,{owner,props:{room:S,thread,send:command=>current()?send(command):false,taskProps:{room:S,thread,vb:panelBridge(),send:command=>current()?send(command):false,request:command=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),waits:myWaits},actions:{navigate:(id,target)=>{if(current())goToMsg(id,target);},navigateRich:target=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFile:file=>{if(current()&&[...(S.files||[]),...allMsgs().flatMap(message=>message.files||[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.ts===file.ts&&f.size===file.size&&f.author===file.author))openNativeFile(file);},openFileReference:file=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);}},lang:LANG,onAuthorize:()=>{if(!current())return;roomConnection?.dispose();roomConnection=null;clearViews();roomCache.delete(roomId);openBook(roomId);},pane:book.querySelector(":scope > .doc")?.dataset.pane||"doc",onPane:pane=>{if(current())nativeDocumentSetPane?.(pane);}}});
+  renderDocumentChrome();
 }
-// The epic's tasks live inside its doc, as a live section: where the doc has a "[[tarefas]]" line, else right
-// after the first paragraph. The #tasks node is moved, not rebuilt, so renderTasks keeps owning its content.
-function placeTasks(pv, ep) {
-  const tk = document.getElementById("tasks");
-  if (!tk) return;
-  const home = document.getElementById("tasksHome");
-  if (!ep) {
-    home.append(tk);
-    return;
-  }
-  // The doc's "## Tarefas" checklist (kept in sync with the tasks by the server) shows as the live card.
-  const h = [...pv.querySelectorAll("h2")].find(
-    (x) => x.textContent.trim().toLowerCase() === "tarefas",
-  );
-  if (h) {
-    const ul =
-      h.nextElementSibling?.tagName === "UL" ? h.nextElementSibling : null;
-    ul?.remove();
-    return h.replaceWith(tk);
-  }
-  const mark = [...pv.querySelectorAll("p")].find(
-    (p) => p.textContent.trim().toLowerCase() === "[[tarefas]]",
-  );
-  if (mark) return mark.replaceWith(tk);
-  const first = [...pv.children].find((x) => x.tagName === "P");
-  first ? first.after(tk) : pv.prepend(tk);
-}
-// The doc panel follows the open epic (its own doc, a child of the room's); "Sala" in the crumb shows the room's.
-let docRoom = false,
-  docShown = null;
-// Epic docs come one at a time: the room's state carries only the open epic's (Book.epicDocs), the rest on "doc.get".
-const docAsked = new Set();
-const docEpic = () =>
-  !docRoom && !isPre() && S.epics.some((e) => e.id === thread) ? thread : null;
-function renderDoc(force) {
-  const doc = document.getElementById("doc");
-  if (!doc) return;
-  S.docs ??= {};
-  // Older epics without a doc open with the same start new ones get (epicDocSeed in src/book.ts).
-  const ep = docEpic(),
-    epic = ep && S.epics.find((e) => e.id === ep);
-  if (ep && !(ep in S.docs) && !docAsked.has(S.id + ep)) {
-    docAsked.add(S.id + ep);
-    send({ t: "doc.get", epic: ep });
-  }
-  const text = ep
-    ? S.docs[ep] ||
-      `# ${epic.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite aqui ou peça pro seu Claude).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n`
-    : S.doc;
-  if (docShown !== (ep || "room")) {
-    force = true;
-    docShown = ep || "room";
-  }
-  ensureCollab();
-  const inEpic = !isPre() && S.epics.find((e) => e.id === thread);
-  const crumb = document.getElementById("docCrumb");
-  crumb.hidden = !inEpic;
-  if (inEpic) {
-    crumb.innerHTML = `<button type="button" class="${ep ? "" : "sel"}" data-docroom="1">${esc(bookTitle())}</button><span>›</span><button type="button" class="${ep ? "sel" : ""}" data-docroom="">${esc(inEpic.title)}</button>`;
-    crumb.querySelectorAll("button").forEach(
-      (b) =>
-        (b.onclick = () => {
-          docRoom = !!b.dataset.docroom;
-          renderDoc(true);
-        }),
-    );
-  }
-  // Doc is written by people and the AI: render markdown, then sanitize.
-  const pv = document.getElementById("preview");
-  const tk = document.getElementById("tasks");
-  if (tk) document.getElementById("tasksHome").append(tk); // keep it out of the innerHTML wipe
-  pv.innerHTML = text.trim()
-    ? DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }), {
-        ...MD_PURIFY,
-        FORBID_TAGS: MD_PURIFY.FORBID_TAGS.filter((x) => x !== "img"),
-        ADD_ATTR: ["target"],
-      }) // the doc keeps images (screenshots of the room's files)
-    : `<div class="empty">${t("Documento vazio. Clique em <b>Editar</b> ou peça pro seu agent resumir as decisões aqui.")}</div>`;
-  pv.querySelectorAll("a").forEach((a) => {
-    a.target = "_blank";
-    a.rel = "noopener noreferrer nofollow ugc";
-  });
-  // @vibe's grade of the room doc (Jev): what the scope still misses. Only on the room's doc, not an epic's.
-  if (!ep && S.docNotes?.length)
-    pv.insertAdjacentHTML(
-      "afterbegin",
-      `<div class="docNotes" title="${t("@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`,
-    );
-  renderMermaid(pv);
-  placeTasks(
-    pv,
-    ep || (thread === "main" && S.roomTasks?.length ? "main" : null),
-  );
-  renderPeek();
-  // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
-  if (force || document.activeElement !== doc) doc.value = text;
+function renderDocumentChrome(){
+  if(!S||!nativeDocumentOwner)return;
+  const book=$app.querySelector(".book"),roomId=S.id,account=S.me,connection=roomConnection,owner=nativeDocumentOwner;
+  const current=()=>nativeDocumentOwner===owner&&S?.id===roomId&&S.me===account&&roomConnection===connection&&currentRoomId()===roomId&&book?.isConnected;
+  const queue=myQueue(),mine=roomAgents.list.filter(a=>a.email===S.me),around=mine.some(a=>Date.now()-a.seen_at<30*60e3),stuck=queue.some(item=>item.st==="blocked");
+  const counts={board:[...S.epics.flatMap(epic=>epic.tasks),...(S.roomTasks||[])].filter(task=>!task.done&&task.owner===S.me).length,files:S.filesN??S.files?.length??0,apps:(conns||[]).length+roomApps().length,decisions:S.decisions?.length??0,reminders:(S.reminders||[]).some(reminder=>reminder.error)?`${S.reminders?.length??0} ⚠`:S.reminders?.length??0,agents:queue.length};
+  const props={owner,room:S,lang:LANG,pane:book.querySelector(":scope > .doc")?.dataset.pane||"doc",counts,agentState:stuck?"blocked":queue.length?"busy":around?"idle":"",agentTitle:stuck?t("Seu agent espera você no terminal"):queue.length?t("Fila do seu agent: {n}",{n:queue.length}):around?t("Seu agent está livre"):"Agents"};
+  const tab=document.getElementById("nativeDocumentToolbar"),peek=document.getElementById("nativeDocumentPeek");
+  if(tab)renderView("documentToolbar",tab,{...props,onPane:pane=>{if(current())nativeDocumentSetPane?.(pane);}});
+  if(peek)renderView("documentPeek",peek,{...props,compact:true,onPane:pane=>{if(!current())return;if(book.dataset.sheet==="doc"&&book.dataset.pane===pane)return closeSheet();if(book.classList.contains("boardview"))document.getElementById("toggleBoard").click();nativeDocumentSetPane?.(pane);openSheet("doc");}});
 }
 
 // Face ID lock (this device): a passkey of the device's own authenticator (user verification required, so Face ID /

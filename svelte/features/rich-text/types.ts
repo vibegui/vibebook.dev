@@ -1,7 +1,9 @@
 import type { Attachment, Room } from "../../../shared/room";
 import type { ChatActions } from "../../chatTypes";
+export type RichPolicy = "document" | "file-preview";
 export type RichMode = "human" | "markdown" | "inline";
 export type RichContext = {
+  policy?: RichPolicy;
   room: Room;
   pageUrl: string;
   idPrefix: string;
@@ -56,5 +58,6 @@ export type RichNode =
       attrs: SafeAttributes;
       children: RichNode[];
       task?: boolean;
+      documentTaskSlot?: true;
       language?: string;
     };

@@ -5,6 +5,7 @@ import type { RichContext, RichMode, RichNode } from "./types";
  * Presence/receipts/message text do not change this key. No global/account text cache exists. */
 function contextKey(context: RichContext): string {
   return JSON.stringify([
+    context.policy,
     context.room.id,
     context.room.me,
     context.pageUrl,
@@ -29,6 +30,7 @@ export function createRichSession() {
   let active = true,
     previousText: string | undefined,
     previousMode: RichMode | undefined,
+    previousPolicy: RichContext["policy"],
     previousContext: string | undefined;
   let previousParts: readonly unknown[] | undefined;
   let parsed: ReturnType<typeof parseRichSource> | undefined,
@@ -36,13 +38,18 @@ export function createRichSession() {
   return {
     render(text: string, mode: RichMode, context: RichContext): RichNode[] {
       if (!active) return [{ kind: "text", text }];
-      const changed = text !== previousText || mode !== previousMode;
+      const changed =
+        text !== previousText ||
+        mode !== previousMode ||
+        context.policy !== previousPolicy;
       if (changed) {
-        parsed = parseRichSource(text, mode);
+        parsed = parseRichSource(text, mode, context.policy);
+        previousPolicy = context.policy;
         previousText = text;
         previousMode = mode;
       }
       const parts = [
+        context.policy,
         context.room.id,
         context.room.me,
         context.room.members,
@@ -71,6 +78,7 @@ export function createRichSession() {
       active = false;
       previousText = undefined;
       previousMode = undefined;
+      previousPolicy = undefined;
       previousContext = undefined;
       previousParts = undefined;
       parsed = undefined;

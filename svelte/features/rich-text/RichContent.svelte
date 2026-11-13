@@ -2,7 +2,7 @@
   import type { Room } from "../../../shared/room";
   import { onDestroy } from "svelte";
   import { createRichSession } from "./session";
-  import type { RichActions, RichMode } from "./types";
+  import type { RichActions, RichMode, RichPolicy } from "./types";
   import RichNodes from "./RichNodes.svelte";
   let {
     text,
@@ -11,6 +11,7 @@
     actions,
     names,
     pageUrl,
+    policy,
   }: {
     text: string;
     mode?: RichMode;
@@ -18,6 +19,7 @@
     actions: RichActions;
     names?: Readonly<Record<string, string>>;
     pageUrl?: string;
+    policy?: RichPolicy;
   } = $props();
   const idPrefix = $props.id();
   const session = createRichSession();
@@ -25,6 +27,7 @@
   const nodes = $derived(
     session.render(text, mode, {
       room,
+      policy,
       names,
       pageUrl: pageUrl || location.href,
       idPrefix,

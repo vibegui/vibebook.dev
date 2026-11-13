@@ -18,6 +18,7 @@ import { markdownTree } from "./markdownTree";
 import { fileTarget, linkTarget, mentionTarget, safeUrl } from "./links";
 import type {
   RichContext,
+  RichPolicy,
   RichMode,
   RichNode,
   RichNamespace,
@@ -88,17 +89,60 @@ export type ParsedRichSource = {
   literal?: boolean;
   tree?: ReturnType<typeof markdownTree>;
 };
+/** Linear preflight avoids pathological Markdown work on a giant non-code line.
+ * Full source remains visible. Fenced code can still use the selected profile's full budget. */
+export function markdownWorkAllowed(source: string): boolean {
+  let start = 0,
+    fence = "",
+    fenceLength = 0;
+  while (start < source.length) {
+    const found = source.indexOf("\n", start),
+      end = found < 0 ? source.length : found,
+      prefix = source.slice(start, Math.min(end, start + 256)),
+      marker = /^ {0,3}(`{3,}|~{3,})/.exec(prefix)?.[1];
+    if (!fence && end - start > 16384) return false;
+    if (marker) {
+      if (!fence) {
+        if (
+          marker[0] === "`" &&
+          source
+            .slice(start, end)
+            .slice(source.slice(start, end).indexOf(marker) + marker.length)
+            .includes("`")
+        ) {
+          start = end + 1;
+          continue;
+        }
+        fence = marker[0];
+        fenceLength = marker.length;
+      } else if (marker[0] === fence && marker.length >= fenceLength)
+        fence = "";
+    } else if (!fence && end - start > 16384) return false;
+    start = end + 1;
+  }
+  return true;
+}
 export function parseRichSource(
   source: string,
   mode: RichMode,
+  policy?: RichPolicy,
 ): ParsedRichSource {
   // Canonical source remains untouched for copy/edit. Oversize content has one inert text node.
-  if (source.length > RICH_LIMITS.source)
+  if (
+    source.length >
+    (policy === "document"
+      ? 100_000
+      : policy === "file-preview"
+        ? 300_000
+        : RICH_LIMITS.source)
+  )
     return { text: source, mode, literal: true };
-  const text = emojify(source);
+  if (mode === "markdown" && !markdownWorkAllowed(source))
+    return { text: source, mode, literal: true };
+  const text = policy === "document" ? source : emojify(source);
   if (mode !== "markdown") return { text, mode };
   try {
-    const tree = markdownTree(text);
+    const tree = markdownTree(text, policy === "document");
     let count = 0,
       svg = 0;
     const pending = [{ node: tree.fragment as Tree.Node, depth: 0 }];
@@ -126,7 +170,10 @@ export function richText(
   mode: RichMode,
   context: RichContext,
 ): RichNode[] {
-  return projectRichSource(parseRichSource(source, mode), context);
+  return projectRichSource(
+    parseRichSource(source, mode, context.policy),
+    context,
+  );
 }
 export function projectRichSource(
   parsed: ParsedRichSource,
@@ -338,6 +385,40 @@ export function projectRichSource(
       if (ns !== HTML_NS && ns !== SVG_NS && ns !== MATH_NS) continue;
       const allowed =
         ns === HTML_NS ? HTML_TAGS : ns === SVG_NS ? SVG_TAGS : MATH_TAGS;
+      if (context.policy === "document" && ns === HTML_NS && tag === "img") {
+        const raw = child.attrs.find((attr) => attr.name === "src")?.value;
+        const safe = raw === undefined ? null : safeUrl(raw, context.pageUrl);
+        if (safe) {
+          const url = new URL(safe, context.pageUrl);
+          if (
+            (url.protocol === "http:" || url.protocol === "https:") &&
+            !url.username &&
+            !url.password
+          ) {
+            const attrs: Record<string, string> = {
+              src: url.href,
+              alt: (
+                child.attrs.find((attr) => attr.name === "alt")?.value ?? ""
+              ).slice(0, 1000),
+              referrerpolicy: "no-referrer",
+              loading: "lazy",
+              decoding: "async",
+            };
+            const title = child.attrs.find(
+              (attr) => attr.name === "title",
+            )?.value;
+            if (title) attrs.title = title.slice(0, 1000);
+            out.push({
+              kind: "element",
+              tag: "img" as SafeTag,
+              namespace: HTML_NS,
+              attrs,
+              children: [],
+            });
+          }
+        }
+        continue;
+      }
       if (!allowed.has(tag)) {
         if (ns === HTML_NS) out.push(...nodes(child.childNodes, ns, code));
         continue;

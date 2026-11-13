@@ -44,6 +44,7 @@ if (native) {
     "svelte/features/home",
     "svelte/features/app-navigation",
     "svelte/features/rooms",
+    "svelte/features/documents",
     "svelte/features/file-viewer",
     "svelte/features/composer",
   ])

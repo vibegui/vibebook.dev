@@ -1,15 +1,20 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import type { RichActions, RichNode, SafeAttributes } from "./types";
   import { HTML_NS } from "./allowlist";
   import Icon from "../../lib/ui/Icon.svelte";
-  let { nodes, actions }: { nodes: readonly RichNode[]; actions: RichActions } =
+  let {
+    nodes,
+    actions,
+    taskSlot,
+  }: { nodes: readonly RichNode[]; actions: RichActions; taskSlot?: Snippet } =
     $props();
   let active = true;
   onDestroy(() => {
     active = false;
   });
   const voidTags = new Set([
+    "img",
     "area",
     "br",
     "col",
@@ -29,6 +34,8 @@
             ? "tw:text-lg tw:leading-6"
             : "tw:text-base tw:leading-6",
       ];
+    if (tag === "img")
+      return "tw:my-3 tw:max-h-[80vh] tw:max-w-full tw:rounded-control tw:object-contain";
     if (tag === "p")
       return "tw:my-2 tw:font-sans tw:tracking-normal tw:leading-6";
     if (tag === "pre")
@@ -65,7 +72,11 @@
     event: MouseEvent | KeyboardEvent,
     node: Extract<RichNode, { kind: "link" }>,
   ) {
-    if (!active) {
+    if (
+      !active ||
+      !(event.currentTarget instanceof Element) ||
+      !event.currentTarget.isConnected
+    ) {
       event.preventDefault();
       return;
     }
@@ -165,6 +176,7 @@
               >{/if}
           {:else}{@render content(node.children)}{/if}
         </a>{/if}
+    {:else if node.documentTaskSlot}{@render taskSlot?.()}
     {:else if node.namespace === HTML_NS && voidTags.has(node.tag)}<svelte:element
         this={node.tag}
         xmlns={node.namespace}

@@ -38,7 +38,7 @@ type KnownToken =
  * exact-version adapter; upgrades must pass split-tag, namespace, table-repair and text-flush regressions.
  * No protected/underscore parser methods or HTML serialization/rendering APIs are called.
  */
-export function markdownTree(source: string) {
+export function markdownTree(source: string, documentImages = false) {
   let emitted = 0,
     depth = 0;
   let pending: { tag: string; metadata: MarkdownMetadata } | undefined;
@@ -169,7 +169,17 @@ export function markdownTree(source: string) {
           tag("hr", true);
           break;
         case "image":
-          break; // The existing MD_PURIFY removes images; attachments own actual image rendering.
+          if (documentImages)
+            tag(
+              "img",
+              true,
+              attrs({
+                src: decodeHTML(token.href),
+                alt: decodeHTML(token.text),
+                title: token.title ? decodeHTML(token.title) : undefined,
+              }),
+            );
+          break; // Chat retains its existing no-image policy.
         case "link":
           wrap(
             "a",
