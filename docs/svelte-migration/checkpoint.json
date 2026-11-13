@@ -1,19 +1,19 @@
 {
-  "scope": "Incremental native Studio task panel and shared UI; not full migration acceptance",
-  "sourceCommit": "0099513658ebb40c3d1e8f37dfae22bf4ccb935c",
-  "capturedAt": "2026-11-13T00:19:34.066Z",
+  "scope": "Native reset containment, Gallery/Inbox and task regression; incremental evidence only",
+  "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
+  "capturedAt": "2026-11-13T01:08:05.091Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
     "passed": 77,
     "failed": 0,
-    "assertions": 361
+    "assertions": 364
   },
   "svelteCheck": {
     "preview": "0 errors and 0 warnings",
     "vanilla": "0 errors and 0 warnings"
   },
-  "logSha256": "1409dc6036b221a1def2ec6c468b0d7714e3c7e9e9bcb236d1d68108862172a8",
+  "logSha256": "265641bedf9889cf0d1d26568d15a11ce4cd77ec8890777dd727a2465526a61a",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
     "files": 405,
@@ -25,7 +25,7 @@
     ]
   },
   "defaultAssetDiff": {
-    "baseline": "e0bce88",
+    "baseline": "12b202f",
     "paths": [
       "public/app.html",
       "public/svelte/ui.js",
@@ -37,24 +37,25 @@
     "changed": []
   },
   "browserProof": {
-    "file": "docs/svelte-migration/native-tasks/verification.json",
-    "sourceCommit": "0099513658ebb40c3d1e8f37dfae22bf4ccb935c",
+    "file": "docs/svelte-migration/native-coexistence/verification.json",
+    "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
     "scopes": [
-      "Native task panel, not full feature parity/production acceptance",
-      "Gallery and Inbox"
+      "Gallery and Inbox",
+      "Native task panel, not full feature parity/production acceptance"
     ],
     "status": "pass"
   },
   "cssBoundary": {
     "vite": "Plain CSS and actual Tailwind: private/backend URLs, aliases, symlinks, public symlinks, nested imports reject; safe fonts pass; server positive/client negative fixtures pass",
     "bun": "Native CSS resolution rejects private font, backend URL, nested backend import and private symlink; safe font passes",
-    "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures"
+    "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures",
+    "nativeReset": "All49 emitted base rules confined to native descendants; no unlowered @scope; real legacy room CSS/geometry unchanged for445desktop/467mobile elements in both themes"
   },
   "limits": [
-    "Local DEV_EMAIL and explicit fixtures; no authenticated production acceptance.",
-    "Vanilla auto-archive is preserved; a second unfinished task isolates task-toggle verification.",
-    "A successful send means queued WebSocket data, not a server acknowledgment; actual UI persistence/reconnect is tested separately.",
-    "Full application remains transitional: legacy host/CSS, complete protocol/RPC migration and all-feature parity remain pending.",
-    "Actual authenticated Studio workspace comparisons, full app/backend/shared-contract HMR and final performance budgets remain pending."
+    "Local DEV_EMAIL and explicit browser fixtures; no authenticated production acceptance.",
+    "Vanilla remains default; the Svelte application still has a legacy host and styling outside migrated surfaces.",
+    "Actual authenticated Studio workspace comparison, complete native features/schema/RPC migration, full-app/backend/contract HMR and final performance budgets remain pending.",
+    "Baseline is12b202f; later peer-reported API/viewer changes must be integrated and verified separately.",
+    "WebSocket send success means queued data, not server acknowledgment; browser persistence and reconnect are tested separately."
   ]
 }

@@ -1,0 +1,308 @@
+{
+  "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
+  "capturedAt": "2026-11-13T01:08:05.091Z",
+  "scope": "Native reset containment, Gallery/Inbox and task regression; incremental evidence only",
+  "sourceFingerprint": "c1e52e6be59c1b7967e0a2ca4a6392c30c14c0c625f77ddd5039a85582d07b83",
+  "sourceHashes": {
+    "bun.lock": "459d94c53cb9ef8fa677e3c9ae068aacb34f0cbdacda366ac5b87eaa26854fe4",
+    "package.json": "ea7ac06d31bbea477e09e46ee0e40f628396117c2a32c739f61a9efd6f3f51ed",
+    "public/app-svelte.css": "bdfe3840d8cb7b1e69253788be6d41e3c7c49aa4408869ef365dd92c422b3677",
+    "public/app-svelte.html": "ee3cf330c96d8ec7d017583f2be157c980f27b94c10dde1336af255236525712",
+    "public/svelte-preview/Field-CJgdBE5w.js": "ceeb6751da71dfe4a3b92e644d05ccf0c1a1af759a9c680c16b18dbabba32e38",
+    "public/svelte-preview/app.js": "f278f5affac21037bc85ff8c1f091d81f33a6ae209f62999cea52780dc9cef66",
+    "public/svelte-preview/host-DX6AEt-n.js": "c7a805e0a6892f0c414ca42f0941faeb9211977a1cde3f00b615dda91514f0d8",
+    "public/svelte-preview/main-CdoGVkRI.js": "1956e63f84765f84512769847736306e0e4de6a40283ec9859e06e3685bcbb5f",
+    "public/svelte-preview/main-zWoo90PW.js": "ef0a5fccc4874c3778b3d36fb0f4c3839f7ad61e9be097f6f944b4c1dfb2b599",
+    "public/svelte-preview/ui.css": "cce8a452bf3a2946c0d2b02573f12257f031393001304169dd541b756791f686",
+    "public/svelte-preview/ui.js": "f5cd024280a4c5b0078c2354fe0f4dab12a9d5dc09cd0be9c4da19c02edf1dd1",
+    "scripts/design-system-browser.ts": "56d4f8407e2b51271a1e52cc300ace2f785f83fad2d3fd584212fe6e61bdb6f7",
+    "scripts/native-browser-fixtures.ts": "43f49504d138de78b8343ab90df70d2e0662bcf23629b283336c32412442a871",
+    "scripts/rpc-routes.test.ts": "eec2470201d87aa97145d725fbc55e5d07a3c71c8ed59ee26ba28d4d07278e2f",
+    "scripts/style-check.ts": "0365bf6afb42d6e6726dfdbd29dfea0f8c23c2a21621adfa0e00973fca647921",
+    "scripts/style-policy.ts": "3a4b98623fc68c42a36163f9cbb3835be41bd89ada0d7667477c2abc9eca9d4b",
+    "scripts/tasks-browser.ts": "ccd029e08552da098a43e5b22ba0910a684221ec6f9533a10394366bcb65f376",
+    "shared/commands.ts": "a88a61f4c929c0d5c99b25966983f0273d95cb4cfafce417892d91990b7d220d",
+    "shared/room.ts": "37ea71c1d15124ddc30d04ba63457b9d9c04f35cff80e6d47a1aad409da49c3c",
+    "shared/rpc.ts": "5de918d51ac8aa3e49f3f22abe83bb43e2daacaa5461388f33cf1d935464ba33",
+    "shared/schemas.ts": "bd5d15156de858a3f0c03e56ad27619dc22d3ef2953ad6a96581001742d7bcce",
+    "shared/uiVariant.ts": "1bb3bda2afdc393b29048afecf7122b1a0affc1343ea54b97e7c60188ea0d990",
+    "shared/validation.ts": "7bbbdf3d0e78495cdc4c83d089c8900459e692b2eaeb940fb52d45c1742ba7b5",
+    "src/api.ts": "9c6e46796f42941f82a1f536dbc831028c388f608dd0d949f7dd9f070ea7099d",
+    "src/index.ts": "82e0ba47dc239a7fe97a5cdbe7437fb078feba0006d79559c3e98a1846789a5c",
+    "src/services.ts": "72049ccb4ea0acec89c40c5917358ad4f9deac54dda9591511f60fbe0a92b85e",
+    "svelte/Board.svelte": "1a5c0455f8e924fd5e3d64fa1794ceb1c19699c56a6ec328210914e6e1916849",
+    "svelte/Chat.svelte": "dc25aa0e63c6c241d7d8896278c5cd7e120d2f8113f8f30fb85f7437271483f9",
+    "svelte/Files.svelte": "adf99bfc21a5f659743277e4daa2a58acfce394834639306de6bc4c3fab12400",
+    "svelte/Inbox.svelte": "7f06c8b32b33e9b3879717766398415f86dea82d380ed226ef3cbacb91f331c6",
+    "svelte/InboxMount.svelte": "cb821035a4c5634730d22a96300739672e868be22eaf79d1dac4f55321e680ac",
+    "svelte/Message.svelte": "0802a82bf329b874dd0d6217500b96c79b3049723ec7b38f4844fcd0dc30b888",
+    "svelte/Reminders.svelte": "79a53c5f6b12c2446c3eebc9db373c553aa88083ecf06b3896c88aa45f3abb2b",
+    "svelte/Sidebar.svelte": "9a2af2984efb300c827aad65adb88e47cdebc13a3c28f485078f6620c0f14a5e",
+    "svelte/TaskList.svelte": "0079f12b86957a5281358f76c63aa49ac2fafb63433ae8210156a0b552256a78",
+    "svelte/Tasks.svelte": "54ca616455d84fb9d51593120d5ec7c5851a4a5b7d323c83aee316ea743d2f61",
+    "svelte/View.svelte": "f4c616a8a93d4f3ed305aa500c66bedee7c79ef311713e372cd7cf2ed1f94541",
+    "svelte/bootstrap.ts": "21a2ed5c3e452805586b0ef5c9f847eb349aabb8458f72e80748cd2b3e118f72",
+    "svelte/build/clientBoundary.ts": "483e1b702ffcc91057fe3020d0413f6b66bd9cbbf3285c311460fdd4052d9516",
+    "svelte/build/uiVariantBoundary.ts": "a1e8c12119afb6a920357ea91af5de3f67b5c1321d71db118f656277e559a806",
+    "svelte/build/uiVersion.ts": "1177c75bcf3b355ac6fd5f9d95675232fd031361ac2c16fcfaa77c38e62aee58",
+    "svelte/chatTypes.ts": "a91ad695a890a159be8b954e1935b9b8520918ed2bdcd2dea7b53438cc701a07",
+    "svelte/env.d.ts": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
+    "svelte/gallery/Gallery.svelte": "38a934a367280da3ab827b8aed7b0724ba70d3d85b85c7befbe4735d41e73cf9",
+    "svelte/gallery/dev.ts": "ded72a65504a4bd71e4425e8bb6caf7ba0e46962784d9af97f5642d48a789ca4",
+    "svelte/gallery/main.ts": "6a2865d69b3d0361356cb772cd485b3e059ccab77cf3b8e127c236e8a2dc76bc",
+    "svelte/index.html": "d73f390964c650cd2c54f67fea83a2290edec7e2020bec399f9d91bf7a7899e8",
+    "svelte/legacy/host.d.ts": "93dab1fcb732e5101eb70f5ee14493a5e6be0421657c1b6cbc7305dbcd6c7e8c",
+    "svelte/legacy/host.js": "dbbe4bbbdc26df98f22cf9caa02968fe3479f5d9fbfedecf8122e883a2b18d9a",
+    "svelte/lib/client/api.ts": "5fc3a789427de1e11994c0b886ed337141f2b48c507810397be5dd245d9731ff",
+    "svelte/lib/client/api.typetest.ts": "4fe57d17cc2158a3bea7a24adb2fd31c2ea8085441d3d66ecb93a7306d82b3dc",
+    "svelte/lib/components/EmptyState.svelte": "29f0eb7396ce9b2bf4ccb0f5f0424ca65507a445c3e4fec0505d7a4108142058",
+    "svelte/lib/components/ErrorState.svelte": "658b8b99f4d3d184bb07d13826dd919cd485d1ea35fead6646f4c61ecc9e91c3",
+    "svelte/lib/components/Field.svelte": "dd985accc45304721f992957fc7814e01dfe992745085e10245df5724408a03e",
+    "svelte/lib/components/LoadingState.svelte": "6a1015d8855a027c2640029205731e2db0ccccb742bbcceb22621d1c03831b57",
+    "svelte/lib/ui/Avatar.svelte": "59f520968a7ccbcadcce0af25f64462e600076158d0f34286fee7cd6604d0a62",
+    "svelte/lib/ui/Badge.svelte": "bbca0a575866ac37f8cd8576a6203c7686435163d95bfa3d1b6b3d81c41be05a",
+    "svelte/lib/ui/Button.svelte": "aaa29e2e5e208550763759b8f75fc569ceece2b19625ae92198687dc8df68682",
+    "svelte/lib/ui/Card.svelte": "dd9fe5fa0cbc2db0b730abe9d5cd1e0eb69a1925ba39ed425f1ecdfa2ac4bac7",
+    "svelte/lib/ui/Checkbox.svelte": "87ac59f22c098d424c9d313e452794e5b25977ac2c7f92a66d6d67d4b8e412db",
+    "svelte/lib/ui/Dialog.svelte": "d2572d0891d917f8fb186dacd832297e7e924a0db5c1872b3eba9219d5e8d13b",
+    "svelte/lib/ui/Icon.svelte": "c65bb1ba1ab1eac63144ddc2a293a005cc5da47b1c7aa056b220c7c00c37e357",
+    "svelte/lib/ui/IconButton.svelte": "647d222f9967cf98115bfa778bc91d3ba2d90cf998650827e1654d097d9c778c",
+    "svelte/lib/ui/Input.svelte": "09d0c656000b69f89a61a906b91a7d860df90cfea6956e192cd565baae7d71ed",
+    "svelte/lib/ui/Label.svelte": "3aa40569b402204054a10311a63f2e3f9674d8f44941bbbb2791c28ffc85dc3f",
+    "svelte/lib/ui/Progress.svelte": "9efb0e6fa59b6be9efc309e7a14f04747e280a72fb6cb0bcaa392d9fda5f51cc",
+    "svelte/lib/ui/RadioGroup.svelte": "8fa0a6b52bc7c7fbb3a007bb68b5d27ee16b46898a00ed861dbb5d65cef10339",
+    "svelte/lib/ui/Select.svelte": "1401ffe1009a4bd395e66830112965c0d884081819426a5d3a034937fa8b874f",
+    "svelte/lib/ui/Separator.svelte": "61ddb6518fb68f0cf788a0d3086731682e25b51fcd86f7ae20075b636ff053d0",
+    "svelte/lib/ui/Skeleton.svelte": "3aedf23ac4ac2443bd031716dfcba1f7e6a574bcb9fca6b2833393a3e4310368",
+    "svelte/lib/ui/Switch.svelte": "6f40cbd8fb8c28d51222df74bec9c1f48e53e1d3b3b3bfcebe380f936891d841",
+    "svelte/lib/ui/Tabs.svelte": "efafebaf02c534f764bf5eb806c8615d321f109d84aa123128c4863f6055913b",
+    "svelte/lib/ui/Textarea.svelte": "f84612342c6de1fb49822bb0a5a8d142b20ae15c84f00a1b86cde5432659ee45",
+    "svelte/lib/ui/Tooltip.svelte": "2520339ae04417a2af874cefcdb2b3751a371b2f48c96aee76d14bff5fd146f7",
+    "svelte/lib/ui/button.ts": "65712e8143c8c72659a29ec1aad215a1128eb50d82bc317b082c614f5f4b5e7d",
+    "svelte/lib/ui/dialogController.ts": "ec6e05707e00852a8f5b757bed103a8970f218efcfcad6b7273a057a1b2d0cc1",
+    "svelte/lib/ui/icons.ts": "26f38502f206739ca1ab59ed936cbeee3e6f5a5cac8b8ee2cacf9538175f3ee7",
+    "svelte/lib/ui/utils.ts": "d27672049684ee4954042038863618be9188d45eb4562e61e2e6e675a422c3c5",
+    "svelte/lib/ui/variants.typetest.ts": "9545e9d8246fb34f3f1021a2396f98d37e4e7f2c27e18efe716a17ca1c2be8d4",
+    "svelte/main.ts": "62aee1daf80e130330f1bfb5ce63f683faa9274b9ba612f282ebdafa94c08dec",
+    "svelte/navigation.ts": "1b215e330307d4f548a0fae079828f03bdd0ebd3afda192d80d489deff0e0f26",
+    "svelte/panels.ts": "5c1350c993b040dad46ae4ada6920e3fde8da32d24dca62207043325436b5fa0",
+    "svelte/roomConnection.ts": "053019e2d10c7c9af4cb55b1ae728f1eade3f751b46b7466e011a58d16698213",
+    "svelte/roomStore.ts": "fb9fc16f07245107d2cf231195aac80ec07bf9faae1d5a8c469fb77f708c5146",
+    "svelte/styles.ts": "68f0bb630d6f45f30f213e5114f91a8af91aa0635b4dc8ea4f14aa323f04b854",
+    "svelte/styles/tailwind.css": "0d6bb301f9b1a7b99853c978e26aa33c34f67a5718798d4e6c666c3ec9251c7c",
+    "svelte/styles/vendor-css.json": "a95f5fb439832f3f5be459a3c2334a9afa948e05577f9f1ee08991a77f324979",
+    "svelte/transport.ts": "5bfa3bf94e290d3bad1618bda46fe7aaf658fca3f8a18ce59f5cd03f44b7db7d",
+    "svelte/tsconfig.json": "2516d3ef668b689e7a7609ac8ddbeec6906b2041dcb80ea60ed77f8f00c127cf",
+    "svelte/types.ts": "355d902f73a25797c5fc5349abfbe0a7a94e325ce3b76e28aa2523c9043a4195",
+    "svelte/vite.config.ts": "1a960c487f0b9cad46a2e5695b53c160402974696b959391617cc8e1c9da9805"
+  },
+  "check": {
+    "command": "bun run check",
+    "exitCode": 0,
+    "passed": 77,
+    "failed": 0,
+    "assertions": 364,
+    "logSha256": "265641bedf9889cf0d1d26568d15a11ce4cd77ec8890777dd727a2465526a61a"
+  },
+  "gallery": {
+    "scope": "Gallery and Inbox",
+    "fixtures": [
+      "legacy-only Google CSS isolated",
+      "local runner: no active rooms/directory",
+      "deterministic profile waits",
+      "held resolve responses and explicit HTTP 500"
+    ],
+    "fonts": {
+      "faces": [
+        {
+          "family": "Inter var",
+          "status": "loaded"
+        },
+        {
+          "family": "Inter var",
+          "status": "unloaded"
+        },
+        {
+          "family": "CommitMono",
+          "status": "loaded"
+        }
+      ],
+      "body": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "code": "CommitMono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+      "weight": "500"
+    },
+    "lightStudioPalette": {
+      "theme": "light",
+      "devicePixelRatio": 1,
+      "tokens": 134,
+      "colorTokens": 92,
+      "roles": 9,
+      "mismatches": []
+    },
+    "lightAccessibility": [],
+    "darkStudioPalette": {
+      "theme": "dark",
+      "devicePixelRatio": 1,
+      "tokens": 134,
+      "colorTokens": 92,
+      "roles": 9,
+      "mismatches": []
+    },
+    "darkAccessibility": [],
+    "mobileAccessibility": [],
+    "darkRetinaStudioPalette": {
+      "theme": "dark",
+      "devicePixelRatio": 2,
+      "tokens": 134,
+      "colorTokens": 92,
+      "roles": 9,
+      "mismatches": []
+    },
+    "lightRetinaStudioPalette": {
+      "theme": "light",
+      "devicePixelRatio": 2,
+      "tokens": 134,
+      "colorTokens": 92,
+      "roles": 9,
+      "mismatches": []
+    },
+    "legacyLayout": [
+      {
+        "width": 1440,
+        "theme": "light",
+        "elements": 445,
+        "mismatches": []
+      },
+      {
+        "width": 1440,
+        "theme": "dark",
+        "elements": 445,
+        "mismatches": []
+      },
+      {
+        "width": 390,
+        "theme": "light",
+        "elements": 467,
+        "mismatches": []
+      },
+      {
+        "width": 390,
+        "theme": "dark",
+        "elements": 467,
+        "mismatches": []
+      }
+    ],
+    "inboxAccessibility": [],
+    "inboxLifecycle": "close/reopen during resolve, recoverable failure, native switcher Escape passed",
+    "crossRoomNavigation": "Actual Inbox link retained ui=svelte and entered the second room",
+    "room": "b7e66636573d",
+    "errors": [],
+    "status": "pass",
+    "expectedNetworkFailures": [
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ],
+    "requestFailures": [
+      {
+        "url": "http://127.0.0.1:8797/api/agents",
+        "error": "net::ERR_ABORTED"
+      },
+      {
+        "url": "http://127.0.0.1:8797/api/me?ui=svelte",
+        "error": "net::ERR_ABORTED"
+      }
+    ]
+  },
+  "tasks": {
+    "scope": "Native task panel, not full feature parity/production acceptance",
+    "fixtures": [
+      "legacy-only Google CSS isolated",
+      "local runner: no active rooms/directory",
+      "temporary room WebSocket closure for failed-send checks",
+      "unfinished control task keeps the epic active during completion toggles"
+    ],
+    "room": "d7f6ed6af2ac",
+    "step": "Checking reconnect recovery and retained edits",
+    "light1440AccessibilityTheme": {
+      "expected": "rgb(254, 253, 251)",
+      "actual": "rgb(254, 253, 251)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif"
+    },
+    "light1440Accessibility": [],
+    "dark768AccessibilityTheme": {
+      "expected": "oklch(0.175 0 0)",
+      "actual": "oklch(0.175 0 0)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif"
+    },
+    "dark768Accessibility": [],
+    "dark390AccessibilityTheme": {
+      "expected": "oklch(0.175 0 0)",
+      "actual": "oklch(0.175 0 0)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif"
+    },
+    "dark390Accessibility": [],
+    "dueDialogAccessibility": [],
+    "status": "pass",
+    "errors": []
+  },
+  "screenshots": [
+    {
+      "file": "gallery-light-1440.png",
+      "sha256": "523e4be886ea40b7f55433270feb2a5bfaa7dfcfdcc5af33b9e21c2012400597"
+    },
+    {
+      "file": "gallery-dark-1440.png",
+      "sha256": "cbb1126917d6c3b1e522b7ed55e37aa3ce8ecc8c86e16151defdf82227615f58"
+    },
+    {
+      "file": "gallery-dark-390.png",
+      "sha256": "f9ab0249cde7a3a4f089f5c0587e93fba7948896fd9fc52bdc38256dab661107"
+    },
+    {
+      "file": "sheet-dark-390.png",
+      "sha256": "ee39dec23925afeba07bee1f28a139a335e567386d06bdf751e86084907de370"
+    },
+    {
+      "file": "inbox-390.png",
+      "sha256": "a8dcc325f47da5d49500985c7f83309e69e3fda7f694aa1dbb22ff4f634cd240"
+    },
+    {
+      "file": "legacy-light-1440.png",
+      "sha256": "b6a81b03388fc807522f9810b39c893d45d26ee8ad10f1234ab159174241c5b8"
+    },
+    {
+      "file": "legacy-dark-1440.png",
+      "sha256": "0002d497809bcc4a0b98547f1f70e0175c4439f046ec88f99edefe54f9f92d69"
+    },
+    {
+      "file": "legacy-light-390.png",
+      "sha256": "26b4b20acda7e77e8392a45a373d7914dda278214f8026434b4372ca7e638cf6"
+    },
+    {
+      "file": "legacy-dark-390.png",
+      "sha256": "39786004e553bc131c2849777da9fc095d83a91fcfbbdc2379bd4b481599bdbb"
+    },
+    {
+      "file": "tasks-light-1440.png",
+      "sha256": "036ed60025a2b93b225e1d65253a06c2e5f6346718cd97387180ef134099903c"
+    },
+    {
+      "file": "tasks-dark-768.png",
+      "sha256": "ca875844175b01a107bec99152cf145cb0a3f6a9eb8eb20dec62c96097496033"
+    },
+    {
+      "file": "tasks-dark-390.png",
+      "sha256": "80e6db0abd4a13c342445f192ea7784703a32baa685271c030f0b7e6be8bf448"
+    },
+    {
+      "file": "task-due-dark-390.png",
+      "sha256": "ca4f79f78150c2b3b2a8dcb73f3ce3a3615fc8a9e5b4442d19b5000be3b2ae87"
+    }
+  ],
+  "limits": [
+    "Local DEV_EMAIL and explicit browser fixtures; no authenticated production acceptance.",
+    "Vanilla remains default; the Svelte application still has a legacy host and styling outside migrated surfaces.",
+    "Actual authenticated Studio workspace comparison, complete native features/schema/RPC migration, full-app/backend/contract HMR and final performance budgets remain pending.",
+    "Baseline is12b202f; later peer-reported API/viewer changes must be integrated and verified separately.",
+    "WebSocket send success means queued data, not server acknowledgment; browser persistence and reconnect are tested separately."
+  ]
+}

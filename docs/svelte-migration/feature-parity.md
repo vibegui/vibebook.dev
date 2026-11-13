@@ -10,6 +10,8 @@ Ongoing vanilla additions are mandatory parity requirements: `2d5dbfe` adds comp
 
 Incremental native task evidence is recorded in [native-tasks](native-tasks/README.md). It covers local task actions, persistence, reconnect, dialogs and selected theme/accessibility profiles; F27 remains pending until every applicable final-parity dimension above passes.
 
+Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) add consistent agent/file/embed presentation, Escape inside viewer frames and a versioned HTML panel alongside chat. The viewer must follow incoming versions until an older version is selected, support fullscreen and return-to-doc controls, and preserve chat interaction. Include these in F15/F34/F35/F49; local baseline integration and native verification remain pending.
+
 | ID | Capability and required actions | Baseline owner / current integration | Native target | Final evidence |
 | --- | --- | --- | --- | --- |
 | F01 | Email login, code resend/verification/errors and account identity | `login`, `view`; auth endpoints | `features/auth` | Pending |
