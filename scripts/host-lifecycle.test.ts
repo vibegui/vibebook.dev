@@ -15,7 +15,7 @@ const source = readFileSync(
   "utf8",
 );
 
-test("suggestion view disposal releases Tasks anchors before the host clears its target", () => {
+test("view registry disposal releases old anchors before reusing a target", () => {
   // A DOM-backed view double isolates the host registry's ownership decisions.
   // Updating a detached old anchor cannot make it visible again.
   const window = new Window();
@@ -61,14 +61,6 @@ test("suggestion view disposal releases Tasks anchors before the host clears its
   expect(target.textContent).toBe("Updated task");
   expect(mounts).toBe(2);
   expect(destroys).toBe(1);
-  const suggestion = source.slice(
-    source.indexOf("if (preOf()) {"),
-    source.indexOf("\n  head.innerHTML = epic"),
-  );
-  expect(suggestion).toContain('disposeView("tasks");');
-  expect(suggestion.indexOf('disposeView("tasks");')).toBeLessThan(
-    suggestion.indexOf('el.innerHTML = ""'),
-  );
   api.disposeView("tasks");
 });
 

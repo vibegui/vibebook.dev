@@ -1,4 +1,9 @@
 import { createRoomMutations } from "../svelte/features/room-sidebar/session";
+import {
+  createDocumentDrafts,
+  createDocumentSession,
+} from "../svelte/features/documents/session";
+import type { DocumentProps } from "../svelte/features/documents/types";
 import { afterEach, describe, expect, test } from "bun:test";
 import { plugin } from "bun";
 import type { Component, ComponentProps } from "svelte";
@@ -2371,6 +2376,78 @@ describe("native Svelte chat", () => {
     touch("touchend", []);
     expect(replied).toEqual([1]);
   });
+});
+
+test("native document task slots dispose across suggestion scope and detached controls cannot write", async () => {
+  const room = fixture();
+  room.doc = "# Room document";
+  room.epics[0].doc = "# Epic document\n\n## Tarefas\n";
+  const events: RoomCommand[] = [];
+  const owner = createDocumentSession({
+    drafts: createDocumentDrafts(),
+    request: async () => ({ ok: true }),
+    name: () => "Member",
+    color: () => "#123456",
+  });
+  owner.sync(room, "e", true, true, 1);
+  const props: DocumentProps = {
+    room,
+    thread: "e",
+    lang: "en",
+    pane: "doc",
+    send: (command) => {
+      events.push(command);
+      return true;
+    },
+    taskProps: {
+      room,
+      thread: "e",
+      vb,
+      send: (command) => {
+        events.push(command);
+        return true;
+      },
+      request: async (command) => {
+        events.push(command);
+        return { ok: true };
+      },
+    },
+    actions: { navigate: () => {}, openFile: () => {} },
+    onPane: () => {},
+    onAuthorize: () => {},
+  };
+  const target = document.createElement("div");
+  document.body.append(target);
+  const view = mountView("document", target, { owner, props });
+  active.push(view);
+  try {
+    const original = target.querySelector<HTMLInputElement>(
+      '[data-document-tasks] input[type="checkbox"]',
+    );
+    expect(original instanceof HTMLInputElement).toBe(true);
+    owner.sync(room, "pre:0", true, true, 1);
+    view.update({ owner, props: { ...props, thread: "pre:0" } });
+    await tick();
+    flushSync();
+    expect(target.querySelectorAll("[data-document-tasks]").length).toBe(0);
+    original!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await tick();
+    expect(events).toEqual([]);
+    owner.sync(room, "e", true, true, 1);
+    view.update({ owner, props });
+    await tick();
+    flushSync();
+    const current = target.querySelector<HTMLInputElement>(
+      '[data-document-tasks] input[type="checkbox"]',
+    );
+    expect(current instanceof HTMLInputElement).toBe(true);
+    expect(current === original).toBe(false);
+    current!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await tick();
+    expect(events).toEqual([{ t: "task.toggle", id: "t" } satisfies RoomCommand]);
+  } finally {
+    owner.dispose();
+  }
 });
 
 describe("stable native sidebar integration", () => {
