@@ -299,12 +299,12 @@
         ></option>{/each}</datalist
     >
   </form>
-  {#each Object.entries($view.pending) as [email]}<p
-      role="status"
-      class="tw:m-0 tw:break-words tw:text-xs tw:text-muted-foreground"
-    >
-      {email} · {vb.t("Aguardando confirmação…")}
-    </p>{/each}
+  {#each Object.entries($view.pending) as [email]}{#if $view.issues[email] !== "unconfirmed"}<p
+        role="status"
+        class="tw:m-0 tw:break-words tw:text-xs tw:text-muted-foreground"
+      >
+        {email} · {vb.t("Aguardando confirmação…")}
+      </p>{/if}{/each}
   {#each Object.entries($view.issues) as [email, issue]}<p
       role="alert"
       class="tw:m-0 tw:whitespace-pre-wrap tw:break-words tw:text-xs tw:text-destructive"
@@ -346,7 +346,12 @@
     ? vb.t("Recusar")
     : vb.t("Remover do vibebook")}
   cancelLabel={vb.t("Cancelar")}
-  busy={!!(deletion && $view.pending[deletion.email])}
+  busy={!!(
+    deletion &&
+    $view.pending[deletion.email] &&
+    $view.issues[deletion.email] !== "unconfirmed"
+  )}
+  confirmDisabled={!!(deletion && $view.pending[deletion.email])}
   error={deletion && $view.issues[deletion.email]
     ? issueText($view.issues[deletion.email])
     : ""}

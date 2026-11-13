@@ -51,6 +51,17 @@ export function createPeopleSession(roomId: string, clock = defaultClock) {
       return { ...s, pending, issues };
     });
   };
+  const unconfirmed = (email: string) => {
+    const op = operations.get(email);
+    if (!op) return;
+    op.timer = undefined;
+    // A deadline is not cancellation or rollback. Retain ownership so late
+    // HTTP success and canonical rows can reconcile without a duplicate write.
+    state.update((s) => ({
+      ...s,
+      issues: { ...s.issues, [email]: "unconfirmed" },
+    }));
+  };
   const canonical = (email: string, action: PeopleAction) =>
     !!room &&
     (action === "remove"
@@ -136,7 +147,7 @@ export function createPeopleSession(roomId: string, clock = defaultClock) {
       });
       const owns = () => active && operations.get(email)?.token === token;
       operations.get(email)!.timer = clock.schedule(() => {
-        if (owns()) finish(email, "unconfirmed");
+        if (owns() && !operations.get(email)!.ack) unconfirmed(email);
       }, PEOPLE_REQUEST_TIMEOUT);
       try {
         await request(action, email);
@@ -162,7 +173,7 @@ export function createPeopleSession(roomId: string, clock = defaultClock) {
       if (canonical(email, action)) finish(email);
       else
         op.timer = clock.schedule(() => {
-          if (owns()) finish(email, "unconfirmed");
+          if (owns()) unconfirmed(email);
         }, PEOPLE_CONFIRMATION_TIMEOUT);
       return true;
     },

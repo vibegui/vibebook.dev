@@ -147,25 +147,76 @@ describe("native People", () => {
     expect(get(s.state).issues[newcomer]).toBe("forbidden");
     s.dispose();
   });
-  test("both HTTP and post-success canonical waits are bounded, late replies and timer callbacks cannot steal retry", async () => {
+  test("HTTP deadline retains ownership for late ACK and canonical rows without a duplicate invitation", async () => {
     const time = clock(),
       s = createPeopleSession("room", time.value),
       r = room(),
       old = deferred();
     s.sync(r);
+    s.edit(newcomer);
     const operation = s.mutate("invite", newcomer, () => old.promise);
     const callbacks = [...time.jobs];
     time.fire();
     expect(get(s.state).issues[newcomer]).toBe("unconfirmed");
-    await s.mutate("invite", newcomer, async () => {});
+    let duplicates = 0;
+    expect(
+      await s.mutate("invite", newcomer, async () => {
+        duplicates++;
+      }),
+    ).toBe(false);
+    expect(duplicates).toBe(0);
+    s.sync({ ...r, members: [...r.members, newcomer] });
     old.resolve();
-    expect(await operation).toBe(false);
+    expect(await operation).toBe(true);
+    expect(get(s.state).draft).toBe("");
     for (const fn of callbacks) fn();
-    expect(get(s.state).pending[newcomer]).toBe("invite");
-    time.fire();
     expect(get(s.state).pending).toEqual({});
-    expect(get(s.state).issues[newcomer]).toBe("unconfirmed");
+    expect(get(s.state).issues).toEqual({});
     s.dispose();
+  });
+  test("late ACK preserves an edited invitation draft and canonical state settles an expired confirmation wait", async () => {
+    const time = clock(),
+      s = createPeopleSession("room", time.value),
+      r = room(),
+      reply = deferred();
+    s.sync(r);
+    s.edit(newcomer);
+    const operation = s.mutate("invite", newcomer, () => reply.promise);
+    const staleDeadline = [...time.jobs][0]!;
+    time.fire();
+    s.edit("another@test.com");
+    reply.resolve();
+    expect(await operation).toBe(true);
+    expect(get(s.state).draft).toBe("another@test.com");
+    staleDeadline();
+    expect(time.jobs.size).toBe(1);
+    time.fire();
+    expect(get(s.state).issues[newcomer]).toBe("unconfirmed");
+    expect(get(s.state).pending[newcomer]).toBe("invite");
+    let duplicates = 0;
+    await s.mutate("invite", newcomer, async () => {
+      duplicates++;
+    });
+    expect(duplicates).toBe(0);
+    s.sync({ ...r, members: [...r.members, newcomer] });
+    expect(get(s.state).pending).toEqual({});
+    expect(get(s.state).issues).toEqual({});
+    expect(get(s.state).draft).toBe("another@test.com");
+    s.dispose();
+  });
+  test("disposal after a request deadline still ignores a late invitation ACK", async () => {
+    const time = clock(),
+      s = createPeopleSession("room", time.value),
+      reply = deferred();
+    s.sync(room());
+    s.edit(newcomer);
+    const operation = s.mutate("invite", newcomer, () => reply.promise);
+    time.fire();
+    s.dispose();
+    reply.resolve();
+    expect(await operation).toBe(false);
+    expect(get(s.state).draft).toBe(newcomer);
+    expect(time.jobs.size).toBe(0);
   });
   test("canonical removal requires original authorization; request denial/approval reconcile against authoritative requests", async () => {
     const time = clock(),

@@ -9,6 +9,7 @@
     confirmLabel,
     cancelLabel,
     busy = false,
+    confirmDisabled = false,
     error = "",
     onconfirm,
     onOpenChange,
@@ -20,6 +21,7 @@
     confirmLabel: string;
     cancelLabel: string;
     busy?: boolean;
+    confirmDisabled?: boolean;
     error?: string;
     onconfirm: () => void;
     onOpenChange?: (open: boolean) => void;
@@ -81,7 +83,7 @@
           >{cancelLabel}</AlertDialog.Cancel
         >
         <AlertDialog.Action
-          disabled={busy}
+          disabled={busy || confirmDisabled}
           aria-busy={busy || undefined}
           onclick={(event) => {
             event.preventDefault();
