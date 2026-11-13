@@ -3,7 +3,9 @@ import type { RoomEvent } from "../shared/room";
 import type { RoomApi } from "../shared/rpc";
 import {
   AttachmentSchema,
+  AvatarResult,
   ErrorBody,
+  RoomIconResult,
   PostMessageResult,
   UploadFileResult,
 } from "../shared/schemas";
@@ -97,6 +99,39 @@ export function createRoomApi(
             ? "Invalid reminder response"
             : "Invalid upload response",
         );
+      return r.data;
+    },
+    async setIcon(image) {
+      // Raw bytes like uploadFile; a JSON body ({}) removes the icon.
+      const response = await room.icon.$post(
+        {
+          param: { id },
+          header: { "content-type": image ? image.type : "application/json" },
+        },
+        { init: { body: image ? image.body : "{}" } },
+      );
+      const value = await body(response);
+      if (!response.ok) throw failure(response, value);
+      const r = RoomIconResult.safeParse(value);
+      if (!r.success) throw new TypeError("Invalid icon response");
+      return r.data;
+    },
+  };
+}
+
+/** The signed-in person's own account calls that carry raw bytes (the profile picture). */
+export function createAccountApi(fetcher: FetchLike = fetch) {
+  const api = client("/", fetcher);
+  return {
+    async uploadAvatar(image: { type: string; body: BodyInit }) {
+      const response = await api.api.me.avatar.$post(
+        { header: { "content-type": image.type } },
+        { init: { body: image.body } },
+      );
+      const value = await body(response);
+      if (!response.ok) throw failure(response, value);
+      const r = AvatarResult.safeParse(value);
+      if (!r.success) throw new TypeError("Invalid avatar response");
       return r.data;
     },
   };

@@ -662,3 +662,31 @@ test("global middleware answers (401 signed out, 403 cross-site) are typed by gl
   expect(globalFailure({ status: 200 }, {})).toBeNull();
   expect(globalFailure({ status: 404 }, { error: "not found" })).toBeNull();
 });
+
+test("native raw-body adapters (icon, avatar) go through the typed routes and check the answers", async () => {
+  const { createRoomApi, createAccountApi } =
+    await import("../svelte/transport");
+  const f = fixture();
+  const fetcher = (input: RequestInfo | URL, init?: RequestInit) =>
+    Promise.resolve(
+      f.app.request(input instanceof Request ? input : String(input), init),
+    );
+  const room = createRoomApi("room", fetcher);
+  const png = new Uint8Array([137, 80, 78, 71]);
+  expect(await room.setIcon({ type: "image/png", body: png })).toEqual({
+    ok: true,
+    icon: 9,
+  });
+  expect(await room.setIcon(null)).toEqual({ ok: true, icon: null });
+  await expect(room.setIcon({ type: "image/bmp", body: png })).rejects.toThrow(
+    "Use PNG, JPEG, WebP, GIF ou ICO.",
+  );
+  const me = createAccountApi(fetcher);
+  expect(await me.uploadAvatar({ type: "image/png", body: png })).toEqual({
+    ok: true,
+    avatar: 7,
+  });
+  await expect(
+    me.uploadAvatar({ type: "image/svg+xml", body: png }),
+  ).rejects.toThrow("Use uma imagem PNG, JPEG ou WebP.");
+});

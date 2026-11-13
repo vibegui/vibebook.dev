@@ -1,3 +1,4 @@
+import * as z from "zod/mini";
 import { pokeRoom } from "./person";
 import { track as trackEvent } from "./track";
 // Cloud agents: a Claude Code that lives in a freestyle.sh VM instead of on someone's computer.
@@ -62,16 +63,38 @@ export async function checkFreestyleKey(env: Env, key: string): Promise<string |
 }
 /** One freestyle REST call with the person's key. Throws an Error with freestyle's message. */
 const useEnv = (env: Env) => { if (env.FREESTYLE_API) API = env.FREESTYLE_API; };
-export async function fs<T = any>(key: string, method: string, path: string, body?: unknown): Promise<T> {
+// What freestyle's REST API answers, checked where it comes in (M1/M2 review, room 1935): a shape we don't expect is an
+// error with the path, not a value the rest of the code trusts.
+const FsIgnored = z.unknown();
+export const FsCreated = z.object({ id: z.string() });
+export const FsVm = z.object({
+  state: z.string(),
+  totalRunSeconds: z.optional(z.number()),
+  updatedAt: z.optional(z.string()),
+  resources: z.optional(z.object({ cpu: z.number(), memory: z.number(), storage: z.number() })),
+});
+export const FsExec = z.object({
+  stdout: z.optional(z.nullable(z.string())),
+  stderr: z.optional(z.nullable(z.string())),
+  statusCode: z.optional(z.nullable(z.number())),
+});
+export const FsToken = z.object({ token: z.string() });
+
+export async function fs<S extends z.ZodMiniType = typeof FsIgnored>(key: string, method: string, path: string, body?: unknown, schema?: S): Promise<z.output<S>> {
   const r = await fetch(`${API}${path}`, {
     method,
     headers: { authorization: `Bearer ${key}`, ...(body === undefined ? {} : { "content-type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await r.text();
-  const j = text ? (() => { try { return JSON.parse(text); } catch { return { message: text.slice(0, 200) }; } })() : {};
-  if (!r.ok) throw new Error(`freestyle ${r.status}: ${String(j?.message ?? j?.error ?? text).slice(0, 200)}`);
-  return j as T;
+  const j: unknown = text ? (() => { try { return JSON.parse(text); } catch { return { message: text.slice(0, 200) }; } })() : {};
+  if (!r.ok) {
+    const e = j && typeof j === "object" ? (j as { message?: unknown; error?: unknown }) : {};
+    throw new Error(`freestyle ${r.status}: ${String(e.message ?? e.error ?? text).slice(0, 200)}`);
+  }
+  const out = (schema ?? FsIgnored).safeParse(j);
+  if (!out.success) throw new Error(`freestyle ${method} ${path.replace(/\/[0-9a-f-]{8,}/gi, "/:id")}: unexpected answer`);
+  return out.data as z.output<S>;
 }
 
 export const slug = (s: string) =>
@@ -194,12 +217,12 @@ export async function createSandbox(env: Env, email: string, bookId: string, raw
   const title = String(book?.title ?? "sala");
   const name = slug(rawName || title);
   const md = await agentFile(env, bookId, email, name, title, origin);
-  const vm = await fs<{ id: string }>(k, "POST", "/v5/vms", {
+  const vm = await fs(k, "POST", "/v5/vms", {
     displayName: `vibebook · ${title}`.slice(0, 60),
     metadata: { vibebook_room: bookId, vibebook_agent: name },
     firewall: { rules: [{ action: "allow", source: {}, destination: { public: true } }] },
     idleTimeoutSeconds: -1,
-  });
+  }, FsCreated);
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: bookId, folder: name, md, origin }), mode: 493 });
   await fs(k, "PUT", `/v5/vms/${vm.id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
   await writeClaudeEnv(env, k, email, vm.id);
@@ -217,7 +240,7 @@ export async function redoSetup(env: Env, email: string, sid: string, origin: st
   const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
   const k = await loadKey(env, email).catch(() => null);
   if (!r || !k) throw new Error("not found");
-  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
   if (vm.state !== "running") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
   const book = await env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first<{ title: string }>();
   const md = await agentFile(env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
@@ -225,10 +248,10 @@ export async function redoSetup(env: Env, email: string, sid: string, origin: st
   await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
   await writeClaudeEnv(env, k, r.email, r.vm_id);
   await writeVibebookLogin(env, k, r.email, r.vm_id, origin, r.name, r.book_id);
-  const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
+  const x = await fs(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
     command: `mkdir -p ~/${r.name}; cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; tmux kill-session -t claude 2>/dev/null; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
     timeoutMs: 280000,
-  });
+  }, FsExec);
   const out = redact(`${x.stdout ?? ""}${x.stderr ?? ""}`.trim());
   const ready = /^READY$/m.test(out);
   await env.DB.prepare(`UPDATE sandboxes SET ready = ? WHERE id = ?`).bind(ready ? 1 : 0, r.id).run();
@@ -254,7 +277,7 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
         const x = r as Row & { run_s?: number; rate?: number; disk_rate?: number };
         try {
           if (!k) throw new Error("freestyle desconectado");
-          const vm = await fs<{ state: string; totalRunSeconds?: number; updatedAt?: string; resources?: { cpu: number; memory: number; storage: number } }>(k, "GET", `/v5/vms/${r.vm_id}`);
+          const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
           // totalRunSeconds counts finished runs; a running VM adds the current one (since its last state change).
           if (vm.state === "running" && vm.updatedAt) vm.totalRunSeconds = (vm.totalRunSeconds ?? 0) + Math.max(0, (Date.now() - Date.parse(vm.updatedAt)) / 1000);
           state = vm.state;
@@ -264,7 +287,7 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
           Object.assign(x, { run_s: vm.totalRunSeconds ?? 0, rate, disk_rate: disk });
           ctx.waitUntil(env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, Math.round(vm.totalRunSeconds ?? 0), rate, disk, Date.now(), r.id).run());
           if (!r.ready && state === "running") {
-            const o = await fs<{ stdout: string | null; stderr: string | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "if [ -f ~/.vibebook-setup-done ]; then echo done; elif [ -f ~/vibebook-setup.log ]; then tail -n 2 ~/vibebook-setup.log | cut -c1-160; else echo nolog; fi", timeoutMs: 10000 });
+            const o = await fs(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "if [ -f ~/.vibebook-setup-done ]; then echo done; elif [ -f ~/vibebook-setup.log ]; then tail -n 2 ~/vibebook-setup.log | cut -c1-160; else echo nolog; fi", timeoutMs: 10000 }, FsExec);
             const out = (o.stdout ?? "").trim();
             if (out === "done") { r.ready = 1; await env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
             else log = out === "nolog" ? "o setup não começou (sem log)" : out.split("\n").pop() || (o.stderr ?? "").slice(0, 160);
@@ -325,15 +348,15 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
     async terminal(sid: string) {
       const r = await mine(sid), k = await key();
       if (!r || !k) return null;
-      const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+      const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
       if (vm.state !== "running" && vm.state !== "starting") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
       let ident = r.identity_id;
       if (!ident) {
-        ident = (await fs<{ id: string }>(k, "POST", "/v5/identities", {})).id;
+        ident = (await fs(k, "POST", "/v5/identities", {}, FsCreated)).id;
         await fs(k, "POST", `/v5/identities/${ident}/permissions/vm`, { vmId: r.vm_id });
         await env.DB.prepare(`UPDATE sandboxes SET identity_id = ? WHERE id = ?`).bind(ident, r.id).run();
       }
-      const t = await fs<{ token: string }>(k, "POST", `/v5/identities/${ident}/tokens`, { expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() });
+      const t = await fs(k, "POST", `/v5/identities/${ident}/tokens`, { expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() }, FsToken);
       // The first time it waits for the setup, logs in to vibebook (paste) and starts Claude listening; slug
       // "claude" makes every later open reattach to that same session (bash takes over if Claude exits).
       const exec = `bash -lc 'while [ ! -f ~/.vibebook-setup-done ]; do echo "Preparando o sandbox... $(tail -n 1 ~/vibebook-setup.log 2>/dev/null | cut -c1-80)"; sleep 5; done; exec tmux new-session -A -s claude -c ~ "bash -l ~/.vibebook-start"'`;
@@ -353,7 +376,7 @@ export async function agentSandboxes(env: Env, email: string) {
   const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE email = ? ORDER BY created_at`).bind(email).all()).results as Row[];
   const out = await Promise.all(rows.map(async (r) => {
     try {
-      const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+      const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
       return { sandbox_id: r.id, room_id: r.book_id, name: r.name, state: vm.state, ready: !!r.ready };
     } catch (e) {
       return { sandbox_id: r.id, room_id: r.book_id, name: r.name, state: "unknown", ready: !!r.ready, error: (e as Error).message };
@@ -368,7 +391,7 @@ export async function agentSandboxPower(env: Env, email: string, sid: string, ac
   const k = await loadKey(env, email).catch(() => null);
   if (!k) throw new Error("your human's freestyle.sh isn't connected");
   await fs(k, "POST", `/v5/vms/${r.vm_id}/${action}`);
-  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
   await env.DB.prepare(`UPDATE sandboxes SET state = ?, checked_at = ? WHERE id = ?`).bind(vm.state, Date.now(), r.id).run();
   return { sandbox_id: r.id, state: vm.state };
 }
@@ -378,12 +401,12 @@ export async function agentSandboxExec(env: Env, email: string, sid: string, com
   if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
   const k = await loadKey(env, email).catch(() => null);
   if (!k) throw new Error("your human's freestyle.sh isn't connected");
-  const vm = await fs<{ state: string }>(k, "GET", `/v5/vms/${r.vm_id}`);
+  const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
   if (vm.state !== "running") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
-  const x = await fs<{ stdout: string | null; stderr: string | null; statusCode: number | null }>(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
+  const x = await fs(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
     command: command.slice(0, 8000),
     timeoutMs: Math.min(Math.max(timeoutS, 1), 280) * 1000,
-  });
+  }, FsExec);
   if (/test -f ~\/\.vibebook-setup-done/.test(command) && /READY|done/.test(x.stdout ?? "")) await env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run();
   return { exit_code: x.statusCode, stdout: redact(x.stdout ?? "").slice(-12000), stderr: redact(x.stderr ?? "").slice(-4000) };
 }
