@@ -44,3 +44,13 @@ remain under investigation. These limitations cannot be labeled passing gates.
 
 These results do not prove complete document lifecycle coverage, final RootApp retirement,
 production performance, hardware keyboard behavior or overall M0–M8 completion.
+
+`documents-member-removal.json` records the rebuilt `e54e9e4` source / `76772b5`
+asset checkpoint (entry query `3c0acf0ffcef54984b9e`) with the DocRoom socket guard.
+All five preceding document phases pass again, and the sixth member-removal
+phase passes: the removed peer loses its editor/preview, cannot observe a later
+private owner write, and receives 403 for the protected file. The updated Worker
+log has no observed send-after-close errors. Optional local explorer/tracing were
+disabled; application and storage behavior were preserved. The overall run still
+**fails** in the final navigation/account/mobile phase with a blank owner page.
+That failure remains under focused diagnosis and cannot be treated as acceptance.
