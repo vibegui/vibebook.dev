@@ -217,6 +217,7 @@ try {
   const sent: Record<string, unknown>[] = [];
   const heldPins: (() => void)[] = [];
   const heldFiles: (() => void)[] = [];
+  const pinRequests = new Set<string>();
   await context.routeWebSocket(
     (url) => url.pathname === `/ws/${id}`,
     async (socket) => {
@@ -228,6 +229,11 @@ try {
       socket.onMessage((raw) => {
         const command = wireObject(raw);
         if (command) sent.push(command);
+        if (
+          (command?.t === "pin.add" || command?.t === "pin.del") &&
+          typeof command.cid === "string"
+        )
+          pinRequests.add(command.cid);
         server.send(raw);
       });
       server.onMessage((raw) => {
@@ -243,11 +249,26 @@ try {
           heldPins.push(() => socket.send(raw));
           return;
         }
+        if (
+          frame?.t === "result" &&
+          typeof frame.cid === "string" &&
+          pinRequests.has(frame.cid) &&
+          holdPins
+        ) {
+          const cid = frame.cid;
+          heldPins.push(() => {
+            socket.send(raw);
+            pinRequests.delete(cid);
+          });
+          return;
+        }
         if (frame?.t === "files" && holdFiles) {
           heldFiles.push(() => socket.send(raw));
           return;
         }
         socket.send(raw);
+        if (frame?.t === "result" && typeof frame.cid === "string")
+          pinRequests.delete(frame.cid);
       });
       sockets.push(socket);
     },
@@ -348,13 +369,13 @@ try {
   await expect.poll(() => heldPins.length).toBeGreaterThan(0);
   await form.title.press("Enter");
   await form.title.fill("Edited while awaiting confirmation");
+  flushPins();
   await agent("pin", {
     room_id: id,
     kind: "link",
     ref: `${base}/en/docs`,
     title: "Remote reference updated",
   });
-  flushPins();
   await expect(
     pins.getByRole("link", { name: /Worker reference/ }),
   ).toBeVisible();

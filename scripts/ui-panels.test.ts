@@ -1563,7 +1563,8 @@ describe("stable native sidebar integration", () => {
     flushSync();
     expect(rendered.events).toEqual([]);
     expect(
-      rendered.target.querySelector("[role=status]")?.textContent,
+      rendered.target.querySelector("[data-native-pins] [role=status]")
+        ?.textContent,
     ).toContain("Este link já está nos fixados");
     expect(rendered.target.querySelector("[data-native-pins] form")).toBeNull();
   }, 30_000);
