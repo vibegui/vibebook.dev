@@ -1,0 +1,24 @@
+# Current vanilla / Svelte long-room frontend comparison
+
+This replaces the runner's obsolete `30bcc5f` comparison and private captured-room dependency. The archived `docs/svelte-migration-metrics.json` is historical evidence, not a current A/B performance report. No new results have been measured or fabricated by this source checkpoint.
+
+After building the current shipping assets, run from that checkout in an exclusive resource slot with its Worker and other browsers stopped:
+
+```sh
+METRICS_EXCLUSIVE=1 TEST_APP_REVISION=<revision-used-to-build-assets> \
+  TEST_OUTPUT_DIR=/tmp/vibebook-ui-metrics bun run measure:ui
+```
+
+The runner starts its own loopback static server and one headless Chromium process. It does not start a Worker or contact real accounts, MCP/model providers, D1/R2, or production rooms. It serves current `public/app.html` and current `public/app-svelte.html` with their actual local assets. `METRICS_PUBLIC_ROOT` can point at a frozen built public directory. Source/served asset SHA256, raw/gzip-reference sizes, shell versions and any version-meta insertion are recorded; a supplied revision is labelled as supplied, not verified build provenance. Changed assets during the run invalidate the comparison.
+
+The default is eight serial trials: one excluded warmup and three measured trials for each variant, alternating pair order. The deterministic `long` workload has 5,000 messages, 50 epics (80% archived), 600 tasks, 16 members/receipts and a 40,000-character moderate-density document. Initial delivery matches Book's 60 messages in the open thread / five in other active threads, with archived histories omitted; older requests return batches of 100. Three history fetches materialize more chat before steady scrolling and a receipt update. This does not pretend all 5,000 messages render at once. The seed, complete workload digests, initial delivered counts, rendered message counts and fixture traffic accompany every sample.
+
+Measured interactions include fresh-context usable render with fonts/two RAFs, three history loads, steady-scroll RAF intervals/jank, a receipt update while reading (including anchor preservation), paste-like Unicode draft input, submit-to-synthetic-canonical echo, native/vanilla thread and room switching, and deferred Inbox loading. CDP task/script/layout counters, heap and DOM nodes complement latency. Gesture/WS instrumentation and DOM probes add overhead; two RAFs are paint opportunities, not compositor presentation. Draft input is not a hardware typing or IME measurement. V8 heap is not total browser RSS.
+
+Entry/deferred bytes come from actual CDP requests classified by request-start phase. `transferBytes` is Chromium's reported encoded transfer; `decodedDataBytes` and encoded data chunks are separate. File gzip sizes are reference values for individually compressed bodies, not actual wire totals or a hypothetical concatenated bundle. API fixture traffic is separate from local app asset bodies. Unvisited editor/Yjs/MCP/media graphs are explicitly unmeasured; the runner never adds every published chunk to initial bytes. External fonts are blocked by default (`METRICS_FONTS=local-only`); native local fonts remain included, so this is **not a full production font-download comparison**. An optional `METRICS_FONTS=network-public-fonts` run permits only Google public font origins and must be reported separately.
+
+`metrics.json` contains raw samples/resources, failures, environment/configuration, asset evidence, p50/p95/min/max/mean and known/missing byte counts. `report.md` summarizes the measured run. Nearest-rank p95 with three samples equals the observed maximum and is not a confidence/significance claim. Failed samples remain visible and make the comparison incomplete; no silent retry or zero-duration fallback is used. Missing assets, unexpected API/Book commands, browser errors, reading-anchor loss and unexpected full document reloads invalidate samples.
+
+Optional later runs: `METRICS_REPETITIONS=5 METRICS_PROFILES=normal,long`; `METRICS_PROFILES=stress METRICS_HISTORY_PAGES=10` uses 20,000 messages / 100 epics / 2,000 tasks / 100,000 document characters. `METRICS_FORCE_GC=1` samples settled post-GC heap and is a separate configuration. Defaults are desktop 1440×1000, reduced motion, fresh contexts, disabled HTTP cache and blocked service workers. Browser-process/OS/static-server caches remain warm. Real Worker/network latency, production concurrency, mobile/Safari/iOS, hardware GPU/IME, crash durability and full M7 resource acceptance require separate runs.
+
+Source-only model/statistics fixtures live in `scripts/ui-metrics-model.test.ts`; source checkpoint formatting, strict tooling, browser execution and resulting report remain pending the parent's sequential resource slot.

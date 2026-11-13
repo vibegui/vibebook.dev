@@ -33,6 +33,7 @@
     "scripts/room-store.test.ts",
     "scripts/ui-build-check.ts",
     "scripts/ui-metrics.ts",
+    "scripts/ui-metrics-model.test.ts",
     "scripts/ui-panels.test.ts",
     "scripts/ui-version.test.ts",
     "scripts/ui-variant.test.ts",
