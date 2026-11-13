@@ -18,7 +18,7 @@ import { RouterStats } from "../shared/schemas";
 export type Arm = "jev" | "hybrid" | "haiku" | "rule";
 export type Decision = "ignore" | "answer" | "wake";
 type In = Awaited<ReturnType<ReturnType<typeof bookStub>["routerInput"]>>;
-type Msg = In["messages"][number] & { mine?: boolean };
+type Msg = In["messages"][number];
 type Out = { arm: Arm; decision: Decision; why: string; reply?: string; source?: string; ms: number; cost: number };
 
 /** At most this many model decisions per room per listen check; more than that wakes the Claude (a burst = real work). */
@@ -32,12 +32,14 @@ function rule(m: Msg, email: string): Omit<Out, "ms" | "cost"> | null | "skip" {
   if (m.author === email && m.agent) return "skip"; // your own Claudes' posts
   if (m.author === "ai") return m.tag === "reminder" && m.for_who === email ? { arm: "rule", decision: "wake", why: "seu lembrete" } : "skip";
   if (m.agent && !m.mentions_you) return "skip"; // other people's Claudes talking among themselves
-  if (m.author === email && m.reply_to_my_claude) return { arm: "rule", decision: "wake", why: "resposta a uma pergunta do seu Claude" };
+  // Your own messages are your instructions: they always reach your Claude (Gui, 13/11: an epic request in another
+  // room and his answer here were ignored). The router only filters what other people write.
+  if (m.author === email) return { arm: "rule", decision: "wake", why: "mensagem sua" };
   return null;
 }
 
 const prompt = (name: string, memory: string, m: Msg) =>
-  `${memory}\n\nThread: ${m.topic}${m.epic_doc ? `\nThis epic's doc (start):\n${m.epic_doc}` : ""}\n\nRecent in this thread:\n${m.recent || "(none)"}\n\nNEW MESSAGE from ${m.from}${m.mine ? ` (${name} themself)` : ""}${m.agent ? " (someone's Claude)" : ""}:\n${m.text}`;
+  `${memory}\n\nThread: ${m.topic}${m.epic_doc ? `\nThis epic's doc (start):\n${m.epic_doc}` : ""}\n\nRecent in this thread:\n${m.recent || "(none)"}\n\nNEW MESSAGE from ${m.from}${m.agent ? " (someone's Claude)" : ""}:\n${m.text}`;
 
 const SYSTEM = (name: string) => `You are the router of ${name}'s vibebook hub. Each room has ${name}'s Claude Code agent, which can be woken; waking it costs about a minute and real money, so wake it only for real work.
 For the new message, decide:
@@ -122,7 +124,7 @@ export async function gate(env: Env, me: { email: string; agent: string }, bookI
       continue;
     }
     if (!fixed && ++routed > MAX_ROUTED) return true;
-    const out: Out = fixed ? { ...fixed, ms: 0, cost: 0 } : await route(env, input.name, input.memory, { ...m, mine: m.author === me.email && !m.agent });
+    const out: Out = fixed ? { ...fixed, ms: 0, cost: 0 } : await route(env, input.name, input.memory, m);
     // One decision per message and person, even with two listeners deciding at once: only the row's writer acts on it.
     const ins = await db
       .prepare(`INSERT INTO router_log (book_id, msg_id, email, arm, decision, why, source, ms, cost, text, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`)
