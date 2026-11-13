@@ -13,6 +13,7 @@
     composerError,
   } from "./model";
   import Textarea from "../../lib/ui/Textarea.svelte";
+  import { cn } from "../../lib/ui/utils";
   import Button from "../../lib/ui/Button.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import Avatar from "../../lib/ui/Avatar.svelte";
@@ -668,12 +669,12 @@
       aria-activedescendant={items.length
         ? `${uid}-mention-${selected}`
         : undefined}
-      class={[
+      class={cn(
         "tw:block tw:min-h-11 tw:max-h-40 tw:min-w-0 tw:flex-1 tw:resize-none tw:[field-sizing:content]",
         dictating
           ? "tw:ring-2 tw:ring-destructive tw:focus-visible:ring-destructive"
           : "",
-      ]}
+      )}
       oninput={(event) => {
         if (!canInteract(event)) return;
         speech.cancel();
