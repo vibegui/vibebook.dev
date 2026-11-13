@@ -33,11 +33,13 @@
     "fixes": {
       "pt": [
         "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior.",
-        "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo."
+        "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo.",
+        "O campo de texto dos lembretes permanece visível mesmo quando o editor do documento está fechado."
       ],
       "en": [
         "A new file version no longer leaves detached buttons able to open or pin the previous version.",
-        "The version picker appears when opening a file after its complete history has loaded."
+        "The version picker appears when opening a file after its complete history has loaded.",
+        "The reminder text field stays visible even when the document editor is closed."
       ]
     }
   },
