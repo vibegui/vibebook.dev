@@ -81,10 +81,10 @@ try {
   await a.locator("#newEpic input").fill("Verify live Svelte");
   await a.locator("#newEpic input").press("Enter");
   const epic = a
-    .locator("#side [data-thread]")
+    .locator("#side [data-epic-thread]")
     .filter({ hasText: "Verify live Svelte" });
   await expect(epic).toHaveCount(1, { timeout: 90_000 });
-  const eid = await epic.getAttribute("data-thread");
+  const eid = await epic.getAttribute("data-epic-thread");
   if (!eid) throw Error("Missing epic");
   await epic.click();
   await expect(a.locator("#newTask input")).toBeVisible({ timeout: 90_000 });

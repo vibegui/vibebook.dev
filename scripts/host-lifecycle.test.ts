@@ -43,7 +43,8 @@ function harness() {
     "disposeView",
     "pinRO",
     "boardLayoutCleanup",
-    editor +
+    "let sideNavigation = null;\n" +
+      editor +
       cleanup +
       `
     return {ensureCollab,clearViews,setLoader(loader){collabLoad=loader;},setRoom(room){S=room;}};

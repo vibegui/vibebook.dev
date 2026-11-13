@@ -3,15 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun",
-      "svelte"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -50,6 +43,9 @@
     "scripts/studio-browser.ts",
     "scripts/native-browser-fixtures.ts",
     "scripts/tasks-browser.ts",
-    "scripts/board-browser.ts"
+    "scripts/board-browser.ts",
+    "scripts/navigation.test.ts",
+    "scripts/native-test-mcp.ts",
+    "scripts/navigation-browser.ts"
   ]
 }

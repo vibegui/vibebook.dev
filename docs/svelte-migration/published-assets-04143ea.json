@@ -1,0 +1,34 @@
+{
+  "checkedAt": "2026-11-13T04:55:37.786Z",
+  "sourceCommit": "04143ea00ed6d2ee21e3cc5bc30fb8af3644ebdc",
+  "scope": "Unauthenticated public asset delivery only; not authenticated production A/B acceptance",
+  "assets": [
+    {
+      "file": "public/svelte-preview/ui.js",
+      "url": "https://vibebook.dev/svelte-preview/ui.js?verify=04143ea",
+      "status": 200,
+      "bytes": 194,
+      "sha256": "12cdcf1a3f46230d4dc12c0901f4ea4b21d076c7e1c2e24051617242ac1b3b83",
+      "expectedSha256": "12cdcf1a3f46230d4dc12c0901f4ea4b21d076c7e1c2e24051617242ac1b3b83",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/app.js",
+      "url": "https://vibebook.dev/svelte-preview/app.js?verify=04143ea",
+      "status": 200,
+      "bytes": 290,
+      "sha256": "f9c7ac85aa78256799c943d08ccd9e3211f7056b9c52f8041f6a7e454cda3d6f",
+      "expectedSha256": "f9c7ac85aa78256799c943d08ccd9e3211f7056b9c52f8041f6a7e454cda3d6f",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/ui.css",
+      "url": "https://vibebook.dev/svelte-preview/ui.css?verify=04143ea",
+      "status": 200,
+      "bytes": 38421,
+      "sha256": "0edb78c0a7295513c80211194ac9b3b126ae437909a57e25eb63e551cf0615d9",
+      "expectedSha256": "0edb78c0a7295513c80211194ac9b3b126ae437909a57e25eb63e551cf0615d9",
+      "matches": true
+    }
+  ]
+}
