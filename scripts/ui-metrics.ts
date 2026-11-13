@@ -38,7 +38,6 @@ import {
   type Workload,
 } from "./ui-metrics-model";
 import { openNativeSidebar } from "./native-browser-fixtures";
-const expect = baseExpect.configure({ timeout: 90000 });
 type Variant = "vanilla" | "svelte";
 const variants: Variant[] = ["vanilla", "svelte"];
 function integer(name: string, fallback: number, min: number, max: number) {
@@ -60,7 +59,10 @@ const config = {
   fontPolicy: process.env.METRICS_FONTS ?? "local-only",
   forceGC: process.env.METRICS_FORCE_GC === "1",
   cohortDeclaredExclusive: process.env.METRICS_EXCLUSIVE === "1",
+  stepTimeoutMs: integer("METRICS_STEP_TIMEOUT_MS", 30000, 1000, 120000),
+  failFast: process.env.METRICS_FAIL_FAST !== "0",
 };
+const expect = baseExpect.configure({ timeout: config.stepTimeoutMs });
 assert(["local-only", "network-public-fonts"].includes(config.fontPolicy));
 const profiles = (process.env.METRICS_PROFILES ?? "long")
   .split(",")
@@ -352,28 +354,8 @@ async function installProbe(context: BrowserContext) {
       },
       true,
     );
-    const Original = window.WebSocket;
-    window.WebSocket = class extends Original {
-      constructor(url: string | URL, protocols?: string | string[]) {
-        if (protocols === undefined) super(url);
-        else super(url, protocols);
-        this.addEventListener("message", (event) => {
-          if (typeof event.data !== "string") return;
-          try {
-            const value = JSON.parse(event.data),
-              pending = probe.pending;
-            if (
-              !pending?.event ||
-              value.t !== pending.event ||
-              (pending.matchTitle && value.book?.title !== pending.matchTitle)
-            )
-              return;
-            if (pending.start === null) pending.start = performance.now();
-            void probe.finish();
-          } catch {}
-        });
-      }
-    };
+    // routeWebSocket owns the browser constructor. Observe real DOM outcomes
+    // through Playwright instead of wrapping that constructor or its events.
   });
 }
 type Resource = {
@@ -421,7 +403,7 @@ const results: { [key: string]: unknown } = {
     "Fresh contexts and cache disabled; browser process, OS files, DNS/TLS and local static server are warm. Browser launch is excluded.",
     "Default local-only font policy blocks external fonts; native local fonts remain measured. Optional network-public-fonts changes this experiment.",
     "Desktop headless Chromium/reduced motion only; no iOS/Safari/mobile/IME/hardware GPU claim.",
-    "Switch/inbox DOM probes include automation observation overhead. Two animation frames are paint opportunities, not compositor presentation proof.",
+    "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
     "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
     "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
     "Deferred bytes cover only exercised interactions and Inbox. Editor/Yjs/MCP/media/tool graphs not visited are unmeasured, not zero.",
@@ -504,7 +486,7 @@ async function run(
     reducedMotion: "reduce",
     serviceWorkers: "block",
   });
-  context.setDefaultTimeout(90000);
+  context.setDefaultTimeout(config.stepTimeoutMs);
   context.setDefaultNavigationTimeout(120000);
   await context.addCookies([{ name: "vb_lang", value: "en", url: base }]);
   await installProbe(context);
@@ -748,6 +730,35 @@ async function run(
     sample.metrics[`${key}.ms`] = value.ms;
     return value;
   }
+  async function delivered(type: string, before: number) {
+    await expect
+      .poll(() => runFixture.deliveredEvents[type] || 0)
+      .toBeGreaterThan(before);
+  }
+  async function checkpoint(next: string) {
+    phase = next;
+    const value = {
+      phase,
+      at: new Date().toISOString(),
+      commands: { ...runFixture.commands },
+      events: { ...runFixture.deliveredEvents },
+    };
+    sample.lastCheckpoint = value;
+    console.log(
+      JSON.stringify({
+        profile: shape.name,
+        variant,
+        repetition,
+        warmup,
+        checkpoint: value,
+      }),
+    );
+    // Outside measured intervals: retain the last started phase even if killed.
+    await writeFile(
+      `${output}/metrics.json`,
+      JSON.stringify({ ...results, assets: assetEvidence() }, null, 2) + "\n",
+    );
+  }
   const messageSelector =
     variant === "svelte" ? "#msgs [data-chat-message]" : "#msgs .msg[id^=m]";
   const bodySelector =
@@ -778,6 +789,7 @@ async function run(
     if (variant === "svelte") await openNativeSidebar(page);
   }
   try {
+    await checkpoint("entry");
     const first = rooms[0],
       last = first.all.filter((message) => message.thread === "main").at(-1)!;
     const response = await page.goto(
@@ -812,12 +824,14 @@ async function run(
         family: getComputedStyle(element).fontFamily,
         size: getComputedStyle(element).fontSize,
       }));
-    phase = "history";
+    await checkpoint("history");
     const beforeHistory = await counters(),
       historyStart = await layout();
     for (let index = 0; index < config.historyPages; index++) {
       const key = `history${index + 1}`,
-        oldest = (await layout()).firstDOM;
+        oldest = (await layout()).firstDOM,
+        beforeOlder = runFixture.deliveredEvents.older || 0;
+      await checkpoint(key);
       await page
         .locator("#msgs")
         .evaluate((element) => (element.scrollTop = element.scrollHeight));
@@ -831,13 +845,14 @@ async function run(
       await page
         .locator("#msgs")
         .evaluate((element) => (element.scrollTop = 0));
-      await result(key);
+      await delivered("older", beforeOlder);
       await expect.poll(async () => (await layout()).firstDOM).not.toBe(oldest);
+      await result(key, true);
     }
     sample.historyBefore = historyStart;
     sample.historyAfter = await layout();
     deltas("history", beforeHistory, await counters());
-    phase = "scroll";
+    await checkpoint("scroll");
     const beforeScroll = await counters();
     const frames = await page
       .locator("#msgs")
@@ -865,7 +880,7 @@ async function run(
       (value) => value > 50,
     ).length;
     deltas("scroll", beforeScroll, await counters());
-    phase = "receiptUpdate";
+    await checkpoint("receiptUpdate");
     await page
       .locator("#msgs")
       .evaluate(
@@ -881,6 +896,14 @@ async function run(
     );
     const anchorBefore = await layout(),
       beforeUpdate = await counters();
+    const readSelector =
+      variant === "svelte"
+        ? '#msgs [data-reader-read="true"]'
+        : "#msgs .seen .sv:not(.dl)";
+    // Older history can already contain read marks from the initial snapshot.
+    // Require the new receipts to change actual footers, beyond that baseline.
+    const readMarksBefore = await page.locator(readSelector).count();
+    const beforeReceipts = runFixture.deliveredEvents.receipts || 0;
     await arm("receiptUpdate", "receipts");
     event(runFixture, first.id, {
       t: "receipts",
@@ -892,7 +915,15 @@ async function run(
         ts: Date.UTC(2026, 1, 1),
       })),
     });
-    await result("receiptUpdate");
+    await delivered("receipts", beforeReceipts);
+    await expect
+      .poll(() => page.locator(readSelector).count())
+      .toBeGreaterThan(readMarksBefore);
+    sample.receiptMarks = {
+      before: readMarksBefore,
+      after: await page.locator(readSelector).count(),
+    };
+    await result("receiptUpdate", true);
     const anchorAfter = await layout();
     sample.updateAnchor = {
       before: anchorBefore,
@@ -905,7 +936,7 @@ async function run(
       anchorAfter.firstVisible,
       "Receipt update changed reading anchor",
     );
-    phase = "compose";
+    await checkpoint("compose");
     await page
       .locator("#msgs")
       .evaluate((element) => (element.scrollTop = element.scrollHeight));
@@ -916,15 +947,17 @@ async function run(
     await page.keyboard.insertText(draft);
     await result("draftInput");
     await expect(page.locator("#composer textarea")).toHaveValue(draft);
+    const beforeMsg = runFixture.deliveredEvents.msg || 0;
     await arm("composeEcho", "msg", "click");
     await page
       .locator(variant === "svelte" ? "[data-composer-send]" : "#sendBtn")
       .click();
-    await result("composeEcho");
+    await delivered("msg", beforeMsg);
     await expect(page.locator("#msgs")).toContainText(draft);
     await expect(page.locator("#composer textarea")).toHaveValue("");
+    await result("composeEcho", true);
     deltas("compose", composeBefore, await counters());
-    phase = "threadSwitch";
+    await checkpoint("threadSwitch");
     await sidebar();
     const thread = first.firstActiveEpic;
     await arm("threadSwitch", undefined, "click");
@@ -940,7 +973,8 @@ async function run(
       `Synthetic A message ${first.all.filter((message) => message.thread === thread).at(-1)!.id}`,
     );
     await result("threadSwitch", true);
-    phase = "roomSwitch";
+    await checkpoint("roomSwitch");
+    const beforeState = runFixture.deliveredEvents.state || 0;
     await arm("roomSwitch", "state", "click", rooms[1].root.book.title);
     await page
       .locator(
@@ -948,12 +982,13 @@ async function run(
       )
       .first()
       .click();
-    await result("roomSwitch");
+    await delivered("state", beforeState);
     await expect
       .poll(() => new URL(page.url()).pathname)
       .toBe(`/b/${rooms[1].id}`);
     await expect(page.locator("#msgs")).toContainText("Synthetic B message");
-    phase = "inboxDeferred";
+    await result("roomSwitch", true);
+    await checkpoint("inboxDeferred");
     await arm("inboxDeferred", undefined, "click");
     await page.locator("#inboxBtn").click();
     const inbox = page.getByRole("dialog", { name: "Inbox", exact: true });
@@ -962,7 +997,7 @@ async function run(
     await inbox.getByRole("button", { name: "Close", exact: true }).click();
     await expect(inbox).not.toBeVisible();
     await page.waitForLoadState("networkidle");
-    phase = "settled";
+    await checkpoint("settled");
     if (config.forceGC) await cdp.send("HeapProfiler.collectGarbage");
     const settled = await counters();
     for (const key of [
@@ -1014,6 +1049,40 @@ async function run(
       error instanceof Error
         ? error.message.slice(0, 8000)
         : "Benchmark failed";
+    console.error(
+      JSON.stringify({
+        profile: shape.name,
+        variant,
+        repetition,
+        warmup,
+        failedPhase: phase,
+        error: sample.error,
+      }),
+    );
+    if (!page.isClosed()) {
+      sample.probeAtFailure = await page
+        .evaluate(() => ({
+          pending: window.__vbFrontendMetrics?.pending ?? null,
+          results: window.__vbFrontendMetrics?.results ?? {},
+        }))
+        .catch(() => null);
+      sample.layoutAtFailure = await page
+        .evaluate((selector) => {
+          const element = document.querySelector("#msgs");
+          if (!element) return null;
+          const rows = element.querySelectorAll<HTMLElement>(
+            selector.replace(/^#msgs /, ""),
+          );
+          return {
+            scrollTop: element.scrollTop,
+            scrollHeight: element.scrollHeight,
+            clientHeight: element.clientHeight,
+            renderedMessages: rows.length,
+            firstDOM: rows[0]?.id || null,
+          };
+        }, messageSelector)
+        .catch(() => null);
+    }
     if (!cancelled) process.exitCode = 1;
   } finally {
     sample.resources = [...network.values()];
@@ -1024,6 +1093,7 @@ async function run(
       commands: runFixture.commands,
       events: runFixture.deliveredEvents,
       deliveredUTF8Bytes: runFixture.deliveredUTF8Bytes,
+      unsupported: runFixture.unsupported,
     };
     await context.close();
     fixture = null;
@@ -1035,6 +1105,7 @@ async function run(
       `${shape.name} ${variant} ${warmup ? "warmup" : `sample ${repetition}`}: ${sample.status}`,
     );
   }
+  return sample.status === "passed";
 }
 try {
   browser = await chromium.launch({
@@ -1043,13 +1114,22 @@ try {
   });
   results.chromium = browser.version();
   assert(!cancelled, "Benchmark cancelled during browser startup");
-  for (const shape of profiles) {
+  trials: for (const shape of profiles) {
     for (let index = 0; index < config.warmups; index++)
       for (const variant of variants)
-        await run(variant, shape, index + 1, true);
+        if (!(await run(variant, shape, index + 1, true)) && config.failFast) {
+          results.stoppedAfterInvalidSample = true;
+          break trials;
+        }
     for (let repetition = 1; repetition <= config.repetitions; repetition++)
       for (const variant of repetition % 2 ? variants : [...variants].reverse())
-        await run(variant, shape, repetition, false);
+        if (
+          !(await run(variant, shape, repetition, false)) &&
+          config.failFast
+        ) {
+          results.stoppedAfterInvalidSample = true;
+          break trials;
+        }
   }
   const summaries = profiles.flatMap((shape) =>
     variants.map((variant) => {
@@ -1147,7 +1227,9 @@ try {
     "",
     `Chromium: ${browser.version()}; ${arch()}; repetitions ${config.repetitions}; fonts ${config.fontPolicy}; exclusive cohort declared ${config.cohortDeclaredExclusive}.`,
     "",
-    "All values below require successful measured samples; failures remain in metrics.json. p95 is nearest rank, not a statistical confidence bound.",
+    "All values below require successful measured samples; failures remain in metrics.json. Fail-fast stops at the first invalid trial by default (METRICS_FAIL_FAST=0 continues). Step timeout defaults to 30 seconds (METRICS_STEP_TIMEOUT_MS); navigation timeout is 120 seconds. p95 is nearest rank, not a statistical confidence bound.",
+    "",
+    "Action/update intervals include automation observation of the required DOM change and two animation frames. They are not pure WebSocket-event or rendering latency; see gaps in metrics.json. Fixture delivery alone never completes these measurements.",
     "",
     "| Workload | Variant | Valid/total | Ready p50/p95 ms | Receipt update p50/p95 ms | Compose echo p50/p95 ms | Room switch p50/p95 ms |",
     "|---|---|---:|---:|---:|---:|---:|",
