@@ -246,3 +246,197 @@ export const AgentDbRow = z.object({
   ctx_at: num,
   ctx_limits: str,
 });
+
+// Slice 8: the person's own cloud sandboxes in a room (freestyle.sh VMs; the key never leaves the server).
+export const SandboxCard = z.object({
+  id: z.string(),
+  name: z.string(),
+  vm_id: z.string(),
+  ready: z.boolean(),
+  state: z.string(),
+  error: z.optional(z.string()),
+  log: z.optional(z.string()),
+  created_at: z.number(),
+  rate: z.number(),
+  cost: z.number(),
+});
+export const SandboxesResult = z.object({
+  connected: z.boolean(),
+  claude: z.boolean(),
+  sandboxes: z.array(SandboxCard),
+});
+export type SandboxesResult = z.infer<typeof SandboxesResult>;
+export const CreateSandboxBody = z.object({ name: z.optional(z.string()) });
+export const CreateSandboxResult = z.object({
+  ok: z.literal(true),
+  id: z.string(),
+  vm_id: z.string(),
+  name: z.string(),
+});
+export type CreateSandboxResult = z.infer<typeof CreateSandboxResult>;
+export const SandboxSetupResult = z.object({
+  ok: z.boolean(),
+  log: z.string(),
+  error: z.optional(z.string()),
+});
+export type SandboxSetupResult = z.infer<typeof SandboxSetupResult>;
+export const SandboxTerminalResult = z.object({
+  token: z.string(),
+  url: z.string(),
+});
+export type SandboxTerminalResult = z.infer<typeof SandboxTerminalResult>;
+
+// Slice 9: a room's MCP connections (src/mcpconn.ts). No token or URL path ever reaches the browser.
+export const ConnectionApp = z.object({
+  tool: z.string(),
+  title: z.string(),
+  description: z.string(),
+  screen: z.boolean(),
+});
+export const ConnectionTool = z.object({
+  name: z.string(),
+  description: z.string(),
+  read_only: z.boolean(),
+  app: z.boolean(),
+});
+export const ConnectionContext = z.object({
+  text: z.string(),
+  by: z.string(),
+  at: z.number(),
+});
+export const Connection = z.object({
+  id: z.string(),
+  title: z.string(),
+  host: z.string(),
+  scope: z.enum(["room", "me"]),
+  owner: z.string(),
+  mine: z.boolean(),
+  created_at: z.number(),
+  auth: z.enum(["token", "identity"]),
+  signed_in: z.boolean(),
+  apps: z.array(ConnectionApp),
+  tools: z.array(ConnectionTool),
+  context: z.record(z.string(), ConnectionContext),
+});
+export type Connection = z.infer<typeof Connection>;
+export const ConnectionsResult = z.object({ connections: z.array(Connection) });
+export type ConnectionsResult = z.infer<typeof ConnectionsResult>;
+/** `token` is refused with a message (connections no longer take one); kept so that error still reaches the person. */
+export const CreateConnectionBody = z.object({
+  url: z.optional(z.string()),
+  scope: z.optional(z.string()),
+  title: z.optional(z.string()),
+  token: z.optional(z.unknown()),
+});
+export type CreateConnectionBody = z.infer<typeof CreateConnectionBody>;
+export const CreateConnectionResult = z.object({
+  ok: z.literal(true),
+  connection: z.nullable(z.extend(Connection, { needs_sign_in: z.boolean() })),
+});
+export type CreateConnectionResult = z.infer<typeof CreateConnectionResult>;
+export const RefreshConnectionResult = z.object({
+  ok: z.literal(true),
+  connection: Connection,
+});
+export type RefreshConnectionResult = z.infer<typeof RefreshConnectionResult>;
+export const ConnectionUiQuery = z.object({ tool: z.optional(z.string()) });
+export const ConnectionUiResult = z.object({
+  html: z.string(),
+  tool: z.object({
+    name: z.string(),
+    title: z.optional(z.string()),
+    description: z.optional(z.string()),
+    inputSchema: z.optional(z.unknown()),
+    annotations: z.optional(z.unknown()),
+    _meta: z.optional(z.unknown()),
+  }),
+});
+export type ConnectionUiResult = z.infer<typeof ConnectionUiResult>;
+export const ConnectionCallBody = z.object({
+  name: z.optional(z.string()),
+  arguments: z.optional(z.unknown()),
+});
+export type ConnectionCallBody = z.infer<typeof ConnectionCallBody>;
+export const ConnectionCallResult = z.object({ result: z.unknown() });
+export type ConnectionCallResult = z.infer<typeof ConnectionCallResult>;
+export const ConnectionContextBody = z.object({
+  tool: z.optional(z.string()),
+  text: z.optional(z.string()),
+});
+export type ConnectionContextBody = z.infer<typeof ConnectionContextBody>;
+/** A failed connection call: sign_in = this person must sign in on that server first (401). */
+export const ConnectionError = z.object({
+  error: z.string(),
+  sign_in: z.optional(z.literal(true)),
+});
+export type ConnectionError = z.infer<typeof ConnectionError>;
+
+// Slice 10: GET /api/me, the home and rail's one read (served from the Person DO's cache while nothing changed).
+export const MeBook = z.object({
+  id: z.string(),
+  title: str,
+  folder: str,
+  summary: str,
+  updated_at: num,
+  created_at: num,
+  icon: num,
+  busy_until: num,
+  position: num,
+  tint: str,
+  opened_at: num,
+  last_human_id: z.number(),
+  last_agent_id: z.number(),
+  read_id: z.number(),
+  sandboxes_running: z.number(),
+  /** The room's members' emails, comma-separated (D1 group_concat). */
+  members: str,
+});
+export const MeFriend = z.object({
+  email: z.string(),
+  name: str,
+  avatar: num,
+  /** 1 = has an account, 0 = invited only (D1 boolean). */
+  joined: z.number(),
+  shared: z.number(),
+});
+export const MeWait = z.object({
+  book_id: z.string(),
+  room: z.string(),
+  /** m<msg> an ask to you, t<task> your task in review, a/b<msg> your Claude waiting on you. */
+  ref: z.string(),
+  thread: z.string(),
+  topic: str,
+  author: z.string(),
+  author_name: str,
+  text: z.string(),
+  ts: z.number(),
+});
+export const MeData = z.object({
+  email: z.string(),
+  name: str,
+  avatar: num,
+  books: z.array(MeBook),
+  friends: z.array(MeFriend),
+  waits: z.array(MeWait),
+});
+export type MeData = z.infer<typeof MeData>;
+/** v = the app shell's version (a new deploy makes open tabs reload); cached = served from the Person DO. */
+export const MeResult = z.extend(MeData, {
+  v: z.string(),
+  cached: z.optional(z.literal(true)),
+});
+export type MeResult = z.infer<typeof MeResult>;
+
+// Slice 11: the two image uploads (raw bytes; the app resizes first). Their type is the request's content-type.
+export const ImageHeaders = z.object({
+  "content-type": z.optional(z.string()),
+});
+export const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
+export const AvatarResult = z.object({
+  ok: z.literal(true),
+  avatar: z.number(),
+});
+export type AvatarResult = z.infer<typeof AvatarResult>;
+/** icon = the new version, or null when the icon was removed (a JSON body). */
+export const RoomIconResult = z.object({ ok: z.literal(true), icon: num });
+export type RoomIconResult = z.infer<typeof RoomIconResult>;

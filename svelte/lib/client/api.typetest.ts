@@ -3,6 +3,13 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  SandboxesResult,
+  ConnectionsResult,
+  MeResult,
+  AvatarResult,
+  RoomIconResult,
+  ConnectionCallResult,
+  SandboxTerminalResult,
   AgentsResult,
   ConnectedResult,
   CreateRoomResult,
@@ -182,5 +189,73 @@ sameAs<
   Equal<
     InferResponseType<(typeof api.api.books)[":id"]["agents"]["$get"], 200>,
     AgentsResult
+  >
+>(true);
+
+// Slice 8: sandboxes.
+void api.api.books[":id"].sandboxes.$post({
+  param: { id: "r" },
+  json: { name: "box" },
+});
+const sbxPost = api.api.books[":id"].sandboxes.$post;
+const notName = { name: 3 };
+// @ts-expect-error name is a string
+void sbxPost({ param: { id: "r" }, json: notName });
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["sandboxes"]["$get"], 200>,
+    SandboxesResult
+  >
+>(true);
+sameAs<
+  Equal<
+    InferResponseType<
+      (typeof api.api.sandboxes)[":sid"]["terminal"]["$post"],
+      200
+    >,
+    SandboxTerminalResult
+  >
+>(true);
+void api.api.sandboxes[":sid"].pause.$post({ param: { sid: "s" } });
+
+// Slice 9: MCP connections.
+sameAs<
+  Equal<
+    InferResponseType<
+      (typeof api.api.books)[":id"]["connections"]["$get"],
+      200
+    >,
+    ConnectionsResult
+  >
+>(true);
+const connCall = api.api.books[":id"].connections[":cid"].call.$post;
+void connCall({
+  param: { id: "r", cid: "c" },
+  json: { name: "t", arguments: {} },
+});
+const notToolName = { name: 3 };
+// @ts-expect-error name is a string
+void connCall({ param: { id: "r", cid: "c" }, json: notToolName });
+// The tool's result is opaque JSON (unknown, so the client sees it as optional).
+const callOut: InferResponseType<typeof connCall, 200> = {
+  result: 1,
+} satisfies ConnectionCallResult;
+void callOut.result;
+void api.api.books[":id"].connections[":cid"].ui.$get({
+  param: { id: "r", cid: "c" },
+  query: { tool: "board" },
+});
+
+// Slice 10: GET /api/me.
+sameAs<Equal<InferResponseType<typeof api.api.me.$get, 200>, MeResult>>(true);
+
+// Slice 11: avatar and room icon (raw bytes; the typed client sees the JSON answers).
+sameAs<
+  Equal<InferResponseType<typeof api.api.me.avatar.$post, 200>, AvatarResult>
+>(true);
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["icon"]["$post"], 200>,
+    RoomIconResult
   >
 >(true);

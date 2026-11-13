@@ -12,6 +12,26 @@ import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  CreateSandboxBody,
+  ConnectionCallBody,
+  type ConnectionCallResult,
+  ConnectionContextBody,
+  type ConnectionError,
+  type ConnectionsResult,
+  ConnectionUiQuery,
+  type ConnectionUiResult,
+  CreateConnectionBody,
+  type CreateConnectionResult,
+  type MeResult,
+  AVATAR_TYPES,
+  type AvatarResult,
+  ImageHeaders,
+  type RoomIconResult,
+  type RefreshConnectionResult,
+  type CreateSandboxResult,
+  type SandboxesResult,
+  type SandboxSetupResult,
+  type SandboxTerminalResult,
   AgentDbRow,
   AgentLimits,
   type AgentsResult,
@@ -105,7 +125,42 @@ export interface ApiServices {
   checkFreestyleKey(key: string): Promise<string | null>;
   /** How recent a listener's last call must be to count as listening (ms). */
   listenFresh: number;
+  /** The signed-in person's own sandboxes (by id + email); room membership is checked by the route. */
+  sandboxes: {
+    list(roomId: string): Promise<SandboxesResult>;
+    /** Throws an Error whose message is user-facing. */
+    create(roomId: string, name: string): Promise<{ id: string; vm_id: string; name: string }>;
+    /** null = done; "not_found"; else freestyle's error. */
+    power(sid: string, act: "pause" | "start"): Promise<string | null>;
+    /** Throws freestyle's error. */
+    setup(sid: string): Promise<SandboxSetupResult>;
+    /** false = no such sandbox of yours. */
+    remove(sid: string): Promise<boolean>;
+    /** null = no such sandbox of yours; throws freestyle's error. */
+    terminal(sid: string): Promise<SandboxTerminalResult | null>;
+  };
+  /** The home and rail's one read: your rooms, friends and waits, plus the app shell's version. */
+  me(): Promise<MeResult>;
+  /** Per-person upload rate limit (UPLOAD_LIMIT): false = over it. */
+  allowUpload(): Promise<boolean>;
+  /** Store your profile picture (R2 avatars/<email>); returns its new version. */
+  saveAvatar(type: string, bytes: ArrayBuffer): Promise<number>;
+  /** Set (or with null remove) a room's icon; returns its version or null. Throws a user-facing Error. */
+  setRoomIcon(roomId: string, img: { type: string; body: ArrayBuffer } | null): Promise<number | null>;
+  /** The room's MCP connections as this person sees them (src/mcpconn.ts connOps); membership is checked by the route. */
+  connections: {
+    list(roomId: string): Promise<ConnectionsResult>;
+    create(roomId: string, b: CreateConnectionBody): Promise<CreateConnectionResult | ConnFail>;
+    remove(roomId: string, cid: string): Promise<OkResult | ConnFail>;
+    refresh(roomId: string, cid: string): Promise<RefreshConnectionResult | ConnFail>;
+    ui(roomId: string, cid: string, tool: string): Promise<ConnectionUiResult | ConnFail>;
+    call(roomId: string, cid: string, name: string, args: unknown): Promise<ConnectionCallResult | ConnFail>;
+    context(roomId: string, cid: string, tool: string, text: string): Promise<OkResult | ConnFail>;
+    signout(roomId: string, cid: string): Promise<OkResult | ConnFail>;
+  };
 }
+/** A failed connection call and its status; sign_in = sign in on that server first (401). */
+export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
 /** A JSON body checked against its shared schema; anything else is a 400 { error } before the handler runs. */
@@ -414,4 +469,147 @@ export const agentsApi = keysApi.get("/api/books/:id/agents", async (c) => {
   return c.json(out, 200);
 });
 
-export type AppType = typeof agentsApi;
+// Slice 8: your cloud sandboxes (freestyle.sh). Errors keep the old shape: { error } with 400/404/502.
+const notFound = { error: "not found" } satisfies ErrorBody;
+const failed = (e: unknown) => ({ error: e instanceof Error ? e.message : String(e) }) satisfies ErrorBody;
+const power = (act: "pause" | "start") => async (c: import("hono").Context<ApiCtx, "/api/sandboxes/:sid/pause" | "/api/sandboxes/:sid/start">) => {
+  const r = await c.get("svc").sandboxes.power(c.req.param("sid"), act);
+  if (r === "not_found") return c.json(notFound, 404);
+  if (r !== null) return c.json({ error: r } satisfies ErrorBody, 502);
+  return c.json(ok, 200);
+};
+export const sandboxApi = agentsApi
+  .get("/api/books/:id/sandboxes", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    return c.json((await svc.sandboxes.list(id)) satisfies SandboxesResult, 200);
+  })
+  .post("/api/books/:id/sandboxes", body(CreateSandboxBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    try {
+      const r = await svc.sandboxes.create(id, c.req.valid("json").name ?? "");
+      return c.json({ ok: true as const, ...r } satisfies CreateSandboxResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 400);
+    }
+  })
+  .post("/api/sandboxes/:sid/pause", (c) => power("pause")(c))
+  .post("/api/sandboxes/:sid/start", (c) => power("start")(c))
+  .post("/api/sandboxes/:sid/setup", async (c) => {
+    try {
+      return c.json((await c.get("svc").sandboxes.setup(c.req.param("sid"))) satisfies SandboxSetupResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 502);
+    }
+  })
+  .delete("/api/sandboxes/:sid", async (c) => {
+    if (!(await c.get("svc").sandboxes.remove(c.req.param("sid")))) return c.json(notFound, 404);
+    return c.json(ok, 200);
+  })
+  .post("/api/sandboxes/:sid/terminal", async (c) => {
+    try {
+      const t = await c.get("svc").sandboxes.terminal(c.req.param("sid"));
+      return t ? c.json(t satisfies SandboxTerminalResult, 200) : c.json(notFound, 404);
+    } catch (e) {
+      return c.json(failed(e), 502);
+    }
+  });
+
+// Slice 9: the room's MCP connections. Sign-in and its OAuth callback stay browser redirects (src/mcpconn.ts).
+const connFail = (r: ConnFail) => ({ error: r.error, ...(r.sign_in ? { sign_in: true as const } : {}) }) satisfies ConnectionError;
+const uiQuery = validator("query", (value, c) => {
+  const r = ConnectionUiQuery.safeParse(value);
+  return r.success ? r.data : c.json({ error: "bad request" } satisfies ErrorBody, 400);
+});
+export const connectionsApi = sandboxApi
+  .get("/api/books/:id/connections", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    return c.json((await svc.connections.list(id)) satisfies ConnectionsResult, 200);
+  })
+  .post("/api/books/:id/connections", body(CreateConnectionBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.create(id, c.req.valid("json"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies CreateConnectionResult, 200);
+  })
+  .delete("/api/books/:id/connections/:cid", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.remove(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  })
+  .post("/api/books/:id/connections/:cid/refresh", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.refresh(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies RefreshConnectionResult, 200);
+  })
+  .get("/api/books/:id/connections/:cid/ui", uiQuery, async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.ui(id, c.req.param("cid"), c.req.valid("query").tool ?? "");
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies ConnectionUiResult, 200);
+  })
+  .post("/api/books/:id/connections/:cid/call", body(ConnectionCallBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const b = c.req.valid("json");
+    const r = await svc.connections.call(id, c.req.param("cid"), b.name ?? "", b.arguments);
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies ConnectionCallResult, 200);
+  })
+  .post("/api/books/:id/connections/:cid/context", body(ConnectionContextBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const b = c.req.valid("json");
+    const r = await svc.connections.context(id, c.req.param("cid"), (b.tool ?? "").slice(0, 100), (b.text ?? "").slice(0, 4000));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  })
+  .post("/api/books/:id/connections/:cid/signout", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.signout(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  });
+
+// Slice 10: GET /api/me (POST /api/me, your name, is slice 5).
+export const meApi = connectionsApi.get("/api/me", async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
+
+// Slice 11: the profile picture and the room icon, raw image bytes (the app resizes them first). Same-origin only.
+const imageHeaders = validator("header", (value, c) => {
+  const r = ImageHeaders.safeParse(value);
+  return r.success ? r.data : c.json({ error: "bad request" } satisfies ErrorBody, 400);
+});
+const mediaType = (h: { "content-type"?: string }) => (h["content-type"] ?? "").split(";")[0].trim().toLowerCase();
+const slowDown = { error: "Muitos uploads. Espera um minuto." } satisfies ErrorBody;
+export const uploadsApi = meApi
+  .post("/api/me/avatar", imageHeaders, async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    const type = mediaType(c.req.valid("header"));
+    if (!AVATAR_TYPES.includes(type)) return c.json({ error: "Use uma imagem PNG, JPEG ou WebP." } satisfies ErrorBody, 415);
+    const bytes = await c.req.arrayBuffer();
+    if (!bytes.byteLength || bytes.byteLength > 1_000_000) return c.json({ error: "Imagem vazia ou maior que 1MB." } satisfies ErrorBody, 413);
+    if (!(await svc.allowUpload())) return c.json(slowDown, 429);
+    const avatar = await svc.saveAvatar(type, bytes);
+    svc.track("avatar_set");
+    return c.json({ ok: true as const, avatar } satisfies AvatarResult, 200);
+  })
+  .post("/api/books/:id/icon", imageHeaders, async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    if (!(await svc.allowUpload())) return c.json(slowDown, 429);
+    const type = mediaType(c.req.valid("header"));
+    try {
+      // A JSON body removes the icon; anything else is the image (setRoomIcon checks type and size).
+      const icon = await svc.setRoomIcon(id, type === "application/json" ? null : { type, body: await c.req.arrayBuffer() });
+      svc.track("room_icon", { book: id, set: icon !== null });
+      return c.json({ ok: true as const, icon } satisfies RoomIconResult, 200);
+    } catch (e) {
+      return c.json(failed(e), 400);
+    }
+  });
+
+export type AppType = typeof uploadsApi;

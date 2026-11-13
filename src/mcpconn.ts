@@ -39,7 +39,7 @@ export function publicConn(c: Conn, email: string, signed?: Set<string>) {
     id: c.id, title: c.title, host: new URL(c.url).host, scope: c.scope, owner: c.owner, mine: c.owner === email, created_at: c.created_at,
     // auth: "token" = the old pasted Bearer (to be removed); "identity" = no secret here, each person signs in on the
     // server when it asks (signed_in tells whether this person already did).
-    auth: c.enc ? "token" : "identity", signed_in: !c.enc && !!signed?.has(c.url),
+    auth: c.enc ? ("token" as const) : ("identity" as const), signed_in: !c.enc && !!signed?.has(c.url),
     // Screens first: tools with a UI only the app calls (visibility ["app"], e.g. autogui's APP_*) are the views meant to
     // be opened; the rest of the UI tools render a tool result and sit behind "ver todas" in the tab.
     apps: tools.filter(uiOf).map((t) => ({ tool: t.name, title: t.title || t.annotations?.title || t.name, description: firstLine(t.description), screen: !!t._meta?.ui?.visibility && !t._meta.ui.visibility.includes("model") })).sort((a, b) => Number(b.screen) - Number(a.screen)),
@@ -222,7 +222,6 @@ export async function appHtml(env: Env, c: Conn, tool: string, who: Who) {
 export function mountConnections(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
   const guard = async (c: any) => (await deps.isMember(c.env.DB, c.req.param("id"), c.get("email")) ? null : c.json({ error: "forbidden" }, 403));
   const conn = async (c: any) => getConn(c.env, c.req.param("id"), c.req.param("cid"), c.get("email"));
-  const fail = (c: any, e: unknown, status = 502) => e instanceof AuthNeeded ? c.json({ error: e.message, sign_in: true }, 401) : c.json({ error: e instanceof Error ? e.message : String(e) }, status);
   const who = (c: any): Who => ({ email: c.get("email"), room: c.req.param("id"), origin: new URL(c.req.url).origin });
 
   // Sign in on a connection's server (OAuth per person): the browser goes to its consent page and comes back here.
@@ -234,13 +233,6 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
       const w = who(c);
       return c.redirect(await startAuth(c.env, w.origin, { email: w.email, book: x.book_id, cid: x.id, resource: x.url, back: `/b/${x.book_id}#app:${x.id}` }));
     } catch (e) { return c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String((e as Error).message).replace(/</g, "&lt;")}. <a href="/b/${x.book_id}">Voltar</a></p>`, 400); }
-  });
-  app.post("/api/books/:id/connections/:cid/signout", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    await forget(c.env, c.get("email"), x.url);
-    for (const k of sessions.keys()) if (k === `${x.id}:${c.get("email")}`) sessions.delete(k);
-    return c.json({ ok: true });
   });
   app.get("/api/mcp-oauth/callback", async (c: any) => {
     const q = c.req.query();
@@ -258,75 +250,73 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
       return c.redirect(s.back);
     } catch (e) { return c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String((e as Error).message).replace(/</g, "&lt;")}. <a href="/app">Voltar</a></p>`, 400); }
   });
-
-  app.get("/api/books/:id/connections", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const email = c.get("email");
-    const signed = await signedInTo(c.env, email);
-    return c.json({ connections: (await listConns(c.env, c.req.param("id"), email)).map((x) => publicConn(x, email, signed)) });
-  });
-
-  app.post("/api/books/:id/connections", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const id = c.req.param("id"), email = c.get("email");
-    if (!(await c.env.LOGIN_LIMIT.limit({ key: `mcp:${email}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
-    const b = await c.req.json().catch(() => ({}));
-    try { return c.json({ ok: true, connection: await createConn(c.env, id, email, b, (x) => c.executionCtx.waitUntil(x), deps.track, new URL(c.req.url).origin) }); }
-    catch (e) { return fail(c, e, 400); }
-  });
-
-  app.delete("/api/books/:id/connections/:cid", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    try { await deleteConn(c.env, c.req.param("id"), c.req.param("cid"), c.get("email")); return c.json({ ok: true }); }
-    catch (e) { return fail(c, e, 400); }
-  });
-
-  app.post("/api/books/:id/connections/:cid/refresh", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    try {
-      const tools = await listTools(c.env, x, who(c));
-      await c.env.DB.prepare(`UPDATE mcp_connections SET tools = ? WHERE id = ?`).bind(JSON.stringify(tools), x.id).run();
-      return c.json({ ok: true, connection: publicConn({ ...x, tools: JSON.stringify(tools) }, c.get("email")) });
-    } catch (e) { return fail(c, e); }
-  });
-
-
-  // The app's HTML for an opaque-origin iframe (the page puts it in srcdoc).
-  app.get("/api/books/:id/connections/:cid/ui", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    try {
-      const a = await appHtml(c.env, x, String(c.req.query("tool") ?? ""), who(c));
-      c.executionCtx.waitUntil(deps.track(c.env, "app_open", { user: c.get("email"), dims: { book: x.book_id, host: new URL(x.url).host, tool: a.tool.name, via: "app" } }));
-      return c.json({ html: a.html, tool: { name: a.tool.name, title: a.tool.title, description: a.tool.description, inputSchema: a.tool.inputSchema, annotations: a.tool.annotations, _meta: a.tool._meta } });
-    } catch (e) { return fail(c, e); }
-  });
-
-  // tools/call from the open app (a person's click), or the host's first call when opening it.
-  app.post("/api/books/:id/connections/:cid/call", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const email = c.get("email");
-    if (!(await c.env.AGENT_LIMIT.limit({ key: `app:${email}` })).success) return c.json({ error: "muitas chamadas no último minuto" }, 429);
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    const b = await c.req.json().catch(() => ({}));
-    try {
-      const result = await callTool(c.env, x, String(b.name ?? ""), b.arguments, who(c));
-      c.executionCtx.waitUntil(deps.track(c.env, "app_call", { user: email, dims: { book: x.book_id, host: new URL(x.url).host, tool: String(b.name), via: "app" } }));
-      return c.json({ result });
-    } catch (e) { return fail(c, e); }
-  });
-
-  // ui/update-model-context: what the open app says about itself, kept per tool so every Claude in the room reads it.
-  app.post("/api/books/:id/connections/:cid/context", async (c: any) => {
-    const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    const b = await c.req.json().catch(() => ({}));
-    const text = String(b.text ?? "").slice(0, 4000), tool = String(b.tool ?? "").slice(0, 100);
-    if (findSecret(text)) return c.json({ error: "parece um segredo; não guardei" }, 400);
-    const ctx = ctxOf(x);
-    ctx[tool] = { text, by: c.get("email"), at: Date.now() };
-    await c.env.DB.prepare(`UPDATE mcp_connections SET ctx = ? WHERE id = ?`).bind(JSON.stringify(ctx), x.id).run();
-    return c.json({ ok: true });
-  });
 }
+
+/** The typed routes' side (src/api.ts, slice 9): the signed-in person's view of a room's connections. Room membership
+ *  is checked by the route; a failure is { error, status } (401 + sign_in = sign in on that server first). */
+export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
+export function connOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, origin: string, track: (env: Env, name: string, o: object) => Promise<unknown>) {
+  const who = (room: string): Who => ({ email, room, origin });
+  const fail = (e: unknown, status: 400 | 502 = 502): ConnFail =>
+    e instanceof AuthNeeded ? { error: e.message, status: 401, sign_in: true } : { error: e instanceof Error ? e.message : String(e), status };
+  const missing: ConnFail = { error: "conexão não encontrada", status: 404 };
+  return {
+    async list(room: string) {
+      const signed = await signedInTo(env, email);
+      return { connections: (await listConns(env, room, email)).map((x) => publicConn(x, email, signed)) };
+    },
+    async create(room: string, b: { url?: string; scope?: string; title?: string; token?: unknown }) {
+      if (!(await env.LOGIN_LIMIT.limit({ key: `mcp:${email}` })).success) return { error: "Muitas tentativas. Espera um minuto.", status: 429 } satisfies ConnFail;
+      try { return { ok: true as const, connection: await createConn(env, room, email, b, (p) => ctx.waitUntil(p), track, origin) }; }
+      catch (e) { return fail(e, 400); }
+    },
+    async remove(room: string, cid: string) {
+      try { await deleteConn(env, room, cid, email); return { ok: true as const }; }
+      catch (e) { return fail(e, 400); }
+    },
+    async refresh(room: string, cid: string) {
+      const x = await getConn(env, room, cid, email); if (!x) return missing;
+      try {
+        const tools = await listTools(env, x, who(room));
+        await env.DB.prepare(`UPDATE mcp_connections SET tools = ? WHERE id = ?`).bind(JSON.stringify(tools), x.id).run();
+        return { ok: true as const, connection: publicConn({ ...x, tools: JSON.stringify(tools) }, email) };
+      } catch (e) { return fail(e); }
+    },
+    /** The app's HTML for an opaque-origin iframe (the page puts it in srcdoc). */
+    async ui(room: string, cid: string, tool: string) {
+      const x = await getConn(env, room, cid, email); if (!x) return missing;
+      try {
+        const a = await appHtml(env, x, tool, who(room));
+        ctx.waitUntil(track(env, "app_open", { user: email, dims: { book: x.book_id, host: new URL(x.url).host, tool: a.tool.name, via: "app" } }));
+        return { html: a.html, tool: { name: a.tool.name, title: a.tool.title, description: a.tool.description, inputSchema: a.tool.inputSchema, annotations: a.tool.annotations, _meta: a.tool._meta } };
+      } catch (e) { return fail(e); }
+    },
+    /** tools/call from the open app (a person's click), or the host's first call when opening it. */
+    async call(room: string, cid: string, name: string, args: unknown) {
+      if (!(await env.AGENT_LIMIT.limit({ key: `app:${email}` })).success) return { error: "muitas chamadas no último minuto", status: 429 } satisfies ConnFail;
+      const x = await getConn(env, room, cid, email); if (!x) return missing;
+      try {
+        const result: unknown = await callTool(env, x, name, args, who(room));
+        ctx.waitUntil(track(env, "app_call", { user: email, dims: { book: x.book_id, host: new URL(x.url).host, tool: name, via: "app" } }));
+        return { result };
+      } catch (e) { return fail(e); }
+    },
+    /** ui/update-model-context: what the open app says about itself, kept per tool so every Claude in the room reads it. */
+    async context(room: string, cid: string, tool: string, text: string) {
+      const x = await getConn(env, room, cid, email); if (!x) return missing;
+      if (findSecret(text)) return { error: "parece um segredo; não guardei", status: 400 } satisfies ConnFail;
+      const c = ctxOf(x);
+      c[tool] = { text, by: email, at: Date.now() };
+      await env.DB.prepare(`UPDATE mcp_connections SET ctx = ? WHERE id = ?`).bind(JSON.stringify(c), x.id).run();
+      return { ok: true as const };
+    },
+    /** Forget this person's sign-in on that connection's server. */
+    async signout(room: string, cid: string) {
+      const x = await getConn(env, room, cid, email); if (!x) return missing;
+      await forget(env, email, x.url);
+      sessions.delete(`${x.id}:${email}`);
+      return { ok: true as const };
+    },
+  };
+}
+export type ConnOps = ReturnType<typeof connOps>;

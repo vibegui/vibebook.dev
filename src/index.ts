@@ -1,4 +1,4 @@
-import { agentsApi, type ApiServices } from "./api";
+import { uploadsApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -14,7 +14,6 @@ import { handleMcp, isAdminMcp } from "./mcp";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { growthReport, productReport } from "./reports";
-import { mountSandbox } from "./sandbox";
 import { mountConnections, retireTokens } from "./mcpconn";
 import { validUnsub } from "./mentionmail";
 import { sendDigests } from "./digest";
@@ -207,17 +206,6 @@ const shell = async (c: { env: Env; req: { url: string; raw: Request } }) => {
   const v = res.headers.get("etag");
   return res.status === 200 && v ? new HTMLRewriter().on("head", { element: (el) => { el.append(`<meta name="vb-v" content="${v.replace(/[^\w-]/g, "")}" />`, { html: true }); } }).transform(res) : res;
 };
-const appVersions = new Map<UiVariant, string>(); // per variant, isolate and deploy
-const currentVersion = async (env: Env, url: string) =>
-  {
-    const variant = uiVariant(url);
-    let version = appVersions.get(variant);
-    if (version === undefined) {
-      version = ((await env.ASSETS.fetch(new Request(new URL(uiShellPath(url), url), { method: "HEAD" }))).headers.get("etag") ?? "").replace(/[^\w-]/g, "");
-      appVersions.set(variant, version);
-    }
-    return version;
-  };
 // Landing and demo live at /pt and /en. "/" and "/demo" pick one: cookie first, then the browser's main
 // language (pt unless it starts with "en"). Opening /pt or /en remembers the choice.
 const LANG_COOKIE = "vb_lang";
@@ -412,82 +400,11 @@ app.get("/api/dev/as", (c) => {
 
 // How you sign in (the profile): per method, the last login and how many, from your own login events (user, ts index).
 
-app.get("/api/me", async (c) => {
-  const email = c.get("email");
-  const db = c.env.DB;
-  // Served from your Person DO while nothing changed (rooms, waits and your own writes poke it stale).
-  const person = c.env.PEOPLE.get(c.env.PEOPLE.idFromName(email));
-  const cached = await person.fetch("https://person/me").catch(() => null);
-  if (cached?.ok) return c.json({ ...(await cached.json<Record<string, unknown>>()), v: await currentVersion(c.env, c.req.url), cached: true });
-  // One round trip's worth: the four reads run together.
-  const [books, friends, me, waits] = await Promise.all([db
-    .prepare(
-      `SELECT b.id, b.title, b.folder, b.summary, b.updated_at, b.created_at, b.icon, b.busy_until, m.position, m.tint, m.opened_at, coalesce(b.last_human_id, 0) AS last_human_id, coalesce(b.last_agent_id, 0) AS last_agent_id,
-         coalesce(r.last_id, 0) AS read_id,
-         (SELECT count(*) FROM sandboxes s WHERE s.book_id = b.id AND s.state = 'running') AS sandboxes_running,
-         (SELECT group_concat(email) FROM members m2 WHERE m2.book_id = b.id) AS members
-       FROM books b JOIN members m ON m.book_id = b.id
-       LEFT JOIN human_reads r ON r.email = m.email AND r.book_id = b.id
-       WHERE m.email = ? AND m.archived_at IS NULL ORDER BY b.updated_at DESC`,
-    )
-    .bind(email)
-    .all(), db
-    .prepare(
-      `SELECT f.b AS email, u.name, u.avatar, u.email IS NOT NULL AS joined,
-         (SELECT count(*) FROM members x JOIN members y ON x.book_id = y.book_id
-           WHERE x.email = f.a AND y.email = f.b) AS shared
-       FROM friends f LEFT JOIN users u ON u.email = f.b
-       WHERE f.a = ? ORDER BY shared DESC, f.b`,
-    )
-    .bind(email)
-    .all(),
-    db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>(),
-    waitsFor(db, email)]);
-  // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
-  const lang = cookieLang(c.req.raw) ?? (me?.lang ? null : reqLang(c.req.raw));
-  if (me && lang && lang !== me.lang) c.executionCtx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
-  const out = { email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits };
-  const gen = cached?.headers.get("x-gen");
-  if (gen) c.executionCtx.waitUntil(person.fetch("https://person/me", { method: "PUT", body: JSON.stringify(out), headers: { "x-gen": gen } }).catch(() => {}));
-  return c.json({ ...out, v: await currentVersion(c.env, c.req.url) });
-});
 
 // "✓ resolvido" on an item of "Esperando você" (only asks; a task in review leaves when its status changes).
 // Native notifications: this device's push subscription (the app's 🔔). One row per endpoint, owned by whoever subscribed last.
 
 
-// Profile picture: the app resizes it to a small square before sending. R2 `avatars/<email>`, users.avatar = version.
-const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
-app.post("/api/me/avatar", async (c) => {
-  const email = c.get("email");
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!AVATAR_TYPES.includes(type)) return c.json({ error: "Use uma imagem PNG, JPEG ou WebP." }, 415);
-  const body = await c.req.arrayBuffer();
-  if (!body.byteLength || body.byteLength > 1_000_000) return c.json({ error: "Imagem vazia ou maior que 1MB." }, 413);
-  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
-  await c.env.FILES.put(`avatars/${email}`, body, { httpMetadata: { contentType: type } });
-  const v = Date.now();
-  await c.env.DB.prepare(`UPDATE users SET avatar = ? WHERE email = ?`).bind(v, email).run();
-  c.executionCtx.waitUntil(track(c.env, "avatar_set", { user: email }));
-  return c.json({ ok: true, avatar: v });
-});
-// Room icon: the app sends a small PNG (it resizes first); members only. ?v=<books.icon> caches it for good.
-app.post("/api/books/:id/icon", async (c) => {
-  const email = c.get("email");
-  const id = c.req.param("id");
-  if (c.req.header("origin") && c.req.header("origin") !== new URL(c.req.url).origin) return c.json({ error: "bad origin" }, 403);
-  if (!(await isMember(c.env.DB, id, email))) return c.json({ error: "forbidden" }, 403);
-  if (!(await c.env.UPLOAD_LIMIT.limit({ key: email })).success) return c.json({ error: "Muitos uploads. Espera um minuto." }, 429);
-  const type = (c.req.header("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  try {
-    const v = await setRoomIcon(c.env, id, type === "application/json" ? null : { type, body: await c.req.arrayBuffer() });
-    c.executionCtx.waitUntil(track(c.env, "room_icon", { user: email, dims: { book: id, set: v !== null } }));
-    return c.json({ ok: true, icon: v });
-  } catch (e) {
-    return c.json({ error: (e as Error).message }, 400);
-  }
-});
 // Versioned URLs (?v=) never change: after the access check, the edge cache (Cache API) answers instead of R2.
 async function edgeCached(c: Context<Ctx>, load: () => Promise<Response | null>) {
   const url = new URL(c.req.url);
@@ -534,7 +451,7 @@ app.get("/api/avatar/:email", (c) =>
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", agentsApi);
+app.route("/", uploadsApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.
@@ -620,7 +537,6 @@ app.get("/ws/:id", async (c) => {
 // Everything else (app, /authorize, /oauth/*, discovery) goes through the OAuth provider to the Hono app.
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
-mountSandbox(app, { isMember, track });
 mountConnections(app, { isMember, track });
 
 export default {
