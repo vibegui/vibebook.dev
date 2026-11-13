@@ -1,0 +1,210 @@
+{
+  "scope": "Literal custom-property comparison with archival public stylesheet; not implemented-app/color-normalized/interactive-state acceptance",
+  "archivalSha256": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+  "activeStylesheet": {
+    "url": "https://studio.decocms.com/assets/index-DYPWHH-M.css",
+    "sha256": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37",
+    "bytes": 304736
+  },
+  "modes": {
+    "light": {
+      "compared": 136,
+      "literalDifferences": [
+        {
+          "token": "--color-chart-1",
+          "archival": "var(--chart-1)",
+          "authenticated": "oklch(73% .15 289)"
+        },
+        {
+          "token": "--color-ring",
+          "archival": "var(--ring)",
+          "authenticated": "#0a0a09"
+        },
+        {
+          "token": "--color-border",
+          "archival": "var(--border)",
+          "authenticated": "#edecea"
+        },
+        {
+          "token": "--color-chart-3",
+          "archival": "var(--chart-3)",
+          "authenticated": "oklch(61% .2 6.81)"
+        },
+        {
+          "token": "--color-foreground",
+          "archival": "var(--foreground)",
+          "authenticated": "#0a0a09"
+        },
+        {
+          "token": "--color-chart-4",
+          "archival": "var(--chart-4)",
+          "authenticated": "oklch(84% .17 84.5)"
+        },
+        {
+          "token": "--color-muted-foreground",
+          "archival": "var(--muted-foreground)",
+          "authenticated": "#676664"
+        },
+        {
+          "token": "--color-background",
+          "archival": "var(--background)",
+          "authenticated": "#fefdfb"
+        },
+        {
+          "token": "--color-primary",
+          "archival": "var(--primary)",
+          "authenticated": "#0a0a09"
+        }
+      ],
+      "notInArchival": [],
+      "aliasResolvedDifferences": [],
+      "explainedAliases": [
+        {
+          "token": "--color-chart-1",
+          "archival": "var(--chart-1)",
+          "resolved": "oklch(73% .15 289)"
+        },
+        {
+          "token": "--color-ring",
+          "archival": "var(--ring)",
+          "resolved": "#0a0a09"
+        },
+        {
+          "token": "--color-border",
+          "archival": "var(--border)",
+          "resolved": "#edecea"
+        },
+        {
+          "token": "--color-chart-3",
+          "archival": "var(--chart-3)",
+          "resolved": "oklch(61% .2 6.81)"
+        },
+        {
+          "token": "--color-foreground",
+          "archival": "var(--foreground)",
+          "resolved": "#0a0a09"
+        },
+        {
+          "token": "--color-chart-4",
+          "archival": "var(--chart-4)",
+          "resolved": "oklch(84% .17 84.5)"
+        },
+        {
+          "token": "--color-muted-foreground",
+          "archival": "var(--muted-foreground)",
+          "resolved": "#676664"
+        },
+        {
+          "token": "--color-background",
+          "archival": "var(--background)",
+          "resolved": "#fefdfb"
+        },
+        {
+          "token": "--color-primary",
+          "archival": "var(--primary)",
+          "resolved": "#0a0a09"
+        }
+      ]
+    },
+    "dark": {
+      "compared": 136,
+      "literalDifferences": [
+        {
+          "token": "--color-chart-1",
+          "archival": "var(--chart-1)",
+          "authenticated": "oklch(73% .15 289)"
+        },
+        {
+          "token": "--color-ring",
+          "archival": "var(--ring)",
+          "authenticated": "oklch(82% 0 0)"
+        },
+        {
+          "token": "--color-border",
+          "archival": "var(--border)",
+          "authenticated": "oklch(26% 0 0)"
+        },
+        {
+          "token": "--color-chart-3",
+          "archival": "var(--chart-3)",
+          "authenticated": "oklch(61% .2 6.81)"
+        },
+        {
+          "token": "--color-foreground",
+          "archival": "var(--foreground)",
+          "authenticated": "oklch(96% 0 0)"
+        },
+        {
+          "token": "--color-chart-4",
+          "archival": "var(--chart-4)",
+          "authenticated": "oklch(84% .17 84.5)"
+        },
+        {
+          "token": "--color-muted-foreground",
+          "archival": "var(--muted-foreground)",
+          "authenticated": "oklch(62% 0 0)"
+        },
+        {
+          "token": "--color-background",
+          "archival": "var(--background)",
+          "authenticated": "oklch(17.5% 0 0)"
+        },
+        {
+          "token": "--color-primary",
+          "archival": "var(--primary)",
+          "authenticated": "oklch(82% 0 0)"
+        }
+      ],
+      "notInArchival": [],
+      "aliasResolvedDifferences": [],
+      "explainedAliases": [
+        {
+          "token": "--color-chart-1",
+          "archival": "var(--chart-1)",
+          "resolved": "oklch(73% .15 289)"
+        },
+        {
+          "token": "--color-ring",
+          "archival": "var(--ring)",
+          "resolved": "oklch(82% 0 0)"
+        },
+        {
+          "token": "--color-border",
+          "archival": "var(--border)",
+          "resolved": "oklch(26% 0 0)"
+        },
+        {
+          "token": "--color-chart-3",
+          "archival": "var(--chart-3)",
+          "resolved": "oklch(61% .2 6.81)"
+        },
+        {
+          "token": "--color-foreground",
+          "archival": "var(--foreground)",
+          "resolved": "oklch(96% 0 0)"
+        },
+        {
+          "token": "--color-chart-4",
+          "archival": "var(--chart-4)",
+          "resolved": "oklch(84% .17 84.5)"
+        },
+        {
+          "token": "--color-muted-foreground",
+          "archival": "var(--muted-foreground)",
+          "resolved": "oklch(62% 0 0)"
+        },
+        {
+          "token": "--color-background",
+          "archival": "var(--background)",
+          "resolved": "oklch(17.5% 0 0)"
+        },
+        {
+          "token": "--color-primary",
+          "archival": "var(--primary)",
+          "resolved": "oklch(82% 0 0)"
+        }
+      ]
+    }
+  },
+  "resolution": "Only exact whole-value var(--token) aliases expand recursively; no color-space normalization or implemented-app acceptance is claimed."
+}

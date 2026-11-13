@@ -104,6 +104,8 @@ Here, Studio means **deco Studio at https://studio.decocms.com/**, not its marke
 
 Reference inspected on 2026-11-12: [Studio stylesheet](https://studio.decocms.com/assets/index-69S-cBsb.css), SHA-256 `eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb`. Its root tokens specify Inter variable for sans-serif UI and CommitMono for monospace; its semantic font-weight mapping is normal 400, medium 500, semibold 500 and bold 600. A Switzer font-face also exists in that stylesheet; its presence alone is not evidence that every heading uses it.
 
+Authenticated workspace reference was additionally frozen on 2026-11-13: [computed roles and privacy-safe control crops](svelte-migration/studio-authenticated/README.md). The active public stylesheet is [index-DYPWHH-M.css](https://studio.decocms.com/assets/index-DYPWHH-M.css), SHA-256 `be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37`. The sample confirms actual Inter/CommitMono loading; the dark sample uses a temporary CSS class that was restored. Final app/interactive comparison remains required.
+
 Selected observed tokens, to make the intended palette concrete:
 
 | Role               | Studio light | Studio dark        |

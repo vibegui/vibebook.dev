@@ -1,0 +1,383 @@
+{
+  "capturedAt": "2026-11-13T18:14:11.894Z",
+  "origin": "https://studio.decocms.com",
+  "workspaceSurface": true,
+  "routePattern": "/<workspace>/projects/<project>/site-editor/content",
+  "themeClass": "dark",
+  "themeMode": "dark",
+  "captureMethod": "Temporary CSS dark class on authenticated workspace; original class restored; no preference or server setting changed. This is CSS-token reference, not proof of a provider-driven mode switch.",
+  "vars": {
+    "--border": "oklch(26% 0 0)",
+    "--sidebar-primary-foreground": "oklch(14% 0 0)",
+    "--card": "oklch(21% 0 0)",
+    "--color-pink-500": "oklch(65.6% .241 354.308)",
+    "--color-violet-600": "oklch(54.1% .281 293.009)",
+    "--color-orange-600": "oklch(64.6% .222 41.116)",
+    "--primary-foreground": "oklch(14% 0 0)",
+    "--color-pink-950": "oklch(28.4% .109 3.907)",
+    "--success": "oklch(45% .15 149)",
+    "--muted": "oklch(23% 0 0)",
+    "--color-yellow-400": "oklch(85.2% .199 91.936)",
+    "--font-mono": "\"CommitMono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+    "--warning": "oklch(65% .15 70)",
+    "--popover": "oklch(22% 0 0)",
+    "--color-white": "#fff",
+    "--color-sky-600": "oklch(58.8% .158 241.966)",
+    "--color-blue-400": "oklch(70.7% .165 254.624)",
+    "--radius-sm": ".375rem",
+    "--font-weight-bold": "600",
+    "--popover-foreground": "oklch(96% 0 0)",
+    "--color-purple-600": "oklch(55.8% .288 302.321)",
+    "--color-violet-500": "oklch(60.6% .25 292.717)",
+    "--color-fuchsia-600": "oklch(59.1% .293 322.896)",
+    "--chart-2": "oklch(60% .18 150)",
+    "--radius-md": ".5rem",
+    "--color-rose-950": "oklch(27.1% .105 12.094)",
+    "--color-pink-100": "oklch(94.8% .028 342.258)",
+    "--radius-lg": ".625rem",
+    "--color-chart-1": "oklch(73% .15 289)",
+    "--sidebar-primary": "oklch(82% 0 0)",
+    "--color-blue-100": "oklch(93.2% .032 255.585)",
+    "--color-green-600": "oklch(62.7% .194 149.214)",
+    "--color-green-950": "oklch(26.6% .065 152.934)",
+    "--color-yellow-950": "oklch(28.6% .066 53.813)",
+    "--accent": "oklch(26% 0 0)",
+    "--color-violet-950": "oklch(28.3% .141 291.089)",
+    "--color-orange-500": "oklch(70.5% .213 47.604)",
+    "--color-sky-400": "oklch(74.6% .16 232.661)",
+    "--secondary-foreground": "oklch(96% 0 0)",
+    "--background": "oklch(17.5% 0 0)",
+    "--color-pink-600": "oklch(59.2% .249 .584)",
+    "--color-green-400": "oklch(79.2% .209 151.711)",
+    "--sidebar-border": "oklch(26% 0 0)",
+    "--warning-foreground": "oklch(98% .02 95)",
+    "--color-orange-100": "oklch(95.4% .038 75.164)",
+    "--color-purple-400": "oklch(71.4% .203 305.504)",
+    "--color-blue-600": "oklch(54.6% .245 262.881)",
+    "--color-ring": "oklch(82% 0 0)",
+    "--color-red-600": "oklch(57.7% .245 27.325)",
+    "--color-border": "oklch(26% 0 0)",
+    "--color-black": "#000",
+    "--color-chart-3": "oklch(61% .2 6.81)",
+    "--destructive": "oklch(62% .22 27)",
+    "--color-foreground": "oklch(96% 0 0)",
+    "--chart-3": "oklch(61% .2 6.81)",
+    "--color-amber-100": "oklch(96.2% .059 95.617)",
+    "--color-chart-4": "oklch(84% .17 84.5)",
+    "--primary": "oklch(82% 0 0)",
+    "--color-indigo-100": "oklch(93% .034 272.788)",
+    "--sidebar-ring": "oklch(82% 0 0)",
+    "--color-global-section-fg": "oklch(45% .15 289)",
+    "--chart-1": "oklch(73% .15 289)",
+    "--success-foreground": "oklch(97% .02 156)",
+    "--color-muted-foreground": "oklch(62% 0 0)",
+    "--color-cyan-400": "oklch(78.9% .154 211.53)",
+    "--color-amber-400": "oklch(82.8% .189 84.429)",
+    "--color-indigo-400": "oklch(67.3% .182 276.935)",
+    "--color-yellow-600": "oklch(68.1% .162 75.834)",
+    "--color-lime-950": "oklch(27.4% .072 132.109)",
+    "--secondary-hover": "oklch(30% 0 0)",
+    "--color-amber-600": "oklch(66.6% .179 58.318)",
+    "--color-pink-400": "oklch(71.8% .202 349.761)",
+    "--card-foreground": "oklch(96% 0 0)",
+    "--color-green-100": "oklch(96.2% .044 156.743)",
+    "--sidebar-accent-foreground": "oklch(96% 0 0)",
+    "--accent-foreground": "oklch(96% 0 0)",
+    "--ring": "oklch(82% 0 0)",
+    "--color-emerald-600": "oklch(59.6% .145 163.225)",
+    "--color-violet-400": "oklch(70.2% .183 293.541)",
+    "--color-purple-100": "oklch(94.6% .033 307.174)",
+    "--color-lime-600": "oklch(64.8% .2 131.684)",
+    "--color-red-400": "oklch(70.4% .191 22.216)",
+    "--sidebar-foreground": "oklch(96% 0 0)",
+    "--font-sans": "\"Inter var\", \"Inter\", ui-sans-serif, system-ui, sans-serif",
+    "--sidebar-accent": "oklch(23% 0 0)",
+    "--color-rose-100": "oklch(94.1% .03 12.58)",
+    "--radius": ".5rem",
+    "--primary-hover": "oklch(74% 0 0)",
+    "--color-emerald-100": "oklch(95% .052 163.051)",
+    "--color-background": "oklch(17.5% 0 0)",
+    "--color-rose-400": "oklch(71.2% .194 13.428)",
+    "--color-purple-950": "oklch(29.1% .149 302.717)",
+    "--color-indigo-600": "oklch(51.1% .262 276.966)",
+    "--destructive-foreground": "oklch(97% .01 17)",
+    "--chart-4": "oklch(84% .17 84.5)",
+    "--color-global-section": "oklch(72.78% .151 289)",
+    "--color-yellow-100": "oklch(97.3% .071 103.193)",
+    "--color-indigo-950": "oklch(25.7% .09 281.288)",
+    "--color-orange-950": "oklch(26.6% .079 36.259)",
+    "--color-sky-100": "oklch(95.1% .026 236.824)",
+    "--color-emerald-950": "oklch(26.2% .051 172.552)",
+    "--color-amber-500": "oklch(76.9% .188 70.08)",
+    "--color-orange-400": "oklch(75% .183 55.934)",
+    "--color-cyan-100": "oklch(95.6% .045 203.388)",
+    "--color-violet-100": "oklch(94.3% .029 294.588)",
+    "--font-weight-semibold": "500",
+    "--color-rose-600": "oklch(58.6% .253 17.585)",
+    "--color-fuchsia-950": "oklch(29.3% .136 325.661)",
+    "--border-hairline": "1px",
+    "--color-global-section-fg-dark": "oklch(78% .15 289)",
+    "--color-blue-500": "oklch(62.3% .214 259.815)",
+    "--color-sky-950": "oklch(29.3% .066 243.157)",
+    "--chart-5": "oklch(74% .17 159)",
+    "--color-lime-100": "oklch(96.7% .067 122.328)",
+    "--color-cyan-600": "oklch(60.9% .126 221.723)",
+    "--color-red-100": "oklch(93.6% .032 17.717)",
+    "--muted-foreground": "oklch(62% 0 0)",
+    "--color-amber-950": "oklch(27.9% .077 45.635)",
+    "--color-primary": "oklch(82% 0 0)",
+    "--color-lime-400": "oklch(84.1% .238 128.85)",
+    "--color-gray-200": "oklch(92.8% .006 264.531)",
+    "--input": "oklch(28% 0 0)",
+    "--color-red-950": "oklch(25.8% .092 26.042)",
+    "--font-weight-medium": "500",
+    "--font-weight-normal": "400",
+    "--color-emerald-400": "oklch(76.5% .177 163.223)",
+    "--color-fuchsia-100": "oklch(95.2% .037 318.852)",
+    "--sidebar": "oklch(15.5% 0 0)",
+    "--font-serif": "ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif",
+    "--color-fuchsia-400": "oklch(74% .238 322.16)",
+    "--color-teal-500": "oklch(70.4% .14 182.503)",
+    "--color-cyan-950": "oklch(30.2% .056 229.695)",
+    "--radius-xl": ".875rem",
+    "--color-blue-950": "oklch(28.2% .091 267.935)",
+    "--foreground": "oklch(96% 0 0)",
+    "--secondary": "oklch(26% 0 0)"
+  },
+  "fonts": [
+    {
+      "family": "Inter var",
+      "status": "loaded",
+      "weight": "100 900",
+      "style": "normal"
+    },
+    {
+      "family": "Inter var",
+      "status": "unloaded",
+      "weight": "100 900",
+      "style": "italic"
+    },
+    {
+      "family": "CommitMono",
+      "status": "loaded",
+      "weight": "100 900",
+      "style": "normal"
+    },
+    {
+      "family": "Switzer",
+      "status": "unloaded",
+      "weight": "100 900",
+      "style": "normal"
+    }
+  ],
+  "samples": {
+    "body": [
+      {
+        "index": 0,
+        "tag": "BODY",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "letterSpacing": "normal",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "oklch(0.175 0 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      }
+    ],
+    "heading": [
+      {
+        "index": 0,
+        "tag": "H2",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "500",
+          "fontSize": "22px",
+          "lineHeight": "27.5px",
+          "letterSpacing": "-0.44px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      },
+      {
+        "index": 1,
+        "tag": "H1",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "500",
+          "fontSize": "13px",
+          "lineHeight": "18px",
+          "letterSpacing": "-0.065px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      },
+      {
+        "index": 2,
+        "tag": "H2",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "500",
+          "fontSize": "15px",
+          "lineHeight": "18.75px",
+          "letterSpacing": "-0.075px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      }
+    ],
+    "navigation": [
+      {
+        "index": 0,
+        "tag": "DIV",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "letterSpacing": "normal",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "oklch(0.155 0 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      },
+      {
+        "index": 1,
+        "tag": "NAV",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "letterSpacing": "normal",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      },
+      {
+        "index": 2,
+        "tag": "NAV",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "16px",
+          "lineHeight": "24px",
+          "letterSpacing": "normal",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      }
+    ],
+    "input": [
+      {
+        "index": 0,
+        "tag": "INPUT",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "13px",
+          "lineHeight": "19.5px",
+          "letterSpacing": "normal",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "oklab(0.23 0 0 / 0.6)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "10px"
+        }
+      },
+      {
+        "index": 1,
+        "tag": "INPUT",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "13px",
+          "lineHeight": "18px",
+          "letterSpacing": "-0.065px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      },
+      {
+        "index": 2,
+        "tag": "INPUT",
+        "role": null,
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "400",
+          "fontSize": "13px",
+          "lineHeight": "18px",
+          "letterSpacing": "-0.065px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "0px"
+        }
+      }
+    ],
+    "monospace": [
+      {
+        "index": 0,
+        "tag": "SPAN",
+        "role": null,
+        "computed": {
+          "fontFamily": "CommitMono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace",
+          "fontWeight": "400",
+          "fontSize": "11px",
+          "lineHeight": "16px",
+          "letterSpacing": "0.11px",
+          "color": "oklch(0.62 0 0)",
+          "backgroundColor": "rgba(0, 0, 0, 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "4px"
+        }
+      }
+    ],
+    "contentControl": [
+      {
+        "computed": {
+          "fontFamily": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+          "fontWeight": "500",
+          "fontSize": "13px",
+          "lineHeight": "18px",
+          "letterSpacing": "-0.065px",
+          "color": "oklch(0.96 0 0)",
+          "backgroundColor": "oklch(0.21 0 0)",
+          "borderColor": "oklch(0.26 0 0)",
+          "borderRadius": "9999px"
+        }
+      }
+    ]
+  },
+  "stylesheets": [
+    "https://studio.decocms.com/assets/index-DYPWHH-M.css",
+    "https://studio.decocms.com/assets/shell-layout-CE2Eihra.css",
+    "https://studio.decocms.com/assets/input-Bwd_JSM8.css",
+    "https://studio.decocms.com/assets/monitoring-D_tSeZWt.css",
+    "https://studio.decocms.com/assets/agent-site-editor-DDGTF8rc.css"
+  ]
+}
