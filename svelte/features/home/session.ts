@@ -135,7 +135,7 @@ export function createNewRoomSession(
   let owner = createAuthOwner(clock),
     active = true;
   let identityRevision = get(personal.state).identityRevision;
-  const stopIdentity = personal.state.subscribe(value => {
+  const stopIdentity = personal.state.subscribe((value) => {
     if (value.identityRevision === identityRevision) return;
     identityRevision = value.identityRevision;
     owner.dispose();
@@ -206,14 +206,20 @@ export function createArchivedSession(
     timers = [];
   };
   const identityRevision = get(personal.state).identityRevision;
-  const stopIdentity = personal.state.subscribe(value => {
+  const stopIdentity = personal.state.subscribe((value) => {
     if (!active || value.identityRevision === identityRevision) return;
     active = false;
     sequence++;
     cancelTimers();
     reader.dispose();
     writer.dispose();
-    state.set({ books: [], loaded: false, loading: false, pending: null, error: "" });
+    state.set({
+      books: [],
+      loaded: false,
+      loading: false,
+      pending: null,
+      error: "",
+    });
   });
   const failure = (error: unknown) =>
     state.update((s) => ({ ...s, loading: false, error: issue(error) }));

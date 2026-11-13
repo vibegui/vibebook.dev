@@ -138,7 +138,8 @@
       file = input.files?.[0],
       id = $nav.settingsId;
     if (!mounted || !input.isConnected || !file || !id) return;
-    const ticket = ++imageSequence, identity = $personal.identityRevision;
+    const ticket = ++imageSequence,
+      identity = $personal.identityRevision;
     imageBusy = true;
     imageError = "";
     try {
@@ -152,10 +153,19 @@
       )
         await controller.rooms.icon(id, image);
     } catch (error) {
-      if (mounted && ticket === imageSequence && identity === $personal.identityRevision)
+      if (
+        mounted &&
+        ticket === imageSequence &&
+        identity === $personal.identityRevision
+      )
         imageError = error instanceof Error ? error.message : "network";
     } finally {
-      if (mounted && ticket === imageSequence && identity === $personal.identityRevision) imageBusy = false;
+      if (
+        mounted &&
+        ticket === imageSequence &&
+        identity === $personal.identityRevision
+      )
+        imageBusy = false;
     }
   }
   const focusBack = () => controller.returnFocus(homeButton);
