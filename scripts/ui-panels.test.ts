@@ -8,7 +8,11 @@ import type { RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
 import type { SidebarProps } from "../svelte/sidebar";
 import { createNavigationSession } from "../svelte/features/navigation/session";
-import { disposePinsSession, requestPinnedFiles, syncPinsSession } from "../svelte/features/pins/session";
+import {
+  disposePinsSession,
+  requestPinnedFiles,
+  syncPinsSession,
+} from "../svelte/features/pins/session";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -1263,94 +1267,279 @@ describe("stable native sidebar integration", () => {
     ).toBe("Epic update 5");
   }, 30_000);
 
+  test("destroyed pin forms cannot act on the retained session after a sidebar remount", async () => {
+    const room = fixture();
+    const first = sidebar(room);
+    first.target
+      .querySelector<HTMLButtonElement>(
+        '[data-native-pins] button[aria-label="Fixar um link"]',
+      )!
+      .click();
+    await tick();
+    flushSync();
+    const oldInput = first.target.querySelector<HTMLInputElement>(
+      "[data-native-pins] input[name=url]",
+    )!;
+    oldInput.value = "example.com";
+    oldInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const oldForm = first.target.querySelector<HTMLFormElement>(
+      "[data-native-pins] form",
+    )!;
+    const session = first.props.pins;
+    first.destroy();
+    expect(session.active).toBe(true);
+    const next = sidebar(room, { pins: session });
+    oldInput.value = "stale.example";
+    oldInput.dispatchEvent(new window.Event("input", { bubbles: true }));
+    oldForm.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
+    expect(first.events).toEqual([]);
+    expect(next.events).toEqual([]);
+    expect(
+      next.target.querySelector<HTMLInputElement>(
+        "[data-native-pins] input[name=url]",
+      )?.value,
+    ).toBe("example.com");
+    next.target
+      .querySelector<HTMLFormElement>("[data-native-pins] form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    expect(next.events).toEqual([
+      { t: "pin.add", kind: "link", ref: "https://example.com/", title: "" },
+    ]);
+    disposePinsSession(session);
+  }, 30_000);
+
   test("native pins queue once, preserve an edited draft and follow canonical updates", async () => {
     const room = fixture();
     const rendered = sidebar(room);
-    rendered.target.querySelector<HTMLButtonElement>('[data-native-pins] button[aria-label="Fixar um link"]')!.click();
-    await tick(); flushSync();
-    const url = rendered.target.querySelector<HTMLInputElement>('[data-native-pins] input[name=url]')!;
-    const title = rendered.target.querySelector<HTMLInputElement>('[data-native-pins] input[name=title]')!;
-    url.value = "example.com"; url.dispatchEvent(new window.Event("input", { bubbles:true }));
-    title.value = "Example"; title.dispatchEvent(new window.Event("input", { bubbles:true }));
-    const form = rendered.target.querySelector<HTMLFormElement>('[data-native-pins] form')!;
-    form.dispatchEvent(new window.Event("submit", { bubbles:true, cancelable:true }));
-    form.dispatchEvent(new window.Event("submit", { bubbles:true, cancelable:true })); flushSync();
-    expect(rendered.events).toEqual([{t:"pin.add",kind:"link",ref:"https://example.com/",title:"Example"}]);
-    expect(rendered.target.querySelectorAll('[data-pin-id]')).toHaveLength(0);
-    title.value = "Edited while waiting"; title.dispatchEvent(new window.Event("input", { bubbles:true }));
-    const next = {...room,pins:[{id:"p",kind:"link",ref:"https://example.com/",title:"Example"}]};
-    syncPinsSession(rendered.props.pins,next);
-    rendered.view.update({...rendered.props,room:next});
-    expect(rendered.target.querySelector<HTMLInputElement>('[data-native-pins] input[name=title]')?.value).toBe("Edited while waiting");
-    expect(rendered.target.querySelectorAll('[data-pin-id]')).toHaveLength(1);
-    const remove = rendered.target.querySelector<HTMLButtonElement>('[data-native-pins] button[aria-label="Desafixar Example"]')!;
-    remove.click(); remove.click(); flushSync();
-    expect(rendered.events.filter(event => event.t === "pin.del")).toEqual([{t:"pin.del",id:"p"}]);
-    expect(rendered.target.querySelectorAll('[data-pin-id]')).toHaveLength(1);
-    syncPinsSession(rendered.props.pins,{...next,pins:[]});
-    rendered.view.update({...rendered.props,room:{...next,pins:[]}});
-    expect(rendered.target.querySelectorAll('[data-pin-id]')).toHaveLength(0);
+    rendered.target
+      .querySelector<HTMLButtonElement>(
+        '[data-native-pins] button[aria-label="Fixar um link"]',
+      )!
+      .click();
+    await tick();
+    flushSync();
+    const url = rendered.target.querySelector<HTMLInputElement>(
+      "[data-native-pins] input[name=url]",
+    )!;
+    const title = rendered.target.querySelector<HTMLInputElement>(
+      "[data-native-pins] input[name=title]",
+    )!;
+    url.value = "example.com";
+    url.dispatchEvent(new window.Event("input", { bubbles: true }));
+    title.value = "Example";
+    title.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const form = rendered.target.querySelector<HTMLFormElement>(
+      "[data-native-pins] form",
+    )!;
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
+    expect(rendered.events).toEqual([
+      {
+        t: "pin.add",
+        kind: "link",
+        ref: "https://example.com/",
+        title: "Example",
+      },
+    ]);
+    expect(rendered.target.querySelectorAll("[data-pin-id]")).toHaveLength(0);
+    title.value = "Edited while waiting";
+    title.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const next = {
+      ...room,
+      pins: [
+        {
+          id: "p",
+          kind: "link",
+          ref: "https://example.com/",
+          title: "Example",
+        },
+      ],
+    };
+    syncPinsSession(rendered.props.pins, next);
+    rendered.view.update({ ...rendered.props, room: next });
+    expect(
+      rendered.target.querySelector<HTMLInputElement>(
+        "[data-native-pins] input[name=title]",
+      )?.value,
+    ).toBe("Edited while waiting");
+    expect(rendered.target.querySelectorAll("[data-pin-id]")).toHaveLength(1);
+    const remove = rendered.target.querySelector<HTMLButtonElement>(
+      '[data-native-pins] button[aria-label="Desafixar Example"]',
+    )!;
+    remove.click();
+    remove.click();
+    flushSync();
+    expect(rendered.events.filter((event) => event.t === "pin.del")).toEqual([
+      { t: "pin.del", id: "p" },
+    ]);
+    expect(rendered.target.querySelectorAll("[data-pin-id]")).toHaveLength(1);
+    syncPinsSession(rendered.props.pins, { ...next, pins: [] });
+    rendered.view.update({ ...rendered.props, room: { ...next, pins: [] } });
+    expect(rendered.target.querySelectorAll("[data-pin-id]")).toHaveLength(0);
     disposePinsSession(rendered.props.pins);
-  },30_000);
+  }, 30_000);
 
   test("native file/app pins open typed targets and disposed room actions stay inert", () => {
-    const file = {id:"f",name:"report.pdf",type:"application/pdf",size:20,author:"me@test",ts:1};
-    const room = {...fixture(),files:[file],filesAll:true,pins:[
-      {id:"file",kind:"file",ref:"f"},
-      {id:"app",kind:"app",ref:"123456abcdef/chart",title:"Chart"},
-      {id:"missing",kind:"file",ref:"gone",title:"Gone"},
-    ]};
-    const files:typeof file[] = [];
-    const apps:{connectionId:string;tool:string}[] = [];
-    const rendered = sidebar(room,{onopenpinfile:file=>files.push(file),onopenpinapp:app=>apps.push(app)});
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=file] button')!.click();
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=app] button')!.click();
+    const file = {
+      id: "f",
+      name: "report.pdf",
+      type: "application/pdf",
+      size: 20,
+      author: "me@test",
+      ts: 1,
+    };
+    const room = {
+      ...fixture(),
+      files: [file],
+      filesAll: true,
+      pins: [
+        { id: "file", kind: "file", ref: "f" },
+        { id: "app", kind: "app", ref: "123456abcdef/chart", title: "Chart" },
+        { id: "missing", kind: "file", ref: "gone", title: "Gone" },
+      ],
+    };
+    const files: (typeof file)[] = [];
+    const apps: { connectionId: string; tool: string }[] = [];
+    const rendered = sidebar(room, {
+      onopenpinfile: (file) => files.push(file),
+      onopenpinapp: (app) => apps.push(app),
+    });
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=file] button")!
+      .click();
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=app] button")!
+      .click();
     expect(files).toEqual([file]);
-    expect(apps).toEqual([{connectionId:"123456abcdef",tool:"chart"}]);
-    expect(rendered.target.querySelector('[data-pin-id=missing]')?.textContent).toContain("Arquivo indisponível");
-    expect(rendered.target.querySelector('[data-pin-id=missing] a')).toBeNull();
+    expect(apps).toEqual([{ connectionId: "123456abcdef", tool: "chart" }]);
+    expect(
+      rendered.target.querySelector("[data-pin-id=missing]")?.textContent,
+    ).toContain("Arquivo indisponível");
+    expect(rendered.target.querySelector("[data-pin-id=missing] a")).toBeNull();
     disposePinsSession(rendered.props.pins);
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=file] button')!.click();
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=app] button')!.click();
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=missing] button')!.click();
-    expect(files).toHaveLength(1);expect(apps).toHaveLength(1);expect(rendered.events).toEqual([]);
-  },30_000);
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=file] button")!
+      .click();
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=app] button")!
+      .click();
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=missing] button")!
+      .click();
+    expect(files).toHaveLength(1);
+    expect(apps).toHaveLength(1);
+    expect(rendered.events).toEqual([]);
+  }, 30_000);
 
   test("partial pinned-file metadata loads once and opens the current file after canonical resolution", () => {
-    const newest={id:"new",name:"new.txt",type:"text/plain",size:5,author:"me@test",ts:2};
-    const old={...newest,id:"old",name:"older-report.pdf",type:"application/pdf",ts:1};
-    const room={...fixture(),files:[newest],filesAll:false,pins:[{id:"p",kind:"file",ref:"old",title:"Older report"}]};
-    const opened:typeof old[]=[];
-    const rendered=sidebar(room,{onopenpinfile:file=>opened.push(file)});
-    expect(rendered.target.querySelector('[data-pin-id=p]')?.textContent).not.toContain("Arquivo indisponível");
-    expect(rendered.target.querySelector('[data-native-pins]')?.hasAttribute('data-vb-native')).toBe(true);
-    requestPinnedFiles(rendered.props.pins,room,rendered.props.send);flushSync();
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
-    requestPinnedFiles(rendered.props.pins,{...room},rendered.props.send);
-    expect(rendered.events).toEqual([{t:"files.get"}]);expect(opened).toEqual([]);
-    const full={...room,files:[newest,old],filesAll:true};
-    syncPinsSession(rendered.props.pins,full);rendered.view.update({...rendered.props,room:full});flushSync();
-    expect(opened).toEqual([old]);
-    rendered.view.update({...rendered.props,room:{...full}});flushSync();expect(opened).toHaveLength(1);
-    // Fresh socket snapshots return to a partial index. An explicit click must recover it.
-    syncPinsSession(rendered.props.pins,room);rendered.view.update({...rendered.props,room});flushSync();
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
-    expect(rendered.events).toEqual([{t:"files.get"},{t:"files.get"}]);expect(opened).toHaveLength(1);
-    const latest={...old,name:"latest-report.pdf"};const reloaded={...room,files:[newest,latest],filesAll:true};
-    syncPinsSession(rendered.props.pins,reloaded);rendered.view.update({...rendered.props,room:reloaded});flushSync();
-    expect(opened).toEqual([old,latest]);
-    disposePinsSession(rendered.props.pins);
-  },30_000);
-  test("metadata received after room disposal does not open a formerly requested pin", () => {
-    const file={id:"old",name:"old.pdf",type:"application/pdf",size:20,author:"me@test",ts:1};
-    const room={...fixture(),files:[],filesAll:false,pins:[{id:"p",kind:"file",ref:"old"}]};
-    const opened:typeof file[]=[];
-    const rendered=sidebar(room,{onopenpinfile:file=>opened.push(file)});
-    rendered.target.querySelector<HTMLButtonElement>('[data-pin-id=p] button')!.click();flushSync();
-    expect(rendered.events).toEqual([{t:"files.get"}]);
-    disposePinsSession(rendered.props.pins);
-    rendered.view.update({...rendered.props,room:{...room,files:[file],filesAll:true}});flushSync();
+    const newest = {
+      id: "new",
+      name: "new.txt",
+      type: "text/plain",
+      size: 5,
+      author: "me@test",
+      ts: 2,
+    };
+    const old = {
+      ...newest,
+      id: "old",
+      name: "older-report.pdf",
+      type: "application/pdf",
+      ts: 1,
+    };
+    const room = {
+      ...fixture(),
+      files: [newest],
+      filesAll: false,
+      pins: [{ id: "p", kind: "file", ref: "old", title: "Older report" }],
+    };
+    const opened: (typeof old)[] = [];
+    const rendered = sidebar(room, {
+      onopenpinfile: (file) => opened.push(file),
+    });
+    expect(
+      rendered.target.querySelector("[data-pin-id=p]")?.textContent,
+    ).not.toContain("Arquivo indisponível");
+    expect(
+      rendered.target
+        .querySelector("[data-native-pins]")
+        ?.hasAttribute("data-vb-native"),
+    ).toBe(true);
+    requestPinnedFiles(rendered.props.pins, room, rendered.props.send);
+    flushSync();
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=p] button")!
+      .click();
+    flushSync();
+    requestPinnedFiles(rendered.props.pins, { ...room }, rendered.props.send);
+    expect(rendered.events).toEqual([{ t: "files.get" }]);
     expect(opened).toEqual([]);
-  },30_000);
-
+    const full = { ...room, files: [newest, old], filesAll: true };
+    syncPinsSession(rendered.props.pins, full);
+    rendered.view.update({ ...rendered.props, room: full });
+    flushSync();
+    expect(opened).toEqual([old]);
+    rendered.view.update({ ...rendered.props, room: { ...full } });
+    flushSync();
+    expect(opened).toHaveLength(1);
+    // Fresh socket snapshots return to a partial index. An explicit click must recover it.
+    syncPinsSession(rendered.props.pins, room);
+    rendered.view.update({ ...rendered.props, room });
+    flushSync();
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=p] button")!
+      .click();
+    flushSync();
+    expect(rendered.events).toEqual([{ t: "files.get" }, { t: "files.get" }]);
+    expect(opened).toHaveLength(1);
+    const latest = { ...old, name: "latest-report.pdf" };
+    const reloaded = { ...room, files: [newest, latest], filesAll: true };
+    syncPinsSession(rendered.props.pins, reloaded);
+    rendered.view.update({ ...rendered.props, room: reloaded });
+    flushSync();
+    expect(opened).toEqual([old, latest]);
+    disposePinsSession(rendered.props.pins);
+  }, 30_000);
+  test("metadata received after room disposal does not open a formerly requested pin", () => {
+    const file = {
+      id: "old",
+      name: "old.pdf",
+      type: "application/pdf",
+      size: 20,
+      author: "me@test",
+      ts: 1,
+    };
+    const room = {
+      ...fixture(),
+      files: [],
+      filesAll: false,
+      pins: [{ id: "p", kind: "file", ref: "old" }],
+    };
+    const opened: (typeof file)[] = [];
+    const rendered = sidebar(room, {
+      onopenpinfile: (file) => opened.push(file),
+    });
+    rendered.target
+      .querySelector<HTMLButtonElement>("[data-pin-id=p] button")!
+      .click();
+    flushSync();
+    expect(rendered.events).toEqual([{ t: "files.get" }]);
+    disposePinsSession(rendered.props.pins);
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, files: [file], filesAll: true },
+    });
+    flushSync();
+    expect(opened).toEqual([]);
+  }, 30_000);
 });

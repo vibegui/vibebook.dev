@@ -46,6 +46,8 @@
     "scripts/board-browser.ts",
     "scripts/navigation.test.ts",
     "scripts/native-test-mcp.ts",
-    "scripts/navigation-browser.ts"
+    "scripts/navigation-browser.ts",
+    "scripts/pins.test.ts",
+    "scripts/pins-browser.ts"
   ]
 }

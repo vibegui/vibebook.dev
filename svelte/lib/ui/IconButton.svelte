@@ -7,6 +7,7 @@
     label,
     icon,
     variant = "ghost",
+    ref = $bindable(null),
     ...rest
   }: Omit<ButtonProps, "children" | "size" | "aria-label"> & {
     label: string;
@@ -14,6 +15,11 @@
   } = $props();
 </script>
 
-<Button {...rest} {variant} size="icon" aria-label={label} title={label}
-  ><Icon name={icon} /></Button
+<Button
+  {...rest}
+  {variant}
+  bind:ref
+  size="icon"
+  aria-label={label}
+  title={label}><Icon name={icon} /></Button
 >

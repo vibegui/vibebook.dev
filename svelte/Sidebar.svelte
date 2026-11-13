@@ -170,7 +170,14 @@
     }}
   />
 </div>
-<PinnedItems {room} session={pins} {send} onopenfile={onopenpinfile} onopenapp={onopenpinapp} t={vb.t} />
+<PinnedItems
+  {room}
+  session={pins}
+  {send}
+  onopenfile={onopenpinfile}
+  onopenapp={onopenpinapp}
+  t={vb.t}
+/>
 <div class="sec">
   {#if room.requests?.length}
     <div class="asks">
