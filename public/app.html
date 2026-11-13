@@ -271,6 +271,24 @@
   .me .avatar { cursor: pointer; }
   .nameAsk { display: grid; gap: 6px; background: var(--ai-bg); border-radius: 16px; padding: 18px 20px; margin-bottom: 28px; max-width: 520px; }
   .nameAsk .row { margin-top: 6px; }
+  /* First visit with no room yet (onboarding()): one step per screen. */
+  .onb { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px 28px; box-sizing: border-box; }
+  .obTop { width: 100%; max-width: 560px; display: flex; align-items: center; margin-bottom: 9vh; }
+  .obTop .brand { font-size: 26px; margin: 0; flex: 1; } .obTop .brand a { color: var(--accent); text-decoration: none; }
+  .obCard { width: 100%; max-width: 560px; display: grid; gap: 14px; }
+  .obCard h1 { font-family: var(--serif, Georgia, serif); font-size: 32px; line-height: 1.15; margin: 0; }
+  .obCard > p.muted { margin: 0 0 6px; font-size: 16px; line-height: 1.5; }
+  .obDots { display: flex; gap: 6px; align-items: center; color: var(--mute); font-size: 13px; }
+  .obDots i { width: 22px; height: 4px; border-radius: 2px; background: var(--line); } .obDots i.on, .obDots i.ok { background: var(--accent); }
+  .obDots span { margin-left: 6px; }
+  .obRow { display: flex; gap: 8px; } .obRow input { flex: 1; min-width: 0; }
+  .obActs { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .obCard textarea { width: 100%; box-sizing: border-box; font-size: 16px; }
+  .obCard .err { color: var(--danger, #e5484d); margin: 0; }
+  .obPic { justify-self: start; display: inline-flex; gap: 8px; align-items: center; }
+  .obPic .avatar { width: 22px; height: 22px; }
+  .obCard .setup { margin: 0; } .obCard .setupHead { display: none; }
+  .obOut { margin-top: auto; font-size: 13px; color: var(--mute); }
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
 
   /* book */
@@ -1531,6 +1549,17 @@ const EN = {
   "Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.": "A request, an idea, a task for someone… I'll find the right room and epic.",
   "Achar a sala →": "Find the room →",
   "Como seus amigos te chamam?": "What do your friends call you?",
+  "Passo {n} de 3": "Step {n} of 3",
+  "Continuar": "Continue",
+  "Trocar foto": "Change photo",
+  "Adicionar foto (opcional)": "Add a photo (optional)",
+  "Conecte seu Claude": "Connect your Claude",
+  "No vibebook cada pessoa traz o próprio Claude: ele lê a sala, trabalha nas tarefas e te pergunta antes de agir. Cole isto no Claude Code, dentro da pasta do projeto:": "In vibebook everyone brings their own Claude: it reads the room, works on the tasks and asks you before acting. Paste this into Claude Code, inside the project folder:",
+  "Pular por agora": "Skip for now",
+  "Sua primeira sala": "Your first room",
+  "Uma sala por projeto: conversa, doc e tarefas. Diga o que é e com quem; quem você citar é convidado.": "One room per project: chat, doc and tasks. Say what it is and with whom; anyone you name gets invited.",
+  "Criar a sala": "Create the room",
+  "Pular e ver a home": "Skip and see the home",
   "O pessoal e os agents vão te chamar assim.": "People and agents will call you that.",
   "Seu nome": "Your name",
   "Salvar": "Save",
@@ -2515,7 +2544,7 @@ async function home() {
   if (/^\/(b|login|archived)\b/.test(location.pathname)) return keepMe(me); // left home while it loaded
   const changed = JSON.stringify(me) !== meJson;
   keepMe(me);
-  if (!changed && $app.querySelector("#ask")) return;
+  if (!changed && $app.querySelector("#ask, .onb")) return;
   const typed = document.getElementById("askText")?.value;
   homeWith(me);
   if (typed) { const ta = document.getElementById("askText"); if (ta) ta.value = typed; }
@@ -2526,6 +2555,7 @@ function homeWith(me) {
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
   const first = (me.name || "").split(" ")[0];
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  if (!me.books.length && !obOff()) return onboarding(me);
   if (PHONE.matches) return phoneHome(me);
   $app.innerHTML = `
   <div class="home">
@@ -2587,6 +2617,67 @@ function homeWith(me) {
     </div>
   </div>`;
   wireHome(me);
+}
+
+// First visit with no room yet (Gui, 13/11: the full home was too much at once): one step per screen, the same on
+// phones. 1 your name (photo optional), 2 your Claude (the connect card, it moves on by itself once one connects;
+// Pular remembers it), 3 your first room ("O que é e com quem?" = startRoom, which opens it). The step comes from the
+// data, so a reload lands on the right one; "Pular e ver a home" turns it off in this browser.
+let obBack = 0, obAgent = false;
+const obOff = () => { try { return localStorage.getItem("vb.obDone") === "1"; } catch { return false; } };
+function onboarding(me) {
+  let skip = false; try { skip = localStorage.getItem("vb.obClaude") === "1"; } catch {}
+  const step = obBack || (!me.name ? 1 : !obAgent && !skip ? 2 : 3);
+  const of = t("Passo {n} de 3", { n: step });
+  const dots = [1, 2, 3].map((i) => `<i class="${i === step ? "on" : i < step ? "ok" : ""}"></i>`).join("");
+  const body = step === 1
+    ? `<h1>${t("Como seus amigos te chamam?")}</h1><p class="muted">${t("O pessoal e os agents vão te chamar assim.")}</p>
+      <form id="obName" class="obRow"><input name="n" required maxlength="60" value="${esc(me.name || "")}" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Continuar")}</button></form>
+      <button type="button" class="ghost obPic" data-pic>${me.avatar ? avatar(me.email) : icon("camera")} ${me.avatar ? t("Trocar foto") : t("Adicionar foto (opcional)")}</button>`
+    : step === 2
+    ? `<h1>${t("Conecte seu Claude")}</h1><p class="muted">${t("No vibebook cada pessoa traz o próprio Claude: ele lê a sala, trabalha nas tarefas e te pergunta antes de agir. Cole isto no Claude Code, dentro da pasta do projeto:")}</p>
+      <div id="obClaude"></div>
+      <div class="obActs"><button type="button" class="ghost" data-back="1">${t("Voltar")}</button><button type="button" class="ghost" data-skip>${t("Pular por agora")}</button></div>`
+    : `<h1>${t("Sua primeira sala")}</h1><p class="muted">${t("Uma sala por projeto: conversa, doc e tarefas. Diga o que é e com quem; quem você citar é convidado.")}</p>
+      <form id="obRoom"><textarea name="t" rows="3" required placeholder="${t("Ex.: viagem de avião pra SP com os dogs, eu e a Alexia")}"></textarea></form>
+      <p class="err" hidden></p>
+      <div class="obActs"><button type="button" class="ghost" data-back="${obAgent ? 1 : 2}">${t("Voltar")}</button><button type="submit" form="obRoom" class="primary">${t("Criar a sala")}</button></div>`;
+  $app.innerHTML = `<div class="onb">
+    <header class="obTop"><div class="brand"><a href="/">vibebook</a></div>${langSwitch()}</header>
+    <main class="obCard"><div class="obDots" aria-label="${of}">${dots}<span>${of}</span></div>${body}</main>
+    <button type="button" class="ghost obOut" data-obdone>${t("Pular e ver a home")}</button>
+    <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden /></div>`;
+  const redraw = () => homeWith(meCache || me);
+  $app.querySelector("[data-pic]")?.addEventListener("click", pickPic);
+  $app.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => { obBack = Number(b.dataset.back); redraw(); });
+  $app.querySelector("[data-obdone]").onclick = () => { try { localStorage.setItem("vb.obDone", "1"); } catch {} redraw(); };
+  const name = document.getElementById("obName");
+  if (name) {
+    name.n.focus();
+    name.onsubmit = async (e) => { e.preventDefault(); const n = name.n.value.trim(); if (!n) return; obBack = 0; keepMe(await api("/api/me", { name: n }).then(() => api("/api/me"))); redraw(); };
+  }
+  const claude = document.getElementById("obClaude");
+  if (claude) {
+    // Connected (now, or already): a second of ✓ when it just happened, then the next step.
+    claude._onConnect = (fresh) => {
+      if (fresh) claude.innerHTML = `<div class="setup done"><span class="setupIcon">${icon("check", 22)}</span><div><b>${t("Seu agent conectou.")}</b></div></div>`;
+      setTimeout(() => { if (document.body.contains(claude)) { obAgent = true; obBack = 0; redraw(); } }, fresh ? 1500 : 0);
+    };
+    $app.querySelector("[data-skip]").onclick = () => { try { localStorage.setItem("vb.obClaude", "1"); } catch {} clearTimeout(setupPoll); obBack = 0; redraw(); };
+    connectCard(claude);
+  }
+  const room = document.getElementById("obRoom");
+  if (room) {
+    const ta = room.t, err = $app.querySelector(".obCard .err"), go = $app.querySelector('[form="obRoom"]');
+    ta.focus();
+    ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); room.requestSubmit(); } };
+    room.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = ta.value.trim(); if (!text) return ta.focus();
+      go.disabled = true; go.textContent = t("Criando…");
+      try { await startRoom(text); } catch (x) { err.hidden = false; err.textContent = x.message; go.disabled = false; go.textContent = t("Criar a sala"); }
+    };
+  }
 }
 
 // Phones: top bar (☰, logo, you), your rooms as an icon grid (last opened first, 70% of the screen), and the
@@ -2956,6 +3047,7 @@ async function connectCard(el, room) {
   const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
   if (!r || !document.body.contains(el)) return;
   noClaude = !r.agents.length;
+  if (r.agents.length && el._onConnect) return el._onConnect(!!el.dataset.waiting);
   if (S && el.id === "agentNudge") renderMyClaude();
   if (r.agents.length) {
     if (el.dataset.waiting) {
