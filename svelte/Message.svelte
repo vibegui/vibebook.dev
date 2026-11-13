@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import InteractiveBody from "./features/chat-interactive/InteractiveBody.svelte";
   import RichContent from "./features/rich-text/RichContent.svelte";
   import type { RichMode } from "./features/rich-text/types";
   import type { Room } from "../shared/room";
@@ -214,8 +215,11 @@
           {actions}
           {vb}
         />
-        {#if m.card || m.choices || m.poll}<LegacyChatContent
-            html={legacy.interactiveBody(m)}
+        {#if m.card || m.choices || m.poll}<InteractiveBody
+            message={m}
+            {room}
+            {actions}
+            {vb}
           />{/if}
       {:else if kind === "reminder"}<details class="tw:space-y-2">
           <summary

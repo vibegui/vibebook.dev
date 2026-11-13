@@ -1,3 +1,4 @@
+import type { RequestRoomCommand } from "./roomConnection";
 import type { Message, Attachment } from "../shared/room";
 import type {
   RichFileReference,
@@ -19,10 +20,9 @@ export type ChatBridge = {
   typingLabel?: (mode: string) => string;
   typingNote?: (id: number) => string | undefined;
 };
-/** Temporary, incomplete migrations: F20/F21 interactive bodies and F15 origin thread-card bodies.
+/** Temporary, incomplete migrations: F15 origin thread-card bodies.
  * These callbacks may return trusted/sanitized HTML, never an entire message/frame/footer. Remove each with its slice. */
 export type LegacyChatIntegrations = {
-  interactiveBody: (message: ChatMessage) => string;
   threadCards: (id: number) => string;
 };
 export type ChatEmbedControls = {
@@ -31,6 +31,13 @@ export type ChatEmbedControls = {
   resize: (height: number) => void;
 };
 export type ChatActions = {
+  request: RequestRoomCommand;
+  draftReply: (draft: {
+    messageId: number;
+    thread: string;
+    text: string;
+  }) => void;
+  openApp?: (target: { connection: string; tool: string }) => void;
   /** Temporary F49 protocol integration. Native iframe geometry/consent/lifetime are component-owned. */
   mountEmbed?: (
     frame: HTMLIFrameElement,

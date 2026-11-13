@@ -1,3 +1,4 @@
+import {canAnswer,choicesOf} from "../features/chat-interactive/model";
 import {EMOJI,emojify} from "../../shared/emoji";
 import {adaptLegacyChatMarkup} from "../features/chat/legacyMarkup";
 import {createFilesSession} from "../features/files/session";
@@ -2136,13 +2137,6 @@ function renderBook() {
     send({ t: "poll.create", thread, question: f.q.value, options, multi: f.multi.checked });
     dlg.close();
   };
-  document.getElementById("msgs").addEventListener("click", (e) => {
-    const v = e.target.closest("[data-vote]");
-    if (v) return send({ t: "vote", id: v.closest("[data-poll]").dataset.poll, opt: Number(v.dataset.vote) });
-    const c = e.target.closest("[data-close]");
-    if (c && confirm(t("Encerrar a votação?"))) send({ t: "poll.close", id: c.dataset.close });
-  });
-
   // Right panel: Documento / Arquivos
   const setPane = (pane) => {
     const doc = book.querySelector(":scope > .doc");
@@ -3090,24 +3084,6 @@ document.addEventListener("click", (e) => {
   openViewer(u.pathname, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || l.textContent.trim() || "arquivo");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
-function pollHtml(id) {
-  const p = S.polls?.[id]; if (!p) return "";
-  const counts = p.votes.map((v) => v.length);
-  const sum = counts.reduce((a, b) => a + b, 0);
-  const max = Math.max(...counts);
-  const voters = new Set(p.votes.flat()).size;
-  return `<div class="poll" data-poll="${id}">
-    <div class="pq">${icon("chart", 18)} ${esc(p.question)}</div>
-    ${p.options.map((o, i) => {
-      const n = counts[i], pct = sum ? Math.round((100 * n) / sum) : 0, mine = p.votes[i].includes(S.me), win = p.closed && n > 0 && n === max;
-      return `<button type="button" class="opt ${mine ? "mine" : ""} ${win ? "win" : ""}" data-vote="${i}" ${p.closed ? "disabled" : ""} aria-pressed="${mine}">
-        <span class="fill" style="width:${pct}%"></span><span class="ol">${win ? `${icon("trophy")} ` : mine ? `${icon("check")} ` : ""}${esc(o)}</span>
-        <span class="stack">${p.votes[i].slice(0, 4).map((e) => avatar(e)).join("")}</span><span class="pc">${n ? `${pct}%` : ""}</span></button>`;
-    }).join("")}
-    <div class="pf">${voters === 1 ? t("1 pessoa votou") : t("{n} pessoas votaram", { n: voters })} · ${p.multi ? t("pode escolher várias") : t("escolha uma")}${p.closed ? ` · ${t("encerrada")}` : p.author === S.me || p.author === "ai" ? ` · <button type="button" class="link" data-close="${id}">${t("encerrar")}</button>` : ""}</div>
-  </div>`;
-}
-
 const hhmm = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
@@ -3201,46 +3177,6 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo 
 // pick is sent as their message replying to the question, which is also how the block knows it was answered.
 // Native cards (MCP post card, json-render's spec shape, validated by src/card.ts): every string escaped, no HTML.
 // Buttons work like choices: only the person whose Claude asked can press one, and it's posted as their reply.
-function cardHtml(m) {
-  let c; try { c = typeof m.card === "string" ? JSON.parse(m.card) : m.card; } catch { return ""; }
-  if (!c?.elements?.[c.root]) return "";
-  const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
-  const mine = m.kind === "agent" && m.author === S.me && !ans;
-  const txt = (v) => esc(String(v ?? "")).replace(/\n/g, "<br>");
-  const draw = (id, depth = 0) => {
-    const e = c.elements[id]; if (!e || depth > 8) return "";
-    const p = e.props || {}, kids = () => (e.children || []).map((k) => draw(k, depth + 1)).join("");
-    switch (e.type) {
-      case "Card": return `<div class="vcard">${p.title ? `<div class="vh"><b>${txt(p.title)}</b>${p.subtitle ? `<small>${txt(p.subtitle)}</small>` : ""}</div>` : ""}<div class="vb">${kids()}</div></div>`;
-      case "Section": return `<section class="vsec">${p.title ? `<h5>${txt(p.title)}</h5>` : ""}${kids()}</section>`;
-      case "Text": return `<p class="vtx ${esc(p.style || "plain")}">${txt(p.content)}</p>`;
-      case "Fields": return `<dl class="vfields">${kids()}</dl>`;
-      case "Field": return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}</dd></div>`;
-      case "Table": return `<div class="vtWrap"><button type="button" class="vtOpen" data-vtopen title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</button><div class="vtable"><table>${p.headers?.length ? `<thead><tr>${p.headers.map((h) => `<th>${txt(h)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(p.rows || []).map((r) => `<tr>${r.map((x) => `<td>${txt(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
-      case "Chart": {
-        const d = p.data || [], max = Math.max(...d.map((x) => Math.abs(x.value)), 1);
-        if (p.kind === "line") {
-          const w = 300, h = 90, step = d.length > 1 ? w / (d.length - 1) : 0, min = Math.min(...d.map((x) => x.value), 0), span = max - min || 1;
-          const pts = d.map((x, i) => `${(i * step).toFixed(1)},${(h - ((x.value - min) / span) * h).toFixed(1)}`).join(" ");
-          return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}<svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="vlab"><span>${txt(d[0]?.label)}</span><span>${txt(d.at(-1)?.label)}</span></div></figure>`;
-        }
-        return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}${d.map((x) => `<div class="vbar"><span>${txt(x.label)}</span><i style="width:${Math.round((Math.abs(x.value) / max) * 100)}%"></i><b>${txt(x.value)}</b></div>`).join("")}</figure>`;
-      }
-      case "Divider": return `<hr class="vhr">`;
-      case "Image": return /^\/api\/books\/[a-z0-9]+\/files\/[a-z0-9]+$/.test(p.url) ? `<img class="vimg" src="${esc(p.url)}" alt="${esc(p.alt || "")}" loading="lazy">` : "";
-      case "Actions": return `<div class="vact">${kids()}</div>`;
-      case "Button": {
-        const v = p.value || p.label, picked = ans?.text === v;
-        return mine ? `<button type="button" class="vbtn ${esc(p.style || "")}" data-cardbtn="${m.id}" data-v="${esc(v)}">${txt(p.label)}</button>` : `<span class="vbtn ro ${picked ? "on" : ""}">${picked ? icon("check", 14) : ""}${txt(p.label)}</span>`;
-      }
-      case "LinkButton":
-        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(p.url || "")) return `<button type="button" class="vbtn link" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
-        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
-      default: return "";
-    }
-  };
-  return draw(c.root);
-}
 // A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
 function cardGo(to) {
   if (to.startsWith("#app:")) { const [cid, tool] = to.slice(5).split("/"); connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })); if (ROOM_PHONE.matches) openSheet("doc"); return; }
@@ -3252,14 +3188,6 @@ function cardGo(to) {
   if (to.startsWith("#doc")) { document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })); if (ROOM_PHONE.matches) openSheet("doc"); }
 }
 document.addEventListener("click", (e) => { const g = e.target.closest("[data-cardgo]"); if (g) { e.preventDefault(); cardGo(g.dataset.cardgo); } });
-// ⤢ on a card table: the table full screen, like an image (wide tables scroll inside the card).
-document.addEventListener("click", (e) => { const b = e.target.closest("[data-vtopen]"); if (!b) return; const tb = b.parentElement.querySelector("table"); if (tb) openViewer(tb, "table", b.closest(".vcard, [data-chat-rich~=vcard]")?.querySelector(".vh b, [data-chat-rich~=vh] b")?.textContent || t("Tabela")); });
-document.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-cardbtn]"); if (!b) return;
-  const q = S.messages.find((x) => x.id === Number(b.dataset.cardbtn));
-  b.closest(".vcard, [data-chat-rich~=vcard]")?.querySelectorAll("[data-cardbtn]").forEach((x) => (x.disabled = true));
-  send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.v, files: [], reply_to: Number(b.dataset.cardbtn) });
-});
 // A permission ask (Aprovar/Negar from the plugin's hook) is answered in place: the button, then Confirmar (never by
 // accident). The answer is still a message of the person's (that's what the server checks: only their own human
 // message counts), but it isn't drawn in the chat: the ask shows "✓ Aprovado por X" instead.
@@ -3267,48 +3195,6 @@ document.addEventListener("click", (e) => {
 // the room doesn't see it (it filled shared threads with "Aprovar/Negar" and "ok", Nov 2026).
 const othersAsk = (m) => m?.kind === "agent" && m.author !== S.me && /^(⏸ Seu Claude|❓ Seu Claude)/.test(m.text || "");
 const isPermAnswer = (m) => { if (!m?.reply_to || m.kind === "agent") return false; const q = S.messages.find((x) => x.id === m.reply_to); return !!q && isPermAsk(q) && q.author === m.author; };
-function permHtml(m, c, ans) {
-  if (ans) { const ok = /^\s*aprov/i.test(ans.text); return `<div class="permAsk done ${ok ? "ok" : "no"}">${icon(ok ? "check" : "x", 14)} ${ok ? t("Aprovado por {who}", { who: esc(name(ans.author)) }) : t("Negado por {who}", { who: esc(name(ans.author)) })} · ${hhmm(ans.ts)}</div>`; }
-  if (c.closed) return `<div class="permAsk done">${icon("terminal", 14)} ${t("foi pro terminal")}</div>`;
-  if (m.author !== S.me) return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
-  return `<div class="permAsk" data-perm="${m.id}"><button type="button" class="primary" data-pv="Aprovar">${t("Aprovar")}</button><button type="button" class="ghost" data-pv="Negar">${t("Negar")}</button></div>`;
-}
-document.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-perm] [data-pv], [data-perm] [data-pconfirm], [data-perm] [data-pcancel]"); if (!b) return;
-  const box = b.closest("[data-perm]"), id = Number(box.dataset.perm);
-  if (b.dataset.pv) { const ok = b.dataset.pv === "Aprovar"; box.innerHTML = adaptLegacyChatMarkup(`<span class="pq">${ok ? t("Aprovar este pedido?") : t("Negar este pedido?")}</span><button type="button" class="${ok ? "primary" : "danger"}" data-pconfirm="${b.dataset.pv}">${t("Confirmar")}</button><button type="button" class="ghost" data-pcancel="1">${t("Cancelar")}</button>`); box.dataset.chatRich = "permAsk confirm"; return; }
-  if (b.dataset.pcancel) { const m = S.messages.find((x) => x.id === id); if (m) box.outerHTML = adaptLegacyChatMarkup(choiceHtml(m)); return; }
-  const q = S.messages.find((x) => x.id === id);
-  box.querySelectorAll("button").forEach((x) => (x.disabled = true));
-  send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.pconfirm, files: [], reply_to: id });
-});
-function choiceHtml(m) {
-  let c; try { c = JSON.parse(m.choices); } catch { return ""; }
-  const ans = S.messages.find((x) => x.reply_to === m.id && x.author === m.author && x.kind !== "agent");
-  if (isPermAsk(m)) return permHtml(m, c, ans);
-  const other = !isPermAsk(m); // "Outro": your own words (not for Aprovar/Negar)
-  // Went to the terminal (the hook timed out, or the person answered there): no longer pickable here.
-  if (!ans && c.closed) return `<div class="choice ro closed">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("foi pro terminal")}</small></div>`;
-  if (ans) {
-    const picked = new Set(ans.text.split(" · "));
-    const own = other && !c.options.some((o) => picked.has(o));
-    return `<div class="choice done">${c.options.map((o) => `<span class="opt ${picked.has(o) ? "on" : ""}">${picked.has(o) ? icon("check", 14) : ""}${esc(o)}</span>`).join("")}${own ? `<span class="opt on">${icon("check", 14)}${t("Outro")}</span>` : ""}</div>`;
-  }
-  // Picking fills your message box (as a reply to the question); you can edit it and send with the composer's Enviar.
-  if (m.kind === "agent" && m.author === S.me)
-    return `<form class="choice" data-choice="${m.id}" data-multi="${c.multi ? 1 : ""}">${c.options.map((o) => `<label class="opt"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="${esc(o)}" />${esc(o)}</label>`).join("")}${other ? `<label class="opt oth"><input type="${c.multi ? "checkbox" : "radio"}" name="c${m.id}" value="" data-other="1" />${t("Outro")}…</label>` : ""}<small>${t("escolha e envie pela caixa de mensagem")}</small></form>`;
-  return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
-}
-document.addEventListener("change", (e) => {
-  const f = e.target.closest("form.choice, form[data-chat-rich~=choice]"); if (!f) return;
-  const box = document.getElementById("input"); if (!box) return;
-  // "Outro" clears the box for your own words (and, single choice, unpicks the others).
-  if (e.target.dataset.other) { if (e.target.checked) { if (!f.dataset.multi) f.querySelectorAll("input").forEach((i) => (i.checked = i === e.target)); box.value = ""; } }
-  else box.value = [...f.querySelectorAll("input:checked:not([data-other])")].map((i) => i.value).join(" · ");
-  startReply(Number(f.dataset.choice));
-  box.dispatchEvent(new Event("input", { bubbles: true }));
-  box.focus();
-});
 function renderDecisions() {
   const el = document.getElementById("decPane"); if (!el) return;
   const list = S.decisions || [];
@@ -3677,7 +3563,7 @@ function renderChat(keep) {
   const roomId=S.id, chatThread=thread;
   let chatMount;
   const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
-  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{interactiveBody:(message)=>adaptLegacyChatMarkup((message.card?cardHtml(message):"")+(message.choices?choiceHtml(message):"")+(message.poll?pollHtml(message.poll):"")),threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openViewer(`/api/books/${roomId}/files/${file.id}`,file.type?.startsWith("image/")?"img":"frame",file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}},onloadolder:()=>{if(current())loadOlder();}});
+  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;replyTo=q;renderReply();const box=document.getElementById("input");if(box){box.value=draft.text;box.dispatchEvent(new Event("input",{bubbles:true}));box.focus();}},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openViewer(`/api/books/${roomId}/files/${file.id}`,file.type?.startsWith("image/")?"img":"frame",file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}},onloadolder:()=>{if(current())loadOlder();}});
   chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   if (keep === "stay") { el.scrollTop = t0; pinOnLoad(el); } // a state refresh while reading above

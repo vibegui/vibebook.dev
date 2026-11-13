@@ -39,6 +39,7 @@ if (native) {
     "svelte/features/notifications",
     "svelte/features/chat",
     "svelte/features/rich-text",
+    "svelte/features/chat-interactive",
   ])
     await collect(directory);
   files.push(

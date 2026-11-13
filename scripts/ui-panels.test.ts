@@ -1280,7 +1280,6 @@ describe("native Svelte chat", () => {
       import("../svelte/chatTypes").LegacyChatIntegrations
     > = {},
   ): import("../svelte/chatTypes").LegacyChatIntegrations => ({
-    interactiveBody: () => "",
     threadCards: () => "",
     ...overrides,
   });
@@ -1302,7 +1301,13 @@ describe("native Svelte chat", () => {
       replyCount: 0,
       vb: bridge(),
       legacy: legacy(),
-      actions: { reply: () => {}, navigate: () => {}, openFile: () => {} },
+      actions: {
+        request: async (): Promise<CommandOutcome> => ({ ok: true }),
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
       onloadolder: () => {},
       ...extra,
     };
@@ -1341,6 +1346,8 @@ describe("native Svelte chat", () => {
     const { target } = renderChat(room, {
       vb: bridge({ pageUrl: "https://example.test/b/abc123" }),
       actions: {
+        request: async (): Promise<CommandOutcome> => ({ ok: true }),
+        draftReply: () => {},
         reply: () => {},
         navigate: (id) => navigated.push(id),
         openFile: (attachment) => files.push(attachment.id),
@@ -1376,6 +1383,419 @@ describe("native Svelte chat", () => {
     expect(body.querySelector("[data-legacy-chat-content]") === null).toBe(
       true,
     );
+  }, 30_000);
+  test("native card catalog keeps plain text, table expansion, owner-only replies and canonical answer state", async () => {
+    const input = JSON.parse(
+      readFileSync(
+        new URL("./fixtures/card-wire.json", import.meta.url),
+        "utf8",
+      ),
+    ).input;
+    const q = {
+      ...message(31, "Surrounding **message**"),
+      author: fixture().me,
+      card: JSON.stringify(input),
+    };
+    let room = { ...fixture(), id: "abc123", messages: [q] };
+    const sent: RoomCommand[] = [];
+    let resolve!: (result: CommandOutcome) => void;
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: (command) => {
+          sent.push(command);
+          return new Promise((done) => (resolve = done));
+        },
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    const card = target.querySelector("[data-native-card]")!;
+    expect(card.textContent).toContain("historical alias");
+    expect(card.querySelector("td")?.textContent).toBe("1");
+    expect(card.querySelector("polyline") !== null).toBe(true);
+    expect(card.querySelector("img")?.getAttribute("src")).toBe(
+      "/api/books/abc123/files/aa11",
+    );
+    const tableTrigger = Array.from(card.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Abrir em tela cheia"),
+    )!;
+    tableTrigger.click();
+    flushSync();
+    await tick();
+    expect(document.querySelector('[role="dialog"] table') !== null).toBe(true);
+    document
+      .querySelector<HTMLButtonElement>(
+        '[role="dialog"] button[aria-label="Fechar"]',
+      )!
+      .click();
+    flushSync();
+    await tick();
+    const button = card.querySelector<HTMLButtonElement>(
+      '[data-native-card-answer="3"]',
+    )!;
+    button.click();
+    button.click();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      t: "msg",
+      thread: "e",
+      reply_to: 31,
+      text: "3",
+    });
+    resolve({ ok: true });
+    await tick();
+    flushSync();
+    expect(
+      target
+        .querySelector('[data-native-card-answer="3"]')
+        ?.hasAttribute("disabled"),
+    ).toBe(true);
+    room = {
+      ...room,
+      messages: [
+        q,
+        { ...message(32, "3"), author: room.me, kind: null, reply_to: 31 },
+      ],
+    };
+    update(room);
+    expect(target.querySelector('[data-native-card-answer="3"]') === null).toBe(
+      true,
+    );
+    expect(target.querySelector('[data-native-card-picked="3"]') !== null).toBe(
+      true,
+    );
+    update({ ...room, messages: [{ ...q, card: "{invalid" }] });
+    expect(target.querySelector("[data-native-card]") === null).toBe(true);
+    expect(target.querySelector("[data-rich-content]")?.textContent).toBe(
+      "Surrounding message",
+    );
+  }, 30_000);
+  test("native choices populate editable composer drafts with Other and never submit", () => {
+    const q = {
+      ...message(41, "Question"),
+      author: fixture().me,
+      choices: JSON.stringify({ options: ["First", "Second"], multi: false }),
+    };
+    const room = { ...fixture(), messages: [q] };
+    const drafts: { messageId: number; thread: string; text: string }[] = [],
+      commands: RoomCommand[] = [];
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: async (command) => {
+          commands.push(command);
+          return { ok: true };
+        },
+        draftReply: (draft) => drafts.push(draft),
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    let radios = target.querySelectorAll<HTMLInputElement>(
+      '[data-native-choices] input[type="radio"]',
+    );
+    radios[0].checked = true;
+    radios[0].dispatchEvent(new Event("change", { bubbles: true }));
+    expect(drafts.at(-1)).toEqual({
+      messageId: 41,
+      thread: "e",
+      text: "First",
+    });
+    radios[2].checked = true;
+    radios[2].dispatchEvent(new Event("change", { bubbles: true }));
+    expect(drafts.at(-1)?.text).toBe("");
+    expect(commands).toHaveLength(0);
+    const detached = radios[0];
+    update({
+      ...room,
+      messages: [
+        {
+          ...q,
+          choices: JSON.stringify({
+            options: ["First", "Second"],
+            closed: "terminal",
+          }),
+        },
+      ],
+    });
+    detached.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(drafts).toHaveLength(2);
+    expect(target.querySelector("[data-native-choices] input") === null).toBe(
+      true,
+    );
+    expect(target.textContent).toContain("foi pro terminal");
+    update({ ...room, me: "you@test", messages: [q] });
+    expect(target.querySelector("[data-native-choices] input") === null).toBe(
+      true,
+    );
+  }, 30_000);
+  test("native multi choices keep option order and Other clears draft without submitting", () => {
+    const q = {
+        ...message(42, "Question"),
+        author: fixture().me,
+        choices: JSON.stringify({ options: ["First", "Second"], multi: true }),
+      },
+      drafts: string[] = [];
+    const { target } = renderChat(
+      { ...fixture(), messages: [q] },
+      {
+        actions: {
+          request: async () => ({ ok: true }),
+          draftReply: (draft) => drafts.push(draft.text),
+          reply: () => {},
+          navigate: () => {},
+          openFile: () => {},
+        },
+      },
+    );
+    const checks = target.querySelectorAll<HTMLInputElement>(
+      '[data-native-choices] input[type="checkbox"]',
+    );
+    for (const index of [1, 0, 2]) {
+      checks[index].checked = true;
+      checks[index].dispatchEvent(new Event("change", { bubbles: true }));
+      flushSync();
+    }
+    expect(drafts).toEqual(["Second", "First · Second", ""]);
+  }, 30_000);
+  test("native permission confirmation cancels safely and canonical target removal suppresses late errors", async () => {
+    const q = {
+      ...message(51, "⏸ Seu Claude pede permissão"),
+      author: fixture().me,
+      choices: '{"options":["Aprovar","Negar"],"multi":false}',
+    };
+    const room = { ...fixture(), messages: [q] };
+    const sent: RoomCommand[] = [];
+    let resolve!: (result: CommandOutcome) => void;
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: (command) => {
+          sent.push(command);
+          return new Promise((done) => (resolve = done));
+        },
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    target
+      .querySelector<HTMLButtonElement>(
+        '[data-native-permission-value="Aprovar"]',
+      )!
+      .click();
+    flushSync();
+    await tick();
+    expect(sent).toHaveLength(0);
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    )
+      .find((button) => button.textContent === "Cancelar")!
+      .click();
+    flushSync();
+    await tick();
+    await expectAlertDialogClosed();
+    expect(sent).toHaveLength(0);
+    target
+      .querySelector<HTMLButtonElement>(
+        '[data-native-permission-value="Negar"]',
+      )!
+      .click();
+    flushSync();
+    await tick();
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    )
+      .find((button) => button.textContent === "Confirmar")!
+      .click();
+    expect(sent[0]).toMatchObject({ t: "msg", text: "Negar", reply_to: 51 });
+    update({ ...room, messages: [] });
+    resolve({ ok: false, error: "late permission failure" });
+    await tick();
+    flushSync();
+    await expectAlertDialogClosed();
+    expect(target.textContent).not.toContain("late permission failure");
+  }, 30_000);
+  test("native poll votes retain canonical pressed state, report failure and gate closure by author", async () => {
+    const q = { ...message(61, ""), poll: "p" };
+    const poll = {
+      id: "p",
+      question: "Vote",
+      options: ["First", "Second"],
+      author: fixture().me,
+      multi: true,
+      closed: false,
+      votes: [[], []],
+    };
+    const room = { ...fixture(), messages: [q], polls: { p: poll } };
+    const sent: RoomCommand[] = [];
+    let resolve!: (result: CommandOutcome) => void;
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: (command) => {
+          sent.push(command);
+          return new Promise((done) => (resolve = done));
+        },
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    const stale = target.querySelector<HTMLButtonElement>(
+      '[data-native-vote="0"]',
+    )!;
+    stale.click();
+    expect(sent[0]).toEqual({ t: "vote", id: "p", opt: 0 });
+    expect(stale.getAttribute("aria-pressed")).toBe("false");
+    resolve({ ok: false, error: "server refused" });
+    await tick();
+    flushSync();
+    expect(target.textContent).toContain("server refused");
+    update({ ...room, polls: { p: { ...poll, votes: [[room.me], []] } } });
+    expect(
+      target
+        .querySelector('[data-native-vote="0"]')
+        ?.getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(target.querySelector("[data-native-poll-close]") !== null).toBe(
+      true,
+    );
+    update({ ...room, me: "you@test" });
+    expect(target.querySelector("[data-native-poll-close]") === null).toBe(
+      true,
+    );
+    const before = sent.length;
+    stale.click();
+    expect(sent).toHaveLength(before);
+  }, 30_000);
+  test("same-ID permission replacement invalidates old confirmation before any request", async () => {
+    const q = {
+      ...message(71, "⏸ Seu Claude pede permissão: old"),
+      author: fixture().me,
+      choices: '{"options":["Aprovar","Negar"],"multi":false}',
+    };
+    const room = { ...fixture(), messages: [q] },
+      sent: RoomCommand[] = [];
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: async (command) => {
+          sent.push(command);
+          return { ok: true };
+        },
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    target
+      .querySelector<HTMLButtonElement>(
+        '[data-native-permission-value="Aprovar"]',
+      )!
+      .click();
+    flushSync();
+    await tick();
+    const stale = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
+    ).find((button) => button.textContent === "Confirmar")!;
+    update({
+      ...room,
+      messages: [{ ...q, text: "⏸ Seu Claude pede permissão: replacement" }],
+    });
+    stale.click();
+    flushSync();
+    await tick();
+    await expectAlertDialogClosed();
+    expect(sent).toHaveLength(0);
+  }, 30_000);
+  test("dense supported card tables stay accessible through lazy full-data dialogs", async () => {
+    const elements: Record<string, unknown> = {
+      c: { type: "Card", children: ["a", "b", "c2"] },
+    };
+    for (const id of ["a", "b", "c2"])
+      elements[id] = {
+        type: "Table",
+        props: {
+          headers: [id],
+          rows: Array.from({ length: 50 }, (_, row) =>
+            Array.from({ length: 10 }, (_, col) => `${id}-${row}-${col}`),
+          ),
+        },
+      };
+    const { target } = renderChat({
+      ...fixture(),
+      messages: [
+        {
+          ...message(72, "Tables"),
+          card: JSON.stringify({ root: "c", elements }),
+        },
+      ],
+    });
+    expect(target.querySelectorAll("[data-native-card-table]")).toHaveLength(3);
+    expect(
+      target.querySelectorAll("[data-native-card-table] td").length,
+    ).toBeLessThanOrEqual(1000);
+    const tables = target.querySelectorAll("[data-native-card-table]");
+    tables[2].querySelector<HTMLButtonElement>("button")!.click();
+    flushSync();
+    await tick();
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
+      "c2-49-9",
+    );
+  }, 30_000);
+  test("lost poll ACK disables repeat toggles until late canonical vote reconciles", async () => {
+    const q = { ...message(81, ""), poll: "p" },
+      poll = {
+        id: "p",
+        question: "Vote",
+        options: ["First", "Second"],
+        author: fixture().me,
+        multi: false,
+        closed: false,
+        votes: [[], []],
+      },
+      room = { ...fixture(), messages: [q], polls: { p: poll } },
+      sent: RoomCommand[] = [];
+    let resolve!: (result: CommandOutcome) => void;
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: (command) => {
+          sent.push(command);
+          return new Promise((done) => (resolve = done));
+        },
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    const vote = target.querySelector<HTMLButtonElement>(
+      '[data-native-vote="0"]',
+    )!;
+    vote.click();
+    resolve({ ok: false, error: "disconnected" });
+    await tick();
+    flushSync();
+    expect(target.textContent).toContain("Ainda sem confirmação");
+    expect(vote.disabled).toBe(true);
+    vote.click();
+    expect(sent).toHaveLength(1);
+    update({ ...room, polls: { p: { ...poll, votes: [[room.me], []] } } });
+    const current = target.querySelector<HTMLButtonElement>(
+      '[data-native-vote="0"]',
+    )!;
+    expect(current.disabled).toBe(false);
+    expect(current.getAttribute("aria-pressed")).toBe("true");
+    expect(sent).toHaveLength(1);
   }, 30_000);
   test("streaming typing notes and repeated text updates retain native message anchors", () => {
     let room: Room = {
@@ -1510,6 +1930,8 @@ describe("native Svelte chat", () => {
     const { target } = renderChat(room, {
       origin,
       actions: {
+        request: async (): Promise<CommandOutcome> => ({ ok: true }),
+        draftReply: () => {},
         reply: (id) => replied.push(id),
         navigate: (id, thread) => navigated.push({ id, thread }),
         openFile: (selected) => opened.push(selected.id),
@@ -1622,13 +2044,31 @@ describe("native Svelte chat", () => {
     const latest = { ...reminder, id: 2, ts: 2000 };
     const interactive = {
       ...message(3, "@person **rich**"),
-      card: "{}",
-      choices: "{}",
+      card: JSON.stringify({
+        root: "c",
+        elements: {
+          c: { type: "Card", children: ["a"] },
+          a: { type: "Actions", children: ["b"] },
+          b: { type: "Button", props: { label: "Pick" } },
+        },
+      }),
+      choices: JSON.stringify({ options: ["A", "B"], multi: false }),
       poll: "p",
     };
     const room = {
       ...fixture(),
       messages: [reminder, latest, interactive],
+      polls: {
+        p: {
+          id: "p",
+          author: "ai",
+          question: "Poll",
+          options: ["A", "B"],
+          multi: false,
+          closed: false,
+          votes: [[], []],
+        },
+      },
       acks: [
         {
           msg_id: 2,
@@ -1641,8 +2081,6 @@ describe("native Svelte chat", () => {
     };
     const { target } = renderChat(room, {
       legacy: legacy({
-        interactiveBody: () =>
-          '<div data-cardbtn="3">card</div><form data-choice="3">choices</form><div data-poll="p"><button data-vote="0">poll</button></div>',
         threadCards: (id) =>
           `<button data-test-thread-card="${id}">origin card</button>`,
       }),
@@ -1657,9 +2095,11 @@ describe("native Svelte chat", () => {
     expect(target.querySelector("#m3 [data-rich-content]")?.textContent).toBe(
       "@person rich",
     );
-    expect(target.querySelector("#m3 [data-cardbtn]") !== null).toBe(true);
-    expect(target.querySelector("#m3 [data-choice]") !== null).toBe(true);
-    expect(target.querySelector("#m3 [data-vote]") !== null).toBe(true);
+    expect(target.querySelector("#m3 [data-native-card]") !== null).toBe(true);
+    expect(target.querySelector("#m3 [data-native-choices]") !== null).toBe(
+      true,
+    );
+    expect(target.querySelector("#m3 [data-native-vote]") !== null).toBe(true);
     expect(target.querySelectorAll("#m2 [data-test-thread-card]")).toHaveLength(
       2,
     );
@@ -1678,6 +2118,8 @@ describe("native Svelte chat", () => {
     const navigated: number[] = [];
     const { target, update } = renderChat(room, {
       actions: {
+        request: async (): Promise<CommandOutcome> => ({ ok: true }),
+        draftReply: () => {},
         reply: (id) => replied.push(id),
         navigate: (id) => navigated.push(id),
         openFile: () => {},
@@ -1721,6 +2163,8 @@ describe("native Svelte chat", () => {
     const mounted: string[] = [];
     const { target, update } = renderChat(room, {
       actions: {
+        request: async (): Promise<CommandOutcome> => ({ ok: true }),
+        draftReply: () => {},
         reply: () => {},
         navigate: () => {},
         openFile: () => {},
@@ -1786,6 +2230,8 @@ describe("native Svelte chat", () => {
       {
         origin: { ...message(7, "Origin"), thread: "main", files: [embedded] },
         actions: {
+          request: async (): Promise<CommandOutcome> => ({ ok: true }),
+          draftReply: () => {},
           reply: () => {},
           navigate: () => {},
           openFile: () => {},
@@ -1804,6 +2250,8 @@ describe("native Svelte chat", () => {
       { ...fixture(), messages: [message(1, "Swipe target")] },
       {
         actions: {
+          request: async (): Promise<CommandOutcome> => ({ ok: true }),
+          draftReply: () => {},
           reply: (id) => replied.push(id),
           navigate: () => {},
           openFile: () => {},

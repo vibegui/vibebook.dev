@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Pending F18/F20/F21/F15 ownership. This accepts body fragments only, never a message/frame/footer.
+  // Pending F15 thread-card ownership. This accepts body fragments only, never a message/frame/footer.
   // Data roles replace legacy CSS dependencies; native controls/attachments/status never enter this boundary.
   let {
     html,

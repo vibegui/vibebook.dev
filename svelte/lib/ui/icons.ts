@@ -7,6 +7,15 @@ export const iconPaths = {
     "M18 8a6 6 0 0 0-8-5",
     "M10 21h4",
   ],
+  expand: ["M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"],
+  external: [
+    "M15 3h6v6M10 14 21 3M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5",
+  ],
+  arrowRight: ["M5 12h14m-6-6 6 6-6 6"],
+  chart: ["M4 3v18h17M8 17v-5m5 5V7m5 10V4"],
+  trophy: [
+    "M8 3h8v6a4 4 0 0 1-8 0V3ZM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 13v7m-4 1h8",
+  ],
   copy: ["M9 9h12v12H9z", "M5 15H3V3h12v2"],
   link: ["m10 13 4-4", "M8 16H6a4 4 0 0 1 0-8h4M14 8h4a4 4 0 0 1 0 8h-4"],
   reply: ["m9 10-5 5 5 5", "M4 15h10a6 6 0 0 0 0-12"],

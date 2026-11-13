@@ -8,9 +8,10 @@ F22 includes the ongoing vanilla compact receipt requirement observed in `public
 
 `LegacyChatIntegrations` is a temporary body-fragment contract, not a native rich-content implementation. It cannot return frames, message actions, attachments or footers.
 
-The former `richText` fragment is retired by the native typed renderer described in [native rich text](native-rich-text.md). `LegacyChatContent.svelte` remains the named HTML boundary for the two fragments below.
+The former `richText` fragment is retired by the native typed renderer described in [native rich text](native-rich-text.md). `LegacyChatContent.svelte` remains the named HTML boundary for the remaining fragment below.
 
-- `interactiveBody`: structured cards/charts, choices, permission confirmations and polls still come from host formatters. Their current action handlers and mutation behavior remain until the dedicated F20/F21 slice. This slice changes only selector hooks needed by the temporary presentation adapter.
+The former `interactiveBody` fragment and its delegated controls are retired by [native interactive message bodies](native-chat-interactive.md).
+
 - `threadCards`: origin thread-card bodies, descendant file summaries and their navigation still come from the host (remaining F15 ownership).
 
 The temporary adapter replaces legacy class hooks with `data-chat-rich` roles. Tailwind descendant utilities provide presentation; percentage bars use native progress values and line charts retain SVG geometry attributes. First-party inline declarations do not cross this boundary. This adapter must disappear with the relevant typed native rich-content/card/poll/thread-card implementations; it is not a permanent design-system primitive.
