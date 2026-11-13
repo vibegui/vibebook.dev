@@ -1,6 +1,7 @@
 <script lang="ts">
   // The room's navigation is rendered by Svelte. The bridge keeps shared artwork,
   // formatting and the existing host actions in one place during the migration.
+  import People from "./People.svelte";
   import EpicTree from "./features/navigation/EpicTree.svelte";
   import PinnedItems from "./features/pins/PinnedItems.svelte";
   import type { SidebarProps } from "./sidebar";
@@ -28,73 +29,7 @@
         ).length
       : room.messages.filter((m) => m.thread === th).length;
   const selected = $derived(room.epics.find((epic) => epic.id === thread));
-  const online = $derived(
-    room.members.filter(
-      (email) => email === room.me || room.online.includes(email),
-    ),
-  );
-  const offline = $derived(
-    room.members.filter((email) => !online.includes(email)),
-  );
-  const availableFriends = $derived(
-    friends.filter((email) => !room.members.includes(email)),
-  );
 </script>
-
-{#snippet member(email: string)}
-  <div class="member">
-    {@html vb.avatar(email, room.online.includes(email))}
-    {#if room.pending?.includes(email)}
-      <div class="fnCol">
-        <span class="fnRow"
-          ><span class="fn" title={email}
-            >{room.names?.[email] || email.split("@")[0]}</span
-          ><span class="pendTag" title={vb.t("Convidada(o), ainda não entrou")}
-            >{vb.t("pendente")}</span
-          ></span
-        >
-        <small class="memActs"
-          ><button
-            type="button"
-            class="ghost resend"
-            data-copyinv={email}
-            title={vb.t(
-              "Copiar a mensagem de convite (link da sala + setup do agent) para mandar no WhatsApp",
-            )}>{vb.t("copiar")}</button
-          >
-          ·
-          <button
-            type="button"
-            class="ghost resend"
-            data-resend={email}
-            title={vb.t("Convidada(o), ainda não entrou")}
-            >{vb.t("reenviar")}</button
-          ></small
-        >
-      </div>
-    {:else if room.names?.[email]}
-      <span class="fn" title={email}>{room.names[email]}</span>
-    {:else}
-      <div class="fnCol">
-        <span class="fn" title={email}>{email.split("@")[0]}</span><small
-          class="memActs">@{email.split("@")[1] ?? ""}</small
-        >
-      </div>
-    {/if}
-    {#if email !== room.book?.owner && (room.pending?.includes(email) || room.me === room.book?.owner)}
-      <button
-        type="button"
-        class="ghost x"
-        data-remove={email}
-        aria-label={vb.t("Remover {email}", { email })}
-        title={room.pending?.includes(email)
-          ? vb.t("Cancelar convite")
-          : vb.t("Remover do vibebook")}>{@html vb.icon("x")}</button
-      >
-    {/if}
-  </div>
-  {@html vb.agentRows(email)}
-{/snippet}
 
 <button type="button" class="sheetGrab" aria-label={vb.t("Fechar")}
   ><i></i></button
@@ -180,82 +115,16 @@
   onopenapp={onopenpinapp}
   t={vb.t}
 />
-<div class="sec">
-  {#if room.requests?.length}
-    <div class="asks">
-      <h4>{vb.t("Pedindo pra entrar")}</h4>
-      {#each room.requests as request (request.email)}
-        <div class="member reqRow">
-          {@html vb.avatar(request.email)}
-          <div class="fnCol">
-            <span
-              class="fn"
-              title={`${request.email} · ${vb.t("pediu {ago}", { ago: vb.ago(request.ts) })}`}
-              >{request.name || request.email.split("@")[0]}</span
-            ><small class="memActs"
-              >{vb.t("pediu {ago}", { ago: vb.ago(request.ts) })} ·
-              <button
-                type="button"
-                class="ghost resend okAsk"
-                data-ask={request.email}
-                data-ok="1"
-                title={vb.t("Liberar: entra na sala e recebe o link por email")}
-                >{vb.t("liberar")}</button
-              ></small
-            >
-          </div>
-          <button
-            type="button"
-            class="ghost x"
-            data-ask={request.email}
-            data-ok=""
-            aria-label={vb.t("Recusar {email}", { email: request.email })}
-            title={vb.t("Recusar")}>{@html vb.icon("x")}</button
-          >
-        </div>
-      {/each}
-    </div>
-  {/if}
-  <h4>{vb.t("Pessoas e agents")}</h4>
-  {@html vb.sbxRows()}
-  {#each online as email (email)}{@render member(email)}{/each}
-  {#if offline.length}
-    <details class="memMore" data-fold="off" open={foldOpen.off}>
-      <summary>{vb.t("{n} offline", { n: offline.length })}</summary
-      >{#each offline as email (email)}{@render member(email)}{/each}
-    </details>
-  {/if}
-  {#if availableFriends.length}
-    <details
-      class="memMore"
-      data-fold="friends"
-      open={foldOpen.friends ?? room.members.length <= 1}
-    >
-      <summary>{vb.t("Seus amigos")} · {availableFriends.length}</summary>
-      {#each availableFriends as email (email)}<button
-          type="button"
-          class="friendAdd"
-          data-add={email}
-          title={vb.t("Adicionar {email}", { email })}
-          >{@html vb.avatar(email)}<span class="fn">{vb.name(email)}</span><b
-            >{@html vb.icon("plus")}</b
-          ></button
-        >{/each}
-    </details>
-  {/if}
-  <form class="row" id="invite" style="margin-top:8px">
-    <input
-      type="email"
-      required
-      placeholder={vb.t("convidar por email")}
-      list="friendList"
-      autocomplete="off"
-    /><button aria-label={vb.t("convidar por email")}
-      >{@html vb.icon("plus")}</button
-    >
-  </form>
-  <datalist id="friendList"
-    >{#each availableFriends as email}<option value={email}
-      ></option>{/each}</datalist
-  >
-</div>
+{#snippet agentArtwork(email: string)}{@html vb.agentRows(email)}{/snippet}
+{#snippet sandboxArtwork()}{@html vb.sbxRows()}{/snippet}
+<People
+  {room}
+  {friends}
+  {foldOpen}
+  vb={{ t: vb.t, name: vb.name, ago: vb.ago, avatarUrl: vb.avatarUrl }}
+  agents={agentArtwork}
+  sandboxes={sandboxArtwork}
+  onfoldchange={(key, value) => {
+    foldOpen[key] = value;
+  }}
+/>

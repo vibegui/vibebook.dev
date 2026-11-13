@@ -16,6 +16,8 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Email inválido.": "Invalid email.",
+  "Esta pessoa já está na sala.": "This person is already in the room.",
   "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
   "Use um link http ou https válido.": "Enter a valid http or https link.",
   "Sem conexão. Seu rascunho foi mantido.": "Offline. Your draft has been kept.",
@@ -2832,10 +2834,8 @@ function renderSide() {
     closeSheet(true);
     thread = id; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   };
-  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
+  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`, file.type.startsWith("image/") ? "img" : "frame", file.name); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;},bookTitle,roomMark,roomStrip,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
   el.querySelector("#railToggle").onclick = toggleRail;
-  // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
-  el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.onclick = () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open));
   const grab = el.querySelector(".sheetGrab");
   if (grab && !sidebarDragHandles.has(grab)) {
     sheetDrag(grab, "side", false);
@@ -2851,36 +2851,6 @@ function renderSide() {
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   });
-  el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
-    const who = b.dataset.remove;
-    if (!confirm((S.pending || []).includes(who) ? t("Cancelar o convite de {email}?", { email: who }) : t("Remover {email} deste vibebook?", { email: who }))) return;
-    const r = await fetch(`/api/books/${S.id}/members/${encodeURIComponent(who)}`, { method: "DELETE" });
-    if (!r.ok) alert((await r.json().catch(() => ({}))).error || t("Não deu para remover."));
-  });
-  el.querySelectorAll("[data-ask]").forEach((b) => b.onclick = async () => {
-    const ok = !!b.dataset.ok, who = b.dataset.ask;
-    if (!ok && !confirm(t("Recusar o pedido de {email}?", { email: who }))) return;
-    b.disabled = true;
-    await api(`/api/books/${S.id}/requests`, { email: who, ok }).then(() => ok && toast(t("{email} entrou na sala e recebeu o link por email.", { email: esc(who) }))).catch((err) => { alert(err.message); b.disabled = false; });
-  });
-  el.querySelectorAll("[data-resend]").forEach((b) => b.onclick = async () => {
-    b.disabled = true; b.textContent = "…";
-    try { await api(`/api/books/${S.id}/members`, { email: b.dataset.resend }); b.textContent = `${t("enviado")} ✓`; }
-    catch (err) { b.textContent = t("reenviar"); b.disabled = false; alert(err.message); }
-  });
-  el.querySelectorAll("[data-copyinv]").forEach((b) => b.onclick = () => copyInvite(b.dataset.copyinv, false));
-  el.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
-    b.disabled = true;
-    copyInvite(b.dataset.add);
-    await api(`/api/books/${S.id}/members`, { email: b.dataset.add }).catch((err) => { alert(err.message); b.disabled = false; });
-  });
-  document.getElementById("invite").onsubmit = async (e) => {
-    e.preventDefault();
-    const email = e.target[0].value.trim();
-    copyInvite(email); // before the await: the clipboard needs the click's user activation
-    await api(`/api/books/${S.id}/members`, { email }).catch((err) => alert(err.message));
-    e.target.reset();
-  };
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   setFavicon(bookTitle());
 }
@@ -2904,18 +2874,6 @@ function pickPic() {
   input.click();
 }
 
-// The invite email gets them in; this is the message you send yourself (WhatsApp etc.): the room link and the
-// one sentence that sets up their Claude. Copied on invite, and from "copiar" next to a pending invite.
-function inviteText(email) {
-  const url = `${location.origin}/b/${S.id}`;
-  return `${t("Te convidei pro vibebook \"{title}\": {url}", { title: bookTitle(), url })}\n\n${t("1. Entra com {email} (o convite chegou nesse email).", { email })}\n${t("2. Manda isto pro seu Claude Code:")}\n\nRead ${location.origin}/llms.txt and set up vibebook for this project. Room: ${url}`;
-}
-function copyInvite(email, sent = true) {
-  navigator.clipboard?.writeText(inviteText(email)).then(
-    () => toast(`${sent ? `${t("Convite enviado por email para <b>{email}</b>.", { email: esc(email) })} ` : ""}${t("Copiei a mensagem com o link da sala e o setup do agent para {name}: cola no WhatsApp.", { name: esc(name(email)) })}`),
-    () => toast(t("Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.", { email: esc(email) })),
-  );
-}
 function toast(html, ms = 7000) {
   document.querySelector(".toast")?.remove();
   document.body.insertAdjacentHTML("beforeend", `<div class="toast" role="status">${html}</div>`);

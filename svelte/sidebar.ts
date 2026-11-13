@@ -12,6 +12,7 @@ export type SidebarBridge = {
   avatar: (email: string, online?: boolean) => string;
   ago: (ts: number) => string;
   name: (email: string) => string;
+  avatarUrl?: (email: string) => string | undefined;
   bookTitle: () => string;
   roomMark: (classes: string) => string;
   roomStrip: () => string;
