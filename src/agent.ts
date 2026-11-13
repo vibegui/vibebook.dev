@@ -1017,6 +1017,7 @@ function choicesOf(a: Args) {
 // an agent id's owner never changes; seen_at/model/repo/room-seen writes at most once a minute each.
 const agentOwner = new Map<string, string>();
 const lastWrite = new Map<string, number>();
+const POLL_TOOLS = new Set(["wait_for_messages", "claude_rooms"]);
 const due = (key: string, ms = 60_000) => {
   const now = Date.now();
   if ((lastWrite.get(key) ?? 0) > now - ms) return false;
@@ -1131,7 +1132,9 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
         ok = false;
         result = { content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }], isError: true };
       }
-      ctx.waitUntil(track(env, "agent_call", { user: me.email, dims: { tool: String(p.name), ok, ms: Date.now() - started, client: me.client } }));
+      // Listening calls aren't recorded: they were 81% of every D1 row written (each event row is 4 with its indexes),
+      // and presence already lives on agents.listening_at; the /mcp request count still shows their volume.
+      if (!POLL_TOOLS.has(String(p.name))) ctx.waitUntil(track(env, "agent_call", { user: me.email, dims: { tool: String(p.name), ok, ms: Date.now() - started, client: me.client } }));
       break;
     }
     case "resources/list":
