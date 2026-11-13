@@ -1,8 +1,8 @@
-import { a as e, c as t, i as n, o as r, r as i, s as a, t as o } from "./main-Chu17qvR.js";
-import { p as s } from "./Field-Dw4795OZ.js";
+import { a as e, c as t, i as n, l as r, o as i, r as a, s as o, t as s } from "./main-CWvGoLdq.js";
+import { p as c } from "./Field-dpYXm9AU.js";
 // svelte/navigation.ts
-function c(e, n, r) {
-	let i = (e) => e == null ? e : t(e, n(), r);
+function l(e, t, n) {
+	let i = (e) => e == null ? e : r(e, t(), n);
 	return {
 		pushState(t, n, r) {
 			e.pushState(t, n, i(r));
@@ -13,16 +13,16 @@ function c(e, n, r) {
 	};
 }
 // svelte/legacy/boardLayout.ts
-function l(e) {
+function u(e) {
 	return e.querySelector(":scope > .chat > #kanban, :scope > .doc > #kanban");
 }
-function u(e, t, n = null) {
-	let r = l(e);
+function d(e, t, n = null) {
+	let r = u(e);
 	if (!r || !t || r.parentElement === t) return;
 	let i = e.ownerDocument.activeElement, a = i instanceof HTMLElement && r.contains(i) ? i : null;
 	t.insertBefore(r, n?.parentNode === t ? n : null), a?.focus({ preventScroll: !0 });
 }
-function d(e, t, n) {
+function ee(e, t, n) {
 	let r = !1, i = () => {
 		!r && e.isConnected && !t.matches && e.classList.contains("boardview") && n();
 	};
@@ -31,82 +31,90 @@ function d(e, t, n) {
 	};
 }
 // svelte/roomConnection.ts
-var ee = 1e4;
-function te(e) {
-	let t = e.schedule ?? setTimeout, n = e.cancel ?? clearTimeout, i = e.createSocket ?? ((e) => new WebSocket(e)), o = null, s, c, l = !1, u = !1, d = 0, te = "", f = /* @__PURE__ */ new Map(), ne = Math.random().toString(36).slice(2, 8), p = 0, re = (e, t) => {
-		let r = f.get(e);
-		r && (f.delete(e), n(r.timer), r.done(t));
-	}, m = (e) => {
-		for (let t of [...f.keys()]) re(t, {
+var te = 1e4;
+function ne(e) {
+	let n = e.schedule ?? setTimeout, r = e.cancel ?? clearTimeout, i = e.createSocket ?? ((e) => new WebSocket(e)), a = null, s, c, l = !1, u = !1, d = 0, ee = "", ne = /* @__PURE__ */ new Map(), f = Math.random().toString(36).slice(2, 8), re = 0, p = (e, t) => {
+		let n = ne.get(e);
+		n && (ne.delete(e), r(n.timer), n.done(t));
+	}, ie = (e) => {
+		for (let t of [...ne.keys()]) p(t, {
 			ok: !1,
 			error: e
 		});
-	}, ie = () => {
-		s !== void 0 && n(s), c !== void 0 && n(c), s = c = void 0;
+	}, m = () => {
+		s !== void 0 && r(s), c !== void 0 && r(c), s = c = void 0;
+	}, ae = () => {
+		l = !0, m(), ie("disconnected");
+		let e = a;
+		a = null, e && (e.onopen = e.onmessage = e.onclose = null, e.close());
 	}, h = () => {
-		l = !0, ie(), m("disconnected");
-		let e = o;
-		o = null, e && (e.onopen = e.onmessage = e.onclose = null, e.close());
-	}, g = () => {
 		if (l) return;
 		s = void 0;
-		let n = i(e.url(te));
-		o = n;
-		let a = () => !l && o === n;
-		n.onopen = () => {
-			a() && (c = t(() => {
-				a() && (c = void 0, n.readyState === 1 && (d = 0));
+		let t = i(e.url(ee));
+		a = t;
+		let r = () => !l && a === t;
+		t.onopen = () => {
+			r() && (c = n(() => {
+				r() && (c = void 0, t.readyState === 1 && (d = 0));
 			}, 15e3));
-		}, n.onmessage = (t) => {
-			if (!a()) return;
-			let n = r(t.data);
-			n.t === "result" ? re(n.cid, n.ok ? { ok: !0 } : {
+		}, t.onmessage = (t) => {
+			if (!r()) return;
+			let n = o(t.data);
+			n.t === "result" ? p(n.cid, n.ok ? { ok: !0 } : {
 				ok: !1,
 				error: n.error
 			}) : (n.t === "state" && (u = !0), e.onEvent(n));
-		}, n.onclose = (r) => {
-			a() && (o = null, ie(), m("disconnected"), n.onopen = n.onmessage = n.onclose = null, r.code === 4003 ? (h(), e.onRemoved()) : !u && r.code !== 1e3 ? (h(), e.onUnavailable()) : (te = String(r.code || ""), s = t(g, Math.min(3e4, 1e3 * 2 ** d++))));
+		}, t.onclose = (i) => {
+			r() && (a = null, m(), ie("disconnected"), t.onopen = t.onmessage = t.onclose = null, i.code === 4003 ? (ae(), e.onRemoved()) : !u && i.code !== 1e3 ? (ae(), e.onUnavailable()) : (ee = String(i.code || ""), s = n(h, Math.min(3e4, 1e3 * 2 ** d++))));
 		};
 	};
 	return {
 		start() {
-			!o && s === void 0 && !l && g();
+			!a && s === void 0 && !l && h();
 		},
-		dispose: h,
+		dispose: ae,
 		send(e) {
-			return a(o, e);
+			return t(a, e);
 		},
-		request(e, n = ee) {
-			let r = `${ne}-${++p}`;
-			return new Promise((i) => {
-				if (!a(o, e, r)) return i({
+		request(e, r = te) {
+			let i = `${f}-${++re}`;
+			return new Promise((o) => {
+				if (!t(a, e, i)) return o({
 					ok: !1,
 					error: "offline"
 				});
-				f.set(r, {
-					done: i,
-					timer: t(() => re(r, {
+				ne.set(i, {
+					done: o,
+					timer: n(() => p(i, {
 						ok: !1,
 						error: "timeout"
-					}), n)
+					}), r)
 				});
 			});
 		},
 		resync() {
-			o?.close();
+			a?.close();
 		}
 	};
 }
 // svelte/legacy/host.js
-var f = c(history, () => location.href, "svelte"), ne = document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] || (/^pt/i.test(navigator.language) ? "pt" : /^en/i.test(navigator.language) ? "en" : "pt");
-document.documentElement.lang = ne === "en" ? "en" : "pt-BR";
-var p = ne === "en" ? "en-US" : "pt-BR", re = {
+var f = l(history, () => location.href, "svelte"), re = document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1] || (/^pt/i.test(navigator.language) ? "pt" : /^en/i.test(navigator.language) ? "en" : "pt");
+document.documentElement.lang = re === "en" ? "en" : "pt-BR";
+var p = re === "en" ? "en-US" : "pt-BR", ie = {
 	"Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
 	"Não deu pra resolver agora. Tente de novo.": "Couldn't resolve this request. Try again.",
 	"Dono: {who}": "Owner: {who}",
 	"clique pra trocar": "click to change",
 	"Sem dono · clique pra escolher": "No owner · click to pick one",
 	"Dono do épico": "Epic owner",
+	"Ordem dos épicos atualizada.": "Epic order updated.",
+	"Abrir galho": "Expand branch",
+	"Fechar galho": "Collapse branch",
+	"Subépico de {title}": "Sub-epic of {title}",
+	"Trabalho em um subépico": "Work in a sub-epic",
+	"Ações do épico": "Epic actions",
+	"Mover para cima": "Move up",
+	"Mover para baixo": "Move down",
 	"Sem dono": "No owner",
 	"app da sala": "room app",
 	arquivo: "file",
@@ -725,12 +733,12 @@ var p = ne === "en" ? "en-US" : "pt-BR", re = {
 	"Documento vazio. Clique em <b>Editar</b> ou peça pro seu agent resumir as decisões aqui.": "Empty doc. Click <b>Edit</b> or ask your agent to summarize the decisions here.",
 	"@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).": "@vibe reviewed this doc. Everyone's agent gets this too (doc_notes)."
 }, m = (e, t) => {
-	let n = ne === "en" && re[e] !== void 0 ? re[e] : e;
+	let n = re === "en" && ie[e] !== void 0 ? ie[e] : e;
 	return t ? n.replace(/\{(\w+)\}/g, (e, n) => n in t ? String(t[n]) : e) : n;
-}, ie = () => `<span class="langSw" role="group" aria-label="Idioma / Language">${["pt", "en"].map((e) => `<button type="button" class="${ne === e ? "sel" : ""}" data-lang="${e}" aria-pressed="${ne === e}">${e.toUpperCase()}</button>`).join("<i>·</i>")}</span>`;
+}, ae = () => `<span class="langSw" role="group" aria-label="Idioma / Language">${["pt", "en"].map((e) => `<button type="button" class="${re === e ? "sel" : ""}" data-lang="${e}" aria-pressed="${re === e}">${e.toUpperCase()}</button>`).join("<i>·</i>")}</span>`;
 document.addEventListener("click", (e) => {
 	let t = e.target.closest?.("[data-lang]");
-	t && t.dataset.lang !== ne && (document.cookie = `vb_lang=${t.dataset.lang}; path=/; max-age=31536000; samesite=lax`, location.reload());
+	t && t.dataset.lang !== re && (document.cookie = `vb_lang=${t.dataset.lang}; path=/; max-age=31536000; samesite=lax`, location.reload());
 });
 var h = document.getElementById("app"), g = (e) => String(e ?? "").replace(/[&<>"']/g, (e) => ({
 	"&": "&amp;",
@@ -738,7 +746,7 @@ var h = document.getElementById("app"), g = (e) => String(e ?? "").replace(/[&<>
 	">": "&gt;",
 	"\"": "&quot;",
 	"'": "&#39;"
-})[e]), ae = [
+})[e]), oe = [
 	"#ff5a36",
 	"#1f9d8a",
 	"#3b6cf6",
@@ -747,44 +755,44 @@ var h = document.getElementById("app"), g = (e) => String(e ?? "").replace(/[&<>
 	"#0f766e",
 	"#be185d",
 	"#4d7c0f"
-], _ = (e) => ae[[...e].reduce((e, t) => e + t.charCodeAt(0), 0) % ae.length], oe = {}, v = (e) => e === "ai" ? "@vibe" : j?.names?.[e] || oe[e] || e.split("@")[0], se = {}, y = (e, t) => {
+], _ = (e) => oe[[...e].reduce((e, t) => e + t.charCodeAt(0), 0) % oe.length], se = {}, v = (e) => e === "ai" ? "@vibe" : A?.names?.[e] || se[e] || e.split("@")[0], ce = {}, y = (e, t) => {
 	if (e === "ai") return "<span class=\"avatar ai\">✦</span>";
-	let n = j?.avatars?.[e] ?? se[e];
+	let n = A?.avatars?.[e] ?? ce[e];
 	return n ? `<span class="avatar pic ${t ? "on" : ""}" title="${g(v(e))}"><img src="/api/avatar/${encodeURIComponent(e)}?v=${n}" alt="" loading="lazy" /></span>` : `<span class="avatar ${t ? "on" : ""}" style="background:${_(e)}" title="${g(v(e))}">${g(v(e).slice(0, 2).toUpperCase())}</span>`;
-}, ce = (e) => {
+}, b = (e) => {
 	let t = String(e || "");
 	return /codex|gpt|openai|\bo[1-9]\b/i.test(t) ? ["codex", "◎"] : /gemini/i.test(t) ? ["gemini", "✦"] : /cursor/i.test(t) ? ["cursor", "▲"] : /copilot/i.test(t) ? ["copilot", "◉"] : ["", "✻"];
 }, le = (e, t) => {
-	let [n, r] = ce(t);
+	let [n, r] = b(t);
 	return `<span class="avatar claude${n ? ` ${n}` : ""}" title="${m("{via} de {who}", {
-		via: g(Sa(t) || "Agent"),
+		via: g(Ca(t) || "Agent"),
 		who: g(v(e))
 	})}">${r}${y(e)}</span>`;
-}, b = (e) => {
+}, x = (e) => {
 	let t = Math.round((Date.now() - e) / 6e4);
 	return t < 1 ? m("agora") : t < 60 ? `${t} min` : t < 1440 ? `${Math.round(t / 60)} h` : `${Math.round(t / 1440)} d`;
 }, ue = (e) => e.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, ""), de = (e) => {
 	let t = e.split("@")[0];
 	return [
-		ue(j?.names?.[e]?.split(/\s+/)[0] || oe[e]?.split(/\s+/)[0] || ""),
+		ue(A?.names?.[e]?.split(/\s+/)[0] || se[e]?.split(/\s+/)[0] || ""),
 		ue(t.split(/[._+-]/)[0]),
 		ue(t)
 	].filter(Boolean);
 }, fe = (e) => de(e)[0], pe = (e) => {
 	let t = ue(e);
-	return t === "vibe" || t === "ai" ? "ai" : (j?.members || []).find((e) => de(e).includes(t)) || null;
-}, x = (e) => e.replace(/(^|[\s(>])@([\p{L}\p{N}._-]+)/gu, (e, t, n) => {
+	return t === "vibe" || t === "ai" ? "ai" : (A?.members || []).find((e) => de(e).includes(t)) || null;
+}, me = (e) => e.replace(/(^|[\s(>])@([\p{L}\p{N}._-]+)/gu, (e, t, n) => {
 	let r = pe(n);
-	return r ? `${t}<span class="mention${r === j?.me ? " me" : ""}" title="${g(r === "ai" ? "@vibe" : r)}">@${n}</span>` : e;
-}), me = "<svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z\"/></svg>", he = (e) => e.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(pull|issues|commit)\/(\w+))?\/?(?:[?#][^"]*)?"([^>]*)>([\s\S]*?)<\/a>/g, (e, t, n, r, i, a, o, s) => {
+	return r ? `${t}<span class="mention${r === A?.me ? " me" : ""}" title="${g(r === "ai" ? "@vibe" : r)}">@${n}</span>` : e;
+}), he = "<svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z\"/></svg>", ge = (e) => e.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)(?:\/(pull|issues|commit)\/(\w+))?\/?(?:[?#][^"]*)?"([^>]*)>([\s\S]*?)<\/a>/g, (e, t, n, r, i, a, o, s) => {
 	if (/^(orgs|settings|features|marketplace|sponsors|apps|topics)$/.test(n)) return e;
 	let c = e.match(/href="([^"]*)"/)[1], l = i === "commit" ? `${n}/${r}@${a.slice(0, 7)}` : i ? `${n}/${r} #${a}` : `${n}/${r}`, u = s.replace(/<[^>]*>/g, "").trim(), d = !u || u === c || /^https?:\/\//.test(u) ? g(l) : s;
-	return `<a ${t}href="${c}"${o} class="ghchip" title="${g(l)}">${me}<span>${d}</span></a>`;
-}), ge = (e) => e.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\/books\/([0-9a-f]+)\/files\/([0-9a-f]+)"([^>]*)>([\s\S]*?)<\/a>/g, (e, t, n, r, i, a, o) => {
-	if (!j?.id || r !== j.id || n && n !== location.origin) return e;
-	let s = (j.files || []).find((e) => e.id === i) || X().flatMap((e) => e.files || []).find((e) => e.id === i), c = o.replace(/<[^>]*>/g, "").trim(), l = s?.name || (c && !/^https?:\/\//.test(c) ? c : "arquivo"), u = s ? ti(s.name) : [], d = u.length > 1 ? u.length - u.findIndex((e) => e.id === i) : 0;
-	return `<a ${t}href="/api/books/${r}/files/${i}"${a} class="fchip" title="${g(l)}">${Rt(s || { type: /\.html?$/i.test(l) ? "text/html" : "" }, 14)}<span>${g(l)}</span>${d ? `<small>v${d}</small>` : ""}</a>`;
-}), _e = JSON.parse("{\"point_up\": \"☝️\", \"point_up_2\": \"👆\", \"point_down\": \"👇\", \"point_left\": \"👈\", \"point_right\": \"👉\", \"+1\": \"👍\", \"thumbsup\": \"👍\", \"-1\": \"👎\", \"thumbsdown\": \"👎\", \"ok_hand\": \"👌\", \"clap\": \"👏\", \"pray\": \"🙏\", \"raised_hands\": \"🙌\", \"wave\": \"👋\", \"muscle\": \"💪\", \"eyes\": \"👀\", \"fire\": \"🔥\", \"rocket\": \"🚀\", \"tada\": \"🎉\", \"100\": \"💯\", \"heart\": \"❤️\", \"heart_eyes\": \"😍\", \"smile\": \"😄\", \"smiley\": \"😃\", \"grin\": \"😁\", \"joy\": \"😂\", \"rofl\": \"🤣\", \"laughing\": \"😆\", \"sweat_smile\": \"😅\", \"wink\": \"😉\", \"blush\": \"😊\", \"slightly_smiling_face\": \"🙂\", \"upside_down_face\": \"🙃\", \"thinking_face\": \"🤔\", \"thinking\": \"🤔\", \"neutral_face\": \"😐\", \"expressionless\": \"😑\", \"unamused\": \"😒\", \"roll_eyes\": \"🙄\", \"face_with_rolling_eyes\": \"🙄\", \"grimacing\": \"😬\", \"sweat\": \"😓\", \"cry\": \"😢\", \"sob\": \"😭\", \"scream\": \"😱\", \"rage\": \"😡\", \"angry\": \"😠\", \"sunglasses\": \"😎\", \"nerd_face\": \"🤓\", \"sleeping\": \"😴\", \"exploding_head\": \"🤯\", \"partying_face\": \"🥳\", \"shrug\": \"🤷\", \"facepalm\": \"🤦\", \"white_check_mark\": \"✅\", \"heavy_check_mark\": \"✔️\", \"check\": \"✔️\", \"x\": \"❌\", \"warning\": \"⚠️\", \"no_entry\": \"⛔\", \"question\": \"❓\", \"exclamation\": \"❗\", \"bulb\": \"💡\", \"memo\": \"📝\", \"pushpin\": \"📌\", \"link\": \"🔗\", \"lock\": \"🔒\", \"unlock\": \"🔓\", \"key\": \"🔑\", \"bug\": \"🐛\", \"wrench\": \"🔧\", \"hammer\": \"🔨\", \"gear\": \"⚙️\", \"zap\": \"⚡\", \"star\": \"⭐\", \"sparkles\": \"✨\", \"boom\": \"💥\", \"hourglass\": \"⌛\", \"alarm_clock\": \"⏰\", \"calendar\": \"📅\", \"chart_with_upwards_trend\": \"📈\", \"chart_with_downwards_trend\": \"📉\", \"moneybag\": \"💰\", \"money_with_wings\": \"💸\", \"dart\": \"🎯\", \"trophy\": \"🏆\", \"coffee\": \"☕\", \"beer\": \"🍺\", \"pizza\": \"🍕\", \"see_no_evil\": \"🙈\", \"hugs\": \"🤗\", \"hugging_face\": \"🤗\", \"handshake\": \"🤝\", \"crossed_fingers\": \"🤞\", \"writing_hand\": \"✍️\", \"skull\": \"💀\", \"ghost\": \"👻\", \"robot_face\": \"🤖\", \"robot\": \"🤖\", \"brain\": \"🧠\", \"speech_balloon\": \"💬\", \"mag\": \"🔍\", \"computer\": \"💻\", \"iphone\": \"📱\", \"package\": \"📦\", \"construction\": \"🚧\", \"rotating_light\": \"🚨\", \"sos\": \"🆘\", \"green_heart\": \"💚\", \"blue_heart\": \"💙\", \"purple_heart\": \"💜\", \"yellow_heart\": \"💛\", \"broken_heart\": \"💔\", \"dog\": \"🐶\", \"cat\": \"🐱\", \"sun\": \"☀️\", \"rainbow\": \"🌈\", \"rain\": \"🌧️\", \"snowflake\": \"❄️\", \"earth_americas\": \"🌎\", \"brazil\": \"🇧🇷\", \"flag-br\": \"🇧🇷\", \"checkered_flag\": \"🏁\", \"arrow_up\": \"⬆️\", \"arrow_down\": \"⬇️\", \"arrow_right\": \"➡️\", \"arrow_left\": \"⬅️\", \"heavy_plus_sign\": \"➕\", \"heavy_minus_sign\": \"➖\", \"red_circle\": \"🔴\", \"large_green_circle\": \"🟢\", \"green_circle\": \"🟢\", \"large_yellow_circle\": \"🟡\", \"yellow_circle\": \"🟡\", \"white_circle\": \"⚪\", \"black_circle\": \"⚫\"}"), ve = (e) => e.replace(/:([a-z0-9_+-]{1,40}):/g, (e, t) => _e[t] ?? e), ye = (e) => ge(he(ve(e).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (e) => `<a href="${e}" target="_blank" rel="noopener noreferrer nofollow ugc">${e}</a>`))), be = {
+	return `<a ${t}href="${c}"${o} class="ghchip" title="${g(l)}">${he}<span>${d}</span></a>`;
+}), _e = (e) => e.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\/books\/([0-9a-f]+)\/files\/([0-9a-f]+)"([^>]*)>([\s\S]*?)<\/a>/g, (e, t, n, r, i, a, o) => {
+	if (!A?.id || r !== A.id || n && n !== location.origin) return e;
+	let s = (A.files || []).find((e) => e.id === i) || Y().flatMap((e) => e.files || []).find((e) => e.id === i), c = o.replace(/<[^>]*>/g, "").trim(), l = s?.name || (c && !/^https?:\/\//.test(c) ? c : "arquivo"), u = s ? ni(s.name) : [], d = u.length > 1 ? u.length - u.findIndex((e) => e.id === i) : 0;
+	return `<a ${t}href="/api/books/${r}/files/${i}"${a} class="fchip" title="${g(l)}">${Bt(s || { type: /\.html?$/i.test(l) ? "text/html" : "" }, 14)}<span>${g(l)}</span>${d ? `<small>v${d}</small>` : ""}</a>`;
+}), ve = JSON.parse("{\"point_up\": \"☝️\", \"point_up_2\": \"👆\", \"point_down\": \"👇\", \"point_left\": \"👈\", \"point_right\": \"👉\", \"+1\": \"👍\", \"thumbsup\": \"👍\", \"-1\": \"👎\", \"thumbsdown\": \"👎\", \"ok_hand\": \"👌\", \"clap\": \"👏\", \"pray\": \"🙏\", \"raised_hands\": \"🙌\", \"wave\": \"👋\", \"muscle\": \"💪\", \"eyes\": \"👀\", \"fire\": \"🔥\", \"rocket\": \"🚀\", \"tada\": \"🎉\", \"100\": \"💯\", \"heart\": \"❤️\", \"heart_eyes\": \"😍\", \"smile\": \"😄\", \"smiley\": \"😃\", \"grin\": \"😁\", \"joy\": \"😂\", \"rofl\": \"🤣\", \"laughing\": \"😆\", \"sweat_smile\": \"😅\", \"wink\": \"😉\", \"blush\": \"😊\", \"slightly_smiling_face\": \"🙂\", \"upside_down_face\": \"🙃\", \"thinking_face\": \"🤔\", \"thinking\": \"🤔\", \"neutral_face\": \"😐\", \"expressionless\": \"😑\", \"unamused\": \"😒\", \"roll_eyes\": \"🙄\", \"face_with_rolling_eyes\": \"🙄\", \"grimacing\": \"😬\", \"sweat\": \"😓\", \"cry\": \"😢\", \"sob\": \"😭\", \"scream\": \"😱\", \"rage\": \"😡\", \"angry\": \"😠\", \"sunglasses\": \"😎\", \"nerd_face\": \"🤓\", \"sleeping\": \"😴\", \"exploding_head\": \"🤯\", \"partying_face\": \"🥳\", \"shrug\": \"🤷\", \"facepalm\": \"🤦\", \"white_check_mark\": \"✅\", \"heavy_check_mark\": \"✔️\", \"check\": \"✔️\", \"x\": \"❌\", \"warning\": \"⚠️\", \"no_entry\": \"⛔\", \"question\": \"❓\", \"exclamation\": \"❗\", \"bulb\": \"💡\", \"memo\": \"📝\", \"pushpin\": \"📌\", \"link\": \"🔗\", \"lock\": \"🔒\", \"unlock\": \"🔓\", \"key\": \"🔑\", \"bug\": \"🐛\", \"wrench\": \"🔧\", \"hammer\": \"🔨\", \"gear\": \"⚙️\", \"zap\": \"⚡\", \"star\": \"⭐\", \"sparkles\": \"✨\", \"boom\": \"💥\", \"hourglass\": \"⌛\", \"alarm_clock\": \"⏰\", \"calendar\": \"📅\", \"chart_with_upwards_trend\": \"📈\", \"chart_with_downwards_trend\": \"📉\", \"moneybag\": \"💰\", \"money_with_wings\": \"💸\", \"dart\": \"🎯\", \"trophy\": \"🏆\", \"coffee\": \"☕\", \"beer\": \"🍺\", \"pizza\": \"🍕\", \"see_no_evil\": \"🙈\", \"hugs\": \"🤗\", \"hugging_face\": \"🤗\", \"handshake\": \"🤝\", \"crossed_fingers\": \"🤞\", \"writing_hand\": \"✍️\", \"skull\": \"💀\", \"ghost\": \"👻\", \"robot_face\": \"🤖\", \"robot\": \"🤖\", \"brain\": \"🧠\", \"speech_balloon\": \"💬\", \"mag\": \"🔍\", \"computer\": \"💻\", \"iphone\": \"📱\", \"package\": \"📦\", \"construction\": \"🚧\", \"rotating_light\": \"🚨\", \"sos\": \"🆘\", \"green_heart\": \"💚\", \"blue_heart\": \"💙\", \"purple_heart\": \"💜\", \"yellow_heart\": \"💛\", \"broken_heart\": \"💔\", \"dog\": \"🐶\", \"cat\": \"🐱\", \"sun\": \"☀️\", \"rainbow\": \"🌈\", \"rain\": \"🌧️\", \"snowflake\": \"❄️\", \"earth_americas\": \"🌎\", \"brazil\": \"🇧🇷\", \"flag-br\": \"🇧🇷\", \"checkered_flag\": \"🏁\", \"arrow_up\": \"⬆️\", \"arrow_down\": \"⬇️\", \"arrow_right\": \"➡️\", \"arrow_left\": \"⬅️\", \"heavy_plus_sign\": \"➕\", \"heavy_minus_sign\": \"➖\", \"red_circle\": \"🔴\", \"large_green_circle\": \"🟢\", \"green_circle\": \"🟢\", \"large_yellow_circle\": \"🟡\", \"yellow_circle\": \"🟡\", \"white_circle\": \"⚪\", \"black_circle\": \"⚫\"}"), ye = (e) => e.replace(/:([a-z0-9_+-]{1,40}):/g, (e, t) => ve[t] ?? e), be = (e) => _e(ge(ye(e).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)"'\]]/g, (e) => `<a href="${e}" target="_blank" rel="noopener noreferrer nofollow ugc">${e}</a>`))), xe = {
 	FORBID_TAGS: [
 		"img",
 		"style",
@@ -798,22 +806,22 @@ var h = document.getElementById("app"), g = (e) => String(e ?? "").replace(/[&<>
 		"embed"
 	],
 	FORBID_ATTR: ["style"]
-}, xe = (e) => DOMPurify.sanitize(ge(he(DOMPurify.sanitize(marked.parse(ve(e), {
+}, Se = (e) => DOMPurify.sanitize(_e(ge(DOMPurify.sanitize(marked.parse(ye(e), {
 	breaks: !0,
 	gfm: !0
-}), be).replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, "<a target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" ").replace(/<a href="#m(\d+)"/g, "<a class=\"mlink\" href=\"#m$1\" data-msg=\"$1\"").replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, "<a class=\"mlink\" href=\"#$1\" data-cardgo=\"#$1\""))), {
-	...be,
+}), xe).replace(/<a (?!href="#(?:m\d+|e[\w-]+|doc[\w:-]*)")/g, "<a target=\"_blank\" rel=\"noopener noreferrer nofollow ugc\" ").replace(/<a href="#m(\d+)"/g, "<a class=\"mlink\" href=\"#m$1\" data-msg=\"$1\"").replace(/<a href="#(e[\w-]+|doc[\w:-]*)"/g, "<a class=\"mlink\" href=\"#$1\" data-cardgo=\"#$1\""))), {
+	...xe,
 	ADD_ATTR: ["target"]
-}), S = async (e, n) => {
-	let r = await fetch(e, n ? {
+}), S = async (e, t) => {
+	let n = await fetch(e, t ? {
 		method: "POST",
 		headers: { "content-type": "application/json" },
-		body: JSON.stringify(n)
+		body: JSON.stringify(t)
 	} : {});
-	if (r.status === 401) throw location.href = t(`/login?next=${encodeURIComponent(location.pathname + location.search)}`, location.href, "svelte"), Error("unauthenticated");
-	if (!r.ok) throw Error((await r.json().catch(() => ({}))).error || r.statusText);
-	return r.json();
-}, C = document.getElementById("switcher"), w = null, T = [], Se = (e) => e.some((e) => /^[ab]\d/.test(e.ref)) ? " cl" : "", Ce = {
+	if (n.status === 401) throw location.href = r(`/login?next=${encodeURIComponent(location.pathname + location.search)}`, location.href, "svelte"), Error("unauthenticated");
+	if (!n.ok) throw Error((await n.json().catch(() => ({}))).error || n.statusText);
+	return n.json();
+}, Ce = document.getElementById("switcher"), C = null, w = [], we = (e) => e.some((e) => /^[ab]\d/.test(e.ref)) ? " cl" : "", Te = {
 	link: "<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/>",
 	inbox: "<path d=\"M22 12h-6l-2 3h-4l-2-3H2\"/><path d=\"M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z\"/>",
 	grid: "<rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1.5\"/>",
@@ -859,49 +867,49 @@ var h = document.getElementById("app"), g = (e) => String(e ?? "").replace(/[&<>
 	chevronRight: "<path d=\"m9 18 6-6-6-6\"/>",
 	pencil: "<path d=\"M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z\"/><path d=\"m15 5 4 4\"/>",
 	contrast: "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 17a5 5 0 0 0 0-10z\" fill=\"currentColor\"/>"
-}, E = (e, t = 16) => `<svg class="i" viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${Ce[e]}</svg>`, we = "<svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"22\" height=\"24\" rx=\"5\" fill=\"#fff\"/><rect x=\"7\" y=\"9\" width=\"11\" height=\"3\" rx=\"1.5\" fill=\"#1d5fc4\"/><rect x=\"7\" y=\"15\" width=\"8\" height=\"3\" rx=\"1.5\" fill=\"#1d5fc4\"/><circle cx=\"24\" cy=\"23\" r=\"7\" fill=\"#f2dc4a\"/></svg>", Te = E("search", 18), Ee = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.6" stroke-linecap="round">${[
+}, T = (e, t = 16) => `<svg class="i" viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${Te[e]}</svg>`, Ee = "<svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"22\" height=\"24\" rx=\"5\" fill=\"#fff\"/><rect x=\"7\" y=\"9\" width=\"11\" height=\"3\" rx=\"1.5\" fill=\"#1d5fc4\"/><rect x=\"7\" y=\"15\" width=\"8\" height=\"3\" rx=\"1.5\" fill=\"#1d5fc4\"/><circle cx=\"24\" cy=\"23\" r=\"7\" fill=\"#f2dc4a\"/></svg>", De = T("search", 18), Oe = `<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.6" stroke-linecap="round">${[
 	0,
 	60,
 	120
-].map((e) => `<line x1="12" y1="3.5" x2="12" y2="20.5" transform="rotate(${e} 12 12)"/>`).join("")}</g></svg>`, De = E("plus", 18);
+].map((e) => `<line x1="12" y1="3.5" x2="12" y2="20.5" transform="rotate(${e} 12 12)"/>`).join("")}</g></svg>`, ke = T("plus", 18);
 if (window.visualViewport) {
 	let e = () => {
 		document.documentElement.style.setProperty("--vvh", `${Math.round(visualViewport.height)}px`), innerWidth <= 900 && scrollY && document.querySelector(".book") && scrollTo(0, 0);
 	};
 	visualViewport.addEventListener("resize", e), visualViewport.addEventListener("scroll", e), e();
 }
-var D = {
+var E = {
 	auto: {
 		label: m("Tema automático (do sistema)"),
 		next: "light",
-		icon: E("contrast", 18)
+		icon: T("contrast", 18)
 	},
 	light: {
 		label: m("Tema claro"),
 		next: "dark",
-		icon: E("sun", 18)
+		icon: T("sun", 18)
 	},
 	dark: {
 		label: m("Tema escuro"),
 		next: "auto",
-		icon: E("moon", 18)
+		icon: T("moon", 18)
 	}
-}, O = () => document.documentElement.dataset.theme || "auto";
-function Oe(e) {
+}, D = () => document.documentElement.dataset.theme || "auto";
+function Ae(e) {
 	e === "auto" ? delete document.documentElement.dataset.theme : document.documentElement.dataset.theme = e;
 	try {
 		e === "auto" ? localStorage.removeItem("vb.theme") : localStorage.setItem("vb.theme", e);
 	} catch {}
-	k();
+	O();
 }
-var ke = {
+var je = {
 	blue: m("azul"),
 	green: m("verde"),
 	yellow: m("amarelo"),
 	orange: m("laranja"),
 	pink: m("rosa"),
 	purple: m("roxo")
-}, Ae = Object.keys(ke);
+}, Me = Object.keys(je);
 document.addEventListener("click", (e) => {
 	let t = document.getElementById("tintPop");
 	t && !t.hidden && !t.contains(e.target) && (t.hidden = !0);
@@ -911,47 +919,47 @@ document.addEventListener("click", (e) => {
 		e && (e.hidden = !0);
 	}
 });
-var je = () => [...w || []].sort((e, t) => (e.position ?? 1e9) - (t.position ?? 1e9) || (e.created_at ?? 0) - (t.created_at ?? 0)), Me = (e) => e?.icon ? `/api/books/${e.id}/icon?v=${e.icon}` : null, Ne = (e, t) => Me(e) ? `<span class="tile ${t} hasIcon"><img src="${Me(e)}" alt="" loading="lazy"></span>` : `<span class="tile ${t}" style="background:${xn(e.title)}">${g(F(e.title))}</span>`;
-function Pe(e) {
-	let t = w?.find((e) => e.id === j?.id);
+var Ne = () => [...C || []].sort((e, t) => (e.position ?? 1e9) - (t.position ?? 1e9) || (e.created_at ?? 0) - (t.created_at ?? 0)), Pe = (e) => e?.icon ? `/api/books/${e.id}/icon?v=${e.icon}` : null, Fe = (e, t) => Pe(e) ? `<span class="tile ${t} hasIcon"><img src="${Pe(e)}" alt="" loading="lazy"></span>` : `<span class="tile ${t}" style="background:${wn(e.title)}">${g(P(e.title))}</span>`;
+function Ie(e) {
+	let t = C?.find((e) => e.id === A?.id);
 	t && e > t.read_id && (t.read_id = e);
 }
-function Fe() {
+function Le() {
 	document.body.classList.contains("has-sw") && S("/api/me?ui=svelte").then((e) => {
-		rt(e);
-		let t = JSON.stringify(wr());
-		w = e.books, T = e.waits || [], j?.messages?.length && Pe(j.messages.at(-1).id), k(), j && JSON.stringify(wr()) !== t && (z(), Z(!0));
+		at(e);
+		let t = JSON.stringify(Dr());
+		C = e.books, w = e.waits || [], A?.messages?.length && Ie(A.messages.at(-1).id), O(), A && JSON.stringify(Dr()) !== t && (R(), X(!0));
 	}).catch(() => {});
 }
-var Ie = null, Le = 0, Re = 0, ze = 0;
-function Be() {
-	Ie && Ie.readyState <= 1 || (Ie = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws-me`), Ie.onopen = () => {
-		Le = 0;
-	}, Ie.onmessage = (e) => {
+var Re = null, ze = 0, Be = 0, Ve = 0;
+function He() {
+	Re && Re.readyState <= 1 || (Re = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws-me`), Re.onopen = () => {
+		ze = 0;
+	}, Re.onmessage = (e) => {
 		let t;
 		try {
 			t = JSON.parse(e.data);
 		} catch {
 			return;
 		}
-		t.t === "me" && !(t.msg && t.book && t.book === j?.id) && (clearTimeout(Re), Re = setTimeout(Fe, 600)), t.t === "agents" && (t.book === "*" || t.book === j?.id) && (clearTimeout(ze), ze = setTimeout(Mn, 600));
-	}, Ie.onclose = () => {
-		Ie = null, document.visibilityState === "visible" && setTimeout(Be, Math.min(3e4, 1e3 * 2 ** Le++));
+		t.t === "me" && !(t.msg && t.book && t.book === A?.id) && (clearTimeout(Be), Be = setTimeout(Le, 600)), t.t === "agents" && (t.book === "*" || t.book === A?.id) && (clearTimeout(Ve), Ve = setTimeout(Fn, 600));
+	}, Re.onclose = () => {
+		Re = null, document.visibilityState === "visible" && setTimeout(He, Math.min(3e4, 1e3 * 2 ** ze++));
 	});
 }
 document.addEventListener("visibilitychange", () => {
-	document.visibilityState === "visible" && document.body.classList.contains("has-sw") && (Fe(), Mn(), Be());
+	document.visibilityState === "visible" && document.body.classList.contains("has-sw") && (Le(), Fn(), He());
 });
-var Ve = "";
-function k() {
-	Tt();
-	let e = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1], t = !!w && location.pathname !== "/login";
+var Ue = "";
+function O() {
+	Dt();
+	let e = location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1], t = !!C && location.pathname !== "/login";
 	if (document.body.classList.toggle("has-sw", t), !t) {
-		C.innerHTML = "";
+		Ce.innerHTML = "";
 		return;
 	}
 	let n = [];
-	for (let e of je()) {
+	for (let e of Ne()) {
 		let t = n.at(-1);
 		t && e.tint && t.tint === e.tint ? t.rooms.push(e) : n.push({
 			tint: e.tint || null,
@@ -959,25 +967,25 @@ function k() {
 		});
 	}
 	let r = (e) => e.last_human_id > e.read_id ? `<b class="dot h" title="${m("mensagens novas")}"></b>` : e.last_agent_id > e.read_id ? `<b class="dot a" title="${m("agents escreveram")}"></b>` : "", i = (e) => e.busy_until > Date.now() ? `<b class="swBusy" title="${m("um agent está trabalhando aqui")}">✻</b>` : "", a = (e) => {
-		let t = T.filter((t) => t.book_id === e.id), n = t.length;
-		return n ? `<b class="swWait${Se(t)}" title="${n === 1 ? m("1 coisa esperando você") : m("{n} coisas esperando você", { n })}">${n}</b>` : "";
-	}, o = (e) => e.sandboxes_running ? `<b class="swCloud" title="${m("sandbox na nuvem rodando")}">☁</b>` : "", s = (e) => `<a class="sw-item" href="/b/${e.id}" data-nav data-id="${e.id}" draggable="true" data-drag aria-label="${g(e.title)}"><i class="pill"></i><span class="tw${e.sandboxes_running ? " cloud" : ""}">${Ne(e, "lg")}${r(e)}${i(e)}${a(e)}${o(e)}</span></a>`, c = `<a class="sw-item" href="/app" data-nav title="${m("Seus vibebooks")}" aria-label="${m("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${we}</span></a>
+		let t = w.filter((t) => t.book_id === e.id), n = t.length;
+		return n ? `<b class="swWait${we(t)}" title="${n === 1 ? m("1 coisa esperando você") : m("{n} coisas esperando você", { n })}">${n}</b>` : "";
+	}, o = (e) => e.sandboxes_running ? `<b class="swCloud" title="${m("sandbox na nuvem rodando")}">☁</b>` : "", s = (e) => `<a class="sw-item" href="/b/${e.id}" data-nav data-id="${e.id}" draggable="true" data-drag aria-label="${g(e.title)}"><i class="pill"></i><span class="tw${e.sandboxes_running ? " cloud" : ""}">${Fe(e, "lg")}${r(e)}${i(e)}${a(e)}${o(e)}</span></a>`, c = `<a class="sw-item" href="/app" data-nav title="${m("Seus vibebooks")}" aria-label="${m("Seus vibebooks")}"><i class="pill"></i><span class="tile lg logo">${Ee}</span></a>
     <span class="sw-sep"></span>
     ${n.map((e) => e.tint ? `<div class="sw-group" data-tint="${e.tint}">${e.rooms.map(s).join("")}</div>` : s(e.rooms[0])).join("")}
     <span class="sw-sp"></span>
-    <button class="sw-btn" id="swTheme" title="${m("{theme} (clique pra trocar)", { theme: D[O()].label })}" aria-label="${m("Tema: {theme}", { theme: D[O()].label })}">${D[O()].icon}</button>
-    <button class="sw-btn" id="swSearch" title="${m("Ir para um vibebook (⌘K)")}" aria-label="${m("Ir para um vibebook")}">${Te}</button>
-    <button class="sw-btn" id="swNew" title="${m("Novo vibebook")}" aria-label="${m("Novo vibebook")}">${De}</button>`, l = () => {
-		C.querySelectorAll(".sw-item").forEach((t) => {
+    <button class="sw-btn" id="swTheme" title="${m("{theme} (clique pra trocar)", { theme: E[D()].label })}" aria-label="${m("Tema: {theme}", { theme: E[D()].label })}">${E[D()].icon}</button>
+    <button class="sw-btn" id="swSearch" title="${m("Ir para um vibebook (⌘K)")}" aria-label="${m("Ir para um vibebook")}">${De}</button>
+    <button class="sw-btn" id="swNew" title="${m("Novo vibebook")}" aria-label="${m("Novo vibebook")}">${ke}</button>`, l = () => {
+		Ce.querySelectorAll(".sw-item").forEach((t) => {
 			let n = t.dataset.id ? t.dataset.id === e : location.pathname === "/app";
 			t.classList.toggle("on", n), n ? t.setAttribute("aria-current", "page") : t.removeAttribute("aria-current");
-		}), C.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+		}), Ce.querySelector(".on")?.scrollIntoView({ block: "nearest" });
 	};
-	if (c === Ve) return l();
-	Ve = c, C.innerHTML = c, l(), C.querySelectorAll("[data-drag]").forEach((e) => e.oncontextmenu = (t) => {
+	if (c === Ue) return l();
+	Ue = c, Ce.innerHTML = c, l(), Ce.querySelectorAll("[data-drag]").forEach((e) => e.oncontextmenu = (t) => {
 		t.preventDefault();
-		let n = w.find((t) => t.id === e.dataset.id), r = document.getElementById("tintPop");
-		r.innerHTML = `<small>${g(n.title)}</small><div>${[null, ...Ae].map((e) => `<button data-tint="${e || ""}" class="${(n.tint || null) === e ? "sel" : ""}" title="${e ? ke[e] : m("sem cor")}" aria-label="${e ? ke[e] : m("sem cor")}"></button>`).join("")}</div>
+		let n = C.find((t) => t.id === e.dataset.id), r = document.getElementById("tintPop");
+		r.innerHTML = `<small>${g(n.title)}</small><div>${[null, ...Me].map((e) => `<button data-tint="${e || ""}" class="${(n.tint || null) === e ? "sel" : ""}" title="${e ? je[e] : m("sem cor")}" aria-label="${e ? je[e] : m("sem cor")}"></button>`).join("")}</div>
       <p class="iconRow"><label class="ghost">${m("Trocar ícone…")}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico" hidden></label>${n.icon ? `<button class="ghost" data-noicon>${m("Tirar ícone")}</button>` : ""}</p>`, r.querySelector("input[type=file]").onchange = async (e) => {
 			let t = e.target.files[0];
 			if (t) {
@@ -986,22 +994,22 @@ function k() {
 					let e = await fetch(`/api/books/${n.id}/icon`, {
 						method: "POST",
 						headers: { "content-type": "image/png" },
-						body: await wn(t, 128)
+						body: await Dn(t, 128)
 					}).then((e) => e.json());
 					if (e.error) throw Error(e.error);
-					n.icon = e.icon, k(), j?.id === n.id && (Tn(P()), z());
+					n.icon = e.icon, O(), A?.id === n.id && (On(N()), R());
 				} catch (e) {
 					alert(e.message || m("Não deu pra usar essa imagem."));
 				}
 			}
 		}, r.querySelector("[data-noicon]")?.addEventListener("click", async () => {
-			r.hidden = !0, await S(`/api/books/${n.id}/icon`, {}), n.icon = null, k(), j?.id === n.id && (Tn(P()), z());
+			r.hidden = !0, await S(`/api/books/${n.id}/icon`, {}), n.icon = null, O(), A?.id === n.id && (On(N()), R());
 		});
 		let i = e.getBoundingClientRect();
 		r.style.top = `${i.top}px`, r.hidden = !1, r.querySelectorAll("button[data-tint]").forEach((e) => e.onclick = () => {
-			n.tint = e.dataset.tint || null, r.hidden = !0, k(), S(`/api/books/${n.id}/tint`, { tint: n.tint }).catch(() => {});
+			n.tint = e.dataset.tint || null, r.hidden = !0, O(), S(`/api/books/${n.id}/tint`, { tint: n.tint }).catch(() => {});
 		});
-	}), C.querySelectorAll("[data-drag]").forEach((e) => {
+	}), Ce.querySelectorAll("[data-drag]").forEach((e) => {
 		e.ondragstart = (t) => {
 			t.dataTransfer.setData("text/plain", e.dataset.id), t.dataTransfer.effectAllowed = "move";
 		}, e.ondragover = (t) => {
@@ -1010,50 +1018,50 @@ function k() {
 			t.preventDefault(), e.classList.remove("dropTo");
 			let n = t.dataTransfer.getData("text/plain"), r = e.dataset.id;
 			if (!n || n === r) return;
-			let i = je().map((e) => e.id).filter((e) => e !== n), a = e.getBoundingClientRect();
+			let i = Ne().map((e) => e.id).filter((e) => e !== n), a = e.getBoundingClientRect();
 			i.splice(i.indexOf(r) + +(t.clientY > a.top + a.height / 2), 0, n), i.forEach((e, t) => {
-				let n = w.find((t) => t.id === e);
+				let n = C.find((t) => t.id === e);
 				n && (n.position = t);
-			}), k(), S("/api/rooms/order", { ids: i }).catch(() => {});
+			}), O(), S("/api/rooms/order", { ids: i }).catch(() => {});
 		};
-	}), document.getElementById("swSearch").onclick = Ze, document.getElementById("swTheme").onclick = () => Oe(D[O()].next), document.getElementById("swNew").onclick = () => ht();
+	}), document.getElementById("swSearch").onclick = $e, document.getElementById("swTheme").onclick = () => Ae(E[D()].next), document.getElementById("swNew").onclick = () => _t();
 }
-var He = document.getElementById("swTip");
-C.addEventListener("mouseover", (e) => {
-	let t = e.target.closest(".sw-item[data-id]"), n = t && w?.find((e) => e.id === t.dataset.id);
+var We = document.getElementById("swTip");
+Ce.addEventListener("mouseover", (e) => {
+	let t = e.target.closest(".sw-item[data-id]"), n = t && C?.find((e) => e.id === t.dataset.id);
 	if (!n) {
-		He.hidden = !0;
+		We.hidden = !0;
 		return;
 	}
-	let r = (n.members || "").split(",").filter(Boolean).length, i = n.id === j?.id ? "" : n.last_human_id > n.read_id ? `<span class="tn h">● ${m("mensagens novas")}</span>` : n.last_agent_id > n.read_id ? `<span class="tn a">● ${m("agents escreveram")}</span>` : "";
-	He.innerHTML = `<b>${g(n.title)}</b>${n.summary ? `<span>${g(n.summary)}</span>` : ""}
-    <small>${n.folder ? `${E("folder", 12)} ${g(n.folder)} · ` : ""}${r === 1 ? m("1 pessoa") : m("{n} pessoas", { n: r })} · ${b(n.updated_at) === m("agora") ? m("ativa agora") : m("ativa há {ago}", { ago: b(n.updated_at) })}</small>${i}`;
+	let r = (n.members || "").split(",").filter(Boolean).length, i = n.id === A?.id ? "" : n.last_human_id > n.read_id ? `<span class="tn h">● ${m("mensagens novas")}</span>` : n.last_agent_id > n.read_id ? `<span class="tn a">● ${m("agents escreveram")}</span>` : "";
+	We.innerHTML = `<b>${g(n.title)}</b>${n.summary ? `<span>${g(n.summary)}</span>` : ""}
+    <small>${n.folder ? `${T("folder", 12)} ${g(n.folder)} · ` : ""}${r === 1 ? m("1 pessoa") : m("{n} pessoas", { n: r })} · ${x(n.updated_at) === m("agora") ? m("ativa agora") : m("ativa há {ago}", { ago: x(n.updated_at) })}</small>${i}`;
 	let a = t.querySelector(".tile").getBoundingClientRect();
-	He.style.top = `${a.top + a.height / 2}px`, He.hidden = !1;
-}), C.addEventListener("mouseleave", () => He.hidden = !0), C.addEventListener("click", () => He.hidden = !0);
-var Ue = document.getElementById("swDlg"), A = document.getElementById("swQ"), We = document.getElementById("swList");
-C.setAttribute("aria-label", m("Seus vibebooks")), Ue.setAttribute("aria-label", m("Ir para um vibebook")), A.placeholder = m("Buscar salas, conversas e arquivos…");
-var Ge = 0;
-function Ke() {
-	let e = ue(A.value), t = (w || []).filter((t) => !e || ue(t.title).includes(e) || ue(t.folder || "").includes(e)).slice(0, 12);
-	Ge = Math.min(Ge, Math.max(0, t.length - 1));
-	let n = qe && qe.q === A.value.trim() ? qe : null;
-	We.innerHTML = (t.map((e, t) => `<a href="/b/${e.id}" data-nav class="${t === Ge ? "sel" : ""}" role="option">${Ne(e, "")}<span>${g(e.title)}</span>${e.folder ? `<small>${g(e.folder)}</small>` : ""}</a>`).join("") || (n?.epics.length || n?.messages.length ? "" : `<p class="muted" style="padding:8px 10px;margin:0">${m("Nada com esse nome.")}</p>`)) + Ye(n);
+	We.style.top = `${a.top + a.height / 2}px`, We.hidden = !1;
+}), Ce.addEventListener("mouseleave", () => We.hidden = !0), Ce.addEventListener("click", () => We.hidden = !0);
+var Ge = document.getElementById("swDlg"), k = document.getElementById("swQ"), Ke = document.getElementById("swList");
+Ce.setAttribute("aria-label", m("Seus vibebooks")), Ge.setAttribute("aria-label", m("Ir para um vibebook")), k.placeholder = m("Buscar salas, conversas e arquivos…");
+var qe = 0;
+function Je() {
+	let e = ue(k.value), t = (C || []).filter((t) => !e || ue(t.title).includes(e) || ue(t.folder || "").includes(e)).slice(0, 12);
+	qe = Math.min(qe, Math.max(0, t.length - 1));
+	let n = Ye && Ye.q === k.value.trim() ? Ye : null;
+	Ke.innerHTML = (t.map((e, t) => `<a href="/b/${e.id}" data-nav class="${t === qe ? "sel" : ""}" role="option">${Fe(e, "")}<span>${g(e.title)}</span>${e.folder ? `<small>${g(e.folder)}</small>` : ""}</a>`).join("") || (n?.epics.length || n?.messages.length ? "" : `<p class="muted" style="padding:8px 10px;margin:0">${m("Nada com esse nome.")}</p>`)) + Ze(n);
 }
-var qe = null, Je = 0, Ye = (e) => {
-	if (!e) return A.value.trim().length >= 2 ? `<p class="muted swHint">${m("Buscando nas conversas…")}</p>` : "";
+var Ye = null, Xe = 0, Ze = (e) => {
+	if (!e) return k.value.trim().length >= 2 ? `<p class="muted swHint">${m("Buscando nas conversas…")}</p>` : "";
 	let t = (e) => new Date(e).toLocaleDateString(p, {
 		day: "numeric",
 		month: "short"
-	}), n = e.epics.map((e) => `<a href="/b/${e.room_id}?t=${e.id}" data-hit="${e.room_id}|${e.id}|" role="option"><span class="hitIco">${e.archived ? "✓" : "#"}</span><span><b>${g(e.title)}</b><small>${g(e.room)}${e.archived ? ` · ${m("arquivado")}` : ""} · ${t(e.ts)}</small></span></a>`).join(""), r = e.messages.map((e) => `<a href="/b/${e.room_id}${e.thread === "main" ? "" : `?t=${e.thread}`}#m${e.id}" data-hit="${e.room_id}|${e.thread}|${e.id}" role="option"><span class="hitIco">${e.files.length ? E("paperclip", 14) : e.by_agent ? "✻" : "“"}</span><span><span class="hitTxt">${g(e.snippet || e.files.map((e) => e.name).join(", "))}</span><small>${g(e.room)}${e.topic ? ` › ${g(e.topic)}` : ""} · ${g(e.by_agent ? e.via || "Agent" : v(e.author))} · ${t(e.ts)}${e.files.length && e.snippet ? ` · ${g(e.files.map((e) => e.name).join(", "))}` : ""}</small></span></a>`).join("");
+	}), n = e.epics.map((e) => `<a href="/b/${e.room_id}?t=${e.id}" data-hit="${e.room_id}|${e.id}|" role="option"><span class="hitIco">${e.archived ? "✓" : "#"}</span><span><b>${g(e.title)}</b><small>${g(e.room)}${e.archived ? ` · ${m("arquivado")}` : ""} · ${t(e.ts)}</small></span></a>`).join(""), r = e.messages.map((e) => `<a href="/b/${e.room_id}${e.thread === "main" ? "" : `?t=${e.thread}`}#m${e.id}" data-hit="${e.room_id}|${e.thread}|${e.id}" role="option"><span class="hitIco">${e.files.length ? T("paperclip", 14) : e.by_agent ? "✻" : "“"}</span><span><span class="hitTxt">${g(e.snippet || e.files.map((e) => e.name).join(", "))}</span><small>${g(e.room)}${e.topic ? ` › ${g(e.topic)}` : ""} · ${g(e.by_agent ? e.via || "Agent" : v(e.author))} · ${t(e.ts)}${e.files.length && e.snippet ? ` · ${g(e.files.map((e) => e.name).join(", "))}` : ""}</small></span></a>`).join("");
 	return !n && !r ? `<p class="muted swHint">${m("Nada nas conversas.")}</p>` : `${n ? `<p class="swSec">${m("Épicos")}</p>${n}` : ""}${r ? `<p class="swSec">${m("Nas conversas")}</p>${r}` : ""}`;
 };
-function Xe() {
-	clearTimeout(Je);
-	let e = A.value.trim();
-	e.length < 2 ? qe = null : Je = setTimeout(async () => {
+function Qe() {
+	clearTimeout(Xe);
+	let e = k.value.trim();
+	e.length < 2 ? Ye = null : Xe = setTimeout(async () => {
 		let t = await fetch(`/api/search?q=${encodeURIComponent(e)}`).catch(() => null), n = t?.ok ? await t.json() : null;
-		A.value.trim() === e && (qe = n ? {
+		k.value.trim() === e && (Ye = n ? {
 			q: e,
 			epics: n.epics || [],
 			messages: n.messages || []
@@ -1061,51 +1069,51 @@ function Xe() {
 			q: e,
 			epics: [],
 			messages: []
-		}, Ke());
+		}, Je());
 	}, 250);
 }
-function Ze() {
-	w && (s(), wt(), A.value = "", Ge = 0, qe = null, Ke(), Ue.showModal(), A.focus());
+function $e() {
+	C && (c(), Et(), k.value = "", qe = 0, Ye = null, Je(), Ge.showModal(), k.focus());
 }
-A.oninput = () => {
-	Ge = 0, Xe(), Ke();
-}, A.onkeydown = (e) => {
-	let t = We.querySelectorAll("a").length;
-	(e.key === "ArrowDown" || e.key === "ArrowUp") && (e.preventDefault(), Ge = (Ge + (e.key === "ArrowDown" ? 1 : t - 1)) % Math.max(t, 1), Ke()), e.key === "Enter" && (e.preventDefault(), We.querySelectorAll("a")[Ge]?.click());
-}, We.onclick = (e) => {
+k.oninput = () => {
+	qe = 0, Qe(), Je();
+}, k.onkeydown = (e) => {
+	let t = Ke.querySelectorAll("a").length;
+	(e.key === "ArrowDown" || e.key === "ArrowUp") && (e.preventDefault(), qe = (qe + (e.key === "ArrowDown" ? 1 : t - 1)) % Math.max(t, 1), Je()), e.key === "Enter" && (e.preventDefault(), Ke.querySelectorAll("a")[qe]?.click());
+}, Ke.onclick = (e) => {
 	let t = e.target.closest("a[data-hit]");
-	if (Ue.close(), !t) return;
+	if (Ge.close(), !t) return;
 	e.preventDefault();
 	let [n, r, i] = t.dataset.hit.split("|");
-	if (f.pushState(null, "", t.getAttribute("href")), Qe(), !i) return;
+	if (f.pushState(null, "", t.getAttribute("href")), et(), !i) return;
 	let a = 0, o = () => {
-		if (j?.id === n && j.messages?.length) return Di(Number(i));
+		if (A?.id === n && A.messages?.length) return Oi(Number(i));
 		++a < 25 && setTimeout(o, 200);
 	};
 	setTimeout(o, 150);
-}, Ue.onclick = (e) => {
-	e.target === Ue && Ue.close();
+}, Ge.onclick = (e) => {
+	e.target === Ge && Ge.close();
 }, document.addEventListener("keydown", (e) => {
-	(e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && document.body.classList.contains("has-sw") && (e.preventDefault(), Ue.open ? Ue.close() : Ze());
+	(e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && document.body.classList.contains("has-sw") && (e.preventDefault(), Ge.open ? Ge.close() : $e());
 });
-function Qe() {
-	s(), wt(), Yt(), k();
+function et() {
+	c(), Et(), Qt(), O();
 	let e = location.pathname.match(/^\/b\/([a-z0-9]+)/);
-	if (jt?.dispose(), jt = null, location.pathname === "/login") return et();
-	if (location.pathname === "/archived") return _t();
-	e ? Ut(e[1]) : at();
+	if (Nt?.dispose(), Nt = null, location.pathname === "/login") return nt();
+	if (location.pathname === "/archived") return yt();
+	e ? Gt(e[1]) : st();
 }
-var $e = "<svg width=\"18\" height=\"18\" viewBox=\"0 0 48 48\" aria-hidden=\"true\"><path fill=\"#FFC107\" d=\"M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z\"/><path fill=\"#FF3D00\" d=\"M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z\"/><path fill=\"#4CAF50\" d=\"M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z\"/><path fill=\"#1976D2\" d=\"M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z\"/></svg>";
-async function et() {
-	document.title = `${m("Entrar")} · vibebook`, Tn(null);
-	let e = new URLSearchParams(location.search), n = t(e.get("next") || "/app", location.href, "svelte"), r = await fetch("/auth/providers").then((e) => e.json()).catch(() => ({ google: !1 })), i = "", a = (e, o = "") => {
+var tt = "<svg width=\"18\" height=\"18\" viewBox=\"0 0 48 48\" aria-hidden=\"true\"><path fill=\"#FFC107\" d=\"M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z\"/><path fill=\"#FF3D00\" d=\"M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z\"/><path fill=\"#4CAF50\" d=\"M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z\"/><path fill=\"#1976D2\" d=\"M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z\"/></svg>";
+async function nt() {
+	document.title = `${m("Entrar")} · vibebook`, On(null);
+	let e = new URLSearchParams(location.search), t = r(e.get("next") || "/app", location.href, "svelte"), n = await fetch("/auth/providers").then((e) => e.json()).catch(() => ({ google: !1 })), i = "", a = (e, o = "") => {
 		h.innerHTML = `
     <div class="login"><div class="box">
       <a class="brand" href="/">vibebook</a>
       ${e === "email" ? `
         <h1>${m("Entrar")}</h1>
         <p>${m("Seus vibebooks e seus amigos te esperando.")}</p>
-        ${r.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(n)}" style="text-decoration:none"><button type="button" class="google">${$e} ${m("Continuar com Google")}</button></a>` : ""}${r.github ? `<a class="google" href="/auth/github/start?next=${encodeURIComponent(n)}" style="text-decoration:none"><button type="button" class="google">${me.replace("<svg ", "<svg width=\"18\" height=\"18\" ")} ${m("Continuar com GitHub")}</button></a>` : ""}${r.google || r.github ? `<div class="or">${m("ou com email")}</div>` : ""}
+        ${n.google ? `<a class="google" href="/auth/google/start?next=${encodeURIComponent(t)}" style="text-decoration:none"><button type="button" class="google">${tt} ${m("Continuar com Google")}</button></a>` : ""}${n.github ? `<a class="google" href="/auth/github/start?next=${encodeURIComponent(t)}" style="text-decoration:none"><button type="button" class="google">${he.replace("<svg ", "<svg width=\"18\" height=\"18\" ")} ${m("Continuar com GitHub")}</button></a>` : ""}${n.google || n.github ? `<div class="or">${m("ou com email")}</div>` : ""}
         <form id="f"><label class="muted" for="email" style="font-size:14px">${m("Seu email")}</label>
           <input id="email" type="email" autocomplete="email" required placeholder="${m("voce@gmail.com")}" value="${g(i)}" />
           <button class="primary" id="go">${m("Mandar código")}</button>
@@ -1119,8 +1127,8 @@ async function et() {
           <button type="button" class="link" id="back">${m("usar outro email")}</button></form>`}
     </div></div>`;
 		let s = document.getElementById("f");
-		s.querySelector("input").focus(), document.getElementById("back")?.addEventListener("click", () => a("email")), s.onsubmit = async (r) => {
-			r.preventDefault();
+		s.querySelector("input").focus(), document.getElementById("back")?.addEventListener("click", () => a("email")), s.onsubmit = async (n) => {
+			n.preventDefault();
 			let o = document.getElementById("go");
 			o.disabled = !0, o.textContent = "…";
 			let s = e === "email" ? "/auth/email/start" : "/auth/email/verify";
@@ -1128,7 +1136,7 @@ async function et() {
 			let c = e === "email" ? { email: i } : {
 				email: i,
 				code: document.getElementById("code").value,
-				next: n
+				next: t
 			}, l = await fetch(s, {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -1136,7 +1144,7 @@ async function et() {
 			}), u = await l.json().catch(() => ({}));
 			if (!l.ok) return a(e, u.error || m("Algo deu errado. Tenta de novo."));
 			if (e === "email") return a("code");
-			location.href = t(u.next || "/app", location.href, "svelte");
+			location.href = r(u.next || "/app", location.href, "svelte");
 		}, e === "code" && (document.getElementById("code").oninput = (e) => {
 			e.target.value.replace(/\D/g, "").length === 6 && s.requestSubmit();
 		});
@@ -1144,52 +1152,52 @@ async function et() {
 	a("email", e.get("error") === "google" ? m("Não deu certo com o Google. Tenta com email.") : e.get("error") === "github" ? m("Não deu certo com o GitHub (precisa de um email principal verificado). Tenta com email.") : "");
 }
 window.addEventListener("popstate", () => {
-	if (s(), wt(), oi() || qr()) return;
+	if (c(), Et(), si() || Jr()) return;
 	let e = location.pathname.match(/^\/b\/([a-z0-9]+)/);
-	if (!e || !j || e[1] !== j.id || !jt || !h.querySelector(".book")) return Qe();
-	M = new URLSearchParams(location.search).get("t") || "main", M !== "main" && !j.epics.some((e) => e.id === M) && (M = "main"), Q = !1, Vr = M === "main" ? null : M, z(), Z(), V(), $();
+	if (!e || !A || e[1] !== A.id || !Nt || !h.querySelector(".book")) return et();
+	j = new URLSearchParams(location.search).get("t") || "main", j !== "main" && !A.epics.some((e) => e.id === j) && (j = "main"), Q = !1, Hr = j === "main" ? null : j, R(), X(), B(), $();
 }), document.addEventListener("click", (e) => {
 	let t = e.target.closest("a[data-nav]");
-	t && (e.preventDefault(), f.pushState(null, "", t.getAttribute("href")), Qe());
+	t && (e.preventDefault(), f.pushState(null, "", t.getAttribute("href")), et());
 });
-var tt = null, nt = "", rt = (e) => {
-	tt = e, nt = JSON.stringify(e), it(e.v), Be();
+var rt = null, it = "", at = (e) => {
+	rt = e, it = JSON.stringify(e), ot(e.v), He();
 };
-function it(e) {
+function ot(e) {
 	let t = document.querySelector("meta[name=\"vb-v\"]")?.content;
 	if (!e || !t || e === t || document.getElementById("vbUpdate")) return;
 	let n = document.createElement("button");
-	n.id = "vbUpdate", n.type = "button", n.className = "vbUpdate", n.innerHTML = `${E("undo", 15)} ${m("Nova versão do vibebook · toque pra atualizar")}`, n.onclick = () => location.reload(), document.body.append(n);
+	n.id = "vbUpdate", n.type = "button", n.className = "vbUpdate", n.innerHTML = `${T("undo", 15)} ${m("Nova versão do vibebook · toque pra atualizar")}`, n.onclick = () => location.reload(), document.body.append(n);
 }
-async function at() {
-	document.title = "vibebook", Tn(null), tt && ot(tt);
+async function st() {
+	document.title = "vibebook", On(null), rt && ct(rt);
 	let e = await S("/api/me?ui=svelte");
-	if (/^\/(b|login|archived)\b/.test(location.pathname)) return rt(e);
-	let t = JSON.stringify(e) !== nt;
-	if (rt(e), !t && h.querySelector("#ask")) return;
+	if (/^\/(b|login|archived)\b/.test(location.pathname)) return at(e);
+	let t = JSON.stringify(e) !== it;
+	if (at(e), !t && h.querySelector("#ask")) return;
 	let n = document.getElementById("askText")?.value;
-	if (ot(e), n) {
+	if (ct(e), n) {
 		let e = document.getElementById("askText");
 		e && (e.value = n);
 	}
 }
-function ot(e) {
-	w = e.books, T = e.waits || [], k(), oe = Object.fromEntries(e.friends.filter((e) => e.name).map((e) => [e.email, e.name])), se = Object.fromEntries([...e.friends.filter((e) => e.avatar).map((e) => [e.email, e.avatar]), ...e.avatar ? [[e.email, e.avatar]] : []]);
+function ct(e) {
+	C = e.books, w = e.waits || [], O(), se = Object.fromEntries(e.friends.filter((e) => e.name).map((e) => [e.email, e.name])), ce = Object.fromEntries([...e.friends.filter((e) => e.avatar).map((e) => [e.email, e.avatar]), ...e.avatar ? [[e.email, e.avatar]] : []]);
 	let t = (e.name || "").split(" ")[0], n = (e, t, n) => `${e} ${e === 1 ? t : n}`;
-	if (st.matches) return lt(e);
+	if (lt.matches) return dt(e);
 	h.innerHTML = `
   <div class="home">
     <header class="top">
       <div class="brand"><a href="/">vibebook</a></div>
       <button class="me" id="myName" title="${m("Seu perfil: email, como você entra, sair")}">${y(e.email)}<span>${g(e.name || e.email)}</span></button>
       <button class="ghost bell" data-bell></button>
-      <button class="ghost homeTheme" id="homeTheme" aria-label="${m("Tema")}">${D[O()].icon}</button>
-      ${ie()}
+      <button class="ghost homeTheme" id="homeTheme" aria-label="${m("Tema")}">${E[D()].icon}</button>
+      ${ae()}
     </header>
     <dialog class="profile" id="profileDlg">
-      <button class="ghost x pfX" aria-label="${m("Fechar")}">${E("x")}</button>
+      <button class="ghost x pfX" aria-label="${m("Fechar")}">${T("x")}</button>
       <div class="pdHead">${y(e.email)}<div><b title="${m("Mudar seu nome")}">${g(e.name || m("Seu nome"))}</b><small>${g(e.email)}</small></div></div>
-      ${ut()}
+      ${ft()}
       <div class="pfOut"><button class="primary" id="logout">${m("Sair")}</button><button class="ghost" id="logoutAll" title="${m("Sai em todos os navegadores e celulares onde você entrou")}">${m("Sair de todos os aparelhos")}</button></div>
     </dialog>
     <div id="setupCard"></div>
@@ -1202,26 +1210,26 @@ function ot(e) {
       <div class="row"><input name="n" required maxlength="60" placeholder="${m("Seu nome")}" autocomplete="given-name" /><button class="primary">${m("Salvar")}</button></div></form>`}
     ${e.avatar ? "" : `<div class="picAsk"><span class="picBig" style="background:${_(e.email)}">${g(v(e.email).slice(0, 2).toUpperCase())}</span>
       <div><b>${m("Coloque sua foto")}</b><span class="muted">${m("Assim o pessoal sabe na hora quando é você falando, e quando é o seu agent (✻).")}</span></div>
-      <button class="primary" data-pic>${E("camera")} ${m("Adicionar foto")}</button></div>`}
+      <button class="primary" data-pic>${T("camera")} ${m("Adicionar foto")}</button></div>`}
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden />
     <div class="hello">
       <div class="helloText"><h1>${t ? m("Oi, {name}", { name: g(t) }) : m("Seus vibebooks")}</h1>
         <p>${n(e.books.length, "vibebook", "vibebooks")} · ${n(e.friends.length, m("amigo"), m("amigos"))} · <a class="archLink" data-nav href="/archived">${m("Arquivo")}</a><span id="waitN"></span></p></div>
-      <button class="primary" id="new">${E("plus")} ${m("Novo vibebook")}</button>
+      <button class="primary" id="new">${T("plus")} ${m("Novo vibebook")}</button>
     </div>
     <div class="grid">
       <main>
         ${e.books.length ? "" : `<div class="empty">${m("Nenhum vibebook ainda. Crie um, chame quem trabalha com você e conecte seu agent ao lado.")}</div>`}
-        <div class="cards">${je().map((e) => {
+        <div class="cards">${Ne().map((e) => {
 		let t = (e.members || "").split(",").filter(Boolean);
 		return `
               <div class="cardBox"><a class="card" data-nav href="/b/${e.id}">
-                <button type="button" class="arch" data-archive="${e.id}" data-title="${g(e.title)}" title="${m("Arquivar")}" aria-label="${m("Arquivar {title}", { title: g(e.title) })}">${E("archive")}</button>
-                ${Me(e) ? `<div class="cover hasIcon"><img src="${Me(e)}" alt="" loading="lazy"></div>` : `<div class="cover" style="background-color:${xn(e.title)}"><span>${g(F(e.title))}</span></div>`}
+                <button type="button" class="arch" data-archive="${e.id}" data-title="${g(e.title)}" title="${m("Arquivar")}" aria-label="${m("Arquivar {title}", { title: g(e.title) })}">${T("archive")}</button>
+                ${Pe(e) ? `<div class="cover hasIcon"><img src="${Pe(e)}" alt="" loading="lazy"></div>` : `<div class="cover" style="background-color:${wn(e.title)}"><span>${g(P(e.title))}</span></div>`}
                 <div class="info">
                   <b>${g(e.title)}</b>
                   <div class="sum">${g(e.summary || m("Ainda sem resumo. O @vibe escreve um quando a conversa andar."))}</div>
-                  <div class="meta"><div class="stack">${t.slice(0, 5).map((e) => y(e)).join("")}</div><span class="wc" data-wc="${e.id}"></span><span>${b(e.updated_at)}</span></div>
+                  <div class="meta"><div class="stack">${t.slice(0, 5).map((e) => y(e)).join("")}</div><span class="wc" data-wc="${e.id}"></span><span>${x(e.updated_at)}</span></div>
                 </div>
               </a><div class="cw" data-cw="${e.id}" hidden></div></div>`;
 	}).join("")}
@@ -1233,27 +1241,27 @@ function ot(e) {
         ${e.friends.length ? e.friends.map((e) => `
           <div class="friend">${y(e.email)}<div class="fn" title="${g(e.email)}">${g(e.name || v(e.email))}
             <small>${e.shared ? `${n(e.shared, m("vibebook junto"), m("vibebooks juntos"))}` : e.joined ? m("na plataforma") : m("convidado")}</small></div>
-            <button class="ghost x" data-unfriend="${g(e.email)}" aria-label="${m("Remover {email} dos amigos", { email: g(e.email) })}" title="${m("Remover dos amigos")}">${E("x")}</button></div>`).join("") : `<p class="muted" style="font-size:14px">${m("Quem você convida para um vibebook vira amigo aqui.")}</p>`}
+            <button class="ghost x" data-unfriend="${g(e.email)}" aria-label="${m("Remover {email} dos amigos", { email: g(e.email) })}" title="${m("Remover dos amigos")}">${T("x")}</button></div>`).join("") : `<p class="muted" style="font-size:14px">${m("Quem você convida para um vibebook vira amigo aqui.")}</p>`}
         <form class="invite" id="addFriend"><input type="email" required placeholder="${m("email do amigo")}" aria-label="${m("Email do amigo")}" /><button>${m("Convidar")}</button></form>
       </aside>
     </div>
-  </div>`, ft(e);
+  </div>`, mt(e);
 }
-var st = matchMedia("(max-width: 720px)");
-st.addEventListener("change", () => {
-	location.pathname === "/app" && at();
+var lt = matchMedia("(max-width: 720px)");
+lt.addEventListener("change", () => {
+	location.pathname === "/app" && st();
 });
-var ct = E("menu", 22);
-function lt(e) {
+var ut = T("menu", 22);
+function dt(e) {
 	let t = [...e.books].sort((e, t) => (t.opened_at ?? 0) - (e.opened_at ?? 0) || t.updated_at - e.updated_at), n = (e) => e.last_human_id > e.read_id ? "<b class=\"dot h\"></b>" : e.last_agent_id > e.read_id ? "<b class=\"dot a\"></b>" : "", r = (e) => {
-		let t = T.filter((t) => t.book_id === e.id), n = t.length;
-		return n ? `<b class="swWait${Se(t)}">${n}</b>` : "";
+		let t = w.filter((t) => t.book_id === e.id), n = t.length;
+		return n ? `<b class="swWait${we(t)}">${n}</b>` : "";
 	}, i = (e, t, n) => `${e} ${e === 1 ? t : n}`;
 	h.innerHTML = `
   <div class="phome">
     <header class="ptop">
-      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${ct}${T.length ? `<b class="swWait${Se(T)}">${T.length}</b>` : ""}</button>
-      <a class="plogo" href="/"><span class="tile logo">${we}</span>vibebook</a>
+      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${ut}${w.length ? `<b class="swWait${we(w)}">${w.length}</b>` : ""}</button>
+      <a class="plogo" href="/"><span class="tile logo">${Ee}</span>vibebook</a>
       <button class="me" id="myName" aria-label="${m("Seu perfil")}">${y(e.email)}</button>
     </header>
     <main class="pmain">
@@ -1261,8 +1269,8 @@ function lt(e) {
       ${e.name ? "" : `<form class="nameAsk" id="nameAsk"><b>${m("Como seus amigos te chamam?")}</b><span class="muted">${m("O pessoal e os agents vão te chamar assim.")}</span>
         <div class="row"><input name="n" required maxlength="60" placeholder="${m("Seu nome")}" autocomplete="given-name" /><button class="primary">${m("Salvar")}</button></div></form>`}
       <div class="pgrid">
-        ${t.map((e) => `<a class="proom" data-nav href="/b/${e.id}"><span class="tw${e.sandboxes_running ? " cloud" : ""}">${Ne(e, "xl")}${n(e)}${r(e)}${e.sandboxes_running ? "<b class=\"swCloud\">☁</b>" : ""}</span><span class="nm">${g(e.title)}</span></a>`).join("")}
-        <button class="proom" id="new" type="button"><span class="tile xl pnew">${De}</span><span class="nm">${m("Novo")}</span></button>
+        ${t.map((e) => `<a class="proom" data-nav href="/b/${e.id}"><span class="tw${e.sandboxes_running ? " cloud" : ""}">${Fe(e, "xl")}${n(e)}${r(e)}${e.sandboxes_running ? "<b class=\"swCloud\">☁</b>" : ""}</span><span class="nm">${g(e.title)}</span></a>`).join("")}
+        <button class="proom" id="new" type="button"><span class="tile xl pnew">${ke}</span><span class="nm">${m("Novo")}</span></button>
       </div>
     </main>
     <form class="pask" id="ask">
@@ -1273,18 +1281,18 @@ function lt(e) {
   </div>
   <dialog class="pdrawer" id="pDrawer">
     <div class="pdHead">${y(e.email)}<div><b>${g(e.name || m("Seu nome"))}</b><small>${g(e.email)}</small></div></div>
-    ${ut()}
-    <section class="waits" id="waits"${T.length ? "" : " hidden"}></section>
+    ${ft()}
+    <section class="waits" id="waits"${w.length ? "" : " hidden"}></section>
     <nav class="pdNav">
       <a data-nav href="/archived">${m("Arquivo")}</a>
-      <div class="pdRow"><button class="ghost" id="homeTheme">${D[O()].icon}<span>${D[O()].label}</span></button>${ie()}</div>
+      <div class="pdRow"><button class="ghost" id="homeTheme">${E[D()].icon}<span>${E[D()].label}</span></button>${ae()}</div>
       <div class="pdBell"><button class="ghost bell" data-bell></button><span>${m("Notificações")}</span></div>
       ${window.PublicKeyCredential ? `<label class="pdLock"><input type="checkbox" id="lockToggle" ${Ra() ? "checked" : ""} /> <span>${m("Exigir Face ID ao abrir")}</span></label>` : ""}
     </nav>
     <section class="agentBox" id="agentBox" aria-live="polite"></section>
     <h2>${m("Amigos")} <small>${e.friends.length || ""}</small></h2>
     ${e.friends.map((e) => `<div class="friend">${y(e.email)}<div class="fn">${g(e.name || v(e.email))}<small>${e.shared ? i(e.shared, m("vibebook junto"), m("vibebooks juntos")) : e.joined ? m("na plataforma") : m("convidado")}</small></div>
-      <button class="ghost x" data-unfriend="${g(e.email)}" aria-label="${m("Remover {email} dos amigos", { email: g(e.email) })}">${E("x")}</button></div>`).join("")}
+      <button class="ghost x" data-unfriend="${g(e.email)}" aria-label="${m("Remover {email} dos amigos", { email: g(e.email) })}">${T("x")}</button></div>`).join("")}
     <form class="invite" id="addFriend"><input type="email" required placeholder="${m("email do amigo")}" aria-label="${m("Email do amigo")}" /><button>${m("Convidar")}</button></form>
     <button class="ghost pdOut" id="logout">${m("Sair")}</button>
     <button class="ghost pdOut pdOutAll" id="logoutAll">${m("Sair de todos os aparelhos")}</button>
@@ -1293,24 +1301,24 @@ function lt(e) {
 	let a = document.getElementById("pDrawer");
 	document.getElementById("pMenu").onclick = () => a.showModal(), a.onclick = (e) => {
 		(e.target === a || e.target.closest("a[data-nav]")) && a.close();
-	}, ft(e), document.getElementById("homeTheme").onclick = (e) => {
-		Oe(D[O()].next), e.currentTarget.innerHTML = `${D[O()].icon}<span>${D[O()].label}</span>`;
-	}, document.getElementById("myName").onclick = () => a.showModal(), a.querySelector(".pdHead .avatar").onclick = Fr, a.querySelector(".pdBell span").onclick = () => a.querySelector(".pdBell .bell").click();
+	}, mt(e), document.getElementById("homeTheme").onclick = (e) => {
+		Ae(E[D()].next), e.currentTarget.innerHTML = `${E[D()].icon}<span>${E[D()].label}</span>`;
+	}, document.getElementById("myName").onclick = () => a.showModal(), a.querySelector(".pdHead .avatar").onclick = Ir, a.querySelector(".pdBell span").onclick = () => a.querySelector(".pdBell .bell").click();
 	let o = document.getElementById("lockToggle");
 	o && (o.onchange = async () => {
 		let t = o.checked;
 		try {
-			await Va(t, e.email), B(m(t ? "Pronto: o vibebook pede Face ID ao abrir neste aparelho." : "Face ID desligado neste aparelho."));
+			await Va(t, e.email), z(m(t ? "Pronto: o vibebook pede Face ID ao abrir neste aparelho." : "Face ID desligado neste aparelho."));
 		} catch {
-			o.checked = !t, B(m("Não deu pra usar o Face ID aqui."));
+			o.checked = !t, z(m("Não deu pra usar o Face ID aqui."));
 		}
 	}), a.querySelector(".pdHead b").onclick = async () => {
 		let t = prompt(m("Seu nome:"), e.name || "");
-		t?.trim() && (await S("/api/me?ui=svelte", { name: t }), at());
+		t?.trim() && (await S("/api/me?ui=svelte", { name: t }), st());
 	};
 }
-var ut = () => `<section class="logins"><h3>${m("Como você entra")}</h3><div id="loginRows"></div><p class="lgNote">${m("Google e GitHub entram na conta do email deles: se for outro email, vira outra conta.")}</p></section>`;
-async function dt() {
+var ft = () => `<section class="logins"><h3>${m("Como você entra")}</h3><div id="loginRows"></div><p class="lgNote">${m("Google e GitHub entram na conta do email deles: se for outro email, vira outra conta.")}</p></section>`;
+async function pt() {
 	let e = document.getElementById("loginRows");
 	if (!e) return;
 	let t;
@@ -1326,98 +1334,98 @@ async function dt() {
 			year: "numeric"
 		}),
 		n: e.n
-	}) : null, i = (e, t, n, i) => `<div class="lgRow${n ? " on" : ""}"><span class="lgIc">${e}</span><span><b>${t}</b><small>${r(n) ?? i}</small></span>${n ? `<i class="lgOk">${E("check", 14)}</i>` : ""}</div>`;
+	}) : null, i = (e, t, n, i) => `<div class="lgRow${n ? " on" : ""}"><span class="lgIc">${e}</span><span><b>${t}</b><small>${r(n) ?? i}</small></span>${n ? `<i class="lgOk">${T("check", 14)}</i>` : ""}</div>`;
 	e.innerHTML = [
-		i(E("at", 16), m("Código por email"), n.email, m("sempre funciona")),
-		t.providers?.google || n.google ? i($e, "Google", n.google, m("ainda não usou")) : "",
-		t.providers?.github || n.github ? i(me.replace("<svg ", "<svg width=\"16\" height=\"16\" "), "GitHub", n.github, m("ainda não usou")) : "",
-		n.invite ? i(E("reply", 16), m("Link de convite"), n.invite) : ""
+		i(T("at", 16), m("Código por email"), n.email, m("sempre funciona")),
+		t.providers?.google || n.google ? i(tt, "Google", n.google, m("ainda não usou")) : "",
+		t.providers?.github || n.github ? i(he.replace("<svg ", "<svg width=\"16\" height=\"16\" "), "GitHub", n.github, m("ainda não usou")) : "",
+		n.invite ? i(T("reply", 16), m("Link de convite"), n.invite) : ""
 	].join("");
 }
-function ft(e) {
-	let n = async (e) => {
-		e?.trim() && (await S("/api/me?ui=svelte", { name: e }), at());
-	}, r = document.getElementById("profileDlg");
-	document.getElementById("myName").onclick = () => r ? r.showModal() : null, r && (r.onclick = (e) => {
-		(e.target === r || e.target.closest(".pfX")) && r.close();
-	}, r.querySelector(".pdHead .avatar").onclick = Fr, r.querySelector(".pdHead b").onclick = () => n(prompt(m("Seu nome:"), e.name || ""))), dt(), document.querySelector("[data-pic]")?.addEventListener("click", Fr), document.getElementById("nameAsk")?.addEventListener("submit", (e) => {
-		e.preventDefault(), n(e.target.n.value);
+function mt(e) {
+	let t = async (e) => {
+		e?.trim() && (await S("/api/me?ui=svelte", { name: e }), st());
+	}, n = document.getElementById("profileDlg");
+	document.getElementById("myName").onclick = () => n ? n.showModal() : null, n && (n.onclick = (e) => {
+		(e.target === n || e.target.closest(".pfX")) && n.close();
+	}, n.querySelector(".pdHead .avatar").onclick = Ir, n.querySelector(".pdHead b").onclick = () => t(prompt(m("Seu nome:"), e.name || ""))), pt(), document.querySelector("[data-pic]")?.addEventListener("click", Ir), document.getElementById("nameAsk")?.addEventListener("submit", (e) => {
+		e.preventDefault(), t(e.target.n.value);
 	}), document.getElementById("homeTheme").onclick = (e) => {
-		Oe(D[O()].next), e.currentTarget.innerHTML = D[O()].icon;
+		Ae(E[D()].next), e.currentTarget.innerHTML = E[D()].icon;
 	}, document.getElementById("logout").onclick = async () => {
 		await fetch("/auth/logout", { method: "POST" }), location.href = "/";
 	}, document.getElementById("logoutAll").onclick = async () => {
-		confirm(m("Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam.")) && (await fetch("/auth/logout-all", { method: "POST" }), location.href = t("/login", location.href, "svelte"));
-	}, document.getElementById("new").onclick = () => ht(), document.querySelectorAll("[data-unfriend]").forEach((e) => e.onclick = async () => {
-		confirm(m("Remover {email} dos seus amigos? Os vibebooks em comum continuam.", { email: e.dataset.unfriend })) && (await fetch(`/api/friends/${encodeURIComponent(e.dataset.unfriend)}`, { method: "DELETE" }), at());
+		confirm(m("Sair de todos os aparelhos? Todo navegador e celular onde você entrou vai pedir login de novo, este também. Seus agents conectados continuam.")) && (await fetch("/auth/logout-all", { method: "POST" }), location.href = r("/login", location.href, "svelte"));
+	}, document.getElementById("new").onclick = () => _t(), document.querySelectorAll("[data-unfriend]").forEach((e) => e.onclick = async () => {
+		confirm(m("Remover {email} dos seus amigos? Os vibebooks em comum continuam.", { email: e.dataset.unfriend })) && (await fetch(`/api/friends/${encodeURIComponent(e.dataset.unfriend)}`, { method: "DELETE" }), st());
 	}), document.getElementById("addFriend").onsubmit = async (e) => {
-		e.preventDefault(), await S("/api/friends", { email: e.target[0].value }).catch((e) => alert(e.message)), at();
-	}, bt(), xt(), an(), pt(), document.querySelectorAll("[data-archive]").forEach((e) => e.onclick = (t) => {
-		t.preventDefault(), t.stopPropagation(), gt(e.dataset.archive, e.dataset.title);
+		e.preventDefault(), await S("/api/friends", { email: e.target[0].value }).catch((e) => alert(e.message)), st();
+	}, St(), Ct(), cn(), ht(), document.querySelectorAll("[data-archive]").forEach((e) => e.onclick = (t) => {
+		t.preventDefault(), t.stopPropagation(), vt(e.dataset.archive, e.dataset.title);
 	});
 }
-function pt() {
-	let t = document.getElementById("ask"), n = document.getElementById("askText"), r = document.getElementById("askOut"), i = document.getElementById("askBtn");
-	if (!t) return;
-	n.oninput = () => {
-		n.style.height = "auto", n.style.height = `${n.scrollHeight}px`;
-	}, n.onkeydown = (e) => {
-		e.key === "Enter" && !e.shiftKey && !e.isComposing && (e.preventDefault(), t.requestSubmit());
+function ht() {
+	let e = document.getElementById("ask"), t = document.getElementById("askText"), n = document.getElementById("askOut"), r = document.getElementById("askBtn");
+	if (!e) return;
+	t.oninput = () => {
+		t.style.height = "auto", t.style.height = `${t.scrollHeight}px`;
+	}, t.onkeydown = (t) => {
+		t.key === "Enter" && !t.shiftKey && !t.isComposing && (t.preventDefault(), e.requestSubmit());
 	};
-	let a = (e) => `<b>${g(e.book_title)}</b>${e.epic_title ? ` → <b>${g(e.epic_title)}</b>` : ""}`, o = async (t) => {
-		let i = n.value.trim();
-		r.innerHTML = `<div class="why">${m("Enviando…")}</div>`;
+	let a = (e) => `<b>${g(e.book_title)}</b>${e.epic_title ? ` → <b>${g(e.epic_title)}</b>` : ""}`, o = async (e) => {
+		let r = t.value.trim();
+		n.innerHTML = `<div class="why">${m("Enviando…")}</div>`;
 		try {
-			if (!t.book_id) return await mt(i);
-			let n = t.book_id, r = await e(n).postMessage({
-				text: i,
-				thread: t.epic_id || "main"
+			if (!e.book_id) return await gt(r);
+			let t = e.book_id, n = await i(t).postMessage({
+				text: r,
+				thread: e.epic_id || "main"
 			});
-			if (!r.ok) throw Error(r.error);
-			zt = t.epic_id || null, f.pushState(null, "", `/b/${n}`), Qe();
+			if (!n.ok) throw Error(n.error);
+			Vt = e.epic_id || null, f.pushState(null, "", `/b/${t}`), et();
 		} catch (e) {
-			r.innerHTML = `<div class="why bad">${g(e.message)}</div>`;
+			n.innerHTML = `<div class="why bad">${g(e.message)}</div>`;
 		}
 	};
-	t.onsubmit = async (e) => {
+	e.onsubmit = async (e) => {
 		e.preventDefault();
-		let t = n.value.trim();
-		if (!t) return;
-		i.disabled = !0, r.hidden = !1, r.innerHTML = `<div class="why">${m("Procurando a sala certa…")}</div>`;
+		let i = t.value.trim();
+		if (!i) return;
+		r.disabled = !0, n.hidden = !1, n.innerHTML = `<div class="why">${m("Procurando a sala certa…")}</div>`;
 		let s;
 		try {
-			s = await S("/api/route", { text: t });
+			s = await S("/api/route", { text: i });
 		} catch (e) {
-			r.innerHTML = `<div class="why">${g(e.message)}</div>`, i.disabled = !1;
+			n.innerHTML = `<div class="why">${g(e.message)}</div>`, r.disabled = !1;
 			return;
 		}
-		i.disabled = !1;
+		r.disabled = !1;
 		let c = (e) => e.length > 40 ? `${e.slice(0, 38)}…` : e, l = [...[s.pick, ...s.alternatives].filter(Boolean), {
 			book_id: null,
 			epic_id: null,
 			new_title: s.new_room_title
 		}], u = 0, d = (e) => e.book_id ? a(e) : m("sala nova <b>“{title}”</b>", { title: g(c(e.new_title)) }), ee = () => {
 			let e = l[u];
-			r.innerHTML = `<div class="where">${e.book_id ? m("Mandar em {where}?", { where: d(e) }) : s.pick ? m("Criar {where}?", { where: d(e) }) : m("Nenhuma sala parece a certa. Criar {where}?", { where: d(e) })}</div>
+			n.innerHTML = `<div class="where">${e.book_id ? m("Mandar em {where}?", { where: d(e) }) : s.pick ? m("Criar {where}?", { where: d(e) }) : m("Nenhuma sala parece a certa. Criar {where}?", { where: d(e) })}</div>
         ${u === 0 && s.pick && s.reason ? `<div class="why">${g(s.reason)}</div>` : ""}
         <div class="acts">
           <button type="button" class="primary" data-send="chat">${m("Enviar")}</button>
           <button type="button" class="ghost" data-cancel>${m("Cancelar")}</button>
         </div>
-        ${l.length > 1 ? `<div class="acts alts"><span class="why">${m("Outro lugar:")}</span>${l.map((e, t) => t === u ? "" : `<button type="button" class="ghost" data-sel="${t}">${d(e)}</button>`).join("")}</div>` : ""}`, r.querySelectorAll("[data-send]").forEach((e) => e.onclick = () => o(l[u])), r.querySelectorAll("[data-sel]").forEach((e) => e.onclick = () => {
-				u = Number(e.dataset.sel), ee(), r.querySelector("[data-send]")?.focus();
-			}), r.querySelector("[data-cancel]").onclick = () => {
-				r.hidden = !0, n.focus();
+        ${l.length > 1 ? `<div class="acts alts"><span class="why">${m("Outro lugar:")}</span>${l.map((e, t) => t === u ? "" : `<button type="button" class="ghost" data-sel="${t}">${d(e)}</button>`).join("")}</div>` : ""}`, n.querySelectorAll("[data-send]").forEach((e) => e.onclick = () => o(l[u])), n.querySelectorAll("[data-sel]").forEach((e) => e.onclick = () => {
+				u = Number(e.dataset.sel), ee(), n.querySelector("[data-send]")?.focus();
+			}), n.querySelector("[data-cancel]").onclick = () => {
+				n.hidden = !0, t.focus();
 			};
 		};
-		ee(), r.querySelector("[data-send]")?.focus();
+		ee(), n.querySelector("[data-send]")?.focus();
 	};
 }
-async function mt(e) {
+async function gt(e) {
 	let t = await S("/api/books/start", { text: e });
-	f.pushState(null, "", `/b/${t.id}`), Qe(), t.unknown?.length && setTimeout(() => B(m("Não achei {who} nos seus amigos: convide pelo email em Pessoas.", { who: g(t.unknown.join(", ")) })), 1500);
+	f.pushState(null, "", `/b/${t.id}`), et(), t.unknown?.length && setTimeout(() => z(m("Não achei {who} nos seus amigos: convide pelo email em Pessoas.", { who: g(t.unknown.join(", ")) })), 1500);
 }
-function ht() {
+function _t() {
 	let e = document.createElement("dialog");
 	e.className = "newRoomDlg", e.innerHTML = `<form method="dialog"><h3>${m("Novo vibebook")}</h3>
     <label for="nrText">${m("O que é e com quem?")}</label>
@@ -1434,41 +1442,41 @@ function ht() {
 		if (!a) return t.focus();
 		n.disabled = !0, n.textContent = m("Criando…");
 		try {
-			await mt(a), e.close();
+			await gt(a), e.close();
 		} catch (e) {
 			r.hidden = !1, r.textContent = e.message, n.disabled = !1, n.textContent = m("Criar");
 		}
 	}, e.showModal(), t.focus();
 }
-function gt(e, t) {
+function vt(e, t) {
 	let n = document.createElement("dialog");
 	n.innerHTML = `<h3>${m("Arquivar “{title}”?", { title: g(t) })}</h3>
     <p class="muted" style="margin:0 0 6px">${m("Sai da sua lista e do inbox do seu agent e vai pro <b>Arquivo</b>. Nada é apagado: quem mais está na sala continua vendo, e você restaura quando quiser.")}</p>
     <div class="acts"><button type="button" class="ghost" value="no">${m("Cancelar")}</button><button type="button" class="primary" value="yes">${m("Arquivar")}</button></div>`, document.body.appendChild(n), n.addEventListener("close", () => n.remove()), n.querySelector("[value=\"no\"]").onclick = () => n.close(), n.querySelector("[value=\"yes\"]").onclick = async () => {
-		await S(`/api/books/${e}/archive`, { archived: !0 }).catch((e) => alert(e.message)), n.close(), at();
+		await S(`/api/books/${e}/archive`, { archived: !0 }).catch((e) => alert(e.message)), n.close(), st();
 	}, n.showModal(), n.querySelector("[value=\"yes\"]").focus();
 }
-async function _t() {
-	document.title = `${m("Arquivo")} · vibebook`, Tn(null);
+async function yt() {
+	document.title = `${m("Arquivo")} · vibebook`, On(null);
 	let { books: e } = await S("/api/archived");
 	h.innerHTML = `
   <div class="home">
     <header class="top"><div class="brand"><a href="/app" data-nav>vibebook</a></div></header>
     <div class="hello"><div class="helloText"><h1>${m("Arquivo")}</h1><p>${m("Salas que você arquivou. Elas continuam existindo pra quem está nelas.")}</p></div>
-      <a class="ghost" data-nav href="/app" style="text-decoration:none">${E("back")} ${m("Voltar")}</a></div>
+      <a class="ghost" data-nav href="/app" style="text-decoration:none">${T("back")} ${m("Voltar")}</a></div>
     <main>${e.length ? `<div class="cards">${e.map((e) => `
       <div class="card" style="cursor:default">
-        <div class="cover" style="background-color:${xn(e.title)};filter:grayscale(.6)"><span>${g(F(e.title))}</span></div>
+        <div class="cover" style="background-color:${wn(e.title)};filter:grayscale(.6)"><span>${g(P(e.title))}</span></div>
         <div class="info"><b>${g(e.title)}</b><div class="sum">${g(e.summary || "")}</div>
-          <div class="meta"><span>${m("arquivada {ago}", { ago: b(e.archived_at) })}</span><span><a data-nav href="/b/${e.id}">${m("abrir")}</a> · <button type="button" class="link" data-restore="${e.id}">${m("Restaurar")}</button></span></div></div>
+          <div class="meta"><span>${m("arquivada {ago}", { ago: x(e.archived_at) })}</span><span><a data-nav href="/b/${e.id}">${m("abrir")}</a> · <button type="button" class="link" data-restore="${e.id}">${m("Restaurar")}</button></span></div></div>
       </div>`).join("")}</div>` : `<div class="empty">${m("Nada arquivado.")}</div>`}</main>
   </div>`, document.querySelectorAll("[data-restore]").forEach((e) => e.onclick = async () => {
-		await S(`/api/books/${e.dataset.restore}/archive`, { archived: !1 }), _t();
+		await S(`/api/books/${e.dataset.restore}/archive`, { archived: !1 }), yt();
 	});
 }
-var vt = 0, yt = 0;
-async function bt(e) {
-	clearTimeout(vt), yt = e ? yt + 1 : 0;
+var bt = 0, xt = 0;
+async function St(e) {
+	clearTimeout(bt), xt = e ? xt + 1 : 0;
 	let t = document.getElementById("agentBox");
 	if (!t) return;
 	let n = await fetch("/api/agents").then((e) => e.json()).catch(() => null);
@@ -1477,10 +1485,10 @@ async function bt(e) {
 			let e = Date.now(), r = (e) => e.used_at ?? e.connected_at, i = (t) => e - r(t) > 12096e5, a = {};
 			for (let e of n.agents) (a[e.client] ??= []).push(e);
 			for (let e of Object.values(a)) e.sort((e, t) => r(t) - r(e));
-			let o = (e) => e.used_at ? m("usado {ago}", { ago: b(e.used_at) }) : e.used_at === null ? m("sem uso ainda") : m("uso desconhecido");
+			let o = (e) => e.used_at ? m("usado {ago}", { ago: x(e.used_at) }) : e.used_at === null ? m("sem uso ainda") : m("uso desconhecido");
 			t.innerHTML = `<h2>✦ ${m("Seus agents conectados")}</h2>
       ${Object.entries(a).map(([e, t]) => `<div class="connGroup"><div class="connHead"><b>${g(e)}</b><small>${t.length}</small></div>
-        ${t.map((e) => `<label class="conn"><input type="checkbox" data-gid="${g(e.id)}" ${i(e) ? "checked" : ""} /><span>${m("conectado {ago}", { ago: b(e.connected_at) })}<small>${o(e)}</small></span></label>`).join("")}</div>`).join("")}
+        ${t.map((e) => `<label class="conn"><input type="checkbox" data-gid="${g(e.id)}" ${i(e) ? "checked" : ""} /><span>${m("conectado {ago}", { ago: x(e.connected_at) })}<small>${o(e)}</small></span></label>`).join("")}</div>`).join("")}
       <div class="connActs"><button type="button" class="ghost" id="connKeep">${m("Marcar todas menos a mais recente de cada")}</button><button type="button" class="primary" id="connDel"></button></div>
       <p style="margin-top:8px">${m("Peça pro seu agent: <i>“vê o que tem de novo no vibebook”</i> ou <i>“vai na sala tal e fala com a Marina…”</i>")}</p>`;
 			let s = () => [...t.querySelectorAll("[data-gid]")], c = () => {
@@ -1495,112 +1503,112 @@ async function bt(e) {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({ ids: e })
-				}), bt());
+				}), St());
 			};
-		} else t.hidden = !0, At(document.getElementById("setupCard"));
+		} else t.hidden = !0, Mt(document.getElementById("setupCard"));
 	}
 }
-function xt() {
+function Ct() {
 	let e = (e) => (e.author_name || e.author.split("@")[0]).split(" ")[0], t = (e) => `/b/${e.book_id}${e.thread === "main" ? "" : `?t=${encodeURIComponent(e.thread)}`}`, n = (n, r) => {
-		let i = T.indexOf(n);
+		let i = w.indexOf(n);
 		return `<li>
-      <a data-nav href="${t(n)}" data-wait-open="${i}">${r ? "" : Ne(w.find((e) => e.id === n.book_id) || {
+      <a data-nav href="${t(n)}" data-wait-open="${i}">${r ? "" : Fe(C.find((e) => e.id === n.book_id) || {
 			id: n.book_id,
 			title: n.room
 		}, "sm")}
-        <span class="wt"><small>${r ? "" : `${g(n.room)}${n.topic ? " › " : ""}`}${n.topic ? g(n.topic) : r ? m("sala principal") : ""} · ${b(n.ts)}</small>
+        <span class="wt"><small>${r ? "" : `${g(n.room)}${n.topic ? " › " : ""}`}${n.topic ? g(n.topic) : r ? m("sala principal") : ""} · ${x(n.ts)}</small>
         ${n.ref.startsWith("t") ? `<b>${m("Tarefa sua esperando OK:")}</b> ${g(n.text)}` : `<b>${g(e(n))}:</b> ${g(n.text.length > 160 ? `${n.text.slice(0, 158)}…` : n.text)}`}</span></a>
-      ${n.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${E("check")}</button>` : ""}
+      ${n.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${i}" title="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${T("check")}</button>` : ""}
     </li>`;
 	}, r = document.getElementById("waitN");
-	r && (r.innerHTML = T.length ? ` · <b class="waitTot">${m("{n} esperando você", { n: T.length })}</b>` : "");
+	r && (r.innerHTML = w.length ? ` · <b class="waitTot">${m("{n} esperando você", { n: w.length })}</b>` : "");
 	let i = (n) => {
-		let r = T.indexOf(n), i = n.ref.startsWith("t");
+		let r = w.indexOf(n), i = n.ref.startsWith("t");
 		return `<li>
-      <a data-nav href="${t(n)}" data-wait-open="${r}"><span class="wIc${i ? " task" : ""}">${i ? E("check", 16) : y(n.author)}</span>
+      <a data-nav href="${t(n)}" data-wait-open="${r}"><span class="wIc${i ? " task" : ""}">${i ? T("check", 16) : y(n.author)}</span>
         <span class="wt"><span class="wTx">${g(n.text.length > 200 ? `${n.text.slice(0, 198)}…` : n.text)}</span>
-        <small>${i ? m("sua tarefa esperando OK") : m("{who} pediu", { who: g(e(n)) })} · ${n.topic ? g(n.topic) : m("sala principal")} · ${b(n.ts)}</small></span></a>
-      ${n.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${r}" title="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${E("check")}</button>` : ""}
+        <small>${i ? m("sua tarefa esperando OK") : m("{who} pediu", { who: g(e(n)) })} · ${n.topic ? g(n.topic) : m("sala principal")} · ${x(n.ts)}</small></span></a>
+      ${n.ref.startsWith("m") ? `<button class="ghost" data-wait-done="${r}" title="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}" aria-label="${m("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${T("check")}</button>` : ""}
     </li>`;
 	};
 	document.querySelectorAll("[data-cw]").forEach((e) => {
-		let t = T.filter((t) => t.book_id === e.dataset.cw);
+		let t = w.filter((t) => t.book_id === e.dataset.cw);
 		e.hidden = !t.length, e.innerHTML = t.length ? `<ul>${t.slice(0, 3).map(i).join("")}</ul>${t.length > 3 ? `<details><summary>${m("+{n} mais", { n: t.length - 3 })}</summary><ul>${t.slice(3).map(i).join("")}</ul></details>` : ""}` : "";
 		let n = document.querySelector(`[data-wc="${e.dataset.cw}"]`);
 		n && (n.innerHTML = t.length ? `<b class="wChip">${m("{n} esperando você", { n: t.length })}</b>` : "");
 	});
 	let a = document.getElementById("waits");
-	a && (a.hidden = !T.length, a.innerHTML = T.length ? `<h2>${m("Esperando você")} <small>${T.length}</small></h2><ul>${T.map((e) => n(e, !1)).join("")}</ul>` : ""), document.querySelectorAll("[data-wait-done]").forEach((e) => e.onclick = () => {
-		let t = T[Number(e.dataset.waitDone)];
-		T = T.filter((e) => e !== t), xt(), k(), S("/api/waits/resolve", {
+	a && (a.hidden = !w.length, a.innerHTML = w.length ? `<h2>${m("Esperando você")} <small>${w.length}</small></h2><ul>${w.map((e) => n(e, !1)).join("")}</ul>` : ""), document.querySelectorAll("[data-wait-done]").forEach((e) => e.onclick = () => {
+		let t = w[Number(e.dataset.waitDone)];
+		w = w.filter((e) => e !== t), Ct(), O(), S("/api/waits/resolve", {
 			book_id: t.book_id,
 			ref: t.ref
 		}).catch(() => {});
 	});
 }
-var St = !1, Ct = 0;
-function wt() {
-	Ct++;
+var wt = !1, Tt = 0;
+function Et() {
+	Tt++;
 	let e = document.getElementById("inbox");
 	e?._unmount?.(), e && (e._unmount = null);
 }
-function Tt() {
-	document.getElementById("inbox")?._unmount?.updateWaits(T);
+function Dt() {
+	document.getElementById("inbox")?._unmount?.updateWaits(w);
 	let e = document.getElementById("inboxBtn");
 	if (!e) return;
-	let t = T.length, n = e.querySelector(".kN");
-	n.hidden = !t, n.textContent = t, n.className = `kN${Se(T)}`;
+	let t = w.length, n = e.querySelector(".kN");
+	n.hidden = !t, n.textContent = t, n.className = `kN${we(w)}`;
 }
-var Et = () => Promise.resolve(o);
-function Dt() {
-	wt();
-	let e = Ct, t = document.getElementById("inbox");
+var Ot = () => Promise.resolve(s);
+function kt() {
+	Et();
+	let e = Tt, t = document.getElementById("inbox");
 	t || (t = document.createElement("div"), t.id = "inbox", document.body.appendChild(t));
 	let n = () => {
-		e === Ct && wt();
+		e === Tt && Et();
 	};
-	Et().then(({ mountInbox: r }) => {
-		e === Ct && (t.replaceChildren(), t._unmount = r(t, {
-			waits: T,
-			roomId: j?.id ?? null,
-			all: St,
+	Ot().then(({ mountInbox: r }) => {
+		e === Tt && (t.replaceChildren(), t._unmount = r(t, {
+			waits: w,
+			roomId: A?.id ?? null,
+			all: wt,
 			vb: {
 				t: m,
-				ago: b
+				ago: x
 			},
 			displayName: v,
 			avatarUrl: (e) => {
-				let t = j?.avatars?.[e] ?? se[e];
+				let t = A?.avatars?.[e] ?? ce[e];
 				return t ? `/api/avatar/${encodeURIComponent(e)}?v=${t}` : void 0;
 			},
-			ontab: (e) => St = e,
+			ontab: (e) => wt = e,
 			onclose: n,
 			onopen: (e, t) => {
 				n();
 				let r = /^[mab]/.test(e.ref) ? Number(e.ref.slice(1)) : 0;
-				j?.id === e.book_id && (t.preventDefault(), r ? Di(r, e.thread) : e.thread !== M && (M = e.thread, z(), Z(), $()));
+				A?.id === e.book_id && (t.preventDefault(), r ? Oi(r, e.thread) : e.thread !== j && (j = e.thread, R(), X(), $()));
 			},
 			onresolve: async (e) => {
 				await S("/api/waits/resolve", {
 					book_id: e.book_id,
 					ref: e.ref
-				}), T = T.filter((t) => t.book_id !== e.book_id || t.ref !== e.ref), k(), xt(), j && z();
+				}), w = w.filter((t) => t.book_id !== e.book_id || t.ref !== e.ref), O(), Ct(), A && R();
 			}
 		}));
-	}).catch(() => B(m("Não deu pra abrir agora. Tente de novo.")));
+	}).catch(() => z(m("Não deu pra abrir agora. Tente de novo.")));
 }
 document.addEventListener("click", (e) => {
-	e.target.closest?.("#inboxBtn") && Dt();
+	e.target.closest?.("#inboxBtn") && kt();
 });
-var Ot = 0, kt = !1;
-async function At(e, t) {
-	if (clearTimeout(Ot), !e) return;
+var At = 0, jt = !1;
+async function Mt(e, t) {
+	if (clearTimeout(At), !e) return;
 	let n = await fetch("/api/agents").then((e) => e.json()).catch(() => null);
 	if (!n || !document.body.contains(e)) return;
-	if (kt = !n.agents.length, j && e.id === "agentNudge" && zn(), n.agents.length) {
-		e.dataset.waiting ? (e.innerHTML = `<div class="setup done"><span class="setupIcon">${E("check", 22)}</span><div><b>${m("Seu agent conectou.")}</b><span>${m(t ? "Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar agent no topo." : "Ele já enxerga as suas salas.")}</span></div></div>`, delete e.dataset.waiting, setTimeout(() => {
+	if (jt = !n.agents.length, A && e.id === "agentNudge" && Hn(), n.agents.length) {
+		e.dataset.waiting ? (e.innerHTML = `<div class="setup done"><span class="setupIcon">${T("check", 22)}</span><div><b>${m("Seu agent conectou.")}</b><span>${m(t ? "Ele já enxerga esta sala. Liga ele aqui com ✻ Ligar agent no topo." : "Ele já enxerga as suas salas.")}</span></div></div>`, delete e.dataset.waiting, setTimeout(() => {
 			document.body.contains(e) && (e.innerHTML = "", e.hidden = !0);
-		}, 6e3), t || bt()) : (e.innerHTML = "", e.hidden = !0);
+		}, 6e3), t || St()) : (e.innerHTML = "", e.hidden = !0);
 		return;
 	}
 	let r = e.id === "agentNudge", i = !1;
@@ -1631,7 +1639,7 @@ async function At(e, t) {
 			try {
 				localStorage.setItem("vb.setupOff", "1");
 			} catch {}
-			clearTimeout(Ot), e.innerHTML = "", e.hidden = !0;
+			clearTimeout(At), e.innerHTML = "", e.hidden = !0;
 		});
 		let o = e.querySelector("[data-copycmd]");
 		o.onclick = async () => {
@@ -1646,9 +1654,9 @@ async function At(e, t) {
 		});
 	}
 	let o = Number(e.dataset.polls || 0);
-	o < 150 && (e.dataset.polls = String(o + 1), Ot = setTimeout(() => At(e, t), 4e3));
+	o < 150 && (e.dataset.polls = String(o + 1), At = setTimeout(() => Mt(e, t), 4e3));
 }
-var jt = null, Mt = n(), j = null, Nt = /* @__PURE__ */ new Map(), M = "main", Pt = [], Ft = [], It = {
+var Nt = null, Pt = n(), A = null, Ft = /* @__PURE__ */ new Map(), j = "main", It = [], Lt = [], Rt = {
 	m4a: "audio/x-m4a",
 	mp3: "audio/mpeg",
 	wav: "audio/wav",
@@ -1658,7 +1666,7 @@ var jt = null, Mt = n(), j = null, Nt = /* @__PURE__ */ new Map(), M = "main", P
 	opus: "audio/ogg",
 	webm: "audio/webm",
 	flac: "audio/flac"
-}, Lt = [
+}, zt = [
 	"image/png",
 	"image/jpeg",
 	"image/webp",
@@ -1682,133 +1690,133 @@ var jt = null, Mt = n(), j = null, Nt = /* @__PURE__ */ new Map(), M = "main", P
 	"audio/webm",
 	"audio/flac",
 	"audio/x-flac"
-], Rt = (e, t) => E(e.type === "text/html" ? "globe" : e.type.startsWith("audio/") ? "mic" : "file", t), zt = null, Bt = /* @__PURE__ */ new Map(), Vt = !1;
-function Ht(e) {
-	let t = (w || tt?.books || []).find((t) => t.id === e), n = t?.title || "";
+], Bt = (e, t) => T(e.type === "text/html" ? "globe" : e.type.startsWith("audio/") ? "mic" : "file", t), Vt = null, Ht = /* @__PURE__ */ new Map(), Ut = !1;
+function Wt(e) {
+	let t = (C || rt?.books || []).find((t) => t.id === e), n = t?.title || "";
 	document.title = `${n || "vibebook"} · vibebook`;
-	let r = Me(t), i = (e) => r ? `<span class="${e} hasIcon"><img src="${r}" alt=""></span>` : n ? `<span class="${e}" style="background:${xn(n)}">${g(F(n))}</span>` : `<span class="${e}"></span>`, a = (e) => `<div class="thread"><span class="ri sk"></span><i style="width:${e}%"></i></div>`, o = (e, t) => `<div class="msg skMsg"><span class="avatar sk"></span><div><i style="width:${e}px"></i><i class="s" style="width:${t}%"></i></div></div>`;
-	return `<div class="book skel ${En ? "rail" : ""}" aria-busy="true" aria-label="${m("Carregando")}">
+	let r = Pe(t), i = (e) => r ? `<span class="${e} hasIcon"><img src="${r}" alt=""></span>` : n ? `<span class="${e}" style="background:${wn(n)}">${g(P(n))}</span>` : `<span class="${e}"></span>`, a = (e) => `<div class="thread"><span class="ri sk"></span><i style="width:${e}%"></i></div>`, o = (e, t) => `<div class="msg skMsg"><span class="avatar sk"></span><div><i style="width:${e}px"></i><i class="s" style="width:${t}%"></i></div></div>`;
+	return `<div class="book skel ${kn ? "rail" : ""}" aria-busy="true" aria-label="${m("Carregando")}">
     <aside class="side"><div class="sec threadsSec"><div class="thread sel">${i("ri roomIco")}<span class="rt">${g(n)}</span></div>${a(70)}${a(55)}${a(62)}</div></aside>
-    <main class="chat"><div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${m("Seus vibebooks")}">${E("back", 20)}</a><h2 id="threadTitle"><span class="thPick">${i("ri roomIco phOnly")}<span>${g(n)}</span></span></h2></div>
+    <main class="chat"><div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${m("Seus vibebooks")}">${T("back", 20)}</a><h2 id="threadTitle"><span class="thPick">${i("ri roomIco phOnly")}<span>${g(n)}</span></span></h2></div>
       <div class="msgs">${o(90, 60)}${o(120, 45)}${o(70, 70)}${o(110, 35)}</div>
       <form class="composer" onsubmit="return false"><div class="row"><textarea rows="1" disabled placeholder="${m("Mensagem…")}"></textarea><button class="primary" disabled style="opacity:.5">${m("Enviar")}</button></div></form></main>
     <section class="doc"><div class="skDoc"><i style="width:40%"></i><i></i><i class="s"></i><i></i><i class="s"></i></div></section></div>`;
 }
-function Ut(e) {
-	M = zt || new URLSearchParams(location.search).get("t") || "main", zt = null, _a = !1, j = null, Nt.clear(), Vt = !1, Ft = [], S("/api/me?ui=svelte").then((e) => {
-		rt(e), Pt = e.friends.map((e) => e.email), w = e.books, T = e.waits || [], k(), z(), j && Tn(P());
+function Gt(e) {
+	j = Vt || new URLSearchParams(location.search).get("t") || "main", Vt = null, va = !1, A = null, Ft.clear(), Ut = !1, Lt = [], S("/api/me?ui=svelte").then((e) => {
+		at(e), It = e.friends.map((e) => e.email), C = e.books, w = e.waits || [], O(), R(), A && On(N());
 	}).catch(() => {});
-	let t = Bt.get(e);
-	t ? (j = t, !t.epics.some((e) => e.id === M) && !M.startsWith("pre:") && (M = "main"), un()) : h.innerHTML = Ht(e);
-	let n = te({
-		url: (t) => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${e}?t=${encodeURIComponent(I() ? "main" : M)}${t ? `&rc=${t}` : ""}`,
+	let t = Ht.get(e);
+	t ? (A = t, !t.epics.some((e) => e.id === j) && !j.startsWith("pre:") && (j = "main"), pn()) : h.innerHTML = Wt(e);
+	let n = ne({
+		url: (t) => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/${e}?t=${encodeURIComponent(F() ? "main" : j)}${t ? `&rc=${t}` : ""}`,
 		onEvent: (t) => {
-			jt === n && $t(t, e);
+			Nt === n && nn(t, e);
 		},
 		onRemoved: () => {
-			jt === n && (Yt(), h.innerHTML = `<div class="home"><p>${m("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${E("back")} ${m("seus vibebooks")}</a></div>`);
+			Nt === n && (Qt(), h.innerHTML = `<div class="home"><p>${m("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${T("back")} ${m("seus vibebooks")}</a></div>`);
 		},
 		onUnavailable: () => {
-			jt === n && (Yt(), h.innerHTML = `<div class="home"><p>${m("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${m("voltar")}</a></div>`);
+			Nt === n && (Qt(), h.innerHTML = `<div class="home"><p>${m("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${m("voltar")}</a></div>`);
 		}
 	});
-	jt = n, n.start();
+	Nt = n, n.start();
 }
-var N = (e) => jt?.send(e) ?? !1, Wt = /* @__PURE__ */ new Map(), Gt = () => {}, Kt = /* @__PURE__ */ new WeakSet();
-function qt(e) {
-	let t = Wt.get(e);
-	t && (t.target._mo?.disconnect(), t.destroy(), Wt.delete(e));
+var M = (e) => Nt?.send(e) ?? !1, Kt = /* @__PURE__ */ new Map(), qt = () => {}, Jt = null, Yt = /* @__PURE__ */ new WeakSet();
+function Xt(e) {
+	let t = Kt.get(e);
+	t && (t.target._mo?.disconnect(), t.destroy(), Kt.delete(e));
 }
-function Jt(e, t, n, r = !1) {
-	let a = Wt.get(e);
-	a && (a.target !== t || r) && (qt(e), a = null), a ? a.update(n) : (t.replaceChildren(), a = {
-		...i(e, t, n),
+function Zt(e, t, n, r = !1) {
+	let i = Kt.get(e);
+	i && (i.target !== t || r) && (Xt(e), i = null), i ? i.update(n) : (t.replaceChildren(), i = {
+		...a(e, t, n),
 		target: t
-	}, Wt.set(e, a));
+	}, Kt.set(e, i));
 }
-function Yt() {
-	Gt(), Gt = () => {}, _n();
-	for (let e of Wt.keys()) qt(e);
+function Qt() {
+	Jt = null, qt(), qt = () => {}, bn();
+	for (let e of Kt.keys()) Xt(e);
 	Ea.disconnect();
 }
-var Xt = () => ({
+var $t = () => ({
 	t: m,
-	icon: E,
+	icon: T,
 	avatar: y,
-	ago: b,
+	ago: x,
 	name: v,
 	color: _,
-	initials: F,
-	mentions: x,
+	initials: P,
+	mentions: me,
 	locale: p
-}), Zt = () => ({
+}), en = () => ({
 	t: m,
-	icon: E,
+	icon: T,
 	name: v,
 	avatar: y,
 	agentAvatar: le,
-	ago: b,
-	hhmm: ui,
-	continues: di,
-	remHtml: Li,
-	issueHtml: Ii,
-	isNotice: Ri,
-	noticeHtml: zi,
-	mentions: x,
-	md: xe,
-	linkify: ye,
+	ago: x,
+	hhmm: di,
+	continues: fi,
+	remHtml: Ri,
+	issueHtml: Li,
+	isNotice: zi,
+	noticeHtml: Bi,
+	mentions: me,
+	md: Se,
+	linkify: be,
 	esc: g,
-	quoteHtml: bi,
-	attHtml: ci,
-	cardHtml: Oi,
-	choiceHtml: Ni,
-	pollHtml: li,
-	threadCards: hi,
-	typingLabel: (e) => en[e] ?? e,
-	typingNote: (e) => Nt.get(e),
+	quoteHtml: xi,
+	attHtml: li,
+	cardHtml: ki,
+	choiceHtml: Pi,
+	pollHtml: ui,
+	threadCards: gi,
+	typingLabel: (e) => rn[e] ?? e,
+	typingNote: (e) => Ft.get(e),
 	dateTime: (e) => new Date(e).toLocaleString(p),
-	waiting: (e) => T.some((t) => t.book_id === j.id && t.ref === `m${e}`)
+	waiting: (e) => w.some((t) => t.book_id === A.id && t.ref === `m${e}`)
 });
-function Qt(e) {
-	M = e, Vr = e === "main" ? null : e, Q = !1, Hr(), z(), Z(), V(), $();
+function tn(e) {
+	j = e, Hr = e === "main" ? null : e, Q = !1, Ur(), R(), X(), B(), $();
 }
-function $t(e, t) {
+function nn(e, t) {
 	if (location.pathname.match(/^\/b\/([a-z0-9]+)/)?.[1] !== t) return;
-	let n = j;
-	if (e.t === "epicsPatch" && j) {
-		let t = /* @__PURE__ */ new Set([...j.epics.map((e) => e.id), ...e.changed.map((e) => e.id)]);
+	let n = A;
+	if (e.t === "epicsPatch" && A) {
+		let t = /* @__PURE__ */ new Set([...A.epics.map((e) => e.id), ...e.changed.map((e) => e.id)]);
 		if (e.order.some((e) => !t.has(e))) {
-			jt?.resync();
+			Nt?.resync();
 			return;
 		}
 	}
-	switch (Mt.get() !== j && Mt.replace(j), j = Mt.apply(e, t), j && Bt.set(t, j), e.t) {
+	switch (Pt.get() !== A && Pt.replace(A), A = Pt.apply(e, t), A && Ht.set(t, A), e.t) {
 		case "state": {
 			let e = !n;
-			Nt.clear(), Vt = !0, ha = !1;
-			for (let e of [...ga]) e.startsWith(t) && ga.delete(e);
+			Ft.clear(), Ut = !0, ga = !1;
+			for (let e of [..._a]) e.startsWith(t) && _a.delete(e);
 			for (let e of [...Fa]) e.startsWith(t) && Fa.delete(e);
-			Bt.delete(t), Bt.set(t, j), Bt.size > 12 && Bt.delete(Bt.keys().next().value), j.messages.length && Pe(j.messages.at(-1).id), Mn(), e ? un() : (z(), Z(Ta ? void 0 : "stay"), $(!0), Yr(), V(), la(), Hi(), ca(), Vi(), Ca(), Cr());
+			Ht.delete(t), Ht.set(t, A), Ht.size > 12 && Ht.delete(Ht.keys().next().value), A.messages.length && Ie(A.messages.at(-1).id), Fn(), e ? pn() : (R(), X(Z ? void 0 : "stay"), $(!0), Xr(), B(), ua(), Ui(), la(), Hi(), wa(), Er());
 			return;
 		}
 		case "closed":
-			Z("stay");
+			X("stay");
 			return;
 		case "moved":
-			j.messages.find((t) => t.id === e.id) && (Z(!0), gi(), z());
+			A.messages.find((t) => t.id === e.id) && (X(!0), _i(), R());
 			break;
 		case "msg":
-			Pe(e.m.id), e.m.thread !== "main" && M === "main" && gi(), e.m.thread === M && (wa(e.m), _i(), e.m.files?.length && ya()), z(), e.m.reply_to && e.m.thread !== M && Z("stay"), ln(e.m);
+			Ie(e.m.id), e.m.thread !== "main" && j === "main" && _i(), e.m.thread === j && (Ta(e.m), vi(), e.m.files?.length && ba()), R(), e.m.reply_to && e.m.thread !== j && X("stay"), fn(e.m);
 			return;
 		case "delta":
-			Nt.delete(e.id), Z(Ta ? void 0 : "stay");
+			Ft.delete(e.id), X(Z ? void 0 : "stay");
 			return;
 		case "typing":
-			e.note ? Nt.set(e.id, e.note) : Nt.delete(e.id), Z("stay");
+			e.note ? Ft.set(e.id, e.note) : Ft.delete(e.id), X("stay");
 			return;
 		case "epicsPatch":
 		case "epics":
-			M !== "main" && !I() && !j.epics.some((e) => e.id === M) && (M = "main"), z(), Yr(), V(), _i(), M === "main" && gi();
+			j !== "main" && !F() && !A.epics.some((e) => e.id === j) && (j = "main"), R(), Xr(), B(), vi(), j === "main" && _i();
 			return;
 		case "docNotes":
 			$();
@@ -1816,10 +1824,10 @@ function $t(e, t) {
 		case "doc": {
 			let t = (e.epic || null) === Ia();
 			if (e.stale) {
-				t ? N({
+				t ? M({
 					t: "doc.get",
 					epic: e.epic
-				}) : Fa.delete(j.id + e.epic);
+				}) : Fa.delete(A.id + e.epic);
 				return;
 			}
 			(t || e.fetched) && $();
@@ -1827,70 +1835,70 @@ function $t(e, t) {
 		}
 		case "meta":
 			if (e.title) {
-				let n = w?.find((e) => e.id === t);
-				n && (n.title = e.title, k());
+				let n = C?.find((e) => e.id === t);
+				n && (n.title = e.title, O());
 			}
-			z(), Yr();
+			R(), Xr();
 			return;
 		case "suggestions": {
-			let e = I() ? n?.suggestions[Number(M.slice(4))]?.title : void 0;
-			if (An !== null) {
-				let e = j.suggestions.length;
-				M = e ? `pre:${Math.min(An, e - 1)}` : "main", An = null, Z();
-			} else if (I() && kn()?.title !== e) {
-				let t = j.suggestions.findIndex((t) => t.title === e);
-				M = t >= 0 ? `pre:${t}` : "main", Z();
+			let e = F() ? n?.suggestions[Number(j.slice(4))]?.title : void 0;
+			if (Nn !== null) {
+				let e = A.suggestions.length;
+				j = e ? `pre:${Math.min(Nn, e - 1)}` : "main", Nn = null, X();
+			} else if (F() && Mn()?.title !== e) {
+				let t = A.suggestions.findIndex((t) => t.title === e);
+				j = t >= 0 ? `pre:${t}` : "main", X();
 			}
-			z();
+			R();
 			return;
 		}
 		case "requests":
-			z();
+			R();
 			return;
 		case "members":
-			z();
+			R();
 			return;
 		case "files":
-			la(), Yi(), ni();
+			ua(), Xi(), ri();
 			return;
 		case "fileAdd":
-			la(), Yi(), ni(), ya();
+			ua(), Xi(), ri(), ba();
 			return;
 		case "reminders":
-			ca();
+			la();
 			return;
 		case "decisions":
-			Vi();
+			Hi();
 			return;
 		case "conns":
-			K = null, document.querySelector(".doc[data-pane=\"apps\"]") && !q ? J() : q || Ki();
+			G = null, document.querySelector(".doc[data-pane=\"apps\"]") && !K ? q() : K || qi();
 			return;
 		case "pins":
-			z(), la(), Hi();
+			R(), ua(), Ui();
 			return;
 		case "error":
-			B(g(e.error || m("falhou")));
+			z(g(e.error || m("falhou")));
 			return;
 		case "receipts":
-			Ca();
+			wa();
 			return;
 		case "older":
-			if (ha = !1, e.more || (ma[j.id + e.thread] = !0), e.thread === M && (Y.n += e.messages.length, Z(!ga.delete(j.id + e.thread))), Ei && e.thread === M) {
-				let t = Ei;
-				j.messages.some((e) => e.id === t.id) ? (Ei = null, setTimeout(() => Di(t.id), 50)) : e.more && ++t.n < 15 ? ba() : (Ei = null, B(m("Não achei essa mensagem nesta sala.")));
+			if (ga = !1, e.more || (ha[A.id + e.thread] = !0), e.thread === j && (J.n += e.messages.length, X(!_a.delete(A.id + e.thread))), Di && e.thread === j) {
+				let t = Di;
+				A.messages.some((e) => e.id === t.id) ? (Di = null, setTimeout(() => Oi(t.id), 50)) : e.more && ++t.n < 15 ? xa() : (Di = null, z(m("Não achei essa mensagem nesta sala.")));
 			}
 			return;
 		case "acks":
-			Ca(), z(), Cr();
+			wa(), R(), Er();
 			return;
 		case "ackRows":
-			Ca(), z(), Cr();
+			wa(), R(), Er();
 			return;
 		case "poll":
-			Z("stay");
+			X("stay");
 			return;
 		case "online":
-			z();
+			R();
 			return;
 		case "blocked": {
 			let t = document.getElementById("input");
@@ -1899,22 +1907,22 @@ function $t(e, t) {
 		}
 	}
 }
-var en = {
+var rn = {
 	route: m("escolhendo o modelo"),
 	fast: m("rápido"),
 	smart: m("com calma")
-}, tn = {
-	on: E("bell", 20),
-	off: E("bellOff", 20)
-}, nn = () => "Notification" in window ? Notification.permission : "unsupported", rn = () => {
+}, an = {
+	on: T("bell", 20),
+	off: T("bellOff", 20)
+}, on = () => "Notification" in window ? Notification.permission : "unsupported", sn = () => {
 	try {
 		return localStorage.getItem("vb.mute") === "1";
 	} catch {
 		return !1;
 	}
 };
-function an() {
-	let e = nn(), t = rn(), n = e === "granted" ? t ? "muted" : "on" : e, r = {
+function cn() {
+	let e = on(), t = sn(), n = e === "granted" ? t ? "muted" : "on" : e, r = {
 		on: m("Notificações ligadas: clique pra silenciar"),
 		muted: m("Notificações silenciadas: clique pra ligar"),
 		default: m("Ativar notificações de mensagem"),
@@ -1922,50 +1930,50 @@ function an() {
 		unsupported: m("Este navegador não tem notificações")
 	}[n];
 	document.querySelectorAll("[data-bell]").forEach((e) => {
-		e.className = `ghost bell ${n}`, e.innerHTML = n === "on" ? tn.on : tn.off, e.title = r, e.setAttribute("aria-label", r), e.onclick = async () => {
-			if (sn(), n === "default") {
-				if (await Notification.requestPermission(), nn() === "granted") {
+		e.className = `ghost bell ${n}`, e.innerHTML = n === "on" ? an.on : an.off, e.title = r, e.setAttribute("aria-label", r), e.onclick = async () => {
+			if (un(), n === "default") {
+				if (await Notification.requestPermission(), on() === "granted") {
 					try {
 						localStorage.removeItem("vb.mute");
 					} catch {}
-					cn();
+					dn();
 				}
 			} else if (n === "denied") alert(m("As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página."));
 			else if (n === "on" || n === "muted") {
 				try {
 					localStorage.setItem("vb.mute", n === "on" ? "1" : "");
 				} catch {}
-				n === "muted" && cn();
+				n === "muted" && dn();
 			}
-			an();
+			cn();
 		};
 	});
 }
-var on = null, sn = () => {
+var ln = null, un = () => {
 	try {
-		on ??= new AudioContext(), on.resume();
+		ln ??= new AudioContext(), ln.resume();
 	} catch {}
 };
-document.addEventListener("pointerdown", sn, { once: !0 });
-function cn() {
-	if (!on) return;
-	let e = on.currentTime;
+document.addEventListener("pointerdown", un, { once: !0 });
+function dn() {
+	if (!ln) return;
+	let e = ln.currentTime;
 	[[880, 0], [1318.5, .12]].forEach(([t, n]) => {
-		let r = on.createOscillator(), i = on.createGain();
-		r.type = "sine", r.frequency.value = t, i.gain.setValueAtTime(0, e + n), i.gain.linearRampToValueAtTime(.18, e + n + .02), i.gain.exponentialRampToValueAtTime(.001, e + n + .5), r.connect(i).connect(on.destination), r.start(e + n), r.stop(e + n + .55);
+		let r = ln.createOscillator(), i = ln.createGain();
+		r.type = "sine", r.frequency.value = t, i.gain.setValueAtTime(0, e + n), i.gain.linearRampToValueAtTime(.18, e + n + .02), i.gain.exponentialRampToValueAtTime(.001, e + n + .5), r.connect(i).connect(ln.destination), r.start(e + n), r.stop(e + n + .55);
 	});
 }
-function ln(e) {
+function fn(e) {
 	let t = e.kind === "agent" || e.author === "ai";
-	if (e.author === j.me && !t || e.quiet || rn()) return;
-	let n = e.text && [...e.text.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((e) => pe(e[1]) === j.me);
-	if ((!t || e.author === j.me || n || e.for_who === j.me || j.messages.find((t) => t.id === e.reply_to)?.author === j.me) && (document.hidden || e.thread !== M || n) && (cn(), nn() === "granted" && document.hidden)) {
+	if (e.author === A.me && !t || e.quiet || sn()) return;
+	let n = e.text && [...e.text.matchAll(/(?:^|[\s(])@([\p{L}\p{N}._-]+)/gu)].some((e) => pe(e[1]) === A.me);
+	if ((!t || e.author === A.me || n || e.for_who === A.me || A.messages.find((t) => t.id === e.reply_to)?.author === A.me) && (document.hidden || e.thread !== j || n) && (dn(), on() === "granted" && document.hidden)) {
 		let t = e.author === "ai" ? "@vibe" : e.kind === "agent" ? m("{via} de {who}", {
 			via: e.via || "agent",
 			who: v(e.author)
-		}) : v(e.author), r = new Notification(`${n ? `${m("Te mencionaram")} · ` : ""}${t} · ${j.book?.title ?? "vibebook"}`, {
+		}) : v(e.author), r = new Notification(`${n ? `${m("Te mencionaram")} · ` : ""}${t} · ${A.book?.title ?? "vibebook"}`, {
 			body: (e.text || (e.author === "ai" ? m("respondendo…") : `📎 ${m("anexo")}`)).slice(0, 180),
-			tag: `vb-${j.id}`,
+			tag: `vb-${A.id}`,
 			icon: "/apple-touch-icon.png"
 		});
 		r.onclick = () => {
@@ -1973,13 +1981,13 @@ function ln(e) {
 		};
 	}
 }
-function un() {
-	Yt(), document.title = `${j.book?.title ?? "vibebook"} · vibebook`, h.innerHTML = `
-  <div class="book ${En ? "rail" : ""}">
-    <aside class="side" id="side"></aside>
+function pn() {
+	Qt(), document.title = `${A.book?.title ?? "vibebook"} · vibebook`, h.innerHTML = `
+  <div class="book ${kn ? "rail" : ""}">
+    <aside class="side tw:[@media(max-width:900px)]:max-h-[calc(var(--vvh,100dvh)_-_max(96px,var(--vvh,100dvh)*.2))]!" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${m("Seus vibebooks")}" title="${m("Seus vibebooks")}">${E("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${m("Quadro de tarefas (kanban)")}" aria-pressed="false">${E("board")}<span class="lbl">${m("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${m("Caixa de entrada: o que espera por você")}" aria-label="${m("Caixa de entrada")}">${E("inbox")}<b class="kN" hidden></b></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${m("mostrar/ocultar documento")}">${E("doc")}<span class="lbl">Doc</span></button></div>
-      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${m("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${m("Abrir documento")}"></button><button type="button" data-pane="files" title="${m("Arquivos")}" aria-label="${m("Arquivos")}">${E("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${E("chart", 18)}</button><button type="button" data-pane="decisions" title="${m("Decisões")}" aria-label="${m("Decisões")}">${E("check", 18)}</button><button type="button" data-pane="reminders" title="${m("Lembretes")}" aria-label="${m("Lembretes")}">${E("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${Ee}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${m("Seus vibebooks")}" title="${m("Seus vibebooks")}">${T("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${m("Quadro de tarefas (kanban)")}" aria-pressed="false">${T("board")}<span class="lbl">${m("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${m("Caixa de entrada: o que espera por você")}" aria-label="${m("Caixa de entrada")}">${T("inbox")}<b class="kN" hidden></b></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${m("mostrar/ocultar documento")}">${T("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="docPeek" id="docPeek" role="toolbar" aria-label="${m("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${m("Abrir documento")}"></button><button type="button" data-pane="files" title="${m("Arquivos")}" aria-label="${m("Arquivos")}">${T("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${T("chart", 18)}</button><button type="button" data-pane="decisions" title="${m("Decisões")}" aria-label="${m("Decisões")}">${T("check", 18)}</button><button type="button" data-pane="reminders" title="${m("Lembretes")}" aria-label="${m("Lembretes")}">${T("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${Oe}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
       <div class="msgs" id="msgs"></div>
@@ -1991,11 +1999,11 @@ function un() {
         <div class="row">
           <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${m("Emoji")}" aria-label="${m("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>
           <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${m("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${m("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
-          <button type="button" class="ghost icon" id="plusBtn" title="${m("Anexar, mencionar, votação")}" aria-label="${m("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${E("plus", 18)}</button>
+          <button type="button" class="ghost icon" id="plusBtn" title="${m("Anexar, mencionar, votação")}" aria-label="${m("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${T("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
-            <button type="button" role="menuitem" id="attach">${E("paperclip")} ${m("Anexar arquivo")} <small>${m("ou Cmd+V")}</small></button>
-            <button type="button" role="menuitem" id="mentionBtn">${E("at")} ${m("Mencionar alguém")} <small>@</small></button>
-            <button type="button" role="menuitem" id="pollBtn">${E("chart")} ${m("Criar votação")}</button>
+            <button type="button" role="menuitem" id="attach">${T("paperclip")} ${m("Anexar arquivo")} <small>${m("ou Cmd+V")}</small></button>
+            <button type="button" role="menuitem" id="mentionBtn">${T("at")} ${m("Mencionar alguém")} <small>@</small></button>
+            <button type="button" role="menuitem" id="pollBtn">${T("chart")} ${m("Criar votação")}</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,text/plain,.txt,text/csv,.csv,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
           <textarea id="input" rows="1" placeholder="${m("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${m("Enviar")}</button>
@@ -2006,7 +2014,7 @@ function un() {
       <button type="button" class="docEditBar" id="docEditBar"></button>
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${m("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${m("Redimensionar documento")}" tabindex="0"></div>
-      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${E("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${m("Quadro de tarefas")}" aria-label="${m("Quadro de tarefas")}">${E("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${m("Arquivos")}" aria-label="${m("Arquivos")}">${E("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${E("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${m("Decisões")}" aria-label="${m("Decisões")}">${E("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${m("Lembretes")}" aria-label="${m("Lembretes")}">${E("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${Ee}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${m("Modo do documento")}"><button type="button" data-view="preview">${m("Ver")}</button><button type="button" data-view="edit">${m("Editar")}</button></div></header>
+      <header><div class="ptabs" role="tablist"><button type="button" class="ptDoc" data-pane="doc">${T("doc", 16)} Doc</button><button type="button" class="ptBoard" data-pane="board" title="${m("Quadro de tarefas")}" aria-label="${m("Quadro de tarefas")}">${T("board", 17)}<b class="kN" hidden></b></button><button type="button" data-pane="files" title="${m("Arquivos")}" aria-label="${m("Arquivos")}">${T("paperclip", 17)}<small id="fileCount"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${T("chart", 17)}<small id="appCount"></small></button><button type="button" data-pane="decisions" title="${m("Decisões")}" aria-label="${m("Decisões")}">${T("check", 17)}<small id="decCount"></small></button><button type="button" data-pane="reminders" title="${m("Lembretes")}" aria-label="${m("Lembretes")}">${T("clock", 17)}<small id="remCount"></small></button><button type="button" class="ptAgents" data-pane="agents" title="Agents" aria-label="Agents">${Oe}<i class="qDot"></i><small class="qN"></small></button></div><div class="seg" role="group" aria-label="${m("Modo do documento")}"><button type="button" data-view="preview">${m("Ver")}</button><button type="button" data-view="edit">${m("Editar")}</button></div></header>
       <div class="docCrumb" id="docCrumb" hidden></div>
       <div class="preview" id="preview"></div>
       <textarea id="doc" placeholder="${m("O documento do vibebook. Todo mundo edita; o @vibe mantém atualizado com as decisões.")}"></textarea>
@@ -2029,43 +2037,43 @@ function un() {
       <div class="acts"><button type="button" id="pollCancel">${m("Cancelar")}</button><button class="primary">${m("Criar votação")}</button></div>
     </form>
   </dialog>`;
-	let t = h.querySelector(".book"), n = new ResizeObserver(() => {
-		let e = t.querySelector(".chathead").getBoundingClientRect().height, n = document.getElementById("docPeek")?.getBoundingClientRect().height || 0;
-		document.documentElement.style.setProperty("--headH", `${Math.round(e)}px`), document.documentElement.style.setProperty("--peekH", `${Math.round(n)}px`);
+	let e = h.querySelector(".book"), t = new ResizeObserver(() => {
+		let t = e.querySelector(".chathead").getBoundingClientRect().height, n = document.getElementById("docPeek")?.getBoundingClientRect().height || 0;
+		document.documentElement.style.setProperty("--headH", `${Math.round(t)}px`), document.documentElement.style.setProperty("--peekH", `${Math.round(n)}px`);
 	});
-	n.observe(t.querySelector(".chathead")), n.observe(document.getElementById("docPeek")), Jr(document.getElementById("docPeek"), "doc", !0, (e) => {
-		let n = e.target.closest("[data-pane]")?.dataset.pane || "doc";
-		if (t.dataset.sheet === "doc" && t.dataset.pane === n) return U();
-		t.classList.contains("boardview") && document.getElementById("toggleBoard").click(), he(n), Kr("doc");
-	}), Jr(document.getElementById("docGrab"), "doc", !1), document.getElementById("sheetDim").onclick = () => U(), document.getElementById("toggleDoc").onclick = () => t.classList.toggle("nodoc");
-	let r = (e) => {
-		document.body.contains(t) && (e && u(t, t.querySelector(":scope > .chat"), t.querySelector(":scope > .chat > #composer")), t.classList.toggle("boardview", e), t.classList.toggle("nodoc", e), document.getElementById("toggleBoard").setAttribute("aria-pressed", String(e)), e && (U(), V()));
+	t.observe(e.querySelector(".chathead")), t.observe(document.getElementById("docPeek")), Yr(document.getElementById("docPeek"), "doc", !0, (t) => {
+		let n = t.target.closest("[data-pane]")?.dataset.pane || "doc";
+		if (e.dataset.sheet === "doc" && e.dataset.pane === n) return H();
+		e.classList.contains("boardview") && document.getElementById("toggleBoard").click(), he(n), qr("doc");
+	}), Yr(document.getElementById("docGrab"), "doc", !1), document.getElementById("sheetDim").onclick = () => H(), document.getElementById("toggleDoc").onclick = () => e.classList.toggle("nodoc");
+	let n = (t) => {
+		document.body.contains(e) && (t && d(e, e.querySelector(":scope > .chat"), e.querySelector(":scope > .chat > #composer")), e.classList.toggle("boardview", t), e.classList.toggle("nodoc", t), document.getElementById("toggleBoard").setAttribute("aria-pressed", String(t)), t && (H(), B()));
 	};
-	document.getElementById("toggleBoard").onclick = () => r(!t.classList.contains("boardview"));
-	let i = (e) => {
-		e = Math.round(Math.min(Math.max(e, 260), window.innerWidth - 260 - 320)), t.style.setProperty("--doc-w", `${e}px`);
+	document.getElementById("toggleBoard").onclick = () => n(!e.classList.contains("boardview"));
+	let r = (t) => {
+		t = Math.round(Math.min(Math.max(t, 260), window.innerWidth - 260 - 320)), e.style.setProperty("--doc-w", `${t}px`);
 		try {
-			localStorage.setItem("vb.docW", e);
+			localStorage.setItem("vb.docW", t);
 		} catch {}
 	};
 	try {
 		let e = Number(localStorage.getItem("vb.docW"));
-		e && i(e);
+		e && r(e);
 	} catch {}
 	let a = document.getElementById("resizer");
 	a.onpointerdown = (e) => {
-		e.preventDefault(), a.setPointerCapture(e.pointerId), a.classList.add("drag"), document.body.classList.add("resizing"), a.onpointermove = (e) => i(window.innerWidth - e.clientX), a.onpointerup = () => {
+		e.preventDefault(), a.setPointerCapture(e.pointerId), a.classList.add("drag"), document.body.classList.add("resizing"), a.onpointermove = (e) => r(window.innerWidth - e.clientX), a.onpointerup = () => {
 			a.onpointermove = null, a.classList.remove("drag"), document.body.classList.remove("resizing");
 		};
-	}, a.ondblclick = () => i(380), a.onkeydown = (e) => {
+	}, a.ondblclick = () => r(380), a.onkeydown = (e) => {
 		let t = document.querySelector(".doc").getBoundingClientRect().width;
-		e.key === "ArrowLeft" ? i(t + 24) : e.key === "ArrowRight" && i(t - 24);
+		e.key === "ArrowLeft" ? r(t + 24) : e.key === "ArrowRight" && r(t - 24);
 	};
 	let o = document.getElementById("input");
 	{
-		let e = document.getElementById("emojiBtn"), t = document.getElementById("emojiPop"), n = document.getElementById("emojiQ"), r = document.getElementById("emojiGrid"), i = [...new Map(Object.entries(_e).map(([e, t]) => [t, e])).entries()], a = () => {
+		let e = document.getElementById("emojiBtn"), t = document.getElementById("emojiPop"), n = document.getElementById("emojiQ"), r = document.getElementById("emojiGrid"), i = [...new Map(Object.entries(ve).map(([e, t]) => [t, e])).entries()], a = () => {
 			let e = n.value.trim().toLowerCase().replace(/:/g, "");
-			r.innerHTML = i.filter(([t, n]) => !e || Object.entries(_e).some(([n, r]) => r === t && n.includes(e))).map(([e, t]) => `<button type="button" title=":${g(t)}:" data-emoji="${e}">${e}</button>`).join("");
+			r.innerHTML = i.filter(([t, n]) => !e || Object.entries(ve).some(([n, r]) => r === t && n.includes(e))).map(([e, t]) => `<button type="button" title=":${g(t)}:" data-emoji="${e}">${e}</button>`).join("");
 		}, s = () => {
 			t.hidden = !0, e.setAttribute("aria-expanded", "false");
 		};
@@ -2083,43 +2091,43 @@ function un() {
 			!t.hidden && !t.contains(n.target) && n.target !== e && s();
 		});
 	}
-	let s = document.getElementById("mentionPop"), c = [], l = 0, ee = -1, te = () => {
-		s.hidden = !0, c = [], ee = -1;
+	let s = document.getElementById("mentionPop"), c = [], l = 0, u = -1, te = () => {
+		s.hidden = !0, c = [], u = -1;
 	}, ne = (e) => {
 		let t = c[e];
 		if (!t) return;
 		let n = o.selectionStart;
-		o.value = `${o.value.slice(0, ee)}@${t.handle} ${o.value.slice(n)}`;
-		let r = ee + t.handle.length + 2;
+		o.value = `${o.value.slice(0, u)}@${t.handle} ${o.value.slice(n)}`;
+		let r = u + t.handle.length + 2;
 		o.setSelectionRange(r, r), te(), o.focus(), o.oninput();
-	}, p = () => {
+	}, re = () => {
 		s.innerHTML = c.map((e, t) => `<button type="button" role="option" class="${t === l ? "sel" : ""}" data-i="${t}">${y(e.email)}<b>@${g(e.handle)}</b><small>${g(e.label)}</small></button>`).join(""), s.hidden = !c.length;
 	};
 	s.onmousedown = (e) => {
 		let t = e.target.closest("[data-i]");
 		t && (e.preventDefault(), ne(Number(t.dataset.i)));
 	};
-	let re = () => {
+	let p = () => {
 		let e = o.value.slice(0, o.selectionStart), t = e.match(/(^|\s)@([\p{L}\p{N}._-]*)$/u);
 		if (!t) return te();
-		ee = e.length - t[2].length - 1;
-		let n = ue(t[2]), r = [...(j.members || []).filter((e) => e !== j.me).map((e) => ({
+		u = e.length - t[2].length - 1;
+		let n = ue(t[2]), r = [...(A.members || []).filter((e) => e !== A.me).map((e) => ({
 			email: e,
 			handle: fe(e),
 			label: v(e) === fe(e) ? e : v(e)
 		}))];
-		if (L.id === j.id) for (let e of L.sandboxes || []) e.email === j.me && r.push({
+		if (I.id === A.id) for (let e of I.sandboxes || []) e.email === A.me && r.push({
 			email: e.email,
 			handle: e.name,
 			label: m("seu agent no sandbox")
 		});
-		c = r.filter((e) => !n || e.handle.startsWith(n) || ue(e.label).includes(n)).slice(0, 8), l = 0, p();
+		c = r.filter((e) => !n || e.handle.startsWith(n) || ue(e.label).includes(n)).slice(0, 8), l = 0, re();
 	};
 	o.oninput = () => {
-		o.style.height = "auto", o.style.height = `${o.scrollHeight}px`, re();
+		o.style.height = "auto", o.style.height = `${o.scrollHeight}px`, p();
 	}, o.onblur = () => setTimeout(te, 100), o.onkeydown = (e) => {
 		if (!s.hidden && c.length) {
-			if (e.key === "ArrowDown" || e.key === "ArrowUp") return e.preventDefault(), l = (l + (e.key === "ArrowDown" ? 1 : c.length - 1)) % c.length, p();
+			if (e.key === "ArrowDown" || e.key === "ArrowUp") return e.preventDefault(), l = (l + (e.key === "ArrowDown" ? 1 : c.length - 1)) % c.length, re();
 			if ((e.key === "Enter" || e.key === "Tab") && !e.isComposing) return e.preventDefault(), ne(l);
 			if (e.key === "Escape") return e.preventDefault(), te();
 		}
@@ -2129,138 +2137,138 @@ function un() {
 	ae.addEventListener("touchend", (e) => {
 		ae.disabled || (e.preventDefault(), document.getElementById("composer").requestSubmit());
 	}), ae.addEventListener("mousedown", (e) => e.preventDefault());
-	let _ = () => {
-		ie.innerHTML = Ft.map((e, t) => `<div class="pend ${!e.meta && !e.error ? "up" : ""} ${e.error ? "err" : ""}" title="${g(e.error || e.file.name)}">
-      ${e.url ? `<img src="${e.url}" alt="">` : `${E("file", 22)}<br>${g(e.file.name.slice(0, 18))}`}${e.error ? `<span style="position:relative;z-index:1">${g(e.error)}</span>` : ""}
-      <button type="button" class="rm" data-rm="${t}" aria-label="${m("Remover anexo")}">${E("x")}</button></div>`).join(""), ie.querySelectorAll("[data-rm]").forEach((e) => e.onclick = () => {
-			let [t] = Ft.splice(Number(e.dataset.rm), 1);
-			t?.url && URL.revokeObjectURL(t.url), _();
+	let oe = () => {
+		ie.innerHTML = Lt.map((e, t) => `<div class="pend ${!e.meta && !e.error ? "up" : ""} ${e.error ? "err" : ""}" title="${g(e.error || e.file.name)}">
+      ${e.url ? `<img src="${e.url}" alt="">` : `${T("file", 22)}<br>${g(e.file.name.slice(0, 18))}`}${e.error ? `<span style="position:relative;z-index:1">${g(e.error)}</span>` : ""}
+      <button type="button" class="rm" data-rm="${t}" aria-label="${m("Remover anexo")}">${T("x")}</button></div>`).join(""), ie.querySelectorAll("[data-rm]").forEach((e) => e.onclick = () => {
+			let [t] = Lt.splice(Number(e.dataset.rm), 1);
+			t?.url && URL.revokeObjectURL(t.url), oe();
 		});
-		let e = Ft.some((e) => !e.meta && !e.error);
+		let e = Lt.some((e) => !e.meta && !e.error);
 		ae.disabled = e, ae.textContent = m(e ? "Enviando…" : "Enviar");
-	}, oe = (t) => {
-		for (let n of t) {
-			!n.type && /\.html?$/i.test(n.name) && (n = new File([n], n.name, { type: "text/html" })), !n.type && /\.md$/i.test(n.name) && (n = new File([n], n.name, { type: "text/markdown" }));
-			let t = {
+	}, _ = (e) => {
+		for (let t of e) {
+			!t.type && /\.html?$/i.test(t.name) && (t = new File([t], t.name, { type: "text/html" })), !t.type && /\.md$/i.test(t.name) && (t = new File([t], t.name, { type: "text/markdown" }));
+			let e = {
 				txt: "text/plain",
 				csv: "text/csv"
-			}[(/\.(\w+)$/.exec(n.name)?.[1] || "").toLowerCase()];
-			t && n.type !== t && (n = new File([n], n.name, { type: t }));
-			let r = It[(/\.(\w+)$/.exec(n.name)?.[1] || "").toLowerCase()];
-			if (r && !n.type.startsWith("audio/") && (n = new File([n], n.name, { type: r })), !Lt.includes(n.type)) {
-				alert(`${n.name}: ${m("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv e áudio.")}`);
+			}[(/\.(\w+)$/.exec(t.name)?.[1] || "").toLowerCase()];
+			e && t.type !== e && (t = new File([t], t.name, { type: e }));
+			let n = Rt[(/\.(\w+)$/.exec(t.name)?.[1] || "").toLowerCase()];
+			if (n && !t.type.startsWith("audio/") && (t = new File([t], t.name, { type: n })), !zt.includes(t.type)) {
+				alert(`${t.name}: ${m("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv e áudio.")}`);
 				continue;
 			}
-			let i = n.type.startsWith("audio/");
-			if (n.size > (i ? 50 : 10) * 1024 * 1024) {
-				alert(`${n.name}: ${m(i ? "áudio maior que 50MB." : "maior que 10MB.")}`);
+			let r = t.type.startsWith("audio/");
+			if (t.size > (r ? 50 : 10) * 1024 * 1024) {
+				alert(`${t.name}: ${m(r ? "áudio maior que 50MB." : "maior que 10MB.")}`);
 				continue;
 			}
-			n.name && n.name !== "image.png" || (n = new File([n], `print-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: n.type }));
+			t.name && t.name !== "image.png" || (t = new File([t], `print-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`, { type: t.type }));
 			let a = {
-				file: n,
-				url: n.type.startsWith("image/") ? URL.createObjectURL(n) : null
+				file: t,
+				url: t.type.startsWith("image/") ? URL.createObjectURL(t) : null
 			};
-			Ft.push(a), e(j.id).uploadFile({
-				name: n.name,
-				type: n.type,
-				body: n
+			Lt.push(a), i(A.id).uploadFile({
+				name: t.name,
+				type: t.type,
+				body: t
 			}).then((e) => {
 				a.meta = e;
 			}).catch((e) => {
 				a.error = e.message || m("sem conexão");
-			}).finally(_);
+			}).finally(oe);
 		}
-		_();
-	}, se = document.getElementById("fileInput"), ce = document.getElementById("plusBtn"), le = document.getElementById("plusMenu"), b = (e = le.hidden) => {
-		le.hidden = !e, ce.setAttribute("aria-expanded", String(e));
+		oe();
+	}, se = document.getElementById("fileInput"), ce = document.getElementById("plusBtn"), b = document.getElementById("plusMenu"), le = (e = b.hidden) => {
+		b.hidden = !e, ce.setAttribute("aria-expanded", String(e));
 	};
 	ce.onclick = (e) => {
-		e.stopPropagation(), b();
+		e.stopPropagation(), le();
 	}, ce.onmousedown = ce.onpointerdown = (e) => {
 		document.activeElement?.id === "input" && e.preventDefault();
-	}, le.onclick = () => b(!1), le.closest("main").addEventListener("click", (e) => {
-		!le.hidden && !le.contains(e.target) && b(!1);
-	}), le.onkeydown = (e) => {
-		e.key === "Escape" && (b(!1), ce.focus());
+	}, b.onclick = () => le(!1), b.closest("main").addEventListener("click", (e) => {
+		!b.hidden && !b.contains(e.target) && le(!1);
+	}), b.onkeydown = (e) => {
+		e.key === "Escape" && (le(!1), ce.focus());
 	}, document.getElementById("mentionBtn").onclick = () => {
 		let e = o.selectionStart ?? o.value.length, t = o.value.slice(0, e), n = t && !/\s$/.test(t) ? " @" : "@";
 		o.value = t + n + o.value.slice(e), o.focus(), o.setSelectionRange(e + n.length, e + n.length), setTimeout(() => o.oninput(), 120);
 	}, document.getElementById("attach").onclick = () => se.click(), se.onchange = () => {
-		oe([...se.files]), se.value = "";
+		_([...se.files]), se.value = "";
 	}, document.onpaste = (e) => {
 		let t = e.target, n = t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName));
 		if (!o.isConnected || n && t !== o) return;
 		let r = [...e.clipboardData?.files ?? []];
-		r.length || (r = [...e.clipboardData?.items ?? []].filter((e) => e.kind === "file").map((e) => e.getAsFile()).filter(Boolean)), r.length && (e.preventDefault(), oe(r), o.focus());
+		r.length || (r = [...e.clipboardData?.items ?? []].filter((e) => e.kind === "file").map((e) => e.getAsFile()).filter(Boolean)), r.length && (e.preventDefault(), _(r), o.focus());
 	};
-	let de = h.querySelector(".chat");
-	de.addEventListener("dragover", (e) => {
-		[...e.dataTransfer.types].includes("Files") && (e.preventDefault(), de.classList.add("drop"));
-	}), de.addEventListener("dragleave", (e) => {
-		de.contains(e.relatedTarget) || de.classList.remove("drop");
-	}), de.addEventListener("drop", (e) => {
-		e.preventDefault(), de.classList.remove("drop"), oe([...e.dataTransfer.files]);
+	let x = h.querySelector(".chat");
+	x.addEventListener("dragover", (e) => {
+		[...e.dataTransfer.types].includes("Files") && (e.preventDefault(), x.classList.add("drop"));
+	}), x.addEventListener("dragleave", (e) => {
+		x.contains(e.relatedTarget) || x.classList.remove("drop");
+	}), x.addEventListener("drop", (e) => {
+		e.preventDefault(), x.classList.remove("drop"), _([...e.dataTransfer.files]);
 	}), document.getElementById("composer").onsubmit = (e) => {
-		if (e.preventDefault(), Ft.some((e) => !e.meta && !e.error)) return;
-		let t = o.value.trim(), n = Ft.filter((e) => e.meta).map((e) => e.meta.id);
-		(t || n.length) && (N({
+		if (e.preventDefault(), Lt.some((e) => !e.meta && !e.error)) return;
+		let t = o.value.trim(), n = Lt.filter((e) => e.meta).map((e) => e.meta.id);
+		(t || n.length) && (M({
 			t: "msg",
-			thread: M,
+			thread: j,
 			text: t,
 			files: n,
-			reply_to: W?.id
-		}), W = null, xi(), Ft.forEach((e) => e.url && URL.revokeObjectURL(e.url)), Ft = [], o.value = "", o.oninput(), _());
+			reply_to: U?.id
+		}), U = null, Si(), Lt.forEach((e) => e.url && URL.revokeObjectURL(e.url)), Lt = [], o.value = "", o.oninput(), oe());
 	};
-	let pe = document.getElementById("pollDlg"), x = document.getElementById("pollOpts"), me = (e = "") => {
-		x.insertAdjacentHTML("beforeend", `<input name="opt" maxlength="200" placeholder="${m("Opção {n}", { n: x.children.length + 1 })}" value="${g(e)}" />`);
+	let de = document.getElementById("pollDlg"), pe = document.getElementById("pollOpts"), me = (e = "") => {
+		pe.insertAdjacentHTML("beforeend", `<input name="opt" maxlength="200" placeholder="${m("Opção {n}", { n: pe.children.length + 1 })}" value="${g(e)}" />`);
 	};
 	document.getElementById("pollBtn").onclick = () => {
-		document.getElementById("pollForm").reset(), x.innerHTML = "", me(), me(), me(), pe.showModal();
+		document.getElementById("pollForm").reset(), pe.innerHTML = "", me(), me(), me(), de.showModal();
 	}, document.getElementById("addOpt").onclick = () => {
-		x.children.length < 10 && me(), x.lastElementChild.focus();
-	}, document.getElementById("pollCancel").onclick = () => pe.close(), document.getElementById("pollForm").onsubmit = (e) => {
+		pe.children.length < 10 && me(), pe.lastElementChild.focus();
+	}, document.getElementById("pollCancel").onclick = () => de.close(), document.getElementById("pollForm").onsubmit = (e) => {
 		e.preventDefault();
 		let t = e.target, n = [...t.querySelectorAll("[name=\"opt\"]")].map((e) => e.value.trim()).filter(Boolean);
 		if (n.length < 2) return alert(m("Coloque pelo menos 2 opções."));
-		N({
+		M({
 			t: "poll.create",
-			thread: M,
+			thread: j,
 			question: t.q.value,
 			options: n,
 			multi: t.multi.checked
-		}), pe.close();
+		}), de.close();
 	}, document.getElementById("msgs").addEventListener("click", (e) => {
 		let t = e.target.closest("[data-vote]");
-		if (t) return N({
+		if (t) return M({
 			t: "vote",
 			id: t.closest("[data-poll]").dataset.poll,
 			opt: Number(t.dataset.vote)
 		});
 		let n = e.target.closest("[data-close]");
-		n && confirm(m("Encerrar a votação?")) && N({
+		n && confirm(m("Encerrar a votação?")) && M({
 			t: "poll.close",
 			id: n.dataset.close
 		});
 	});
-	let he = (e) => {
-		let n = t.querySelector(":scope > .doc");
-		n && (n.dataset.pane = e, t.dataset.pane = e, n.querySelectorAll(":scope > header .ptabs button").forEach((t) => {
-			t.classList.toggle("sel", t.dataset.pane === e), t.setAttribute("aria-selected", t.dataset.pane === e);
-		}), e === "files" && (j.filesAll || N({ t: "files.get" }), la()), e === "decisions" && Vi(), e === "apps" && Hi(), e === "reminders" && ca(), e === "agents" && (zn(), Qn()), e === "board" && (u(t, n), V()));
+	let he = (t) => {
+		let n = e.querySelector(":scope > .doc");
+		n && (n.dataset.pane = t, e.dataset.pane = t, n.querySelectorAll(":scope > header .ptabs button").forEach((e) => {
+			e.classList.toggle("sel", e.dataset.pane === t), e.setAttribute("aria-selected", e.dataset.pane === t);
+		}), t === "files" && (A.filesAll || M({ t: "files.get" }), ua()), t === "decisions" && Hi(), t === "apps" && Ui(), t === "reminders" && la(), t === "agents" && (Hn(), tr()), t === "board" && (d(e, n), B()));
 	};
-	Gt = d(t, H, () => {
-		r(!1), he("board");
-	}), h.querySelectorAll(".ptabs button").forEach((e) => e.onclick = () => he(e.dataset.pane)), document.removeEventListener("click", Kn), document.removeEventListener("vb:pane", qn), Kn = (e) => {
-		e.target.closest?.("[data-sbx-open]") && document.body.contains(t) && (U(), document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })), H.matches && Kr("doc"));
-	}, qn = (e) => {
-		document.body.contains(t) && (t.classList.remove("nodoc"), he(e.detail));
-	}, document.addEventListener("click", Kn), document.addEventListener("vb:pane", qn), he("doc");
-	let ge = document.getElementById("doc"), ve;
+	qt = ee(e, V, () => {
+		n(!1), he("board");
+	}), h.querySelectorAll(".ptabs button").forEach((e) => e.onclick = () => he(e.dataset.pane)), document.removeEventListener("click", Yn), document.removeEventListener("vb:pane", Xn), Yn = (t) => {
+		t.target.closest?.("[data-sbx-open]") && document.body.contains(e) && (H(), document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })), V.matches && qr("doc"));
+	}, Xn = (t) => {
+		document.body.contains(e) && (e.classList.remove("nodoc"), he(t.detail));
+	}, document.addEventListener("click", Yn), document.addEventListener("vb:pane", Xn), he("doc");
+	let ge = document.getElementById("doc"), _e;
 	ge.oninput = () => {
-		clearTimeout(ve), ve = setTimeout(() => {
+		clearTimeout(_e), _e = setTimeout(() => {
 			let e = Ia();
-			e ? j.docs[e] = ge.value : j.doc = ge.value, N({
+			e ? A.docs[e] = ge.value : A.doc = ge.value, M({
 				t: "doc",
 				text: ge.value,
 				epic: e || void 0
@@ -2270,7 +2278,7 @@ function un() {
 	let ye = h.querySelector(".doc");
 	function be(e) {
 		let t = document.getElementById("docEditBar");
-		t && (t.innerHTML = e === "edit" ? `${E("check", 16)} ${m("Pronto")}` : `${E("pencil", 16)} ${m("Editar")}`);
+		t && (t.innerHTML = e === "edit" ? `${T("check", 16)} ${m("Pronto")}` : `${T("pencil", 16)} ${m("Editar")}`);
 	}
 	document.getElementById("docEditBar").onclick = () => xe(ye.dataset.view === "edit" ? "preview" : "edit");
 	let xe = (e) => {
@@ -2278,36 +2286,36 @@ function un() {
 		try {
 			localStorage.setItem("vb.docView", e);
 		} catch {}
-		e === "edit" ? (vn(), (pn || ge).focus()) : (vn(), $());
+		e === "edit" ? (xn(), (gn || ge).focus()) : (xn(), $());
 	};
 	ye.querySelectorAll(".seg button").forEach((e) => e.onclick = () => xe(e.dataset.view));
-	let S = "preview";
+	let Se = "preview";
 	try {
-		S = localStorage.getItem("vb.docView") || "preview";
+		Se = localStorage.getItem("vb.docView") || "preview";
 	} catch {}
-	if (ye.dataset.view = S, be(S), ye.querySelectorAll(".seg button").forEach((e) => e.classList.toggle("sel", e.dataset.view === S)), z(), Z(), $(!0), la(), Hi(), ca(), Vi(), At(document.getElementById("agentNudge"), j.id), an(), fn(), /^#m\d+$/.test(location.hash)) setTimeout(() => Di(Number(location.hash.slice(2))), 300);
+	if (ye.dataset.view = Se, be(Se), ye.querySelectorAll(".seg button").forEach((e) => e.classList.toggle("sel", e.dataset.view === Se)), R(), X(), $(!0), ua(), Ui(), la(), Hi(), Mt(document.getElementById("agentNudge"), A.id), cn(), hn(), /^#m\d+$/.test(location.hash)) setTimeout(() => Oi(Number(location.hash.slice(2))), 300);
 	else if (/^#f[0-9a-f]+$/.test(location.hash)) {
 		let e = location.hash.slice(2);
-		f.replaceState(null, "", location.pathname + location.search), setTimeout(() => dn(e), 300);
+		f.replaceState(null, "", location.pathname + location.search), setTimeout(() => mn(e), 300);
 	}
 }
-function dn(e, t) {
-	let n = (j.files || []).find((t) => t.id === e) || X().flatMap((e) => e.files || []).find((t) => t.id === e);
-	if (!n && !t && !j.filesAll) return N({ t: "files.get" }), setTimeout(() => dn(e, !0), 800);
-	ei(`/api/books/${j.id}/files/${e}`, n?.type?.startsWith("image/") ? "img" : "frame", n?.name || m("arquivo"));
+function mn(e, t) {
+	let n = (A.files || []).find((t) => t.id === e) || Y().flatMap((e) => e.files || []).find((t) => t.id === e);
+	if (!n && !t && !A.filesAll) return M({ t: "files.get" }), setTimeout(() => mn(e, !0), 800);
+	ti(`/api/books/${A.id}/files/${e}`, n?.type?.startsWith("image/") ? "img" : "frame", n?.name || m("arquivo"));
 }
-function fn() {
-	let e = `vb.welcomed.${j.me}`;
+function hn() {
+	let e = `vb.welcomed.${A.me}`;
 	try {
-		if (!j.book?.owner || j.me === j.book.owner || localStorage.getItem(e)) return;
+		if (!A.book?.owner || A.me === A.book.owner || localStorage.getItem(e)) return;
 		localStorage.setItem(e, "1");
 	} catch {
 		return;
 	}
-	let t = v(j.book.owner), n = [
+	let t = v(A.book.owner), n = [
 		[
-			E("hand", 24),
-			m("Bem-vindo a <b>{room}</b>", { room: g(j.book.title || m("esta sala")) }),
+			T("hand", 24),
+			m("Bem-vindo a <b>{room}</b>", { room: g(A.book.title || m("esta sala")) }),
 			m("{owner} te chamou pra cá. Cada conversa importante ganha uma sala no vibebook: o chat, as tarefas e o doc do projeto ficam juntos.", { owner: g(t) })
 		],
 		[
@@ -2316,19 +2324,19 @@ function fn() {
 			m("Você conecta o seu agent, no seu computador e com as suas permissões. Ele lê a sala, pega tarefas, atualiza os épicos e conta o que entregou. Só o que <b>você</b> escreve é instrução pra ele: o resto ele lê como contexto.")
 		],
 		[
-			E("paperclip", 24),
+			T("paperclip", 24),
 			m("O contexto é de todo mundo"),
 			m("Doc, arquivos, decisões e tarefas ficam na sala, e todo agent lê o mesmo contexto antes de agir. Quando alguém passa o bastão ou fica esperando você, a sala mostra.")
 		],
 		[
-			E("arrowRight", 24),
+			T("arrowRight", 24),
 			m("Conecte o seu agent"),
 			""
 		]
 	], r = document.createElement("dialog");
 	r.className = "welcome", document.body.appendChild(r);
 	let i = 0, a = () => {
-		r.close(), r.remove(), At(document.getElementById("agentNudge"), j.id);
+		r.close(), r.remove(), Mt(document.getElementById("agentNudge"), A.id);
 	}, o = () => {
 		let [e, t, s] = n[i], c = i === n.length - 1;
 		r.innerHTML = `<div class="wIco">${e}</div><h3>${t}</h3>${s ? `<p>${s}</p>` : `<p>${m("Cole isto no <b>Claude Code</b>, dentro da pasta do projeto. Ele instala o vibebook, entra nesta sala e fica ouvindo.")}</p><div id="wConnect"></div>`}
@@ -2338,46 +2346,46 @@ function fn() {
 			let t = e.dataset.w;
 			if (t === "skip" || t === "1" && c) return a();
 			i += Number(t), o();
-		}), c && At(r.querySelector("#wConnect"), j.id).then(() => {
+		}), c && Mt(r.querySelector("#wConnect"), A.id).then(() => {
 			let e = r.querySelector("#wConnect");
-			e && e.hidden && (e.hidden = !1, e.innerHTML = `<div class="setup done"><span class="setupIcon">${E("check", 22)}</span><div><b>${m("Seu agent já está conectado.")}</b><span>${m("Ligue ele nesta sala com ✻ Ligar agent, no topo.")}</span></div></div>`);
+			e && e.hidden && (e.hidden = !1, e.innerHTML = `<div class="setup done"><span class="setupIcon">${T("check", 22)}</span><div><b>${m("Seu agent já está conectado.")}</b><span>${m("Ligue ele nesta sala com ✻ Ligar agent, no topo.")}</span></div></div>`);
 		}), r.querySelector(".wFoot .primary").focus();
 	};
 	r.addEventListener("cancel", (e) => {
 		e.preventDefault(), a();
 	}), o(), r.showModal();
 }
-var pn = null, mn = null, hn = null, gn = 0;
-function _n() {
-	++gn;
-	let e = pn;
-	pn = null, mn = null, e?.destroy();
+var gn = null, _n = null, vn = null, yn = 0;
+function bn() {
+	++yn;
+	let e = gn;
+	gn = null, _n = null, e?.destroy();
 }
-function vn() {
-	let e = h.querySelector(".doc"), t = document.getElementById("cm"), n = Ia(), r = e?.dataset.view === "edit" && j?.id && !I() ? n ? `${j.id}~${n}` : j.id : null;
-	if (r === mn) return;
-	_n(), mn = r, e?.classList.remove("collab"), t && (t.innerHTML = "");
-	let i = gn;
-	r && t && (hn ??= import(
+function xn() {
+	let e = h.querySelector(".doc"), t = document.getElementById("cm"), n = Ia(), r = e?.dataset.view === "edit" && A?.id && !F() ? n ? `${A.id}~${n}` : A.id : null;
+	if (r === _n) return;
+	bn(), _n = r, e?.classList.remove("collab"), t && (t.innerHTML = "");
+	let i = yn;
+	r && t && (vn ??= import(
 		/* @vite-ignore */
 		"/collab-svelte.js"
 )).then((a) => {
-		i === gn && (pn?.destroy(), t.innerHTML = "", pn = a.mountCollab(t, {
+		i === yn && (gn?.destroy(), t.innerHTML = "", gn = a.mountCollab(t, {
 			room: r,
-			name: v(j.me),
-			color: _(j.me),
+			name: v(A.me),
+			color: _(A.me),
 			onText: (e) => {
-				i === gn && (n ? j.docs[n] = e : j.doc = e);
+				i === yn && (n ? A.docs[n] = e : A.doc = e);
 			},
 			onStatus: (t) => {
-				i === gn && (e.classList.toggle("collab", t === "connected"), t !== "connected" && $(!0));
+				i === yn && (e.classList.toggle("collab", t === "connected"), t !== "connected" && $(!0));
 			}
 		}));
 	}).catch(() => {
-		hn = null;
+		vn = null;
 	});
 }
-var yn = E("sidebar", 20), P = () => j?.book?.title || "vibebook", bn = [
+var Sn = T("sidebar", 20), N = () => A?.book?.title || "vibebook", Cn = [
 	"oklch(0.5 0.17 248)",
 	"oklch(0.58 0.17 35)",
 	"oklch(0.52 0.11 175)",
@@ -2386,7 +2394,7 @@ var yn = E("sidebar", 20), P = () => j?.book?.title || "vibebook", bn = [
 	"oklch(0.45 0.1 145)",
 	"oklch(0.36 0.06 255)",
 	"oklch(0.55 0.16 10)"
-], xn = (e) => bn[[...String(e)].reduce((e, t) => e * 31 + t.charCodeAt(0) >>> 0, 7) % bn.length], Sn = /* @__PURE__ */ new Set([
+], wn = (e) => Cn[[...String(e)].reduce((e, t) => e * 31 + t.charCodeAt(0) >>> 0, 7) % Cn.length], Tn = /* @__PURE__ */ new Set([
 	"e",
 	"de",
 	"do",
@@ -2407,14 +2415,14 @@ var yn = E("sidebar", 20), P = () => j?.book?.title || "vibebook", bn = [
 	"the",
 	"and",
 	"of"
-]), F = (e) => {
-	let t = e.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean), n = t.filter((e) => !Sn.has(e.toLowerCase()));
+]), P = (e) => {
+	let t = e.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/).filter(Boolean), n = t.filter((e) => !Tn.has(e.toLowerCase()));
 	return ((n.length ? n : t).slice(0, 2).map((e) => e[0]).join("") || "◆").toUpperCase();
-}, Cn = (e) => {
-	let t = Me(w?.find((e) => e.id === j?.id));
-	return e ? t ? `<span class="${e} hasIcon"><img src="${t}" alt=""></span>` : `<span class="${e}" style="background:${xn(P())}">${g(F(P()))}</span>` : t ? `<img src="${t}" alt="">` : g(F(P()));
+}, En = (e) => {
+	let t = Pe(C?.find((e) => e.id === A?.id));
+	return e ? t ? `<span class="${e} hasIcon"><img src="${t}" alt=""></span>` : `<span class="${e}" style="background:${wn(N())}">${g(P(N()))}</span>` : t ? `<img src="${t}" alt="">` : g(P(N()));
 };
-async function wn(e, t) {
+async function Dn(e, t) {
 	let n = URL.createObjectURL(e);
 	try {
 		let e = await new Promise((e, t) => {
@@ -2428,13 +2436,13 @@ async function wn(e, t) {
 		URL.revokeObjectURL(n);
 	}
 }
-async function Tn(e) {
+async function On(e) {
 	let t = document.querySelector("link[rel=\"icon\"]");
 	if (!e) {
 		t.type = "image/svg+xml", t.href = "/favicon.svg";
 		return;
 	}
-	let n = Me(w?.find((e) => e.id === j?.id));
+	let n = Pe(C?.find((e) => e.id === A?.id));
 	if (n) {
 		let e = new Image();
 		e.onload = () => {
@@ -2451,45 +2459,45 @@ async function Tn(e) {
 	let r = document.createElement("canvas");
 	r.width = r.height = 64;
 	let i = r.getContext("2d");
-	i.fillStyle = xn(e), i.beginPath(), i.roundRect(0, 0, 64, 64, 14), i.fill();
+	i.fillStyle = wn(e), i.beginPath(), i.roundRect(0, 0, 64, 64, 14), i.fill();
 	let a = i.createRadialGradient(56, 8, 0, 56, 8, 44);
 	a.addColorStop(0, "rgba(255,255,255,.28)"), a.addColorStop(1, "rgba(255,255,255,0)"), i.fillStyle = a, i.fill();
-	let o = F(e);
+	let o = P(e);
 	i.fillStyle = "#fff", i.textAlign = "center", i.textBaseline = "middle", i.font = `400 ${o.length > 1 ? 30 : 38}px Caprasimo, Georgia, serif`, i.fillText(o, 32, 35), t.type = "image/png", t.href = r.toDataURL("image/png");
 }
-var En = !1;
-function Dn() {
-	En = !En;
+var kn = !1;
+function An() {
+	kn = !kn;
 	try {
-		localStorage.setItem("vb.rail", En ? "1" : "0");
+		localStorage.setItem("vb.rail", kn ? "1" : "0");
 	} catch {}
-	h.querySelector(".book")?.classList.toggle("rail", En), z();
+	h.querySelector(".book")?.classList.toggle("rail", kn), R();
 }
-function On(e) {
+function jn(e) {
 	e.innerHTML = `
-    <button class="iconBtn" id="railToggle" title="${m("Abrir menu")}" aria-label="${m("Abrir menu")}" aria-expanded="false">${yn}</button>
-    <a data-nav href="/app" class="iconBtn" title="${m("Seus vibebooks")}" aria-label="${m("Seus vibebooks")}" style="text-decoration:none">${E("back", 20)}</a>
+    <button class="iconBtn" id="railToggle" title="${m("Abrir menu")}" aria-label="${m("Abrir menu")}" aria-expanded="false">${Sn}</button>
+    <a data-nav href="/app" class="iconBtn" title="${m("Seus vibebooks")}" aria-label="${m("Seus vibebooks")}" style="text-decoration:none">${T("back", 20)}</a>
     <div class="railSep"></div>
     <div class="railList">
-      <button class="rb geral ${M === "main" ? "sel" : ""} ${Me(w?.find((e) => e.id === j.id)) ? "hasIcon" : ""}" style="background:${xn(P())}" data-thread="main" title="${g(P())}" aria-label="${g(P())}">${Cn("")}</button>
-      ${j.epics.filter((e) => !e.archived || e.id === M).map((e) => {
+      <button class="rb geral ${j === "main" ? "sel" : ""} ${Pe(C?.find((e) => e.id === A.id)) ? "hasIcon" : ""}" style="background:${wn(N())}" data-thread="main" title="${g(N())}" aria-label="${g(N())}">${En("")}</button>
+      ${A.epics.filter((e) => !e.archived || e.id === j).map((e) => {
 		let t = e.tasks.filter((e) => e.done).length, n = e.tasks.length ? 100 * t / e.tasks.length : 0;
 		return `
-        <button class="rb ${M === e.id ? "sel" : ""} ${wr(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${g(e.title)} · ${t}/${e.tasks.length}" aria-label="${g(e.title)}" style="background:${_(e.title)}">
-          ${e.owner ? `<span class="rbOwner">${Dr(e.owner)}</span>` : g(F(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${n}%"></span>` : ""}</button>`;
+        <button class="rb ${j === e.id ? "sel" : ""} ${Dr(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${g(e.title)} · ${t}/${e.tasks.length}" aria-label="${g(e.title)}" style="background:${_(e.title)}">
+          ${e.owner ? `<span class="rbOwner">${kr(e.owner)}</span>` : g(P(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${n}%"></span>` : ""}</button>`;
 	}).join("")}
-      <button class="rb add" id="railAdd" title="${m("Novo épico")}" aria-label="${m("Novo épico")}">${E("plus", 18)}</button>
+      <button class="rb add" id="railAdd" title="${m("Novo épico")}" aria-label="${m("Novo épico")}">${T("plus", 18)}</button>
     </div>
-    <div class="railPeople">${(j.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${m("{n} pedindo pra entrar", { n: j.requests.length })}" aria-label="${m("{n} pedindo pra entrar", { n: j.requests.length })}">+${j.requests.length}</button>` : ""}${j.members.slice(0, 8).map((e) => y(e, j.online.includes(e))).join("")}</div>`, e.querySelector("#railToggle").onclick = Dn, e.querySelector("#railAsks")?.addEventListener("click", Dn), e.querySelector("#railAdd").onclick = () => {
-		Dn(), document.querySelector("#newEpic input")?.focus();
+    <div class="railPeople">${(A.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${m("{n} pedindo pra entrar", { n: A.requests.length })}" aria-label="${m("{n} pedindo pra entrar", { n: A.requests.length })}">+${A.requests.length}</button>` : ""}${A.members.slice(0, 8).map((e) => y(e, A.online.includes(e))).join("")}</div>`, e.querySelector("#railToggle").onclick = An, e.querySelector("#railAsks")?.addEventListener("click", An), e.querySelector("#railAdd").onclick = () => {
+		An(), document.querySelector("#newEpic input")?.focus();
 	}, e.querySelectorAll("[data-thread]").forEach((e) => e.onclick = () => {
-		M = e.dataset.thread, Q = !1, Vr = M === "main" || I() ? null : M, z(), Z(), V(), $();
+		j = e.dataset.thread, Q = !1, Hr = j === "main" || F() ? null : j, R(), X(), B(), $();
 	});
 }
-var I = () => M.startsWith("pre:"), kn = () => I() ? j.suggestions[Number(M.slice(4))] : null, An = null;
-function jn(e) {
-	let t = kn();
-	if (!t) return M = "main", Z();
+var F = () => j.startsWith("pre:"), Mn = () => F() ? A.suggestions[Number(j.slice(4))] : null, Nn = null;
+function Pn(e) {
+	let t = Mn();
+	if (!t) return j = "main", X();
 	e.innerHTML = `<div class="preCard">
     <p class="kicker">✦ ${m("O @vibe sugere um épico")}</p>
     <h3>${g(t.title)}</h3>
@@ -2498,77 +2506,77 @@ function jn(e) {
     <div class="row"><button class="primary" id="preAccept">${m("Pedir pro meu agent")}</button><button class="ghost" id="preSkip">${m("Descartar")}</button></div>
     <p class="muted">${m("Vira um pedido seu na sala: seu agent confere se ainda faz sentido, ajusta o doc e as tarefas e cria o épico.")}</p>
   </div>`;
-	let n = Number(M.slice(4));
+	let n = Number(j.slice(4));
 	e.querySelector("#preAccept").onclick = () => {
-		N({
+		M({
 			t: "suggestion",
 			i: n,
 			accept: !0
-		}), M = "main", Z();
+		}), j = "main", X();
 	}, e.querySelector("#preSkip").onclick = () => {
-		An = n, N({
+		Nn = n, M({
 			t: "suggestion",
 			i: n
 		});
 	};
 }
-var L = {
+var I = {
 	id: null,
 	list: []
 };
-async function Mn() {
-	if (!j?.id) return;
-	let e = await S(`/api/books/${j.id}/agents`).catch(() => null);
-	e && (L = {
-		id: j.id,
+async function Fn() {
+	if (!A?.id) return;
+	let e = await S(`/api/books/${A.id}/agents`).catch(() => null);
+	e && (I = {
+		id: A.id,
 		list: e.agents,
 		claudeOn: e.claude_on,
 		sandboxes: e.sandboxes || []
-	}, zn(), z());
+	}, Hn(), R());
 }
-var Nn = "http://127.0.0.1:47321", Pn = null, Fn = () => Pn && Date.now() - Pn.at < 2e4 ? Promise.resolve(Pn.rooms) : fetch(`${Nn}/ping`).then((e) => e.json()).then((e) => (Pn = {
+var In = "http://127.0.0.1:47321", Ln = null, Rn = () => Ln && Date.now() - Ln.at < 2e4 ? Promise.resolve(Ln.rooms) : fetch(`${In}/ping`).then((e) => e.json()).then((e) => (Ln = {
 	at: Date.now(),
 	rooms: e.rooms
-}).rooms).catch(() => (Pn = {
+}).rooms).catch(() => (Ln = {
 	at: Date.now(),
 	rooms: null
-}).rooms), In = {}, Ln = (e, t) => {
-	let n = In[e];
-	return n && Date.now() - n.at < 2e4 ? Promise.resolve(n.w) : fetch(`${Nn}/where?room=${e}&title=${encodeURIComponent(t || "")}`).then((e) => e.ok ? e.json() : null).catch(() => null).then((t) => (In[e] = {
+}).rooms), zn = {}, Bn = (e, t) => {
+	let n = zn[e];
+	return n && Date.now() - n.at < 2e4 ? Promise.resolve(n.w) : fetch(`${In}/where?room=${e}&title=${encodeURIComponent(t || "")}`).then((e) => e.ok ? e.json() : null).catch(() => null).then((t) => (zn[e] = {
 		at: Date.now(),
 		w: t
 	}).w);
-}, Rn = {
+}, Vn = {
 	used: m("a pasta onde ele já abriu antes"),
 	linked: m("ligada a esta sala pelo arquivo .vibebook"),
 	slug: m("a pasta com o nome da sala"),
 	new: m("pasta nova com o nome da sala, criada ao ligar")
 };
-function zn() {
+function Hn() {
 	let e = document.getElementById("myClaude");
-	if (e && L.id !== j?.id) {
+	if (e && I.id !== A?.id) {
 		let e = document.getElementById("claudeBar");
 		e && (e.hidden = !0);
 	}
-	if (!e || L.id !== j?.id) return;
-	let t = !!L.claudeOn, n = L.list.some((e) => e.email === j.me && e.listening);
+	if (!e || I.id !== A?.id) return;
+	let t = !!I.claudeOn, n = I.list.some((e) => e.email === A.me && e.listening);
 	e.hidden = !1, e.setAttribute("aria-pressed", String(t));
-	let r = In[j.id]?.w, i = r?.folder ? r.folder.startsWith(r.home + "/") ? "~" + r.folder.slice(r.home.length) : r.folder : "";
-	e.innerHTML = `✻ <span class="lbl">${m(t ? n ? "ouvindo" : "não ouvindo" : "Ligar agent")}</span>${i ? `<span class="where">${g(i.replace(/^~\/Projects\//, ""))}${r.how === "new" ? ` ${E("plus", 12)}` : ""}</span>` : ""}`, In[j.id] || Ln(j.id, P()).then((e) => e && zn()), e.title = (i ? `${m("Abre em {path} ({how}).", {
+	let r = zn[A.id]?.w, i = r?.folder ? r.folder.startsWith(r.home + "/") ? "~" + r.folder.slice(r.home.length) : r.folder : "";
+	e.innerHTML = `✻ <span class="lbl">${m(t ? n ? "ouvindo" : "não ouvindo" : "Ligar agent")}</span>${i ? `<span class="where">${g(i.replace(/^~\/Projects\//, ""))}${r.how === "new" ? ` ${T("plus", 12)}` : ""}</span>` : ""}`, zn[A.id] || Bn(A.id, N()).then((e) => e && Hn()), e.title = (i ? `${m("Abre em {path} ({how}).", {
 		path: i,
-		how: Rn[r.how] || m("pasta da sala")
-	})}\n\n` : "") + m(t && !n ? "Ligado, mas nenhum agent seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar." : t ? "Seu agent está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada)." : "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina."), dr(t, n || L.list.some((e) => e.email === j.me && Date.now() - e.seen_at < 18e5)), e.onclick = () => document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })), Vn(t, n, i, r);
+		how: Vn[r.how] || m("pasta da sala")
+	})}\n\n` : "") + m(t && !n ? "Ligado, mas nenhum agent seu está ouvindo esta sala agora: ele pode estar abrindo, ocupado com outra tarefa (o vibebook herdr pede pra ele ouvir quando ficar livre) ou o vibebook herdr não está rodando. Clique pra desligar." : t ? "Seu agent está ligado nesta sala. Clique pra desligar (fecha a aba dele no herdr; a conversa pode ser retomada)." : "Abre um Claude Code seu para esta sala no herdr, ouvindo as mensagens. Precisa do vibebook herdr rodando na sua máquina."), mr(t, n || I.list.some((e) => e.email === A.me && Date.now() - e.seen_at < 18e5)), e.onclick = () => document.dispatchEvent(new CustomEvent("vb:pane", { detail: "agents" })), Wn(t, n, i, r);
 }
-async function Bn() {
-	let e = !L.claudeOn;
-	L.claudeOn = e, e && (or[j.id] = Date.now()), zn(), await S(`/api/books/${j.id}/claude`, { on: e }).catch(() => {
-		L.claudeOn = !e, zn();
+async function Un() {
+	let e = !I.claudeOn;
+	I.claudeOn = e, e && (lr[A.id] = Date.now()), Hn(), await S(`/api/books/${A.id}/claude`, { on: e }).catch(() => {
+		I.claudeOn = !e, Hn();
 	});
 }
-function Vn(e, t, n, r) {
+function Wn(e, t, n, r) {
 	let i = document.getElementById("agentsPane");
 	if (!i) return;
-	let a = L.list.filter((e) => e.email === j.me), o = Yn(), s = t || a.some((e) => Date.now() - e.seen_at < 18e5);
+	let a = I.list.filter((e) => e.email === A.me), o = Qn(), s = t || a.some((e) => Date.now() - e.seen_at < 18e5);
 	if (document.querySelectorAll(".peekAgents, .ptAgents").forEach((e) => {
 		let t = o.find((e) => e.st === "blocked");
 		e.dataset.q = t ? "blocked" : o.length ? "busy" : s ? "idle" : "", e.querySelector(".qN").textContent = o.length ? String(o.length) : "", e.title = t ? m("Seu agent espera você no terminal") : o.length ? m("Fila do seu agent: {n}", { n: o.length }) : s ? m("Seu agent está livre") : "Agents";
@@ -2579,40 +2587,40 @@ function Vn(e, t, n, r) {
 	i.innerHTML = `<h4>${m("Seus agents nesta sala")}</h4>
     <div class="agCard${e ? " on" : ""}"><span class="agIcon">✻</span><div><b>${m("Claude Code no seu computador")}</b>
       <small>${e ? t ? m("ligado · ouvindo esta sala") : a.some((e) => Date.now() - e.seen_at < 18e5) ? m("ligado · trabalhando agora") : m("ligado · ainda não está ouvindo") : m("desligado")}${n ? ` · ${g(n.replace(/^~\/Projects\//, ""))}${r?.how === "new" ? ` (${m("pasta nova")})` : ""}` : ""}</small></div>
-      <button type="button" class="ghost agGo" id="agGo" hidden title="${m("Ir pro seu agent desta sala no herdr")}" aria-label="${m("Ir pro seu agent no herdr")}">${E("external", 16)}</button>
+      <button type="button" class="ghost agGo" id="agGo" hidden title="${m("Ir pro seu agent desta sala no herdr")}" aria-label="${m("Ir pro seu agent no herdr")}">${T("external", 16)}</button>
       <label class="agSwitch"><input type="checkbox" id="agToggle" ${e ? "checked" : ""} /><i></i></label></div>
     <p class="agNote">${m("Abre (ou fecha) um Claude Code seu para esta sala pelo vibebook herdr, na sua máquina.")}</p>
-    <div class="agConn"><b>${m("Conectar seu agente")}</b><small>${m("Cole no Claude Code (ou outro agente), dentro da pasta do projeto: ele instala o plugin e a CLI e entra nesta sala.")}</small><code>${g(lr())}</code><button type="button" class="primary" id="agConnCopy">${m("Copiar prompt")}</button></div>
+    <div class="agConn"><b>${m("Conectar seu agente")}</b><small>${m("Cole no Claude Code (ou outro agente), dentro da pasta do projeto: ele instala o plugin e a CLI e entra nesta sala.")}</small><code>${g(fr())}</code><button type="button" class="primary" id="agConnCopy">${m("Copiar prompt")}</button></div>
     <h4>${m("Fila do seu agent")} <small>${o.length || ""}</small></h4>
-    ${o.length ? `<div class="queue${Gn ? " open" : ""}">${o.map((e) => {
-		let t = j.epics.find((t) => t.id === e.m.thread), n = t ? Or(t) : Cn("ri"), r = e.st === "blocked" ? m("espera você no terminal") : e.st === "doing" ? m("fazendo") : m("na fila");
-		return `<div class="qRow"><button type="button" class="qGo" data-goto="${e.m.id}" title="${g(t ? t.title : m("sala principal"))} · ${b(e.m.ts)}">${y(j.me)}${n}<span class="qTx">${g(e.m.text.replace(/\s+/g, " ").slice(0, 120))}</span><i class="qS ${e.st}" title="${r}"></i></button><button type="button" class="qX" data-dismiss="${e.m.id}" title="${m("Tirar da fila (já resolvido)")}" aria-label="${m("Tirar da fila (já resolvido)")}">${E("x")}</button></div>`;
-	}).join("")}${o.length > 4 ? `<button type="button" class="qMore" id="qMore">${Gn ? m("mostrar menos") : m("mostrar mais {n}", { n: o.length - 4 })}</button>` : ""}</div>` : `<p class="agNote">${m("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
-    ${a.length ? `<h4>${m("Conectados")}</h4><div class="agList">${_r(j.me)}</div>` : ""}
-    <h4>${m("Na nuvem")}</h4><div id="sbx">${$n()}</div>`, document.getElementById("agToggle").onchange = Bn, document.getElementById("agConnCopy").onclick = ur;
+    ${o.length ? `<div class="queue${Jn ? " open" : ""}">${o.map((e) => {
+		let t = A.epics.find((t) => t.id === e.m.thread), n = t ? Ar(t) : En("ri"), r = e.st === "blocked" ? m("espera você no terminal") : e.st === "doing" ? m("fazendo") : m("na fila");
+		return `<div class="qRow"><button type="button" class="qGo" data-goto="${e.m.id}" title="${g(t ? t.title : m("sala principal"))} · ${x(e.m.ts)}">${y(A.me)}${n}<span class="qTx">${g(e.m.text.replace(/\s+/g, " ").slice(0, 120))}</span><i class="qS ${e.st}" title="${r}"></i></button><button type="button" class="qX" data-dismiss="${e.m.id}" title="${m("Tirar da fila (já resolvido)")}" aria-label="${m("Tirar da fila (já resolvido)")}">${T("x")}</button></div>`;
+	}).join("")}${o.length > 4 ? `<button type="button" class="qMore" id="qMore">${Jn ? m("mostrar menos") : m("mostrar mais {n}", { n: o.length - 4 })}</button>` : ""}</div>` : `<p class="agNote">${m("Nada na fila: tudo que você pediu nesta sala nas últimas 48h foi feito ou respondido.")}</p>`}
+    ${a.length ? `<h4>${m("Conectados")}</h4><div class="agList">${br(A.me)}</div>` : ""}
+    <h4>${m("Na nuvem")}</h4><div id="sbx">${nr()}</div>`, document.getElementById("agToggle").onchange = Un, document.getElementById("agConnCopy").onclick = pr;
 	let c = document.getElementById("agGo");
-	e && Fn().then((e) => {
-		c.isConnected && (c.hidden = !e?.includes(j.id));
-	}), c.onclick = () => fetch(`${Nn}/focus?room=${j.id}`).then((e) => e.json()).then((e) => e.error && B(g(e.error))).catch(() => B(m("O vibebook herdr não está rodando nesta máquina."))), i.querySelectorAll("[data-goto]").forEach((e) => e.onclick = () => {
-		H.matches && U(), Di(Number(e.dataset.goto));
-	}), i.querySelectorAll("[data-dismiss]").forEach((e) => e.onclick = () => N({
+	e && Rn().then((e) => {
+		c.isConnected && (c.hidden = !e?.includes(A.id));
+	}), c.onclick = () => fetch(`${In}/focus?room=${A.id}`).then((e) => e.json()).then((e) => e.error && z(g(e.error))).catch(() => z(m("O vibebook herdr não está rodando nesta máquina."))), i.querySelectorAll("[data-goto]").forEach((e) => e.onclick = () => {
+		V.matches && H(), Oi(Number(e.dataset.goto));
+	}), i.querySelectorAll("[data-dismiss]").forEach((e) => e.onclick = () => M({
 		t: "ack.dismiss",
 		id: Number(e.dataset.dismiss)
 	})), document.getElementById("qMore")?.addEventListener("click", () => {
-		Gn = !Gn, zn();
-	}), er();
+		Jn = !Jn, Hn();
+	}), rr();
 }
-var Hn = (e) => ((e.run_s || 0) / 3600 + (e.state === "running" && e.checked_at ? (Date.now() - e.checked_at) / 36e5 : 0)) * (e.rate || 0) + (Date.now() - e.created_at) / 36e5 * (e.disk_rate || 0), Un = (e) => `US$${e < 10 ? e.toFixed(2) : Math.round(e)}`.replace(".", ne === "en" ? "." : ",");
-function Wn() {
-	return L.id !== j?.id || !L.sandboxes?.length ? "" : L.sandboxes.map((e) => `<button type="button" class="member sbxRow ${g(e.state || "")}" data-sbx-open title="${g(e.name)} · ${m("de {who}", { who: g(v(e.email)) })}">
-    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${g(e.name)}</span><small>${g(v(e.email).split(" ")[0])} · ${m(Zn[e.state] || e.state || "?")}</small></span><span class="money">${Un(Hn(e))}</span></button>`).join("");
+var Gn = (e) => ((e.run_s || 0) / 3600 + (e.state === "running" && e.checked_at ? (Date.now() - e.checked_at) / 36e5 : 0)) * (e.rate || 0) + (Date.now() - e.created_at) / 36e5 * (e.disk_rate || 0), Kn = (e) => `US$${e < 10 ? e.toFixed(2) : Math.round(e)}`.replace(".", re === "en" ? "." : ",");
+function qn() {
+	return I.id !== A?.id || !I.sandboxes?.length ? "" : I.sandboxes.map((e) => `<button type="button" class="member sbxRow ${g(e.state || "")}" data-sbx-open title="${g(e.name)} · ${m("de {who}", { who: g(v(e.email)) })}">
+    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${g(e.name)}</span><small>${g(v(e.email).split(" ")[0])} · ${m(er[e.state] || e.state || "?")}</small></span><span class="money">${Kn(Gn(e))}</span></button>`).join("");
 }
-var Gn = !1, Kn = () => {}, qn = () => {}, Jn = (e) => e.kind === "agent" && /^\u23f8/.test(e.text || "") && /"options":\["Aprovar","Negar"\]/.test(e.choices || "");
-function Yn() {
+var Jn = !1, Yn = () => {}, Xn = () => {}, Zn = (e) => e.kind === "agent" && /^\u23f8/.test(e.text || "") && /"options":\["Aprovar","Negar"\]/.test(e.choices || "");
+function Qn() {
 	let e = Date.now() - 1728e5, t = /* @__PURE__ */ new Map();
-	for (let e of j.acks || []) e.email === j.me && (t.get(e.msg_id) ?? t.set(e.msg_id, []).get(e.msg_id)).push(e);
-	let n = j.messages ? X() : [];
-	return n.filter((t) => t.author === j.me && !t.kind && t.text && t.ts > e && !n.some((e) => e.id === t.reply_to && Jn(e))).map((e) => {
+	for (let e of A.acks || []) e.email === A.me && (t.get(e.msg_id) ?? t.set(e.msg_id, []).get(e.msg_id)).push(e);
+	let n = A.messages ? Y() : [];
+	return n.filter((t) => t.author === A.me && !t.kind && t.text && t.ts > e && !n.some((e) => e.id === t.reply_to && Zn(e))).map((e) => {
 		let n = t.get(e.id) || [];
 		return {
 			m: e,
@@ -2620,13 +2628,13 @@ function Yn() {
 		};
 	}).filter((e) => e.st);
 }
-var R = {
+var L = {
 	id: null,
 	connected: null,
 	list: [],
 	busy: "",
 	err: ""
-}, Xn = 0, Zn = {
+}, $n = 0, er = {
 	running: "rodando",
 	starting: "ligando",
 	pausing: "pausando",
@@ -2635,49 +2643,49 @@ var R = {
 	deleted: "apagado no freestyle",
 	unknown: "?"
 };
-async function Qn() {
-	if (!j?.id) return;
-	clearTimeout(Xn);
-	let e = await fetch(`/api/books/${j.id}/sandboxes`).then((e) => e.json()).catch(() => null);
+async function tr() {
+	if (!A?.id) return;
+	clearTimeout($n);
+	let e = await fetch(`/api/books/${A.id}/sandboxes`).then((e) => e.json()).catch(() => null);
 	if (!e || e.error) return;
-	R = {
-		...R,
-		id: j.id,
+	L = {
+		...L,
+		id: A.id,
 		connected: e.connected,
 		claude: e.claude,
 		list: e.sandboxes
 	};
 	let t = document.getElementById("sbx");
-	t && (t.innerHTML = $n(), er()), e.sandboxes.some((e) => !e.ready || e.state !== "running" && /ing$/.test(e.state)) && document.querySelector(".doc[data-pane=\"agents\"]") && (Xn = setTimeout(Qn, 5e3));
+	t && (t.innerHTML = nr(), rr()), e.sandboxes.some((e) => !e.ready || e.state !== "running" && /ing$/.test(e.state)) && document.querySelector(".doc[data-pane=\"agents\"]") && ($n = setTimeout(tr, 5e3));
 }
-function $n() {
-	if (R.id !== j?.id || R.connected === null) return `<p class="agNote">${m("carregando…")}</p>`;
-	let e = R.err ? `<p class="agErr">${g(R.err)}</p>` : "";
-	return R.connected ? `${R.claude ? `<div class="fsOn">${E("check", 13)} ${m("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${m("remover")}</button></div>` : `<div class="agCard col"><b>${m("Conecte sua conta do Claude")}</b><small>${m("No seu terminal, rode:")}</small><div class="cpCmd"><code>claude setup-token</code><button type="button" class="ghost" data-cp="claude setup-token">${m("Copiar")}</button></div><small>${m("Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
-      <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${R.busy ? "disabled" : ""}>${R.busy === "ct" ? m("Salvando…") : m("Salvar")}</button></form>${R.errAt === "ct" && R.err ? `<p class="agErr">${g(R.err)}</p>` : ""}</div>`}${R.list.map((e) => `<div class="sbxCard ${e.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${g(e.name)}</b>
-      <small>${!e.ready && e.state === "running" ? m("preparando (uns 3 min)…") : m(Zn[e.state] || e.state)}${e.rate ? ` · ${Un(e.rate)}/h` : ""}${e.error ? ` · ${g(e.error)}` : ""}</small>${R.logs?.[e.id] ? `<pre class="sbxLog">${g(R.logs[e.id])}</pre>` : !e.ready && e.log ? `<code class="sbxLog">${g(e.log)}</code>` : ""}</div><span class="money" title="${m("gasto até agora na sua conta do freestyle")}">${Un(e.cost || 0)}</span></div>
+function nr() {
+	if (L.id !== A?.id || L.connected === null) return `<p class="agNote">${m("carregando…")}</p>`;
+	let e = L.err ? `<p class="agErr">${g(L.err)}</p>` : "";
+	return L.connected ? `${L.claude ? `<div class="fsOn">${T("check", 13)} ${m("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${m("remover")}</button></div>` : `<div class="agCard col"><b>${m("Conecte sua conta do Claude")}</b><small>${m("No seu terminal, rode:")}</small><div class="cpCmd"><code>claude setup-token</code><button type="button" class="ghost" data-cp="claude setup-token">${m("Copiar")}</button></div><small>${m("Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
+      <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${L.busy ? "disabled" : ""}>${L.busy === "ct" ? m("Salvando…") : m("Salvar")}</button></form>${L.errAt === "ct" && L.err ? `<p class="agErr">${g(L.err)}</p>` : ""}</div>`}${L.list.map((e) => `<div class="sbxCard ${e.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${g(e.name)}</b>
+      <small>${!e.ready && e.state === "running" ? m("preparando (uns 3 min)…") : m(er[e.state] || e.state)}${e.rate ? ` · ${Kn(e.rate)}/h` : ""}${e.error ? ` · ${g(e.error)}` : ""}</small>${L.logs?.[e.id] ? `<pre class="sbxLog">${g(L.logs[e.id])}</pre>` : !e.ready && e.log ? `<code class="sbxLog">${g(e.log)}</code>` : ""}</div><span class="money" title="${m("gasto até agora na sua conta do freestyle")}">${Kn(e.cost || 0)}</span></div>
       <div class="sbxActs">${e.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${g(e.id)}">${m("Terminal")}</button>`}
       ${e.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${g(e.id)}">${m("Pausar")}</button>` : e.state === "paused" || e.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${g(e.id)}">${m("Retomar")}</button>` : ""}
-      ${!e.ready && e.state === "running" ? `<button class="ghost" data-sbx-setup="${g(e.id)}" title="${m("Rodar o setup de novo")}" ${R.busy ? "disabled" : ""}>${R.busy === "setup:" + e.id ? m("Rodando setup… (até 4 min)") : m("Refazer setup")}</button>` : ""}
-      <button class="ghost del" data-sbx-del="${g(e.id)}" aria-label="${m("Apagar sandbox")}" title="${m("Apagar sandbox")}">${E("trash", 16)}</button></div></div>`).join("")}
-    <button class="agNew on" id="sbxNew" ${R.busy ? "disabled" : ""}>${E("plus", 16)} ${R.busy === "new" ? m("Criando…") : m("Criar sandbox")}<small>${m("Um agent na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.")}</small></button>${R.errAt === "ct" ? "" : e}
-    <div class="fsOn">${E("check", 13)} ${m("freestyle.sh conectado")} · <button type="button" class="ghost" id="fsOff">${m("desconectar")}</button></div>` : `<div class="agCard col"><b>${m("Conecte sua conta do freestyle.sh")}</b>
+      ${!e.ready && e.state === "running" ? `<button class="ghost" data-sbx-setup="${g(e.id)}" title="${m("Rodar o setup de novo")}" ${L.busy ? "disabled" : ""}>${L.busy === "setup:" + e.id ? m("Rodando setup… (até 4 min)") : m("Refazer setup")}</button>` : ""}
+      <button class="ghost del" data-sbx-del="${g(e.id)}" aria-label="${m("Apagar sandbox")}" title="${m("Apagar sandbox")}">${T("trash", 16)}</button></div></div>`).join("")}
+    <button class="agNew on" id="sbxNew" ${L.busy ? "disabled" : ""}>${T("plus", 16)} ${L.busy === "new" ? m("Criando…") : m("Criar sandbox")}<small>${m("Um agent na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.")}</small></button>${L.errAt === "ct" ? "" : e}
+    <div class="fsOn">${T("check", 13)} ${m("freestyle.sh conectado")} · <button type="button" class="ghost" id="fsOff">${m("desconectar")}</button></div>` : `<div class="agCard col"><b>${m("Conecte sua conta do freestyle.sh")}</b>
     <small>${m("O sandbox roda na sua conta do freestyle.sh. Crie uma conta lá e, no seu terminal, gere uma API key:")}</small><div class="cpCmd"><code>npx freestyle@latest tokens create vibebook</code><button type="button" class="ghost" data-cp="npx freestyle@latest tokens create vibebook">${m("Copiar")}</button></div><small>${m("Cole a key aqui. Ela fica cifrada no vibebook e nunca vai pra sala nem pros agents.")}</small>
-    <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${m("API key do freestyle")}" required /><button class="primary" ${R.busy ? "disabled" : ""}>${R.busy === "key" ? m("Conferindo…") : m("Conectar")}</button></form>${e}</div>`;
+    <form id="fsForm" class="fsForm"><input type="password" name="key" autocomplete="off" placeholder="${m("API key do freestyle")}" required /><button class="primary" ${L.busy ? "disabled" : ""}>${L.busy === "key" ? m("Conferindo…") : m("Conectar")}</button></form>${e}</div>`;
 }
-function er() {
+function rr() {
 	let e = () => {
 		let e = document.getElementById("sbx");
-		e && (e.innerHTML = $n(), er());
+		e && (e.innerHTML = nr(), rr());
 	}, t = async (t, n) => {
-		R.busy = t, R.errAt = t, R.err = "", e();
+		L.busy = t, L.errAt = t, L.err = "", e();
 		try {
 			let e = await n();
-			e?.error && (R.err = e.error);
+			e?.error && (L.err = e.error);
 		} catch {
-			R.err = m("sem conexão");
+			L.err = m("sem conexão");
 		}
-		R.busy = "", await Qn(), e();
+		L.busy = "", await tr(), e();
 	}, n = (e, t, n) => fetch(t, {
 		method: e,
 		headers: { "content-type": "application/json" },
@@ -2695,15 +2703,15 @@ function er() {
 		e.preventDefault();
 		let r = e.target.token.value;
 		t("ct", () => n("POST", "/api/claude-token", { token: r }));
-	}), document.getElementById("ctOff")?.addEventListener("click", () => confirm(m("Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.")) && t("ct", () => n("DELETE", "/api/claude-token"))), document.getElementById("fsOff")?.addEventListener("click", () => confirm(m("Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.")) && t("off", () => n("DELETE", "/api/freestyle"))), document.getElementById("sbxNew")?.addEventListener("click", () => t("new", () => n("POST", `/api/books/${j.id}/sandboxes`, {}))), document.querySelectorAll("[data-sbx-setup]").forEach((e) => e.onclick = () => t(`setup:${e.dataset.sbxSetup}`, async () => {
+	}), document.getElementById("ctOff")?.addEventListener("click", () => confirm(m("Remover o token do Claude? Sandboxes que já têm o token continuam logados até você apagá-los.")) && t("ct", () => n("DELETE", "/api/claude-token"))), document.getElementById("fsOff")?.addEventListener("click", () => confirm(m("Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.")) && t("off", () => n("DELETE", "/api/freestyle"))), document.getElementById("sbxNew")?.addEventListener("click", () => t("new", () => n("POST", `/api/books/${A.id}/sandboxes`, {}))), document.querySelectorAll("[data-sbx-setup]").forEach((e) => e.onclick = () => t(`setup:${e.dataset.sbxSetup}`, async () => {
 		let t = await n("POST", `/api/sandboxes/${e.dataset.sbxSetup}/setup`);
-		return R.logs = {
-			...R.logs,
+		return L.logs = {
+			...L.logs,
 			[e.dataset.sbxSetup]: t.log || t.error || ""
 		}, t;
-	})), document.querySelectorAll("[data-sbx-act]").forEach((e) => e.onclick = () => t("act", () => n("POST", `/api/sandboxes/${e.dataset.id}/${e.dataset.sbxAct}`))), document.querySelectorAll("[data-sbx-del]").forEach((e) => e.onclick = () => confirm(m("Apagar este sandbox? A VM e tudo que está nela somem do freestyle.sh.")) && t("del", () => n("DELETE", `/api/sandboxes/${e.dataset.sbxDel}`))), document.querySelectorAll("[data-sbx-term]").forEach((e) => e.onclick = () => ar(e.dataset.sbxTerm, R.list.find((t) => t.id === e.dataset.sbxTerm)?.name));
+	})), document.querySelectorAll("[data-sbx-act]").forEach((e) => e.onclick = () => t("act", () => n("POST", `/api/sandboxes/${e.dataset.id}/${e.dataset.sbxAct}`))), document.querySelectorAll("[data-sbx-del]").forEach((e) => e.onclick = () => confirm(m("Apagar este sandbox? A VM e tudo que está nela somem do freestyle.sh.")) && t("del", () => n("DELETE", `/api/sandboxes/${e.dataset.sbxDel}`))), document.querySelectorAll("[data-sbx-term]").forEach((e) => e.onclick = () => cr(e.dataset.sbxTerm, L.list.find((t) => t.id === e.dataset.sbxTerm)?.name));
 }
-var tr = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0", nr = "https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js", rr = {
+var ir = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0", ar = "https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js", or = {
 	Esc: "\x1B",
 	Tab: "	",
 	"Ctrl-C": "",
@@ -2712,7 +2720,7 @@ var tr = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0", nr = "https://cdn.js
 	"←": "\x1B[D",
 	"→": "\x1B[C",
 	"/": "/"
-}, ir = (e) => new Promise((t, n) => {
+}, sr = (e) => new Promise((t, n) => {
 	let r = Object.assign(document.createElement("script"), {
 		src: e,
 		onload: t,
@@ -2720,14 +2728,14 @@ var tr = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0", nr = "https://cdn.js
 	});
 	document.head.append(r);
 });
-async function ar(e, t) {
+async function cr(e, t) {
 	window.Terminal || (document.head.append(Object.assign(document.createElement("link"), {
 		rel: "stylesheet",
-		href: `${tr}/css/xterm.css`
-	})), await ir(`${tr}/lib/xterm.js`), await ir(nr));
+		href: `${ir}/css/xterm.css`
+	})), await sr(`${ir}/lib/xterm.js`), await sr(ar));
 	let n = document.createElement("dialog");
-	n.className = "termDlg", n.innerHTML = `<header><b>☁ ${g(t || "sandbox")}</b><span id="termSt">${m("conectando…")}</span><button class="ghost" data-close aria-label="${m("Fechar")}">${E("x")}</button></header><div class="termBox" id="termBox"></div>
-    <div class="termKeys">${Object.keys(rr).map((e) => `<button type="button" data-k="${g(e)}">${g(e)}</button>`).join("")}</div>`, document.body.append(n), n.showModal();
+	n.className = "termDlg", n.innerHTML = `<header><b>☁ ${g(t || "sandbox")}</b><span id="termSt">${m("conectando…")}</span><button class="ghost" data-close aria-label="${m("Fechar")}">${T("x")}</button></header><div class="termBox" id="termBox"></div>
+    <div class="termKeys">${Object.keys(or).map((e) => `<button type="button" data-k="${g(e)}">${g(e)}</button>`).join("")}</div>`, document.body.append(n), n.showModal();
 	let r = new window.Terminal({
 		cursorBlink: !0,
 		fontSize: 14,
@@ -2764,18 +2772,18 @@ async function ar(e, t) {
 			rows: r.rows
 		}));
 	}).observe(n.querySelector("#termBox")), n.querySelectorAll("[data-k]").forEach((e) => e.onclick = () => {
-		o.readyState === 1 && o.send(d.encode(rr[e.dataset.k])), r.focus();
+		o.readyState === 1 && o.send(d.encode(or[e.dataset.k])), r.focus();
 	}), r.focus();
 }
-var or = {}, sr = 0, cr = {}, lr = () => `Read ${location.origin}/llms.txt and set up vibebook for this project. Room: ${location.origin}/b/${j.id}`;
-function ur() {
-	let e = lr();
-	(navigator.clipboard?.writeText(e) ?? Promise.reject()).then(() => B(m("Copiado. Cole no Claude Code, dentro da pasta do projeto.")), () => window.prompt(m("Copie e cole no seu Claude Code:"), e));
+var lr = {}, ur = 0, dr = {}, fr = () => `Read ${location.origin}/llms.txt and set up vibebook for this project. Room: ${location.origin}/b/${A.id}`;
+function pr() {
+	let e = fr();
+	(navigator.clipboard?.writeText(e) ?? Promise.reject()).then(() => z(m("Copiado. Cole no Claude Code, dentro da pasta do projeto.")), () => window.prompt(m("Copie e cole no seu Claude Code:"), e));
 }
-function dr(e, t) {
+function mr(e, t) {
 	let n = document.getElementById("claudeBar");
 	if (!n) return;
-	clearTimeout(sr);
+	clearTimeout(ur);
 	let r = document.getElementById("agentNudge"), i = "vb.claudeBar.off", a = !1;
 	try {
 		a = localStorage.getItem(i) === "off";
@@ -2787,23 +2795,23 @@ function dr(e, t) {
 			try {
 				localStorage.setItem(i, "off");
 			} catch {}
-			n.hidden = !0, clearTimeout(sr);
+			n.hidden = !0, clearTimeout(ur);
 		});
 	}, c = !1;
 	try {
-		c = localStorage.getItem(`vb.start.${j.id}`) === "off";
+		c = localStorage.getItem(`vb.start.${A.id}`) === "off";
 	} catch {}
-	if (j.book?.owner === j.me && !j.epics.length && M === "main" && !c) return fr(n, e, t, `vb.start.${j.id}`);
-	if (kt || r && !r.hidden || t && !cr[j.id] || a && !or[j.id]) n.hidden = !0;
-	else if (t) cr[j.id] = !1, s("ok", `<span class="star">✻</span><span><b>${m("Seu agent está ouvindo esta sala.")}</b></span>`), setTimeout(() => n.hidden = !0, 5e3);
+	if (A.book?.owner === A.me && !A.epics.length && j === "main" && !c) return hr(n, e, t, `vb.start.${A.id}`);
+	if (jt || r && !r.hidden || t && !dr[A.id] || a && !lr[A.id]) n.hidden = !0;
+	else if (t) dr[A.id] = !1, s("ok", `<span class="star">✻</span><span><b>${m("Seu agent está ouvindo esta sala.")}</b></span>`), setTimeout(() => n.hidden = !0, 5e3);
 	else if (e) {
-		cr[j.id] = !0;
-		let e = Date.now() - (or[j.id] || 0) > 18e4;
-		s("wait", `<span class="star">✻</span><span><b>${m(e ? "Seu agent ainda não está ouvindo." : "Abrindo seu agent no seu computador…")}</b><small>${m(e ? "Confira se o vibebook herdr está rodando no seu computador, ou se o agent parou numa pergunta lá." : "O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.")}</small></span>${o}`), e || (sr = setTimeout(zn, 18e4 - (Date.now() - (or[j.id] || 0)) + 500));
-	} else cr[j.id] = !1, s("", `<span class="star">✻</span><span><b>${m("Seu agent não está nesta sala.")}</b><small>${m("Cole o prompt no seu Claude Code: ele instala o plugin e a CLI e entra aqui.")}</small></span><button class="primary" data-conn>${m("Conectar seu agente")}</button><button class="ghost" data-on>${m("Ligar agent")}</button>${o}`), n.querySelector("[data-on]").onclick = () => document.getElementById("myClaude")?.click(), n.querySelector("[data-conn]").onclick = ur;
+		dr[A.id] = !0;
+		let e = Date.now() - (lr[A.id] || 0) > 18e4;
+		s("wait", `<span class="star">✻</span><span><b>${m(e ? "Seu agent ainda não está ouvindo." : "Abrindo seu agent no seu computador…")}</b><small>${m(e ? "Confira se o vibebook herdr está rodando no seu computador, ou se o agent parou numa pergunta lá." : "O vibebook herdr abre o Claude Code na pasta da sala; leva uns segundos.")}</small></span>${o}`), e || (ur = setTimeout(Hn, 18e4 - (Date.now() - (lr[A.id] || 0)) + 500));
+	} else dr[A.id] = !1, s("", `<span class="star">✻</span><span><b>${m("Seu agent não está nesta sala.")}</b><small>${m("Cole o prompt no seu Claude Code: ele instala o plugin e a CLI e entra aqui.")}</small></span><button class="primary" data-conn>${m("Conectar seu agente")}</button><button class="ghost" data-on>${m("Ligar agent")}</button>${o}`), n.querySelector("[data-on]").onclick = () => document.getElementById("myClaude")?.click(), n.querySelector("[data-conn]").onclick = pr;
 }
-function fr(e, t, n, r) {
-	let i = (j.members || []).filter((e) => e !== j.me), a = (e, t) => `<li class="${e}"><i>${e === "ok" ? "✓" : e === "wait" ? "✻" : "○"}</i><span>${t}</span></li>`, o = kt ? a("todo", m("Conecte seu agent (o card acima diz como)")) : n ? a("ok", m("Seu agent está aqui")) : t ? a("wait", m("Abrindo seu agent no seu computador…")) : a("todo", `${m("Seu agent está desligado nesta sala")} <button class="linkish" data-on>${m("Ligar")}</button>`);
+function hr(e, t, n, r) {
+	let i = (A.members || []).filter((e) => e !== A.me), a = (e, t) => `<li class="${e}"><i>${e === "ok" ? "✓" : e === "wait" ? "✻" : "○"}</i><span>${t}</span></li>`, o = jt ? a("todo", m("Conecte seu agent (o card acima diz como)")) : n ? a("ok", m("Seu agent está aqui")) : t ? a("wait", m("Abrindo seu agent no seu computador…")) : a("todo", `${m("Seu agent está desligado nesta sala")} <button class="linkish" data-on>${m("Ligar")}</button>`);
 	e.className = "claudeBar start", e.hidden = !1, e.innerHTML = `<span class="star">✻</span><span><b>${m("Começando a sala")}</b><ul>
     ${a("ok", m("Sala criada"))}
     ${i.length ? a("ok", m("Na sala: {who}", { who: g(i.map(v).join(", ")) })) : a("todo", m("Só você aqui: convide em Pessoas"))}
@@ -2813,11 +2821,11 @@ function fr(e, t, n, r) {
 		try {
 			localStorage.setItem(r, "off");
 		} catch {}
-		e.hidden = !0, clearTimeout(sr);
+		e.hidden = !0, clearTimeout(ur);
 	};
 }
-var pr = (e) => e >= 1e6 ? `${+(e / 1e6).toFixed(1)}M` : `${Math.round(e / 1e3)}k`, mr = (e) => Math.min(100, Math.round(e.tokens / e.window * 100)), hr = (e) => {
-	let t = mr(e), n = (e, t = 60, n = 80) => `<i class="ctx ${e >= n ? "hot" : e >= t ? "mid" : ""}" style="--p:${e}%"></i>`, r = (e, t, r) => `<div><div class="l"><b>${e}</b><span>${r}</span></div>${n(t)}</div>`, i = ["five_hour", "seven_day"].map((t) => {
+var gr = (e) => e >= 1e6 ? `${+(e / 1e6).toFixed(1)}M` : `${Math.round(e / 1e3)}k`, _r = (e) => Math.min(100, Math.round(e.tokens / e.window * 100)), vr = (e) => {
+	let t = _r(e), n = (e, t = 60, n = 80) => `<i class="ctx ${e >= n ? "hot" : e >= t ? "mid" : ""}" style="--p:${e}%"></i>`, r = (e, t, r) => `<div><div class="l"><b>${e}</b><span>${r}</span></div>${n(t)}</div>`, i = ["five_hour", "seven_day"].map((t) => {
 		let n = e.limits?.[t];
 		if (!n || n.r * 1e3 < Date.now()) return "";
 		let i = /* @__PURE__ */ new Date(n.r * 1e3), a = i.toLocaleTimeString(p, {
@@ -2829,40 +2837,40 @@ var pr = (e) => e >= 1e6 ? `${+(e / 1e6).toFixed(1)}M` : `${Math.round(e / 1e3)}
 			at: o
 		}));
 	});
-	return `<div class="ctip">${r(m("Contexto"), t, `${t}% · ${pr(e.tokens)}/${pr(e.window)}`)}${i.join("")}</div>`;
-}, gr = (e) => {
+	return `<div class="ctip">${r(m("Contexto"), t, `${t}% · ${gr(e.tokens)}/${gr(e.window)}`)}${i.join("")}</div>`;
+}, yr = (e) => {
 	if (!e) return "";
-	let t = mr(e);
+	let t = _r(e);
 	return `<i class="ctx ${t >= 80 ? "hot" : t >= 60 ? "mid" : ""}" style="--p:${t}%"></i>`;
-}, _r = (e) => {
-	if (L.id !== j?.id) return "";
+}, br = (e) => {
+	if (I.id !== A?.id) return "";
 	let t = /* @__PURE__ */ new Set();
-	return L.list.filter((t) => t.email === e).sort((e, t) => t.listening - e.listening).filter((e) => !t.has(Sa(e.who) + e.repo) && t.add(Sa(e.who) + e.repo)).slice(0, 3).map((t) => `<div class="member agentRow" title="${m("{via} de {who}", {
-		via: g(Sa(t.who)),
+	return I.list.filter((t) => t.email === e).sort((e, t) => t.listening - e.listening).filter((e) => !t.has(Ca(e.who) + e.repo) && t.add(Ca(e.who) + e.repo)).slice(0, 3).map((t) => `<div class="member agentRow" title="${m("{via} de {who}", {
+		via: g(Ca(t.who)),
 		who: g(v(e))
-	})}${t.repo ? ` ${m("em {repo}", { repo: g(t.repo) })}` : ""} · ${t.listening ? t.all_rooms ? m("ouvindo todas as salas agora") : m("ouvindo esta sala agora") : m("visto há {ago}", { ago: b(t.seen_at) })}"><span class="aglyph ${ce(t.who)[0]} ${t.listening ? "on" : ""}">${ce(t.who)[1]}</span><span class="fn">${g(Sa(t.who).replace(/^Claude\s+/i, ""))}${t.repo ? ` · ${g(t.repo)}` : ""}</span><small>${t.listening ? m("ouvindo") : b(t.seen_at)}${t.context ? ` · ${mr(t.context)}%` : ""}</small>${gr(t.context)}${t.context ? hr(t.context) : ""}</div>`).join("");
-}, vr = (e) => {
+	})}${t.repo ? ` ${m("em {repo}", { repo: g(t.repo) })}` : ""} · ${t.listening ? t.all_rooms ? m("ouvindo todas as salas agora") : m("ouvindo esta sala agora") : m("visto há {ago}", { ago: x(t.seen_at) })}"><span class="aglyph ${b(t.who)[0]} ${t.listening ? "on" : ""}">${b(t.who)[1]}</span><span class="fn">${g(Ca(t.who).replace(/^Claude\s+/i, ""))}${t.repo ? ` · ${g(t.repo)}` : ""}</span><small>${t.listening ? m("ouvindo") : x(t.seen_at)}${t.context ? ` · ${_r(t.context)}%` : ""}</small>${yr(t.context)}${t.context ? vr(t.context) : ""}</div>`).join("");
+}, xr = (e) => {
 	if (!e || e.archived > 0) return null;
-	let t = new Set((j.epics || []).filter((t) => t.id !== e.id).map((e) => e.from_msg)), n = new Set(X().filter((n) => n.thread === e.id && !t.has(n.id)).map((e) => e.id));
+	let t = new Set((A.epics || []).filter((t) => t.id !== e.id).map((e) => e.from_msg)), n = new Set(Y().filter((n) => n.thread === e.id && !t.has(n.id)).map((e) => e.id));
 	n.add(e.from_msg);
-	let r = (j.acks || []).filter((e) => n.has(e.msg_id) && e.status !== "dismissed").sort((e, t) => t.ts - e.ts), i = r.find((e) => e.status === "doing" && Date.now() - e.ts < 12e5);
+	let r = (A.acks || []).filter((e) => n.has(e.msg_id) && e.status !== "dismissed").sort((e, t) => t.ts - e.ts), i = r.find((e) => e.status === "doing" && Date.now() - e.ts < 12e5);
 	if (i) return {
 		who: i.who,
 		email: i.email
 	};
 	if (r[0]?.status === "done") return null;
-	let a = j.messages.findLast((t) => t.thread === e.id && t.kind === "agent");
+	let a = A.messages.findLast((t) => t.thread === e.id && t.kind === "agent");
 	return a && a.tag !== "done" && Date.now() - a.ts < 18e4 ? {
 		who: a.via || "Agent",
 		email: a.author
 	} : null;
-}, yr = () => {
-	let e = new Set(X().filter((e) => e.thread === "main").map((e) => e.id)), t = new Set((j.epics || []).map((e) => e.from_msg)), n = (j.acks || []).filter((n) => e.has(n.msg_id) && !t.has(n.msg_id) && n.status !== "dismissed").sort((e, t) => t.ts - e.ts), r = n.find((e) => e.status === "doing" && Date.now() - e.ts < 12e5 && n.find((t) => t.msg_id === e.msg_id && t.who === e.who) === e);
+}, Sr = () => {
+	let e = new Set(Y().filter((e) => e.thread === "main").map((e) => e.id)), t = new Set((A.epics || []).map((e) => e.from_msg)), n = (A.acks || []).filter((n) => e.has(n.msg_id) && !t.has(n.msg_id) && n.status !== "dismissed").sort((e, t) => t.ts - e.ts), r = n.find((e) => e.status === "doing" && Date.now() - e.ts < 12e5 && n.find((t) => t.msg_id === e.msg_id && t.who === e.who) === e);
 	return r ? {
 		who: r.who,
 		email: r.email
 	} : null;
-}, br = (e) => {
+}, Cr = (e) => {
 	let t = /* @__PURE__ */ new Set(), n = [];
 	for (let r of e) {
 		let i = `${r.who}|${r.email}`;
@@ -2872,33 +2880,33 @@ var pr = (e) => e >= 1e6 ? `${+(e / 1e6).toFixed(1)}M` : `${Math.round(e / 1e3)}
 		}));
 	}
 	return n;
-}, xr = () => {
-	if (I()) return [];
-	let e = M === "main" ? null : j.epics.find((e) => e.id === M), t;
+}, wr = () => {
+	if (F()) return [];
+	let e = j === "main" ? null : A.epics.find((e) => e.id === j), t;
 	if (e) {
 		if (e.archived > 0) return [];
-		let n = new Set((j.epics || []).filter((t) => t.id !== e.id).map((e) => e.from_msg));
-		t = new Set(X().filter((t) => t.thread === e.id && !n.has(t.id)).map((e) => e.id)), t.add(e.from_msg);
+		let n = new Set((A.epics || []).filter((t) => t.id !== e.id).map((e) => e.from_msg));
+		t = new Set(Y().filter((t) => t.thread === e.id && !n.has(t.id)).map((e) => e.id)), t.add(e.from_msg);
 	} else {
-		let e = new Set((j.epics || []).map((e) => e.from_msg));
-		t = new Set(X().filter((t) => t.thread === "main" && !e.has(t.id)).map((e) => e.id));
+		let e = new Set((A.epics || []).map((e) => e.from_msg));
+		t = new Set(Y().filter((t) => t.thread === "main" && !e.has(t.id)).map((e) => e.id));
 	}
-	let n = br((j.acks || []).filter((e) => t.has(e.msg_id) && e.status !== "dismissed").sort((e, t) => t.ts - e.ts));
+	let n = Cr((A.acks || []).filter((e) => t.has(e.msg_id) && e.status !== "dismissed").sort((e, t) => t.ts - e.ts));
 	if (n.length) return n;
-	let r = e ? vr(e) : yr();
+	let r = e ? xr(e) : Sr();
 	return r ? [r] : [];
-}, Sr = (e) => {
-	let t = vr(e);
+}, Tr = (e) => {
+	let t = xr(e);
 	return t ? m("{via} de {who}", {
 		via: t.who,
 		who: v(t.email)
 	}) : null;
 };
-function Cr() {
+function Er() {
 	let e = document.getElementById("msgs");
-	if (!e || !j) return;
+	if (!e || !A) return;
 	e.querySelector("#working")?.remove();
-	let t = xr();
+	let t = wr();
 	if (e.querySelector(".empty")?.classList.toggle("hidden", !!t.length), !t.length) return;
 	let n = (e) => `<b>${m("{via} de {who}", {
 		via: g(e.who),
@@ -2906,219 +2914,156 @@ function Cr() {
 	})}</b>`;
 	e.insertAdjacentHTML("beforeend", `<div id="working" class="working"><span class="wAv">${t.slice(0, 4).map((e) => le(e.email, e.who)).join("")}</span><div>${t.length === 1 ? `${n(t[0])} ${m("está trabalhando nisso")}` : `${t.map(n).join(", ")} ${m("estão trabalhando nisso")}`}<small>${m("O andamento e a entrega aparecem aqui nesta thread.")}</small></div><span class="spin">✻</span></div>`);
 }
-var wr = (e) => T.filter((t) => t.book_id === j?.id && (e === void 0 || t.thread === e)), Tr = (e) => {
-	let t = wr(e), n = t.length;
-	return n ? `<b class="wN${Se(t)}" title="${n === 1 ? m("Alguém está esperando você aqui") : m("{n} coisas esperando você aqui", { n })}">${n}</b>` : "";
-}, Er = (e) => e.prod ? e.prod.stage === "verified" ? `<span class="prodMark ok" title="${g(m("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>` : `<span class="prodMark" title="${m("No ar, falta verificar em prod")}">🚀</span>` : "", Dr = (e) => {
-	let t = j?.avatars?.[e] ?? se[e];
+var Dr = (e) => w.filter((t) => t.book_id === A?.id && (e === void 0 || t.thread === e)), Or = (e) => {
+	let t = Dr(e), n = t.length;
+	return n ? `<b class="wN${we(t)}" title="${n === 1 ? m("Alguém está esperando você aqui") : m("{n} coisas esperando você aqui", { n })}">${n}</b>` : "";
+}, kr = (e) => {
+	let t = A?.avatars?.[e] ?? ce[e];
 	return t ? `<img src="/api/avatar/${encodeURIComponent(e)}?v=${t}" alt="" loading="lazy" />` : g(v(e).slice(0, 2).toUpperCase());
-}, Or = (e, t) => e.owner ? `<span class="ri epOwner" style="background:${_(e.owner)}" ${t ? `data-epowner="${e.id}" role="button" tabindex="0" ` : ""}title="${g(m("Dono: {who}", { who: v(e.owner) }))}${t ? ` · ${m("clique pra trocar")}` : ""}">${Dr(e.owner)}</span>` : `<span class="ri" style="background:${_(e.title)};color:#fff" ${t ? `data-epowner="${e.id}" role="button" tabindex="0" title="${m("Sem dono · clique pra escolher")}"` : ""}>${g(F(e.title))}</span>`;
-function kr(e, t) {
-	document.getElementById("ownMenu")?.remove();
-	let n = j.epics.find((e) => e.id === t);
-	if (!n) return;
-	let r = document.createElement("div");
-	r.id = "ownMenu", r.className = "ownMenu", r.setAttribute("role", "menu"), r.innerHTML = `<p>${m("Dono do épico")}</p>${j.members.map((e) => `<button type="button" role="menuitemradio" aria-checked="${n.owner === e}" data-own="${g(e)}">${y(e)}<span>${g(v(e))}</span>${n.owner === e ? E("check", 14) : ""}</button>`).join("")}<button type="button" role="menuitemradio" aria-checked="${!n.owner}" data-own=""><span class="avatar none">–</span><span>${m("Sem dono")}</span>${n.owner ? "" : E("check", 14)}</button>`, document.body.append(r);
-	let i = e.getBoundingClientRect();
-	r.style.left = `${Math.max(8, Math.min(i.left, innerWidth - r.offsetWidth - 8))}px`, r.style.top = `${i.bottom + 6 + r.offsetHeight > innerHeight ? Math.max(8, i.top - r.offsetHeight - 6) : i.bottom + 6}px`;
-	let a = () => {
-		r.remove(), removeEventListener("pointerdown", o, !0), removeEventListener("keydown", s);
-	}, o = (e) => {
-		r.contains(e.target) || a();
-	}, s = (e) => {
-		e.key === "Escape" && a();
-	};
-	setTimeout(() => {
-		addEventListener("pointerdown", o, !0), addEventListener("keydown", s);
-	}), r.querySelectorAll("[data-own]").forEach((e) => e.onclick = () => {
-		N({
-			t: "epic.owner",
-			id: t,
-			owner: e.dataset.own
-		}), a();
-	}), r.querySelector("button")?.focus();
-}
-var Ar = (e) => {
+}, Ar = (e, t) => e.owner ? `<span class="ri epOwner" style="background:${_(e.owner)}" ${t ? `data-epowner="${e.id}" role="button" tabindex="0" ` : ""}title="${g(m("Dono: {who}", { who: v(e.owner) }))}${t ? ` · ${m("clique pra trocar")}` : ""}">${kr(e.owner)}</span>` : `<span class="ri" style="background:${_(e.title)};color:#fff" ${t ? `data-epowner="${e.id}" role="button" tabindex="0" title="${m("Sem dono · clique pra escolher")}"` : ""}>${g(P(e.title))}</span>`, jr = (e) => {
 	try {
 		return new URL(e).hostname.replace(/^www\./, "");
 	} catch {
 		return e;
 	}
-}, jr = !1;
-function Mr() {
-	let e = j.pins || [];
-	return `<div class="sec pinsSec"><h4>${m("Fixados")}${jr ? "" : `<button type="button" class="ghost pinPlus" id="pinPlus" title="${m("Fixar um link")}" aria-label="${m("Fixar um link")}">${E("plus", 14)}</button>`}</h4>
+}, Mr = !1;
+function Nr() {
+	let e = A.pins || [];
+	return `<div class="sec pinsSec"><h4>${m("Fixados")}${Mr ? "" : `<button type="button" class="ghost pinPlus" id="pinPlus" title="${m("Fixar um link")}" aria-label="${m("Fixar um link")}">${T("plus", 14)}</button>`}</h4>
       ${e.map((e) => {
 		let t, n = "", r = e.title, i = "", a;
-		if (e.kind === "link") t = e.ref, n = "target=\"_blank\" rel=\"noopener\"", i = Ar(e.ref), r ||= i, a = `<span class="ri pinIco" style="background:${_(i)}">${g(i[0]?.toUpperCase() || "↗")}</span>`;
+		if (e.kind === "link") t = e.ref, n = "target=\"_blank\" rel=\"noopener\"", i = jr(e.ref), r ||= i, a = `<span class="ri pinIco" style="background:${_(i)}">${g(i[0]?.toUpperCase() || "↗")}</span>`;
 		else if (e.kind === "app") {
 			let o = e.ref.includes("/") ? `#app:${e.ref}` : `#app:room/${e.ref}`;
-			t = g(o), n = `data-cardgo="${g(o)}"`, r ||= e.ref.split("/").pop(), i = e.ref.includes("/") ? "app" : m("app da sala"), a = `<span class="ri pinIco app">${E("grid", 14)}</span>`;
+			t = g(o), n = `data-cardgo="${g(o)}"`, r ||= e.ref.split("/").pop(), i = e.ref.includes("/") ? "app" : m("app da sala"), a = `<span class="ri pinIco app">${T("grid", 14)}</span>`;
 		} else {
-			let o = (j.files || []).find((t) => t.id === e.ref);
+			let o = (A.files || []).find((t) => t.id === e.ref);
 			if (!o) return "";
-			t = Xr(o), n = `target="_blank" rel="noopener" ${Zr(o)}`, r ||= o.name, i = m("arquivo"), a = `<span class="ri pinIco app">${E("file", 14)}</span>`;
+			t = Zr(o), n = `target="_blank" rel="noopener" ${Qr(o)}`, r ||= o.name, i = m("arquivo"), a = `<span class="ri pinIco app">${T("file", 14)}</span>`;
 		}
-		return `<div class="pinRow"><a class="thread pin" href="${g(t)}" ${n} title="${g(r)}${e.kind === "link" ? ` · ${g(e.ref)}` : ""}">${a}<span class="rt">${g(r)}<small>${g(i)}</small></span></a><button type="button" class="ghost x" data-unpin="${g(e.id)}" title="${m("Desafixar")}" aria-label="${m("Desafixar {name}", { name: g(r) })}">${E("x", 14)}</button></div>`;
+		return `<div class="pinRow"><a class="thread pin" href="${g(t)}" ${n} title="${g(r)}${e.kind === "link" ? ` · ${g(e.ref)}` : ""}">${a}<span class="rt">${g(r)}<small>${g(i)}</small></span></a><button type="button" class="ghost x" data-unpin="${g(e.id)}" title="${m("Desafixar")}" aria-label="${m("Desafixar {name}", { name: g(r) })}">${T("x", 14)}</button></div>`;
 	}).join("")}
-      ${jr ? `<form id="pinForm" class="pinForm"><input name="url" required placeholder="${m("Cole um link (site, repo, painel…)")}" aria-label="${m("Link pra fixar")}" enterkeyhint="done" /><input name="title" maxlength="80" placeholder="${m("Nome (opcional)")}" aria-label="${m("Nome")}" /><div class="row"><button type="button" class="ghost" id="pinCancel">${m("Cancelar")}</button><button class="primary">${m("Fixar")}</button></div></form>` : e.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${E("pin", 14)}<span>${m("Fixar site, repo ou app")}</span></button>`}
+      ${Mr ? `<form id="pinForm" class="pinForm"><input name="url" required placeholder="${m("Cole um link (site, repo, painel…)")}" aria-label="${m("Link pra fixar")}" enterkeyhint="done" /><input name="title" maxlength="80" placeholder="${m("Nome (opcional)")}" aria-label="${m("Nome")}" /><div class="row"><button type="button" class="ghost" id="pinCancel">${m("Cancelar")}</button><button class="primary">${m("Fixar")}</button></div></form>` : e.length ? "" : `<button type="button" class="pinEmpty" id="pinEmpty">${T("pin", 14)}<span>${m("Fixar site, repo ou app")}</span></button>`}
     </div>`;
 }
-function Nr(e) {
+function Pr(e) {
 	let t = () => {
-		jr = !0, z(), document.querySelector("#pinForm [name=url]")?.focus();
+		Mr = !0, R(), document.querySelector("#pinForm [name=url]")?.focus();
 	}, n = e.querySelector("#pinPlus");
 	n && (n.onclick = t);
 	let r = e.querySelector("#pinEmpty");
 	r && (r.onclick = t);
 	let i = e.querySelector("#pinCancel");
 	i && (i.onclick = () => {
-		jr = !1, z();
+		Mr = !1, R();
 	});
 	let a = e.querySelector("#pinForm");
 	a && (a.onsubmit = (e) => {
 		e.preventDefault();
 		let t = e.target, n = t.elements.namedItem("url").value.trim();
-		n && (N({
+		n && (M({
 			t: "pin.add",
 			kind: "link",
 			ref: n,
 			title: t.elements.namedItem("title").value.trim()
-		}), jr = !1, z());
-	}), e.querySelectorAll("[data-unpin]").forEach((e) => e.onclick = () => N({
+		}), Mr = !1, R());
+	}), e.querySelectorAll("[data-unpin]").forEach((e) => e.onclick = () => M({
 		t: "pin.del",
 		id: e.dataset.unpin
 	}));
 }
-function Pr() {
+function Fr() {
 	let e = document.getElementById("askBar");
 	if (!e) return;
-	let t = wr().find((e) => /^a\d/.test(e.ref) && e.thread !== M);
+	let t = Dr().find((e) => /^a\d/.test(e.ref) && e.thread !== j);
 	if (e.hidden = !t, !t) return;
 	let n = (t.text || "").replace(/^(⏸|❓)\s*Seu Claude\s*/, "").replace(/[*`]/g, "").slice(0, 160);
-	e.innerHTML = `<span>⏸ <b>${m("Seu agent espera você")}</b> ${m("em {where}", { where: g(t.topic || m("sala principal")) })}: ${g(n)}</span><button type="button" class="primary" data-askgo="${t.ref.slice(1)}">${m("Ver")}</button>`, e.querySelector("[data-askgo]").onclick = (e) => Di(Number(e.currentTarget.dataset.askgo));
+	e.innerHTML = `<span>⏸ <b>${m("Seu agent espera você")}</b> ${m("em {where}", { where: g(t.topic || m("sala principal")) })}: ${g(n)}</span><button type="button" class="primary" data-askgo="${t.ref.slice(1)}">${m("Ver")}</button>`, e.querySelector("[data-askgo]").onclick = (e) => Oi(Number(e.currentTarget.dataset.askgo));
 }
-function z() {
-	Tt(), Pr();
-	let e = document.getElementById("side");
-	if (!e || !j) return;
-	if (zn(), En && window.innerWidth > 900) return qt("sidebar"), On(e);
-	Jt("sidebar", e, {
-		room: j,
-		thread: M,
-		archOpen: Rr,
-		foldOpen: zr,
-		friends: Pt,
+function R() {
+	Dt(), Fr();
+	let t = document.getElementById("side");
+	if (!t || !A) return;
+	if (Hn(), Jt = e(Jt, A, j, zr), kn && window.innerWidth > 900) return Xt("sidebar"), jn(t);
+	let n = A.id;
+	Zt("sidebar", t, {
+		room: A,
+		thread: j,
+		navigation: Jt,
+		send: (e) => A?.id === n && M(e),
+		onopen: (e) => {
+			A?.id === n && (H(!0), j = e, Q = !1, Hr = j === "main" || F() ? null : j, R(), X(), B(), $());
+		},
+		onarchchange: (e) => {
+			A?.id === n && (zr = e);
+		},
+		foldOpen: Br,
+		friends: It,
 		vb: {
 			t: m,
-			icon: E,
+			icon: T,
 			avatar: y,
-			ago: b,
+			ago: x,
 			name: v,
-			initials: F,
-			bookTitle: P,
-			roomMark: Cn,
-			roomStrip: Br,
-			pinsSec: Mr,
-			sbxRows: Wn,
-			agentRows: _r,
-			epicIco: Or,
-			epicBusy: Sr,
-			waitPill: Tr,
-			waitsIn: wr,
-			prodMark: Er
+			bookTitle: N,
+			roomMark: En,
+			roomStrip: Vr,
+			pinsSec: Nr,
+			sbxRows: qn,
+			agentRows: br,
+			epicBusy: Tr,
+			waitPill: Or,
+			waitsIn: Dr
 		}
-	}), e.querySelector("#railToggle").onclick = Dn, e.querySelectorAll("details.memMore > summary").forEach((e) => e.onclick = () => zr[e.parentElement.dataset.fold] = !e.parentElement.open), e.querySelectorAll(".epTabs [data-arch]").forEach((e) => e.onclick = () => {
-		Rr = !!e.dataset.arch, z();
-	}), Nr(e), e.querySelectorAll("[data-epowner]").forEach((e) => {
-		let t = (t) => {
-			t.preventDefault(), t.stopPropagation(), kr(e, e.dataset.epowner);
-		};
-		e.onclick = t, e.onkeydown = (e) => {
-			(e.key === "Enter" || e.key === " ") && t(e);
-		};
+	}), t.querySelector("#railToggle").onclick = An, t.querySelectorAll("details.memMore > summary").forEach((e) => e.onclick = () => Br[e.parentElement.dataset.fold] = !e.parentElement.open), Pr(t);
+	let r = t.querySelector(".sheetGrab");
+	r && !Yt.has(r) && (Yr(r, "side", !1), Yt.add(r));
+	let i = t.querySelector("#sideRooms");
+	i && (i.onclick = $e);
+	let a = t.querySelector("#sideRename");
+	a && (a.onclick = (e) => {
+		e.stopPropagation(), Wr();
 	});
-	let t = e.querySelector(".sheetGrab");
-	t && !Kt.has(t) && (Jr(t, "side", !1), Kt.add(t));
-	let n = e.querySelector("#sideRooms");
-	n && (n.onclick = Ze);
-	let r = e.querySelector("#sideRename");
-	r && (r.onclick = (e) => {
-		e.stopPropagation(), Ur();
+	let o = t.querySelector("#sideArch");
+	o && (o.onclick = () => {
+		H(), document.getElementById("epicArch")?.click();
 	});
-	let i = e.querySelector("#sideArch");
-	i && (i.onclick = () => {
-		U(), document.getElementById("epicArch")?.click();
-	});
-	let a = e.querySelector("#sideDel");
-	a && (a.onclick = () => {
-		U(), document.getElementById("epicDel")?.click();
-	}), e.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((e) => {
-		e.draggable = !0, e.ondragstart = (t) => {
-			t.dataTransfer.setData("text/vb-epic", e.dataset.thread), t.dataTransfer.effectAllowed = "move", e.classList.add("dragging");
-		}, e.ondragend = () => e.classList.remove("dragging"), e.ondragover = (t) => {
-			if (!t.dataTransfer.types.includes("text/vb-epic")) return;
-			t.preventDefault();
-			let n = e.getBoundingClientRect();
-			e.classList.toggle("dropAbove", t.clientY < n.top + n.height / 2), e.classList.toggle("dropBelow", t.clientY >= n.top + n.height / 2);
-		}, e.ondragleave = () => e.classList.remove("dropAbove", "dropBelow"), e.ondrop = (t) => {
-			t.preventDefault(), e.classList.remove("dropAbove", "dropBelow");
-			let n = t.dataTransfer.getData("text/vb-epic"), r = e.dataset.thread;
-			if (!n || n === r) return;
-			let i = j.epics.filter((e) => !e.archived).map((e) => e.id).filter((e) => e !== n), a = e.getBoundingClientRect();
-			i.splice(i.indexOf(r) + +(t.clientY >= a.top + a.height / 2), 0, n);
-			let o = [...i, ...j.epics.filter((e) => e.archived).map((e) => e.id)];
-			j.epics.sort((e, t) => o.indexOf(e.id) - o.indexOf(t.id)), z(), N({
-				t: "epic.order",
-				ids: o
-			});
-		};
-	}), e.querySelectorAll("[data-thread]").forEach((e) => e.onclick = () => {
-		U(!0), M = e.dataset.thread, Q = !1, Vr = M === "main" || I() ? null : M, z(), Z(), V(), $();
-	});
-	let o = document.getElementById("newEpic"), s = o?.querySelector("input");
-	s && (s.onfocus = (e) => setTimeout(() => e.target.scrollIntoView({
-		block: "center",
-		behavior: "smooth"
-	}), 350)), o && (o.onsubmit = (e) => {
-		e.preventDefault();
-		let t = e.target[0].value.trim();
-		if (!t) return e.target[0].focus();
-		N({
-			t: "epic",
-			title: t
-		}), e.target.reset();
-	}), e.querySelectorAll("[data-remove]").forEach((e) => e.onclick = async () => {
+	let s = t.querySelector("#sideDel");
+	s && (s.onclick = () => {
+		H(), document.getElementById("epicDel")?.click();
+	}), t.querySelectorAll("[data-thread]").forEach((e) => e.onclick = () => {
+		H(!0), j = e.dataset.thread, Q = !1, Hr = j === "main" || F() ? null : j, R(), X(), B(), $();
+	}), t.querySelectorAll("[data-remove]").forEach((e) => e.onclick = async () => {
 		let t = e.dataset.remove;
-		if (!confirm((j.pending || []).includes(t) ? m("Cancelar o convite de {email}?", { email: t }) : m("Remover {email} deste vibebook?", { email: t }))) return;
-		let n = await fetch(`/api/books/${j.id}/members/${encodeURIComponent(t)}`, { method: "DELETE" });
+		if (!confirm((A.pending || []).includes(t) ? m("Cancelar o convite de {email}?", { email: t }) : m("Remover {email} deste vibebook?", { email: t }))) return;
+		let n = await fetch(`/api/books/${A.id}/members/${encodeURIComponent(t)}`, { method: "DELETE" });
 		n.ok || alert((await n.json().catch(() => ({}))).error || m("Não deu para remover."));
-	}), e.querySelectorAll("[data-ask]").forEach((e) => e.onclick = async () => {
+	}), t.querySelectorAll("[data-ask]").forEach((e) => e.onclick = async () => {
 		let t = !!e.dataset.ok, n = e.dataset.ask;
-		(t || confirm(m("Recusar o pedido de {email}?", { email: n }))) && (e.disabled = !0, await S(`/api/books/${j.id}/requests`, {
+		(t || confirm(m("Recusar o pedido de {email}?", { email: n }))) && (e.disabled = !0, await S(`/api/books/${A.id}/requests`, {
 			email: n,
 			ok: t
-		}).then(() => t && B(m("{email} entrou na sala e recebeu o link por email.", { email: g(n) }))).catch((t) => {
+		}).then(() => t && z(m("{email} entrou na sala e recebeu o link por email.", { email: g(n) }))).catch((t) => {
 			alert(t.message), e.disabled = !1;
 		}));
-	}), e.querySelectorAll("[data-resend]").forEach((e) => e.onclick = async () => {
+	}), t.querySelectorAll("[data-resend]").forEach((e) => e.onclick = async () => {
 		e.disabled = !0, e.textContent = "…";
 		try {
-			await S(`/api/books/${j.id}/members`, { email: e.dataset.resend }), e.textContent = `${m("enviado")} ✓`;
+			await S(`/api/books/${A.id}/members`, { email: e.dataset.resend }), e.textContent = `${m("enviado")} ✓`;
 		} catch (t) {
 			e.textContent = m("reenviar"), e.disabled = !1, alert(t.message);
 		}
-	}), e.querySelectorAll("[data-copyinv]").forEach((e) => e.onclick = () => Lr(e.dataset.copyinv, !1)), e.querySelectorAll("[data-add]").forEach((e) => e.onclick = async () => {
-		e.disabled = !0, Lr(e.dataset.add), await S(`/api/books/${j.id}/members`, { email: e.dataset.add }).catch((t) => {
+	}), t.querySelectorAll("[data-copyinv]").forEach((e) => e.onclick = () => Rr(e.dataset.copyinv, !1)), t.querySelectorAll("[data-add]").forEach((e) => e.onclick = async () => {
+		e.disabled = !0, Rr(e.dataset.add), await S(`/api/books/${A.id}/members`, { email: e.dataset.add }).catch((t) => {
 			alert(t.message), e.disabled = !1;
 		});
 	}), document.getElementById("invite").onsubmit = async (e) => {
 		e.preventDefault();
 		let t = e.target[0].value.trim();
-		Lr(t), await S(`/api/books/${j.id}/members`, { email: t }).catch((e) => alert(e.message)), e.target.reset();
-	}, document.title = `${j.book?.title ?? "vibebook"} · vibebook`, Tn(P());
+		Rr(t), await S(`/api/books/${A.id}/members`, { email: t }).catch((e) => alert(e.message)), e.target.reset();
+	}, document.title = `${A.book?.title ?? "vibebook"} · vibebook`, On(N());
 }
-function Fr() {
+function Ir() {
 	let e = document.getElementById("picFile");
 	e && (e.onchange = async () => {
 		let t = e.files?.[0];
@@ -3131,55 +3076,55 @@ function Fr() {
 				body: i
 			});
 			if (!a.ok) throw Error((await a.json().catch(() => ({}))).error || m("Não deu para salvar a foto."));
-			Qe();
+			et();
 		} catch (e) {
 			alert(e.message || m("Não deu para ler essa imagem."));
 		}
 	}, e.click());
 }
-function Ir(e) {
-	let t = `${location.origin}/b/${j.id}`;
+function Lr(e) {
+	let t = `${location.origin}/b/${A.id}`;
 	return `${m("Te convidei pro vibebook \"{title}\": {url}", {
-		title: P(),
+		title: N(),
 		url: t
 	})}\n\n${m("1. Entra com {email} (o convite chegou nesse email).", { email: e })}\n${m("2. Manda isto pro seu Claude Code:")}\n\nRead ${location.origin}/llms.txt and set up vibebook for this project. Room: ${t}`;
 }
-function Lr(e, t = !0) {
-	navigator.clipboard?.writeText(Ir(e)).then(() => B(`${t ? `${m("Convite enviado por email para <b>{email}</b>.", { email: g(e) })} ` : ""}${m("Copiei a mensagem com o link da sala e o setup do agent para {name}: cola no WhatsApp.", { name: g(v(e)) })}`), () => B(m("Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.", { email: g(e) })));
+function Rr(e, t = !0) {
+	navigator.clipboard?.writeText(Lr(e)).then(() => z(`${t ? `${m("Convite enviado por email para <b>{email}</b>.", { email: g(e) })} ` : ""}${m("Copiei a mensagem com o link da sala e o setup do agent para {name}: cola no WhatsApp.", { name: g(v(e)) })}`), () => z(m("Não consegui copiar. Use \"copiar\" ao lado de {email} em Pessoas.", { email: g(e) })));
 }
-function B(e, t = 7e3) {
+function z(e, t = 7e3) {
 	document.querySelector(".toast")?.remove(), document.body.insertAdjacentHTML("beforeend", `<div class="toast" role="status">${e}</div>`);
 	let n = document.querySelector(".toast");
 	setTimeout(() => n.remove(), t);
 }
 m("A fazer"), m("Fazendo"), m("Esperando OK"), m("Feito");
-var Rr = !1, zr = {
+var zr = !1, Br = {
 	off: !1,
 	friends: null
 };
-function Br() {
-	let e = [...w || []].filter((e) => e.id !== j?.id && !e.archived_at).sort((e, t) => (t.opened_at ?? 0) - (e.opened_at ?? 0)).slice(0, 3), t = (e) => e.last_human_id > e.read_id ? "<b class=\"dot h\"></b>" : e.last_agent_id > e.read_id ? "<b class=\"dot a\"></b>" : "", n = (e) => e.busy_until > Date.now() ? "<b class=\"swBusy\">✻</b>" : "", r = (e) => {
-		let t = T.filter((t) => t.book_id === e.id), n = t.length;
-		return n ? `<b class="swWait${Se(t)}">${n}</b>` : "";
+function Vr() {
+	let e = [...C || []].filter((e) => e.id !== A?.id && !e.archived_at).sort((e, t) => (t.opened_at ?? 0) - (e.opened_at ?? 0)).slice(0, 3), t = (e) => e.last_human_id > e.read_id ? "<b class=\"dot h\"></b>" : e.last_agent_id > e.read_id ? "<b class=\"dot a\"></b>" : "", n = (e) => e.busy_until > Date.now() ? "<b class=\"swBusy\">✻</b>" : "", r = (e) => {
+		let t = w.filter((t) => t.book_id === e.id), n = t.length;
+		return n ? `<b class="swWait${we(t)}">${n}</b>` : "";
 	};
-	return `<nav class="roomStrip" aria-label="${m("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${E("grid", 20)}</span><span>${m("Todos")}</span></a>${e.map((e) => `<a data-nav href="/b/${e.id}" title="${g(e.title)}"><span class="tw">${Ne(e, "md")}${t(e)}${n(e)}${r(e)}</span><span>${g(e.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - e.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${m("Trocar de sala")}"><span class="tile md">${Te}</span><span>${m("Buscar")}</span></button></nav>`;
+	return `<nav class="roomStrip" aria-label="${m("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${T("grid", 20)}</span><span>${m("Todos")}</span></a>${e.map((e) => `<a data-nav href="/b/${e.id}" title="${g(e.title)}"><span class="tw">${Fe(e, "md")}${t(e)}${n(e)}${r(e)}</span><span>${g(e.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - e.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${m("Trocar de sala")}"><span class="tile md">${De}</span><span>${m("Buscar")}</span></button></nav>`;
 }
-var Vr = null, Hr = () => {
+var Hr = null, Ur = () => {
 	h.querySelector(".book.boardview") && document.getElementById("toggleBoard").click();
 };
-function V() {
-	let e = h.querySelector(".book"), t = e && l(e);
-	t && (e.classList.contains("boardview") || e.querySelector(":scope > .doc")?.dataset.pane === "board") && Jt("board", t, {
-		room: j,
-		thread: M,
-		vb: Xt(),
-		send: N,
-		onopen: Qt
+function B() {
+	let e = h.querySelector(".book"), t = e && u(e);
+	t && (e.classList.contains("boardview") || e.querySelector(":scope > .doc")?.dataset.pane === "board") && Zt("board", t, {
+		room: A,
+		thread: j,
+		vb: $t(),
+		send: M,
+		onopen: tn
 	});
 }
-function Ur() {
-	let e = j.epics.find((e) => e.id === M), t = e ? e.title : P(), n = prompt(m(e ? "Nome do épico:" : "Nome do vibebook:"), t);
-	n?.trim() && n !== t && N(e ? {
+function Wr() {
+	let e = A.epics.find((e) => e.id === j), t = e ? e.title : N(), n = prompt(m(e ? "Nome do épico:" : "Nome do vibebook:"), t);
+	n?.trim() && n !== t && M(e ? {
 		t: "epic.rename",
 		id: e.id,
 		title: n
@@ -3188,39 +3133,39 @@ function Ur() {
 		title: n
 	});
 }
-function Wr() {
+function Gr() {
 	let e = document.getElementById("peekTxt");
-	if (!e || !j) return;
-	let t = Ia(), n = t && j.epics.find((e) => e.id === t), r = ((t ? j.docs?.[t] : j.doc) || "").match(/^#\s+(.+)$/m)?.[1].replace(/[*_`]/g, "").trim() || (n ? n.title : P()), i = n?.tasks.length || 0, a = i && n.tasks.filter((e) => e.done).length;
-	e.innerHTML = `${E("doc", 15)}<b>Doc</b>${i ? `<small>${a}/${i}</small>` : ""}`, e.title = r;
-	let o = j.filesN ?? j.files?.length ?? 0, s = (j.reminders || []).filter((e) => e.error).length;
+	if (!e || !A) return;
+	let t = Ia(), n = t && A.epics.find((e) => e.id === t), r = ((t ? A.docs?.[t] : A.doc) || "").match(/^#\s+(.+)$/m)?.[1].replace(/[*_`]/g, "").trim() || (n ? n.title : N()), i = n?.tasks.length || 0, a = i && n.tasks.filter((e) => e.done).length;
+	e.innerHTML = `${T("doc", 15)}<b>Doc</b>${i ? `<small>${a}/${i}</small>` : ""}`, e.title = r;
+	let o = A.filesN ?? A.files?.length ?? 0, s = (A.reminders || []).filter((e) => e.error).length;
 	document.getElementById("peekFiles").textContent = o ? String(o) : "", document.getElementById("peekRem").textContent = s ? "⚠" : "";
 }
-var H = matchMedia("(max-width: 900px)"), Gr = !1;
-function Kr(e) {
+var V = matchMedia("(max-width: 900px)"), Kr = !1;
+function qr(e) {
 	let t = h.querySelector(".book");
-	t && H.matches && t.dataset.sheet !== e && (t.dataset.sheet || f.pushState({ sheet: 1 }, "", location.href), t.dataset.sheet = e);
+	t && V.matches && t.dataset.sheet !== e && (t.dataset.sheet || f.pushState({ sheet: 1 }, "", location.href), t.dataset.sheet = e);
 }
-function U(e) {
+function H(e) {
 	let t = h.querySelector(".book");
-	t?.dataset.sheet && (t.querySelector(".doc[data-view=\"edit\"] .seg [data-view=\"preview\"]")?.click(), delete t.dataset.sheet, history.state?.sheet && (e ? _a = !1 : (Gr = !0, history.back())));
+	t?.dataset.sheet && (t.querySelector(".doc[data-view=\"edit\"] .seg [data-view=\"preview\"]")?.click(), delete t.dataset.sheet, history.state?.sheet && (e ? va = !1 : (Kr = !0, history.back())));
 }
-function qr() {
-	if (Gr) return Gr = !1, !0;
+function Jr() {
+	if (Kr) return Kr = !1, !0;
 	let e = h.querySelector(".book");
 	return e?.dataset.sheet ? (e.querySelector(".doc[data-view=\"edit\"] .seg [data-view=\"preview\"]")?.click(), delete e.dataset.sheet, !0) : !1;
 }
 document.addEventListener("keydown", (e) => {
-	e.key === "Escape" && !e.defaultPrevented && h.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]") && U();
+	e.key === "Escape" && !e.defaultPrevented && h.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]") && H();
 });
-function Jr(e, t, n, r) {
+function Yr(e, t, n, r) {
 	if (!e) return;
 	let i = !1;
 	e.onclick = (e) => {
-		i ? i = !1 : r ? r(e) : n ? Kr(t) : U();
+		i ? i = !1 : r ? r(e) : n ? qr(t) : H();
 	}, e.onpointerdown = (r) => {
 		let a = h.querySelector(".book")?.querySelector(t === "doc" ? ".doc" : ".side"), o = document.getElementById("sheetDim");
-		if (!a || !H.matches) return;
+		if (!a || !V.matches) return;
 		let s = r.clientY, c = a.offsetHeight, l = 0, u = !1;
 		i = !1, e.setPointerCapture(r.pointerId), e.onpointermove = (e) => {
 			if (l = (e.clientY - s) * -1, !u && Math.abs(l) < 6) return;
@@ -3228,81 +3173,81 @@ function Jr(e, t, n, r) {
 			let t = Math.min(c, Math.max(0, n ? c + l : l));
 			a.style.transform = `translateY(${t * -1}px)`, o.style.opacity = String(1 - t / c);
 		}, e.onpointerup = e.onpointercancel = () => {
-			e.onpointermove = e.onpointerup = e.onpointercancel = null, u && (i = !0, setTimeout(() => i = !1, 400), a.classList.remove("sheetDrag"), a.style.transform = "", o.style.transition = "", o.style.opacity = "", (n ? -l > c / 4 : l <= c / 4) ? Kr(t) : U());
+			e.onpointermove = e.onpointerup = e.onpointercancel = null, u && (i = !0, setTimeout(() => i = !1, 400), a.classList.remove("sheetDrag"), a.style.transform = "", o.style.transition = "", o.style.opacity = "", (n ? -l > c / 4 : l <= c / 4) ? qr(t) : H());
 		};
 	};
 }
-function Yr() {
+function Xr() {
 	let e = document.getElementById("tasks");
 	if (!e) return;
-	let t = j.epics.find((e) => e.id === M), n = document.getElementById("threadTitle"), r = `<button type="button" class="thChev" aria-label="${m("Trocar de conversa")}" title="${m("Trocar de conversa")}">${E("chevronDown", 18)}</button>`, i = () => n.querySelector(".thChev").onclick = () => Kr("side"), a = (e, t) => `<span class="thPick">${e.replace("class=\"ri", "class=\"ri thMark")}${t}${r}</span>`;
-	if (kn()) {
-		qt("tasks"), n.innerHTML = `${a(`<span class="ri">${g(F(kn().title))}</span>`, `<span class="epicName" id="roomName">${g(kn().title)}</span>`)}<small class="folderChip">✦ ${m("sugestão do @vibe")}</small>`, i(), document.getElementById("roomName").onclick = () => H.matches && Kr("side"), e.innerHTML = "", Wr();
+	let t = A.epics.find((e) => e.id === j), n = document.getElementById("threadTitle"), r = `<button type="button" class="thChev" aria-label="${m("Trocar de conversa")}" title="${m("Trocar de conversa")}">${T("chevronDown", 18)}</button>`, i = () => n.querySelector(".thChev").onclick = () => qr("side"), a = (e, t) => `<span class="thPick">${e.replace("class=\"ri", "class=\"ri thMark")}${t}${r}</span>`;
+	if (Mn()) {
+		Xt("tasks"), n.innerHTML = `${a(`<span class="ri">${g(P(Mn().title))}</span>`, `<span class="epicName" id="roomName">${g(Mn().title)}</span>`)}<small class="folderChip">✦ ${m("sugestão do @vibe")}</small>`, i(), document.getElementById("roomName").onclick = () => V.matches && qr("side"), e.innerHTML = "", Gr();
 		return;
 	}
-	n.innerHTML = t ? `${a(`<span class="ri" style="background:${_(t.title)};color:#fff">${g(F(t.title))}</span>`, `<span class="epicName" id="roomName" title="${m("Clique para renomear")}">${g(t.title)}</span>`)}<button class="ghost x" id="epicArch" title="${t.archived ? m("Desarquivar épico") : m("Arquivar épico (concluído)")}" aria-label="${t.archived ? m("Desarquivar épico") : m("Arquivar épico")}">${E(t.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${m("Apagar épico")}" aria-label="${m("Apagar épico")}">${E("trash")}</button>` : `${a(Cn("ri roomIco"), `<span class="epicName" id="roomName" title="${g(j.book?.summary || m("Clique para renomear"))}">${g(P())}</span>`)}${j.book?.folder ? `<small class="folderChip">${E("folder", 12)} ${g(j.book.folder)}</small>` : ""}`;
+	n.innerHTML = t ? `${a(`<span class="ri" style="background:${_(t.title)};color:#fff">${g(P(t.title))}</span>`, `<span class="epicName" id="roomName" title="${m("Clique para renomear")}">${g(t.title)}</span>`)}<button class="ghost x" id="epicArch" title="${t.archived ? m("Desarquivar épico") : m("Arquivar épico (concluído)")}" aria-label="${t.archived ? m("Desarquivar épico") : m("Arquivar épico")}">${T(t.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${m("Apagar épico")}" aria-label="${m("Apagar épico")}">${T("trash")}</button>` : `${a(En("ri roomIco"), `<span class="epicName" id="roomName" title="${g(A.book?.summary || m("Clique para renomear"))}">${g(N())}</span>`)}${A.book?.folder ? `<small class="folderChip">${T("folder", 12)} ${g(A.book.folder)}</small>` : ""}`;
 	let o = {};
-	for (let e of [...j.epics.flatMap((e) => e.tasks), ...j.roomTasks || []]) !e.done && e.owner && (o[e.owner] = (o[e.owner] || 0) + 1);
+	for (let e of [...A.epics.flatMap((e) => e.tasks), ...A.roomTasks || []]) !e.done && e.owner && (o[e.owner] = (o[e.owner] || 0) + 1);
 	Object.entries(o).sort((e, t) => t[1] - e[1]), n.closest(".chathead");
-	let s = o[j.me] || 0, c = document.getElementById("toggleBoard");
+	let s = o[A.me] || 0, c = document.getElementById("toggleBoard");
 	c.querySelector(".kN")?.remove(), s && c.insertAdjacentHTML("beforeend", `<b class="kN" title="${m("Esperando você")}: ${s}">${s}</b>`);
 	let l = h.querySelector(".ptBoard .kN");
-	l && (l.hidden = !s, l.textContent = s || ""), c.title = s ? `${m("Quadro de tarefas")} · ${m("Esperando você")}: ${s}` : m("Quadro de tarefas (kanban)"), i(), document.getElementById("roomName").onclick = () => H.matches ? Kr("side") : Ur();
+	l && (l.hidden = !s, l.textContent = s || ""), c.title = s ? `${m("Quadro de tarefas")} · ${m("Esperando você")}: ${s}` : m("Quadro de tarefas (kanban)"), i(), document.getElementById("roomName").onclick = () => V.matches ? qr("side") : Wr();
 	let u = h.querySelector(".phHome");
-	u && (u.title = u.ariaLabel = m(M === "main" ? "Seus vibebooks" : "Voltar pra sala principal"), u.onclick = (e) => {
-		M !== "main" && (e.preventDefault(), e.stopPropagation(), M = "main", Q = !1, z(), Z(), V(), $());
+	u && (u.title = u.ariaLabel = m(j === "main" ? "Seus vibebooks" : "Voltar pra sala principal"), u.onclick = (e) => {
+		j !== "main" && (e.preventDefault(), e.stopPropagation(), j = "main", Q = !1, R(), X(), B(), $());
 	}), n.querySelector(".thPick").onclick = (e) => {
-		H.matches && !e.target.closest(".thChev") && Kr("side");
-	}, Wr();
-	let d = t || (M === "main" && j.roomTasks?.length ? {
+		V.matches && !e.target.closest(".thChev") && qr("side");
+	}, Gr();
+	let d = t || (j === "main" && A.roomTasks?.length ? {
 		id: "main",
-		tasks: j.roomTasks
+		tasks: A.roomTasks
 	} : null);
-	e.style.display = d ? "" : "none", d && (t && (document.getElementById("epicArch").onclick = () => N({
+	e.style.display = d ? "" : "none", d && (t && (document.getElementById("epicArch").onclick = () => M({
 		t: "epic.archive",
 		id: t.id,
 		archived: !t.archived
 	})), t && (document.getElementById("epicDel").onclick = () => {
-		confirm(m("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: t.title })) && N({
+		confirm(m("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: t.title })) && M({
 			t: "epic.del",
 			id: t.id
 		});
-	}), Jt("tasks", e, {
-		room: j,
-		thread: M,
-		vb: Xt(),
-		send: N,
-		waits: T
+	}), Zt("tasks", e, {
+		room: A,
+		thread: j,
+		vb: $t(),
+		send: M,
+		waits: w
 	}));
 }
-var Xr = (e) => `/api/books/${j.id}/files/${e.id}`, Zr = (e) => `data-view="${e.type.startsWith("image/") ? "img" : "frame"}" data-name="${g(e.name)}"`, Qr = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === !0) && (/iP(hone|ad|od)/.test(navigator.userAgent) || /Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1), $r = (e) => Qr ? `x-safari-${new URL(e, location.href).href}` : e;
-function ei(e, t, n) {
+var Zr = (e) => `/api/books/${A.id}/files/${e.id}`, Qr = (e) => `data-view="${e.type.startsWith("image/") ? "img" : "frame"}" data-name="${g(e.name)}"`, $r = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === !0) && (/iP(hone|ad|od)/.test(navigator.userAgent) || /Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1), ei = (e) => $r ? `x-safari-${new URL(e, location.href).href}` : e;
+function ti(e, t, n) {
 	let r = document.getElementById("viewer");
-	r || (r = document.createElement("dialog"), r.id = "viewer", r.className = "viewer", r.innerHTML = `<header><b></b><select class="vsel" aria-label="${m("Versão")}" hidden></select><a target="_blank" rel="noopener" title="${m("Abrir numa aba")}" aria-label="${m("Abrir numa aba")}">${E("external", 20)}</a><button type="button" title="${m("Fechar")}" aria-label="${m("Fechar")}">${E("x", 20)}</button></header><div class="vbody"></div>`, r.querySelector("button").onclick = () => r.close(), r.querySelector("header a").onclick = () => r.close(), r.querySelector(".vsel").onchange = (e) => {
+	r || (r = document.createElement("dialog"), r.id = "viewer", r.className = "viewer", r.innerHTML = `<header><b></b><select class="vsel" aria-label="${m("Versão")}" hidden></select><a target="_blank" rel="noopener" title="${m("Abrir numa aba")}" aria-label="${m("Abrir numa aba")}">${T("external", 20)}</a><button type="button" title="${m("Fechar")}" aria-label="${m("Fechar")}">${T("x", 20)}</button></header><div class="vbody"></div>`, r.querySelector("button").onclick = () => r.close(), r.querySelector("header a").onclick = () => r.close(), r.querySelector(".vsel").onchange = (e) => {
 		let t = e.target.value;
-		ri(r, `/api/books/${j.id}/files/${t}`, r.dataset.kind, r.dataset.name);
+		ii(r, `/api/books/${A.id}/files/${t}`, r.dataset.kind, r.dataset.name);
 	}, r.addEventListener("click", (e) => {
 		e.target.classList.contains("vbody") && r.close();
 	}), r.addEventListener("close", () => {
-		r.querySelector(".vbody").innerHTML = "", history.state?.viewer && (ai = !0, history.back());
-	}), document.body.appendChild(r)), ri(r, e, t, n), r.open || f.pushState({ viewer: 1 }, "", r.dataset.fid ? `${location.pathname}${location.search}#f${r.dataset.fid}` : location.href), r.showModal();
+		r.querySelector(".vbody").innerHTML = "", history.state?.viewer && (oi = !0, history.back());
+	}), document.body.appendChild(r)), ii(r, e, t, n), r.open || f.pushState({ viewer: 1 }, "", r.dataset.fid ? `${location.pathname}${location.search}#f${r.dataset.fid}` : location.href), r.showModal();
 }
-function ti(e) {
+function ni(e) {
 	let t = /* @__PURE__ */ new Map();
-	for (let n of j.files || []) n.name === e && t.set(n.id, {
+	for (let n of A.files || []) n.name === e && t.set(n.id, {
 		id: n.id,
 		ts: n.ts
 	});
-	for (let n of X()) for (let r of n.files || []) r.name === e && !t.has(r.id) && t.set(r.id, {
+	for (let n of Y()) for (let r of n.files || []) r.name === e && !t.has(r.id) && t.set(r.id, {
 		id: r.id,
 		ts: n.ts
 	});
 	return [...t.values()].sort((e, t) => t.ts - e.ts);
 }
-function ni() {
+function ri() {
 	let e = document.getElementById("viewer");
 	if (!e?.open || !e.dataset.name) return;
-	let t = e.querySelector(".vsel"), n = ti(e.dataset.name), r = e.dataset.fid;
+	let t = e.querySelector(".vsel"), n = ni(e.dataset.name), r = e.dataset.fid;
 	t.hidden = n.length < 2, t.innerHTML = n.map((e, t) => `<option value="${e.id}"${e.id === r ? " selected" : ""}>v${n.length - t}${t === 0 ? ` · ${m("mais nova")}` : ""} · ${new Date(e.ts).toLocaleString(p, {
 		day: "2-digit",
 		month: "2-digit",
@@ -3310,17 +3255,17 @@ function ni() {
 		minute: "2-digit"
 	})}</option>`).join("");
 }
-function ri(e, t, n, r) {
-	e.dataset.kind = n, e.dataset.name = typeof t == "string" ? r : "", e.dataset.fid = typeof t == "string" ? /\/files\/([0-9a-f]+)/.exec(t)?.[1] ?? "" : "", e.querySelector("header b").textContent = r, e.querySelector("header a").href = typeof t == "string" ? $r(t) : "";
+function ii(e, t, n, r) {
+	e.dataset.kind = n, e.dataset.name = typeof t == "string" ? r : "", e.dataset.fid = typeof t == "string" ? /\/files\/([0-9a-f]+)/.exec(t)?.[1] ?? "" : "", e.querySelector("header b").textContent = r, e.querySelector("header a").href = typeof t == "string" ? ei(t) : "";
 	let i = e.querySelector(".vsel");
-	i.hidden = !0, e.dataset.fid && (ni(), j.filesAll || N({ t: "files.get" })), e.open && e.dataset.fid && history.state?.viewer && f.replaceState(history.state, "", `${location.pathname}${location.search}#f${e.dataset.fid}`);
+	i.hidden = !0, e.dataset.fid && (ri(), A.filesAll || M({ t: "files.get" })), e.open && e.dataset.fid && history.state?.viewer && f.replaceState(history.state, "", `${location.pathname}${location.search}#f${e.dataset.fid}`);
 	let a = e.querySelector(".vbody");
 	if (a.className = `vbody ${n}`, e.classList.toggle("noLink", n === "table"), n === "table") a.replaceChildren(t.cloneNode(!0));
 	else if (n === "img") {
 		let e = new Image();
 		e.src = t, e.alt = r, a.replaceChildren(e);
 	} else if (/\.(md|markdown|txt|csv)$/i.test(r) && typeof t == "string") a.className = "vbody text", a.replaceChildren(), fetch(t).then((e) => e.ok ? e.text() : Promise.reject(e.status)).then((n) => {
-		(!e.dataset.fid || t.endsWith(e.dataset.fid)) && (a.innerHTML = /\.(md|markdown)$/i.test(r) ? `<div class="vdoc md">${xe(n.slice(0, 3e5))}</div>` : /\.csv$/i.test(r) ? `<div class="vdoc"><table>${ii(n).map((e, t) => `<tr>${e.map((e) => `<${t ? "td" : "th"}>${g(e)}</${t ? "td" : "th"}>`).join("")}</tr>`).join("")}</table></div>` : `<pre class="vdoc">${g(n.slice(0, 3e5))}</pre>`);
+		(!e.dataset.fid || t.endsWith(e.dataset.fid)) && (a.innerHTML = /\.(md|markdown)$/i.test(r) ? `<div class="vdoc md">${Se(n.slice(0, 3e5))}</div>` : /\.csv$/i.test(r) ? `<div class="vdoc"><table>${ai(n).map((e, t) => `<tr>${e.map((e) => `<${t ? "td" : "th"}>${g(e)}</${t ? "td" : "th"}>`).join("")}</tr>`).join("")}</table></div>` : `<pre class="vdoc">${g(n.slice(0, 3e5))}</pre>`);
 	}).catch(() => {
 		a.innerHTML = `<p class="vdoc">${m("Não consegui abrir este arquivo.")}</p>`;
 	});
@@ -3329,7 +3274,7 @@ function ri(e, t, n, r) {
 		e.src = t, e.title = r, /\.pdf$/i.test(r) || (e.sandbox = "allow-scripts"), a.replaceChildren(e);
 	}
 }
-function ii(e) {
+function ai(e) {
 	let t = [], n = [], r = "", i = !1;
 	for (let a = 0; a < e.length && t.length < 2e3; a++) {
 		let o = e[a];
@@ -3337,62 +3282,62 @@ function ii(e) {
 	}
 	return (r || n.length) && (n.push(r), t.push(n.slice(0, 50))), t;
 }
-var ai = !1;
-function oi() {
-	if (ai) return ai = !1, !0;
+var oi = !1;
+function si() {
+	if (oi) return oi = !1, !0;
 	let e = document.getElementById("viewer");
 	return e?.open ? (f.replaceState(null, "", location.href), e.close(), !0) : !1;
 }
 document.addEventListener("click", (e) => {
 	if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
 	let t = e.target.closest?.("a[data-view]");
-	if (t) return e.preventDefault(), ei(t.getAttribute("href"), t.dataset.view, t.dataset.name || "");
+	if (t) return e.preventDefault(), ti(t.getAttribute("href"), t.dataset.view, t.dataset.name || "");
 	let n = e.target.closest?.("a[href]");
-	if (!n || !j?.id) return;
+	if (!n || !A?.id) return;
 	let r;
 	try {
 		r = new URL(n.getAttribute("href"), location.href);
 	} catch {
 		return;
 	}
-	let i = r.origin === location.origin && RegExp(`^/api/books/${j.id}/files/([0-9a-f]+)$`).exec(r.pathname);
+	let i = r.origin === location.origin && RegExp(`^/api/books/${A.id}/files/([0-9a-f]+)$`).exec(r.pathname);
 	if (!i) return;
-	let a = (j.files || []).find((e) => e.id === i[1]) || X().flatMap((e) => e.files || []).find((e) => e.id === i[1]);
-	e.preventDefault(), ei(r.pathname, a?.type?.startsWith("image/") ? "img" : "frame", a?.name || n.textContent.trim() || "arquivo");
+	let a = (A.files || []).find((e) => e.id === i[1]) || Y().flatMap((e) => e.files || []).find((e) => e.id === i[1]);
+	e.preventDefault(), ti(r.pathname, a?.type?.startsWith("image/") ? "img" : "frame", a?.name || n.textContent.trim() || "arquivo");
 });
-var si = (e) => e > 1e6 ? `${(e / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(e / 1e3))} KB`, ci = (e) => e?.length ? `<div class="atts">${e.map((e) => e.embed ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${Xr(e)}" sandbox="allow-scripts" loading="lazy" title="${g(e.name)}"></iframe><a class="embedOpen" href="${Xr(e)}" ${Zr(e)} title="${m("Abrir em tela cheia")}" aria-label="${m("Abrir em tela cheia")}">${E("expand", 15)}</a></div></div>` : e.type.startsWith("audio/") ? `<div class="audioAtt"><audio controls preload="metadata" src="${Xr(e)}"></audio><a href="${Xr(e)}" target="_blank" rel="noopener" download="${g(e.name)}">${E("mic", 14)} ${g(e.name)} <small>${si(e.size)}</small></a></div>` : e.type.startsWith("image/") ? `<a href="${Xr(e)}" target="_blank" rel="noopener" ${Zr(e)}><img src="${Xr(e)}" alt="${g(e.name)}" loading="lazy" /></a>` : `<a class="fileChip" href="${Xr(e)}" target="_blank" rel="noopener" ${Zr(e)}>${Rt(e)} ${g(e.name)} <small>${si(e.size)}</small></a>`).join("")}</div>` : "";
-function li(e) {
-	let t = j.polls?.[e];
+var ci = (e) => e > 1e6 ? `${(e / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(e / 1e3))} KB`, li = (e) => e?.length ? `<div class="atts">${e.map((e) => e.embed ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${Zr(e)}" sandbox="allow-scripts" loading="lazy" title="${g(e.name)}"></iframe><a class="embedOpen" href="${Zr(e)}" ${Qr(e)} title="${m("Abrir em tela cheia")}" aria-label="${m("Abrir em tela cheia")}">${T("expand", 15)}</a></div></div>` : e.type.startsWith("audio/") ? `<div class="audioAtt"><audio controls preload="metadata" src="${Zr(e)}"></audio><a href="${Zr(e)}" target="_blank" rel="noopener" download="${g(e.name)}">${T("mic", 14)} ${g(e.name)} <small>${ci(e.size)}</small></a></div>` : e.type.startsWith("image/") ? `<a href="${Zr(e)}" target="_blank" rel="noopener" ${Qr(e)}><img src="${Zr(e)}" alt="${g(e.name)}" loading="lazy" /></a>` : `<a class="fileChip" href="${Zr(e)}" target="_blank" rel="noopener" ${Qr(e)}>${Bt(e)} ${g(e.name)} <small>${ci(e.size)}</small></a>`).join("")}</div>` : "";
+function ui(e) {
+	let t = A.polls?.[e];
 	if (!t) return "";
 	let n = t.votes.map((e) => e.length), r = n.reduce((e, t) => e + t, 0), i = Math.max(...n), a = new Set(t.votes.flat()).size;
 	return `<div class="poll" data-poll="${e}">
-    <div class="pq">${E("chart", 18)} ${g(t.question)}</div>
+    <div class="pq">${T("chart", 18)} ${g(t.question)}</div>
     ${t.options.map((e, a) => {
-		let o = n[a], s = r ? Math.round(100 * o / r) : 0, c = t.votes[a].includes(j.me), l = t.closed && o > 0 && o === i;
+		let o = n[a], s = r ? Math.round(100 * o / r) : 0, c = t.votes[a].includes(A.me), l = t.closed && o > 0 && o === i;
 		return `<button type="button" class="opt ${c ? "mine" : ""} ${l ? "win" : ""}" data-vote="${a}" ${t.closed ? "disabled" : ""} aria-pressed="${c}">
-        <span class="fill" style="width:${s}%"></span><span class="ol">${l ? `${E("trophy")} ` : c ? `${E("check")} ` : ""}${g(e)}</span>
+        <span class="fill" style="width:${s}%"></span><span class="ol">${l ? `${T("trophy")} ` : c ? `${T("check")} ` : ""}${g(e)}</span>
         <span class="stack">${t.votes[a].slice(0, 4).map((e) => y(e)).join("")}</span><span class="pc">${o ? `${s}%` : ""}</span></button>`;
 	}).join("")}
-    <div class="pf">${a === 1 ? m("1 pessoa votou") : m("{n} pessoas votaram", { n: a })} · ${t.multi ? m("pode escolher várias") : m("escolha uma")}${t.closed ? ` · ${m("encerrada")}` : t.author === j.me || t.author === "ai" ? ` · <button type="button" class="link" data-close="${e}">${m("encerrar")}</button>` : ""}</div>
+    <div class="pf">${a === 1 ? m("1 pessoa votou") : m("{n} pessoas votaram", { n: a })} · ${t.multi ? m("pode escolher várias") : m("escolha uma")}${t.closed ? ` · ${m("encerrada")}` : t.author === A.me || t.author === "ai" ? ` · <button type="button" class="link" data-close="${e}">${m("encerrar")}</button>` : ""}</div>
   </div>`;
 }
-var ui = (e) => new Date(e).toLocaleTimeString(p, {
+var di = (e) => new Date(e).toLocaleTimeString(p, {
 	hour: "2-digit",
 	minute: "2-digit"
-}), di = (e, t) => !!e && e.author === t.author && (e.kind || null) === (t.kind || null) && (e.tag || null) === (t.tag || null) && t.ts - e.ts < 3e5 && !e.poll && !t.poll, fi = (e) => {
-	let t = j.messages.filter((t) => t.thread === e.id), n = t.at(-1), r = j.counts ? (j.counts[e.id] ?? 0) + t.filter((e) => e.id > (j.countsAt ?? 0)).length : t.length, i = e.tasks.filter((e) => e.status === "done").length;
-	return `${Or(e)}<span class="tc-t"><b>${g(e.title)}</b><small>${e.archived ? `✓ ${m("concluído")} · ` : ""}${e.tasks.length ? `${m("{d}/{n} tarefas", {
+}), fi = (e, t) => !!e && e.author === t.author && (e.kind || null) === (t.kind || null) && (e.tag || null) === (t.tag || null) && t.ts - e.ts < 3e5 && !e.poll && !t.poll, pi = (e) => {
+	let t = A.messages.filter((t) => t.thread === e.id), n = t.at(-1), r = A.counts ? (A.counts[e.id] ?? 0) + t.filter((e) => e.id > (A.countsAt ?? 0)).length : t.length, i = e.tasks.filter((e) => e.status === "done").length;
+	return `${Ar(e)}<span class="tc-t"><b>${g(e.title)}</b><small>${e.archived ? `✓ ${m("concluído")} · ` : ""}${e.tasks.length ? `${m("{d}/{n} tarefas", {
 		d: i,
 		n: e.tasks.length
-	})} · ` : ""}${r === 1 ? m("1 resposta") : m("{n} respostas", { n: r })}${n ? ` · ${b(n.ts) === m("agora") ? m("agora") : m("última há {ago}", { ago: b(n.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
+	})} · ` : ""}${r === 1 ? m("1 resposta") : m("{n} respostas", { n: r })}${n ? ` · ${x(n.ts) === m("agora") ? m("agora") : m("última há {ago}", { ago: x(n.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
 };
-function pi(e) {
+function mi(e) {
 	let t = /* @__PURE__ */ new Map();
-	for (let e of j.epics || []) e.parent && (t.has(e.parent) || t.set(e.parent, []), t.get(e.parent).push(e.id));
+	for (let e of A.epics || []) e.parent && (t.has(e.parent) || t.set(e.parent, []), t.get(e.parent).push(e.id));
 	let n = [e];
 	for (let e = 0; e < n.length && n.length < 60; e++) for (let r of t.get(n[e]) || []) n.includes(r) || n.push(r);
 	let r = new Set(n), i = /* @__PURE__ */ new Map();
-	for (let e of [...j.messages].reverse()) if (r.has(e.thread)) for (let t of e.files || []) {
+	for (let e of [...A.messages].reverse()) if (r.has(e.thread)) for (let t of e.files || []) {
 		let e = i.get(t.name);
 		e ? e.seen.add(t.id) : i.set(t.name, {
 			f: t,
@@ -3400,7 +3345,7 @@ function pi(e) {
 			n: 0
 		});
 	}
-	for (let e of n) for (let t of j.epics.find((t) => t.id === e)?.files || []) {
+	for (let e of n) for (let t of A.epics.find((t) => t.id === e)?.files || []) {
 		let e = i.get(t.name);
 		e ? e.n = Math.max(e.n, t.n, e.seen.size) : i.set(t.name, {
 			f: t,
@@ -3413,40 +3358,40 @@ function pi(e) {
 		n: Math.max(e.n, e.seen.size)
 	}));
 }
-var mi = (e) => {
-	let t = pi(e);
-	return t.length ? `<div class="tcFiles" data-files-of="${e}">${t.slice(0, 6).map((e) => `<a class="fchip" href="/api/books/${j.id}/files/${e.id}" title="${g(e.name)}">${Rt(e, 14)}<span>${g(e.name)}</span>${e.n > 1 ? `<small>v${e.n}</small>` : ""}</a>`).join("")}${t.length > 6 ? `<small class="mute">+${t.length - 6}</small>` : ""}</div>` : "";
-}, hi = (e) => (j.epics || []).filter((t) => t.from_msg === e).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${fi(e)}</button>${mi(e.id)}`).join("");
-function gi() {
-	Z("stay");
+var hi = (e) => {
+	let t = mi(e);
+	return t.length ? `<div class="tcFiles" data-files-of="${e}">${t.slice(0, 6).map((e) => `<a class="fchip" href="/api/books/${A.id}/files/${e.id}" title="${g(e.name)}">${Bt(e, 14)}<span>${g(e.name)}</span>${e.n > 1 ? `<small>v${e.n}</small>` : ""}</a>`).join("")}${t.length > 6 ? `<small class="mute">+${t.length - 6}</small>` : ""}</div>` : "";
+}, gi = (e) => (A.epics || []).filter((t) => t.from_msg === e).map((e) => `<button type="button" class="tcard" data-goepic="${e.id}">${pi(e)}</button>${hi(e.id)}`).join("");
+function _i() {
+	X("stay");
 }
 document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-gomain]");
-	if (t) return M = "main", Q = !1, z(), Z(), V(), $(), document.getElementById(`m${t.dataset.gomain}`)?.scrollIntoView({ block: "center" });
+	if (t) return j = "main", Q = !1, R(), X(), B(), $(), document.getElementById(`m${t.dataset.gomain}`)?.scrollIntoView({ block: "center" });
 	let n = e.target.closest(".tcard[data-goepic]");
-	n && (M = n.dataset.goepic, Q = !1, z(), Z(), V(), $());
+	n && (j = n.dataset.goepic, Q = !1, R(), X(), B(), $());
 });
-function _i() {
+function vi() {
 	let e = document.getElementById("msgs");
 	if (!e) return;
 	e.querySelectorAll(".endMark, .prodStage").forEach((e) => e.remove());
-	let t = j.epics.find((e) => e.id === M), n = t?.prod, r = n ? n.stage === "verified" ? `<div class="prodStage ok"><b>✓✓ ${m("Verificado em prod")}</b>${n.note ? `<span>${g(n.note)}</span>` : ""}</div>` : `<div class="prodStage"><b>🚀 ${m("No ar")}</b><span>${m("Falta o agent verificar em prod.")}</span></div>` : "";
+	let t = A.epics.find((e) => e.id === j), n = t?.prod, r = n ? n.stage === "verified" ? `<div class="prodStage ok"><b>✓✓ ${m("Verificado em prod")}</b>${n.note ? `<span>${g(n.note)}</span>` : ""}</div>` : `<div class="prodStage"><b>🚀 ${m("No ar")}</b><span>${m("Falta o agent verificar em prod.")}</span></div>` : "";
 	t?.archived && e.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${m("Agent fez")}</b><span>${m("Escreva aqui pra continuar: ele reabre.")}</span></div>`), r && e.insertAdjacentHTML("beforeend", r);
 }
-var W = null, vi = (e) => (e.text || e.files?.map((e) => e.name).join(", ") || (e.poll ? m("votação") : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120), yi = (e) => e.author === "ai" ? "@vibe" : e.kind === "agent" ? m("{via} de {who}", {
+var U = null, yi = (e) => (e.text || e.files?.map((e) => e.name).join(", ") || (e.poll ? m("votação") : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120), bi = (e) => e.author === "ai" ? "@vibe" : e.kind === "agent" ? m("{via} de {who}", {
 	via: "Agent",
 	who: v(e.author)
-}) : v(e.author), bi = (e) => {
-	let t = j.messages.find((t) => t.id === e);
-	return `<button type="button" class="quote" data-goto="${e}" title="${m("Ver a mensagem respondida")}">${E("reply", 13)} ${t ? `<b>${g(yi(t))}</b> ${g(vi(t))}` : m("mensagem anterior")}</button>`;
+}) : v(e.author), xi = (e) => {
+	let t = A.messages.find((t) => t.id === e);
+	return `<button type="button" class="quote" data-goto="${e}" title="${m("Ver a mensagem respondida")}">${T("reply", 13)} ${t ? `<b>${g(bi(t))}</b> ${g(yi(t))}` : m("mensagem anterior")}</button>`;
 };
-function xi() {
+function Si() {
 	let e = document.getElementById("replyBar");
-	e && (W && W.thread !== M && (W = null), e.hidden = !W, W && (e.innerHTML = `<span>${E("reply", 13)} ${m("Respondendo a <b>{who}</b>", { who: g(yi(W)) })}: ${g(vi(W))}</span><button type="button" class="ghost" id="replyX" aria-label="${m("Cancelar resposta")}" title="${m("Cancelar")}">${E("x")}</button>`), document.getElementById("replyX")?.addEventListener("click", () => {
-		W = null, xi();
+	e && (U && U.thread !== j && (U = null), e.hidden = !U, U && (e.innerHTML = `<span>${T("reply", 13)} ${m("Respondendo a <b>{who}</b>", { who: g(bi(U)) })}: ${g(yi(U))}</span><button type="button" class="ghost" id="replyX" aria-label="${m("Cancelar resposta")}" title="${m("Cancelar")}">${T("x")}</button>`), document.getElementById("replyX")?.addEventListener("click", () => {
+		U = null, Si();
 	}));
 }
-function Si(e) {
+function Ci(e) {
 	let t = document.createElement("textarea");
 	t.value = e, t.readOnly = !0, t.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px", document.body.append(t), t.focus({ preventScroll: !0 }), t.setSelectionRange(0, e.length);
 	let n = !1;
@@ -3455,91 +3400,91 @@ function Si(e) {
 	} catch {}
 	return t.remove(), n;
 }
-function Ci(e) {
-	let t = X().find((t) => t.id === e);
-	if (!t) return;
-	let n = `${location.origin}/b/${j.id}${t.thread && t.thread !== "main" ? `?t=${encodeURIComponent(t.thread)}` : ""}#m${e}`, r = () => {
-		B(`✓ ${m("Link copiado")}`, 1600), navigator.vibrate?.(15);
-	};
-	if (Si(n)) return r();
-	(navigator.clipboard?.writeText(n) ?? Promise.reject()).then(r, () => B(`${m("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copylink="${e}">${m("Copiar link")}</button>`));
-}
 function wi(e) {
-	let t = j.messages.find((t) => t.id === e);
+	let t = Y().find((t) => t.id === e);
 	if (!t) return;
-	let n = t.text || t.files?.map((e) => e.name).join("\n") || "";
-	if (!n) return B(m("Essa mensagem não tem texto pra copiar."), 2500);
-	let r = () => {
-		B(`✓ ${m("Copiado")}`, 1600), navigator.vibrate?.(15);
+	let n = `${location.origin}/b/${A.id}${t.thread && t.thread !== "main" ? `?t=${encodeURIComponent(t.thread)}` : ""}#m${e}`, r = () => {
+		z(`✓ ${m("Link copiado")}`, 1600), navigator.vibrate?.(15);
 	};
-	if (Si(n)) return r();
-	(navigator.clipboard?.writeText(n) ?? Promise.reject()).then(r, () => {
-		B(`${m("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copymsg="${e}">${m("Copiar")}</button>`);
-	});
+	if (Ci(n)) return r();
+	(navigator.clipboard?.writeText(n) ?? Promise.reject()).then(r, () => z(`${m("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copylink="${e}">${m("Copiar link")}</button>`));
 }
 function Ti(e) {
-	W = j.messages.find((t) => t.id === e) ?? null, xi(), document.getElementById("input")?.focus();
+	let t = A.messages.find((t) => t.id === e);
+	if (!t) return;
+	let n = t.text || t.files?.map((e) => e.name).join("\n") || "";
+	if (!n) return z(m("Essa mensagem não tem texto pra copiar."), 2500);
+	let r = () => {
+		z(`✓ ${m("Copiado")}`, 1600), navigator.vibrate?.(15);
+	};
+	if (Ci(n)) return r();
+	(navigator.clipboard?.writeText(n) ?? Promise.reject()).then(r, () => {
+		z(`${m("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copymsg="${e}">${m("Copiar")}</button>`);
+	});
+}
+function Ei(e) {
+	U = A.messages.find((t) => t.id === e) ?? null, Si(), document.getElementById("input")?.focus();
 }
 document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-reply]");
-	if (t) return Ti(Number(t.dataset.reply));
+	if (t) return Ei(Number(t.dataset.reply));
 	let n = e.target.closest("[data-copymsg]");
-	if (n) return wi(Number(n.dataset.copymsg));
+	if (n) return Ti(Number(n.dataset.copymsg));
 	let r = e.target.closest("[data-copylink]");
-	if (r) return Ci(Number(r.dataset.copylink));
+	if (r) return wi(Number(r.dataset.copylink));
 	let i = e.target.closest("a.mlink[data-msg]");
-	if (i) return e.preventDefault(), Di(Number(i.dataset.msg));
+	if (i) return e.preventDefault(), Oi(Number(i.dataset.msg));
 	let a = e.target.closest(".quote[data-goto]");
-	a && Di(Number(a.dataset.goto));
+	a && Oi(Number(a.dataset.goto));
 });
-var Ei = null;
-function Di(e, t) {
-	let n = j.messages.find((t) => t.id === e), r = n?.thread || t;
-	r && r !== M && (r === "main" || j.epics.some((e) => e.id === r)) && (M = r, Q = !1, z(), Z(), V(), $());
+var Di = null;
+function Oi(e, t) {
+	let n = A.messages.find((t) => t.id === e), r = n?.thread || t;
+	r && r !== j && (r === "main" || A.epics.some((e) => e.id === r)) && (j = r, Q = !1, R(), X(), B(), $());
 	let i = document.getElementById(`m${e}`);
 	if (!i && n) {
-		let t = j.messages.filter((e) => e.thread === M), r = t.indexOf(n);
-		r >= 0 && (Y.n = Math.max(Y.n, t.length - r + 10), Z(!0), i = document.getElementById(`m${e}`));
+		let t = A.messages.filter((e) => e.thread === j), r = t.indexOf(n);
+		r >= 0 && (J.n = Math.max(J.n, t.length - r + 10), X(!0), i = document.getElementById(`m${e}`));
 	}
-	if (!i) return Ei?.id === e ? void 0 : (Ei = {
+	if (!i) return Di?.id === e ? void 0 : (Di = {
 		id: e,
 		n: 0
-	}, B(m("Buscando a mensagem…"), 1500), ba());
-	Ei = null, Ta = !1, i.scrollIntoView({
+	}, z(m("Buscando a mensagem…"), 1500), xa());
+	Di = null, Z = !1, i.scrollIntoView({
 		block: "center",
 		behavior: "smooth"
 	}), i.classList.remove("flash"), i.offsetWidth, i.classList.add("flash");
 }
 document.addEventListener("keydown", (e) => {
-	e.key === "Escape" && W && document.activeElement?.id === "input" && (W = null, xi());
+	e.key === "Escape" && U && document.activeElement?.id === "input" && (U = null, Si());
 });
-var G = null;
+var W = null;
 document.addEventListener("touchstart", (e) => {
 	let t = !e.target.closest("pre, table, .embedBox") && e.target.closest(".msgs .msg[id^=m]");
-	G = t && e.touches.length === 1 ? {
+	W = t && e.touches.length === 1 ? {
 		m: t,
 		x: e.touches[0].clientX,
 		y: e.touches[0].clientY,
 		dx: 0
 	} : null;
 }, { passive: !0 }), document.addEventListener("touchmove", (e) => {
-	if (!G) return;
-	let t = e.touches[0].clientX - G.x, n = e.touches[0].clientY - G.y;
-	if (!G.locked) {
+	if (!W) return;
+	let t = e.touches[0].clientX - W.x, n = e.touches[0].clientY - W.y;
+	if (!W.locked) {
 		if (Math.abs(n) > 8 && Math.abs(n) >= Math.abs(t)) {
-			G = null;
+			W = null;
 			return;
 		}
 		if (Math.abs(t) < 10 || Math.abs(t) <= Math.abs(n)) return;
-		G.locked = !0, G.m.classList.add("swipe");
+		W.locked = !0, W.m.classList.add("swipe");
 	}
-	e.preventDefault(), G.dx = t, G.m.style.transform = `translateX(${Math.max(-80, Math.min(t, 80))}px)`, G.m.dataset.sw = t < 0 ? `← ${m("Copiar")}` : `${m("Responder")} →`, G.m.classList.toggle("swL", t < 0), G.m.classList.toggle("swR", t > 0), G.m.classList.toggle("swGo", Math.abs(t) > 60);
+	e.preventDefault(), W.dx = t, W.m.style.transform = `translateX(${Math.max(-80, Math.min(t, 80))}px)`, W.m.dataset.sw = t < 0 ? `← ${m("Copiar")}` : `${m("Responder")} →`, W.m.classList.toggle("swL", t < 0), W.m.classList.toggle("swR", t > 0), W.m.classList.toggle("swGo", Math.abs(t) > 60);
 }, { passive: !1 }), document.addEventListener("touchend", () => {
-	if (!G) return;
-	let { m: e, dx: t } = G;
-	G = null, e.classList.remove("swipe", "swL", "swR", "swGo"), e.style.transform = "", t > 60 ? Ti(Number(e.id.slice(1))) : t < -60 && wi(Number(e.id.slice(1)));
+	if (!W) return;
+	let { m: e, dx: t } = W;
+	W = null, e.classList.remove("swipe", "swL", "swR", "swGo"), e.style.transform = "", t > 60 ? Ei(Number(e.id.slice(1))) : t < -60 && Ti(Number(e.id.slice(1)));
 });
-function Oi(e) {
+function ki(e) {
 	let t;
 	try {
 		t = typeof e.card == "string" ? JSON.parse(e.card) : e.card;
@@ -3547,7 +3492,7 @@ function Oi(e) {
 		return "";
 	}
 	if (!t?.elements?.[t.root]) return "";
-	let n = j.messages.find((t) => t.reply_to === e.id && t.author === e.author && t.kind !== "agent"), r = e.kind === "agent" && e.author === j.me && !n, i = (e) => g(String(e ?? "")).replace(/\n/g, "<br>"), a = (o, s = 0) => {
+	let n = A.messages.find((t) => t.reply_to === e.id && t.author === e.author && t.kind !== "agent"), r = e.kind === "agent" && e.author === A.me && !n, i = (e) => g(String(e ?? "")).replace(/\n/g, "<br>"), a = (o, s = 0) => {
 		let c = t.elements[o];
 		if (!c || s > 8) return "";
 		let l = c.props || {}, u = () => (c.children || []).map((e) => a(e, s + 1)).join("");
@@ -3557,7 +3502,7 @@ function Oi(e) {
 			case "Text": return `<p class="vtx ${g(l.style || "plain")}">${i(l.content)}</p>`;
 			case "Fields": return `<dl class="vfields">${u()}</dl>`;
 			case "Field": return `<div><dt>${i(l.label)}</dt><dd>${i(l.value)}</dd></div>`;
-			case "Table": return `<div class="vtWrap"><button type="button" class="vtOpen" data-vtopen title="${m("Abrir em tela cheia")}" aria-label="${m("Abrir em tela cheia")}">${E("expand", 14)}</button><div class="vtable"><table>${l.headers?.length ? `<thead><tr>${l.headers.map((e) => `<th>${i(e)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(l.rows || []).map((e) => `<tr>${e.map((e) => `<td>${i(e)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+			case "Table": return `<div class="vtWrap"><button type="button" class="vtOpen" data-vtopen title="${m("Abrir em tela cheia")}" aria-label="${m("Abrir em tela cheia")}">${T("expand", 14)}</button><div class="vtable"><table>${l.headers?.length ? `<thead><tr>${l.headers.map((e) => `<th>${i(e)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(l.rows || []).map((e) => `<tr>${e.map((e) => `<td>${i(e)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
 			case "Chart": {
 				let e = l.data || [], t = Math.max(...e.map((e) => Math.abs(e.value)), 1);
 				if (l.kind === "line") {
@@ -3571,59 +3516,59 @@ function Oi(e) {
 			case "Actions": return `<div class="vact">${u()}</div>`;
 			case "Button": {
 				let t = l.value || l.label, a = n?.text === t;
-				return r ? `<button type="button" class="vbtn ${g(l.style || "")}" data-cardbtn="${e.id}" data-v="${g(t)}">${i(l.label)}</button>` : `<span class="vbtn ro ${a ? "on" : ""}">${a ? E("check", 14) : ""}${i(l.label)}</span>`;
+				return r ? `<button type="button" class="vbtn ${g(l.style || "")}" data-cardbtn="${e.id}" data-v="${g(t)}">${i(l.label)}</button>` : `<span class="vbtn ro ${a ? "on" : ""}">${a ? T("check", 14) : ""}${i(l.label)}</span>`;
 			}
-			case "LinkButton": return /^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(l.url || "") ? `<button type="button" class="vbtn link" data-cardgo="${g(l.url)}">${i(l.label)} ${E("arrowRight", 13)}</button>` : /^https?:\/\//i.test(l.url) ? `<a class="vbtn link" href="${g(l.url)}" target="_blank" rel="noopener noreferrer">${i(l.label)} ${E("external", 13)}</a>` : "";
+			case "LinkButton": return /^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(l.url || "") ? `<button type="button" class="vbtn link" data-cardgo="${g(l.url)}">${i(l.label)} ${T("arrowRight", 13)}</button>` : /^https?:\/\//i.test(l.url) ? `<a class="vbtn link" href="${g(l.url)}" target="_blank" rel="noopener noreferrer">${i(l.label)} ${T("external", 13)}</a>` : "";
 			default: return "";
 		}
 	};
 	return a(t.root);
 }
-function ki(e) {
+function Ai(e) {
 	if (e.startsWith("#app:")) {
 		let [t, n] = e.slice(5).split("/");
-		q = {
+		K = {
 			cid: t,
 			tool: n
-		}, document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })), H.matches && Kr("doc");
+		}, document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })), V.matches && qr("doc");
 		return;
 	}
-	if (e.startsWith("#m")) return Di(Number(e.slice(2)));
-	let t = e.startsWith("#e") ? e.slice(2) : e.split(":")[1], n = t && j.epics.some((e) => e.id === t) ? t : t ? null : M;
-	if (!n) return B(m("Esse épico não existe mais nesta sala."));
-	n !== M && (M = n, Q = !1, z(), Z(), V(), $()), e.startsWith("#doc") && (document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })), H.matches && Kr("doc"));
+	if (e.startsWith("#m")) return Oi(Number(e.slice(2)));
+	let t = e.startsWith("#e") ? e.slice(2) : e.split(":")[1], n = t && A.epics.some((e) => e.id === t) ? t : t ? null : j;
+	if (!n) return z(m("Esse épico não existe mais nesta sala."));
+	n !== j && (j = n, Q = !1, R(), X(), B(), $()), e.startsWith("#doc") && (document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" })), V.matches && qr("doc"));
 }
 document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-cardgo]");
-	t && (e.preventDefault(), ki(t.dataset.cardgo));
+	t && (e.preventDefault(), Ai(t.dataset.cardgo));
 }), document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-vtopen]");
 	if (!t) return;
 	let n = t.parentElement.querySelector("table");
-	n && ei(n, "table", t.closest(".vcard")?.querySelector(".vh b")?.textContent || m("Tabela"));
+	n && ti(n, "table", t.closest(".vcard")?.querySelector(".vh b")?.textContent || m("Tabela"));
 }), document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-cardbtn]");
 	if (!t) return;
-	let n = j.messages.find((e) => e.id === Number(t.dataset.cardbtn));
-	t.closest(".vcard")?.querySelectorAll("[data-cardbtn]").forEach((e) => e.disabled = !0), N({
+	let n = A.messages.find((e) => e.id === Number(t.dataset.cardbtn));
+	t.closest(".vcard")?.querySelectorAll("[data-cardbtn]").forEach((e) => e.disabled = !0), M({
 		t: "msg",
-		thread: n?.thread ?? M,
+		thread: n?.thread ?? j,
 		text: t.dataset.v,
 		files: [],
 		reply_to: Number(t.dataset.cardbtn)
 	});
 });
-var Ai = (e) => e?.kind === "agent" && e.author !== j.me && /^(⏸ Seu Claude|❓ Seu Claude)/.test(e.text || ""), ji = (e) => {
+var ji = (e) => e?.kind === "agent" && e.author !== A.me && /^(⏸ Seu Claude|❓ Seu Claude)/.test(e.text || ""), Mi = (e) => {
 	if (!e?.reply_to || e.kind === "agent") return !1;
-	let t = j.messages.find((t) => t.id === e.reply_to);
-	return !!t && Jn(t) && t.author === e.author;
+	let t = A.messages.find((t) => t.id === e.reply_to);
+	return !!t && Zn(t) && t.author === e.author;
 };
-function Mi(e, t, n) {
+function Ni(e, t, n) {
 	if (n) {
 		let e = /^\s*aprov/i.test(n.text);
-		return `<div class="permAsk done ${e ? "ok" : "no"}">${E(e ? "check" : "x", 14)} ${m(e ? "Aprovado por {who}" : "Negado por {who}", { who: g(v(n.author)) })} · ${ui(n.ts)}</div>`;
+		return `<div class="permAsk done ${e ? "ok" : "no"}">${T(e ? "check" : "x", 14)} ${m(e ? "Aprovado por {who}" : "Negado por {who}", { who: g(v(n.author)) })} · ${di(n.ts)}</div>`;
 	}
-	return t.closed ? `<div class="permAsk done">${E("terminal", 14)} ${m("foi pro terminal")}</div>` : e.author === j.me ? `<div class="permAsk" data-perm="${e.id}"><button type="button" class="primary" data-pv="Aprovar">${m("Aprovar")}</button><button type="button" class="ghost" data-pv="Negar">${m("Negar")}</button></div>` : `<div class="choice ro">${t.options.map((e) => `<span class="opt">${g(e)}</span>`).join("")}<small>${m("esperando {who}", { who: g(v(e.author)) })}</small></div>`;
+	return t.closed ? `<div class="permAsk done">${T("terminal", 14)} ${m("foi pro terminal")}</div>` : e.author === A.me ? `<div class="permAsk" data-perm="${e.id}"><button type="button" class="primary" data-pv="Aprovar">${m("Aprovar")}</button><button type="button" class="ghost" data-pv="Negar">${m("Negar")}</button></div>` : `<div class="choice ro">${t.options.map((e) => `<span class="opt">${g(e)}</span>`).join("")}<small>${m("esperando {who}", { who: g(v(e.author)) })}</small></div>`;
 }
 document.addEventListener("click", (e) => {
 	let t = e.target.closest("[data-perm] [data-pv], [data-perm] [data-pconfirm], [data-perm] [data-pcancel]");
@@ -3635,48 +3580,48 @@ document.addEventListener("click", (e) => {
 		return;
 	}
 	if (t.dataset.pcancel) {
-		let e = j.messages.find((e) => e.id === r);
-		e && (n.outerHTML = Ni(e));
+		let e = A.messages.find((e) => e.id === r);
+		e && (n.outerHTML = Pi(e));
 		return;
 	}
-	let i = j.messages.find((e) => e.id === r);
-	n.querySelectorAll("button").forEach((e) => e.disabled = !0), N({
+	let i = A.messages.find((e) => e.id === r);
+	n.querySelectorAll("button").forEach((e) => e.disabled = !0), M({
 		t: "msg",
-		thread: i?.thread ?? M,
+		thread: i?.thread ?? j,
 		text: t.dataset.pconfirm,
 		files: [],
 		reply_to: r
 	});
 });
-function Ni(e) {
+function Pi(e) {
 	let t;
 	try {
 		t = JSON.parse(e.choices);
 	} catch {
 		return "";
 	}
-	let n = j.messages.find((t) => t.reply_to === e.id && t.author === e.author && t.kind !== "agent");
-	if (Jn(e)) return Mi(e, t, n);
-	let r = !Jn(e);
+	let n = A.messages.find((t) => t.reply_to === e.id && t.author === e.author && t.kind !== "agent");
+	if (Zn(e)) return Ni(e, t, n);
+	let r = !Zn(e);
 	if (!n && t.closed) return `<div class="choice ro closed">${t.options.map((e) => `<span class="opt">${g(e)}</span>`).join("")}<small>${m("foi pro terminal")}</small></div>`;
 	if (n) {
 		let e = new Set(n.text.split(" · ")), i = r && !t.options.some((t) => e.has(t));
-		return `<div class="choice done">${t.options.map((t) => `<span class="opt ${e.has(t) ? "on" : ""}">${e.has(t) ? E("check", 14) : ""}${g(t)}</span>`).join("")}${i ? `<span class="opt on">${E("check", 14)}${m("Outro")}</span>` : ""}</div>`;
+		return `<div class="choice done">${t.options.map((t) => `<span class="opt ${e.has(t) ? "on" : ""}">${e.has(t) ? T("check", 14) : ""}${g(t)}</span>`).join("")}${i ? `<span class="opt on">${T("check", 14)}${m("Outro")}</span>` : ""}</div>`;
 	}
-	return e.kind === "agent" && e.author === j.me ? `<form class="choice" data-choice="${e.id}" data-multi="${t.multi ? 1 : ""}">${t.options.map((n) => `<label class="opt"><input type="${t.multi ? "checkbox" : "radio"}" name="c${e.id}" value="${g(n)}" />${g(n)}</label>`).join("")}${r ? `<label class="opt oth"><input type="${t.multi ? "checkbox" : "radio"}" name="c${e.id}" value="" data-other="1" />${m("Outro")}…</label>` : ""}<small>${m("escolha e envie pela caixa de mensagem")}</small></form>` : `<div class="choice ro">${t.options.map((e) => `<span class="opt">${g(e)}</span>`).join("")}<small>${m("esperando {who}", { who: g(v(e.author)) })}</small></div>`;
+	return e.kind === "agent" && e.author === A.me ? `<form class="choice" data-choice="${e.id}" data-multi="${t.multi ? 1 : ""}">${t.options.map((n) => `<label class="opt"><input type="${t.multi ? "checkbox" : "radio"}" name="c${e.id}" value="${g(n)}" />${g(n)}</label>`).join("")}${r ? `<label class="opt oth"><input type="${t.multi ? "checkbox" : "radio"}" name="c${e.id}" value="" data-other="1" />${m("Outro")}…</label>` : ""}<small>${m("escolha e envie pela caixa de mensagem")}</small></form>` : `<div class="choice ro">${t.options.map((e) => `<span class="opt">${g(e)}</span>`).join("")}<small>${m("esperando {who}", { who: g(v(e.author)) })}</small></div>`;
 }
 document.addEventListener("change", (e) => {
 	let t = e.target.closest("form.choice");
 	if (!t) return;
 	let n = document.getElementById("input");
-	n && (e.target.dataset.other ? e.target.checked && (t.dataset.multi || t.querySelectorAll("input").forEach((t) => t.checked = t === e.target), n.value = "") : n.value = [...t.querySelectorAll("input:checked:not([data-other])")].map((e) => e.value).join(" · "), Ti(Number(t.dataset.choice)), n.dispatchEvent(new Event("input", { bubbles: !0 })), n.focus());
+	n && (e.target.dataset.other ? e.target.checked && (t.dataset.multi || t.querySelectorAll("input").forEach((t) => t.checked = t === e.target), n.value = "") : n.value = [...t.querySelectorAll("input:checked:not([data-other])")].map((e) => e.value).join(" · "), Ei(Number(t.dataset.choice)), n.dispatchEvent(new Event("input", { bubbles: !0 })), n.focus());
 });
-var Pi = (e) => e?.tag === "reminder" ? (e.text || "").split("\n")[0] : e?.tag === "issue" ? "⚠issue" : null;
-function Fi(e) {
+var Fi = (e) => e?.tag === "reminder" ? (e.text || "").split("\n")[0] : e?.tag === "issue" ? "⚠issue" : null;
+function Ii(e) {
 	let t = [];
 	for (let n of e) {
-		let e = Pi(n), r = t[t.length - 1];
-		e && Pi(r) === e ? t[t.length - 1] = {
+		let e = Fi(n), r = t[t.length - 1];
+		e && Fi(r) === e ? t[t.length - 1] = {
 			...n,
 			runs: [...r.runs || [r.ts], n.ts],
 			group: [...r.group || [r], n]
@@ -3684,184 +3629,184 @@ function Fi(e) {
 	}
 	return t;
 }
-function Ii(e) {
-	let t = (e.group || [e]).slice().reverse(), n = (e) => new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? ui(e) : `${new Date(e).toLocaleDateString(p, {
+function Li(e) {
+	let t = (e.group || [e]).slice().reverse(), n = (e) => new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? di(e) : `${new Date(e).toLocaleDateString(p, {
 		day: "numeric",
 		month: "short"
-	})} ${ui(e)}`, r = (e) => {
+	})} ${di(e)}`, r = (e) => {
 		let [t, ...n] = (e.text || "").split("\n\n");
 		return {
 			head: t.replace(/^⚠\s*/, ""),
 			what: n.join("\n\n")
 		};
 	}, i = r(t[0]);
-	return `<div class="msg remMsg issueMsg" id="m${e.id}">${Bi(e.id)}<div class="body"><details><summary>${E("alert", 14)}<span class="remT"><b>${t.length > 1 ? m("{n} issues dos agents", { n: t.length }) : m("Issue de um agent")}</b> ${g(i.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${n(e.ts)}</span></summary><div class="txt issueList">${t.map((e) => {
+	return `<div class="msg remMsg issueMsg" id="m${e.id}">${Vi(e.id)}<div class="body"><details><summary>${T("alert", 14)}<span class="remT"><b>${t.length > 1 ? m("{n} issues dos agents", { n: t.length }) : m("Issue de um agent")}</b> ${g(i.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${n(e.ts)}</span></summary><div class="txt issueList">${t.map((e) => {
 		let t = r(e);
-		return `<div class="iss"><small>${n(e.ts)} · ${x(xe(t.head))}<span class="issAct"><button type="button" class="rbtn" data-copymsg="${e.id}" title="${m("Copiar")}" aria-label="${m("Copiar o texto desta mensagem")}">${E("copy", 13)}</button><button type="button" class="rbtn" data-reply="${e.id}" title="${m("Responder")}" aria-label="${m("Responder a esta mensagem")}">${E("reply", 13)}</button></span></small><div>${g(t.what)}</div></div>`;
+		return `<div class="iss"><small>${n(e.ts)} · ${me(Se(t.head))}<span class="issAct"><button type="button" class="rbtn" data-copymsg="${e.id}" title="${m("Copiar")}" aria-label="${m("Copiar o texto desta mensagem")}">${T("copy", 13)}</button><button type="button" class="rbtn" data-reply="${e.id}" title="${m("Responder")}" aria-label="${m("Responder a esta mensagem")}">${T("reply", 13)}</button></span></small><div>${g(t.what)}</div></div>`;
 	}).join("")}</div></details></div></div>`;
 }
-function Li(e, t = !1) {
-	let [n, ...r] = (e.text || "").split("\n\n"), i = e.runs || [e.ts], a = n.replace(/^⏰\s*/, ""), o = a.match(/^\*\*(.+?)\*\*\s*(.*)$/), s = (e) => new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? ui(e) : `${new Date(e).toLocaleDateString(p, {
+function Ri(e, t = !1) {
+	let [n, ...r] = (e.text || "").split("\n\n"), i = e.runs || [e.ts], a = n.replace(/^⏰\s*/, ""), o = a.match(/^\*\*(.+?)\*\*\s*(.*)$/), s = (e) => new Date(e).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? di(e) : `${new Date(e).toLocaleDateString(p, {
 		day: "numeric",
 		month: "short"
-	})} ${ui(e)}`;
-	return `<div class="msg remMsg" id="m${e.id}">${Bi(e.id)}<div class="body"><details><summary>${E("clock", 14)}<span class="remT">${o ? `<b>${g(o[1])}</b> ${g(o[2])}` : g(a)}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${i.length > 1 ? `${m("rodou {n}×", { n: i.length })} · ` : ""}${s(e.ts)}</span></summary>${r.length ? `<div class="txt">${x(xe(r.join("\n\n")))}</div>` : ""}${i.length > 1 ? `<small class="remRuns">${i.map(s).join(" · ")}</small>` : ""}</details>${t ? "" : (e.group || [e]).map((e) => hi(e.id)).join("")}</div></div>`;
+	})} ${di(e)}`;
+	return `<div class="msg remMsg" id="m${e.id}">${Vi(e.id)}<div class="body"><details><summary>${T("clock", 14)}<span class="remT">${o ? `<b>${g(o[1])}</b> ${g(o[2])}` : g(a)}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${i.length > 1 ? `${m("rodou {n}×", { n: i.length })} · ` : ""}${s(e.ts)}</span></summary>${r.length ? `<div class="txt">${me(Se(r.join("\n\n")))}</div>` : ""}${i.length > 1 ? `<small class="remRuns">${i.map(s).join(" · ")}</small>` : ""}</details>${t ? "" : (e.group || [e]).map((e) => gi(e.id)).join("")}</div></div>`;
 }
-var Ri = (e) => e.author === "ai" && (e.tag === "notice" || e.tag === "done" || /^↩ (Reabri|I reopened)/.test(e.text || ""));
-function zi(e) {
-	let t = (e.text || "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim(), n = new Date(e.ts).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? ui(e.ts) : `${new Date(e.ts).toLocaleDateString(p, {
+var zi = (e) => e.author === "ai" && (e.tag === "notice" || e.tag === "done" || /^↩ (Reabri|I reopened)/.test(e.text || ""));
+function Bi(e) {
+	let t = (e.text || "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim(), n = new Date(e.ts).toDateString() === (/* @__PURE__ */ new Date()).toDateString() ? di(e.ts) : `${new Date(e.ts).toLocaleDateString(p, {
 		day: "numeric",
 		month: "short"
-	})} ${ui(e.ts)}`;
-	return `<div class="msg remMsg noticeMsg" id="m${e.id}">${Bi(e.id)}<div class="body"><details><summary><span class="vibeMark" aria-hidden="true">✦</span><span class="remT">${x(g(t))}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${n}</span></summary><div class="txt">${x(xe(e.text || ""))}</div></details></div></div>`;
+	})} ${di(e.ts)}`;
+	return `<div class="msg remMsg noticeMsg" id="m${e.id}">${Vi(e.id)}<div class="body"><details><summary><span class="vibeMark" aria-hidden="true">✦</span><span class="remT">${me(g(t))}</span><span class="remWhen" title="${g(new Date(e.ts).toLocaleString(p))}">${n}</span></summary><div class="txt">${me(Se(e.text || ""))}</div></details></div></div>`;
 }
-var Bi = (e) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${e}" title="${m("Copiar")}" aria-label="${m("Copiar o texto desta mensagem")}">${E("copy", 14)} ${m("Copiar")}</button><button type="button" class="rbtn" data-copylink="${e}" title="${m("Copiar link")}" aria-label="${m("Copiar o link desta mensagem")}">${E("link", 14)} ${m("Copiar link")}</button><button type="button" class="rbtn" data-reply="${e}" title="${m("Responder")}" aria-label="${m("Responder a esta mensagem")}">${E("reply", 14)} ${m("Responder")}</button></span>`;
-function Vi() {
+var Vi = (e) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${e}" title="${m("Copiar")}" aria-label="${m("Copiar o texto desta mensagem")}">${T("copy", 14)} ${m("Copiar")}</button><button type="button" class="rbtn" data-copylink="${e}" title="${m("Copiar link")}" aria-label="${m("Copiar o link desta mensagem")}">${T("link", 14)} ${m("Copiar link")}</button><button type="button" class="rbtn" data-reply="${e}" title="${m("Responder")}" aria-label="${m("Responder a esta mensagem")}">${T("reply", 14)} ${m("Responder")}</button></span>`;
+function Hi() {
 	let e = document.getElementById("decPane");
 	if (!e) return;
-	let t = j.decisions || [];
-	document.getElementById("decCount").textContent = t.length ? ` ${t.length}` : "", e.innerHTML = t.length ? t.slice().reverse().map((e) => `<div class="dec ${e.kind === "approval" ? "approval" : ""}"><div>${g(e.text)}<small>${e.kind === "approval" ? `✓ ${m("aprovado")}` : m("decidido")} · ${g(e.who)} · ${b(e.ts)}</small></div>
-      <button class="ghost x" data-ddel="${e.id}" aria-label="${m("Apagar registro")}" title="${m("Apagar registro")}">${E("x")}</button></div>`).join("") : `<div class="empty">${m("O que a sala decidir e cada aprovação aparecem aqui. Os agents registram conforme a conversa anda.")}</div>`, e.querySelectorAll("[data-ddel]").forEach((e) => e.onclick = () => {
-		confirm(m("Apagar esse registro?")) && N({
+	let t = A.decisions || [];
+	document.getElementById("decCount").textContent = t.length ? ` ${t.length}` : "", e.innerHTML = t.length ? t.slice().reverse().map((e) => `<div class="dec ${e.kind === "approval" ? "approval" : ""}"><div>${g(e.text)}<small>${e.kind === "approval" ? `✓ ${m("aprovado")}` : m("decidido")} · ${g(e.who)} · ${x(e.ts)}</small></div>
+      <button class="ghost x" data-ddel="${e.id}" aria-label="${m("Apagar registro")}" title="${m("Apagar registro")}">${T("x")}</button></div>`).join("") : `<div class="empty">${m("O que a sala decidir e cada aprovação aparecem aqui. Os agents registram conforme a conversa anda.")}</div>`, e.querySelectorAll("[data-ddel]").forEach((e) => e.onclick = () => {
+		confirm(m("Apagar esse registro?")) && M({
 			t: "decision.del",
 			id: Number(e.dataset.ddel)
 		});
 	});
 }
-function Hi() {
-	document.querySelector(".doc[data-pane=\"apps\"]") && J();
+function Ui() {
+	document.querySelector(".doc[data-pane=\"apps\"]") && q();
 }
-var K = null, Ui = null, Wi = !1, q = null, Gi = /* @__PURE__ */ new Set();
-async function Ki() {
-	let e = j.id;
+var G = null, Wi = null, Gi = !1, K = null, Ki = /* @__PURE__ */ new Set();
+async function qi() {
+	let e = A.id;
 	try {
 		let t = await S(`/api/books/${e}/connections`);
-		j.id === e && (K = t.connections, Ui = e);
+		A.id === e && (G = t.connections, Wi = e);
 	} catch (e) {
-		K ||= [], B(g(e.message));
+		G ||= [], z(g(e.message));
 	}
-	J();
+	q();
 }
-var qi = (e) => e.scope === "me" ? `<span class="cScope me">${m("minha")}</span>` : `<span class="cScope">${m("da sala")}</span>`;
-function Ji() {
+var Ji = (e) => e.scope === "me" ? `<span class="cScope me">${m("minha")}</span>` : `<span class="cScope">${m("da sala")}</span>`;
+function Yi() {
 	let e = /* @__PURE__ */ new Set();
-	return (j.files || []).filter((t) => t.type === "text/html" && /^apps\/[\w.-]+\.html$/i.test(t.name) && !e.has(t.name) && e.add(t.name)).map((e) => ({
+	return (A.files || []).filter((t) => t.type === "text/html" && /^apps\/[\w.-]+\.html$/i.test(t.name) && !e.has(t.name) && e.add(t.name)).map((e) => ({
 		tool: e.name.slice(5, -5),
 		title: e.name.slice(5, -5),
-		description: `${v(e.author)} · ${b(e.ts)}`,
+		description: `${v(e.author)} · ${x(e.ts)}`,
 		file: e
 	}));
 }
-function Yi() {
-	document.querySelector(".doc[data-pane=\"apps\"]") && !(q && document.querySelector(".connFrame")) && J();
+function Xi() {
+	document.querySelector(".doc[data-pane=\"apps\"]") && !(K && document.querySelector(".connFrame")) && q();
 }
-function J() {
+function q() {
 	let e = document.getElementById("appsPane");
 	if (!e) return;
-	if (Ui !== j.id && (K = null, Ui = j.id), j.filesAll || N({ t: "files.get" }), K === null) {
-		e.innerHTML = `<div class="empty">${m("Carregando…")}</div>`, Ki(), K = void 0;
+	if (Wi !== A.id && (G = null, Wi = A.id), A.filesAll || M({ t: "files.get" }), G === null) {
+		e.innerHTML = `<div class="empty">${m("Carregando…")}</div>`, qi(), G = void 0;
 		return;
 	}
-	if (K === void 0) return;
-	let t = Ji();
-	if (document.getElementById("appCount").textContent = K.length + t.length ? ` ${K.length + t.length}` : "", q) return Xi(e);
+	if (G === void 0) return;
+	let t = Yi();
+	if (document.getElementById("appCount").textContent = G.length + t.length ? ` ${G.length + t.length}` : "", K) return Zi(e);
 	let n = document.getElementById("connForm") && Object.fromEntries(new FormData(document.getElementById("connForm"))), r = (e, t) => `<div class="connApps">${t.map((t) => `<button type="button" class="connApp" data-conn-open="${e}/${g(t.tool)}"><b>${g(t.title)}</b><span>${g(t.description)}</span></button>`).join("")}</div>`;
-	e.innerHTML = `<div class="connHead"><b>Apps</b>${Wi ? "" : `<button type="button" class="ghost" id="connAdd">${E("plus", 15)} ${m("Conectar MCP")}</button>`}</div>
-    ${Wi ? `<form class="connForm" id="connForm">
+	e.innerHTML = `<div class="connHead"><b>Apps</b>${Gi ? "" : `<button type="button" class="ghost" id="connAdd">${T("plus", 15)} ${m("Conectar MCP")}</button>`}</div>
+    ${Gi ? `<form class="connForm" id="connForm">
       <label>${m("URL do servidor MCP")}<input name="url" required placeholder="https://…/mcp" autocomplete="off" spellcheck="false"></label>
       <small class="mute">${m("Sem token aqui: se o servidor pedir login, cada pessoa entra com a própria conta dela, e o vibebook só diz quem é e de qual sala.")}</small>
       <fieldset><label><input type="radio" name="scope" value="me" checked> ${m("Só minha: só eu e meus agents")}</label><label><input type="radio" name="scope" value="room"> ${m("Da sala: todo mundo vê; cada um entra com a própria conta")}</label></fieldset>
       <div class="acts"><button type="button" id="connCancel">${m("Cancelar")}</button><button class="primary">${m("Conectar")}</button></div></form>` : ""}
     <div class="conn"><div class="connTop"><b>${m("Esta sala")}</b><span class="cScope">${m("da sala")}</span><small>apps/*.html</small></div>
       ${t.length ? r("room", t) : `<small class="mute">${m("Um app da sala é um arquivo HTML em apps/ que usa a sala pelo iframe: lê o doc, as tarefas e as mensagens, posta e mexe nas tarefas (com o seu OK). Peça pro seu agent: “faz um app apps/enquete.html pra esta sala”.")}</small>`}</div>
-    ${K.map((e) => `<div class="conn"><div class="connTop"><b>${g(e.title)}</b>${qi(e)}<small>${g(e.host)} · ${g(v(e.owner))}</small>
-        <button type="button" class="ghost" data-conn-ref="${e.id}" title="${m("Atualizar")}" aria-label="${m("Atualizar")}">↻</button>${e.mine ? `<button type="button" class="ghost" data-conn-del="${e.id}" title="${m("Remover conexão")}" aria-label="${m("Remover conexão")}">${E("x", 14)}</button>` : ""}</div>
-        ${e.auth === "identity" ? e.signed_in ? `<small class="mute connWho">${m("Você entrou em {host} com a sua conta.", { host: g(e.host) })} <button type="button" class="link" data-conn-out="${e.id}">${m("Sair")}</button></small>` : `<div class="connSign"><small>${m("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: g(e.host) })}</small><a class="primary" href="/api/books/${j.id}/connections/${e.id}/signin">${m("Entrar em {host}", { host: g(e.host) })}</a></div>` : ""}
+    ${G.map((e) => `<div class="conn"><div class="connTop"><b>${g(e.title)}</b>${Ji(e)}<small>${g(e.host)} · ${g(v(e.owner))}</small>
+        <button type="button" class="ghost" data-conn-ref="${e.id}" title="${m("Atualizar")}" aria-label="${m("Atualizar")}">↻</button>${e.mine ? `<button type="button" class="ghost" data-conn-del="${e.id}" title="${m("Remover conexão")}" aria-label="${m("Remover conexão")}">${T("x", 14)}</button>` : ""}</div>
+        ${e.auth === "identity" ? e.signed_in ? `<small class="mute connWho">${m("Você entrou em {host} com a sua conta.", { host: g(e.host) })} <button type="button" class="link" data-conn-out="${e.id}">${m("Sair")}</button></small>` : `<div class="connSign"><small>${m("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: g(e.host) })}</small><a class="primary" href="/api/books/${A.id}/connections/${e.id}/signin">${m("Entrar em {host}", { host: g(e.host) })}</a></div>` : ""}
         ${e.apps.length ? (() => {
-		let t = e.apps.filter((e) => e.screen), n = t.length && !Gi.has(e.id);
+		let t = e.apps.filter((e) => e.screen), n = t.length && !Ki.has(e.id);
 		return r(e.id, n ? t : e.apps) + (t.length && t.length < e.apps.length ? `<button type="button" class="link connMore" data-conn-more="${e.id}">${n ? m("ver todas ({n})", { n: e.apps.length }) : m("só as telas")}</button>` : "");
 	})() : `<small class="mute">${m("{n} tools, nenhum app", { n: e.tools.length })}</small>`}</div>`).join("")}`;
 	let i = document.getElementById("connForm");
 	if (i && n) for (let [e, t] of Object.entries(n)) i.elements[e] && e !== "scope" && (i.elements[e].value = t);
 	document.getElementById("connAdd")?.addEventListener("click", () => {
-		Wi = !0, J(), document.querySelector("#connForm [name=\"url\"]")?.focus();
+		Gi = !0, q(), document.querySelector("#connForm [name=\"url\"]")?.focus();
 	}), document.getElementById("connCancel")?.addEventListener("click", () => {
-		Wi = !1, J();
+		Gi = !1, q();
 	}), i && (i.onsubmit = async (e) => {
 		e.preventDefault();
 		let t = i.querySelector(".primary");
 		t.disabled = !0, t.textContent = m("Conectando…");
 		try {
-			let e = await S(`/api/books/${j.id}/connections`, {
+			let e = await S(`/api/books/${A.id}/connections`, {
 				url: i.url.value.trim(),
 				scope: i.scope.value
 			});
-			if (e.connection?.needs_sign_in) return void (location.href = `/api/books/${j.id}/connections/${e.connection.id}/signin`);
-			Wi = !1, K = null, J();
+			if (e.connection?.needs_sign_in) return void (location.href = `/api/books/${A.id}/connections/${e.connection.id}/signin`);
+			Gi = !1, G = null, q();
 		} catch (e) {
-			B(g(e.message)), t.disabled = !1, t.textContent = m("Conectar");
+			z(g(e.message)), t.disabled = !1, t.textContent = m("Conectar");
 		}
 	}), e.querySelectorAll("[data-conn-out]").forEach((e) => e.onclick = async () => {
 		try {
-			await S(`/api/books/${j.id}/connections/${e.dataset.connOut}/signout`, {});
+			await S(`/api/books/${A.id}/connections/${e.dataset.connOut}/signout`, {});
 		} catch (e) {
-			B(g(e.message));
+			z(g(e.message));
 		}
-		K = null, J();
+		G = null, q();
 	}), e.querySelectorAll("[data-conn-more]").forEach((e) => e.onclick = () => {
 		let t = e.dataset.connMore;
-		Gi.has(t) ? Gi.delete(t) : Gi.add(t), J();
+		Ki.has(t) ? Ki.delete(t) : Ki.add(t), q();
 	}), e.querySelectorAll("[data-conn-open]").forEach((e) => e.onclick = () => {
 		let [t, n] = e.dataset.connOpen.split("/");
-		q = {
+		K = {
 			cid: t,
 			tool: n
-		}, J();
+		}, q();
 	}), e.querySelectorAll("[data-conn-ref]").forEach((e) => e.onclick = async () => {
 		try {
-			await S(`/api/books/${j.id}/connections/${e.dataset.connRef}/refresh`, {}), K = null, J();
+			await S(`/api/books/${A.id}/connections/${e.dataset.connRef}/refresh`, {}), G = null, q();
 		} catch (e) {
-			B(g(e.message));
+			z(g(e.message));
 		}
 	}), e.querySelectorAll("[data-conn-del]").forEach((e) => e.onclick = async () => {
-		let t = K.find((t) => t.id === e.dataset.connDel);
-		confirm(m("Remover a conexão {name}? Os apps dela saem da sala.", { name: t?.title || "" })) && (await fetch(`/api/books/${j.id}/connections/${e.dataset.connDel}`, { method: "DELETE" }), K = null, J());
+		let t = G.find((t) => t.id === e.dataset.connDel);
+		confirm(m("Remover a conexão {name}? Os apps dela saem da sala.", { name: t?.title || "" })) && (await fetch(`/api/books/${A.id}/connections/${e.dataset.connDel}`, { method: "DELETE" }), G = null, q());
 	});
 }
-function Xi(e) {
-	let t = q.cid === "room", n = t ? {
+function Zi(e) {
+	let t = K.cid === "room", n = t ? {
 		id: "room",
 		scope: "room",
 		title: m("Esta sala")
-	} : K.find((e) => e.id === q.cid), r = t ? Ji().find((e) => e.tool === q.tool) : n?.apps.find((e) => e.tool === q.tool);
+	} : G.find((e) => e.id === K.cid), r = t ? Yi().find((e) => e.tool === K.tool) : n?.apps.find((e) => e.tool === K.tool);
 	if (!n || !r) {
-		if (t && !j.filesAll) {
+		if (t && !A.filesAll) {
 			e.innerHTML = `<div class="empty">${m("Carregando…")}</div>`;
 			return;
 		}
-		return !t && !q.retried ? (q.retried = !0, K = null, J()) : (q = null, B(m("Esse app não está nas conexões que você pode usar nesta sala.")), J());
+		return !t && !K.retried ? (K.retried = !0, G = null, q()) : (K = null, z(m("Esse app não está nas conexões que você pode usar nesta sala.")), q());
 	}
 	let i = `${n.id}/${r.tool}${t ? `@${r.file.id}` : ""}`, a = t ? r.tool : `${n.id}/${r.tool}`, o = e.querySelector(".connBar");
 	if (e.querySelector(".connFrame")?.dataset.app === i) {
-		o?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: da("app", a) }).content), o && fa(o);
+		o?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: fa("app", a) }).content), o && pa(o);
 		return;
 	}
-	e.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${g(r.title)}</b>${qi(n)}${da("app", a)}<button type="button" class="ghost" id="connReload" title="${m("Recarregar")}" aria-label="${m("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${g(r.title)}"></iframe>`;
+	e.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${g(r.title)}</b>${Ji(n)}${fa("app", a)}<button type="button" class="ghost" id="connReload" title="${m("Recarregar")}" aria-label="${m("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${g(r.title)}"></iframe>`;
 	let s = e.querySelector(".connFrame");
 	s.dataset.app = i, document.getElementById("connBack").onclick = () => {
-		q = null, J();
-	}, fa(e.querySelector(".connBar")), document.getElementById("connReload").onclick = () => {
-		s.dataset.app = "", Xi(e);
-	}, sa(s, n, r);
+		K = null, q();
+	}, pa(e.querySelector(".connBar")), document.getElementById("connReload").onclick = () => {
+		s.dataset.app = "", Zi(e);
+	}, ca(s, n, r);
 }
-var Zi = (e) => Array.isArray(e) ? e.filter((e) => e?.type === "text").map((e) => e.text).join("\n") : "", Qi = (e) => ({
+var Qi = (e) => Array.isArray(e) ? e.filter((e) => e?.type === "text").map((e) => e.text).join("\n") : "", $i = (e) => ({
 	content: [{
 		type: "text",
 		text: typeof e == "string" ? e : JSON.stringify(e)
 	}],
 	...e && typeof e == "object" ? { structuredContent: e } : {}
-}), $i = Promise.resolve();
-function ea(e, t, n) {
+}), ea = Promise.resolve();
+function ta(e, t, n) {
 	let r = () => new Promise((r) => {
 		if (!e?.isConnected) return r(!1);
 		e.hidden = !1, e.innerHTML = `<span>${m("Este app quer {what}, como você:", { what: g(t) })}</span><q></q><div><button type="button" class="primary">${m("Permitir")}</button><button type="button" class="ghost">${m("Cancelar")}</button></div>`, e.querySelector("q").textContent = String(n).slice(0, 600);
@@ -3870,9 +3815,9 @@ function ea(e, t, n) {
 		};
 		e.querySelector(".primary").onclick = () => i(!0), e.querySelector(".ghost").onclick = () => i(!1);
 	});
-	return $i = $i.then(r, r);
+	return ea = ea.then(r, r);
 }
-var ta = [
+var na = [
 	{
 		name: "vibebook_read",
 		description: "The room: title, doc, epics with tasks, members and the newest messages of a thread (default main).",
@@ -3949,23 +3894,23 @@ var ta = [
 		}
 	}
 ];
-function na({ thread: e = "main", limit: t = 50 } = {}) {
-	let n = X().filter((t) => t.thread === e).slice(-Math.min(Math.max(Number(t) || 50, 1), 100));
+function ra({ thread: e = "main", limit: t = 50 } = {}) {
+	let n = Y().filter((t) => t.thread === e).slice(-Math.min(Math.max(Number(t) || 50, 1), 100));
 	return {
 		room: {
-			id: j.id,
-			title: P()
+			id: A.id,
+			title: N()
 		},
 		me: {
-			email: j.me,
-			name: v(j.me)
+			email: A.me,
+			name: v(A.me)
 		},
-		members: (j.members || []).map((e) => ({
+		members: (A.members || []).map((e) => ({
 			email: e.email ?? e,
 			name: v(e.email ?? e)
 		})),
-		doc: j.doc || "",
-		epics: j.epics.filter((e) => !e.archived).map((e) => ({
+		doc: A.doc || "",
+		epics: A.epics.filter((e) => !e.archived).map((e) => ({
 			id: e.id,
 			title: e.title,
 			tasks: e.tasks.map((e) => ({
@@ -3975,7 +3920,7 @@ function na({ thread: e = "main", limit: t = 50 } = {}) {
 				owner: e.owner || null
 			}))
 		})),
-		room_tasks: (j.roomTasks || []).map((e) => ({
+		room_tasks: (A.roomTasks || []).map((e) => ({
 			id: e.id,
 			title: e.title,
 			status: e.status
@@ -3989,11 +3934,11 @@ function na({ thread: e = "main", limit: t = 50 } = {}) {
 		}))
 	};
 }
-async function ra(e, t = {}, n) {
-	let r = (e) => Qi(e), i = (e) => e && e !== "main" && !j.epics.some((t) => t.id === e) ? null : e || "main";
+async function ia(e, t = {}, n) {
+	let r = (e) => $i(e), i = (e) => e && e !== "main" && !A.epics.some((t) => t.id === e) ? null : e || "main";
 	switch (e) {
-		case "vibebook_read": return r(na(t));
-		case "vibebook_connections": return Array.isArray(K) || await Ki(), r((K || []).map((e) => ({
+		case "vibebook_read": return r(ra(t));
+		case "vibebook_connections": return Array.isArray(G) || await qi(), r((G || []).map((e) => ({
 			id: e.id,
 			title: e.title,
 			scope: e.scope,
@@ -4007,7 +3952,7 @@ async function ra(e, t = {}, n) {
 					type: "text",
 					text: "text and a valid thread (main or an epic id) needed"
 				}]
-			} : await n(m("postar"), a) ? (N({
+			} : await n(m("postar"), a) ? (M({
 				t: "msg",
 				thread: e,
 				text: a,
@@ -4021,7 +3966,7 @@ async function ra(e, t = {}, n) {
 			};
 		}
 		case "vibebook_add_task": {
-			let e = t.epic_id && t.epic_id !== "main" ? j.epics.find((e) => e.id === t.epic_id) : null;
+			let e = t.epic_id && t.epic_id !== "main" ? A.epics.find((e) => e.id === t.epic_id) : null;
 			if (t.epic_id && t.epic_id !== "main" && !e) return {
 				isError: !0,
 				content: [{
@@ -4036,14 +3981,14 @@ async function ra(e, t = {}, n) {
 					type: "text",
 					text: "cancelled"
 				}]
-			} : (N({
+			} : (M({
 				t: "task.add",
 				epic: e ? e.id : "main",
 				title: i
 			}), r("added"));
 		}
 		case "vibebook_task_status": {
-			let e = [...j.epics.flatMap((e) => e.tasks), ...j.roomTasks || []].find((e) => e.id === t.task_id);
+			let e = [...A.epics.flatMap((e) => e.tasks), ...A.roomTasks || []].find((e) => e.id === t.task_id);
 			return !e || ![
 				"todo",
 				"doing",
@@ -4055,7 +4000,7 @@ async function ra(e, t = {}, n) {
 					type: "text",
 					text: "no such task or bad status"
 				}]
-			} : await n(m("mover uma tarefa"), `${e.title} → ${t.status}`) ? (N({
+			} : await n(m("mover uma tarefa"), `${e.title} → ${t.status}`) ? (M({
 				t: "task.status",
 				id: e.id,
 				status: t.status
@@ -4068,12 +4013,12 @@ async function ra(e, t = {}, n) {
 			};
 		}
 		case "vibebook_call_connection": {
-			Array.isArray(K) || await Ki();
-			let e = (K || []).find((e) => e.id === t.connection_id), r = e?.tools.find((e) => e.name === t.tool);
+			Array.isArray(G) || await qi();
+			let e = (G || []).find((e) => e.id === t.connection_id), r = e?.tools.find((e) => e.name === t.tool);
 			return r ? await n(m("usar {tool} em {conn}", {
 				tool: r.name,
 				conn: e.title
-			}), JSON.stringify(t.arguments || {})) ? (await S(`/api/books/${j.id}/connections/${e.id}/call`, {
+			}), JSON.stringify(t.arguments || {})) ? (await S(`/api/books/${A.id}/connections/${e.id}/call`, {
 				name: r.name,
 				arguments: t.arguments || {}
 			})).result : {
@@ -4099,12 +4044,12 @@ async function ra(e, t = {}, n) {
 		}]
 	};
 }
-var ia = /* @__PURE__ */ new WeakMap();
-function aa(e, t) {
+var aa = /* @__PURE__ */ new WeakMap();
+function oa(e, t) {
 	let n = (t) => e.contentWindow?.postMessage({
 		jsonrpc: "2.0",
 		...t
-	}, "*"), r = (e, n) => ea(t.ask(), e, n), i = (e, n) => t.call ? t.call(e, n || {}) : ra(e, n || {}, r), a = () => document.documentElement.dataset.theme === "dark" || document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches;
+	}, "*"), r = (e, n) => ta(t.ask(), e, n), i = (e, n) => t.call ? t.call(e, n || {}) : ia(e, n || {}, r), a = () => document.documentElement.dataset.theme === "dark" || document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches;
 	return async (o) => {
 		let s = (e) => o.id !== void 0 && n({
 			id: o.id,
@@ -4144,14 +4089,14 @@ function aa(e, t) {
 							},
 							locale: p,
 							timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-							platform: H.matches ? "mobile" : "web",
+							platform: V.matches ? "mobile" : "web",
 							user: {
-								email: j.me,
-								name: v(j.me)
+								email: A.me,
+								name: v(A.me)
 							},
 							room: {
-								id: j.id,
-								title: P()
+								id: A.id,
+								title: N()
 							}
 						}
 					});
@@ -4171,21 +4116,21 @@ function aa(e, t) {
 					e.style.height = `${Math.min(r, n)}px`, e.closest(".embedWrap")?.classList.toggle("clipped", r > n);
 					return;
 				}
-				case "tools/list": return s({ tools: t.call ? [] : ta });
+				case "tools/list": return s({ tools: t.call ? [] : na });
 				case "tools/call": return s(await i(o.params?.name, o.params?.arguments));
 				case "ui/open-link": {
 					let e = String(o.params?.url || "");
 					return !/^https?:\/\//i.test(e) || !await r(m("abrir um link"), e) ? s({ isError: !0 }) : (window.open(e, "_blank", "noopener"), s({}));
 				}
 				case "ui/message": {
-					let e = Zi(o.params?.content).trim().slice(0, 4e3);
-					return s(e ? await ra("vibebook_post", {
+					let e = Qi(o.params?.content).trim().slice(0, 4e3);
+					return s(e ? await ia("vibebook_post", {
 						text: e,
-						thread: t.thread ?? M
+						thread: t.thread ?? j
 					}, r) : {});
 				}
 				case "ui/update-model-context": {
-					let e = Zi(o.params?.content) || (o.params?.structuredContent ? JSON.stringify(o.params.structuredContent) : "");
+					let e = Qi(o.params?.content) || (o.params?.structuredContent ? JSON.stringify(o.params.structuredContent) : "");
 					return e && t.base && S(`${t.base}/context`, {
 						tool: t.toolName,
 						text: e.slice(0, 4e3)
@@ -4214,10 +4159,10 @@ function aa(e, t) {
 		}
 	};
 }
-function oa(e) {
-	if (!ia.has(e)) {
-		let t = e.closest(".embedBox"), n = M;
-		ia.set(e, aa(e, {
+function sa(e) {
+	if (!aa.has(e)) {
+		let t = e.closest(".embedBox"), n = j;
+		aa.set(e, oa(e, {
 			embed: !0,
 			thread: n,
 			ask: () => t.querySelector(".appAsk") || t.appendChild(Object.assign(document.createElement("div"), {
@@ -4226,14 +4171,14 @@ function oa(e) {
 			}))
 		}));
 	}
-	return ia.get(e);
+	return aa.get(e);
 }
 addEventListener("message", (e) => {
 	let t = e.data;
-	if (!t || !j || e.origin !== "null") return;
+	if (!t || !A || e.origin !== "null") return;
 	let n = document.querySelector(".connFrame"), r = n?.contentWindow === e.source ? n : [...document.querySelectorAll("iframe.embed")].find((t) => t.contentWindow === e.source);
 	if (r) {
-		if (t.vbEmbed === 1) return oa(r)(typeof t.h == "number" ? {
+		if (t.vbEmbed === 1) return sa(r)(typeof t.h == "number" ? {
 			method: "ui/notifications/size-changed",
 			params: { height: t.h }
 		} : {
@@ -4243,20 +4188,20 @@ addEventListener("message", (e) => {
 				text: String(t.send || "")
 			}] }
 		});
-		t.jsonrpc === "2.0" && typeof t.method == "string" && (ia.get(r) || oa(r))(t);
+		t.jsonrpc === "2.0" && typeof t.method == "string" && (aa.get(r) || sa(r))(t);
 	}
 });
-async function sa(e, t, n) {
-	let r = t.id === "room", i = `/api/books/${j.id}/connections/${t.id}`, a = () => document.getElementById("appAsk");
+async function ca(e, t, n) {
+	let r = t.id === "room", i = `/api/books/${A.id}/connections/${t.id}`, a = () => document.getElementById("appAsk");
 	if (r) {
-		ia.set(e, aa(e, {
+		aa.set(e, oa(e, {
 			ask: a,
 			tool: {
 				name: n.tool,
 				title: n.title
 			},
-			first: Promise.resolve(Qi(na()))
-		})), e.src = `/api/books/${j.id}/files/${n.file.id}`;
+			first: Promise.resolve($i(ra()))
+		})), e.src = `/api/books/${A.id}/files/${n.file.id}`;
 		return;
 	}
 	let o;
@@ -4277,7 +4222,7 @@ async function sa(e, t, n) {
 			text: e.message
 		}]
 	}));
-	ia.set(e, aa(e, {
+	aa.set(e, oa(e, {
 		ask: a,
 		call: s,
 		first: c,
@@ -4286,39 +4231,39 @@ async function sa(e, t, n) {
 		toolName: n.tool
 	})), e.srcdoc = o.html;
 }
-function ca() {
-	let e = document.getElementById("remPane");
-	if (!e || !j) return;
-	Wr();
-	let t = j.reminders || [], n = t.filter((e) => e.error).length;
-	document.getElementById("remCount").textContent = t.length ? ` ${t.length}${n ? " ⚠" : ""}` : "", Jt("reminders", e, {
-		room: j,
-		thread: M,
-		vb: Xt(),
-		send: N
-	});
-}
 function la() {
-	let e = document.getElementById("filesPane");
-	if (!e || !j) return;
-	Wr();
-	let t = j.filesN ?? j.files?.length ?? 0;
-	document.getElementById("fileCount").textContent = t ? ` ${t}` : "", Jt("files", e, {
-		room: j,
-		thread: M,
-		vb: Xt(),
-		send: N
+	let e = document.getElementById("remPane");
+	if (!e || !A) return;
+	Gr();
+	let t = A.reminders || [], n = t.filter((e) => e.error).length;
+	document.getElementById("remCount").textContent = t.length ? ` ${t.length}${n ? " ⚠" : ""}` : "", Zt("reminders", e, {
+		room: A,
+		thread: j,
+		vb: $t(),
+		send: M
 	});
 }
-var ua = (e, t) => (j.pins || []).find((n) => n.kind === e && n.ref === t), da = (e, t) => {
-	let n = !!ua(e, t);
-	return `<button type="button" class="ghost pinBtn${n ? " on" : ""}" data-pin-kind="${e}" data-pin-ref="${g(t)}" title="${m(n ? "Desafixar" : "Fixar na lateral")}" aria-label="${m(n ? "Desafixar" : "Fixar na lateral")}" aria-pressed="${n}">${E("pin", 14)}</button>`;
+function ua() {
+	let e = document.getElementById("filesPane");
+	if (!e || !A) return;
+	Gr();
+	let t = A.filesN ?? A.files?.length ?? 0;
+	document.getElementById("fileCount").textContent = t ? ` ${t}` : "", Zt("files", e, {
+		room: A,
+		thread: j,
+		vb: $t(),
+		send: M
+	});
+}
+var da = (e, t) => (A.pins || []).find((n) => n.kind === e && n.ref === t), fa = (e, t) => {
+	let n = !!da(e, t);
+	return `<button type="button" class="ghost pinBtn${n ? " on" : ""}" data-pin-kind="${e}" data-pin-ref="${g(t)}" title="${m(n ? "Desafixar" : "Fixar na lateral")}" aria-label="${m(n ? "Desafixar" : "Fixar na lateral")}" aria-pressed="${n}">${T("pin", 14)}</button>`;
 };
-function fa(e) {
+function pa(e) {
 	e.querySelectorAll("[data-pin-kind]").forEach((e) => e.onclick = (t) => {
 		t.preventDefault(), t.stopPropagation();
-		let n = ua(e.dataset.pinKind, e.dataset.pinRef);
-		N(n ? {
+		let n = da(e.dataset.pinKind, e.dataset.pinRef);
+		M(n ? {
 			t: "pin.del",
 			id: n.id
 		} : {
@@ -4328,21 +4273,21 @@ function fa(e) {
 		});
 	});
 }
-var pa = 60, Y = {
+var ma = 60, J = {
 	thread: null,
-	n: pa
-}, ma = {}, ha = !1, ga = /* @__PURE__ */ new Set(), X = () => j.origins?.length ? [...j.messages, ...j.origins.filter((e) => !j.messages.some((t) => t.id === e.id))] : j.messages, _a = !1;
-function va() {
-	if (!j) return;
-	let e = t(`/b/${j.id}${M !== "main" && !I() ? `?t=${encodeURIComponent(M)}` : ""}`, location.href, "svelte");
-	location.pathname + location.search !== e && f[_a ? "pushState" : "replaceState"](null, "", e), _a = !0;
-}
+	n: ma
+}, ha = {}, ga = !1, _a = /* @__PURE__ */ new Set(), Y = () => A.origins?.length ? [...A.messages, ...A.origins.filter((e) => !A.messages.some((t) => t.id === e.id))] : A.messages, va = !1;
 function ya() {
+	if (!A) return;
+	let e = r(`/b/${A.id}${j !== "main" && !F() ? `?t=${encodeURIComponent(j)}` : ""}`, location.href, "svelte");
+	location.pathname + location.search !== e && f[va ? "pushState" : "replaceState"](null, "", e), va = !0;
+}
+function ba() {
 	let e = document.getElementById("thFiles");
 	if (!e) return;
 	let t = /* @__PURE__ */ new Map();
-	if (M !== "main" && !I()) {
-		for (let e of X()) if (e.thread === M) for (let n of e.files || []) {
+	if (j !== "main" && !F()) {
+		for (let e of Y()) if (e.thread === j) for (let n of e.files || []) {
 			let r = t.get(n.name);
 			r ? (r.n++, e.ts > r.ts && (r.f = n, r.ts = e.ts)) : t.set(n.name, {
 				f: n,
@@ -4352,15 +4297,15 @@ function ya() {
 		}
 	}
 	let n = [...t.values()].sort((e, t) => t.ts - e.ts).slice(0, 8);
-	e.hidden = !n.length, e.innerHTML = n.length ? `<span class="thfL">${E("paperclip", 14)} ${m("Arquivos deste épico")}</span>${n.map(({ f: e, n: t }) => `<a href="${Xr(e)}" target="_blank" rel="noopener" ${Zr(e)} title="${g(e.name)}">${Rt(e, 14)}<span>${g(e.name)}</span>${t > 1 ? `<small>v${t}</small>` : ""}</a>`).join("")}` : "";
+	e.hidden = !n.length, e.innerHTML = n.length ? `<span class="thfL">${T("paperclip", 14)} ${m("Arquivos deste épico")}</span>${n.map(({ f: e, n: t }) => `<a href="${Zr(e)}" target="_blank" rel="noopener" ${Qr(e)} title="${g(e.name)}">${Bt(e, 14)}<span>${g(e.name)}</span>${t > 1 ? `<small>v${t}</small>` : ""}</a>`).join("")}` : "";
 }
-function Z(e) {
-	Pr(), ya(), va(), xi(), Yr();
+function X(e) {
+	Fr(), ba(), ya(), Si(), Xr();
 	let t = document.getElementById("msgs");
-	if (h.querySelector(".book")?.classList.toggle("pre", I()), I()) return qt("chat"), jn(t);
-	if (Y.thread !== M || Y.room !== j.id) {
-		let e = h.querySelector(".book"), t = wr(M).some((e) => e.ref.startsWith("t")) || !!j.epics.find((e) => e.id === M)?.tasks.some((e) => !e.done && e.owner === j.me);
-		M !== "main" && e?.classList.contains("nodoc") && !e.classList.contains("boardview") && (t || !j.messages.some((e) => e.thread === M)) && e.classList.remove("nodoc"), (M !== "main" || wr(M).length) && setTimeout(() => {
+	if (h.querySelector(".book")?.classList.toggle("pre", F()), F()) return Xt("chat"), Pn(t);
+	if (J.thread !== j || J.room !== A.id) {
+		let e = h.querySelector(".book"), t = Dr(j).some((e) => e.ref.startsWith("t")) || !!A.epics.find((e) => e.id === j)?.tasks.some((e) => !e.done && e.owner === A.me);
+		j !== "main" && e?.classList.contains("nodoc") && !e.classList.contains("boardview") && (t || !A.messages.some((e) => e.thread === j)) && e.classList.remove("nodoc"), (j !== "main" || Dr(j).length) && setTimeout(() => {
 			let e = [...document.querySelectorAll(".task.waitTask, .msg.waitMsg .txt")];
 			e.length || (e = [...document.querySelectorAll(".task.mine")]), e[0]?.classList.contains("task") && e[0].scrollIntoView({
 				block: "center",
@@ -4370,50 +4315,50 @@ function Z(e) {
 			});
 		}, 400);
 	}
-	(Y.thread !== M || Y.room !== j.id) && (Y = {
-		thread: M,
-		room: j.id,
-		n: pa
+	(J.thread !== j || J.room !== A.id) && (J = {
+		thread: j,
+		room: A.id,
+		n: ma
 	});
-	let n = j.messages.filter((e) => e.thread === M && !ji(e) && !Ai(e) && !Ai(j.messages.find((t) => t.id === e.reply_to)));
-	Vt && n.length < pa && !ha && !j.complete && !j.full?.includes(M) && !ma[j.id + M] && !ga.has(j.id + M) && (ga.add(j.id + M), ha = !0, N({
+	let n = A.messages.filter((e) => e.thread === j && !Mi(e) && !ji(e) && !ji(A.messages.find((t) => t.id === e.reply_to)));
+	Ut && n.length < ma && !ga && !A.complete && !A.full?.includes(j) && !ha[A.id + j] && !_a.has(A.id + j) && (_a.add(A.id + j), ga = !0, M({
 		t: "older",
-		thread: M,
+		thread: j,
 		before: n[0]?.id ?? 0
 	}));
-	let r = Fi(n.slice(-Y.n)), i = n.length > r.length || n.length && !j.complete && !j.full?.includes(M) && !ma[j.id + M], a = t.scrollHeight, o = t.scrollTop, s = j.epics.find((e) => e.id === M)?.from_msg, c = s && (j.messages.find((e) => e.id === s) || j.origins?.find((e) => e.id === s)), l = j.counts ? (j.counts[M] ?? 0) + n.filter((e) => e.id > (j.countsAt ?? 0)).length : n.length;
-	Jt("chat", t, {
-		room: j,
-		thread: M,
+	let r = Ii(n.slice(-J.n)), i = n.length > r.length || n.length && !A.complete && !A.full?.includes(j) && !ha[A.id + j], a = t.scrollHeight, o = t.scrollTop, s = A.epics.find((e) => e.id === j)?.from_msg, c = s && (A.messages.find((e) => e.id === s) || A.origins?.find((e) => e.id === s)), l = A.counts ? (A.counts[j] ?? 0) + n.filter((e) => e.id > (A.countsAt ?? 0)).length : n.length;
+	Zt("chat", t, {
+		room: A,
+		thread: j,
 		list: r,
 		previous: n[n.length - r.length - 1],
 		more: i,
 		origin: c || null,
 		replyCount: l,
-		vb: Zt(),
-		onloadolder: xa
-	}), Cr(), _i(), e === "stay" ? (t.scrollTop = o, Ca(), Da(t)) : e ? (t.scrollTop = o + t.scrollHeight - a, Ca(), Da(t)) : (Oa(!0), Da(t), Ca());
+		vb: en(),
+		onloadolder: Sa
+	}), Er(), vi(), e === "stay" ? (t.scrollTop = o, wa(), Da(t)) : e ? (t.scrollTop = o + t.scrollHeight - a, wa(), Da(t)) : (Oa(!0), Da(t), wa());
 }
-function ba() {
-	let e = j.messages.filter((e) => e.thread === M);
-	ha = !0, N({
+function xa() {
+	let e = A.messages.filter((e) => e.thread === j);
+	ga = !0, M({
 		t: "older",
-		thread: M,
+		thread: j,
 		before: e[0]?.id ?? 0
 	});
 }
-function xa() {
-	if (ha || I()) return;
-	let e = j.messages.filter((e) => e.thread === M);
-	if (e.length > Y.n) return Y.n += pa, Z(!0);
-	j.complete || j.full?.includes(M) || ma[j.id + M] || !e.length || (ha = !0, N({
+function Sa() {
+	if (ga || F()) return;
+	let e = A.messages.filter((e) => e.thread === j);
+	if (e.length > J.n) return J.n += ma, X(!0);
+	A.complete || A.full?.includes(j) || ha[A.id + j] || !e.length || (ga = !0, M({
 		t: "older",
-		thread: M,
+		thread: j,
 		before: e[0].id
 	}));
 }
-var Sa = (e) => String(e ?? "").replace(/^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i, (e, t, n, r) => `Claude ${t[0].toUpperCase()}${t.slice(1)} ${n}.${r}`);
-function Ca() {
+var Ca = (e) => String(e ?? "").replace(/^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i, (e, t, n, r) => `Claude ${t[0].toUpperCase()}${t.slice(1)} ${n}.${r}`);
+function wa() {
 	let e = document.getElementById("msgs");
 	if (!e) return;
 	e.querySelectorAll(".mfoot").forEach((e) => e.remove());
@@ -4421,42 +4366,42 @@ function Ca() {
 		st: [],
 		rd: []
 	}, r = (e) => m("{via} de {who}", {
-		via: g(Sa(e.who)),
+		via: g(Ca(e.who)),
 		who: g(v(e.email))
 	}), i = /* @__PURE__ */ new Set();
-	for (let e of j.acks || []) {
+	for (let e of A.acks || []) {
 		if (e.status === "dismissed") continue;
 		let t = `${e.msg_id}|${e.who}|${e.email}`;
 		if (i.has(t)) continue;
 		i.add(t);
-		let a = e.status === "doing" && Date.now() - e.ts < 12e5, o = r(e), s = `<time title="${g(new Date(e.ts).toLocaleString(p))}">${b(e.ts)}</time>`, c, l, u;
+		let a = e.status === "doing" && Date.now() - e.ts < 12e5, o = r(e), s = `<time title="${g(new Date(e.ts).toLocaleString(p))}">${x(e.ts)}</time>`, c, l, u;
 		if (e.status === "blocked") c = "need", l = "⏸", u = `${m("{who} espera você no terminal", { who: o })}${e.note ? `: <b>${g(e.note)}</b>` : ""} · ${s}`;
 		else if (a) c = "doing", l = "<span class=\"spin\"></span>", u = `${m("{who} está fazendo isso", { who: o })} · ${s}`;
 		else if (e.status === "done") c = "did", l = "✓", u = m("{who} fez isso", { who: o });
 		else {
-			let t = [...new Set((j.epics || []).filter((t) => t.from_msg === e.msg_id && !t.archived).flatMap((e) => e.tasks.filter((e) => e.status !== "done" && e.owner).map((e) => v(e.owner))))];
+			let t = [...new Set((A.epics || []).filter((t) => t.from_msg === e.msg_id && !t.archived).flatMap((e) => e.tasks.filter((e) => e.status !== "done" && e.owner).map((e) => v(e.owner))))];
 			t.length ? (c = "wait", l = "⏳", u = m("aguardando {who}", { who: t.map(g).join(", ") })) : (c = "idle", l = "–", u = `${m("{who} parou", { who: o })} · ${s}`);
 		}
 		n(e.msg_id).st.push(`<span class="ms ${c}"><i>${l}</i><span>${u}</span></span>`);
 	}
-	let a = j.messages.filter((e) => e.thread === M);
-	for (let e of j.receipts || []) {
+	let a = A.messages.filter((e) => e.thread === j);
+	for (let e of A.receipts || []) {
 		let t = a.findLast((t) => t.id <= Math.max(e.read, e.delivered) && (t.kind !== "agent" || t.author !== e.email));
 		if (!t || i.has(`${t.id}|${e.who}|${e.email}`)) continue;
 		let o = e.read >= t.id, s = r(e);
-		n(t.id).rd.push(`<span class="${o ? "rd" : ""}" title="${m(o ? "lido por {who}" : "entregue, ainda não lido por {who}", { who: s })}">${o ? "✓✓" : "✓"} ${g(Sa(e.who))}</span>`);
+		n(t.id).rd.push(`<span class="${o ? "rd" : ""}" title="${m(o ? "lido por {who}" : "entregue, ainda não lido por {who}", { who: s })}">${o ? "✓✓" : "✓"} ${g(Ca(e.who))}</span>`);
 	}
 	for (let [e, n] of Object.entries(t)) {
 		let t = document.querySelector(`#m${e} .body`);
 		t && t.insertAdjacentHTML("beforeend", `<div class="mfoot">${n.st.join("")}${n.rd.length ? `<span class="mr">${n.rd.join("")}</span>` : ""}</div>`);
 	}
 }
-function wa(e) {
-	Z(Ta || e.author === j.me && e.kind !== "agent" ? void 0 : "stay");
+function Ta(e) {
+	X(Z || e.author === A.me && e.kind !== "agent" ? void 0 : "stay");
 }
-var Ta = !0, Ea = new ResizeObserver(() => {
+var Z = !0, Ea = new ResizeObserver(() => {
 	let e = document.getElementById("msgs");
-	e && Ta && (e.scrollTop = e.scrollHeight);
+	e && Z && (e.scrollTop = e.scrollHeight);
 });
 function Da(e) {
 	e && (e.classList?.contains("msg") ? [e] : e.querySelectorAll(".msg")).forEach((e) => Ea.observe(e));
@@ -4465,13 +4410,13 @@ function Oa(e) {
 	let t = document.getElementById("msgs");
 	if (t) {
 		t.onscroll ??= () => {
-			t.scrollHeight - t.scrollTop - t.clientHeight < 80 ? Ta = !0 : t.scrollTop < (t._lastTop ?? 0) - 2 && (Ta = !1), t._lastTop = t.scrollTop, t.scrollTop < 150 && !Ta && xa();
+			t.scrollHeight - t.scrollTop - t.clientHeight < 80 ? Z = !0 : t.scrollTop < (t._lastTop ?? 0) - 2 && (Z = !1), t._lastTop = t.scrollTop, t.scrollTop < 150 && !Z && Sa();
 		}, Ea.observe(t), t._mo ??= new MutationObserver((e) => {
 			for (let t of e) t.addedNodes.forEach((e) => e.nodeType === 1 && Ea.observe(e));
-			Ta && (t.scrollTop = t.scrollHeight);
+			Z && (t.scrollTop = t.scrollHeight);
 		}), t._mo.observe(t, { childList: !0 });
 		for (let e of t.children) Ea.observe(e);
-		e && (Ta = !0), (e || t.scrollHeight - t.scrollTop - t.clientHeight < 200) && (t.scrollTop = t.scrollHeight);
+		e && (Z = !0), (e || t.scrollHeight - t.scrollTop - t.clientHeight < 200) && (t.scrollTop = t.scrollHeight);
 	}
 }
 var ka = "https://cdn.jsdelivr.net/npm/pele@1.10.0/dist/pele.global.js", Aa, ja = () => Aa ??= new Promise((e, t) => {
@@ -4525,20 +4470,20 @@ function Na(e, t) {
 	let o = [...e.children].find((e) => e.tagName === "P");
 	o ? o.after(n) : e.prepend(n);
 }
-var Q = !1, Pa = null, Fa = /* @__PURE__ */ new Set(), Ia = () => !Q && !I() && j.epics.some((e) => e.id === M) ? M : null;
+var Q = !1, Pa = null, Fa = /* @__PURE__ */ new Set(), Ia = () => !Q && !F() && A.epics.some((e) => e.id === j) ? j : null;
 function $(e) {
 	let t = document.getElementById("doc");
 	if (!t) return;
-	j.docs ??= {};
-	let n = Ia(), r = n && j.epics.find((e) => e.id === n);
-	n && !(n in j.docs) && !Fa.has(j.id + n) && (Fa.add(j.id + n), N({
+	A.docs ??= {};
+	let n = Ia(), r = n && A.epics.find((e) => e.id === n);
+	n && !(n in A.docs) && !Fa.has(A.id + n) && (Fa.add(A.id + n), M({
 		t: "doc.get",
 		epic: n
 	}));
-	let i = n ? j.docs[n] || `# ${r.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite aqui ou peça pro seu Claude).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : j.doc;
-	Pa !== (n || "room") && (e = !0, Pa = n || "room"), vn();
-	let a = !I() && j.epics.find((e) => e.id === M), o = document.getElementById("docCrumb");
-	o.hidden = !a, a && (o.innerHTML = `<button type="button" class="${n ? "" : "sel"}" data-docroom="1">${g(P())}</button><span>›</span><button type="button" class="${n ? "sel" : ""}" data-docroom="">${g(a.title)}</button>`, o.querySelectorAll("button").forEach((e) => e.onclick = () => {
+	let i = n ? A.docs[n] || `# ${r.title}\n\n**Objetivo:** o que este épico entrega e por quê (edite aqui ou peça pro seu Claude).\n\n## Contexto\n\n- \n\n## Decisões\n\n- \n` : A.doc;
+	Pa !== (n || "room") && (e = !0, Pa = n || "room"), xn();
+	let a = !F() && A.epics.find((e) => e.id === j), o = document.getElementById("docCrumb");
+	o.hidden = !a, a && (o.innerHTML = `<button type="button" class="${n ? "" : "sel"}" data-docroom="1">${g(N())}</button><span>›</span><button type="button" class="${n ? "sel" : ""}" data-docroom="">${g(a.title)}</button>`, o.querySelectorAll("button").forEach((e) => e.onclick = () => {
 		Q = !!e.dataset.docroom, $(!0);
 	}));
 	let s = document.getElementById("preview"), c = document.getElementById("tasks");
@@ -4546,12 +4491,12 @@ function $(e) {
 		breaks: !0,
 		gfm: !0
 	}), {
-		...be,
-		FORBID_TAGS: be.FORBID_TAGS.filter((e) => e !== "img"),
+		...xe,
+		FORBID_TAGS: xe.FORBID_TAGS.filter((e) => e !== "img"),
 		ADD_ATTR: ["target"]
 	}) : `<div class="empty">${m("Documento vazio. Clique em <b>Editar</b> ou peça pro seu agent resumir as decisões aqui.")}</div>`, s.querySelectorAll("a").forEach((e) => {
 		e.target = "_blank", e.rel = "noopener noreferrer nofollow ugc";
-	}), !n && j.docNotes?.length && s.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${m("@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).")}">${j.docNotes.map((e) => `<span class="vnote">${E("alert", 12)} ${g(e)}</span>`).join("")}</div>`), Ma(s), Na(s, n || (M === "main" && j.roomTasks?.length ? "main" : null)), Wr(), (e || document.activeElement !== t) && (t.value = i);
+	}), !n && A.docNotes?.length && s.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${m("@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).")}">${A.docNotes.map((e) => `<span class="vnote">${T("alert", 12)} ${g(e)}</span>`).join("")}</div>`), Ma(s), Na(s, n || (j === "main" && A.roomTasks?.length ? "main" : null)), Gr(), (e || document.activeElement !== t) && (t.value = i);
 }
 var La = 3e5;
 function Ra() {
@@ -4619,4 +4564,4 @@ function Ha() {
 var Ua = 0;
 document.addEventListener("visibilitychange", () => {
 	document.hidden ? Ua = Date.now() : Ua && Date.now() - Ua > La && Ha();
-}), Ha(), Qe();
+}), Ha(), et();

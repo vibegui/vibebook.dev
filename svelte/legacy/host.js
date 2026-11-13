@@ -1,6 +1,7 @@
 // Existing host integrations retained during the incremental TypeScript migration.
 // Native room views and wire contracts live in the typed modules alongside this file.
 import * as UI from "../main";
+import { syncNavigationSession } from "../features/navigation/session";
 import { createUiNavigation } from "../navigation";
 import { getBoardContainer, moveBoardContainer, watchBoardLayout } from "./boardLayout";
 import { uiNavigationUrl } from "../../shared/uiVariant";
@@ -19,6 +20,14 @@ const EN = {
   "clique pra trocar": "click to change",
   "Sem dono · clique pra escolher": "No owner · click to pick one",
   "Dono do épico": "Epic owner",
+  "Ordem dos épicos atualizada.": "Epic order updated.",
+  "Abrir galho": "Expand branch",
+  "Fechar galho": "Collapse branch",
+  "Subépico de {title}": "Sub-epic of {title}",
+  "Trabalho em um subépico": "Work in a sub-epic",
+  "Ações do épico": "Epic actions",
+  "Mover para cima": "Move up",
+  "Mover para baixo": "Move down",
   "Sem dono": "No owner",
   "app da sala": "room app",
   "arquivo": "file",
@@ -1666,6 +1675,7 @@ const send = (m) => roomConnection?.send(m) ?? false;
 
 const viewMounts = new Map();
 let boardLayoutCleanup = () => {};
+let sideNavigation = null;
 const sidebarDragHandles = new WeakSet();
 function disposeView(kind) {
   const mounted = viewMounts.get(kind);
@@ -1681,6 +1691,7 @@ function renderView(kind, target, props, remount = false) {
   else mounted.update(props);
 }
 function clearViews() {
+  sideNavigation = null;
   boardLayoutCleanup();
   boardLayoutCleanup = () => {};
   disposeCollab();
@@ -1855,7 +1866,7 @@ function renderBook() {
   document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
   $app.innerHTML = `
   <div class="book ${railMode ? "rail" : ""}">
-    <aside class="side" id="side"></aside>
+    <aside class="side tw:[@media(max-width:900px)]:max-h-[calc(var(--vvh,100dvh)_-_max(96px,var(--vvh,100dvh)*.2))]!" id="side"></aside>
     <main class="chat">
       <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><button class="ghost bell" data-bell></button><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek" role="toolbar" aria-label="${t("Documento e arquivos da sala")}"><div class="peekRow"><button type="button" class="peekDoc" data-pane="doc" id="peekTxt" aria-label="${t("Abrir documento")}"></button><button type="button" data-pane="files" title="${t("Arquivos")}" aria-label="${t("Arquivos")}">${icon("paperclip", 18)}<small id="peekFiles"></small></button><button type="button" data-pane="apps" title="Apps" aria-label="Apps">${icon("chart", 18)}</button><button type="button" data-pane="decisions" title="${t("Decisões")}" aria-label="${t("Decisões")}">${icon("check", 18)}</button><button type="button" data-pane="reminders" title="${t("Lembretes")}" aria-label="${t("Lembretes")}">${icon("clock", 18)}<small id="peekRem"></small></button><button type="button" class="peekAgents" data-pane="agents" title="Agents" aria-label="Agents">${STAR}<i class="qDot"></i><small class="qN"></small></button></div><i class="grab"></i></div>
@@ -2806,21 +2817,22 @@ function renderSide() {
   renderAskBar();
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
+  sideNavigation = syncNavigationSession(sideNavigation, S, thread, archOpen);
   if (railMode && window.innerWidth > 900) {
     disposeView("sidebar");
     return renderRail(el);
   }
-  renderView("sidebar", el, {room:S, thread, archOpen, foldOpen, friends, vb:{t,icon,avatar,ago,name,initials,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicIco,epicBusy,waitPill,waitsIn,prodMark}});
+  const roomId = S.id;
+  const openSideThread = (id) => {
+    if (S?.id !== roomId) return;
+    closeSheet(true);
+    thread = id; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
+  };
+  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, vb:{t,icon,avatar,ago,name,bookTitle,roomMark,roomStrip,pinsSec,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
   el.querySelector("#railToggle").onclick = toggleRail;
   // Only a click counts (a details drawn already open fires "toggle" too, which would pin the default).
   el.querySelectorAll("details.memMore > summary").forEach((sm) => sm.onclick = () => (foldOpen[sm.parentElement.dataset.fold] = !sm.parentElement.open));
-  el.querySelectorAll(".epTabs [data-arch]").forEach((b) => (b.onclick = () => { archOpen = !!b.dataset.arch; renderSide(); }));
   wirePins(el);
-  el.querySelectorAll("[data-epowner]").forEach((b) => {
-    const go = (ev) => { ev.preventDefault(); ev.stopPropagation(); ownerMenu(b, b.dataset.epowner); };
-    b.onclick = go;
-    b.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") go(ev); };
-  });
   const grab = el.querySelector(".sheetGrab");
   if (grab && !sidebarDragHandles.has(grab)) {
     sheetDrag(grab, "side", false);
@@ -2832,36 +2844,10 @@ function renderSide() {
   // Same actions as the header's ✓ 🗑 (hidden on phones): close the sheet, then run them.
   const archive = el.querySelector("#sideArch"); if (archive) archive.onclick = () => { closeSheet(); document.getElementById("epicArch")?.click(); };
   const remove = el.querySelector("#sideDel"); if (remove) remove.onclick = () => { closeSheet(); document.getElementById("epicDel")?.click(); };
-  // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
-  el.querySelectorAll(".epList > .thread[data-thread]:not(.pre)").forEach((b) => {
-    b.draggable = true;
-    b.ondragstart = (e) => { e.dataTransfer.setData("text/vb-epic", b.dataset.thread); e.dataTransfer.effectAllowed = "move"; b.classList.add("dragging"); };
-    b.ondragend = () => b.classList.remove("dragging");
-    b.ondragover = (e) => { if (!e.dataTransfer.types.includes("text/vb-epic")) return; e.preventDefault(); const r = b.getBoundingClientRect(); b.classList.toggle("dropAbove", e.clientY < r.top + r.height / 2); b.classList.toggle("dropBelow", e.clientY >= r.top + r.height / 2); };
-    b.ondragleave = () => b.classList.remove("dropAbove", "dropBelow");
-    b.ondrop = (e) => {
-      e.preventDefault(); b.classList.remove("dropAbove", "dropBelow");
-      const from = e.dataTransfer.getData("text/vb-epic"), to = b.dataset.thread;
-      if (!from || from === to) return;
-      const open = S.epics.filter((x) => !x.archived).map((x) => x.id).filter((id) => id !== from);
-      const r = b.getBoundingClientRect();
-      open.splice(open.indexOf(to) + (e.clientY >= r.top + r.height / 2 ? 1 : 0), 0, from);
-      const ids = [...open, ...S.epics.filter((x) => x.archived).map((x) => x.id)];
-      S.epics.sort((x, y) => ids.indexOf(x.id) - ids.indexOf(y.id));
-      renderSide();
-      send({ t: "epic.order", ids });
-    };
-  });
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
   });
-  // The form is absent on the Arquivados tab. Empty title: the + just puts you in the field.
-  const ne = document.getElementById("newEpic");
-  // Phones: once the keyboard is up (the visible viewport shrinks), bring the field to the middle of the sheet.
-  const epicInput = ne?.querySelector("input");
-  if (epicInput) epicInput.onfocus = (e) => setTimeout(() => e.target.scrollIntoView({ block: "center", behavior: "smooth" }), 350);
-  if (ne) ne.onsubmit = (e) => { e.preventDefault(); const v = e.target[0].value.trim(); if (!v) return e.target[0].focus(); send({ t: "epic", title: v }); e.target.reset(); };
   el.querySelectorAll("[data-remove]").forEach((b) => b.onclick = async () => {
     const who = b.dataset.remove;
     if (!confirm((S.pending || []).includes(who) ? t("Cancelar o convite de {email}?", { email: who }) : t("Remover {email} deste vibebook?", { email: who }))) return;

@@ -6,6 +6,8 @@ import { Window as HappyDOMWindow } from "happy-dom";
 import type { Room } from "../svelte/roomStore";
 import type { RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
+import type { SidebarProps } from "../svelte/sidebar";
+import { createNavigationSession } from "../svelte/features/navigation/session";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -955,13 +957,251 @@ describe("native Svelte chat", () => {
 });
 
 describe("stable native sidebar integration", () => {
+  function sidebar(room: Room, extra: Partial<SidebarProps> = {}) {
+    const target = window.document.createElement("div");
+    window.document.body.append(target);
+    const events: RoomCommand[] = [];
+    const opened: string[] = [];
+    const props: SidebarProps = {
+      room,
+      thread: "e",
+      navigation: createNavigationSession(room.id),
+      send: (command) => {
+        events.push(command);
+        return true;
+      },
+      onopen: (id) => {
+        opened.push(id);
+      },
+      onarchchange: () => {},
+      vb: {
+        ...vb,
+        bookTitle: () => room.book.title,
+        roomMark: () => "",
+        roomStrip: () => "",
+        pinsSec: () => "",
+        sbxRows: () => "",
+        agentRows: () => "",
+        epicBusy: () => null,
+        waitPill: () => "",
+        waitsIn: () => [],
+      },
+      ...extra,
+    };
+    const view = mountView("sidebar", target, props);
+    active.push(view);
+    return {
+      target,
+      props,
+      view,
+      events,
+      opened,
+      destroy() {
+        active.splice(active.indexOf(view), 1);
+        view.destroy();
+        target.remove();
+      },
+    };
+  }
+  test("native branch disclosure and drafts survive updates and a rail-style remount", () => {
+    const room = fixture();
+    room.epics.push({ id: "child", title: "Child", parent: "e", tasks: [] });
+    room.epics.push(
+      { id: "old-parent", title: "Old parent", tasks: [], archived: true },
+      {
+        id: "old-child",
+        parent: "old-parent",
+        title: "Old child",
+        tasks: [],
+        archived: true,
+      },
+    );
+    const session = createNavigationSession(room.id);
+    const first = sidebar(room, { navigation: session, thread: "child" });
+    const parent = first.target.querySelector<HTMLButtonElement>(
+      "[data-epic=e] button[aria-expanded]",
+    )!;
+    expect(parent.getAttribute("aria-expanded")).toBe("true");
+    parent.click();
+    flushSync();
+    expect(
+      first.target.querySelector<HTMLElement>("[data-epic=child]")?.hidden,
+    ).toBe(true);
+    const draft =
+      first.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.value = "Room-owned draft";
+    draft.dispatchEvent(new window.Event("input", { bubbles: true }));
+    flushSync();
+    first.view.update({
+      ...first.props,
+      room: {
+        ...room,
+        messages: [
+          { id: 1, author: room.me, thread: "child", ts: 1, text: "live" },
+        ],
+      },
+    });
+    expect(
+      first.target.querySelector<HTMLElement>("[data-epic=child]")?.hidden,
+    ).toBe(true);
+    first.destroy();
+    const second = sidebar(room, { navigation: session, thread: "child" });
+    expect(
+      second.target.querySelector<HTMLInputElement>("#newEpic input")?.value,
+    ).toBe("Room-owned draft");
+    expect(
+      second.target.querySelector<HTMLElement>("[data-epic=child]")?.hidden,
+    ).toBe(true);
+    second.view.update({ ...second.props, thread: "old-child" });
+    second.view.update({ ...second.props, thread: "child" });
+    expect(
+      second.target.querySelector<HTMLElement>("[data-epic=child]")?.hidden,
+    ).toBe(false);
+  }, 30_000);
+  test("native epic drafts survive rejected and thrown sends; owner controls await canonical state", () => {
+    const room = fixture();
+    let fail: "false" | "throw" | null = "false";
+    const commands: RoomCommand[] = [];
+    const rendered = sidebar(room, {
+      send(command) {
+        if (fail === "throw") throw Error("offline");
+        if (fail === "false") return false;
+        commands.push(command);
+        return true;
+      },
+    });
+    const draft =
+      rendered.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.value = "Retain title";
+    draft.dispatchEvent(new window.Event("input", { bubbles: true }));
+    flushSync();
+    const form = rendered.target.querySelector<HTMLFormElement>("#newEpic")!;
+    for (const failure of ["false", "throw"] as const) {
+      fail = failure;
+      form.dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+      flushSync();
+      expect(draft.value).toBe("Retain title");
+      expect(rendered.target.querySelector("[role=alert]")).not.toBeNull();
+    }
+    fail = null;
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
+    expect(draft.value).toBe("");
+    expect(commands).toEqual([{ t: "epic", title: "Retain title" }]);
+    const owner = rendered.target.querySelector<HTMLSelectElement>(
+      "[data-epic=e] select",
+    )!;
+    owner.value = "you@test";
+    change(owner);
+    expect(commands.at(-1)).toEqual({
+      t: "epic.owner",
+      id: "e",
+      owner: "you@test",
+    });
+    expect(owner.value).toBe("");
+    rendered.view.update({
+      ...rendered.props,
+      room: {
+        ...room,
+        epics: room.epics.map((epic) => ({ ...epic, owner: "you@test" })),
+      },
+    });
+    expect(owner.value).toBe("you@test");
+    rendered.destroy();
+    form.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
+    expect(commands).toHaveLength(2);
+  }, 30_000);
+  test("native order controls submit a full permutation without optimistic mutation or stale targets", () => {
+    const room = fixture();
+    room.epics.push({ id: "other", title: "Other", tasks: [] });
+    const rendered = sidebar(room);
+    const down = rendered.target.querySelector<HTMLButtonElement>(
+      '[aria-label="Mover para baixo: Epic"]',
+    )!;
+    down.click();
+    flushSync();
+    expect(rendered.events).toEqual([{ t: "epic.order", ids: ["other", "e"] }]);
+    expect(room.epics.map((epic) => epic.id)).toEqual(["e", "other"]);
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[0]] },
+    });
+    expect(down.disabled).toBe(true);
+    down.click();
+    flushSync();
+    expect(rendered.events).toHaveLength(1);
+  }, 30_000);
+  test("confirmed epic ordering restores disabled-control focus without stealing an intervening field", async () => {
+    const room = fixture();
+    room.epics.push({ id: "other", title: "Other", tasks: [] });
+    const rendered = sidebar(room);
+    const down = rendered.target.querySelector<HTMLButtonElement>(
+      '[aria-label="Mover para baixo: Epic"]',
+    )!;
+    down.focus();
+    down.click();
+    flushSync();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(
+      rendered.target.querySelector('[data-epic-thread="e"]'),
+    );
+    expect(
+      rendered.target.querySelector("[role=status]")?.textContent,
+    ).toContain("Ordem dos épicos atualizada.");
+    rendered.view.update(rendered.props);
+    down.focus();
+    down.click();
+    flushSync();
+    const draft =
+      rendered.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.focus();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(draft);
+  }, 30_000);
+  test("epic ordering focus callbacks cannot target a replaced room view", async () => {
+    const room = fixture();
+    room.epics.push({ id: "other", title: "Other", tasks: [] });
+    const rendered = sidebar(room);
+    const down = rendered.target.querySelector<HTMLButtonElement>(
+      '[aria-label="Mover para baixo: Epic"]',
+    )!;
+    down.focus();
+    down.click();
+    flushSync();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    rendered.destroy();
+    const next = sidebar({ ...room, id: "next" });
+    const draft =
+      next.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.focus();
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(draft);
+  }, 30_000);
   test("repeated room updates preserve keyed navigation and form drafts", () => {
     let room = fixture();
     const target = window.document.createElement("div");
     window.document.body.append(target);
-    type SidebarProps = import("svelte").ComponentProps<
-      typeof import("../svelte/Sidebar.svelte").default
-    >;
     const sidebarBridge: SidebarProps["vb"] = {
       ...vb,
       bookTitle: () => room.book.title,
@@ -970,21 +1210,23 @@ describe("stable native sidebar integration", () => {
       pinsSec: () => "",
       sbxRows: () => "",
       agentRows: () => "",
-      epicIco: () => '<span class="ri"></span>',
       epicBusy: () => null,
       waitPill: () => "",
       waitsIn: () => [],
-      prodMark: () => "",
     };
     const props: SidebarProps = {
       room,
       thread: "e",
+      navigation: createNavigationSession(room.id),
+      send: () => true,
+      onopen: () => {},
+      onarchchange: () => {},
       friends: ["friend@test"],
       vb: sidebarBridge,
     };
     const view = mountView("sidebar", target, props);
     active.push(view);
-    const row = target.querySelector("[data-thread=e]");
+    const row = target.querySelector("[data-epic-thread=e]");
     const create = target.querySelector<HTMLInputElement>("#newEpic input")!;
     const invite = target.querySelector<HTMLInputElement>("#invite input")!;
     create.value = "Draft epic title";
@@ -1005,14 +1247,15 @@ describe("stable native sidebar integration", () => {
         ],
       };
       view.update({ ...props, room, vb: { ...sidebarBridge } });
-      expect(target.querySelector("[data-thread=e]")).toBe(row);
+      expect(target.querySelector("[data-epic-thread=e]")).toBe(row);
       expect(target.querySelector("#newEpic input")).toBe(create);
       expect(create.value).toBe("Draft epic title");
       expect(invite.value).toBe("invitee@test");
     }
-    expect(target.querySelector("[data-thread=e] .rt")?.textContent).toBe(
-      "Epic update 5",
-    );
+    expect(
+      target.querySelector("[data-epic-thread=e] [data-epic-title]")
+        ?.textContent,
+    ).toBe("Epic update 5");
   }, 30_000);
 
   test("the real host pin wiring remains idempotent on a preserved form", () => {

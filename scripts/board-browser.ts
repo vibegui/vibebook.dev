@@ -124,10 +124,10 @@ try {
     .fill("Board workflow");
   await page.locator("#newEpic").getByRole("button").click();
   const epic = page
-    .locator("button[data-thread]")
+    .locator("button[data-epic-thread]")
     .filter({ hasText: "Board workflow" });
   await expect(epic).toBeVisible();
-  const epicID = await epic.getAttribute("data-thread");
+  const epicID = await epic.getAttribute("data-epic-thread");
   assert(epicID && /^[a-z0-9]+$/.test(epicID));
   await board
     .getByRole("combobox", { name: "Epic", exact: true })

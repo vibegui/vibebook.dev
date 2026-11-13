@@ -1,0 +1,4 @@
+$ bun scripts/design-system-browser.ts
+Gallery loaded; checking fonts and controls
+PASS native gallery: fonts, controls, keyboard tabs, focus trap/restoration, scroll lock, sheet, light/dark/mobile axe
+PASS real native Inbox: local profile data, Svelte URL, tabs, close/Escape, focus restoration, mobile axe

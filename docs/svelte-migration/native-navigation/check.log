@@ -1,0 +1,342 @@
+$ bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run check:styles:native && bun run test:store && bun run test:rpc && bun run test:ui && bun run test:ui:variants && bun run test:build && bun run test:connection && bun run check:tooling && bun run format:check
+$ node node_modules/@typescript/native/bin/tsc -p tsconfig.api.json
+$ node node_modules/@typescript/native/bin/tsc --noEmit && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts
+582 keys, 628 in EN
+unused EN entries (46):
+  Abrir galho
+  Fechar galho
+  Ir para um vibebook…
+  Outros
+  Áudios
+  Tudo
+  Imagens
+  Texto e CSV
+  Ver o texto
+  Esconder o texto
+  Não deu pra copiar: selecione o texto e copie.
+  {who} está trabalhando aqui
+  novo épico
+  @vibe sugere
+  Pessoas
+  Copiar a mensagem de convite (link da sala + setup do agent) para mandar no WhatsApp
+  Nada a fazer.
+  Arraste um card pra cá.
+  Ainda não tem épico nem tarefa. Crie um épico na barra ao lado, ou peça pro seu agent organizar o projeto em épicos e tarefas.
+  esperando
+  Ver as tasks abertas
+  Esperando {who}
+  esperando OK
+  a fazer
+  Essa mensagem está mais acima: role o chat pra carregar.
+  (pelo agent)
+  quer usar
+  Conexões
+  Da sala: todo mundo usa junto
+  Diga quando e o quê. Ex.: Todo dia às 8h: puxe os números de ontem e poste aqui o que mudou.
+  Cada lembrete é um arquivo <code>reminders/&lt;nome&gt;.md</code>: o texto diz quando rodar e o que fazer. Na hora, o @vibe posta o texto aqui e o agent de quem salvou faz.
+  feito
+  Sem épico
+  Conecte seu Claude
+  épico
+  espera você
+  rodando
+  ligando
+  pausando
+  pausado
+  parado
+  apagado no freestyle
+  Nenhum lembrete ainda. Clique em Novo lembrete, ou peça pro seu agent: “todo dia às 8h, me manda o resumo do que mudou”.
+  Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.
+  Comece a conversa. Os agents ligados nesta sala leem e respondem; o seu age com o seu OK. Ex.: <i>organiza o projeto em épicos: site novo, aluguéis e domínio</i>.
+  Discussão deste épico. Os agents leem as tarefas, o doc e a sala principal.
+ok
+$ svelte-check --tsconfig svelte/tsconfig.json
+Loading svelte-check in workspace: /home/zip76/code/vibebook-native-navigation
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+$ svelte-check --tsconfig vanilla/tsconfig.json && bun scripts/vanilla-isolation-check.ts
+Loading svelte-check in workspace: /home/zip76/code/vibebook-native-navigation
+Getting Svelte diagnostics...
+
+svelte-check found 0 errors and 0 warnings
+PASS independent vanilla Inbox build (2 owned modules, 17902 gzip bytes); default assets preserved
+$ bun scripts/protocol-check.ts
+PASS shared event/command validation, nullable DTOs, typed socket and HTTP transports
+$ bun scripts/client-boundary-check.ts
+PASS shared runtime values and erased backend type imports
+PASS browser-safe dotfiles and import.meta.env
+PASS browser-safe dependency helpers in a package server directory
+PASS rejects direct backend import
+PASS rejects raw backend source import
+PASS rejects backend URL asset import
+PASS rejects transitive backend import
+PASS rejects backend alias
+PASS rejects backend symlink
+PASS rejects server-only marker
+PASS rejects server file suffix
+PASS rejects project server directory
+PASS rejects dynamic backend import
+PASS rejects Node runtime
+PASS rejects Worker runtime
+PASS rejects transitive private config
+PASS rejects private config alias
+PASS rejects private config symlink
+PASS rejects private .env?raw
+PASS rejects private .env?url
+PASS rejects private .env.production?raw
+PASS rejects private .env.production?url
+PASS rejects private .dev.vars?raw
+PASS rejects private .dev.vars?url
+PASS rejects private .dev.vars.local?raw
+PASS rejects private .dev.vars.local?url
+PASS rejects private .git/config?raw
+PASS rejects private .git/config?url
+PASS rejects private .ssh/config?raw
+PASS rejects private .ssh/config?url
+PASS rejects private .vibebook/config?raw
+PASS rejects private .vibebook/config?url
+PASS rejects externally configured server-only marker
+PASS rejects externally configured relative backend import
+PASS rejects externally configured server-only file
+PASS rejects externally configured private files
+PASS rejects externally configured private symlink
+PASS CSS browser-safe font asset
+PASS rejects CSS private font URL
+PASS rejects CSS backend URL asset
+PASS rejects CSS backend alias URL
+PASS rejects CSS private symlink URL
+PASS rejects CSS backend CSS import
+PASS rejects CSS nested backend CSS import
+PASS rejects CSS public asset symlink
+PASS Tailwind browser-safe font asset
+PASS rejects Tailwind private font URL
+PASS rejects Tailwind backend URL asset
+PASS rejects Tailwind backend alias URL
+PASS rejects Tailwind private symlink URL
+PASS rejects Tailwind backend CSS import
+PASS rejects Tailwind nested backend CSS import
+PASS rejects Tailwind public asset symlink
+PASS separate server environment permits backend and Node imports
+$ bun scripts/ui-build-check.ts
+$ bun run build:api-types && vite build --config svelte/vite.config.ts
+$ node node_modules/@typescript/native/bin/tsc -p tsconfig.api.json
+7:50:26 AM [vite-plugin-svelte] no Svelte config found at /home/zip76/code/vibebook-native-navigation/svelte - using default configuration.
+vite v8.3.8 building client environment for production...
+transforming...
+✓ 826 modules transformed.
+rendering chunks...
+computing gzip size...
+public/svelte-preview/ui.css              39.74 kB │ gzip:  8.00 kB
+public/svelte-preview/ui.js                0.19 kB │ gzip:  0.15 kB
+public/svelte-preview/app.js               0.29 kB │ gzip:  0.23 kB
+public/svelte-preview/main-CJLsj24m.js    98.05 kB │ gzip: 25.52 kB
+public/svelte-preview/main-SMaYoTgU.js   130.25 kB │ gzip: 38.00 kB
+public/svelte-preview/host-Cm5SMWqY.js   259.69 kB │ gzip: 81.77 kB
+public/svelte-preview/Field-Y4VaoJzU.js  276.17 kB │ gzip: 77.25 kB
+
+✓ built in 1m 15s
+[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 72.5s of this 74.8s build (97%).
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin vite-plugin-svelte:compile transform (34%, 25.2s, 263 calls)
+  - plugin vite-plugin-svelte:compile-module transform (28%, 21.0s, 97 calls)
+  - plugin @tailwindcss/vite:generate:build transform (8%, 6.1s, 3 calls)
+  - plugin vibebook-ui-variant-boundary resolveId (6%, 4.8s, 3569 calls)
+  - plugin vibebook-client-boundary generateBundle (4%, 3.3s, 1 call)
+  - plugin alias resolveId (3%, 2.4s, 7138 calls)
+  - plugin vibebook-ui-variant-boundary load (2%, 1.7s, 825 calls)
+  - plugin vibebook-client-boundary load (1%, 1.1s, 825 calls)
+Additional callback time came from the callbacks below and from callbacks under 1s.
+1 callback is listed without a time. Its calls overlapped, so the time inside one call includes work from other calls. To find its cost, profile the build with `node --cpu-prof`:
+  - plugin vibebook-client-boundary resolveId (3569 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
+PASS actual client graph and generated UI asset consistency
+$ bun test scripts/style-policy.test.ts && bun scripts/style-check.ts --native
+bun test v1.4.4 (38afee6c8)
+
+scripts/style-policy.test.ts:
+(pass) HTML parsing catches embedded styles and stylesheet links, including template fragments [262.81ms]
+(pass) native component audit rejects style blocks, directives, markup and CSSOM bypasses [631.75ms]
+(pass) stylesheet policy distinguishes tokens from custom selector and import escapes [74.69ms]
+
+ 3 pass
+ 0 fail
+ 41 expect() calls
+Ran 3 tests across 1 file. [5.93s]
+PASS native increment only (full M3 remains pending) style policy: 45 sources, one emitted CSS asset, font integrity verified
+$ bun test scripts/room-store.test.ts scripts/navigation.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/navigation.test.ts:
+(pass) native epic navigation model > filtered or missing parents remain visible roots; siblings retain canonical order [10.46ms]
+(pass) native epic navigation model > cycles, attached descendants and duplicate IDs render every ID exactly once [1.61ms]
+(pass) native epic navigation model > deep imported hierarchies traverse without recursion or lost descendants [183.26ms]
+(pass) native epic navigation model > busy descendants remain signaled while closed [9.89ms]
+(pass) native epic navigation model > hidden descendants keep stable rows and controls without repeated ancestor scans [1.94ms]
+(pass) native epic navigation model > archive view orders by last message, then reverse canonical index [4.58ms]
+(pass) native epic navigation model > reordering changes sibling positions only and preserves all room IDs and parents [6.10ms]
+(pass) room-owned navigation session > rail-only thread entries reopen ancestors without discarding the room draft [9.79ms]
+(pass) room-owned navigation session > returning from an archived thread is a new entry even while the active tab stays selected [2.45ms]
+(pass) room-owned navigation session > entering a filtered archived child reveals its branch when its tab opens [1.92ms]
+(pass) room-owned navigation session > ancestor auto-opening runs once per thread entry, preserving manual collapse and drafts [3.82ms]
+(pass) room-owned navigation session > closed branches reload per room; another room never receives its draft [1.81ms]
+(pass) room-owned navigation session > malformed and unavailable storage cannot break navigation [14.24ms]
+
+scripts/room-store.test.ts:
+(pass) Book room state reducer > a fresh snapshot discards prior transient typing and stale room data [6.56ms]
+(pass) Book room state reducer > duplicate msg delivery does not duplicate or replace a newer message [2.62ms]
+(pass) Book room state reducer > delta updates its message and ends only that message's typing [2.18ms]
+(pass) Book room state reducer > epicsPatch updates changed rows, follows server order and removes absent epics [2.68ms]
+(pass) Book room state reducer > epicsPatch with a missing ordered id leaves state intact for host resync [1.21ms]
+(pass) Book room state reducer > older pages are sorted and overlapping stale copies never overwrite loaded messages [2.66ms]
+(pass) Book room state reducer > ackRows updates one agent without losing another agent on the same message [3.09ms]
+(pass) Book room state reducer > ackRows supports old email-only agent identities [1.53ms]
+(pass) Book room state reducer > fileAdd replaces retried file metadata without incrementing the server total twice [2.04ms]
+(pass) Book room state reducer > non-snapshot events from a previous room are ignored [0.68ms]
+(pass) Book room state reducer > stale epic document is invalidated then recovered without losing other docs [1.10ms]
+(pass) Book room state reducer > store apply publishes successive snapshots and get agrees with subscriptions [4.14ms]
+
+ 25 pass
+ 0 fail
+ 97 expect() calls
+Ran 25 tests across 2 files. [518.00ms]
+$ bun test scripts/rpc-routes.test.ts scripts/epic-order.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/rpc-routes.test.ts:
+(pass) post validates HTTP input and preserves success and business-error responses [119.98ms]
+(pass) room operations reject nonmembers before any write [31.50ms]
+(pass) binary upload validates metadata, encoded names and limits [17.67ms]
+(pass) push settings expose the public key and validate subscription writes [28.34ms]
+(pass) room and wait mutations validate inputs and scope writes to the signed-in person [21.89ms]
+(pass) freestyle key and Claude token: validated, checked, sealed, never echoed back [31.62ms]
+(pass) room agents: members only, listening and context derived from the rows, bad limits JSON dropped [36.31ms]
+
+scripts/epic-order.test.ts:
+(pass) a full permutation of 600+ epics is applied whole, past index 500 [19.32ms]
+(pass) a partial list reorders only those epics, in the slots they occupy [6.98ms]
+(pass) unknown ids, repeats and non-strings are dropped; nothing is lost or duplicated [1.89ms]
+(pass) a message longer than the cap only uses its first MAX_ORDER ids [10.03ms]
+
+ 11 pass
+ 0 fail
+ 76 expect() calls
+Ran 11 tests across 2 files. [929.00ms]
+$ bun test --conditions=browser scripts/ui-panels.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/ui-panels.test.ts:
+(pass) native Svelte room panels > tasks send canonical toggles, assignment and rename without flag text entering title [1140.61ms]
+(pass) native Svelte room panels > task drafts and active edits stay in their room/thread scope [571.23ms]
+(pass) native Svelte room panels > task commands retain drafts and controls when disconnected [214.29ms]
+(pass) native Svelte room panels > task due dialog saves typed assignments and tears down before native modal handoff [966.97ms]
+(pass) native Svelte room panels > board supports keyboard status moves and native list navigation [545.50ms]
+(pass) native Svelte room panels > board projection retains room tasks, explicit archived scopes and invalid scope boundaries [2.03ms]
+(pass) native Svelte room panels > board preserves failed drafts and never retargets a deleted or archived selection [626.21ms]
+(pass) native Svelte room panels > board keyboard movement retains focus after a live update without stealing an intervening focus [370.21ms]
+(pass) native Svelte room panels > board status controls preserve the focused list occurrence and do not open its epic [330.00ms]
+(pass) native Svelte room panels > board disposal cancels focus restoration into the next scope [592.87ms]
+(pass) native Svelte room panels > board ignores foreign and removed drag IDs [220.20ms]
+(pass) native Svelte room panels > board layout moves preserve native input identity/focus and dispose media callbacks [43.86ms]
+(pass) native Svelte room panels > files group versions in folders, filter and send pin events [396.80ms]
+(pass) native Svelte room panels > reminders preserve draft across a server reminder update [114.98ms]
+(pass) native Svelte room panels > reminder upload displays typed schedule and HTTP errors without losing draft [237.83ms]
+(pass) native Svelte chat > streaming typing notes and repeated text updates retain native message anchors [560.80ms]
+(pass) native Svelte chat > quotes, native actions, origin and quiet notices survive chat refresh [71.78ms]
+(pass) native Svelte chat > special reminder origins omit self-linking cards without removing native DOM [25.50ms]
+(pass) stable native sidebar integration > native branch disclosure and drafts survive updates and a rail-style remount [934.67ms]
+(pass) stable native sidebar integration > native epic drafts survive rejected and thrown sends; owner controls await canonical state [266.36ms]
+(pass) stable native sidebar integration > native order controls submit a full permutation without optimistic mutation or stale targets [315.42ms]
+(pass) stable native sidebar integration > confirmed epic ordering restores disabled-control focus without stealing an intervening field [386.15ms]
+(pass) stable native sidebar integration > epic ordering focus callbacks cannot target a replaced room view [508.97ms]
+(pass) stable native sidebar integration > repeated room updates preserve keyed navigation and form drafts [406.75ms]
+(pass) stable native sidebar integration > the real host pin wiring remains idempotent on a preserved form [63.86ms]
+
+ 25 pass
+ 0 fail
+ 186 expect() calls
+Ran 25 tests across 1 file. [47.49s]
+$ bun test scripts/ui-variants.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/ui-variants.test.ts:
+(pass) namespaced variants merge semantic radius, colors and size overrides [110.00ms]
+
+ 1 pass
+ 0 fail
+ 8 expect() calls
+Ran 1 test across 1 file. [404.00ms]
+$ bun test scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts scripts/ui-variant.test.ts scripts/ui-variant-boundary.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/ui-variant.test.ts:
+(pass) explicit per-URL preview selection > normal and unknown URLs always select vanilla [2.54ms]
+(pass) explicit per-URL preview selection > navigation retains the variant, thread, login continuation and file hash [6.22ms]
+(pass) explicit per-URL preview selection > history adapter preserves state and leaves history API untouched [4.63ms]
+(pass) explicit per-URL preview selection > preview shell and vanilla shell use disjoint entry assets [32.29ms]
+
+scripts/bun-client-boundary.test.ts:
+(pass) Bun allows shared runtime values and erases backend type imports [182.22ms]
+(pass) Bun rejects backend before browser output [18.17ms]
+(pass) Bun rejects transitive backend before browser output [18.50ms]
+(pass) Bun rejects symlinked backend before browser output [18.66ms]
+(pass) Bun rejects server marker before browser output [18.79ms]
+(pass) Bun rejects server suffix before browser output [20.86ms]
+(pass) Bun rejects dynamic backend before browser output [15.04ms]
+(pass) Bun rejects Node runtime before browser output [14.51ms]
+(pass) Bun rejects Worker runtime before browser output [13.32ms]
+(pass) Bun rejects private configuration before browser output [13.22ms]
+(pass) Bun rejects CSS private font URL before browser output [67.82ms]
+(pass) Bun rejects CSS backend asset URL before browser output [38.56ms]
+(pass) Bun rejects CSS nested backend CSS import before browser output [17.68ms]
+(pass) Bun rejects CSS private font symlink before browser output [18.76ms]
+(pass) Bun permits a browser-safe CSS font without private markers [33.13ms]
+(pass) production editor build configuration enforces the boundary [20.54ms]
+(pass) production MCP build configuration enforces the boundary [23.15ms]
+(pass) production MCP build keeps its self-contained HTML output [42.48ms]
+(pass) production editor build writes the standalone browser bundle [18.38ms]
+
+scripts/ui-version.test.ts:
+(pass) app shell content version > rejects a real emitted chunk importing the versioned bootstrap [608.18ms]
+(pass) app shell content version > generated Tailwind CSS changes the update version and is linked exactly once [29.62ms]
+(pass) app shell content version > unchanged builds are stable, preserve layout and use the same version for CSS/JS [15.21ms]
+(pass) app shell content version > every emitted JS chunk and CSS affect the shell version [17.54ms]
+(pass) app shell content version > the separately loaded editor affects the version; shell changes cannot cause a circular hash [19.86ms]
+(pass) app shell content version > repairs stale query versions deterministically and ignores unrelated output files [15.19ms]
+(pass) app shell content version > Vite writes the version after emission and unchanged rebuilds keep the shell identical [640.83ms]
+(pass) app shell content version > fails clearly instead of publishing an unversioned or incomplete shell [7.89ms]
+
+scripts/ui-variant-boundary.test.ts:
+(pass) both variants can build their own UI with shared browser-safe contracts [337.21ms]
+(pass) vanilla cannot acquire preview UI directly, through aliases or through a symlink [351.64ms]
+(pass) preview cannot delegate its UI to vanilla source or its runtime assets [372.74ms]
+
+ 34 pass
+ 0 fail
+ 80 expect() calls
+Ran 34 tests across 4 files. [5.12s]
+$ bun test scripts/room-connection.test.ts scripts/host-lifecycle.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/room-connection.test.ts:
+(pass) navigation cancels a disconnected room's retry and cannot send into that room [28.21ms]
+(pass) old socket callbacks cannot mutate a replacement or a disposed connection [5.70ms]
+(pass) backoff and close diagnostics survive transient closes and reset only after stability [4.30ms]
+(pass) access denial and removal stop retries; normal initial closes still retry [3.37ms]
+(pass) resync closes the owned socket and retries with a new snapshot [2.87ms]
+(pass) repeated disconnects cap retry delay at thirty seconds [5.60ms]
+
+scripts/host-lifecycle.test.ts:
+(pass) room cleanup invalidates a pending editor import before it can mount [11.10ms]
+(pass) room cleanup destroys the editor and blocks old provider callbacks into the next room [6.16ms]
+(pass) suggestion view disposal releases Tasks anchors before the host clears its target [113.95ms]
+
+ 9 pass
+ 0 fail
+ 47 expect() calls
+Ran 9 tests across 2 files. [2.65s]
+$ node node_modules/@typescript/native/bin/tsc -p tsconfig.tooling.json
+$ prettier --check 'svelte/**/*.{ts,svelte,css}' shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts' vanilla/inbox/*.ts vanilla/inbox/*.svelte scripts/ui-variant-boundary.test.ts scripts/vanilla-isolation-check.ts scripts/migration-inventory.ts scripts/rpc-routes.test.ts scripts/style-policy.ts scripts/style-policy.test.ts scripts/style-check.ts scripts/capture-studio.ts scripts/design-system-browser.ts scripts/ui-variants.test.ts scripts/studio-browser.ts scripts/native-browser-fixtures.ts scripts/tasks-browser.ts scripts/board-browser.ts scripts/navigation.test.ts scripts/native-test-mcp.ts scripts/navigation-browser.ts scripts/epic-order.test.ts
+Checking formatting...
+All matched files use Prettier code style!

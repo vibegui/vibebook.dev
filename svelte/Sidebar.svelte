@@ -1,41 +1,19 @@
 <script lang="ts">
   // The room's navigation is rendered by Svelte. The bridge keeps shared artwork,
   // formatting and the existing host actions in one place during the migration.
-  import type { Room, Epic } from "../shared/room";
-  type Bridge = {
-    t: (text: string, vars?: Record<string, string | number>) => string;
-    icon: (name: string, size?: number) => string;
-    avatar: (email: string, online?: boolean) => string;
-    ago: (ts: number) => string;
-    name: (email: string) => string;
-    initials: (title: string) => string;
-    bookTitle: () => string;
-    roomMark: (classes: string) => string;
-    roomStrip: () => string;
-    pinsSec: () => string;
-    sbxRows: () => string;
-    agentRows: (email: string) => string;
-    epicIco: (epic: Epic, pick: boolean) => string;
-    epicBusy: (epic: Epic) => string | null;
-    waitPill: (thread: string) => string;
-    waitsIn: (thread: string) => unknown[];
-    prodMark: (epic: Epic) => string;
-  };
+  import EpicTree from "./features/navigation/EpicTree.svelte";
+  import type { SidebarProps } from "./sidebar";
   let {
     room,
     thread,
-    archOpen = false,
     foldOpen = { off: false, friends: null },
     friends = [],
     vb,
-  }: {
-    room: Room;
-    thread: string;
-    archOpen?: boolean;
-    foldOpen?: { off: boolean; friends: boolean | null };
-    friends?: string[];
-    vb: Bridge;
-  } = $props();
+    send,
+    onopen,
+    onarchchange,
+    navigation,
+  }: SidebarProps = $props();
 
   const count = (th: string) =>
     room.counts
@@ -44,21 +22,7 @@
           (m) => m.thread === th && m.id > (room.countsAt ?? 0),
         ).length
       : room.messages.filter((m) => m.thread === th).length;
-  const last = (epic: Epic) =>
-    room.messages.reduce(
-      (n, m) => (m.thread === epic.id && m.id > n ? m.id : n),
-      0,
-    );
   const selected = $derived(room.epics.find((epic) => epic.id === thread));
-  const active = $derived(room.epics.filter((epic) => !epic.archived));
-  const archived = $derived(
-    room.epics
-      .filter((epic) => epic.archived)
-      .map((epic, i) => ({ epic, last: last(epic), i }))
-      .sort((a, b) => b.last - a.last || b.i - a.i)
-      .map(({ epic }) => epic),
-  );
-  const showArch = $derived(archOpen && archived.length > 0);
   const online = $derived(
     room.members.filter(
       (email) => email === room.me || room.online.includes(email),
@@ -71,31 +35,6 @@
     friends.filter((email) => !room.members.includes(email)),
   );
 </script>
-
-{#snippet epicRow(epic: Epic)}
-  {@const done = epic.tasks.filter((task) => task.done).length}
-  {@const busy = vb.epicBusy(epic)}
-  <button
-    type="button"
-    class="thread"
-    class:sel={thread === epic.id}
-    class:archived={!!epic.archived}
-    class:busy={!!busy}
-    class:waiting={vb.waitsIn(epic.id).length > 0}
-    data-thread={epic.id}
-    title={`${epic.title} · ${done}/${epic.tasks.length} tasks${epic.archived ? ` · ${vb.t("arquivado")}` : ""}${busy ? ` · ${vb.t("{who} está trabalhando aqui", { who: busy })}` : ""}`}
-  >
-    {@html vb.epicIco(epic, true)}<span class="rt">{epic.title}</span>
-    {#if busy}<span
-        class="claudeSpin"
-        aria-label={vb.t("{who} está trabalhando", { who: busy })}>✻</span
-      >{/if}
-    {@html vb.waitPill(epic.id)}{@html vb.prodMark(epic)}
-    <span class="n"
-      >{epic.tasks.length ? `${done}/${epic.tasks.length}` : ""}</span
-    >
-  </button>
-{/snippet}
 
 {#snippet member(email: string)}
   <div class="member">
@@ -212,54 +151,20 @@
     {/if}
     {@html vb.waitPill("main")}<span class="n">{count("main")}</span>
   </button>
-  {#if archived.length}
-    <div class="epTabs" role="tablist">
-      <button
-        type="button"
-        role="tab"
-        data-arch=""
-        class:on={!showArch}
-        aria-selected={!showArch}
-        >{vb.t("Épicos")} <b>{active.length}</b></button
-      >
-      <button
-        type="button"
-        role="tab"
-        data-arch="1"
-        class:on={showArch}
-        aria-selected={showArch}
-        >{vb.t("Arquivados")} <b>{archived.length}</b></button
-      >
-    </div>
-  {/if}
-  <div class="epList" class:arch={showArch}>
-    {#each showArch ? archived : active as epic (epic.id)}{@render epicRow(
-        epic,
-      )}{/each}
-    {#if !showArch}
-      <form id="newEpic" class="newRoom">
-        <input
-          placeholder={vb.t("Novo épico: escreva o título…")}
-          aria-label={vb.t("Novo épico")}
-          enterkeyhint="done"
-        /><button class="ri" aria-label={vb.t("Criar épico")}
-          >{@html vb.icon("plus")}</button
-        >
-      </form>
-      {#each room.suggestions as suggestion, i}
-        <button
-          type="button"
-          class="thread pre"
-          class:sel={thread === `pre:${i}`}
-          data-thread={`pre:${i}`}
-          title={`${suggestion.title} · ${vb.t("sugestão do @vibe, clique para ver")}`}
-          ><span class="ri">{vb.initials(suggestion.title)}</span><span
-            class="rt">{suggestion.title}</span
-          ><span class="n">{suggestion.tasks.length || ""}</span></button
-        >
-      {/each}
-    {/if}
-  </div>
+  <EpicTree
+    {room}
+    {thread}
+    session={navigation}
+    {send}
+    {onopen}
+    {onarchchange}
+    vb={{
+      t: vb.t,
+      name: vb.name,
+      epicBusy: vb.epicBusy,
+      waitCount: (id) => vb.waitsIn(id).length,
+    }}
+  />
 </div>
 {@html vb.pinsSec()}
 <div class="sec">
