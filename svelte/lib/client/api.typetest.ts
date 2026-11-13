@@ -3,6 +3,7 @@
 import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
+  AgentsResult,
   ConnectedResult,
   CreateRoomResult,
   RouteResult,
@@ -171,4 +172,15 @@ sameAs<
 >(true);
 sameAs<
   Equal<InferResponseType<typeof api.api.freestyle.$delete, 200>, OkResult>
+>(true);
+
+// Slice 7: a room's Claudes and sandboxes.
+void api.api.books[":id"].agents.$get({ param: { id: "r" } });
+// @ts-expect-error the room id is required
+void api.api.books[":id"].agents.$get({ param: {} });
+sameAs<
+  Equal<
+    InferResponseType<(typeof api.api.books)[":id"]["agents"]["$get"], 200>,
+    AgentsResult
+  >
 >(true);

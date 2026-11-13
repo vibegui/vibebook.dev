@@ -9,7 +9,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/avatar/:email` | `src/index.ts:549` | binary GET (asset) | 2 | n/a (documented) |
 | POST | `/api/books` | `src/api.ts` | JSON RPC | 37 | tested (slice 5) |
 | GET | `/api/books/:id/access` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
-| GET | `/api/books/:id/agents` | `src/index.ts:581` | JSON RPC | 37 | todo |
+| GET | `/api/books/:id/agents` | `src/api.ts` | JSON RPC | 37 | tested (slice 7) |
 | POST | `/api/books/:id/archive` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/:id/claude` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
 | GET | `/api/books/:id/connections` | `src/mcpconn.ts:262` | JSON RPC | 37 | todo |

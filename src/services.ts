@@ -2,7 +2,7 @@
 // person. This is the one place that knows both Env and ApiServices; the routes and their browser-facing types don't.
 import type { ApiServices } from "./api";
 import type { Env } from "./index";
-import { poke } from "./person";
+import { LISTEN_FRESH, poke } from "./person";
 import { EMAIL_RE } from "./auth";
 import { reqLang } from "./lang";
 import { routeMessage } from "./route-home";
@@ -94,5 +94,6 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     allowSecretTry: async (key) => (await env.LOGIN_LIMIT.limit({ key })).success,
     saveSecret: (table, value) => saveKey(env, email, value, table),
     checkFreestyleKey: (key) => checkFreestyleKey(env, key),
+    listenFresh: LISTEN_FRESH,
   };
 }
