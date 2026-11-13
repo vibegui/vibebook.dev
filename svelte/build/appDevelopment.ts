@@ -107,7 +107,8 @@ function postHeaders(
       headers.append(name, part);
   }
   // Match the existing HTTP/WS proxy trust boundary; never trust incoming Host.
-  if (incoming.origin === vite) headers.set("origin", worker);
+  if (incoming.origin !== undefined)
+    headers.set("origin", incoming.origin === vite ? worker : incoming.origin);
   return headers;
 }
 

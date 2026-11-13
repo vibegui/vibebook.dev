@@ -313,7 +313,7 @@ test("selected consent POST forwards exact raw form, cookie and origin boundary 
         const req = consentRequest(body, "/authorize?ui=svelte", {
             ...(origin ? { origin } : {}),
             referer: "http://127.0.0.1:5173/authorize?ui=svelte",
-            connection: "keep-alive, x-private-hop",
+            connection: "keep-alive, x-private-hop, origin",
             "x-private-hop": "removed",
             "transfer-encoding": "chunked",
             "sec-fetch-site": "same-origin",
