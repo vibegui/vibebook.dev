@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import RichContent from "./features/rich-text/RichContent.svelte";
+  import type { RichMode } from "./features/rich-text/types";
   import type { Room } from "../shared/room";
   import type {
     ChatActions,
@@ -112,6 +114,14 @@
       : `${new Date(ts).toLocaleDateString(vb.locale, { day: "numeric", month: "short" })} ${vb.hhmm(ts)}`;
 </script>
 
+{#snippet rich(text: string, mode: RichMode = "markdown")}<RichContent
+    {text}
+    {mode}
+    {room}
+    {actions}
+    names={vb.knownNames}
+    pageUrl={vb.pageUrl}
+  />{/snippet}
 <article
   id={origin ? undefined : `m${m.id}`}
   data-chat-message={m.id}
@@ -193,13 +203,10 @@
                 })
               : vb.t("pensando…")}{typing ? "…" : ""}
           </p>
-        {:else if m.text}<LegacyChatContent
-            preserveWhitespace={m.author !== "ai" && m.kind !== "agent"}
-            html={legacy.richText(
-              m.text,
-              m.author === "ai" || m.kind === "agent" ? "markdown" : "human",
-            )}
-          />{/if}
+        {:else if m.text}{@render rich(
+            m.text,
+            m.author === "ai" || m.kind === "agent" ? "markdown" : "human",
+          )}{/if}
         <Attachments
           roomId={room.id}
           messageThread={m.thread}
@@ -217,9 +224,9 @@
             {/if}{reminder.head} · {reminder.runs.length > 1
               ? `${vb.t("rodou {n}×", { n: reminder.runs.length })} · `
               : ""}<time title={timestamp}>{day(m.ts)}</time></summary
-          >{#if reminder.body}<LegacyChatContent
-              html={legacy.richText(reminder.body, "markdown")}
-            />{/if}{#if reminder.runs.length > 1}<p
+          >{#if reminder.body}{@render rich(
+              reminder.body,
+            )}{/if}{#if reminder.runs.length > 1}<p
               class="tw:m-0 tw:text-xs tw:text-muted-foreground"
             >
               {reminder.runs.map(day).join(" · ")}
@@ -240,9 +247,7 @@
             >
               <time class="tw:text-xs tw:text-muted-foreground"
                 >{day(issue.ts)}</time
-              ><LegacyChatContent
-                html={legacy.richText(issueParts(issue).head, "markdown")}
-              />
+              >{@render rich(issueParts(issue).head)}
               <p class="tw:m-0 tw:whitespace-pre-wrap tw:break-words">
                 {issueParts(issue).body}
               </p>
@@ -258,14 +263,11 @@
       {:else}<details class="tw:space-y-2">
           <summary
             class="tw:cursor-pointer tw:rounded-control tw:leading-6 tw:focus-visible:outline-2 tw:focus-visible:outline-ring"
-            >✦ <LegacyChatContent
-              inline
-              html={legacy.richText(
-                m.text.replace(/\*\*/g, "").replace(/\s+/g, " ").trim(),
-                "inline",
-              )}
-            /> · <time title={timestamp}>{day(m.ts)}</time></summary
-          ><LegacyChatContent html={legacy.richText(m.text, "markdown")} />
+            >✦ {@render rich(
+              m.text.replace(/\*\*/g, "").replace(/\s+/g, " ").trim(),
+              "inline",
+            )} · <time title={timestamp}>{day(m.ts)}</time></summary
+          >{@render rich(m.text)}
         </details>{/if}
       {#if !origin && kind !== "issue" && kind !== "notice"}{#each kind === "reminder" ? group : [m] as source (source.id)}<LegacyChatContent
             html={legacy.threadCards(source.id)}

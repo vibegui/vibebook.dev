@@ -1,0 +1,80 @@
+import { parseRichSource, projectRichSource } from "./project";
+import { knownFiles } from "./links";
+import type { RichContext, RichMode, RichNode } from "./types";
+/** Values used by mention recognition, immutable file targets/version ordering and local IDs.
+ * Presence/receipts/message text do not change this key. No global/account text cache exists. */
+function contextKey(context: RichContext): string {
+  return JSON.stringify([
+    context.room.id,
+    context.room.me,
+    context.pageUrl,
+    context.idPrefix,
+    context.room.members.map((email) => [
+      email,
+      context.room.names?.[email],
+      context.names?.[email],
+    ]),
+    knownFiles(context).map((file) => [
+      file.id,
+      file.name,
+      file.type,
+      file.ts,
+      file.size,
+      file.author,
+    ]),
+  ]);
+}
+/** One syntax tree and one projection per mounted content component; disposal releases both. */
+export function createRichSession() {
+  let active = true,
+    previousText: string | undefined,
+    previousMode: RichMode | undefined,
+    previousContext: string | undefined;
+  let previousParts: readonly unknown[] | undefined;
+  let parsed: ReturnType<typeof parseRichSource> | undefined,
+    nodes: RichNode[] | undefined;
+  return {
+    render(text: string, mode: RichMode, context: RichContext): RichNode[] {
+      if (!active) return [{ kind: "text", text }];
+      const changed = text !== previousText || mode !== previousMode;
+      if (changed) {
+        parsed = parseRichSource(text, mode);
+        previousText = text;
+        previousMode = mode;
+      }
+      const parts = [
+        context.room.id,
+        context.room.me,
+        context.room.members,
+        context.room.names,
+        context.names,
+        context.room.files,
+        context.room.messages,
+        context.room.origins,
+        context.pageUrl,
+        context.idPrefix,
+      ];
+      // Room reducer snapshots retain unchanged arrays/maps: receipt/presence updates avoid even fingerprint scans.
+      const key =
+        previousParts &&
+        parts.every((part, index) => part === previousParts![index])
+          ? previousContext!
+          : contextKey(context);
+      previousParts = parts;
+      if (changed || !nodes || key !== previousContext) {
+        nodes = projectRichSource(parsed!, context);
+        previousContext = key;
+      }
+      return nodes;
+    },
+    dispose() {
+      active = false;
+      previousText = undefined;
+      previousMode = undefined;
+      previousContext = undefined;
+      previousParts = undefined;
+      parsed = undefined;
+      nodes = undefined;
+    },
+  };
+}

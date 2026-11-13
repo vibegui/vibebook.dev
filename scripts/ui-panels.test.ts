@@ -1254,18 +1254,6 @@ describe("native Svelte room panels", () => {
 });
 
 describe("native Svelte chat", () => {
-  const escape = (s: string) =>
-    s.replace(
-      /[&<>"']/g,
-      (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[c]!,
-    );
   const message = (
     id: number,
     text: string,
@@ -1292,8 +1280,6 @@ describe("native Svelte chat", () => {
       import("../svelte/chatTypes").LegacyChatIntegrations
     > = {},
   ): import("../svelte/chatTypes").LegacyChatIntegrations => ({
-    richText: (text, mode) =>
-      mode === "markdown" ? `<p>${escape(text)}</p>` : escape(text),
     interactiveBody: () => "",
     threadCards: () => "",
     ...overrides,
@@ -1329,6 +1315,68 @@ describe("native Svelte chat", () => {
       },
     };
   }
+  test("native rich content preserves safe semantics and exact direct actions without HTML hooks", () => {
+    const file = {
+      id: "aa11",
+      name: "report.html",
+      type: "text/html",
+      author: "you@test",
+      size: 10,
+      ts: 1,
+    };
+    const room = {
+      ...fixture(),
+      id: "abc123",
+      files: [file],
+      messages: [
+        message(
+          1,
+          '<details open><summary>More</summary>\n\n**Body** @AI :fire: [message](#m12) [thread](#eabc) [file](/api/books/abc123/files/aa11) [external](https://example.test)\n\n</details>\n\n<div id="m99" class="vcard" data-cardbtn="evil" onclick="evil()"><b>safe</b></div><script>evil()</script>',
+        ),
+      ],
+    };
+    const navigated: number[] = [],
+      threads: string[] = [],
+      files: string[] = [];
+    const { target } = renderChat(room, {
+      vb: bridge({ pageUrl: "https://example.test/b/abc123" }),
+      actions: {
+        reply: () => {},
+        navigate: (id) => navigated.push(id),
+        openFile: (attachment) => files.push(attachment.id),
+        navigateRich: (target) => threads.push(target.id || ""),
+      },
+    });
+    const body = target.querySelector("#m1 [data-rich-content]")!;
+    expect(body.querySelector("details[open] summary")?.textContent).toBe(
+      "More",
+    );
+    expect(body.querySelector("strong")?.textContent).toBe("Body");
+    expect(body.querySelector('[data-rich-mention="ai"]')?.textContent).toBe(
+      "@AI",
+    );
+    expect(body.textContent).toContain("🔥");
+    expect(
+      body.querySelector("script,[onclick],[data-cardbtn],.vcard,#m99") ===
+        null,
+    ).toBe(true);
+    body
+      .querySelector<HTMLAnchorElement>('[data-rich-link="message"]')!
+      .click();
+    body.querySelector<HTMLAnchorElement>('[data-rich-link="thread"]')!.click();
+    body.querySelector<HTMLAnchorElement>('[data-rich-link="file"]')!.click();
+    expect(navigated).toEqual([12]);
+    expect(threads).toEqual(["abc"]);
+    expect(files).toEqual(["aa11"]);
+    const external = body.querySelector<HTMLAnchorElement>(
+      'a[href="https://example.test"]',
+    )!;
+    expect(external.target).toBe("_blank");
+    expect(external.rel).toContain("noopener");
+    expect(body.querySelector("[data-legacy-chat-content]") === null).toBe(
+      true,
+    );
+  }, 30_000);
   test("streaming typing notes and repeated text updates retain native message anchors", () => {
     let room: Room = {
       ...fixture(),
@@ -1350,8 +1398,8 @@ describe("native Svelte chat", () => {
       room = { ...room, messages: [message(1, text)], typing: {} };
       update(room);
       expect(target.querySelector("#m1")).toBe(row);
-      expect(row.querySelector("[data-legacy-chat-content]")?.textContent).toBe(
-        text,
+      expect(row.querySelector("[data-rich-content]")?.textContent).toBe(
+        text.replace(/\*\*/g, ""),
       );
       expect(row.querySelector("[data-message-typing]")).toBeNull();
     }
@@ -1385,8 +1433,7 @@ describe("native Svelte chat", () => {
         ?.getAttribute("data-native-quote"),
     ).toBe("7");
     expect(
-      target.querySelector("#m9 details > [data-legacy-chat-content]")
-        ?.textContent,
+      target.querySelector("#m9 details > [data-rich-content]")?.textContent,
     ).toBe("Archived safely");
     expect(
       target.querySelector('#m8 [data-native-copylink="8"]'),
@@ -1397,9 +1444,9 @@ describe("native Svelte chat", () => {
       ...room,
       messages: [{ ...reply, text: "Updated response" }, notice],
     });
-    expect(
-      target.querySelector("#m8 [data-legacy-chat-content]")?.textContent,
-    ).toBe("Updated response");
+    expect(target.querySelector("#m8 [data-rich-content]")?.textContent).toBe(
+      "Updated response",
+    );
     expect(target.querySelectorAll("[data-chat-origin]")).toHaveLength(1);
     expect(target.querySelectorAll("#m9")).toHaveLength(1);
   }, 30_000);
@@ -1594,7 +1641,6 @@ describe("native Svelte chat", () => {
     };
     const { target } = renderChat(room, {
       legacy: legacy({
-        richText: (text) => `<span data-test-rich>${escape(text)}</span>`,
         interactiveBody: () =>
           '<div data-cardbtn="3">card</div><form data-choice="3">choices</form><div data-poll="p"><button data-vote="0">poll</button></div>',
         threadCards: (id) =>
@@ -1608,8 +1654,8 @@ describe("native Svelte chat", () => {
     expect(
       target.querySelector("#m2 [data-message-footer]")?.textContent,
     ).toContain("fez isso");
-    expect(target.querySelector("#m3 [data-test-rich]")?.textContent).toBe(
-      "@person **rich**",
+    expect(target.querySelector("#m3 [data-rich-content]")?.textContent).toBe(
+      "@person rich",
     );
     expect(target.querySelector("#m3 [data-cardbtn]") !== null).toBe(true);
     expect(target.querySelector("#m3 [data-choice]") !== null).toBe(true);
@@ -1624,25 +1670,34 @@ describe("native Svelte chat", () => {
       new Promise<void>((resolve) => {
         resolveCopy = resolve;
       });
-    const room = { ...fixture(), messages: [message(1, "Old room")] };
+    const room = {
+      ...fixture(),
+      messages: [message(1, "Old room [jump](#m7)")],
+    };
     const replied: number[] = [];
+    const navigated: number[] = [];
     const { target, update } = renderChat(room, {
       actions: {
         reply: (id) => replied.push(id),
-        navigate: () => {},
+        navigate: (id) => navigated.push(id),
         openFile: () => {},
       },
     });
     const staleReply = target.querySelector<HTMLButtonElement>(
       "[data-native-reply]",
     )!;
+    const staleRich = target.querySelector<HTMLAnchorElement>(
+      '[data-rich-link="message"]',
+    )!;
     target.querySelector<HTMLButtonElement>("[data-native-copy]")!.click();
     update({ ...room, id: "next", messages: [message(2, "Next room")] });
     staleReply.click();
+    staleRich.click();
     resolveCopy();
     await tick();
     flushSync();
     expect(replied).toEqual([]);
+    expect(navigated).toEqual([]);
     expect(target.textContent).not.toContain("Copiado");
     expect(target.querySelector("#m1") === null).toBe(true);
     expect(target.querySelector("#m2") !== null).toBe(true);

@@ -1,9 +1,15 @@
 import type { Message, Attachment } from "../shared/room";
+import type {
+  RichFileReference,
+  RichNavigation,
+} from "./features/rich-text/types";
 export type ChatMessage = Message & { runs?: number[]; group?: ChatMessage[] };
 /** Formatting data only. HTML ownership is explicitly listed in LegacyChatIntegrations. */
 export type ChatBridge = {
   t: (text: string, vars?: Record<string, string | number>) => string;
   name: (email: string) => string;
+  knownNames?: Readonly<Record<string, string>>;
+  pageUrl?: string;
   locale?: string;
   avatarUrl?: (email: string) => string | undefined;
   ago: (ts: number) => string;
@@ -13,10 +19,9 @@ export type ChatBridge = {
   typingLabel?: (mode: string) => string;
   typingNote?: (id: number) => string | undefined;
 };
-/** Temporary, incomplete migrations: F18 rich text, F20/F21 interactive bodies, F15 origin thread-card bodies.
+/** Temporary, incomplete migrations: F20/F21 interactive bodies and F15 origin thread-card bodies.
  * These callbacks may return trusted/sanitized HTML, never an entire message/frame/footer. Remove each with its slice. */
 export type LegacyChatIntegrations = {
-  richText: (text: string, mode: "human" | "markdown" | "inline") => string;
   interactiveBody: (message: ChatMessage) => string;
   threadCards: (id: number) => string;
 };
@@ -32,6 +37,8 @@ export type ChatActions = {
     file: Attachment,
     controls: ChatEmbedControls,
   ) => () => void;
+  navigateRich?: (target: RichNavigation) => void;
+  openFileReference?: (file: RichFileReference) => void;
   reply: (id: number) => void;
   navigate: (id: number, thread?: string) => void;
   openFile: (file: Attachment) => void;

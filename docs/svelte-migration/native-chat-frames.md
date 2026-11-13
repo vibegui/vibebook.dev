@@ -8,7 +8,8 @@ F22 includes the ongoing vanilla compact receipt requirement observed in `public
 
 `LegacyChatIntegrations` is a temporary body-fragment contract, not a native rich-content implementation. It cannot return frames, message actions, attachments or footers.
 
-- `richText`: the host still owns Markdown sanitization, human linkification, emoji shortcodes, mention recognition, GitHub/file chips and rich internal links (F18). Its existing sanitization remains mandatory. `LegacyChatContent.svelte` is the sole named rendering boundary for these fragments.
+The former `richText` fragment is retired by the native typed renderer described in [native rich text](native-rich-text.md). `LegacyChatContent.svelte` remains the named HTML boundary for the two fragments below.
+
 - `interactiveBody`: structured cards/charts, choices, permission confirmations and polls still come from host formatters. Their current action handlers and mutation behavior remain until the dedicated F20/F21 slice. This slice changes only selector hooks needed by the temporary presentation adapter.
 - `threadCards`: origin thread-card bodies, descendant file summaries and their navigation still come from the host (remaining F15 ownership).
 
