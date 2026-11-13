@@ -140,6 +140,20 @@ afterEach(() => {
   window.document.body.innerHTML = "";
   window.localStorage.clear();
 });
+// Bits retains closed content until its exit-animation frame completes.
+// Poll the actual DOM condition; do not print Happy DOM graphs on failure.
+async function expectAlertDialogClosed() {
+  for (let frame = 0; frame < 10; frame++) {
+    if (!document.querySelector('[role="alertdialog"]')) break;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    flushSync();
+    await tick();
+  }
+  expect(document.querySelector('[role="alertdialog"]') === null).toBe(true);
+}
+
 function render(
   kind: "tasks" | "board" | "files" | "reminders" | "decisions",
   room: Room,
@@ -791,13 +805,13 @@ describe("native Svelte room panels", () => {
     const cancel = Array.from(
       dialog.querySelectorAll<HTMLButtonElement>("button"),
     ).find((b) => b.textContent?.includes("Cancelar"))!;
-    expect(document.activeElement).toBe(cancel);
+    expect(document.activeElement === cancel).toBe(true);
     expect(events).toEqual([]);
     cancel.click();
     flushSync();
     await tick();
-    expect(document.activeElement).toBe(trigger);
-    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(document.activeElement === trigger).toBe(true);
+    await expectAlertDialogClosed();
     trigger.click();
     flushSync();
     await tick();
@@ -819,7 +833,7 @@ describe("native Svelte room panels", () => {
     update({ ...room, decisions: [] });
     await tick();
     flushSync();
-    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    await expectAlertDialogClosed();
     expect(document.activeElement).toBe(
       target.querySelector("[data-decisions-panel]"),
     );
@@ -858,7 +872,7 @@ describe("native Svelte room panels", () => {
     update({ ...room, decisions: [] });
     await tick();
     flushSync();
-    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    await expectAlertDialogClosed();
     update({ ...room, id: "other-room" });
     await tick();
     flushSync();
@@ -898,7 +912,7 @@ describe("native Svelte room panels", () => {
       );
       await tick();
       flushSync();
-      expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+      await expectAlertDialogClosed();
       answer({ ok: false, error: "late failure" });
       await tick();
       flushSync();
@@ -976,13 +990,13 @@ describe("native Svelte room panels", () => {
     const cancel = Array.from(
       dialog.querySelectorAll<HTMLButtonElement>("button"),
     ).find((button) => button.textContent?.includes("Cancelar"))!;
-    expect(document.activeElement).toBe(cancel);
+    expect(document.activeElement === cancel).toBe(true);
     cancel.click();
     flushSync();
     await tick();
     expect(events).toEqual([]);
-    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-    expect(document.activeElement).toBe(trigger);
+    await expectAlertDialogClosed();
+    expect(document.activeElement === trigger).toBe(true);
     trigger.click();
     flushSync();
     await tick();
