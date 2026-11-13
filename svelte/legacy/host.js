@@ -3671,13 +3671,18 @@ function renderAskBar() {
   el.querySelector("[data-askgo]").onclick = (e) =>
     goToMsg(Number(e.currentTarget.dataset.askgo));
 }
+function openSidebarAgents(roomId, account) {
+ if(S?.id!==roomId||S.me!==account||currentRoomId()!==roomId)return;
+ document.dispatchEvent(new CustomEvent("vb:pane",{detail:"agents"}));
+ if(ROOM_PHONE.matches)openSheet("doc");
+}
 function renderSide() {
  syncInbox();renderAskBar();const el=document.getElementById("side");if(!el||!S)return;
  renderMyClaude();sideNavigation=syncNavigationSession(sideNavigation,S,thread,archOpen);sidePins=syncPinsSession(sidePins,S);if(liveState)requestPinnedFiles(sidePins,S,send);
  const roomId=S.id,account=S.me,pinsSession=sidePins,owner=syncRoomMutations();
  const current=()=>S?.id===roomId&&S.me===account&&currentRoomId()===roomId;
  const open=(id)=>{if(!current())return;if(deferViewerIntent(()=>open(id)))return;closeSheet(true);thread=id;documentScopeReset=true;boardEpic=thread==="main"||isPre()?null:thread;renderSide();renderChat();renderKanban();renderDoc();};
- renderView("sidebar",el,{room:S,thread,collapsed:railMode&&innerWidth>900,roomIcon:iconUrl(myBooks?.find(book=>book.id===roomId)),roomTint:myBooks?.find(book=>book.id===roomId)?.tint,locale:LOCALE,mutations:owner,presence:roomAgents.id===roomId?{agents:roomAgents.list,sandboxes:roomAgents.sandboxes||[]}:{agents:[],sandboxes:[]},navigation:sideNavigation,pins:pinsSession,request:(command,timeout)=>current()&&sidePins===pinsSession?request(command,timeout):Promise.resolve({ok:false,error:"offline"}),send:(command)=>current()?send(command):false,onopen:open,onarchchange:(value)=>{if(current())archOpen=value;},onopenpinfile:(file)=>{if(current()&&sidePins===pinsSession)openNativeFile(file);},onopenpinapp:(app)=>{if(current())cardGo(`#app:${app.connectionId}/${app.tool}`);},ontogglerail:()=>{if(current())toggleRail();},onrenameroom:()=>{if(current()){ensureNativeHome();nativeAppNav.askRename(roomId);}},onopenside:()=>{if(current())closeSheet();},onagents:()=>{if(current())document.dispatchEvent(new CustomEvent("vb:pane",{detail:"agents"}));},mountSheetHandle:(node)=>{sheetDrag(node,"side",false);return ()=>{node.onclick=node.onpointerdown=node.onpointermove=node.onpointerup=node.onpointercancel=null;};},foldOpen,friends,appNavigation:{controller:nativeAppNav,lang:LANG},vb:roomSidebarBridge()});
+ renderView("sidebar",el,{room:S,thread,collapsed:railMode&&innerWidth>900,roomIcon:iconUrl(myBooks?.find(book=>book.id===roomId)),roomTint:myBooks?.find(book=>book.id===roomId)?.tint,locale:LOCALE,mutations:owner,presence:roomAgents.id===roomId?{agents:roomAgents.list,sandboxes:roomAgents.sandboxes||[]}:{agents:[],sandboxes:[]},navigation:sideNavigation,pins:pinsSession,request:(command,timeout)=>current()&&sidePins===pinsSession?request(command,timeout):Promise.resolve({ok:false,error:"offline"}),send:(command)=>current()?send(command):false,onopen:open,onarchchange:(value)=>{if(current())archOpen=value;},onopenpinfile:(file)=>{if(current()&&sidePins===pinsSession)openNativeFile(file);},onopenpinapp:(app)=>{if(current())cardGo(`#app:${app.connectionId}/${app.tool}`);},ontogglerail:()=>{if(current())toggleRail();},onrenameroom:()=>{if(current()){ensureNativeHome();nativeAppNav.askRename(roomId);}},onopenside:()=>{if(current())closeSheet();},onagents:()=>openSidebarAgents(roomId,account),mountSheetHandle:(node)=>{sheetDrag(node,"side",false);return ()=>{node.onclick=node.onpointerdown=node.onpointermove=node.onpointerup=node.onpointercancel=null;};},foldOpen,friends,appNavigation:{controller:nativeAppNav,lang:LANG},vb:roomSidebarBridge()});
  document.title=`${S.book?.title??"vibebook"} · vibebook`;setFavicon(bookTitle());
 }
 

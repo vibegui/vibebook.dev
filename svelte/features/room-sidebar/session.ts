@@ -195,7 +195,8 @@ export function createRoomMutations(
                   result.error === "offline" ||
                   result.error === "invalid command" ||
                   result.error === "changed" ||
-                  result.error === "suggestion changed"
+                  result.error === "suggestion changed" ||
+                result.error === "unknown epic"
                 ) {
                   cancel();
                   state.set({ phase: "error", error: result.error });

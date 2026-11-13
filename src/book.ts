@@ -863,7 +863,8 @@ export class Book extends DurableObject<Env> {
   }
   // Humans only: removes the epic, its tasks and its discussion.
   deleteEpic(id: string) {
-    const bookId = this.epics().some((epic) => epic.id === id) ? this.get("book_id") : null;
+    if (id === "main" || !this.epics().some((epic) => epic.id === id)) return new Refused("unknown epic");
+    const bookId = this.get("book_id");
     this.sql.exec(`DELETE FROM tasks WHERE epic_id = ?`, id);
     this.sql.exec(`DELETE FROM messages WHERE thread = ?`, id);
     this.sql.exec(`DELETE FROM epics WHERE id = ?`, id);

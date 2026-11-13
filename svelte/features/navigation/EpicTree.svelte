@@ -49,7 +49,7 @@
   const uid = $props.id();
   let navigation = $derived(session.state);
   const mutation = untrack(() => mutations.state);
-  const busy = $derived(
+  const mutationBusy = $derived(
     $mutation.phase === "pending" || $mutation.phase === "unconfirmed",
   );
   let error = $state("");
@@ -90,12 +90,12 @@
   );
   const forest = $derived(epicForest(mode === "archived" ? archived : active));
   const entryForest = $derived(epicForest(room.epics));
-  const busy = $derived(
+  const workingEpics = $derived(
     new Set(
       room.epics.filter((epic) => vb.epicBusy(epic)).map((epic) => epic.id),
     ),
   );
-  const rows = $derived(visibleEpics(forest, $navigation.closed, busy, true));
+  const rows = $derived(visibleEpics(forest, $navigation.closed, workingEpics, true));
   const rowIds = $derived(
     new Map(rows.map((row, index) => [row.epic.id, `${uid}-row-${index}`])),
   );
@@ -115,7 +115,7 @@
     error = "";
   }
   async function submit(command: Parameters<RoomMutations["run"]>[0]) {
-    if (disposed || busy || session.roomId !== room.id) return false;
+    if (disposed || mutationBusy || session.roomId !== room.id) return false;
     error = "";
     const success = await mutations.run(command);
     return success;
@@ -212,7 +212,7 @@
     if (mode === "active" && target) reorder(id, target.id, direction === 1);
   }
   function startDrag(event: DragEvent, id: string) {
-    if (busy || mode !== "active" || !event.dataTransfer)
+    if (mutationBusy || mode !== "active" || !event.dataTransfer)
       return event.preventDefault();
     event.dataTransfer.setData("text/vb-epic", id);
     event.dataTransfer.effectAllowed = "move";
@@ -220,7 +220,7 @@
   }
   function canDrop(event: DragEvent, id: string) {
     return (
-      !busy &&
+      !mutationBusy &&
       mode === "active" &&
       drag !== id &&
       event.dataTransfer?.types.includes("text/vb-epic")
@@ -289,7 +289,7 @@
               <div
                 role="group"
                 aria-label={epic.title}
-                draggable={!busy && value === "active"}
+                draggable={!mutationBusy && value === "active"}
                 ondragstart={(event) => startDrag(event, epic.id)}
                 ondragend={() => {
                   drag = null;
@@ -383,7 +383,7 @@
                     >{vb.t("Dono do épico")}</Label
                   >
                   <Select
-                    disabled={busy}
+                    disabled={mutationBusy}
                     id={`${rowIds.get(epic.id)}-owner`}
                     aria-label={`${vb.t("Dono do épico")}: ${epic.title}`}
                     value={epic.owner ?? ""}
@@ -405,14 +405,14 @@
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={busy || !adjacent(epic.id, -1)}
+                        disabled={mutationBusy || !adjacent(epic.id, -1)}
                         aria-label={`${vb.t("Mover para cima")}: ${epic.title}`}
                         onclick={() => move(epic.id, -1)}
                         >{vb.t("Mover para cima")}</Button
                       ><Button
                         variant="outline"
                         size="sm"
-                        disabled={busy || !adjacent(epic.id, 1)}
+                        disabled={mutationBusy || !adjacent(epic.id, 1)}
                         aria-label={`${vb.t("Mover para baixo")}: ${epic.title}`}
                         onclick={() => move(epic.id, 1)}
                         >{vb.t("Mover para baixo")}</Button
@@ -439,7 +439,7 @@
                 placeholder={vb.t("Novo épico: escreva o título…")}
                 enterkeyhint="done"
               /><IconButton
-                disabled={busy}
+                disabled={mutationBusy}
                 type="submit"
                 icon="plus"
                 variant="primary"

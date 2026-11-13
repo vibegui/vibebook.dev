@@ -95,7 +95,7 @@ test("room cleanup disposes native owners and layout exactly once", () => {
     "disposeView",
     "disposePwaMounts",
     "pinRO",
-    `let nativeFilesSession = files, sidePins = pins, sideNavigation = null;
+    `let nativeFilesSession = files, sidePins = pins, sideNavigation = null, nativeRoomMutations = null;
      let nativeDocumentOwner = documentOwner, nativeDocumentSetPane = null;
      let boardLayoutCleanup = layoutCleanup;
      ${cleanup}
