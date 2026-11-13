@@ -176,7 +176,9 @@
               name={$view.name}
               onready={() => controller.ready(operation)}
               onerror={() => controller.mediaError(operation)}
-              onclose={() => controller.closeUser()}
+              onclose={() => {
+                if (controller.current(operation)) controller.closeUser();
+              }}
             />
           {:else if $view.content.kind === "markdown" && $view.room && $view.phase === "ready"}<RichContent
               text={$view.content.text ?? ""}
