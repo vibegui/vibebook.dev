@@ -1,18 +1,19 @@
 {
-  "scope": "Incremental native board/list and browser type environment; not full migration or production acceptance",
-  "sourceCommit": "2a0aeda1d16d0086cdcfcf9b12b367c7b005f38c",
-  "capturedAt": "2026-11-13T04:20:19.220Z",
+  "scope": "Incremental native epic navigation and shared UI regression; not full sidebar, migration or production acceptance",
+  "sourceCommit": "a8e96545be378257346c810d0bd058c78b65e9b5",
+  "applicationCommit": "ce83771ea0a24020193056817a7aff443a4c722b",
+  "capturedAt": "2026-11-13T07:54:34.793Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
-    "passed": 84,
+    "passed": 108,
     "failed": 0,
-    "assertions": 428
+    "assertions": 535
   },
-  "logSha256": "5a4f01c8e9d9b1887cfb0f72e1fe929256a2394e3beb305d70624981cd772581",
+  "logSha256": "a61969eade1ddccb4c3b21843a51dad14ed1b47743c07a209cca9856c5060e5c",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
-    "files": 225,
+    "files": 228,
     "nodeTypes": [],
     "bunTypes": [],
     "cloudflareWorkerTypes": [],
@@ -23,7 +24,7 @@
     ]
   },
   "defaultAssetDiff": {
-    "baseline": "8f01bbf",
+    "baseline": "cb97950",
     "paths": [
       "public/app.html",
       "public/svelte/ui.js",
@@ -35,20 +36,23 @@
     "changed": []
   },
   "browserProof": {
-    "file": "docs/svelte-migration/native-board/verification.json",
-    "sourceCommit": "2a0aeda1d16d0086cdcfcf9b12b367c7b005f38c",
+    "file": "docs/svelte-migration/native-navigation/verification.json",
     "status": "pass",
     "scopes": [
-      "Native board/list incremental verification; not production or full feature parity"
+      "navigation",
+      "board",
+      "tasks",
+      "gallery-inbox"
     ]
   },
-  "previousProof": "docs/svelte-migration/native-coexistence/verification.json",
+  "previousProof": "docs/svelte-migration/native-board/verification.json",
   "limits": [
-    "Loopback Worker with DEV_EMAIL and documented browser fixtures; no authenticated production acceptance.",
-    "Board/list remains inside a transitional legacy host. Full native shell/styling/parity, schema/RPC coverage, performance and HMR gates remain pending.",
-    "Studio reference comes from frozen public assets; authenticated workspace comparison remains pending.",
-    "Successful WebSocket send means queued data, not durable server acknowledgment. Real persistence/reconnect checked separately.",
-    "Backend/API baseline is 8f01bbf (25 operations); later peer-published backend slices require combined verification.",
-    "Vanilla remains default; protected assets unchanged from the tested baseline."
+    "Loopback DEV_EMAIL identity and explicit browser fixtures; authenticated production A/B acceptance remains pending.",
+    "Native epics are integrated in a transitional sidebar/host; pins, people, rail, root navigation and other screens still require native migration.",
+    "CSS comparison isolates legacy defaults at fixed native boundaries; freezing itself must preserve every surrounding snapshot. Actual normal-layout behavior is checked in responsive browser flows.",
+    "WebSocket send success means queued data. Canonical order/focus, reload persistence and reconnect are checked separately; correlated command acknowledgment remains pending.",
+    "Backend baseline includes cb97950, API31 and the large-room ordering fix (shared message shape unchanged; MAX_ORDER5000). Later peer-published API49 (833d981) requires combined integration and frontend-caller verification; server route coverage alone does not complete full-plan M2.",
+    "Authenticated Studio workspace comparison, complete schema/RPC coverage, full application/backend/contract HMR and final performance budgets remain pending.",
+    "Vanilla remains default."
   ]
 }

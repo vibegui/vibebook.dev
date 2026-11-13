@@ -1,0 +1,8 @@
+$ bun scripts/tasks-browser.ts
+Native tasks created through UI; checking edits
+Checking persistence after reload
+Persistence passed; checking modal handoff
+Checking responsive task accessibility
+Checking disconnected draft and selection retention
+Checking reconnect recovery and retained edits
+PASS native tasks: create/rename/toggle/owner/due/delete, persistence, modal handoff, responsive axe, disconnect retention/retry

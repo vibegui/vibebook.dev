@@ -1,0 +1,11 @@
+$ bun scripts/board-browser.ts
+Checking room tasks without any epics
+Checking keyboard movement, native status selection and focus
+Checking real drag and drop
+Checking persisted mode/status and native Enter/Space navigation
+Checking light/dark responsive board and list accessibility
+Checking layout round trip without remount or draft/focus loss
+Checking disconnected drafts, status rollback and retry
+Checking board scrolling keeps the form and final card reachable
+Checking Portuguese labels, accented input and list accessibility
+PASS native board/list: room tasks, creation, keyboard/drag/status, focus, mode/persistence, Enter/Space, responsive axe, disconnected retention/retry

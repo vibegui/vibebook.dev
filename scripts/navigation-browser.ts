@@ -340,10 +340,10 @@ try {
         document.activeElement.blur();
     });
     await submit.hover();
-    const sheetHeight = await page
+    const sheetHeight: number = await page
       .locator("#side")
       .evaluate((el) => el.clientHeight);
-    const sheetScroll = await page
+    const sheetScroll: number = await page
       .locator("#side")
       .evaluate((el) => el.scrollTop);
     const submitBounds = await submit.boundingBox();
