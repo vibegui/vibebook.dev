@@ -2148,8 +2148,10 @@ const ghChips = (h) => h.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-
 const fileChips = (h) => h.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\/books\/([0-9a-f]+)\/files\/([0-9a-f]+)"([^>]*)>([\s\S]*?)<\/a>/g, (all, pre, host, room, fid, post, text) => {
   if (!S?.id || room !== S.id || (host && host !== location.origin)) return all;
   const f = (S.files || []).find((x) => x.id === fid) || allMsgs().flatMap((x) => x.files || []).find((x) => x.id === fid);
+  // The state brings only the newest 12 files: an older one's name comes with files.get, then the chat redraws.
+  if (!f && !S.filesAll) { S.chipMiss = true; if (!S.filesAsked) { S.filesAsked = true; setTimeout(() => send({ t: "files.get" })); } }
   const own = text.replace(/<[^>]*>/g, "").trim();
-  const nameOf = f?.name || (own && !/^https?:\/\//.test(own) ? own : "arquivo");
+  const nameOf = f?.name || (own && !/^https?:\/\//.test(own) ? own : t("arquivo"));
   const vs = f ? fileVersions(f.name) : [];
   const n = vs.length > 1 ? vs.length - vs.findIndex((v) => v.id === fid) : 0;
   return `<a ${pre}href="/api/books/${room}/files/${fid}"${post} class="fchip" title="${esc(nameOf)}">${fileIcon(f || { type: /\.html?$/i.test(nameOf) ? "text/html" : "" }, 14)}<span>${esc(nameOf)}</span>${n ? `<small>v${n}</small>` : ""}</a>`;
@@ -3216,7 +3218,7 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
