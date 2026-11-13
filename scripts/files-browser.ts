@@ -34,6 +34,7 @@ const result: Record<string, unknown> = {
     "Incremental native Files panel against real local HTTP/R2/Book WebSockets. Legacy viewer is exercised through its typed exact-file callback; this is not full Files/upload/viewer migration acceptance.",
   gaps: [
     "Uploads use the actual inferred Hono client and supported raw HTTP route, not drag/drop/paste UI.",
+    "Folder/version verification uses the supported agents/ Markdown namespace. Arbitrary upload paths are flattened by storeFile; nested folder projection remains pure/DOM coverage.",
     "No supported file deletion operation: absent-file and same-ID metadata replacement guards remain pure/DOM coverage.",
     "Detached stale controls are exercised without synthesizing state; component HMR-only remount and old-room queued server results remain separate lifecycle tests.",
     "Google font CSS and local runner availability use the shared declared browser fixtures; all room data and mutation receipts are real.",
@@ -114,15 +115,16 @@ try {
     api.uploadFile({ name, type, body: text });
   step("Uploading real folder/version history beyond the newest-12 snapshot");
   const old = await upload(
-    "reports/history.txt",
+    "agents/history.md",
     "Older immutable report body",
+    "text/markdown",
   );
   for (let n = 0; n < 13; n++)
     await upload(`recent-${n}.txt`, `Recent real upload ${n}`);
-  const newest = await upload(old.name, "Newest report body");
+  const newest = await upload(old.name, "Newest report body", old.type);
   const markdown = await upload(
-    "reports/sub/notes.md",
-    "# Nested native files",
+    "agents/notes.md",
+    "# Native folder notes",
     "text/markdown",
   );
   const rootOld = await upload("root-history.txt", "Root version one");
@@ -186,17 +188,21 @@ try {
   const openTile = (fileID: string) => tile(fileID).locator("button").first();
   const show = async () => {
     await expect(panel).toBeAttached();
-    if (!(await panel.isVisible())) {
+    // Clipped panel content can have a visible bounding box while the document
+    // owner is collapsed. Navigate through the visible controls instead.
+    const tab = page.locator('.ptabs [data-pane="files"]');
+    if (!(await tab.isVisible())) {
       const peek = page.locator('#docPeek [data-pane="files"]');
       if (await peek.isVisible()) await peek.click();
       else {
         await page.locator("#toggleDoc").click();
-        await page.locator('.ptabs [data-pane="files"]').click();
+        await tab.click();
       }
     } else if (
       (await page.locator(".book").getAttribute("data-pane")) !== "files"
     )
-      await page.locator('.ptabs [data-pane="files"]').click();
+      await tab.click();
+    await expect(page.locator(".book")).toHaveAttribute("data-pane", "files");
     await expect(panel).toBeVisible();
   };
   const canonicalPins = async () =>
@@ -215,6 +221,7 @@ try {
   const closeViewer = async () => {
     await viewer.getByRole("button", { name: "Close", exact: true }).click();
     await expect(viewer).not.toBeVisible();
+    await expect.poll(() => new URL(page.url()).hash).toBe("");
   };
   const vanilla = await context.request.get(`${base}/b/${id}`);
   assert(vanilla.ok());
@@ -265,7 +272,7 @@ try {
   await expect(panel.locator(`[data-file-id="${rootOld.id}"]`)).toBeVisible();
   await expect(tile(rootNew.id)).toBeVisible();
   await expect.poll(() => count("files.get")).toBeGreaterThan(beforeFull);
-  const folder = panel.locator('[data-fdir="reports"]');
+  const folder = panel.locator('[data-fdir="agents"]');
   await folder.focus();
   await folder.press("Enter");
   await expect(tile(newest.id)).toBeVisible();
@@ -285,11 +292,14 @@ try {
   await expect(viewer).toHaveAttribute("data-fid", newest.id);
   await closeViewer();
   await panel.locator('[data-fkind="md"]').click();
-  await expect(panel.locator('[data-fdir="reports/sub"]')).toBeVisible();
-  await panel.locator('[data-fdir="reports/sub"]').click();
   await expect(tile(markdown.id)).toBeVisible();
+  await expect(tile(rootOld.id)).toHaveCount(0);
+  await panel.locator('[data-fkind="txt"]').click();
+  await expect(tile(rootOld.id)).toBeVisible();
+  await expect(tile(markdown.id)).toHaveCount(0);
   await panel.locator('[data-fkind="all"]').click();
-  await panel.getByRole("button", { name: /back|voltar/i }).click();
+  await folder.focus();
+  await folder.press("Enter");
   await expect(tile(newest.id)).toBeVisible();
 
   step(
@@ -347,7 +357,11 @@ try {
   );
   const stale = await openTile(newest.id).elementHandle();
   assert(stale);
-  const latest = await upload(old.name, "Latest real collaborator upload");
+  const latest = await upload(
+    old.name,
+    "Latest real collaborator upload",
+    old.type,
+  );
   await expect(tile(latest.id)).toBeVisible();
   await expect(tile(newest.id)).toHaveCount(0);
   await stale.evaluate((element) => {
@@ -401,12 +415,25 @@ try {
     await expect(viewer).toHaveAttribute("data-fid", latest.id);
     await closeViewer();
     await show();
-    const metrics = await panel.evaluate((element) => ({
-      native: element.hasAttribute("data-vb-native"),
-      overflow: document.documentElement.scrollWidth > innerWidth,
-      font: getComputedStyle(element).fontFamily,
-    }));
+    const metrics = await panel.evaluate(async (element) => {
+      await document.fonts.ready;
+      return {
+        native: element.hasAttribute("data-vb-native"),
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        font: getComputedStyle(element).fontFamily,
+        loadedFont: [...document.fonts].some(
+          (face) =>
+            face.family.replaceAll('"', "") === "Inter var" &&
+            face.status === "loaded",
+        ),
+      };
+    });
     assert(metrics.native);
+    assert(
+      metrics.font.includes("Inter var"),
+      "Files must use the loaded Studio UI font",
+    );
+    assert(metrics.loadedFont, "Studio UI font must be loaded, not a fallback");
     assert(!metrics.overflow, "Files must not overflow the viewport");
     const axe = await new AxeBuilder({ page })
       .include('[data-vb-native="files"]')

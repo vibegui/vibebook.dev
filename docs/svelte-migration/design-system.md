@@ -2,7 +2,9 @@
 
 The owned component layer is `svelte/lib/ui/`, with reusable compositions in `svelte/lib/components/`. Its source follows the shadcn-svelte model: application-owned typed Svelte components, Tailwind classes and headless Bits UI interaction behavior. Primitives do not import application stores, authentication or backend services.
 
-The current catalog includes Button/IconButton, Icon, Input/Textarea, Label, Checkbox, Switch, RadioGroup, Select, Badge, Avatar, Separator, Skeleton, Progress, Tooltip, Tabs, Dialog/Sheet, Card, Field, EmptyState, ErrorState and LoadingState. Native Inbox and task controls compose this same layer. The interactive gallery is at `/app?ui=svelte&gallery=1`.
+The current catalog includes Button/IconButton, Heading, Icon, Input/Textarea, Label, Checkbox, Switch, RadioGroup, Select, Badge, Avatar, Separator, Skeleton, Progress, Tooltip, Tabs, Dialog/Sheet, AlertDialog, Card, Field, EmptyState, ErrorState and LoadingState. Native Inbox and task controls compose this same layer. The interactive gallery is at `/app?ui=svelte&gallery=1`.
+
+Heading owns semantic heading levels and explicit Studio UI font, weight, tracking and font variation utilities. A native root's inherited font cannot override a legacy rule applied directly to `h2` or `h3`. Decisions, Reminders and People use this atom; browser checks inspect their computed heading families and actual font loading. Files explicitly sets the Studio UI font on its native root. These checks establish the selected native surfaces, not the complete Studio workspace comparison.
 
 The typed bootstrap selects the native gallery independently of the legacy application host. `legacy/host.d.ts` declares only that existing side-effect entry and exposes no application API; the JavaScript implementation and this temporary declaration remain explicit M6 debt. `dev:components` serves the gallery through Vite HMR at `http://127.0.0.1:5173`; full-application/Worker HMR and shared-contract edit verification remain M7 work.
 

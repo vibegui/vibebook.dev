@@ -1,5 +1,45 @@
 [
   {
+    "date": "2026-11-13",
+    "slug": "2026-11-13-svelte-preview",
+    "title": {
+      "pt": "Prévia Svelte: arquivos, pessoas e registros",
+      "en": "Svelte preview: files, people and records"
+    },
+    "intro": {
+      "pt": "Os novos painéis estão na prévia aberta com ?ui=svelte. A versão atual continua sendo o padrão.",
+      "en": "The new panels are available in the preview opened with ?ui=svelte. The current version remains the default."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Arquivos, pessoas, lembretes e decisões",
+          "en": "Files, people, reminders and decisions"
+        },
+        "text": {
+          "pt": "Na prévia, navegue pelos arquivos e suas versões, fixe itens na lateral e gerencie convites e pedidos de acesso. Remover uma pessoa, decisão ou lembrete pede confirmação; erros mantêm o que você estava preenchendo.",
+          "en": "In the preview, browse files and their versions, pin items in the sidebar, and manage invitations and access requests. Removing a person, decision or reminder asks for confirmation; errors preserve what you were entering."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Os painéis nativos usam a mesma tipografia e os mesmos componentes de interface."
+      ],
+      "en": [
+        "Native panels share consistent typography and interface components."
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior."
+      ],
+      "en": [
+        "A new file version no longer leaves detached buttons able to open or pin the previous version."
+      ]
+    }
+  },
+  {
     "date": "2026-11-10",
     "slug": "2026-11-10-apps",
     "title": {

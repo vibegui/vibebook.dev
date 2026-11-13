@@ -16,6 +16,7 @@
   import Button from "../../lib/ui/Button.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import Input from "../../lib/ui/Input.svelte";
+  import Heading from "../../lib/ui/Heading.svelte";
   import Label from "../../lib/ui/Label.svelte";
   let {
     room,
@@ -188,9 +189,9 @@
   class="tw:space-y-4 tw:border-t tw:border-border tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
 >
   {#if room.requests?.length}<div class="tw:space-y-3">
-      <h3 class="tw:m-0 tw:text-sm tw:font-semibold">
+      <Heading level={3} class="tw:text-sm tw:leading-5">
         {vb.t("Pedindo pra entrar")}
-      </h3>
+      </Heading>
       {#each room.requests as access (access.email)}<div
           class="tw:flex tw:items-start tw:gap-2"
           data-access-request={access.email}
@@ -228,7 +229,9 @@
           />
         </div>{/each}
     </div>{/if}
-  <h3 class="tw:m-0 tw:text-sm tw:font-semibold">{vb.t("Pessoas e agents")}</h3>
+  <Heading level={3} class="tw:text-sm tw:leading-5"
+    >{vb.t("Pessoas e agents")}</Heading
+  >
   {@render sandboxes?.()}
   <div class="tw:space-y-3">
     {#each model.online as email (email)}{@render member(email)}{/each}

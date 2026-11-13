@@ -35,7 +35,7 @@
 
 <section
   data-vb-native="files"
-  class="tw:flex tw:flex-col tw:gap-3 tw:p-3 tw:text-foreground"
+  class="tw:flex tw:flex-col tw:gap-3 tw:p-3 tw:font-sans tw:text-sm tw:text-foreground"
   aria-label={vb.t("Arquivos")}
 >
   {#if room.files?.length}
@@ -93,8 +93,9 @@
             variant="ghost"
             class="tw:h-auto tw:w-full tw:min-w-0 tw:flex-col tw:items-start tw:gap-2 tw:whitespace-normal tw:p-0 tw:text-left"
             title={file.name}
-            onclick={() => {
-              if (mounted) session.open(file, onopenfile);
+            onclick={(event) => {
+              if (mounted && event.currentTarget.isConnected)
+                session.open(file, onopenfile);
             }}
           >
             {#if file.type.startsWith("image/")}<img
@@ -118,8 +119,9 @@
             aria-pressed={pinned}
             disabled={!!$fileState.pending}
             loading={$fileState.pending?.id === file.id}
-            onclick={() => {
-              if (mounted) void session.toggle(file, request);
+            onclick={(event) => {
+              if (mounted && event.currentTarget.isConnected)
+                void session.toggle(file, request);
             }}
           />
         </article>

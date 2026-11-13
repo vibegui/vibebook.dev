@@ -1086,11 +1086,14 @@ describe("native Svelte room panels", () => {
     const opened: string[] = [];
     const session = createFilesSession(room.id);
     let rejectPin = true;
+    let fileRequests = 0;
     const { target, update, destroy } = render("files", room, {
       session,
       onopenfile: (file) => opened.push(file.id),
-      request: async () =>
-        rejectPin ? { ok: false, error: "offline" } : { ok: true },
+      request: async () => {
+        fileRequests++;
+        return rejectPin ? { ok: false, error: "offline" } : { ok: true };
+      },
     });
     target.querySelector<HTMLElement>('[data-fdir="docs"]')!.click();
     flushSync();
@@ -1117,15 +1120,29 @@ describe("native Svelte room panels", () => {
     expect(
       target.querySelector('[data-file-id] button[aria-pressed="true"]'),
     ).toBeNull();
+    // Finish the first mutation while its control is still mounted and enabled.
+    const pins = [{ id: "p", kind: "file" as const, ref: "v1" }];
+    update({ ...room, pins });
+    const oldPin = target.querySelector<HTMLButtonElement>(
+      '[data-file-id="v1"] button[aria-pressed]',
+    )!;
+    expect(oldPin.disabled).toBe(false);
     const latest = { ...file, id: "v2", ts: 2 };
     update({
       ...room,
       files: [latest, file],
-      pins: [{ id: "p", kind: "file", ref: "v1" }],
+      pins,
     });
     expect(target.querySelector('[data-file-id="v2"]')).not.toBeNull();
-    oldTile.click(); // The stale tile still identifies v1; it must never open v2.
-    expect(opened.every((id) => id === "v1")).toBe(true);
+    expect(oldTile.isConnected).toBe(false);
+    expect(oldPin.isConnected).toBe(false);
+    const beforeStaleRequests = fileRequests;
+    oldTile.click();
+    oldPin.click();
+    await tick();
+    flushSync();
+    expect(opened).toEqual(["v1"]);
+    expect(fileRequests).toBe(beforeStaleRequests);
     const latestTile = target.querySelector<HTMLElement>(
       '[data-file-id="v2"] button',
     )!;

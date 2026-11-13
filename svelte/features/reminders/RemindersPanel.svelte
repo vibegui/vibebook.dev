@@ -6,6 +6,7 @@
   import AlertDialog from "../../lib/ui/AlertDialog.svelte";
   import Button from "../../lib/ui/Button.svelte";
   import Card from "../../lib/ui/Card.svelte";
+  import Heading from "../../lib/ui/Heading.svelte";
   import Icon from "../../lib/ui/Icon.svelte";
   import Input from "../../lib/ui/Input.svelte";
   import Label from "../../lib/ui/Label.svelte";
@@ -85,9 +86,9 @@
 >
   <div class="tw:flex tw:flex-wrap tw:items-start tw:justify-between tw:gap-3">
     <div class="tw:min-w-0 tw:flex-1 tw:space-y-1">
-      <h2 class="tw:m-0 tw:text-base tw:font-semibold tw:leading-6">
+      <Heading>
         {vb.t("Lembretes")}
-      </h2>
+      </Heading>
       <p
         class="tw:m-0 tw:max-w-prose tw:text-sm tw:leading-5 tw:text-muted-foreground"
       >

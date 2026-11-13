@@ -421,20 +421,42 @@ try {
       const selector = `[data-${panel}-panel]`;
       const target = page.locator(selector);
       await target.scrollIntoViewIfNeeded();
-      const native = await target.evaluate((element) => ({
-        boundary: element.hasAttribute("data-vb-native"),
-        width: element.getBoundingClientRect().width,
-        viewport: innerWidth,
-        family: getComputedStyle(element).fontFamily,
-        dark: document.documentElement.dataset.theme,
-        lang: document.documentElement.lang,
-      }));
+      const native = await target.evaluate(async (element) => {
+        await document.fonts.ready;
+        return {
+          boundary: element.hasAttribute("data-vb-native"),
+          width: element.getBoundingClientRect().width,
+          viewport: innerWidth,
+          family: getComputedStyle(element).fontFamily,
+          headings: [...element.querySelectorAll("h1,h2,h3,h4,h5,h6")].map(
+            (heading) => ({
+              family: getComputedStyle(heading).fontFamily,
+              variation: getComputedStyle(heading).fontVariationSettings,
+            }),
+          ),
+          loadedFont: [...document.fonts].some(
+            (face) =>
+              face.family.replaceAll('"', "") === "Inter var" &&
+              face.status === "loaded",
+          ),
+          dark: document.documentElement.dataset.theme,
+          lang: document.documentElement.lang,
+        };
+      });
       assert(native.boundary);
       assert(native.width <= native.viewport);
       assert(
         native.family.includes("Inter"),
         "Native panel uses the owned application typography",
       );
+      assert(native.loadedFont, "Studio UI font must actually be loaded");
+      for (const heading of native.headings) {
+        assert(
+          heading.family.includes("Inter var"),
+          "Native headings must not inherit legacy serif fonts",
+        );
+        assert.equal(heading.variation, "normal");
+      }
       assert.equal(native.dark, profile.dark ? "dark" : "light");
       assert.equal(native.lang, profile.lang === "en" ? "en" : "pt-BR");
       const accessibility = await new AxeBuilder({ page })

@@ -5,6 +5,7 @@
   import AlertDialog from "../../lib/ui/AlertDialog.svelte";
   import Badge from "../../lib/ui/Badge.svelte";
   import Card from "../../lib/ui/Card.svelte";
+  import Heading from "../../lib/ui/Heading.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import EmptyState from "../../lib/components/EmptyState.svelte";
   let { room, vb, request }: Pick<PanelProps, "room" | "vb" | "request"> =
@@ -45,9 +46,9 @@
   class="tw:space-y-4 tw:p-4 tw:font-sans tw:text-sm tw:text-foreground"
 >
   <div class="tw:flex tw:items-center tw:gap-2">
-    <h2 class="tw:m-0 tw:text-base tw:font-semibold tw:leading-6">
+    <Heading>
       {vb.t("Decisões")}
-    </h2>
+    </Heading>
     <Badge>{list.length}</Badge>
   </div>
   {#each rows as decision (decision.id)}
