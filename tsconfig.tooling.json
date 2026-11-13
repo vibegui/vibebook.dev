@@ -82,6 +82,7 @@
     "scripts/native-auth-browser.ts",
     "scripts/native-file-viewer.test.ts",
     "scripts/native-file-viewer-dom.test.ts",
-    "scripts/native-file-viewer-browser.ts"
+    "scripts/native-file-viewer-browser.ts",
+    "scripts/native-composer.test.ts"
   ]
 }
