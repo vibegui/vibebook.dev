@@ -7,6 +7,9 @@ import { Window } from "happy-dom";
 import { get } from "svelte/store";
 import { createPersonalSession } from "../svelte/features/home/personal";
 import { createRoomsSession } from "../svelte/features/rooms/session";
+import { createNewRoomSession } from "../svelte/features/home/session";
+import { createAccountSession } from "../svelte/features/account/session";
+import type { AccountApi } from "../svelte/features/account/api";
 import type { RoomTarget } from "../svelte/features/home/model";
 import { createPwaService } from "../svelte/features/pwa/service";
 import {
@@ -99,6 +102,7 @@ const cleanups: (() => void)[] = [];
 afterEach(() => {
   for (const dispose of cleanups.splice(0).reverse()) dispose();
   document.body.replaceChildren();
+  localStorage.clear();
 });
 const flush = async () => {
   await settle();
@@ -112,16 +116,27 @@ async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {
     });
   await personal.refresh();
   const rooms = createRoomsSession(personal, timer.clock),
-    pwa = createPwaService();
+    pwa = createPwaService(),
+    profile = createAccountSession(personal, profileApi, timer.clock),
+    creator = createNewRoomSession(personal, () => {}, timer.clock);
   cleanups.push(() => {
     pwa.dispose();
     rooms.dispose();
+    profile.dispose();
+    creator.dispose();
     personal.dispose();
   });
-  return { timer, personal, rooms, pwa };
+  return { timer, personal, rooms, pwa, profile, creator };
 }
+const profileApi: AccountApi = {
+  logins: async () => ({ logins: [], providers: { google: false, github: false } }),
+  name: async (name) => ({ ok: true, name }),
+  avatar: async () => ({ ok: true, avatar: 1 }),
+  addFriend: async () => ({ ok: true }),
+  removeFriend: async () => ({ ok: true }),
+};
 test("native Home renders untrusted room metadata as text and passes exact room identity", async () => {
-  const { personal, rooms, pwa } = await setup({
+  const { personal, rooms, pwa, profile, creator } = await setup({
     me: async () =>
       me({
         books: [
@@ -142,6 +157,9 @@ test("native Home renders untrusted room metadata as text and passes exact room 
         pwa,
         personal,
         rooms,
+        profile,
+        creator,
+        onlanguage: () => {},
         lang: "en",
         ago: () => "now",
         onnavigate: (value: RoomTarget) => navigation.push(value),
@@ -211,7 +229,7 @@ test("detached native tile link/settings actions cannot navigate after canonical
 test("room refresh keeps Home draft/focus, then unmount owns late routing result", async () => {
   const late = deferred<typeof suggestion>();
   let latest = me();
-  const { personal, rooms, pwa } = await setup({
+  const { personal, rooms, pwa, profile, creator } = await setup({
     me: async () => latest,
     route: () => late.promise,
   });
@@ -225,6 +243,9 @@ test("room refresh keeps Home draft/focus, then unmount owns late routing result
           pwa,
           personal,
           rooms,
+          profile,
+          creator,
+          onlanguage: () => {},
           lang: "en",
           ago: () => "now",
           onnavigate: (value: RoomTarget) => navigation.push(value),
@@ -280,4 +301,36 @@ test("canonical ask clearance changes native room count to a task dot without hi
   expect(dot.getAttribute("aria-label")).toBe("A task of yours is pending");
   expect(dot.textContent).toBe("");
   expect(target.textContent).toContain("Task remains actionable");
+});
+test("actual Home mounts three onboarding steps, preserves drafts across Back and skips into ordinary Home", async () => {
+  let canonical = me({ name: "", books: [] });
+  const { personal, rooms, pwa, profile, creator } = await setup({ me: async () => canonical });
+  const target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(Home, { target, props: {
+    personal, rooms, pwa, profile, creator, lang: "en", ago: () => "now", onnavigate: () => {},
+    onlanguage: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {},
+  } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  const step = () => target.querySelector("[data-native-onboarding]")?.getAttribute("data-onboarding-step");
+  expect(step()).toBe("1");
+  expect(target.querySelector('[role="dialog"]')).toBe(null);
+  const name = target.querySelector<HTMLInputElement>('input[autocomplete="given-name"]')!;
+  name.value = "Ada"; name.dispatchEvent(new Event("input", { bubbles: true }));
+  target.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  expect(step()).toBe("1"); // An HTTP success is not the canonical profile.
+  canonical = me({ name: "Ada", books: [] }); await personal.refresh(); await flush();
+  expect(step()).toBe("2");
+  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip for now")!.click(); await flush();
+  expect(step()).toBe("3");
+  const draft = target.querySelector("textarea")!;
+  draft.value = "A careful first room"; draft.dispatchEvent(new Event("input", { bubbles: true }));
+  const composing = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, isComposing: true }); draft.dispatchEvent(composing); await flush();
+  expect(get(creator.state).busy).toBe(false);
+  [...target.querySelectorAll("button")].find(button => button.textContent === "Back")!.click(); await flush();
+  expect(step()).toBe("2");
+  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip for now")!.click(); await flush();
+  expect(target.querySelector("textarea")!.value).toBe("A careful first room");
+  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip and see the home")!.click(); await flush();
+  expect(step()).toBe(undefined); expect(target.querySelector("#home-ask") === null).toBe(false);
+  expect(localStorage.getItem("vb.obDone")).toBe("1");
 });

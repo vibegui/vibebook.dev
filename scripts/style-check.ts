@@ -48,6 +48,7 @@ if (native) {
     "svelte/features/rich-text",
     "svelte/features/chat-interactive",
     "svelte/features/home",
+    "svelte/features/onboarding",
     "svelte/features/app-navigation",
     "svelte/features/rooms",
     "svelte/features/documents",

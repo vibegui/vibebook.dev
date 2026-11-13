@@ -70,6 +70,8 @@
     "scripts/native-home.test.ts",
     "scripts/native-home-dom.test.ts",
     "scripts/native-home-fixtures.ts",
+    "scripts/native-onboarding.test.ts",
+    "scripts/native-onboarding-browser.ts",
     "scripts/i18n-policy.ts",
     "scripts/i18n-policy.test.ts",
     "scripts/i18n-check.ts",

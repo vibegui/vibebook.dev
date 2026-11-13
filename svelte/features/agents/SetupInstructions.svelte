@@ -10,12 +10,14 @@
     lang = "pt",
     waiting = true,
     current = () => true,
+    intro = true,
   }: {
     origin: string;
     roomId?: string;
     lang?: "pt" | "en";
     waiting?: boolean;
     current?: () => boolean;
+    intro?: boolean;
   } = $props();
   const text = (key: Parameters<typeof agentText>[1]) => agentText(lang, key);
   let notice = $state("");
@@ -47,13 +49,13 @@
   data-native-agent-setup
   class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-4 tw:text-card-foreground"
 >
-  <Heading level={3}
+  {#if intro}<Heading level={3}
     >{text(roomId ? "roomConnectTitle" : "connectTitle")}</Heading
   >
   <p class="tw:m-0 tw:text-sm tw:leading-6 tw:text-muted-foreground">
     {text("connectBody")}
   </p>
-  <code
+  {/if}<code
     class="tw:block tw:select-text tw:break-words tw:rounded-control tw:bg-muted tw:p-3 tw:font-mono tw:text-xs"
     >{connectPrompt(origin, roomId)}</code
   ><Button

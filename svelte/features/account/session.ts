@@ -12,6 +12,7 @@ export type AccountBinding = {
 export type AccountState = {
   binding: AccountBinding | null;
   open: boolean;
+  presentation: "dialog" | "inline";
   section: AccountSection;
   me: MeResult | null;
   phase: "idle" | "pending" | "confirming" | "unconfirmed" | "error";
@@ -32,6 +33,7 @@ export function createAccountSession(
   const state = writable<AccountState>({
     binding: null,
     open: false,
+    presentation: "dialog",
     section: "all",
     me: null,
     phase: "idle",
@@ -60,7 +62,7 @@ export function createAccountSession(
   };
   const owns = (ticket: number) =>
     active &&
-    get(state).open &&
+    get(state).binding !== null &&
     ticket === sequence &&
     get(personal.state).identityRevision === identity &&
     personal.peek()?.email === account;
@@ -99,6 +101,7 @@ export function createAccountSession(
       state.set({
         binding: null,
         open: false,
+    presentation: "dialog",
         section: "all",
         me: null,
         phase: "idle",
@@ -147,7 +150,7 @@ export function createAccountSession(
   ) {
     if (
       !active ||
-      !get(state).open ||
+      !get(state).binding ||
       operation ||
       !account ||
       personal.peek()?.email !== account
@@ -195,9 +198,7 @@ export function createAccountSession(
       },
     );
   }
-  return {
-    state,
-    open(section: AccountSection = "all", element?: HTMLElement) {
+  function activate(section: AccountSection, element: HTMLElement | undefined, presentation: "dialog" | "inline") {
       if (!active) return;
       const me = personal.peek();
       if (!me) return;
@@ -209,7 +210,8 @@ export function createAccountSession(
       trigger = element?.isConnected ? element : null;
       state.set({
         binding: { account, revision: identity, generation: pageEpoch },
-        open: true,
+        open: presentation === "dialog",
+        presentation,
         section,
         me,
         phase: "idle",
@@ -218,9 +220,15 @@ export function createAccountSession(
         loginsLoading: false,
         loginsError: "",
       });
-      logins();
-    },
-    close() {
+      if (presentation === "dialog") logins();
+      return get(state).binding;
+      }
+  return {
+    state,
+    open(section: AccountSection = "all", element?: HTMLElement) { activate(section, element, "dialog"); },
+    openInline() { if (get(state).open) return null; return activate("profile", undefined, "inline") ?? null; },
+    close(expected?: AccountBinding) {
+      if (expected && get(state).binding !== expected) return;
       pageEpoch++;
       cancel();
       reads.cancel();
@@ -228,6 +236,7 @@ export function createAccountSession(
         ...s,
         binding: null,
         open: false,
+    presentation: "dialog",
         logins: null,
         loginsLoading: false,
       }));
@@ -235,7 +244,7 @@ export function createAccountSession(
     returnFocus: () => (trigger?.isConnected ? trigger : null),
     owns: (binding: AccountBinding) =>
       active &&
-      get(state).open &&
+      get(state).binding !== null &&
       get(state).binding === binding &&
       binding.account === account &&
       binding.revision === identity &&
@@ -244,7 +253,7 @@ export function createAccountSession(
       personal.peek()?.email === account,
     current: () =>
       active &&
-      get(state).open &&
+      get(state).binding !== null &&
       get(personal.state).identityRevision === identity &&
       personal.peek()?.email === account,
     rename: (name: string) =>
@@ -272,7 +281,7 @@ export function createAccountSession(
         () => ({ kind: "remove", email }),
       ),
     refresh() {
-      if (!active || !get(state).open) return;
+      if (!active || !get(state).binding) return;
       personal.invalidate();
       void personal.refresh();
       if (!get(state).loginsLoading) logins();
@@ -294,6 +303,7 @@ export function createAccountSession(
       state.set({
         binding: null,
         open: false,
+    presentation: "dialog",
         section: "all",
         me: null,
         phase: "idle",

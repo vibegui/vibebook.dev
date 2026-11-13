@@ -21,10 +21,15 @@
   } from "./model";
   import RoomTile from "./RoomTile.svelte";
   import WaitList from "./WaitList.svelte";
+  import Onboarding from "../onboarding/Onboarding.svelte";
+  import { createOnboardingSession } from "../onboarding/session";
   let {
     pwa,
     personal,
     rooms,
+    profile,
+    creator,
+    onlanguage,
     lang,
     ago,
     onnavigate,
@@ -40,6 +45,11 @@
   const mobile = new MediaQuery("(max-width:720px)");
   const session = untrack(() => createHomeSession(personal, onnavigate)),
     view = session.state;
+  const onboarding = untrack(() => {
+    let storage: Storage | null = null;
+    try { storage = localStorage; } catch { /* Browser storage may be disabled. */ }
+    return createOnboardingSession(personal, profile, creator, { storage });
+  }), onboardingView = onboarding.state;
   const text = (
     key: Parameters<typeof homeText>[1],
     vars?: Record<string, string | number>,
@@ -55,13 +65,13 @@
   let mounted = false,
     agentTimer: ReturnType<typeof setTimeout> | undefined,
     copyStatus = $state("");
-  onDestroy(() => session.dispose());
+  onDestroy(() => { onboarding.dispose(); session.dispose(); });
   onMount(() => {
     mounted = true;
     void personal.refresh();
     const poll = () => {
       if (!mounted) return;
-      if (!$account.agents?.agents.length) void personal.refreshAgents();
+      if (!$onboardingView.visible && !$account.agents?.agents.length) void personal.refreshAgents();
       agentTimer = setTimeout(poll, 15_000);
     };
     poll();
@@ -86,6 +96,9 @@
 </script>
 
 <svelte:head><title>vibebook</title></svelte:head>
+{#if $onboardingView.visible}
+  <Onboarding owner={onboarding} {lang} {onlanguage}/>
+{:else}
 <main
   data-vb-native="home"
   class="tw:min-h-dvh tw:bg-background tw:p-4 tw:font-sans tw:text-sm tw:leading-6 tw:text-foreground tw:sm:p-8"
@@ -406,3 +419,4 @@
       >{/if}
   </div>
 </main>
+{/if}

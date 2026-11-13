@@ -134,7 +134,7 @@
           closeLabel={en ? "Close" : "Fechar"}
           sheet
           onOpenChange={(open) => {
-            if (!open && owner.owns(rendered)) owner.close();
+            if (!open && $view.presentation !== "inline" && owner.owns(rendered)) owner.close();
           }}
           returnFocus={owner.returnFocus}
           initialFocus={() =>

@@ -1390,6 +1390,9 @@ function nativeHomeProps() {
     pwa: nativePwa,
     personal: nativePersonal,
     rooms: nativeRooms,
+    profile: ensureNativeAccount(),
+    creator: nativeAppNav.creator,
+    onlanguage: language=>{document.cookie=`vb_lang=${language}; path=/; max-age=31536000; samesite=lax`;location.reload();},
     lang: LANG,
     ago,
     onnavigate: (target) => nativeRouter.go(target),
@@ -1576,9 +1579,13 @@ function confirmArchive(id, title) {
 let nativeAccount=null,nativeAccountMount=null,nativeAccountTarget=null;
 function accountProps(){return {owner:nativeAccount,device:nativeDeviceLock,lang:LANG,theme:theme(),onTheme:()=>{setTheme(THEMES[theme()].next);updateAccountView();},onLanguage:language=>{document.cookie=`vb_lang=${language}; path=/; max-age=31536000; samesite=lax`;location.reload();},onArchive:()=>{nativeAccount.close();nativeRouter.go('/archived');},onLogout:all=>{if(nativeAccount.current())void logoutWithPwa(all);},mountBell:node=>UI.mountPwa(node,'bell',nativePwa,LANG),mountAgentSettings:mountAccountAgentSettings};}
 function updateAccountView(){if(nativeAccountMount)nativeAccountMount.update(accountProps());}
+function ensureNativeAccount(){
+  if(!nativeAccount){nativeAccount=UI.createAccountSession(nativePersonal,UI.createAccountApi());nativeAccountTarget=document.createElement('div');nativeAccountTarget.dataset.nativeAccountMount='';document.body.append(nativeAccountTarget);nativeAccountMount=UI.mountView('account',nativeAccountTarget,accountProps());}
+  return nativeAccount;
+}
 function openHomeSettings(section='all'){
   ensureNativeHome();homeSettingsCleanup();if(!nativePersonal.peek())return;
-  if(!nativeAccount){nativeAccount=UI.createAccountSession(nativePersonal,UI.createAccountApi());nativeAccountTarget=document.createElement('div');nativeAccountTarget.dataset.nativeAccountMount='';document.body.append(nativeAccountTarget);nativeAccountMount=UI.mountView('account',nativeAccountTarget,accountProps());}
+  ensureNativeAccount();
   nativeAccount.open(section,document.activeElement instanceof HTMLElement?document.activeElement:undefined);
   homeSettingsCleanup=()=>{nativeAccount.close();nativeDeviceLock.cancel();};
 }
