@@ -1,4 +1,7 @@
-import { FILE_TYPES as UPLOAD_FILE_TYPES, maxBytes } from "../../../shared/composition";
+import {
+  FILE_TYPES as UPLOAD_FILE_TYPES,
+  maxBytes,
+} from "../../../shared/composition";
 import { EMOJI } from "../../../shared/emoji";
 import type { Attachment, Message, Room } from "../../../shared/room";
 import type { ComposerAgent } from "./types";
@@ -39,8 +42,7 @@ export function normalizeFile(input: File, now = Date.now()): File {
 export const fileIssue = (file: File) =>
   !FILE_TYPES.has(mediaType(file.type))
     ? "type"
-    : file.size >
-        maxBytes(mediaType(file.type))
+    : file.size > maxBytes(mediaType(file.type))
       ? "size"
       : file.size === 0
         ? "empty"

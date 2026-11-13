@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MAX_OPTIONS } from "../../../shared/composition";
+  import {
+    POLL_QUESTION_LIMIT,
+    POLL_OPTION_LIMIT,
+    POLL_MAX_OPTIONS,
+  } from "../../../shared/composition";
   import { untrack, onDestroy } from "svelte";
   import type { ComposerEntry } from "./drafts";
   import type { ChatBridge } from "../../chatTypes";

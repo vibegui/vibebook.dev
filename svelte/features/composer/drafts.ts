@@ -1,4 +1,11 @@
-import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../../../shared/composition";
+import {
+  MESSAGE_TEXT_LIMIT,
+  MESSAGE_FILE_LIMIT,
+  POLL_QUESTION_LIMIT,
+  POLL_OPTION_LIMIT,
+  POLL_MIN_OPTIONS,
+  POLL_MAX_OPTIONS,
+} from "../../../shared/composition";
 import { visibleMessage } from "../chat/privacy";
 import { get, writable, type Writable } from "svelte/store";
 import type { Room, Message, Attachment, Poll } from "../../../shared/room";
