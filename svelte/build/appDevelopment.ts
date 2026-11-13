@@ -18,7 +18,7 @@ export function isSourceApp(url: string): boolean {
   }
   return (
     parsed.searchParams.get("ui") === "svelte" &&
-    (/^\/(?:app|archived|login)$/.test(parsed.pathname) ||
+    (/^\/(?:app|archived|login|authorize)$/.test(parsed.pathname) ||
       /^\/b\/[^/]+$/.test(parsed.pathname))
   );
 }
@@ -148,7 +148,15 @@ export function appDevelopment(root: string, worker: string): Plugin {
           const cookies = response.headers.getSetCookie();
           if (cookies.length) res.setHeader("set-cookie", cookies);
           res.setHeader("cache-control", "no-store");
-          if (!response.ok || !html.includes("/svelte-preview/app.js")) {
+          const nativeErrorShell =
+            [400, 404, 500].includes(response.status) &&
+            /<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["'](?:login|access|consent)["'])[^>]*>/i.test(
+              html,
+            );
+          if (
+            (!response.ok && !nativeErrorShell) ||
+            !html.includes("/svelte-preview/app.js")
+          ) {
             res.end(html);
             return;
           }

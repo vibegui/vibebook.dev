@@ -13,11 +13,12 @@ import {
 import { projectRoot } from "../svelte/build/clientBoundary";
 
 test("only explicit Svelte app pages select source HTML", () => {
-  for (const path of ["/app", "/login", "/archived", "/b/abc"])
+  for (const path of ["/app", "/login", "/authorize", "/archived", "/b/abc"])
     expect(isSourceApp(`${path}?ui=svelte`)).toBe(true);
   for (const path of [
     "/app",
     "/app?ui=vanilla",
+    "/authorize?client_id=example",
     "/b/abc",
     "/api/me?ui=svelte",
     "/app-svelte.html?ui=svelte",
@@ -92,6 +93,74 @@ test("HTTP and websocket proxy trust the configured Vite origin, never a supplie
     expect(() => workerProxy(target, "http://127.0.0.1:5173")).toThrow(
       "loopback",
     );
+});
+
+test("native auth error shells retain status and cookies while using source HMR", async () => {
+  let middleware: Function = () => {};
+  const plugin = appDevelopment(projectRoot, "http://127.0.0.1:8787");
+  (plugin.configureServer as Function)({
+    watcher: { add() {}, on() {} },
+    middlewares: {
+      use(fn: Function) {
+        middleware = fn;
+      },
+    },
+    transformIndexHtml: async (_url: string, html: string) =>
+      `<!-- HMR -->${html}`,
+  });
+  const previousFetch = globalThis.fetch;
+  try {
+    for (const fixture of [
+      { status: 200, page: "consent", transform: true },
+      { status: 400, page: "consent", transform: true },
+      { status: 404, page: "access", transform: true },
+      { status: 500, page: "login", transform: true },
+      { status: 302, page: "consent", transform: false },
+      { status: 400, page: "unknown", transform: false },
+      { status: 500, page: "", transform: false },
+    ]) {
+      const html = `<html><head><meta name="vb-page" content="${fixture.page}"><meta name="vb-v" content="production"><link rel="stylesheet" href="/svelte-preview/ui.css?v=abc"></head><body><script type="module" src="/svelte-preview/app.js?v=abc"></script></body></html>`;
+      globalThis.fetch = Object.assign(
+        async () =>
+          new Response(html, {
+            status: fixture.status,
+            headers: {
+              "content-type": "text/html",
+              "set-cookie": "local-fixture=1; HttpOnly",
+            },
+          }),
+        { preconnect: previousFetch.preconnect },
+      );
+      let body = "";
+      const headers: Record<string, unknown> = {};
+      const res = {
+        statusCode: 200,
+        setHeader(name: string, value: unknown) {
+          headers[name] = value;
+        },
+        end(value: string) {
+          body = value;
+        },
+      };
+      await middleware(
+        { url: "/authorize?ui=svelte", method: "GET", headers: {} },
+        res,
+        () => {
+          throw new Error("native auth route bypassed");
+        },
+      );
+      expect(res.statusCode).toBe(fixture.status);
+      expect(headers["set-cookie"]).toEqual(["local-fixture=1; HttpOnly"]);
+      if (fixture.transform) {
+        expect(body).toContain('src="/bootstrap.ts"');
+        expect(body).toContain("<!-- HMR -->");
+        expect(body).not.toContain('name="vb-v"');
+        expect(body).not.toContain("/svelte-preview/ui.css");
+      } else expect(body).toBe(html);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
 });
 
 test("runtime contracts reload while component/style edits remain HMR", () => {
