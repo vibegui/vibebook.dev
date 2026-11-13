@@ -34,6 +34,9 @@ export const REMINDER_CONFIRMATION_TIMEOUT = 10_000;
 export const reminderFileName = (name: string) =>
   name.trim().replace(/\.md$/i, "").replace(/[\\/]/g, "-");
 
+// Upload ownership outlives a form or component: reopening the same room must not race the same file on the server.
+const outstandingUploads = new Set<string>();
+
 /** A session belongs to one mounted room. A response from an older form, room or component cannot own its state. */
 export function createRemindersSession(
   roomId: string,
@@ -48,7 +51,8 @@ export function createRemindersSession(
   });
   let active = true,
     sequence = 0,
-    form = 0;
+    form = 0,
+    uploading = false;
   let reminders: readonly Reminder[] = [];
   const timers = new Map<string, unknown>();
   const clear = (id: string) => {
@@ -85,7 +89,7 @@ export function createRemindersSession(
       state.update((s) => ({
         ...s,
         draft: { ...draft },
-        saving: false,
+        saving: uploading,
         issue: null,
       }));
     },
@@ -98,15 +102,30 @@ export function createRemindersSession(
     cancel() {
       if (!active) return;
       form++;
-      state.update((s) => ({ ...s, draft: null, saving: false, issue: null }));
+      state.update((s) => ({
+        ...s,
+        draft: null,
+        saving: uploading,
+        issue: null,
+      }));
     },
     async save(upload: RoomApi["uploadFile"]): Promise<void> {
       const before = get(state);
-      if (!active || !before.draft || before.saving) return;
+      if (!active || !before.draft || uploading) return;
       const draft = { ...before.draft },
         owner = form,
         name = reminderFileName(draft.name);
       if (!name || !draft.text.trim()) return;
+      const uploadKey = JSON.stringify([roomId, name]);
+      if (outstandingUploads.has(uploadKey)) {
+        state.update((s) => ({
+          ...s,
+          issue: { kind: "upload", detail: "upload-in-progress" },
+        }));
+        return;
+      }
+      outstandingUploads.add(uploadKey);
+      uploading = true;
       state.update((s) => ({ ...s, saving: true, issue: null }));
       const owns = () => active && owner === form && !!get(state).draft;
       try {
@@ -116,6 +135,17 @@ export function createRemindersSession(
           body: draft.text,
         });
         if (!owns()) return;
+        if (!result.reminder) {
+          state.update((s) => ({
+            ...s,
+            issue: {
+              kind: "upload",
+              detail: "reminder-processing-unconfirmed",
+            },
+          }));
+          return;
+        }
+        const processing = result.reminder;
         state.update((s) => {
           if (!s.draft) return s;
           // A successful file write fixes only the submitted filename; edits made while waiting stay in the form.
@@ -123,13 +153,13 @@ export function createRemindersSession(
           const current = sameName
             ? { ...s.draft, name, fixed: true }
             : s.draft;
-          if (result.reminder && !result.reminder.ok)
+          if (!processing.ok)
             return {
               ...s,
               draft: current,
               issue: {
                 kind: "upload",
-                detail: result.reminder.error || "failed",
+                detail: processing.error || "failed",
               },
             };
           return {
@@ -147,9 +177,9 @@ export function createRemindersSession(
             },
           }));
       } finally {
-        if (owns()) state.update((s) => ({ ...s, saving: false }));
-        else if (active && owner === form)
-          state.update((s) => ({ ...s, saving: false }));
+        outstandingUploads.delete(uploadKey);
+        uploading = false;
+        if (active) state.update((s) => ({ ...s, saving: false }));
       }
     },
     async mutate(

@@ -92,7 +92,7 @@ plugin({
     }));
   },
 });
-const { flushSync, tick } = await import("svelte");
+const { flushSync, tick, mount, unmount } = await import("svelte");
 const { mountView, dismissDialogs } = await import("../svelte/main");
 const vb: PanelBridge = {
   t: (s, vars) =>
@@ -685,6 +685,35 @@ describe("native Svelte room panels", () => {
     );
   }, 30_000);
 
+  test("shared switch keeps default local updates and rejects them only in controlled mode", async () => {
+    const Switch = (await import("../svelte/lib/ui/Switch.svelte")).default;
+    for (const controlled of [false, true]) {
+      const target = document.createElement("div");
+      document.body.append(target);
+      const desired: boolean[] = [];
+      const instance = flushSync(() =>
+        mount(Switch, {
+          target,
+          props: {
+            checked: true,
+            controlled,
+            onCheckedChange: (value) => desired.push(value),
+          },
+        }),
+      );
+      try {
+        const input = target.querySelector<HTMLInputElement>("input")!;
+        input.checked = false;
+        change(input);
+        expect(input.checked).toBe(controlled);
+        expect(input.getAttribute("aria-checked")).toBe(String(controlled));
+        expect(desired).toEqual([false]);
+      } finally {
+        await unmount(instance);
+        target.remove();
+      }
+    }
+  }, 30_000);
   test("native reminder disclosure and controlled switches wait for server acknowledgement", async () => {
     const room = fixture();
     room.reminders = [

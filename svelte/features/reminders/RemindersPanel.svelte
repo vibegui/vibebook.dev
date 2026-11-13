@@ -9,7 +9,7 @@
   import Icon from "../../lib/ui/Icon.svelte";
   import Input from "../../lib/ui/Input.svelte";
   import Label from "../../lib/ui/Label.svelte";
-  import ControlledSwitch from "../../lib/ui/ControlledSwitch.svelte";
+  import Switch from "../../lib/ui/Switch.svelte";
   import Textarea from "../../lib/ui/Textarea.svelte";
   let { room, vb, request }: Pick<PanelProps, "room" | "vb" | "request"> =
     $props();
@@ -36,13 +36,21 @@
   const issueText = (issue?: ReminderIssue | null) =>
     !issue
       ? ""
-      : ["offline", "disconnected"].includes(issue.detail)
-        ? vb.t("sem conexão")
-        : issue.kind === "unconfirmed" || issue.detail === "timeout"
+      : issue.detail === "upload-in-progress"
+        ? vb.t(
+            "Um envio deste lembrete ainda está em andamento. Aguarde antes de salvar novamente.",
+          )
+        : issue.detail === "reminder-processing-unconfirmed"
           ? vb.t(
-              "Ainda não recebi a confirmação. Confira antes de tentar de novo.",
+              "Não recebi a confirmação do agendamento. Confira antes de tentar de novo.",
             )
-          : issue.detail;
+          : ["offline", "disconnected"].includes(issue.detail)
+            ? vb.t("sem conexão")
+            : issue.kind === "unconfirmed" || issue.detail === "timeout"
+              ? vb.t(
+                  "Ainda não recebi a confirmação. Confira antes de tentar de novo.",
+                )
+              : issue.detail;
   $effect(() => {
     session.sync(list);
   });
@@ -199,7 +207,8 @@
           class="tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-2"
         >
           <Label class="tw:flex tw:items-center tw:gap-2">
-            <ControlledSwitch
+            <Switch
+              controlled
               data-rem-on={reminder.id}
               checked={reminder.enabled}
               disabled={!!reminder.error || !!pending}

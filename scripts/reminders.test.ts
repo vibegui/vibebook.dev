@@ -22,6 +22,7 @@ const upload: UploadFileResponse = {
   author: "me@test",
   ts: 1,
   size: 12,
+  reminder: { ok: true },
 };
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -157,6 +158,57 @@ describe("native reminder session", () => {
     later.resolve({ ...upload, reminder: { ok: false, error: "late" } });
     await wait;
     expect(get(s.state)).toBe(before);
+  });
+
+  test("cancel/reopen cannot dispatch another same-file upload until the first settles", async () => {
+    const s = createRemindersSession("locked-room");
+    s.open({ name: "daily", text: "first" });
+    const first = deferred<UploadFileResponse>();
+    let calls = 0;
+    const saving = s.save(() => {
+      calls++;
+      return first.promise;
+    });
+    s.cancel();
+    s.open({ name: "daily.md", text: "replacement" });
+    expect(get(s.state).saving).toBe(true);
+    await s.save(async () => {
+      calls++;
+      return upload;
+    });
+    expect(calls).toBe(1);
+    // A second component for the same room also cannot race a disposed component's write.
+    s.dispose();
+    const reopened = createRemindersSession("locked-room");
+    reopened.open({ name: "daily", text: "new component" });
+    await reopened.save(async () => {
+      calls++;
+      return upload;
+    });
+    expect(calls).toBe(1);
+    expect(get(reopened.state).issue?.detail).toBe("upload-in-progress");
+    first.resolve(upload);
+    await saving;
+    await reopened.save(async () => {
+      calls++;
+      return upload;
+    });
+    expect(calls).toBe(2);
+    expect(get(reopened.state).draft).toBeNull();
+    reopened.dispose();
+  });
+  test("file upload without an explicit reminder result never declares scheduling success", async () => {
+    const s = createRemindersSession("missing-result");
+    s.open({ name: "daily.md", text: "Every Monday at 9 UTC: report" });
+    const { reminder: processing, ...fileOnly } = upload;
+    await s.save(async () => fileOnly);
+    expect(get(s.state).draft).toEqual({
+      name: "daily.md",
+      text: "Every Monday at 9 UTC: report",
+    });
+    expect(get(s.state).issue?.detail).toBe("reminder-processing-unconfirmed");
+    expect(get(s.state).saving).toBe(false);
+    s.dispose();
   });
   test("normalizes supported file names", () => {
     expect(reminderFileName(" daily.md ")).toBe("daily");

@@ -523,6 +523,8 @@ const EN = {
   "Apagar esse registro?": "Delete this entry?",
   "Lembretes": "Reminders",
   "Texto do lembrete": "Reminder text",
+  "Um envio deste lembrete ainda está em andamento. Aguarde antes de salvar novamente.": "An upload of this reminder is still in progress. Wait before saving again.",
+  "Não recebi a confirmação do agendamento. Confira antes de tentar de novo.": "Scheduling confirmation has not arrived. Check before trying again.",
   "Quando o lembrete roda, o @vibe publica o texto aqui para seu agent.": "When the reminder runs, @vibe posts its text here for your agent.",
   "Aguardando confirmação…": "Waiting for confirmation…",
   "Ainda não recebi a confirmação. Confira antes de tentar de novo.": "Confirmation has not arrived yet. Check before trying again.",
