@@ -16,6 +16,7 @@ import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
 import { connOps } from "./mcpconn";
 import { consentContext, grantOps } from "./connect";
 import { routerStats } from "./router";
+import { aiSpend } from "./reports";
 
 // The app shell's version per UI variant, per isolate (a deploy is a new isolate): open tabs compare it to reload.
 const appVersions = new Map<UiVariant, string>();
@@ -185,5 +186,7 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     grants: grantOps(env, ctx, email),
     consentContext: () => consentContext(env, req0, email),
     routerStats: (room) => routerStats(env.DB, email, room),
+    reportRoom: (room) => (env.METRICS_ROOMS ?? "").split(",").map((x) => x.trim()).includes(room),
+    aiSpend: () => aiSpend(env),
   };
 }

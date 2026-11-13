@@ -160,6 +160,28 @@ function fixture(overrides: Partial<ApiServices> = {}) {
         return ids.length;
       },
     },
+    reportRoom: (room) => room === "report",
+    aiSpend: async () => ({
+      recorded: {
+        jev: 0.01,
+        llm: 0.5,
+        router: 0.001,
+        since: "2026-10-01T00:00:00.000Z",
+      },
+      by_event: [
+        { event: "grade", kind: "jev", model: "jev", calls: 500, cost: 0.01 },
+      ],
+      router: [{ arm: "jev", n: 3, cost: 0.0001 }],
+      days: [{ day: "2026-11-12", jev: 0.001, llm: 0.02, router: 0 }],
+      openrouter_key: {
+        usage: 12.34,
+        limit: null,
+        daily: 0.5,
+        weekly: 2,
+        monthly: 9,
+      },
+      note: "n",
+    }),
     routerStats: async (room) => {
       const arm = { n: 2, ignore: 1, answer: 0, wake: 1, cost: 0.0001 };
       return {
@@ -815,4 +837,19 @@ test("router A/B stats: the person's numbers, one room only for its members", as
   expect((await outsider.app.request("/api/router/stats?room=r1")).status).toBe(
     403,
   );
+});
+
+test("model spend: only in the report rooms, for their members", async () => {
+  const { app } = fixture();
+  const r = await app.request("/api/metrics/ai-spend?room=report");
+  expect(r.status).toBe(200);
+  expect((await r.json()).openrouter_key.usage).toBe(12.34);
+  expect((await app.request("/api/metrics/ai-spend?room=other")).status).toBe(
+    403,
+  );
+  expect((await app.request("/api/metrics/ai-spend")).status).toBe(403);
+  const outsider = fixture({ isMember: async () => false });
+  expect(
+    (await outsider.app.request("/api/metrics/ai-spend?room=report")).status,
+  ).toBe(403);
 });

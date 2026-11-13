@@ -568,3 +568,44 @@ export const RouterStats = z.object({
   ),
 });
 export type RouterStats = z.infer<typeof RouterStats>;
+
+/** What vibebook spent on models (src/reports.ts aiSpend), for the report rooms' app. */
+export const AiSpend = z.object({
+  recorded: z.object({
+    jev: z.number(),
+    llm: z.number(),
+    router: z.number(),
+    since: z.nullable(z.string()),
+  }),
+  by_event: z.array(
+    z.object({
+      event: z.string(),
+      kind: z.string(),
+      model: z.string(),
+      calls: z.number(),
+      cost: z.number(),
+    }),
+  ),
+  router: z.array(
+    z.object({ arm: z.string(), n: z.number(), cost: z.number() }),
+  ),
+  days: z.array(
+    z.object({
+      day: z.string(),
+      jev: z.number(),
+      llm: z.number(),
+      router: z.number(),
+    }),
+  ),
+  openrouter_key: z.nullable(
+    z.object({
+      usage: z.number(),
+      limit: z.nullable(z.number()),
+      daily: z.nullable(z.number()),
+      weekly: z.nullable(z.number()),
+      monthly: z.nullable(z.number()),
+    }),
+  ),
+  note: z.string(),
+});
+export type AiSpend = z.infer<typeof AiSpend>;

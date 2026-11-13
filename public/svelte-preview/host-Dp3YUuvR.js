@@ -3869,6 +3869,15 @@ var ta = [
 		}
 	},
 	{
+		name: "vibebook_ai_spend",
+		description: "vibebook's model spend: Jev and the LLMs by event and model, the hub router, the last 30 days and OpenRouter's total for the key. Only in vibebook's report rooms.",
+		inputSchema: {
+			type: "object",
+			properties: {}
+		},
+		annotations: { readOnlyHint: !0 }
+	},
+	{
 		name: "vibebook_router_stats",
 		description: "The person's hub router A/B (Jev vs Haiku): per arm how many messages were ignored, answered or woke their Claude, latency p50/p95, cost, and the last 40 decisions. room: true = only this room.",
 		inputSchema: {
@@ -3922,6 +3931,16 @@ async function ra(e, t = {}, n) {
 	let r = (e) => Qi(e), i = (e) => e && e !== "main" && !j.epics.some((t) => t.id === e) ? null : e || "main";
 	switch (e) {
 		case "vibebook_read": return r(na(t));
+		case "vibebook_ai_spend": {
+			let e = await fetch(`/api/metrics/ai-spend?room=${j.id}`).catch(() => null);
+			return e && e.ok ? r(await e.json()) : {
+				isError: !0,
+				content: [{
+					type: "text",
+					text: `spend unavailable${e ? ` (${e.status})` : ""}`
+				}]
+			};
+		}
 		case "vibebook_router_stats": {
 			let e = await fetch(`/api/router/stats${t.room ? `?room=${j.id}` : ""}`).catch(() => null);
 			return e && e.ok ? r(await e.json()) : {
