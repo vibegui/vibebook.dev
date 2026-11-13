@@ -780,7 +780,7 @@ test("personal event contracts decode raw ws-me data and retain the literal new-
     { t: "me" },
     { t: "me", book: "room", msg: 1 },
     { t: "agents", book: "*" },
-  ]) {
+  ] as const) {
     expect(parsePersonEvent(JSON.stringify(notice))).toEqual(notice);
     expect(PersonEventSchema.safeParse(notice).success).toBe(true);
   }

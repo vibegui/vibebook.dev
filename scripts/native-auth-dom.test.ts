@@ -116,7 +116,7 @@ async function render(
               ? "https://vibebook.test/b/abcdef?ui=svelte"
               : `https://vibebook.test/${page === "consent" ? "authorize?ui=svelte&client_id=client" : "login?ui=svelte"}`,
           api: http,
-          navigate: (url) => navigations.push(url),
+          navigate: (url: string) => navigations.push(url),
         },
       }),
     ),
@@ -282,7 +282,7 @@ test("changing a native page URL disposes the old context before a late response
                 ? old
                 : { ...consent, client_name: "New app", handle: "new-handle" },
           }),
-          navigate: (url) => navigations.push(url),
+          navigate: (url: string) => navigations.push(url),
         },
       }),
     ),
