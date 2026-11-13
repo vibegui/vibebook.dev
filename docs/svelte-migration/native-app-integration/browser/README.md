@@ -17,7 +17,17 @@ button between pointerdown and pointerup as the textarea lost focus, preventing
 the click. `30b4438` keeps the expanded sheet height while the form owns focus,
 using the sole Tailwind entry. No programmatic click was needed in this passing
 run. An initial cold run timed out before the room mounted; it is not passing
-evidence. The full secondary-panel rerun remains pending.
+evidence.
+
+`secondary-panels.json` records the subsequent complete scoped rerun against the
+same `aa50c3f` assets. Decisions, People and the real Reminder failed-processing
+path pass. All twelve native panel audits across four EN/PT, desktop/mobile and
+light/dark profiles report no accessibility violations; the browser reports no
+JavaScript errors. Actual loaded Inter fonts are checked. These are twelve panel
+audits, not the full product accessibility matrix. AI-backed schedule creation
+and alarm execution remain unverified. Whole-room screenshots were visually
+reviewed locally; the surrounding hybrid shell still needs final migration and
+Studio-theme acceptance.
 
 Neither result proves real document collaboration, final RootApp retirement,
 production performance, hardware keyboard behavior or overall M0–M8 completion.
