@@ -402,3 +402,17 @@ test("reset fences already enqueued close navigation and late traversal does not
   expect(history.consumePop()).toBe("none");
   history.dispose();
 });
+
+test("canonical membership removal closes preview and fences prior media callbacks", async () => {
+  const { session } = fixture();
+  session.open({ roomId: "aaaaaa", id: "aa" });
+  await settle();
+  const ticket = get(session.state).content!.operation;
+  session.sync(room({ members: [] }), async () => ({ ok: true }));
+  session.ready(ticket);
+  session.mediaError(ticket);
+  expect(get(session.state).open).toBe(false);
+  expect(get(session.state).content).toBeNull();
+  expect(session.open({ roomId: "aaaaaa", id: "aa" })).toBe(false);
+  session.dispose();
+});

@@ -346,6 +346,15 @@ export function createFileViewer(options: {
     state,
     sync(next: Room, send: RequestRoomCommand, freshSnapshot = false) {
       if (!active) return;
+      if (!next.members.includes(next.me)) {
+        closed();
+        history.reset();
+        disposePins();
+        room = null;
+        request = undefined;
+        trigger = null;
+        return;
+      }
       if (room && (room.id !== next.id || room.me !== next.me)) {
         closed();
         history.reset();
