@@ -147,6 +147,19 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     },
     checkFreestyleKey: async (key) =>
       key.startsWith("good") ? null : "401 unauthorized",
+    grants: {
+      list: async () => ({
+        agents: [
+          { id: "g1", client: "vibebook CLI", connected_at: 1, used_at: 2 },
+          { id: "g0", client: "Claude", connected_at: 0 },
+        ],
+        last_used: 2,
+      }),
+      revoke: async (ids) => {
+        saved.push({ table: "revoke", value: ids.join(",") });
+        return ids.length;
+      },
+    },
     ...overrides,
   };
   const app = new Hono<ApiCtx>()
@@ -689,4 +702,33 @@ test("native raw-body adapters (icon, avatar) go through the typed routes and ch
   await expect(
     me.uploadAvatar({ type: "image/svg+xml", body: png }),
   ).rejects.toThrow("Use uma imagem PNG, JPEG ou WebP.");
+});
+
+test("connected Claudes (OAuth grants): list, revoke a list, revoke one; bad bodies and other origins refused", async () => {
+  const { app, json, saved } = fixture();
+  const list = await app.request("/api/agents");
+  expect(await list.json()).toEqual({
+    agents: [
+      { id: "g1", client: "vibebook CLI", connected_at: 1, used_at: 2 },
+      { id: "g0", client: "Claude", connected_at: 0 },
+    ],
+    last_used: 2,
+  });
+  const r = await json("/api/agents/revoke", { ids: ["g0", "g1"] });
+  expect(await r.json()).toEqual({ ok: true, removed: 2 });
+  expect((await json("/api/agents/revoke", { ids: "g0" })).status).toBe(400);
+  expect(
+    (await app.request("/api/agents/g1", { method: "DELETE" })).status,
+  ).toBe(200);
+  expect(saved.filter((x) => x.table === "revoke").map((x) => x.value)).toEqual(
+    ["g0,g1", "g1"],
+  );
+  const cross = fixture({ sameOrigin: false });
+  expect((await cross.json("/api/agents/revoke", { ids: ["g0"] })).status).toBe(
+    403,
+  );
+  expect(
+    (await cross.app.request("/api/agents/g0", { method: "DELETE" })).status,
+  ).toBe(403);
+  expect(cross.saved).toHaveLength(0);
 });

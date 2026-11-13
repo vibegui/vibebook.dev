@@ -490,3 +490,24 @@ export const AccessContext = z.object({
   email: z.nullable(z.string()),
 });
 export type AccessContext = z.infer<typeof AccessContext>;
+
+/** Your connected Claudes (one per OAuth grant: each `vibebook login` or connector), on the home's side box.
+ *  used_at: last use of that grant; null = never seen, absent = an older grant with no per-grant record. */
+export const AgentGrant = z.object({
+  id: z.string(),
+  client: z.string(),
+  connected_at: z.number(),
+  used_at: z.optional(z.nullable(z.number())),
+});
+export type AgentGrant = z.infer<typeof AgentGrant>;
+export const AgentGrantsResult = z.object({
+  agents: z.array(AgentGrant),
+  last_used: z.nullable(z.number()),
+});
+export type AgentGrantsResult = z.infer<typeof AgentGrantsResult>;
+export const RevokeAgentsBody = z.object({ ids: z.array(z.string()) });
+export const RevokeAgentsResult = z.object({
+  ok: z.literal(true),
+  removed: z.number(),
+});
+export type RevokeAgentsResult = z.infer<typeof RevokeAgentsResult>;

@@ -77,6 +77,9 @@ import {
   EmailVerifyBody,
   type EmailVerifyResult,
   type AccessContext,
+  type AgentGrantsResult,
+  RevokeAgentsBody,
+  type RevokeAgentsResult,
 } from "../shared/schemas";
 
 export type Bind = string | number | null;
@@ -164,6 +167,8 @@ export interface ApiServices {
     context(roomId: string, cid: string, tool: string, text: string): Promise<OkResult | ConnFail>;
     signout(roomId: string, cid: string): Promise<OkResult | ConnFail>;
   };
+  /** Your Claudes' OAuth grants (src/connect.ts grantOps): list them, revoke some (at most 100 per call). */
+  grants: { list(): Promise<AgentGrantsResult>; revoke(ids: string[]): Promise<number> };
 }
 /** A failed connection call and its status; sign_in = sign in on that server first (401). */
 export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
@@ -639,6 +644,20 @@ export const uploadsApi = meApi
     } catch (e) {
       return c.json(failed(e), 400);
     }
+  })
+  // Slice 13: your connected Claudes (OAuth grants), moved from src/connect.ts.
+  .get("/api/agents", async (c) => c.json((await c.get("svc").grants.list()) satisfies AgentGrantsResult, 200))
+  .post("/api/agents/revoke", body(RevokeAgentsBody, "ids must be a list"), async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    const removed = await svc.grants.revoke(c.req.valid("json").ids);
+    return c.json({ ok: true as const, removed } satisfies RevokeAgentsResult, 200);
+  })
+  .delete("/api/agents/:id", async (c) => {
+    const svc = c.get("svc");
+    if (!svc.sameOrigin) return c.json({ error: "bad origin" } satisfies ErrorBody, 403);
+    await svc.grants.revoke([c.req.param("id")]);
+    return c.json(ok, 200);
   });
 
 export type AppType = typeof uploadsApi;
