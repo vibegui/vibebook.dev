@@ -1,6 +1,5 @@
 import { relative, resolve } from "node:path";
-import { Readable } from "node:stream";
-import type { IncomingHttpHeaders } from "node:http";
+import type { IncomingHttpHeaders, IncomingMessage } from "node:http";
 import type { Plugin, ProxyOptions } from "vite";
 import {
   createDevelopmentRequestPolicy,
@@ -101,8 +100,25 @@ function postHeaders(
       .map((value) => value.trim().toLowerCase()),
   ]);
   const headers = new Headers();
+  // Caller-controlled Connection tokens cannot erase auth/CSRF or body metadata.
+  const metadata = new Set([
+    "origin",
+    "referer",
+    "cookie",
+    "authorization",
+    "cf-connecting-ip",
+    "content-type",
+    "content-length",
+  ]);
   for (const [name, value] of Object.entries(incoming)) {
-    if (value === undefined || excluded.has(name.toLowerCase())) continue;
+    const lower = name.toLowerCase();
+    if (
+      value === undefined ||
+      (excluded.has(lower) &&
+        !metadata.has(lower) &&
+        !lower.startsWith("sec-fetch-"))
+    )
+      continue;
     for (const part of Array.isArray(value) ? value : [value])
       headers.append(name, part);
   }
@@ -110,6 +126,23 @@ function postHeaders(
   if (incoming.origin !== undefined)
     headers.set("origin", incoming.origin === vite ? worker : incoming.origin);
   return headers;
+}
+
+function postBody(request: IncomingMessage): ReadableStream<Uint8Array> {
+  const iterator: AsyncIterator<unknown> = request[Symbol.asyncIterator]();
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const chunk: IteratorResult<unknown> = await iterator.next();
+      if (chunk.done) controller.close();
+      else if (chunk.value instanceof Uint8Array)
+        controller.enqueue(chunk.value);
+      else throw new TypeError("Consent request body must contain raw bytes");
+    },
+    async cancel() {
+      request.destroy();
+      await iterator.return?.();
+    },
+  });
 }
 
 /** Runtime/contract edits need fresh connections; component/CSS edits use HMR. */
@@ -200,9 +233,7 @@ export function appDevelopment(
             };
             if (consentPost) {
               options.method = "POST";
-              // Node and DOM publish separate declarations for the same WHATWG
-              // byte stream; this is their single transport adaptation boundary.
-              options.body = Readable.toWeb(req) as ReadableStream<Uint8Array>;
+              options.body = postBody(req);
               options.duplex = "half";
               options.signal = cancellation.signal;
             }

@@ -188,8 +188,9 @@ function consentRequest(
   url = "/authorize?ui=svelte",
   headers: Record<string, string> = {},
 ) {
+  const bytes = Buffer.from(body);
   return Object.assign(
-    Readable.from([Buffer.from(body.slice(0, 7)), Buffer.from(body.slice(7))]),
+    Readable.from([bytes.subarray(0, 8), bytes.subarray(8)]),
     {
       url,
       method: "POST",
@@ -226,7 +227,7 @@ function consentResponse() {
 test("selected consent POST forwards exact raw form, cookie and origin boundary before transforming only native consent errors", async () => {
   const middleware = consentMiddleware(),
     previousFetch = globalThis.fetch;
-  const body = "handle=a%2Bb%3D&decision=deny&state=%E2%9C%93&next=%2Fapp";
+  const body = "handle=✓a%2Bb%3D&decision=deny&state=%E2%9C%93&next=%2Fapp";
   try {
     for (const fixture of [
       {
@@ -256,95 +257,97 @@ test("selected consent POST forwards exact raw form, cookie and origin boundary 
         "https://evil.test",
         "http://localhost:5173",
         undefined,
-      ]) {
-        const html = `<html><head><meta name="vb-page" content="${fixture.page}"><meta name="vb-v" content="prod"><link rel="stylesheet" href="/svelte-preview/ui.css?v=abc"></head><body><script type="module" src="/svelte-preview/app.js?v=abc"></script></body></html>`;
-        let forwarded = false;
-        globalThis.fetch = Object.assign(
-          async (input: RequestInfo | URL, init?: RequestInit) => {
-            forwarded = true;
-            expect(String(input)).toBe(
-              "http://127.0.0.1:8787/authorize?ui=svelte",
-            );
-            expect(init?.redirect).toBe("manual");
-            expect(Reflect.get(init!, "duplex")).toBe("half");
-            const request = new Request(input, init);
-            expect(request.method).toBe("POST");
-            expect(await request.text()).toBe(body);
-            expect(request.headers.get("cookie")).toBe(
-              "session=real-cookie; consent=nonce",
-            );
-            expect(request.headers.get("content-type")).toBe(
-              "application/x-www-form-urlencoded",
-            );
-            expect(request.headers.get("content-length")).toBe(
-              String(Buffer.byteLength(body)),
-            );
-            expect(request.headers.get("origin")).toBe(
-              origin === "http://127.0.0.1:5173"
-                ? "http://127.0.0.1:8787"
-                : (origin ?? null),
-            );
-            expect(request.headers.get("referer")).toBe(
-              "http://127.0.0.1:5173/authorize?ui=svelte",
-            );
-            expect(request.headers.get("host")).toBeNull();
-            expect(request.headers.get("connection")).toBeNull();
-            expect(request.headers.get("x-private-hop")).toBeNull();
-            expect(request.headers.get("transfer-encoding")).toBeNull();
-            expect(request.headers.get("sec-fetch-site")).toBe("same-origin");
-            const headers = new Headers({
-              "content-type": fixture.type,
-              "cache-control": "private, max-age=0",
-              etag: '"fixture"',
-              location:
-                "https://client.example.test/callback?error=access_denied",
-              vary: "Cookie",
-              "x-consent-test": "kept",
-            });
-            headers.append(
-              "set-cookie",
-              "consent=; Path=/; HttpOnly; Max-Age=0",
-            );
-            headers.append("set-cookie", "session=next; Path=/; HttpOnly");
-            return new Response(html, { status: fixture.status, headers });
-          },
-          { preconnect: previousFetch.preconnect },
-        );
-        const req = consentRequest(body, "/authorize?ui=svelte", {
-            ...(origin ? { origin } : {}),
-            referer: "http://127.0.0.1:5173/authorize?ui=svelte",
-            connection: "keep-alive, x-private-hop, origin",
-            "x-private-hop": "removed",
-            "transfer-encoding": "chunked",
-            "sec-fetch-site": "same-origin",
-          }),
-          res = consentResponse();
-        await middleware(req, res, () => {
-          throw Error("selected POST bypassed");
-        });
-        expect(forwarded).toBe(true);
-        expect(res.statusCode).toBe(fixture.status);
-        expect(res.headers["set-cookie"]).toEqual([
-          "consent=; Path=/; HttpOnly; Max-Age=0",
-          "session=next; Path=/; HttpOnly",
-        ]);
-        expect(res.headers.location).toBe(
-          "https://client.example.test/callback?error=access_denied",
-        );
-        expect(res.headers.vary).toBe("Cookie");
-        expect(res.headers["x-consent-test"]).toBe("kept");
-        if (fixture.transform) {
-          expect(res.body).toContain("<!-- HMR -->");
-          expect(res.body).toContain('src="/bootstrap.ts"');
-          expect(res.body).not.toContain('name="vb-v"');
-          expect(res.headers.etag).toBeUndefined();
-          expect(res.headers["cache-control"]).toBe("no-store");
-        } else {
-          expect(res.body).toBe(html);
-          expect(res.headers.etag).toBe('"fixture"');
-          expect(res.headers["cache-control"]).toBe("private, max-age=0");
+      ])
+        for (const site of ["same-origin", "cross-site"]) {
+          const html = `<html><head><meta name="vb-page" content="${fixture.page}"><meta name="vb-v" content="prod"><link rel="stylesheet" href="/svelte-preview/ui.css?v=abc"></head><body><script type="module" src="/svelte-preview/app.js?v=abc"></script></body></html>`;
+          let forwarded = false;
+          globalThis.fetch = Object.assign(
+            async (input: RequestInfo | URL, init?: RequestInit) => {
+              forwarded = true;
+              expect(String(input)).toBe(
+                "http://127.0.0.1:8787/authorize?ui=svelte",
+              );
+              expect(init?.redirect).toBe("manual");
+              expect(Reflect.get(init!, "duplex")).toBe("half");
+              const request = new Request(input, init);
+              expect(request.method).toBe("POST");
+              expect(await request.text()).toBe(body);
+              expect(request.headers.get("cookie")).toBe(
+                "session=real-cookie; consent=nonce",
+              );
+              expect(request.headers.get("content-type")).toBe(
+                "application/x-www-form-urlencoded",
+              );
+              expect(request.headers.get("content-length")).toBe(
+                String(Buffer.byteLength(body)),
+              );
+              expect(request.headers.get("origin")).toBe(
+                origin === "http://127.0.0.1:5173"
+                  ? "http://127.0.0.1:8787"
+                  : (origin ?? null),
+              );
+              expect(request.headers.get("referer")).toBe(
+                "http://127.0.0.1:5173/authorize?ui=svelte",
+              );
+              expect(request.headers.get("host")).toBeNull();
+              expect(request.headers.get("connection")).toBeNull();
+              expect(request.headers.get("x-private-hop")).toBeNull();
+              expect(request.headers.get("transfer-encoding")).toBeNull();
+              expect(request.headers.get("sec-fetch-site")).toBe(site);
+              const headers = new Headers({
+                "content-type": fixture.type,
+                "cache-control": "private, max-age=0",
+                etag: '"fixture"',
+                location:
+                  "https://client.example.test/callback?error=access_denied",
+                vary: "Cookie",
+                "x-consent-test": "kept",
+              });
+              headers.append(
+                "set-cookie",
+                "consent=; Path=/; HttpOnly; Max-Age=0",
+              );
+              headers.append("set-cookie", "session=next; Path=/; HttpOnly");
+              return new Response(html, { status: fixture.status, headers });
+            },
+            { preconnect: previousFetch.preconnect },
+          );
+          const req = consentRequest(body, "/authorize?ui=svelte", {
+              ...(origin ? { origin } : {}),
+              referer: "http://127.0.0.1:5173/authorize?ui=svelte",
+              connection:
+                "keep-alive, x-private-hop, origin, sec-fetch-site, referer, cookie, content-type, content-length",
+              "x-private-hop": "removed",
+              "transfer-encoding": "chunked",
+              "sec-fetch-site": site,
+            }),
+            res = consentResponse();
+          await middleware(req, res, () => {
+            throw Error("selected POST bypassed");
+          });
+          expect(forwarded).toBe(true);
+          expect(res.statusCode).toBe(fixture.status);
+          expect(res.headers["set-cookie"]).toEqual([
+            "consent=; Path=/; HttpOnly; Max-Age=0",
+            "session=next; Path=/; HttpOnly",
+          ]);
+          expect(res.headers.location).toBe(
+            "https://client.example.test/callback?error=access_denied",
+          );
+          expect(res.headers.vary).toBe("Cookie");
+          expect(res.headers["x-consent-test"]).toBe("kept");
+          if (fixture.transform) {
+            expect(res.body).toContain("<!-- HMR -->");
+            expect(res.body).toContain('src="/bootstrap.ts"');
+            expect(res.body).not.toContain('name="vb-v"');
+            expect(res.headers.etag).toBeUndefined();
+            expect(res.headers["cache-control"]).toBe("no-store");
+          } else {
+            expect(res.body).toBe(html);
+            expect(res.headers.etag).toBe('"fixture"');
+            expect(res.headers["cache-control"]).toBe("private, max-age=0");
+          }
         }
-      }
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -440,6 +443,57 @@ test("selected consent POST cancels upstream body and response when its client d
       expect(res.body).toBe("");
       expect(req.listenerCount("aborted")).toBe(0);
       expect(res.listenerCount("close")).toBe(0);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("consent POST byte adapter preserves backpressure, rejects decoded chunks and destroys its source on cancel", async () => {
+  const middleware = consentMiddleware(),
+    previousFetch = globalThis.fetch;
+  try {
+    for (const mode of ["bytes", "decoded", "cancel"]) {
+      let produced = 0;
+      const payload = Array.from({ length: 32 }, (_, i) => `part${i}=✓&`).join(
+        "",
+      );
+      async function* chunks() {
+        for (let i = 0; i < 32; i++) {
+          produced++;
+          yield mode === "decoded" ? `part${i}=✓&` : Buffer.from(`part${i}=✓&`);
+        }
+      }
+      const req = Object.assign(Readable.from(chunks(), { highWaterMark: 1 }), {
+          url: "/authorize?ui=svelte",
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          aborted: false,
+        }),
+        res = consentResponse();
+      globalThis.fetch = Object.assign(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          await Promise.resolve();
+          expect(produced).toBeLessThan(32);
+          if (mode === "cancel") {
+            const reader = (
+              init?.body as ReadableStream<Uint8Array>
+            ).getReader();
+            await reader.read();
+            await reader.cancel();
+            expect(req.destroyed).toBe(true);
+          } else {
+            const request = new Request(input, init);
+            expect(await request.text()).toBe(payload);
+          }
+          return new Response("passed", { status: 400 });
+        },
+        { preconnect: previousFetch.preconnect },
+      );
+      await middleware(req, res, () => {
+        throw Error("POST bypassed");
+      });
+      expect(res.statusCode).toBe(mode === "decoded" ? 502 : 400);
     }
   } finally {
     globalThis.fetch = previousFetch;
