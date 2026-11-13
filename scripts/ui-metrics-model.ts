@@ -63,7 +63,8 @@ export function summarize(values: readonly number[]) {
   };
 }
 export function checkedEvent<T extends RoomEvent>(value: T): T {
-  if (!isRoomEvent(value)) throw Error(`Invalid benchmark event ${value.t}`);
+  const type = value.t;
+  if (!isRoomEvent(value)) throw Error(`Invalid benchmark event ${type}`);
   return value;
 }
 export function createMetricRoom(
@@ -206,15 +207,13 @@ export function createMetricRoom(
     for (const message of messages)
       sent[message.thread] = (sent[message.thread] || 0) + 1;
     const latest = all.at(-1)?.id || 0,
-      receipts = members
-        .slice(1)
-        .map((email, i) => ({
-          email,
-          who: names[email],
-          read: Math.max(0, latest - (i + 1) * 200),
-          delivered: latest,
-          ts: epoch + latest * 60000,
-        }));
+      receipts = members.slice(1).map((email, i) => ({
+        email,
+        who: names[email],
+        read: Math.max(0, latest - (i + 1) * 200),
+        delivered: latest,
+        ts: epoch + latest * 60000,
+      }));
     const state = RoomSnapshotSchema.parse({
       ...root,
       messages,

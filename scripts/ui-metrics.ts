@@ -244,18 +244,21 @@ const server = Bun.serve({
       const compressed =
         (request.headers.get("accept-encoding") || "").includes("gzip") &&
         value.gzipBytes < value.rawBytes;
-      return new Response(compressed ? value.gzip : value.body, {
-        headers: {
-          "content-type": value.type,
-          "cache-control": "no-store",
-          vary: "Accept-Encoding",
-          "x-metrics-asset": value.key,
-          ...(compressed ? { "content-encoding": "gzip" } : {}),
-          ...(path.startsWith("/b/") || path === "/app"
-            ? { "x-vibebook-ui": variant }
-            : {}),
+      return new Response(
+        new Uint8Array(compressed ? value.gzip : value.body),
+        {
+          headers: {
+            "content-type": value.type,
+            "cache-control": "no-store",
+            vary: "Accept-Encoding",
+            "x-metrics-asset": value.key,
+            ...(compressed ? { "content-encoding": "gzip" } : {}),
+            ...(path.startsWith("/b/") || path === "/app"
+              ? { "x-vibebook-ui": variant }
+              : {}),
+          },
         },
-      });
+      );
     } catch {
       return new Response("Not found", { status: 404 });
     }
@@ -590,9 +593,6 @@ async function run(
               room.post(command.text || "", command.thread),
             );
             break;
-          case "read":
-          case "typing":
-            break;
           default:
             runFixture.unsupported.push(
               `Unsupported Book command ${command.t}`,
@@ -884,15 +884,13 @@ async function run(
     await arm("receiptUpdate", "receipts");
     event(runFixture, first.id, {
       t: "receipts",
-      receipts: first.root.members
-        .slice(1)
-        .map((email, index) => ({
-          email,
-          who: first.root.names?.[email] || email,
-          read: first.all.at(-1)!.id - index,
-          delivered: first.all.at(-1)!.id,
-          ts: Date.UTC(2026, 1, 1),
-        })),
+      receipts: first.root.members.slice(1).map((email, index) => ({
+        email,
+        who: first.root.names?.[email] || email,
+        read: first.all.at(-1)!.id - index,
+        delivered: first.all.at(-1)!.id,
+        ts: Date.UTC(2026, 1, 1),
+      })),
     });
     await result("receiptUpdate");
     const anchorAfter = await layout();
