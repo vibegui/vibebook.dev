@@ -1,4 +1,4 @@
-import { sandboxApi, type ApiServices } from "./api";
+import { connectionsApi, type ApiServices } from "./api";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -533,7 +533,7 @@ app.get("/api/avatar/:email", (c) =>
 // Typed routes (src/api.ts): post and upload, mounted here so they run after the auth middleware like before.
 // The typed routes get their services (src/services.ts) instead of the bindings.
 app.use("/api/*", async (c, next) => { c.set("svc", services(c.env, c.executionCtx, c.get("email"), c.req.raw)); await next(); });
-app.route("/", sandboxApi);
+app.route("/", connectionsApi);
 
 // "Meu Claude" toggle: the person wants a Claude of theirs on this room. `vibebook herdr` on their machine reads it
 // (MCP claude_rooms) and opens or closes a Claude Code for the room in herdr.

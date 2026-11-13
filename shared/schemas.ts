@@ -285,3 +285,88 @@ export const SandboxTerminalResult = z.object({
   url: z.string(),
 });
 export type SandboxTerminalResult = z.infer<typeof SandboxTerminalResult>;
+
+// Slice 9: a room's MCP connections (src/mcpconn.ts). No token or URL path ever reaches the browser.
+export const ConnectionApp = z.object({
+  tool: z.string(),
+  title: z.string(),
+  description: z.string(),
+  screen: z.boolean(),
+});
+export const ConnectionTool = z.object({
+  name: z.string(),
+  description: z.string(),
+  read_only: z.boolean(),
+  app: z.boolean(),
+});
+export const ConnectionContext = z.object({
+  text: z.string(),
+  by: z.string(),
+  at: z.number(),
+});
+export const Connection = z.object({
+  id: z.string(),
+  title: z.string(),
+  host: z.string(),
+  scope: z.enum(["room", "me"]),
+  owner: z.string(),
+  mine: z.boolean(),
+  created_at: z.number(),
+  auth: z.enum(["token", "identity"]),
+  signed_in: z.boolean(),
+  apps: z.array(ConnectionApp),
+  tools: z.array(ConnectionTool),
+  context: z.record(z.string(), ConnectionContext),
+});
+export type Connection = z.infer<typeof Connection>;
+export const ConnectionsResult = z.object({ connections: z.array(Connection) });
+export type ConnectionsResult = z.infer<typeof ConnectionsResult>;
+/** `token` is refused with a message (connections no longer take one); kept so that error still reaches the person. */
+export const CreateConnectionBody = z.object({
+  url: z.optional(z.string()),
+  scope: z.optional(z.string()),
+  title: z.optional(z.string()),
+  token: z.optional(z.unknown()),
+});
+export type CreateConnectionBody = z.infer<typeof CreateConnectionBody>;
+export const CreateConnectionResult = z.object({
+  ok: z.literal(true),
+  connection: z.nullable(z.extend(Connection, { needs_sign_in: z.boolean() })),
+});
+export type CreateConnectionResult = z.infer<typeof CreateConnectionResult>;
+export const RefreshConnectionResult = z.object({
+  ok: z.literal(true),
+  connection: Connection,
+});
+export type RefreshConnectionResult = z.infer<typeof RefreshConnectionResult>;
+export const ConnectionUiQuery = z.object({ tool: z.optional(z.string()) });
+export const ConnectionUiResult = z.object({
+  html: z.string(),
+  tool: z.object({
+    name: z.string(),
+    title: z.optional(z.string()),
+    description: z.optional(z.string()),
+    inputSchema: z.optional(z.unknown()),
+    annotations: z.optional(z.unknown()),
+    _meta: z.optional(z.unknown()),
+  }),
+});
+export type ConnectionUiResult = z.infer<typeof ConnectionUiResult>;
+export const ConnectionCallBody = z.object({
+  name: z.optional(z.string()),
+  arguments: z.optional(z.unknown()),
+});
+export type ConnectionCallBody = z.infer<typeof ConnectionCallBody>;
+export const ConnectionCallResult = z.object({ result: z.unknown() });
+export type ConnectionCallResult = z.infer<typeof ConnectionCallResult>;
+export const ConnectionContextBody = z.object({
+  tool: z.optional(z.string()),
+  text: z.optional(z.string()),
+});
+export type ConnectionContextBody = z.infer<typeof ConnectionContextBody>;
+/** A failed connection call: sign_in = this person must sign in on that server first (401). */
+export const ConnectionError = z.object({
+  error: z.string(),
+  sign_in: z.optional(z.literal(true)),
+});
+export type ConnectionError = z.infer<typeof ConnectionError>;

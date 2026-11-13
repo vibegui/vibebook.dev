@@ -13,6 +13,16 @@ import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
   CreateSandboxBody,
+  ConnectionCallBody,
+  type ConnectionCallResult,
+  ConnectionContextBody,
+  type ConnectionError,
+  type ConnectionsResult,
+  ConnectionUiQuery,
+  type ConnectionUiResult,
+  CreateConnectionBody,
+  type CreateConnectionResult,
+  type RefreshConnectionResult,
   type CreateSandboxResult,
   type SandboxesResult,
   type SandboxSetupResult,
@@ -124,7 +134,20 @@ export interface ApiServices {
     /** null = no such sandbox of yours; throws freestyle's error. */
     terminal(sid: string): Promise<SandboxTerminalResult | null>;
   };
+  /** The room's MCP connections as this person sees them (src/mcpconn.ts connOps); membership is checked by the route. */
+  connections: {
+    list(roomId: string): Promise<ConnectionsResult>;
+    create(roomId: string, b: CreateConnectionBody): Promise<CreateConnectionResult | ConnFail>;
+    remove(roomId: string, cid: string): Promise<OkResult | ConnFail>;
+    refresh(roomId: string, cid: string): Promise<RefreshConnectionResult | ConnFail>;
+    ui(roomId: string, cid: string, tool: string): Promise<ConnectionUiResult | ConnFail>;
+    call(roomId: string, cid: string, name: string, args: unknown): Promise<ConnectionCallResult | ConnFail>;
+    context(roomId: string, cid: string, tool: string, text: string): Promise<OkResult | ConnFail>;
+    signout(roomId: string, cid: string): Promise<OkResult | ConnFail>;
+  };
 }
+/** A failed connection call and its status; sign_in = sign in on that server first (401). */
+export type ConnFail = { error: string; status: 400 | 401 | 404 | 429 | 502; sign_in?: true };
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
 /** A JSON body checked against its shared schema; anything else is a 400 { error } before the handler runs. */
@@ -480,4 +503,61 @@ export const sandboxApi = agentsApi
     }
   });
 
-export type AppType = typeof sandboxApi;
+// Slice 9: the room's MCP connections. Sign-in and its OAuth callback stay browser redirects (src/mcpconn.ts).
+const connFail = (r: ConnFail) => ({ error: r.error, ...(r.sign_in ? { sign_in: true as const } : {}) }) satisfies ConnectionError;
+const uiQuery = validator("query", (value, c) => {
+  const r = ConnectionUiQuery.safeParse(value);
+  return r.success ? r.data : c.json({ error: "bad request" } satisfies ErrorBody, 400);
+});
+export const connectionsApi = sandboxApi
+  .get("/api/books/:id/connections", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    return c.json((await svc.connections.list(id)) satisfies ConnectionsResult, 200);
+  })
+  .post("/api/books/:id/connections", body(CreateConnectionBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.create(id, c.req.valid("json"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies CreateConnectionResult, 200);
+  })
+  .delete("/api/books/:id/connections/:cid", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.remove(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  })
+  .post("/api/books/:id/connections/:cid/refresh", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.refresh(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies RefreshConnectionResult, 200);
+  })
+  .get("/api/books/:id/connections/:cid/ui", uiQuery, async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.ui(id, c.req.param("cid"), c.req.valid("query").tool ?? "");
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies ConnectionUiResult, 200);
+  })
+  .post("/api/books/:id/connections/:cid/call", body(ConnectionCallBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const b = c.req.valid("json");
+    const r = await svc.connections.call(id, c.req.param("cid"), b.name ?? "", b.arguments);
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(r satisfies ConnectionCallResult, 200);
+  })
+  .post("/api/books/:id/connections/:cid/context", body(ConnectionContextBody), async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const b = c.req.valid("json");
+    const r = await svc.connections.context(id, c.req.param("cid"), (b.tool ?? "").slice(0, 100), (b.text ?? "").slice(0, 4000));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  })
+  .post("/api/books/:id/connections/:cid/signout", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    const r = await svc.connections.signout(id, c.req.param("cid"));
+    return "error" in r ? c.json(connFail(r), r.status) : c.json(ok, 200);
+  });
+
+export type AppType = typeof connectionsApi;

@@ -12,15 +12,15 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | GET | `/api/books/:id/agents` | `src/api.ts` | JSON RPC | 37 | tested (slice 7) |
 | POST | `/api/books/:id/archive` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/:id/claude` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |
-| GET | `/api/books/:id/connections` | `src/mcpconn.ts:262` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/connections` | `src/mcpconn.ts:269` | JSON RPC | 37 | todo |
-| DELETE | `/api/books/:id/connections/:cid` | `src/mcpconn.ts:278` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/connections/:cid/call` | `src/mcpconn.ts:307` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/connections/:cid/context` | `src/mcpconn.ts:321` | JSON RPC | 37 | todo |
-| POST | `/api/books/:id/connections/:cid/refresh` | `src/mcpconn.ts:284` | JSON RPC | 37 | todo |
+| GET | `/api/books/:id/connections` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| POST | `/api/books/:id/connections` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| DELETE | `/api/books/:id/connections/:cid` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| POST | `/api/books/:id/connections/:cid/call` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| POST | `/api/books/:id/connections/:cid/context` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| POST | `/api/books/:id/connections/:cid/refresh` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
 | GET | `/api/books/:id/connections/:cid/signin` | `src/mcpconn.ts:229` | browser navigation / redirect | 37 | n/a (documented) |
-| POST | `/api/books/:id/connections/:cid/signout` | `src/mcpconn.ts:238` | JSON RPC | 37 | todo |
-| GET | `/api/books/:id/connections/:cid/ui` | `src/mcpconn.ts:296` | HTML resource for the app iframe | 37 | n/a (documented) |
+| POST | `/api/books/:id/connections/:cid/signout` | `src/api.ts` | JSON RPC | 37 | tested (slice 9) |
+| GET | `/api/books/:id/connections/:cid/ui` | `src/api.ts` | JSON RPC (`{ html, tool }`: the app HTML travels as a string for srcdoc) | 37 | tested (slice 9; was listed as an HTML resource, but it answers JSON) |
 | POST | `/api/books/:id/files` | `src/api.ts` | binary upload (typed adapter) | 37 | tested (slice 1) |
 | GET | `/api/books/:id/files/:fid` | `src/index.ts:813` | binary GET (asset) | 37 | n/a (documented) |
 | POST | `/api/books/:id/icon` | `src/index.ts:507` | binary upload (typed adapter) | 37 | todo |
@@ -83,5 +83,7 @@ Slice 3 (archived, search, logins, friends add/remove, members invite/remove): d
 Slice 4 (Ligar Claude, access request, approve/deny, access status): same gates; runtime run of every branch (non-member 403, unknown room 404, already a member, asked, deny twice → 404, approve → member).
 
 Slice 5 (your name, create room, start room in one step, home router): the model's answers (start, route) are parsed with their schemas before they leave the Worker; runtime run of each status (empty 400, AI limit 429, cross-site 403, model failure 502, success).
+
+Slice 9 (MCP connections: list, create, delete, refresh, ui, call, context, signout): `mountConnections` keeps only the two browser redirects (sign-in on the server, its OAuth callback); the rest is `connOps` in `src/mcpconn.ts` behind `ApiServices.connections`, every connection still looked up by room + the signed-in person (`getConn`/`canUse`). Failures keep `{ error }` and their status (400/404/429/502), and a server that wants its own sign-in still answers 401 with `sign_in: true`. `/ui` was inventoried as an HTML resource but answers JSON (`{ html, tool }`, the page puts the HTML in srcdoc), so it is typed too (`tool` as a validated query). 46 of 49 JSON routes typed and tested; left: `GET /api/me` and the two binary uploads (room icon, avatar).
 
 Vanilla refs = occurrences of the path prefix in `public/app.html` (approximate; a shared prefix counts for several routes). The Svelte preview today reaches all of them through `svelte/legacy/host.js`; each slice moves its operations to the inferred client and updates this table.

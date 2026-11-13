@@ -11,6 +11,7 @@ import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, max
 import { track } from "./track";
 import { pushTo } from "./webpush";
 import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
+import { connOps } from "./mcpconn";
 
 export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req0: Request): ApiServices {
   return {
@@ -96,5 +97,6 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
     checkFreestyleKey: (key) => checkFreestyleKey(env, key),
     listenFresh: LISTEN_FRESH,
     sandboxes: sandboxOps(env, ctx, email, new URL(req0.url).origin),
+    connections: connOps(env, ctx, email, new URL(req0.url).origin, track),
   };
 }

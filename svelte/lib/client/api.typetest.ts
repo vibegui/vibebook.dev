@@ -4,6 +4,8 @@ import type { InferRequestType, InferResponseType } from "hono/client";
 import type { Client } from "./api";
 import type {
   SandboxesResult,
+  ConnectionsResult,
+  ConnectionCallResult,
   SandboxTerminalResult,
   AgentsResult,
   ConnectedResult,
@@ -212,3 +214,31 @@ sameAs<
   >
 >(true);
 void api.api.sandboxes[":sid"].pause.$post({ param: { sid: "s" } });
+
+// Slice 9: MCP connections.
+sameAs<
+  Equal<
+    InferResponseType<
+      (typeof api.api.books)[":id"]["connections"]["$get"],
+      200
+    >,
+    ConnectionsResult
+  >
+>(true);
+const connCall = api.api.books[":id"].connections[":cid"].call.$post;
+void connCall({
+  param: { id: "r", cid: "c" },
+  json: { name: "t", arguments: {} },
+});
+const notToolName = { name: 3 };
+// @ts-expect-error name is a string
+void connCall({ param: { id: "r", cid: "c" }, json: notToolName });
+// The tool's result is opaque JSON (unknown, so the client sees it as optional).
+const callOut: InferResponseType<typeof connCall, 200> = {
+  result: 1,
+} satisfies ConnectionCallResult;
+void callOut.result;
+void api.api.books[":id"].connections[":cid"].ui.$get({
+  param: { id: "r", cid: "c" },
+  query: { tool: "board" },
+});

@@ -1,9 +1,28 @@
 import { expect, test } from "bun:test";
 import { Hono } from "hono";
-import { sandboxApi as api, type ApiCtx, type ApiServices } from "../src/api";
+import {
+  connectionsApi as api,
+  type ApiCtx,
+  type ApiServices,
+} from "../src/api";
 
 // Exercise the real handlers/validators without Worker bindings or unchecked Env casts.
 // Authentication middleware and persistence are separate Worker integration gates.
+const conn = {
+  id: "c1",
+  title: "Mock",
+  host: "mcp.example",
+  scope: "room" as const,
+  owner: "test@example.com",
+  mine: true,
+  created_at: 1,
+  auth: "identity" as const,
+  signed_in: true,
+  apps: [],
+  tools: [{ name: "t", description: "", read_only: true, app: false }],
+  context: {},
+};
+
 function fixture(overrides: Partial<ApiServices> = {}) {
   const writes: { query: string; values: (string | number | null)[] }[] = [];
   const posted: { room: string; text: string; thread: string }[] = [];
@@ -82,6 +101,34 @@ function fixture(overrides: Partial<ApiServices> = {}) {
       remove: async (sid) => sid === "mine",
       terminal: async (sid) =>
         sid === "mine" ? { token: "t", url: "wss://x" } : null,
+    },
+    connections: {
+      list: async () => ({ connections: [conn] }),
+      create: async (_room, b) =>
+        b.token
+          ? { error: "conexões não levam mais token", status: 400 }
+          : { ok: true, connection: { ...conn, needs_sign_in: false } },
+      remove: async (_room, cid) =>
+        cid === "c1"
+          ? { ok: true }
+          : { error: "só quem conectou pode remover", status: 400 },
+      refresh: async (_room, cid) =>
+        cid === "c1"
+          ? { ok: true, connection: conn }
+          : { error: "conexão não encontrada", status: 404 },
+      ui: async (_room, cid, tool) =>
+        cid === "c1"
+          ? { html: "<p>" + tool, tool: { name: tool } }
+          : { error: "auth", status: 401, sign_in: true },
+      call: async (_room, cid, name, args) =>
+        cid === "c1"
+          ? { result: { name, args } }
+          : { error: "muitas chamadas no último minuto", status: 429 },
+      context: async (_room, _cid, tool, text) => {
+        saved.push({ table: "ctx", value: `${tool}:${text.length}` });
+        return { ok: true };
+      },
+      signout: async () => ({ ok: true }),
     },
     checkFreestyleKey: async (key) =>
       key.startsWith("good") ? null : "401 unauthorized",
@@ -419,4 +466,95 @@ test("sandboxes: members only, errors keep their old status and shape", async ()
     url: "wss://x",
   });
   expect((await post("/api/sandboxes/other/terminal")).status).toBe(404);
+});
+
+test("connections: members only, typed bodies, sign_in on 401, errors keep { error } and status", async () => {
+  const outsider = fixture({ isMember: async () => false });
+  expect(
+    (await outsider.app.request("/api/books/room/connections")).status,
+  ).toBe(403);
+  expect(
+    (await outsider.json("/api/books/room/connections/c1/call", { name: "x" }))
+      .status,
+  ).toBe(403);
+  const f = fixture();
+  expect(
+    await (await f.app.request("/api/books/room/connections")).json(),
+  ).toEqual({ connections: [conn] });
+  const made = await f.json("/api/books/room/connections", {
+    url: "https://mcp.example/mcp",
+    scope: "room",
+  });
+  expect([made.status, (await made.json()).connection.needs_sign_in]).toEqual([
+    200,
+    false,
+  ]);
+  const tok = await f.json("/api/books/room/connections", {
+    url: "https://x",
+    token: "abc",
+  });
+  expect([tok.status, await tok.json()]).toEqual([
+    400,
+    { error: "conexões não levam mais token" },
+  ]);
+  expect((await f.json("/api/books/room/connections", { url: 3 })).status).toBe(
+    400,
+  );
+  expect(
+    (
+      await f.app.request("/api/books/room/connections/c1", {
+        method: "DELETE",
+      })
+    ).status,
+  ).toBe(200);
+  expect(
+    (
+      await f.app.request("/api/books/room/connections/c2", {
+        method: "DELETE",
+      })
+    ).status,
+  ).toBe(400);
+  expect(
+    (await f.json("/api/books/room/connections/c2/refresh", {})).status,
+  ).toBe(404);
+  expect(
+    await (
+      await f.app.request("/api/books/room/connections/c1/ui?tool=board")
+    ).json(),
+  ).toEqual({
+    html: "<p>board",
+    tool: { name: "board" },
+  });
+  const auth = await f.app.request(
+    "/api/books/room/connections/c2/ui?tool=board",
+  );
+  expect([auth.status, await auth.json()]).toEqual([
+    401,
+    { error: "auth", sign_in: true },
+  ]);
+  expect(
+    await (
+      await f.json("/api/books/room/connections/c1/call", {
+        name: "t",
+        arguments: { a: 1 },
+      })
+    ).json(),
+  ).toEqual({
+    result: { name: "t", args: { a: 1 } },
+  });
+  expect(
+    (await f.json("/api/books/room/connections/c2/call", { name: "t" })).status,
+  ).toBe(429);
+  expect(
+    (
+      await f.json("/api/books/room/connections/c1/context", {
+        tool: "t",
+        text: "x".repeat(5000),
+      })
+    ).status,
+  ).toBe(200);
+  expect(f.saved).toContainEqual({ table: "ctx", value: "t:4000" });
+  expect(
+    (await f.json("/api/books/room/connections/c1/signout", {})).status,
+  ).toBe(200);
 });
