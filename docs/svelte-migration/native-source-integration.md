@@ -13,3 +13,28 @@ This is subsequent integration source, not the currently shipping A/B preview. R
 Strict UI run 1 hit Node's default V8 heap limit before diagnostics and is explicitly unconfirmed (`/tmp/vibebook-source-integration-ui-1.log`). Run 2 with `NODE_OPTIONS=--max-old-space-size=544` completed with ten errors/no warnings in four owned files. The typed captures/result inference fixes above resolved those diagnostics. Four-file formatting passed, then run 3 passed **zero errors and zero warnings**, exit 0 (`/tmp/vibebook-source-integration-ui-3.log`, Node PID368712, sampled VmHWM 525,340KiB/tree RSS 524,560KiB). This gate checked `26907d0` before the subsequent source-only changes below. All validation processes stopped and the exclusive slot was released. No pure/DOM test, Worker, browser, build, font activation or asset regeneration was run for this combined source. Earlier slice receipts and shipping-preview browser evidence do not establish combined runtime acceptance; root's remaining model/tooling/style/DOM/build/browser gates are still required.
 
 After both exact source peers accepted `26907d0`, source-only follow-ups were applied without another validation process: `71bec74` ports only `8e7ea1b`'s composer Blob-part rename compatibility, regression assertions, README and Bun 1.4.4 packageManager pin; no shipping bundle replacement. Merge `d6d3786` includes origin/main `e36810a`'s actual four-file RouterStats `who`/room-wide query/fixture/vanilla description change. `dbb3a94` matches the native Apps router tool description to that vanilla contract (`room: true`, every member in this room; false, the person's own router across rooms). `61b98aa` adds only `5450b94`'s pinned Node/Bun repository-check workflow, read-only repository permission and no persisted checkout credential. These changes are queued source, not covered by the earlier zero-error/API receipt, and await root's fresh complete gates. No font subset was activated.
+
+## Root integration gates after upstream synchronization
+
+`4bee2ad` merges main through `6ab34a9`, retaining upstream onboarding,
+notification/reply-clearing and older-file behavior. Fresh API declaration emit
+passes. The model suite passes **225 tests / 1,111 assertions** and connection
+suite passes **35 tests / 179 assertions** at this revision.
+
+`07bac49` additionally contains the reviewed Linux/macOS path-alias boundary
+fixes and CI matrix. At this revision, strict Svelte checking passes **zero
+errors and zero warnings**, and strict tooling checking exits successfully.
+Both use the frozen dependencies and `NODE_OPTIONS=--max-old-space-size=544`.
+
+The complete component run at `07bac49` is **not passing**: 90 tests pass and
+four fail (606 assertions, 94 cases). The failures concern queued embed consent,
+an old friend-removal confirmation across account replacement, sandbox removal
+controls and explicit agent recovery. They require investigation and corrected
+verification before this combined source is accepted. In particular, the old
+account confirmation assertion must remain strict; a passing model test does
+not establish the rendered control's authority.
+
+Local raw logs: `/tmp/vibebook-native-source-{api4,store1,connection1,ui4,tooling1,dom1}.log`.
+These gates cover the named source revisions, not subsequent personal-channel,
+wait/file-chip or onboarding ports. Generated assets are still frozen; no fresh
+combined application build, real-browser or deployment acceptance is claimed.
