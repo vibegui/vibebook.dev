@@ -39,6 +39,7 @@ try {
     ...(await nativeBrowserFixtures(context, base)),
     "deterministic profile waits",
     "held resolve responses and explicit HTTP 500",
+    "native outer boxes frozen only during CSS containment comparison; fixture itself must preserve surrounding layout",
   ];
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
@@ -316,24 +317,92 @@ try {
               styles: properties.map((name) => style.getPropertyValue(name)),
             };
           });
+        const diff = (
+          before: ReturnType<typeof snapshot>,
+          after: ReturnType<typeof snapshot>,
+        ) =>
+          before.flatMap((value, index) =>
+            JSON.stringify(value) === JSON.stringify(after[index])
+              ? []
+              : [{ baseline: value, nativeLoaded: after[index] }],
+          );
+        const frames = [
+          ...document.querySelectorAll<HTMLElement>("[data-vb-native]"),
+        ]
+          .filter((node) => !node.parentElement?.closest("[data-vb-native]"))
+          .map((node) => {
+            const style = getComputedStyle(node),
+              rect = node.getBoundingClientRect();
+            return {
+              node,
+              originalStyle: node.getAttribute("style"),
+              width: rect.width,
+              height: rect.height,
+              geometry: {
+                display: style.display,
+                position: style.position,
+                flex: style.flex,
+                "align-self": style.alignSelf,
+                margin: style.margin,
+                "box-sizing": "border-box",
+              },
+            };
+          });
+        const original = snapshot();
         try {
+          // Native content intentionally changes size when its own CSS is removed.
+          // Fix only its excluded outer boxes so reset leakage is measured separately.
+          for (const frame of frames) {
+            for (const [name, value] of Object.entries(frame.geometry))
+              frame.node.style.setProperty(name, value, "important");
+            if (frame.width > 0 && frame.height > 0) {
+              for (const name of ["width", "min-width", "max-width"])
+                frame.node.style.setProperty(
+                  name,
+                  `${frame.width}px`,
+                  "important",
+                );
+              for (const name of ["height", "min-height", "max-height"])
+                frame.node.style.setProperty(
+                  name,
+                  `${frame.height}px`,
+                  "important",
+                );
+              frame.node.style.setProperty("overflow", "hidden", "important");
+            }
+          }
+          const fixtureMismatches = diff(original, snapshot());
           sheet.disabled = true;
           const baseline = snapshot();
           sheet.disabled = false;
           const nativeLoaded = snapshot();
           return {
             elements: elements.length,
-            mismatches: baseline.flatMap((value, index) =>
-              JSON.stringify(value) === JSON.stringify(nativeLoaded[index])
-                ? []
-                : [{ baseline: value, nativeLoaded: nativeLoaded[index] }],
-            ),
+            nativeFrames: frames.map(({ node, width, height }) => ({
+              tag: node.tagName,
+              id: node.id,
+              label: node.getAttribute("aria-label"),
+              width,
+              height,
+            })),
+            fixtureMismatches,
+            mismatches: diff(baseline, nativeLoaded),
           };
         } finally {
           sheet.disabled = false;
+          for (const frame of frames) {
+            if (frame.originalStyle === null)
+              frame.node.removeAttribute("style");
+            else frame.node.setAttribute("style", frame.originalStyle);
+          }
         }
       });
       assert(comparison.elements > 20, "Measure the real legacy room shell");
+      assert.deepEqual(
+        comparison.fixtureMismatches,
+        [],
+        "Native-box fixture changed surrounding layout",
+      );
       assert.deepEqual(
         comparison.mismatches,
         [],

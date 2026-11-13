@@ -330,6 +330,20 @@ try {
   await audit("navigation-dark-768");
   await page.setViewportSize({ width: 390, height: 844 });
   await audit("navigation-dark-390");
+  step("Checking the mobile form stays reachable with expanded epic actions");
+  await draft.scrollIntoViewIfNeeded();
+  await expect(draft).toBeInViewport({ ratio: 0.95 });
+  await submit.click(); // Empty submission focuses the field without writing a new epic.
+  await expect(draft).toBeFocused();
+  await expect(submit).toBeInViewport({ ratio: 0.95 });
+  result.mobileForm = {
+    bounds: await draft.boundingBox(),
+    viewport: page.viewportSize(),
+    focused: await draft.evaluate(
+      (element) => element === document.activeElement,
+    ),
+  };
+  await page.screenshot({ path: `${output}/navigation-form-dark-390.png` });
   step("Checking Portuguese input and navigation accessibility");
   await context.addCookies([{ name: "vb_lang", value: "pt", url: base }]);
   await page.reload();
