@@ -218,6 +218,8 @@
   .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
   .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
   .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
+  /* Only your tasks waiting here: a small dot, no number (the number is for asks). */
+  .swWait.tdot, .thread .wN.tdot { min-width: 0; width: 9px; height: 9px; padding: 0; }
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
   .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary, .claudeBar [data-on] { white-space: nowrap; flex: none; }
@@ -394,9 +396,7 @@
   .arch summary::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 8px 2px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; } .arch[open] summary::before { transform: rotate(45deg); }
   .thread.archived { opacity: .6; }
   .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
-  /* A Claude working on this epic: the asterisk turns slowly and a soft light runs around the row. */
-  .thread.busy { position: relative; isolation: isolate; }
-  .thread.busy::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), transparent 0 70%, var(--claude) 85%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  /* A Claude working on this epic: the asterisk turns slowly (the light around the row was noise, Gui 13/11). */
   @property --spin-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
   @keyframes claudeRing { to { --spin-a: 360deg; } }
   .claudeSpin { color: var(--claude); font-size: 15px; line-height: 1; display: inline-grid; place-items: center; width: 1em; height: 1em; transform-origin: 50% 50%; animation: claudeTurn 3.2s linear infinite; flex: none; }
@@ -1549,6 +1549,7 @@ const EN = {
   "Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.": "A request, an idea, a task for someone… I'll find the right room and epic.",
   "Achar a sala →": "Find the room →",
   "Como seus amigos te chamam?": "What do your friends call you?",
+  "Tarefa sua pendente": "A task of yours is pending",
   "Passo {n} de 3": "Step {n} of 3",
   "Continuar": "Continue",
   "Trocar foto": "Change photo",
@@ -2179,6 +2180,14 @@ let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting 
 // A Claude of yours stopped at a question (a<msg> = its ask in the room, b<msg> = blocked in the terminal): those
 // counts turn orange-red instead of yellow, so "your Claude is stuck" stands out from people waiting.
 const clW = (ws) => (ws.some((w) => /^[ab]\d/.test(w.ref)) ? " cl" : "");
+// The number is what asks for your reply: Jev read a message as an ask of you, a person tagged you, your Claude asks
+// (m/a/b). Your open tasks (t) are only a small yellow dot (Gui, 13/11: one count for both was noise).
+const asksOf = (ws) => ws.filter((w) => !w.ref.startsWith("t"));
+const waitBadge = (ws, cls = "swWait") => {
+  const a = asksOf(ws);
+  if (a.length) return `<b class="${cls}${clW(a)}" title="${a.length === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n: a.length })}">${a.length}</b>`;
+  return ws.length ? `<b class="${cls} tdot" title="${t("Tarefa sua pendente")}"></b>` : "";
+};
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
   link: `<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>`,
@@ -2309,7 +2318,7 @@ function renderSwitcher() {
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um agent está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   // A cloud sandbox running in the room (it costs money): an orange ring and a ☁ on the tile.
   const cloud = (b) => (b.sandboxes_running ? `<b class="swCloud" title="${t("sandbox na nuvem rodando")}">☁</b>` : "");
   const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw${b.sandboxes_running ? " cloud" : ""}">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}${cloud(b)}</span></a>`;
@@ -2688,12 +2697,12 @@ const MENU_ICON = icon("menu", 22);
 function phoneHome(me) {
   const rooms = [...me.books].sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0) || b.updated_at - a.updated_at);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   $app.innerHTML = `
   <div class="phome">
     <header class="ptop">
-      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait${clW(myWaits)}">${myWaits.length}</b>` : ""}</button>
+      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${waitBadge(myWaits)}</button>
       <a class="plogo" href="/"><span class="tile logo">${SW_LOGO}</span>vibebook</a>
       <button class="me" id="myName" aria-label="${t("Seu perfil")}">${avatar(me.email)}</button>
     </header>
@@ -3855,7 +3864,7 @@ function renderRail(el) {
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
-        <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
+        <button class="rb ${thread === e.id ? "sel" : ""} ${asksIn(e.id) ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${e.owner ? `<span class="rbOwner">${ownerPic(e.owner)}</span>` : esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">${icon("plus", 18)}</button>
     </div>
@@ -4260,7 +4269,8 @@ function renderWorking() {
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
-const waitPill = (th) => { const ws = waitsIn(th), n = ws.length; return n ? `<b class="wN${clW(ws)}" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
+const waitPill = (th) => waitBadge(waitsIn(th), "wN");
+const asksIn = (th) => asksOf(waitsIn(th)).length;
 // Deploy stage after "Claude fez" (set by agents with update_epic prod): 🚀 no ar, ✓✓ verificado em prod.
 const prodMark = (e) => !e.prod ? "" : e.prod.stage === "verified"
   ? `<span class="prodMark ok" title="${esc(t("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>`
@@ -4320,7 +4330,7 @@ function epicTree(list) {
   return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map((e) => epicRow(e)).join("");
 }
 const epicRow = (e, lead = "") => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
-        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${asksIn(e.id) ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           ${lead}${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 // Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
@@ -4381,7 +4391,7 @@ function renderSide() {
       <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec threadsSec">
-      <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""} ${asksIn("main") ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
         const open = S.epics.filter((e) => !e.archived);
@@ -4559,7 +4569,7 @@ function roomStrip() {
   const recent = [...(myBooks || [])].filter((b) => b.id !== S?.id && !b.archived_at).sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0)).slice(0, 3);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy">✻</b>` : "");
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   // "Todos" sits on the left (where ← goes back), search on the right.
   return `<nav class="roomStrip" aria-label="${t("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${icon("grid", 20)}</span><span>${t("Todos")}</span></a>${recent.map((b) => `<a data-nav href="/b/${b.id}" title="${esc(b.title)}"><span class="tw">${tile(b, "md")}${dot(b)}${busy(b)}${waitN(b)}</span><span>${esc(b.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - recent.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${t("Trocar de sala")}"><span class="tile md">${SW_SEARCH}</span><span>${t("Buscar")}</span></button></nav>`;
 }

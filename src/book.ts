@@ -680,9 +680,18 @@ export class Book extends DurableObject<Env> {
       // for the same prompt (it stayed red until the Claude's next post, which can be minutes away).
       if (q && q.author === author && ASK_OPENER.test(q.text)) { this.ctx.waitUntil(this.askWait(author, replyTo, "", null)); this.unblock(author); }
     }
+    if (byPerson && !extra.quiet) this.ctx.waitUntil(this.answeredHere(author, thread, id));
     if (text.includes("@") && !extra.quiet) this.ctx.waitUntil(this.queueMentions(m));
     if (extra.tag === "done" && extra.kind === "agent" && thread !== "main") this.ctx.waitUntil(this.wakeAt(ts + (this.env.DEV_EMAIL ? 4_000 : NUDGE_AFTER_DELIVERY_MS)));
     return m;
+  }
+
+  /** A person wrote in this thread: what was asked of them earlier in it counts as answered (Gui, 13/11: the count
+   * should go when you reply, not when Jev agrees you did). Only asks (m<id>); their tasks (t<id>) stay. */
+  async answeredHere(email: string, thread: string, id: number) {
+    const bookId = this.get("book_id"); if (!bookId) return;
+    const r = await this.env.DB.prepare(`DELETE FROM waits WHERE book_id = ? AND email = ? AND thread = ? AND ref LIKE 'm%' AND CAST(substr(ref, 2) AS INTEGER) < ?`).bind(bookId, email, thread, id).run();
+    if (r.meta.changes) await poke(this.env, [email], { t: "me" });
   }
 
   // ---- mention emails (src/mentionmail.ts) ----
@@ -2064,10 +2073,14 @@ export class Book extends DurableObject<Env> {
         if (!r) break; // the next pass starts from this message again
         cost += r.cost;
         const yes = (k: string, at: number) => (r.answers[k]?.noul ?? 0) >= at;
-        const asked = others.slice(0, 12).filter((_, i) => yes(`p${i}`, 0.7));
+        // Asked = Jev read it as an ask, or a person (not an agent) tagged them; minus whoever already wrote in this thread
+        // after it (the pass runs ~30s late, and answeredHere already ran for them).
+        const tagged = m.kind ? [] : mentioned(m.text, members, names, m.author);
+        const later = new Set(this.sql.exec<{ author: string }>(`SELECT DISTINCT author FROM messages WHERE thread = ? AND id > ? AND kind IS NULL`, m.thread, m.id).toArray().map((x) => x.author));
+        const asked = others.filter((e, i) => (tagged.includes(e) || (i < 12 && yes(`p${i}`, 0.7))) && !later.has(e));
         if (asked.length) this.ctx.waitUntil(this.notify(asked, `${nm(m.author)} espera sua resposta`, m.text.replace(/\s+/g, " "), m.id, m.thread));
         await DB.batch([
-          ...others.slice(0, 12).filter((_, i) => yes(`p${i}`, 0.7)).map((e) =>
+          ...asked.map((e) =>
             DB.prepare(`INSERT OR IGNORE INTO waits (book_id, ref, email, thread, topic, author, text, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).bind(bookId, `m${m.id}`, e, m.thread, topic(m.thread), m.author, m.text.slice(0, 280), m.ts),
           ),
           ...open.filter((_, i) => yes(`r${i}`, 0.6)).map((w) => DB.prepare(`DELETE FROM waits WHERE book_id = ? AND ref = ? AND email = ?`).bind(bookId, w.ref, m.author)),
