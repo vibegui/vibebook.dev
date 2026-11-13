@@ -4203,7 +4203,7 @@ let treeOpenedFor = "";
 function epicTree(list) {
   const ids = new Set(list.map((e) => e.id)), kids = new Map();
   for (const e of list) if (e.parent && e.parent !== e.id && ids.has(e.parent)) { if (!kids.has(e.parent)) kids.set(e.parent, []); kids.get(e.parent).push(e); }
-  if (!kids.size) return list.map(epicRow).join("");
+  if (!kids.size) return list.map((e) => epicRow(e)).join("");
   const closed = treeClosed(), seen = new Set();
   const below = (id, f, d = 0) => d < 12 && (kids.get(id) || []).some((k) => f(k) || below(k.id, f, d + 1));
   // Entering a thread opens the branches above it once; after that the › always wins (closing works even from inside).
@@ -4224,7 +4224,7 @@ function epicTree(list) {
     return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}">${epicRow(e, `<span class="epChev" role="button" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</span>`)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
   };
   // Roots first (no parent in this list); anything a cycle left out still gets its row.
-  return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map(epicRow).join("");
+  return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map((e) => epicRow(e)).join("");
 }
 const epicRow = (e, lead = "") => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
