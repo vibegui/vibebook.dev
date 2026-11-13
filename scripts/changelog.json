@@ -53,7 +53,8 @@
         "As ações de arquivos continuam disponíveis quando o endereço da sala termina com uma barra.",
         "Os rótulos de gráficos, escolhas e confirmação pendente também aparecem em inglês quando esse idioma está selecionado.",
         "Editar o documento de uma conversa removida não sobrescreve mais o documento da sala.",
-        "Na prévia Svelte, perder acesso limpa os dados da sala em cache e fecha arquivos abertos."
+        "Na prévia Svelte, perder acesso limpa os dados da sala em cache e fecha arquivos abertos.",
+        "A revisão de rascunhos de conversas removidas respeita o idioma escolhido."
       ],
       "en": [
         "A new file version no longer leaves detached buttons able to open or pin the previous version.",
@@ -64,7 +65,8 @@
         "File actions remain available when the room URL ends with a slash.",
         "Chart, choice and pending-confirmation labels now appear in English when that language is selected.",
         "Editing a deleted conversation’s document no longer overwrites the room document.",
-        "In the Svelte preview, losing access clears cached room data and closes open file previews."
+        "In the Svelte preview, losing access clears cached room data and closes open file previews.",
+        "Draft review for deleted conversations follows the selected language."
       ]
     }
   },
@@ -897,12 +899,8 @@
       ]
     },
     "fixes": {
-      "pt": [
-        "Salas novas ganham título e resumo depois da primeira mensagem"
-      ],
-      "en": [
-        "New rooms get a title and summary after the first message"
-      ]
+      "pt": ["Salas novas ganham título e resumo depois da primeira mensagem"],
+      "en": ["New rooms get a title and summary after the first message"]
     }
   },
   {

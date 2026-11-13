@@ -3926,7 +3926,7 @@ describe("native composer ownership and interactions", () => {
     orphan.edit("Original private draft");
     flushSync();
     const review = [...target.querySelectorAll("button")].find((button) =>
-      button.textContent?.includes("Review draft"),
+      button.textContent?.includes("Revisar rascunho"),
     );
     expect(!!review).toBe(true);
     review!.click();
@@ -3945,15 +3945,15 @@ describe("native composer ownership and interactions", () => {
         throw new Error("denied");
       };
       [...dialog.querySelectorAll("button")]
-        .find((button) => button.textContent?.trim() === "Copy")!
+        .find((button) => button.textContent?.trim() === "Copiar")!
         .click();
       await tick();
-      expect(dialog.textContent).toContain("Could not copy");
+      expect(dialog.textContent).toContain("Não foi possível copiar");
     } finally {
       navigator.clipboard.writeText = original;
     }
     [...dialog.querySelectorAll("button")]
-      .find((button) => button.textContent?.includes("Discard draft"))!
+      .find((button) => button.textContent?.includes("Descartar rascunho"))!
       .click();
     flushSync();
     await dialogClosed();

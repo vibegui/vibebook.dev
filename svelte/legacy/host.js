@@ -41,6 +41,13 @@ const LANG =
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Você não tem acesso a esta sala.": "You do not have access to this room.",
+  "Rascunhos de conversas removidas": "Drafts from deleted threads",
+  "Revisar rascunho": "Review draft",
+  "Rascunho original": "Original draft",
+  "Descartar rascunho": "Discard draft",
+  "Não foi possível copiar. Selecione o texto abaixo e copie manualmente.": "Could not copy. Select the text below and copy it manually.",
+  "A conversa original não está disponível. Copie ou descarte este rascunho local. Nada será enviado ou movido. Descartar não desfaz um upload ou uma mensagem já enviada.": "The original thread is unavailable. Copy or discard this local draft. Nothing will be sent or moved. Discarding cannot undo an upload or message already sent.",
   "Gráfico": "Chart",
   "Escolha uma opção": "Choose an option",
   "Ainda sem confirmação. Confira a sala antes de enviar novamente.": "Still unconfirmed. Check the room before sending again.",

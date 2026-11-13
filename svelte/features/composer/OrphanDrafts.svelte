@@ -41,7 +41,9 @@
           selected.state.poll.question
             ? `Poll: ${selected.state.poll.question}`
             : "",
-          selected.state.poll.multi ? vb.t("Multiple choices allowed") : "",
+          selected.state.poll.multi
+            ? vb.t("cada pessoa pode escolher várias")
+            : "",
           ...selected.state.poll.options.filter(Boolean),
         ]
           .filter(Boolean)
@@ -63,11 +65,11 @@
     try {
       await navigator.clipboard.writeText(reviewText);
       if (active && own === ticket && selected === snapshot && open && current)
-        notice = vb.t("Copied");
+        notice = vb.t("Copiado");
     } catch {
       if (active && own === ticket && selected === snapshot && open && current)
         notice = vb.t(
-          "Could not copy. Select the text below and copy it manually.",
+          "Não foi possível copiar. Selecione o texto abaixo e copie manualmente.",
         );
     }
   }
@@ -90,7 +92,7 @@
     data-composer-orphans
     class="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:border-t tw:border-border tw:p-2 tw:text-sm tw:text-muted-foreground"
   >
-    <span>{vb.t("Drafts from deleted threads")}: {orphans.length}</span>
+    <span>{vb.t("Rascunhos de conversas removidas")}: {orphans.length}</span>
     {#each orphans as item (item.scope.thread)}
       <Button
         variant="outline"
@@ -100,23 +102,23 @@
           notice = "";
           open = true;
           ticket++;
-        }}>{vb.t("Review draft")}: {item.scope.thread}</Button
+        }}>{vb.t("Revisar rascunho")}: {item.scope.thread}</Button
       >
     {/each}
   </aside>
 {/if}
 <Dialog
   bind:open
-  title={vb.t("Review draft")}
-  closeLabel={vb.t("Close")}
+  title={vb.t("Revisar rascunho")}
+  closeLabel={vb.t("Fechar")}
   description={vb.t(
-    "The original thread is unavailable. Copy or discard this local draft. Nothing will be sent or moved. Discarding cannot undo an upload or message already sent.",
+    "A conversa original não está disponível. Copie ou descarte este rascunho local. Nada será enviado ou movido. Descartar não desfaz um upload ou uma mensagem já enviada.",
   )}
 >
   <Textarea
     readonly
     value={reviewText}
-    aria-label={vb.t("Original draft")}
+    aria-label={vb.t("Rascunho original")}
     rows={8}
   />
   {#if notice}<p
@@ -127,10 +129,10 @@
     </p>{/if}
   <div class="tw:flex tw:justify-end tw:gap-2">
     <Button variant="outline" disabled={!current} onclick={copy}
-      >{vb.t("Copy")}</Button
+      >{vb.t("Copiar")}</Button
     >
     <Button variant="destructive" disabled={!current} onclick={discard}
-      >{vb.t("Discard draft")}</Button
+      >{vb.t("Descartar rascunho")}</Button
     >
   </div>
 </Dialog>
