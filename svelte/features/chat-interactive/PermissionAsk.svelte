@@ -42,6 +42,7 @@
     "permission",
   );
   const answer = $derived(answerOf(room, message));
+  const approved = $derived(!!answer && /^\s*aprov/i.test(answer.text));
   const actionable = $derived(canAnswer(room, message) && !choices.closed);
   $effect(() => {
     const snapshot = room;
@@ -86,7 +87,7 @@
       role="status"
       class="tw:m-0 tw:rounded-control tw:border tw:border-border tw:bg-muted tw:p-3"
     >
-      {/^\s*aprov/i.test(answer.text)
+      {approved
         ? "✓ " + vb.t("Aprovado por {who}", { who: vb.name(answer.author) })
         : "✕ " + vb.t("Negado por {who}", { who: vb.name(answer.author) })} · {vb.hhmm(
         answer.ts,
