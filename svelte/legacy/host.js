@@ -12,6 +12,7 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
   "Não deu pra resolver agora. Tente de novo.": "Couldn't resolve this request. Try again.",
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -977,7 +978,7 @@ function swSearch() {
     renderSwitchList();
   }, 250);
 }
-function openSwitch() { if (!myBooks) return; closeInbox(); swQ.value = ""; swPick = 0; swHits = null; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
+function openSwitch() { if (!myBooks) return; UI.dismissDialogs(); closeInbox(); swQ.value = ""; swPick = 0; swHits = null; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
 swQ.oninput = () => { swPick = 0; swSearch(); renderSwitchList(); };
 swQ.onkeydown = (e) => {
   const n = swList.querySelectorAll("a").length;
@@ -1002,6 +1003,7 @@ swDlg.onclick = (e) => { if (e.target === swDlg) swDlg.close(); };
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && document.body.classList.contains("has-sw")) { e.preventDefault(); swDlg.open ? swDlg.close() : openSwitch(); } });
 
 function route() {
+  UI.dismissDialogs();
   closeInbox();
   clearViews();
   renderSwitcher();
@@ -1064,6 +1066,7 @@ async function login() {
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
+  UI.dismissDialogs();
   closeInbox();
   if (viewerPop() || sheetPop()) return;
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
@@ -2992,7 +2995,7 @@ function sheetPop() {
   delete bk.dataset.sheet;
   return true;
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open]")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]")) closeSheet(); });
 // Drag a sheet by its handle (or the peek bar): it follows the finger, and lets go open or closed past a quarter.
 // A tap (no drag) is a plain click: opens from the peek bar, closes from the handle.
 function sheetDrag(handle, which, opening, onTap) {

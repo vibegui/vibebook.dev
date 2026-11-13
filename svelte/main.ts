@@ -11,6 +11,7 @@ import Reminders from "./Reminders.svelte";
 import Sidebar from "./Sidebar.svelte";
 import Chat from "./Chat.svelte";
 export { createRoomStore } from "./roomStore";
+export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
   tasks: Tasks,
   board: Board,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { HTMLAttributes } from "svelte/elements";
   import { tv, type VariantProps } from "tailwind-variants";
   import { cn } from "./utils";
   const variants = tv(
@@ -23,10 +24,14 @@
     children,
     variant,
     class: className,
-  }: VariantProps<typeof variants> & {
-    children?: Snippet;
-    class?: string;
-  } = $props();
+    ...rest
+  }: VariantProps<typeof variants> &
+    Omit<HTMLAttributes<HTMLSpanElement>, "children" | "style" | "class"> & {
+      children?: Snippet;
+      class?: string;
+    } = $props();
 </script>
 
-<span class={cn(variants({ variant }), className)}>{@render children?.()}</span>
+<span {...rest} class={cn(variants({ variant }), className)}
+  >{@render children?.()}</span
+>

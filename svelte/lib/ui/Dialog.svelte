@@ -4,6 +4,7 @@
   import Icon from "./Icon.svelte";
   import { buttonVariants } from "./button";
   import { cn } from "./utils";
+  import { registerDialog } from "./dialogController";
   let {
     open = $bindable(false),
     title,
@@ -13,6 +14,7 @@
     closeLabel,
     sheet = false,
     onOpenChange,
+    initialFocus,
   }: {
     open?: boolean;
     title: string;
@@ -22,7 +24,15 @@
     closeLabel: string;
     sheet?: boolean;
     onOpenChange?: (open: boolean) => void;
+    initialFocus?: () => HTMLElement | null;
   } = $props();
+  $effect(() => {
+    if (open)
+      return registerDialog(() => {
+        open = false;
+        onOpenChange?.(false);
+      });
+  });
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
@@ -34,6 +44,13 @@
   <Dialog.Portal>
     <Dialog.Overlay class="tw:fixed tw:inset-0 tw:z-40 tw:bg-scrim" />
     <Dialog.Content
+      onOpenAutoFocus={(event) => {
+        const target = initialFocus?.();
+        if (target) {
+          event.preventDefault();
+          target.focus();
+        }
+      }}
       preventScroll={false}
       preventBodyPointerEvents={false}
       preventOverflowTextSelection={false}

@@ -23,6 +23,9 @@ for (const key of [
   "Element",
   "HTMLElement",
   "HTMLInputElement",
+  "HTMLButtonElement",
+  "HTMLFormElement",
+  "HTMLAnchorElement",
   "HTMLMediaElement",
   "HTMLSelectElement",
   "HTMLTextAreaElement",
@@ -31,15 +34,27 @@ for (const key of [
   "Text",
   "Comment",
   "MutationObserver",
+  "ResizeObserver",
   "Event",
   "MouseEvent",
+  "PointerEvent",
   "KeyboardEvent",
   "CustomEvent",
+  "getComputedStyle",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
   "localStorage",
 ]) {
   const value = key === "window" ? window : Reflect.get(window, key);
   Object.defineProperty(globalThis, key, {
-    value,
+    value:
+      [
+        "getComputedStyle",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ].includes(key) && typeof value === "function"
+        ? value.bind(window)
+        : value,
     configurable: true,
     writable: true,
   });
@@ -64,8 +79,8 @@ plugin({
     }));
   },
 });
-const { flushSync } = await import("svelte");
-const { mountView } = await import("../svelte/main");
+const { flushSync, tick } = await import("svelte");
+const { mountView, dismissDialogs } = await import("../svelte/main");
 const vb: PanelBridge = {
   t: (s, vars) =>
     s.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[key] ?? "")),
@@ -150,13 +165,16 @@ describe("native Svelte room panels", () => {
     room.epics[0].tasks[0].flags = ["review note"];
     const { target, events } = render("tasks", room);
     const checkbox = target.querySelector("input[type=checkbox]")!;
-    change(checkbox);
+    checkbox.dispatchEvent(
+      new window.MouseEvent("click", { bubbles: true, cancelable: true }),
+    );
+    flushSync();
     const owner = target.querySelector("select")!;
     owner.value = "you@test";
     change(owner);
-    target.querySelector<HTMLElement>(".tt")!.click();
+    target.querySelector<HTMLElement>("[data-task-title]")!.click();
     flushSync();
-    const edit = target.querySelector<HTMLInputElement>(".tedit")!;
+    const edit = target.querySelector<HTMLInputElement>("[data-task-edit]")!;
     expect(edit.value).toBe("Original title");
     edit.value = "New title";
     edit.dispatchEvent(new window.Event("input", { bubbles: true }));
@@ -183,18 +201,18 @@ describe("native Svelte room panels", () => {
     const draft = target.querySelector<HTMLInputElement>("#newTask input")!;
     draft.value = "Draft for original epic";
     draft.dispatchEvent(new window.Event("input", { bubbles: true }));
-    target.querySelector<HTMLElement>(".tt")!.click();
+    target.querySelector<HTMLElement>("[data-task-title]")!.click();
     flushSync();
     update({ ...room });
     expect(
       target.querySelector<HTMLInputElement>("#newTask input")?.value,
     ).toBe("Draft for original epic");
-    expect(target.querySelector(".tedit")).not.toBeNull();
+    expect(target.querySelector("[data-task-edit]")).not.toBeNull();
     update(room, "other");
     expect(
       target.querySelector<HTMLInputElement>("#newTask input")?.value,
     ).toBe("");
-    expect(target.querySelector(".tedit")).toBeNull();
+    expect(target.querySelector("[data-task-edit]")).toBeNull();
     target
       .querySelector("#newTask")!
       .dispatchEvent(
@@ -216,6 +234,85 @@ describe("native Svelte room panels", () => {
     expect(
       target.querySelector<HTMLInputElement>("#newTask input")?.value,
     ).toBe("");
+  }, 30_000);
+  test("task commands retain drafts and controls when disconnected", () => {
+    const { target, events } = render("tasks", fixture(), {
+      send: () => false,
+    });
+    const draft = target.querySelector<HTMLInputElement>("#newTask input")!;
+    draft.value = "Keep this offline draft";
+    draft.dispatchEvent(new window.Event("input", { bubbles: true }));
+    target
+      .querySelector("#newTask")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    flushSync();
+    expect(draft.value).toBe("Keep this offline draft");
+    expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+      "Não deu pra enviar agora",
+    );
+    const owner = target.querySelector<HTMLSelectElement>("select")!;
+    owner.value = "you@test";
+    change(owner);
+    expect(owner.value).toBe("me@test");
+    target.querySelector<HTMLElement>("[data-task-title]")!.click();
+    flushSync();
+    const edit = target.querySelector<HTMLInputElement>("[data-task-edit]")!;
+    edit.value = "Keep this rename";
+    edit.dispatchEvent(new window.Event("input", { bubbles: true }));
+    edit.dispatchEvent(
+      new window.KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    flushSync();
+    expect(
+      target.querySelector<HTMLInputElement>("[data-task-edit]")?.value,
+    ).toBe("Keep this rename");
+    expect(events).toEqual([]);
+  }, 30_000);
+  test("task due dialog saves typed assignments and tears down before native modal handoff", async () => {
+    const room = fixture();
+    const { target, events, update } = render("tasks", room);
+    target.querySelector<HTMLElement>("[data-due]")!.click();
+    flushSync();
+    await tick();
+    const dialog = window.document.querySelector('[role="dialog"]')!;
+    expect(dialog).not.toBeNull();
+    const input = dialog.querySelector<HTMLInputElement>("input")!;
+    input.value = "Friday";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    dialog
+      .querySelector("form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    flushSync();
+    await tick();
+    expect(events).toEqual([{ t: "task.assign", id: "t", due: "Friday" }]);
+    expect(window.document.querySelector('[role="dialog"]')).toBeNull();
+    room.epics[0].tasks[0].due = "Friday";
+    update({ ...room });
+    target.querySelector<HTMLElement>("[data-due]")!.click();
+    flushSync();
+    await tick();
+    expect(
+      window.document.querySelector<HTMLInputElement>('[role="dialog"] input')
+        ?.value,
+    ).toBe("Friday");
+    dismissDialogs();
+    await tick();
+    expect(window.document.querySelector('[role="dialog"]')).toBeNull();
+    target.querySelector<HTMLElement>("[data-due]")!.click();
+    flushSync();
+    await tick();
+    update({ ...room, epics: [{ ...room.epics[0], tasks: [] }] });
+    await tick();
+    expect(window.document.querySelector('[role="dialog"]')).toBeNull();
+    expect(events).toHaveLength(1);
   }, 30_000);
   test("board supports keyboard status moves and native list navigation", () => {
     const opened: string[] = [];

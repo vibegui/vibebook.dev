@@ -174,6 +174,11 @@
               ]}
             />{/snippet}</Field
         >
+        <output
+          data-selection-state
+          class="tw:block tw:text-xs tw:text-muted-foreground"
+          aria-live="polite">{choice} · {filter}</output
+        >
       </Card>
       <Card
         title="Overlays"

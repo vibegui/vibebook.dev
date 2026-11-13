@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import * as z from "zod/mini";
 import type { Wait } from "../svelte/types";
 import { verifyStudioPalette } from "./studio-browser";
+import { nativeBrowserFixtures } from "./native-browser-fixtures";
 
 const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -34,29 +35,8 @@ try {
   await context.addCookies([{ name: "vb_lang", value: "en", url: base }]);
   context.setDefaultTimeout(60_000);
   context.setDefaultNavigationTimeout(120_000);
-  // This increment checks native fonts from their real WOFF2 assets. Legacy-only
-  // Google font CSS is isolated so unrelated external requests cannot block it.
-  await context.route("https://fonts.googleapis.com/**", (route) =>
-    route.fulfill({ status: 200, contentType: "text/css", body: "" }),
-  );
-  // This UI suite does not start a coding-agent runner. Its read-only local
-  // protocol reports no active rooms/directory; runner integration has its own gate.
-  await context.route("http://127.0.0.1:47321/**", (route) => {
-    const path = new URL(route.request().url()).pathname;
-    assert(
-      path === "/ping" || path === "/where",
-      "Unexpected local runner operation",
-    );
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: { "access-control-allow-origin": base },
-      body: path === "/ping" ? '{"rooms":[]}' : "null",
-    });
-  });
   results.fixtures = [
-    "legacy-only Google CSS isolated",
-    "local runner: no active rooms/directory",
+    ...(await nativeBrowserFixtures(context, base)),
     "deterministic profile waits",
     "held resolve responses and explicit HTTP 500",
   ];
@@ -125,6 +105,27 @@ try {
     await toggle.focus();
     await page.keyboard.press("Space");
     await expect(toggle).toBeChecked();
+    const members = page.getByRole("radio", {
+      name: "Room members",
+      exact: true,
+    });
+    const personal = page.getByRole("radio", { name: "Only me", exact: true });
+    await members.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(personal).toBeChecked();
+    await expect(
+      page.getByRole("radio", { name: "Unavailable", exact: true }),
+    ).toBeDisabled();
+    const filter = page.getByRole("combobox", { name: "Show", exact: true });
+    await filter.selectOption("active");
+    await expect(page.locator("[data-selection-state]")).toHaveText(
+      "personal · active",
+    );
+    await filter.selectOption("all");
+    await members.check();
+    await expect(page.locator("[data-selection-state]")).toHaveText(
+      "room · all",
+    );
     await writeFile(`${output}/gallery-before-tabs.html`, await page.content());
     await page.screenshot({
       path: `${output}/gallery-before-tabs.png`,

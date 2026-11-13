@@ -33,6 +33,8 @@ if (native) {
   files.push(
     "svelte/Inbox.svelte",
     "svelte/InboxMount.svelte",
+    "svelte/TaskList.svelte",
+    "svelte/Tasks.svelte",
     "svelte/styles.ts",
     "svelte/index.html",
   );

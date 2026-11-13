@@ -40,6 +40,8 @@
     "scripts/capture-studio.ts",
     "scripts/design-system-browser.ts",
     "scripts/ui-variants.test.ts",
-    "scripts/studio-browser.ts"
+    "scripts/studio-browser.ts",
+    "scripts/native-browser-fixtures.ts",
+    "scripts/tasks-browser.ts"
   ]
 }
