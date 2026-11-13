@@ -49,14 +49,16 @@
         "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo.",
         "O campo de texto dos lembretes permanece visível mesmo quando o editor do documento está fechado.",
         "Na prévia móvel, tocar nas abas abre o painel escolhido sem confundir o toque com o gesto de arrastar.",
-        "Fechar uma confirmação com Escape mantém o painel móvel aberto e devolve o foco ao botão de origem."
+        "Fechar uma confirmação com Escape mantém o painel móvel aberto e devolve o foco ao botão de origem.",
+        "As ações de arquivos continuam disponíveis quando o endereço da sala termina com uma barra."
       ],
       "en": [
         "A new file version no longer leaves detached buttons able to open or pin the previous version.",
         "The version picker appears when opening a file after its complete history has loaded.",
         "The reminder text field stays visible even when the document editor is closed.",
         "In the mobile preview, tapping a tab opens the selected panel without confusing a tap with a drag gesture.",
-        "Dismissing a confirmation with Escape keeps the mobile panel open and returns focus to its original button."
+        "Dismissing a confirmation with Escape keeps the mobile panel open and returns focus to its original button.",
+        "File actions remain available when the room URL ends with a slash."
       ]
     }
   },

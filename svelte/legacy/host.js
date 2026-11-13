@@ -5873,7 +5873,7 @@ function renderFiles(load = false, freshSnapshot = false) {
   if(nativeFilesSession?.roomId!==S.id){nativeFilesSession?.dispose();nativeFilesSession=createFilesSession(S.id);}
   const session=nativeFilesSession, roomId=S.id, connection=roomConnection;
   session.sync(S, freshSnapshot);
-  const current=()=>nativeFilesSession===session&&S?.id===roomId&&roomConnection===connection&&location.pathname===`/b/${roomId}`;
+  const current=()=>nativeFilesSession===session&&S?.id===roomId&&roomConnection===connection&&currentRoomId()===roomId;
   const request=(command)=>current()&&connection?connection.request(command):Promise.resolve({ok:false,error:t("sem conexão")});
   if(load || (freshSnapshot && el.parentElement?.dataset.pane === "files"))void session.load(request);
   renderView("files",el,{room:S,thread,vb:panelBridge(),send,session,request,onfolderchange:()=>{if(current())el.scrollTop=0;},onopenfile:(file)=>{if(current())openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}});
