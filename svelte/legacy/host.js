@@ -1298,7 +1298,7 @@ function ensureNativeHome() {
     document: (href) => {
       location.href = href;
     },
-    consumePop: () => nativeViewer?.consumePop() || sheetPop(),
+    consumePop: () => UI.consumeFileViewerPop(nativeViewer,S?{roomId:S.id,account:S.me,thread}:null,sheetPop,location.href),
     deferNavigation: (callback) => nativeViewer?.deferNavigation(callback) ?? false,
     sameRoom: (target) => {
       if (
@@ -2652,7 +2652,6 @@ function renderBook() {
   // …and a link to one file (#f<id>, the viewer's own address) opens it.
   else if (/^#f[0-9a-f]+$/.test(landingHash)) {
     const fid = landingHash.slice(2);
-    navigation.replaceState(null, "", location.pathname + location.search);
     setTimeout(() => {
       if (ownsLanding()) openFile(fid);
     }, 300);

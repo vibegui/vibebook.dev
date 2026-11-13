@@ -110,3 +110,5 @@ export function mountPwa(
   };
 }
 export { pwaLogoutWarning, pwaLogoutFailure } from "./features/pwa/copy";
+
+export { consumeFileViewerPop } from "./features/file-viewer/navigation";

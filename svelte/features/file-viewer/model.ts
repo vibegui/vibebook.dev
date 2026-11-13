@@ -11,6 +11,17 @@ export type ViewerInput = FileTarget & {
   metadata?: Attachment;
   label?: string;
 };
+export function fileTargetFromRoomURL(value: string): FileTarget | null {
+  try {
+    const url = new URL(value);
+    const room = /^\/b\/([a-z0-9]{6,40})\/?$/.exec(url.pathname)?.[1];
+    const file = /^#f([0-9a-f]{1,64})$/.exec(url.hash)?.[1];
+    const parsed = FileTarget.safeParse({ roomId: room, id: file });
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
 export function fileTargetFromURL(
   value: string | URL,
   origin: string,

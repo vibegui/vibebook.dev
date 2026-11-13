@@ -429,6 +429,25 @@ export function createFileViewer(options: {
       loadIndex(true);
     },
     current: owns,
+    popOutcome: history.consumePop,
+    restoreHistory(
+      scope: { roomId: string; account: string; thread: string } | null,
+    ) {
+      const target = history.incomingTarget();
+      if (
+        !scope ||
+        !active ||
+        !room ||
+        !target ||
+        room.id !== scope.roomId ||
+        room.me !== scope.account ||
+        target.roomId !== scope.roomId ||
+        (new URL(options.href()).searchParams.get("t") || "main") !==
+          scope.thread
+      )
+        return false;
+      return open(target);
+    },
     togglePin() {
       const value = get(state);
       if (

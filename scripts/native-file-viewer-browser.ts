@@ -23,7 +23,7 @@ const result: Record<string, unknown> = {
   revisionSuppliedByRunner: process.env.TEST_APP_REVISION ?? null,
   gaps: [
     "Uploads use supported typed HTTP API rather than composer UI.",
-    "Chromium PDF iframe resource delivery is checked; native PDF plugin rendering remains platform-dependent.",
+    "The PDF wrapper URL and authenticated range probe are checked; native PDF plugin delivery/rendering remains a platform browser gate.",
     "No actual iOS standalone/Safari handoff or production deployment acceptance.",
     "Cookie cache gate uses a separate unrouted context; legacy pre-Vary fresh cache entries and same-cookie revoked membership remain documented backend limits.",
   ],
@@ -155,10 +155,9 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   const open = async (fid: string) => {
     await page.goto(`${base}/b/${id}?ui=svelte#f${fid}`);
-    await expect(page.locator("[data-file-id]")).toHaveAttribute(
-      "data-file-id",
-      fid,
-    );
+    await expect(
+      page.locator("[data-file-viewer][data-file-id]"),
+    ).toHaveAttribute("data-file-id", fid);
   };
   await open(newest.id);
   result.appVersion = await page
@@ -175,10 +174,9 @@ try {
   await page.goBack();
   await expect(page.locator("[data-file-viewer]")).not.toBeVisible();
   await page.goForward();
-  await expect(page.locator("[data-file-id]")).toHaveAttribute(
-    "data-file-id",
-    old.id,
-  );
+  await expect(
+    page.locator("[data-file-viewer][data-file-id]"),
+  ).toHaveAttribute("data-file-id", old.id);
   await page.getByRole("button", { name: "Close file", exact: true }).click();
   await expect.poll(() => new URL(page.url()).hash).toBe("");
   await open("f".repeat(64));
@@ -247,6 +245,43 @@ try {
     await page.keyboard.press("Enter");
     await expect(page.locator("[data-file-viewer]")).not.toBeVisible();
   }
+  // Actual mobile Files sheet remains the underlying history/UI owner.
+  await expect.poll(() => new URL(page.url()).hash).toBe("");
+  const book = page.locator(".book");
+  await page
+    .locator("#docPeek")
+    .getByRole("button", { name: /^(Files|Arquivos)/ })
+    .click();
+  await expect(book).toHaveAttribute("data-sheet", "doc");
+  await expect(book).toHaveAttribute("data-pane", "files");
+  await page
+    .locator(`#filesPane [data-file-id="${newest.id}"]`)
+    .getByRole("button")
+    .first()
+    .click();
+  await expect(
+    page.locator("[data-file-viewer][data-file-id]"),
+  ).toHaveAttribute("data-file-id", newest.id);
+  await page.getByRole("button", { name: "Close file", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).hash).toBe("");
+  await expect(book).toHaveAttribute("data-sheet", "doc");
+  const mobileHistoryLength = await page.evaluate(() => history.length);
+  await page.goForward();
+  await expect(
+    page.locator("[data-file-viewer][data-file-id]"),
+  ).toHaveAttribute("data-file-id", newest.id);
+  await expect(book).toHaveAttribute("data-sheet", "doc");
+  assert.equal(
+    await page.evaluate(() => history.length),
+    mobileHistoryLength,
+    "Forward adopts the existing file entry",
+  );
+  await page.goBack();
+  await expect(page.locator("[data-file-viewer]")).not.toBeVisible();
+  await expect(book).toHaveAttribute("data-sheet", "doc");
+  await expect(book).toHaveAttribute("data-pane", "files");
+  result.mobileHistory =
+    "PASS actual phone Files sheet → viewer → close → Forward exact-file adoption → Back retains Files sheet";
   assert(errors.length === 0, errors.join("\n"));
   result.ui =
     "PASS exact Markdown versions, Back/Forward, image decode, audio metadata, HTML sandbox/Escape, PDF resource URL and desktop/mobile keyboard close";

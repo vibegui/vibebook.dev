@@ -4,6 +4,7 @@ import { get } from "svelte/store";
 import type { Room, Attachment } from "../shared/room";
 import type { RequestRoomCommand } from "../svelte/roomConnection";
 import { createFileViewer } from "../svelte/features/file-viewer/session";
+import { consumeFileViewerPop } from "../svelte/features/file-viewer/navigation";
 import { createViewerHistory } from "../svelte/features/file-viewer/history";
 import {
   createFileReadApi,
@@ -425,5 +426,90 @@ test("an unknown exact deep link reports canonical missing without opening a sta
   expect(
     session.open({ roomId: "aaaaaa", id: "ff", metadata: attachment("ff") }),
   ).toBe(false);
+  session.dispose();
+});
+
+test("same-owner mobile Forward adopts the existing overlay without consuming its underlying sheet", async () => {
+  const { session, nav } = fixture();
+  const scope = { roomId: "aaaaaa", account: "a", thread: "main" };
+  let sheetOpen = true,
+    sheetPops = 0;
+  const sheet = () => {
+    sheetPops++;
+    sheetOpen = false;
+    return true;
+  };
+  session.open({ roomId: "aaaaaa", id: "aa" });
+  await settle();
+  session.closeUser();
+  nav.pop();
+  expect(consumeFileViewerPop(session, scope, sheet, nav.href())).toBe(true);
+  expect(sheetOpen).toBe(true);
+  nav.forward();
+  expect(consumeFileViewerPop(session, scope, sheet, nav.href())).toBe(true);
+  await settle();
+  expect(get(session.state).target?.id).toBe("aa");
+  expect(nav.entries).toHaveLength(2);
+  session.closeUser();
+  nav.pop();
+  expect(consumeFileViewerPop(session, scope, sheet, nav.href())).toBe(true);
+  expect(sheetOpen).toBe(true);
+  expect(sheetPops).toBe(0);
+  session.dispose();
+});
+test("foreign account/thread and unowned valid file pops route while malformed file hashes keep sheet behavior", async () => {
+  const { session, nav } = fixture();
+  let sheets = 0;
+  const sheet = () => {
+    sheets++;
+    return true;
+  };
+  session.open({ roomId: "aaaaaa", id: "aa" });
+  await settle();
+  session.closeUser();
+  nav.pop();
+  consumeFileViewerPop(
+    session,
+    { roomId: "aaaaaa", account: "a", thread: "main" },
+    sheet,
+    nav.href(),
+  );
+  nav.forward();
+  expect(
+    consumeFileViewerPop(
+      session,
+      { roomId: "aaaaaa", account: "b", thread: "main" },
+      sheet,
+      nav.href(),
+    ),
+  ).toBe(false);
+  expect(
+    consumeFileViewerPop(
+      session,
+      { roomId: "aaaaaa", account: "a", thread: "other" },
+      sheet,
+      nav.href(),
+    ),
+  ).toBe(false);
+  nav.history.replaceState(null, "", "/b/bbbbbb?ui=svelte#faa");
+  expect(
+    consumeFileViewerPop(
+      session,
+      { roomId: "aaaaaa", account: "a", thread: "main" },
+      sheet,
+      nav.href(),
+    ),
+  ).toBe(false);
+  expect(sheets).toBe(0);
+  nav.history.replaceState(null, "", "/b/aaaaaa?ui=svelte#fINVALID");
+  expect(
+    consumeFileViewerPop(
+      session,
+      { roomId: "aaaaaa", account: "a", thread: "main" },
+      sheet,
+      nav.href(),
+    ),
+  ).toBe(true);
+  expect(sheets).toBe(1);
   session.dispose();
 });

@@ -1,5 +1,10 @@
 import * as z from "zod/mini";
-import { FileTarget, fileRoomURL, type FileTarget as Target } from "./model";
+import {
+  FileTarget,
+  fileRoomURL,
+  fileTargetFromRoomURL,
+  type FileTarget as Target,
+} from "./model";
 export type ViewerClock = {
   schedule(callback: () => void, ms: number): unknown;
   cancel(handle: unknown): void;
@@ -87,6 +92,13 @@ export function createViewerHistory(options: {
       });
   };
   return {
+    incomingTarget() {
+      const entry = current(),
+        target = fileTargetFromRoomURL(options.href());
+      return entry && target?.roomId === entry.roomId && target.id === entry.id
+        ? target
+        : null;
+    },
     open(input: Target) {
       if (!active) return;
       intent++;
