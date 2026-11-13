@@ -2,7 +2,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
-import { compile } from "svelte/compiler";
+import { compile, compileModule } from "svelte/compiler";
 import { Window } from "happy-dom";
 import { get } from "svelte/store";
 import { createPersonalSession } from "../svelte/features/home/personal";
@@ -32,25 +32,38 @@ for (const name of [
   "HTMLElement",
   "HTMLInputElement",
   "HTMLButtonElement",
+  "HTMLFormElement",
+  "HTMLAnchorElement",
+  "HTMLMediaElement",
+  "HTMLSelectElement",
   "HTMLTextAreaElement",
   "SVGElement",
   "DocumentFragment",
   "Text",
   "Comment",
   "MutationObserver",
+  "ResizeObserver",
   "Event",
   "MouseEvent",
+  "PointerEvent",
   "KeyboardEvent",
   "CustomEvent",
   "getComputedStyle",
   "matchMedia",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
 ]) {
   const value =
     name === "window" ? environment : Reflect.get(environment, name);
   Object.defineProperty(globalThis, name, {
     value:
       typeof value === "function" &&
-      ["getComputedStyle", "matchMedia"].includes(name)
+      [
+        "getComputedStyle",
+        "matchMedia",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ].includes(name)
         ? value.bind(environment)
         : value,
     configurable: true,
@@ -60,6 +73,13 @@ for (const name of [
 plugin({
   name: "native-home-components",
   setup(build) {
+    build.onLoad({ filter: /\.svelte\.js$/ }, (args) => ({
+      contents: compileModule(readFileSync(args.path, "utf8"), {
+        filename: args.path,
+        generate: "client",
+      }).js.code,
+      loader: "js",
+    }));
     build.onLoad({ filter: /\.svelte$/ }, (args) => ({
       contents: compile(readFileSync(args.path, "utf8"), {
         filename: args.path,
@@ -168,7 +188,8 @@ test("detached native tile link/settings actions cannot navigate after canonical
         lang: "en",
         now: 0,
         onnavigate: (value: RoomTarget) => navigation.push(value),
-        onsettings: (id: string, trigger: HTMLElement) => settings.push([id, trigger]),
+        onsettings: (id: string, trigger: HTMLElement) =>
+          settings.push([id, trigger]),
       },
     }),
   );

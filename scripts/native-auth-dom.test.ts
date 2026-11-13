@@ -2,7 +2,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
-import { compile } from "svelte/compiler";
+import { compile, compileModule } from "svelte/compiler";
 import { Window } from "happy-dom";
 import { writable } from "svelte/store";
 import type { AuthApi } from "../svelte/features/auth/api";
@@ -14,27 +14,45 @@ for (const name of [
   "window",
   "document",
   "navigator",
+  "location",
   "Node",
   "Element",
   "HTMLElement",
   "HTMLInputElement",
   "HTMLButtonElement",
   "HTMLFormElement",
+  "HTMLAnchorElement",
+  "HTMLMediaElement",
+  "HTMLSelectElement",
+  "HTMLTextAreaElement",
   "SVGElement",
   "DocumentFragment",
   "Text",
   "Comment",
   "MutationObserver",
+  "ResizeObserver",
   "Event",
   "MouseEvent",
+  "PointerEvent",
+  "KeyboardEvent",
   "CustomEvent",
   "FormData",
   "getComputedStyle",
+  "requestAnimationFrame",
+  "cancelAnimationFrame",
 ]) {
   const value =
     name === "window" ? environment : Reflect.get(environment, name);
   Object.defineProperty(globalThis, name, {
-    value: name === "getComputedStyle" ? value.bind(environment) : value,
+    value:
+      typeof value === "function" &&
+      [
+        "getComputedStyle",
+        "requestAnimationFrame",
+        "cancelAnimationFrame",
+      ].includes(name)
+        ? value.bind(environment)
+        : value,
     configurable: true,
     writable: true,
   });
@@ -42,6 +60,13 @@ for (const name of [
 plugin({
   name: "native-auth-components",
   setup(build) {
+    build.onLoad({ filter: /\.svelte\.js$/ }, (args) => ({
+      contents: compileModule(readFileSync(args.path, "utf8"), {
+        filename: args.path,
+        generate: "client",
+      }).js.code,
+      loader: "js",
+    }));
     build.onLoad({ filter: /\.svelte$/ }, (args) => ({
       contents: compile(readFileSync(args.path, "utf8"), {
         filename: args.path,
