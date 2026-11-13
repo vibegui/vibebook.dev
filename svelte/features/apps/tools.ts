@@ -78,7 +78,7 @@ export const roomTools: Tool[] = [
   {
     name: "vibebook_router_stats",
     description:
-      "The person's hub router A/B (Jev vs Haiku): per arm how many messages were ignored, answered or woke their Claude, latency p50/p95, cost, and the last 40 decisions. room: true = only this room.",
+      "The hub router A/B (Jev vs Haiku): per arm how many messages were ignored, answered or woke a Claude, latency p50/p95, cost, and the last 40 decisions (who = whose router). room: true = this room, every member's router; false = the person's own router in all rooms.",
     inputSchema: { type: "object", properties: { room: { type: "boolean" } } },
     annotations: { readOnlyHint: true },
   },
