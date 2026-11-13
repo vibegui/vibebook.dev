@@ -1083,13 +1083,13 @@
   .epList.arch { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
   /* Epic tree: a sub-epic under its parent, › opens/closes the branch (epicTree). */
   .epNode { display: flex; flex-wrap: wrap; align-items: center; }
-  .epNode > .thread { flex: 1; min-width: 0; width: auto; }
-  .epChev { width: 26px; height: 34px; flex: none; border: 0; background: none; color: var(--mute); padding: 0; margin-right: -2px; border-radius: 8px; font-size: 22px; font-weight: 700; line-height: 34px; text-align: center; cursor: pointer; transition: transform .12s, background .12s; }
-  button.epChev:hover { background: var(--hover); color: var(--ink); }
-  span.epChev { cursor: default; }
-  .epNode.open > .epChev { transform: rotate(90deg); }
-  .epNode.kidsBusy:not(.open) > .epChev { color: var(--claude); }
-  .epKids { flex: 0 0 calc(100% - 13px); min-width: 0; margin-left: 13px; padding-left: 2px; border-left: 1px solid var(--line); }
+  .epNode > .thread { flex: 1 1 100%; min-width: 0; width: auto; }
+  .epChev { width: 22px; height: 22px; flex: none; display: inline-grid; place-items: center; margin: -4px -4px -4px -6px; border-radius: 6px; color: var(--mute); font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer; transition: transform .12s, background .12s; }
+  [data-chev]:hover { background: var(--hover); color: var(--ink); }
+  .leaf .epChev { cursor: inherit; }
+  .epNode.open > .thread > .epChev { transform: rotate(90deg); }
+  .epNode.kidsBusy:not(.open) > .thread > .epChev { color: var(--claude); }
+  .epKids { flex: 0 0 calc(100% - 12px); min-width: 0; margin-left: 12px; padding-left: 2px; border-left: 1px solid var(--line); }
   .epNode:not(.open) > .epKids { display: none; }
   @media (prefers-reduced-motion: reduce) { .epChev { transition: none; } }
   @media (max-width: 900px) {
@@ -4158,17 +4158,18 @@ function epicTree(list) {
     if (seen.has(e.id)) return "";
     seen.add(e.id);
     const ks = kids.get(e.id) || [];
-    if (!ks.length) return `<div class="epNode leaf"><span class="epChev"></span>${epicRow(e)}</div>`;
+    if (!ks.length) return `<div class="epNode leaf">${epicRow(e, `<span class="epChev" aria-hidden="true"></span>`)}</div>`;
     const open = !closed.has(e.id);
     const busy = below(e.id, (k) => !!epicBusy(k));
-    return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}"><button type="button" class="epChev" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</button>${epicRow(e)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
+    // The › lives inside the row (first thing, like a file tree): clicking it toggles the branch, the rest opens the thread.
+    return `<div class="epNode${open ? " open" : ""}${busy ? " kidsBusy" : ""}">${epicRow(e, `<span class="epChev" role="button" data-chev="${e.id}" aria-expanded="${open}" aria-label="${open ? t("Fechar galho") : t("Abrir galho")}" title="${open ? t("Fechar galho") : t("Abrir galho")}">›</span>`)}<div class="epKids">${ks.map(node).join("")}</div></div>`;
   };
   // Roots first (no parent in this list); anything a cycle left out still gets its row.
   return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map(epicRow).join("");
 }
-const epicRow = (e) => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
+const epicRow = (e, lead = "") => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
         <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
-          ${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
+          ${lead}${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 // Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
 const pinHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
@@ -4281,7 +4282,7 @@ function renderSide() {
   el.querySelector("#sideDel")?.addEventListener("click", () => { closeSheet(); document.getElementById("epicDel")?.click(); });
   // Drag an open epic to reorder the room's epics (shared with everyone in the room; board and list follow).
   el.querySelectorAll("[data-chev]").forEach((b) => b.onclick = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); e.preventDefault();
     const c = treeClosed(), id = b.dataset.chev;
     if (c.has(id)) c.delete(id); else c.add(id);
     try { localStorage.setItem(`vb.tree.${S.id}`, JSON.stringify([...c])); } catch {}
@@ -4308,7 +4309,7 @@ function renderSide() {
   });
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
     // A parent epic you're already in: clicking its row again opens/closes its branch (a big target besides the ›).
-    const chev = b.dataset.thread === thread && b.parentElement?.querySelector(`:scope > [data-chev="${b.dataset.thread}"]`);
+    const chev = b.dataset.thread === thread && b.querySelector(`[data-chev="${b.dataset.thread}"]`);
     if (chev) return chev.click();
     closeSheet(true);
     thread = b.dataset.thread; docRoom = false; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
