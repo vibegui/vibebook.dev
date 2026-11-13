@@ -1,3 +1,5 @@
+import type { AppNavigationSession } from "./features/app-navigation/controller";
+import type { HomeLanguage } from "./features/home/copy";
 import type { Room, Epic, Attachment } from "../shared/room";
 import type { RequestRoomCommand } from "./roomConnection";
 import type { SendRoomCommand } from "../shared/commands";
@@ -15,7 +17,8 @@ export type SidebarBridge = {
   avatarUrl?: (email: string) => string | undefined;
   bookTitle: () => string;
   roomMark: (classes: string) => string;
-  roomStrip: () => string;
+  /** Retained only for old test fixtures; native room strips never call this callback. */
+  roomStrip?: () => string;
   sbxRows: () => string;
   agentRows: (email: string) => string;
   epicBusy: (epic: Epic) => string | null;
@@ -24,6 +27,7 @@ export type SidebarBridge = {
 };
 
 export type SidebarProps = {
+  appNavigation?: { controller: AppNavigationSession; lang: HomeLanguage };
   room: Room;
   thread: string;
   foldOpen?: { off: boolean; friends: boolean | null };

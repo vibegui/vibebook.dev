@@ -16,6 +16,7 @@
     fullScreen = false,
     onOpenChange,
     initialFocus,
+    returnFocus,
   }: {
     open?: boolean;
     title: string;
@@ -27,6 +28,7 @@
     fullScreen?: boolean;
     onOpenChange?: (open: boolean) => void;
     initialFocus?: () => HTMLElement | null;
+    returnFocus?: () => HTMLElement | null;
   } = $props();
   $effect(() => {
     if (open)
@@ -53,6 +55,13 @@
       onOpenAutoFocus={(event) => {
         const target = initialFocus?.();
         if (target) {
+          event.preventDefault();
+          target.focus();
+        }
+      }}
+      onCloseAutoFocus={(event) => {
+        const target = returnFocus?.();
+        if (target?.isConnected) {
           event.preventDefault();
           target.focus();
         }

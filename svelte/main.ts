@@ -2,6 +2,9 @@ import { flushSync, mount, unmount } from "svelte";
 import type { Component, ComponentProps } from "svelte";
 import { writable } from "svelte/store";
 import View from "./View.svelte";
+import Home from "./features/home/HomePanel.svelte";
+import Archived from "./features/home/ArchivedPanel.svelte";
+import AppNavigation from "./features/app-navigation/AppNavigation.svelte";
 import Inbox from "./Inbox.svelte";
 import InboxMount from "./InboxMount.svelte";
 import Tasks from "./Tasks.svelte";
@@ -14,6 +17,9 @@ import Chat from "./Chat.svelte";
 export { createRoomStore } from "./roomStore";
 export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
+  home: Home,
+  archived: Archived,
+  appNavigation: AppNavigation,
   tasks: Tasks,
   board: Board,
   files: Files,

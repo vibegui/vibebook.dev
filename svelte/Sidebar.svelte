@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RoomStrip from "./features/app-navigation/RoomStrip.svelte";
   // The room's navigation is rendered by Svelte. The bridge keeps shared artwork,
   // formatting and the existing host actions in one place during the migration.
   import People from "./People.svelte";
@@ -6,6 +7,7 @@
   import PinnedItems from "./features/pins/PinnedItems.svelte";
   import type { SidebarProps } from "./sidebar";
   let {
+    appNavigation,
     room,
     thread,
     foldOpen = { off: false, friends: null },
@@ -34,7 +36,10 @@
 <button type="button" class="sheetGrab" aria-label={vb.t("Fechar")}
   ><i></i></button
 >
-{@html vb.roomStrip()}
+{#if appNavigation}<RoomStrip
+    controller={appNavigation.controller}
+    lang={appNavigation.lang}
+  />{/if}
 <div class="sideHead">
   <div class="sideTop">
     <a data-nav href="/app" class="muted">{@html vb.icon("back")} vibebooks</a>
