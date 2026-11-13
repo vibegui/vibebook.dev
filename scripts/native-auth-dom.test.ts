@@ -339,3 +339,142 @@ test("native POST failure marker renders an error without context creation until
     form.querySelector<HTMLButtonElement>('button[name="decision"]')!.value,
   ).toBe("deny");
 });
+
+// These fixtures intercept requestSubmit only to observe the real form boundary;
+// they do not fabricate a server logout, cookie deletion or push delivery.
+const { default: AuthLogoutForm } =
+  await import("../svelte/features/auth/AuthLogoutForm.svelte");
+test("consent sign-out cleanup keeps real POST and original query, then submits only its owned form", async () => {
+  let finish!: (value: {
+    local: boolean;
+    settled: boolean;
+    confirmed: boolean;
+  }) => void;
+  const cleanup = new Promise<{
+    local: boolean;
+    settled: boolean;
+    confirmed: boolean;
+  }>((resolve) => {
+    finish = resolve;
+  });
+  const target = document.createElement("div");
+  document.body.append(target);
+  let begun = 0;
+  mounted.push(
+    flushSync(() =>
+      mount(AuthLogoutForm, {
+        target,
+        props: {
+          next: "/authorize?ui=svelte&client_id=original",
+          lang: "en",
+          onBegin: () => {
+            begun++;
+          },
+          cleanup: () => cleanup,
+        },
+      }),
+    ),
+  );
+  const form = target.querySelector<HTMLFormElement>("form")!;
+  expect(form.getAttribute("method")).toBe("post");
+  expect(form.getAttribute("action")).toBe("/auth/logout");
+  expect(
+    form.querySelector<HTMLInputElement>('input[name="next"]')?.value,
+  ).toBe("/authorize?ui=svelte&client_id=original");
+  expect(form.querySelector('input[name="handle"]')).toBe(null);
+  let submits = 0;
+  form.requestSubmit = () => {
+    const event = new Event("submit", { bubbles: true, cancelable: true });
+    form.dispatchEvent(event);
+    if (!event.defaultPrevented) submits++;
+  };
+  const first = new Event("submit", { bubbles: true, cancelable: true });
+  form.dispatchEvent(first);
+  expect(first.defaultPrevented).toBe(true);
+  expect(begun).toBe(1);
+  expect(submits).toBe(0);
+  finish({ local: true, settled: true, confirmed: true });
+  await settle();
+  expect(submits).toBe(1);
+});
+test("unconfirmed sign-out cleanup requires explicit continuation and exposes safe fresh review", async () => {
+  const target = document.createElement("div");
+  document.body.append(target);
+  mounted.push(
+    flushSync(() =>
+      mount(AuthLogoutForm, {
+        target,
+        props: {
+          next: "/authorize?ui=svelte&client_id=original",
+          lang: "en",
+          onBegin: () => {},
+          cleanup: async () => ({
+            local: true,
+            settled: false,
+            confirmed: false,
+          }),
+        },
+      }),
+    ),
+  );
+  const form = target.querySelector<HTMLFormElement>("form")!;
+  let automatic = 0;
+  form.requestSubmit = () => {
+    automatic++;
+  };
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  await settle();
+  expect(automatic).toBe(0);
+  expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+    "unconfirmed",
+  );
+  expect(target.querySelector("button")?.textContent).toContain(
+    "Continue signing out",
+  );
+  expect(target.querySelector("a")?.getAttribute("href")).toBe(
+    "/authorize?ui=svelte&client_id=original",
+  );
+  const explicit = new Event("submit", { bubbles: true, cancelable: true });
+  form.dispatchEvent(explicit);
+  expect(explicit.defaultPrevented).toBe(false);
+});
+test("disposed consent sign-out cleanup cannot submit its detached form", async () => {
+  let finish!: (value: {
+    local: boolean;
+    settled: boolean;
+    confirmed: boolean;
+  }) => void;
+  const pending = new Promise<{
+    local: boolean;
+    settled: boolean;
+    confirmed: boolean;
+  }>((resolve) => {
+    finish = resolve;
+  });
+  const target = document.createElement("div");
+  document.body.append(target);
+  const component = flushSync(() =>
+    mount(AuthLogoutForm, {
+      target,
+      props: {
+        next: "/authorize?ui=svelte",
+        lang: "en",
+        onBegin: () => {},
+        cleanup: () => pending,
+      },
+    }),
+  );
+  const form = target.querySelector<HTMLFormElement>("form")!;
+  let automatic = 0;
+  form.requestSubmit = () => {
+    automatic++;
+  };
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  flushSync(() => {
+    void unmount(component);
+  });
+  finish({ local: true, settled: true, confirmed: true });
+  await settle();
+  expect(form.isConnected).toBe(false);
+  expect(automatic).toBe(0);
+});

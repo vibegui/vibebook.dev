@@ -4,6 +4,7 @@
   import { authIssue, authText, type AuthLanguage } from "./copy";
   import { createConsentSession } from "./session";
   import AuthFrame from "./AuthFrame.svelte";
+  import AuthLogoutForm from "./AuthLogoutForm.svelte";
   import Button from "../../lib/ui/Button.svelte";
   import { buttonVariants } from "../../lib/ui/button";
   let {
@@ -93,14 +94,13 @@
     {#if submitted}<p role="status" class="tw:m-0 tw:text-muted-foreground">
         {text("waiting")}
       </p>{/if}
-    <form method="post" action="/auth/logout">
-      <input type="hidden" name="next" value={`/authorize${search}`} /><Button
-        variant="link"
-        type="submit"
-        class="tw:h-auto tw:whitespace-normal tw:p-0 tw:text-left"
-        >{text("other")}</Button
-      >
-    </form>
+    <AuthLogoutForm
+      next={`/authorize${search}`}
+      {lang}
+      onBegin={() => {
+        submitted = true;
+      }}
+    />
   {:else}<p role="alert" class="tw:m-0 tw:break-words tw:text-destructive">
       {authIssue(lang, $view.error)}
     </p>

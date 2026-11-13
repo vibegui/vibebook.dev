@@ -31,12 +31,14 @@
       "pt": [
         "Os painéis nativos usam a mesma tipografia e os mesmos componentes de interface.",
         "A versão Svelte mantém o email e o código após erros, mostra pedidos de acesso e confirma a conexão de agents com os mesmos controles de segurança do servidor.",
-        "Erros ao conectar um agent permanecem na interface Svelte e só criam um novo pedido após você tentar novamente."
+        "Erros ao conectar um agent permanecem na interface Svelte e só criam um novo pedido após você tentar novamente.",
+        "Ao trocar de conta na conexão de agents, a versão Svelte tenta limpar as notificações deste aparelho e avisa quando a limpeza não foi confirmada."
       ],
       "en": [
         "Native panels share consistent typography and interface components.",
         "The Svelte preview retains email and code after errors, shows access requests and confirms agent connections through the same server security checks.",
-        "Agent connection errors stay in the Svelte interface and create a new request only after an explicit retry."
+        "Agent connection errors stay in the Svelte interface and create a new request only after an explicit retry.",
+        "When switching accounts during agent connection, the Svelte preview attempts current-device notification cleanup and warns when cleanup is unconfirmed."
       ]
     },
     "fixes": {

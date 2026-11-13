@@ -73,3 +73,14 @@ real provider authorize/deny/logout and PKCE callback completion, direct and
 continued `?ui=svelte` links, no-JavaScript standard consent, HMR source-shell
 transformation and zero legacy-host imports on native page routes. No such
 runtime result is implied by source/component tests.
+
+The consent page's “Not you?” action retains its real form POST to `/auth/logout`
+and the original query-only authorization continuation. Its native submit
+boundary attempts known current-device notification cleanup first. Unconfirmed
+cleanup requires an explicit second sign-out submission; reloading to review a
+new request remains available. Starting sign-out blocks the old consent form,
+and a disposed page cannot submit its old logout form after cleanup settles.
+This cleanup neither grants consent nor carries a consent handle into login.
+The new DOM fixtures remain unrun. Actual logout cookie/provider lifecycle and
+cross-document/server endpoint-write ordering remain acceptance gates; a
+frontend cleanup result cannot fence an abandoned previous document's request.

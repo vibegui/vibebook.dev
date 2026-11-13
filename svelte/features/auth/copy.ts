@@ -49,6 +49,10 @@ const pt = {
   allow: "Permitir",
   cancel: "Cancelar",
   other: "Não é você? Entrar com outro email",
+  continueLogout: "Continuar e sair",
+  logoutCleanup:
+    "Não consegui confirmar a remoção das notificações deste aparelho. Você pode continuar e sair; a limpeza das notificações pode estar incompleta.",
+  reviewAgain: "Recarregar para revisar um novo pedido",
   return: "Voltar ao aplicativo",
   consentError: "Não foi possível conectar este aplicativo.",
   consentFailed:
@@ -108,6 +112,10 @@ const en: Record<keyof typeof pt, string> = {
   allow: "Allow",
   cancel: "Cancel",
   other: "Not you? Sign in with another email",
+  continueLogout: "Continue signing out",
+  logoutCleanup:
+    "Notification removal on this device is unconfirmed. You can continue signing out; notification cleanup may be incomplete.",
+  reviewAgain: "Reload to review a new request",
   return: "Return to the app",
   consentError: "Couldn't connect this app.",
   consentFailed:
