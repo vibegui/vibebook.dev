@@ -1,0 +1,89 @@
+{
+  "scope": "Incremental native epic navigation; not full native sidebar or production acceptance",
+  "fixtures": [
+    "legacy-only Google CSS isolated",
+    "local runner: no active rooms/directory",
+    "real local OAuth/PKCE MCP agent creates nested epics through supported tools",
+    "temporary browser-side WebSocket closure for rejected sends"
+  ],
+  "room": "06683063926e",
+  "step": "Checking Portuguese input and navigation accessibility",
+  "epics": {
+    "parent": "a41449d4",
+    "child": "52375c33",
+    "leaf": "06a32208",
+    "other": "a315a268",
+    "oldParent": "00f6d5f4",
+    "oldChild": "d7107f5f"
+  },
+  "navigation-light-1440": {
+    "theme": {
+      "actual": "rgb(250, 249, 247)",
+      "expected": "rgb(250, 249, 247)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 1440,
+      "viewport": 1440
+    },
+    "violations": []
+  },
+  "navigation-dark-768": {
+    "theme": {
+      "actual": "oklch(0.155 0 0)",
+      "expected": "oklch(0.155 0 0)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 768,
+      "viewport": 768
+    },
+    "violations": []
+  },
+  "navigation-dark-390": {
+    "theme": {
+      "actual": "oklch(0.155 0 0)",
+      "expected": "oklch(0.155 0 0)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 390,
+      "viewport": 390
+    },
+    "violations": []
+  },
+  "mobileForm900": {
+    "sheetHeight": 675,
+    "bounds": {
+      "x": 28,
+      "y": 319.1875,
+      "width": 800,
+      "height": 36
+    },
+    "viewport": {
+      "width": 900,
+      "height": 844
+    },
+    "focused": true
+  },
+  "mobileForm390": {
+    "sheetHeight": 675,
+    "bounds": {
+      "x": 28,
+      "y": 319.1875,
+      "width": 290,
+      "height": 36
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "focused": true
+  },
+  "navigation-pt-390": {
+    "theme": {
+      "actual": "rgb(250, 249, 247)",
+      "expected": "rgb(250, 249, 247)",
+      "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+      "pageWidth": 390,
+      "viewport": 390
+    },
+    "violations": []
+  },
+  "status": "pass",
+  "errors": []
+}

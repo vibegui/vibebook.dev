@@ -39,7 +39,7 @@ Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) a
 | F21 | Cards/charts/buttons, permission/question choices and user confirmations | `cardHtml`, `permHtml`, `choiceHtml`, `cardGo` | `features/messages` | Pending |
 | F22 | Quiet reminders/notices/issues, folding and acknowledgements/receipts | `foldReminders`, `remHtml`, `noticeHtml`, `renderReceipts` | `features/messages` | Pending |
 | F23 | Live message updates, edit/remote text behavior and escaped hostile input | `Message.svelte`, `appendMsg`, room reducer | `features/chat` | Pending |
-| F24 | Sidebar, expanded/collapsed rail, archived tabs, fold state and navigation drafts | `Sidebar.svelte`, `renderSide`, `toggleRail` | `features/sidebar` | Incremental native epic tree verified (hierarchy, disclosure, tabs, drafts, order/focus/drag, live updates and EN/PT mobile accessibility); root/header, rail, pins, people and other sidebar actions remain pending |
+| F24 | Sidebar, expanded/collapsed rail, archived tabs, fold state and navigation drafts | `Sidebar.svelte`, `renderSide`, `toggleRail` | `features/sidebar` | Incremental native epic tree verified (hierarchy, disclosure, tabs, drafts, order/focus/drag, live updates and EN/PT mobile accessibility); pinned-item controls are verified separately; root/header, rail, people and other sidebar actions remain pending |
 | F25 | Epic creation/rename/owner/archive/delete, hierarchy and order | `renderSide`, `renameThread`, room commands | `features/epics` | Native create/owner/tree/order interactions verified incrementally; rename/archive/delete handoffs still use the legacy shell, so full native parity remains pending |
 | F26 | Suggested epics, accept/reject, preview and return to real thread | `renderPre`, `preOf`, `isPre`, `onEvent` | `features/epics` | Pending |
 | F27 | Task add/rename/toggle/status/owner/due/delete, flags and review waits | `Tasks.svelte`, `TaskList.svelte`, host controls | `features/tasks` | Pending |
@@ -51,7 +51,7 @@ Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) a
 | F33 | File folders/version grouping/filtering and file tab | `Files.svelte`, `treeFiles`, `renderFiles` | `features/files` | Pending |
 | F34 | Image/audio/PDF/HTML/Markdown/text/CSV viewers, download and versions | `openViewer`, `loadViewer`, `csvRows`, `fileVersions` | `features/viewers` | Pending |
 | F35 | File hashes, viewer Back/Escape/close, mobile layout and sandbox boundaries | `viewerPop`, `openFile`, viewer handlers | `features/viewers` | Pending |
-| F36 | Pins for link/file/app, add/delete/open, shared updates and layout | `pinsSec`, `wirePins`, `pinHost`, room commands | `features/pins` | Pending |
+| F36 | Pins for link/file/app, add/delete/open, shared updates and layout | `pinsSec`, `wirePins`, `pinHost`, room commands | `features/pins` | Native controls, typed correlated mutations, remote updates, exact older-file lookup, offline/reconnect and responsive EN/PT flows verified; viewer/Apps still use explicit legacy adapters |
 | F37 | Reminder create/edit/upload, enable/disable/delete, validation and schedule errors | `Reminders.svelte`, `renderReminders`, upload parsing | `features/reminders` | Pending |
 | F38 | Decisions view/delete and updates | `renderDecisions`, room commands | `features/decisions` | Pending |
 | F39 | People/online/roles, invite, access requests, removal and leave behavior | `renderSide`, member handlers, owner menu | `features/members` | Pending |

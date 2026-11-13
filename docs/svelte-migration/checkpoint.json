@@ -1,22 +1,22 @@
 {
-  "scope": "Incremental native epic navigation and shared UI regression; not full sidebar, migration or production acceptance",
-  "sourceCommit": "a8e96545be378257346c810d0bd058c78b65e9b5",
-  "applicationCommit": "ce83771ea0a24020193056817a7aff443a4c722b",
-  "capturedAt": "2026-11-13T07:54:34.793Z",
+  "scope": "Incremental native pinned items, shared UI and navigation verification; not full sidebar/migration/production acceptance",
+  "sourceCommit": "28d784d0602dd117f22c95bc279b4f00717a24a8",
+  "applicationCommit": "9cdd6d937be4202e8eba78d2c73cb103e5ecb23a",
+  "capturedAt": "2026-11-13T10:04:10.411Z",
   "command": "bun run check",
   "exitCode": 0,
   "tests": {
-    "passed": 108,
+    "passed": 143,
     "failed": 0,
-    "assertions": 535
+    "assertions": 744
   },
-  "logSha256": "a61969eade1ddccb4c3b21843a51dad14ed1b47743c07a209cca9856c5060e5c",
+  "logSha256": "057337a1ee400e6ef4f6d331278bd8afc849486e11aab02314479443218227f5",
   "frontendTypeProgram": {
     "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
-    "files": 228,
+    "files": 231,
     "nodeTypes": [],
     "bunTypes": [],
-    "cloudflareWorkerTypes": [],
+    "workerTypes": [],
     "backendRuntimeSources": [],
     "apiDeclarations": [
       "shared/schemas.d.ts",
@@ -24,7 +24,7 @@
     ]
   },
   "defaultAssetDiff": {
-    "baseline": "cb97950",
+    "baseline": "f5e07b8",
     "paths": [
       "public/app.html",
       "public/svelte/ui.js",
@@ -36,23 +36,22 @@
     "changed": []
   },
   "browserProof": {
-    "file": "docs/svelte-migration/native-navigation/verification.json",
+    "file": "docs/svelte-migration/native-pins/verification.json",
     "status": "pass",
     "scopes": [
-      "navigation",
-      "board",
-      "tasks",
-      "gallery-inbox"
+      "pins",
+      "gallery-inbox",
+      "navigation"
     ]
   },
-  "previousProof": "docs/svelte-migration/native-board/verification.json",
+  "previousProof": "docs/svelte-migration/native-navigation/verification.json",
   "limits": [
-    "Loopback DEV_EMAIL identity and explicit browser fixtures; authenticated production A/B acceptance remains pending.",
-    "Native epics are integrated in a transitional sidebar/host; pins, people, rail, root navigation and other screens still require native migration.",
-    "CSS comparison isolates legacy defaults at fixed native boundaries; freezing itself must preserve every surrounding snapshot. Actual normal-layout behavior is checked in responsive browser flows.",
-    "WebSocket send success means queued data. Canonical order/focus, reload persistence and reconnect are checked separately; correlated command acknowledgment remains pending.",
-    "Backend baseline includes cb97950, API31 and the large-room ordering fix (shared message shape unchanged; MAX_ORDER5000). Later peer-published API49 (833d981) requires combined integration and frontend-caller verification; server route coverage alone does not complete full-plan M2.",
-    "Authenticated Studio workspace comparison, complete schema/RPC coverage, full application/backend/contract HMR and final performance budgets remain pending.",
-    "Vanilla remains default."
+    "Loopback DEV_EMAIL test identity, explicit runner/font/profile/network fixtures; no authenticated production acceptance.",
+    "Missing-file and stale/disposed metadata branches have pure/DOM coverage; no unsupported live file deletion was fabricated. Viewer/Apps remain legacy adapters.",
+    "One earlier navigation regression timed out on Portuguese room loading with no browser errors. The same unweakened suite passed using a prebuilt Worker entry; source and timeout scope are recorded.",
+    "Native CSS-off/on comparison fixes only native boundaries and first verifies that fixing preserves surrounding layout; it is not unrestricted layout parity.",
+    "Backend baseline includes schema-derived DTO/events/commands and correlated request API through f5e07b8. Peer23eadf6 external-service/adapters changes are published but await source integration.",
+    "Reminders, Files, Decisions and full-app HMR source branches remain outside this verified slice until their integration gates pass.",
+    "Remaining native shell/features, sole full-app Tailwind audit, authenticated Studio workspace, final HMR/performance budgets and production A/B acceptance remain open. Vanilla remains default."
   ]
 }

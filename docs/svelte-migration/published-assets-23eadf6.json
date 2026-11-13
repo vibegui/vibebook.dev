@@ -1,0 +1,79 @@
+{
+  "revision": "23eadf6",
+  "checkedAt": "2026-11-13T08:33:04.457Z",
+  "scope": "Unauthenticated public preview asset delivery only; does not establish authenticated production acceptance",
+  "results": [
+    {
+      "file": "public/app-svelte.html",
+      "url": "https://vibebook.dev/app-svelte.html",
+      "status": 200,
+      "bytes": 1818,
+      "expectedSha256": "737b2ea818fc240fbcc4dfe640295c3ba302e6dd475ce4d6a2bbbb9cb93bcfd8",
+      "sha256": "737b2ea818fc240fbcc4dfe640295c3ba302e6dd475ce4d6a2bbbb9cb93bcfd8",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/Field-dpYXm9AU.js",
+      "url": "https://vibebook.dev/svelte-preview/Field-dpYXm9AU.js",
+      "status": 200,
+      "bytes": 274809,
+      "expectedSha256": "1ec1b7443c8526017dccd26d4261bae9d027154e0b4a21eeff75954b9ea81fcf",
+      "sha256": "1ec1b7443c8526017dccd26d4261bae9d027154e0b4a21eeff75954b9ea81fcf",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/app.js",
+      "url": "https://vibebook.dev/svelte-preview/app.js",
+      "status": 200,
+      "bytes": 290,
+      "expectedSha256": "3509116276c9003fa855e3c0690b7b8c2bd04133abfc02c8871cbfd6d5c95ff0",
+      "sha256": "3509116276c9003fa855e3c0690b7b8c2bd04133abfc02c8871cbfd6d5c95ff0",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/host-eqPu1e9v.js",
+      "url": "https://vibebook.dev/svelte-preview/host-eqPu1e9v.js",
+      "status": 200,
+      "bytes": 260382,
+      "expectedSha256": "faf33dabdcfb1f33fc63788814af307f5dc98c9683a3c5676722d3336ee9054d",
+      "sha256": "faf33dabdcfb1f33fc63788814af307f5dc98c9683a3c5676722d3336ee9054d",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/main-4nFoapQw.js",
+      "url": "https://vibebook.dev/svelte-preview/main-4nFoapQw.js",
+      "status": 200,
+      "bytes": 97800,
+      "expectedSha256": "0440df3d49c57ab3bd2e0d0ccdc39847ffbb50157b7e56a74d9b85a896d0a985",
+      "sha256": "0440df3d49c57ab3bd2e0d0ccdc39847ffbb50157b7e56a74d9b85a896d0a985",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/main-Be-N39ve.js",
+      "url": "https://vibebook.dev/svelte-preview/main-Be-N39ve.js",
+      "status": 200,
+      "bytes": 143482,
+      "expectedSha256": "aa20e499a936aff51f11839bf52e2f93906e12f7be1fde21759d9fa85bf0110f",
+      "sha256": "aa20e499a936aff51f11839bf52e2f93906e12f7be1fde21759d9fa85bf0110f",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/ui.css",
+      "url": "https://vibebook.dev/svelte-preview/ui.css",
+      "status": 200,
+      "bytes": 39748,
+      "expectedSha256": "228d93b3320196cdca84814490d641c64eaa2bd87820bf12b168eae08e5d16e6",
+      "sha256": "228d93b3320196cdca84814490d641c64eaa2bd87820bf12b168eae08e5d16e6",
+      "matches": true
+    },
+    {
+      "file": "public/svelte-preview/ui.js",
+      "url": "https://vibebook.dev/svelte-preview/ui.js",
+      "status": 200,
+      "bytes": 194,
+      "expectedSha256": "25f97f385219471f459340966180e62024f5b79d87a9867e7c1ea066593b0694",
+      "sha256": "25f97f385219471f459340966180e62024f5b79d87a9867e7c1ea066593b0694",
+      "matches": true
+    }
+  ]
+}

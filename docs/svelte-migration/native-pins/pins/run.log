@@ -1,0 +1,10 @@
+$ bun scripts/pins-browser.ts
+Creating real file history and a local MCP app connection
+Checking create/cancel focus and live remote changes without losing the draft
+Checking one queued add, edits before the real receipt, and canonical update
+Checking explicit duplicate no-op and canonical removal once
+Resolving an older remote-pinned file through a real files.get response
+Opening a real pinned MCP app and handling its later unavailable connection
+Keeping drafts offline, reconnecting, and sending only after an explicit retry
+Checking EN/PT responsive accessibility and keyboard focus
+PASS native pins: real canonical writes, queued-edit retention, explicit no-op, older-file lookup/version identity, MCP app/unavailable target, offline/reconnect, EN/PT responsive axe and keyboard focus
