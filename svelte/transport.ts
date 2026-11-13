@@ -15,13 +15,15 @@ export interface RoomSocket {
   readonly readyState: number;
   send(data: string): void;
 }
+/** Queue a command on an open socket; `cid` asks the server for a correlated `result` (see shared/commands.ts). */
 export function sendRoomCommand(
   socket: RoomSocket | null | undefined,
   command: RoomCommand,
+  cid?: string,
 ): boolean {
   if (!isRoomCommand(command)) throw new TypeError("Invalid room command");
   if (!socket || socket.readyState !== 1) return false;
-  socket.send(JSON.stringify(command));
+  socket.send(JSON.stringify(cid ? { ...command, cid } : command));
   return true;
 }
 export function receiveRoomEvent(raw: unknown): RoomEvent {

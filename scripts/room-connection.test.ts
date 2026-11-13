@@ -187,3 +187,56 @@ test("repeated disconnects cap retry delay at thirty seconds", () => {
   h.connection.dispose();
   expect(h.timers.size).toBe(0);
 });
+
+test("request: correlated answers resolve by cid, are not forwarded as events, and never hang", async () => {
+  const h = harness("a"),
+    s = h.sockets[0]!;
+  expect(await h.connection.request({ t: "older", thread: "main" })).toEqual({
+    ok: false,
+    error: "offline",
+  });
+  s.open();
+  s.message(snapshot);
+  const one = h.connection.request({
+    t: "task.status",
+    id: "t1",
+    status: "done",
+  });
+  const two = h.connection.request({
+    t: "pin.add",
+    kind: "link",
+    ref: "javascript:x",
+  });
+  const sent = s.sent.map((x) => JSON.parse(x) as { cid: string; t: string });
+  expect(sent.map((x) => x.t)).toEqual(["task.status", "pin.add"]);
+  expect(sent[0]!.cid).not.toBe(sent[1]!.cid);
+  // Answers can come back in any order; unknown cids are ignored.
+  s.message({ t: "result", cid: "nobody", ok: true });
+  s.message({
+    t: "result",
+    cid: sent[1]!.cid,
+    ok: false,
+    error: "só links http(s)",
+  });
+  s.message({ t: "result", cid: sent[0]!.cid, ok: true });
+  expect(await one).toEqual({ ok: true });
+  expect(await two).toEqual({ ok: false, error: "só links http(s)" });
+  expect(h.events.filter((e) => e.t === "result")).toHaveLength(0);
+  // The Boolean bridge is unchanged: no cid on the wire.
+  expect(h.connection.send({ t: "files.get" })).toBe(true);
+  expect(s.sent.at(-1)).toBe('{"t":"files.get"}');
+  // Timeout, then a dropped socket: both settle.
+  const slow = h.connection.request({ t: "files.get" }, 5000);
+  h.run(5000);
+  expect(await slow).toEqual({ ok: false, error: "timeout" });
+  const dropped = h.connection.request({ t: "files.get" });
+  s.end(1006);
+  expect(await dropped).toEqual({ ok: false, error: "disconnected" });
+  expect(() =>
+    h.connection.request({
+      t: "task.status",
+      id: "t",
+      status: "nope",
+    } as never),
+  ).toThrow();
+});

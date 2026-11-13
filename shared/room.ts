@@ -1,194 +1,190 @@
-// JSON DTOs shared by the Cloudflare Worker and browser. Keep this module free of backend imports.
-export interface BookMeta {
-  title: string;
-  owner: string;
-  summary?: string | null;
-  folder?: string | null;
-}
-export interface Suggestion {
-  title: string;
-  tasks: string[];
-  why?: string;
-}
-export interface Decision {
-  id: number;
-  text: string;
-  who: string;
-  kind: string;
-  ts: number;
-}
-export interface Pin {
-  id: string;
-  kind: string;
-  ref: string;
-  title?: string;
-  author?: string;
-  ts?: number;
-}
-export interface Poll {
-  id: string;
-  question: string;
-  options: string[];
-  multi: boolean;
-  closed: boolean;
-  author: string;
-  votes: string[][];
-}
+// JSON DTOs shared by the Cloudflare Worker and browser (M1): runtime schemas first, every type derived from them.
+// Browser-safe: zod/mini only, no backend imports. The events built from these live in events.ts.
+import * as z from "zod/mini";
+
+const str = z.string();
+const num = z.number();
+const bool = z.boolean();
+const opt = <T extends z.ZodMiniType>(t: T) => z.optional(t);
+const maybe = <T extends z.ZodMiniType>(t: T) => z.optional(z.nullable(t));
+const strings = z.array(str);
 
 export const TASK_STATUSES = ["todo", "doing", "review", "done"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
-export interface Task {
+
+export const BookMetaSchema = z.object({
+  title: str,
+  owner: str,
+  summary: maybe(str),
+  folder: maybe(str),
+});
+export type BookMeta = z.infer<typeof BookMetaSchema>;
+export const SuggestionSchema = z.object({
+  title: str,
+  tasks: strings,
+  why: opt(str),
+});
+export type Suggestion = z.infer<typeof SuggestionSchema>;
+export const DecisionSchema = z.object({
+  id: num,
+  text: str,
+  who: str,
+  kind: str,
+  ts: num,
+});
+export type Decision = z.infer<typeof DecisionSchema>;
+export const PinSchema = z.object({
+  id: str,
+  kind: str,
+  ref: str,
+  title: opt(str),
+  author: opt(str),
+  ts: opt(num),
+});
+export type Pin = z.infer<typeof PinSchema>;
+export const PollSchema = z.object({
+  id: str,
+  question: str,
+  options: strings,
+  multi: bool,
+  closed: bool,
+  author: str,
+  votes: z.array(strings),
+});
+export type Poll = z.infer<typeof PollSchema>;
+export const TaskSchema = z.object({
+  id: str,
+  title: str,
+  done: bool,
+  status: z.enum(TASK_STATUSES),
+  owner: maybe(str),
+  due: maybe(str),
+  flags: opt(strings),
+  epic_id: opt(str),
+});
+export type Task = z.infer<typeof TaskSchema>;
+export const EpicSchema = z.object({
+  id: str,
+  title: str,
+  tasks: z.array(TaskSchema),
+  archived: opt(bool),
+  owner: maybe(str),
+  from_msg: maybe(num),
+  parent: maybe(str),
+  kept: opt(bool),
+  files: opt(z.array(z.object({ id: str, name: str, type: str, n: num }))),
+  flags: opt(strings),
+  prod: maybe(z.object({ stage: str, note: opt(str), at: opt(num) })),
+});
+export type Epic = z.infer<typeof EpicSchema>;
+export const AttachmentSchema = z.object({
+  id: str,
+  name: str,
+  type: str,
+  size: num,
+  author: str,
+  ts: num,
+  embed: opt(bool),
+});
+export type Attachment = z.infer<typeof AttachmentSchema>;
+export const MessageSchema = z.object({
+  id: num,
+  thread: str,
+  author: str,
+  ts: num,
+  text: str,
+  kind: maybe(str),
+  tag: maybe(str),
+  via: maybe(str),
+  reply_to: maybe(num),
+  choices: maybe(str),
+  poll: maybe(str),
+  card: maybe(str),
+  quiet: opt(bool),
+  cut: opt(bool),
+  for_who: maybe(str),
+  files: opt(z.array(AttachmentSchema)),
+});
+export type Message = z.infer<typeof MessageSchema>;
+export const AckSchema = z.object({
+  msg_id: num,
+  agent: opt(str),
+  email: str,
+  who: str,
+  status: str,
+  ts: num,
+  note: maybe(str),
+});
+export type Ack = z.infer<typeof AckSchema>;
+export const ReminderSchema = z.object({
+  id: str,
+  name: maybe(str),
+  text: str,
+  owner: str,
+  enabled: bool,
+  error: maybe(str),
+  every: maybe(str),
+  cron: maybe(str),
+  next_at: maybe(num),
+  thread: opt(str),
+  tz: opt(str),
+  file_id: maybe(str),
+});
+export type Reminder = z.infer<typeof ReminderSchema>;
+export const AccessRequestSchema = z.object({
+  email: str,
+  name: maybe(str),
+  ts: num,
+});
+export const ReceiptSchema = z.object({
+  email: str,
+  who: str,
+  read: num,
+  delivered: num,
+  agent: opt(str),
+  ts: opt(num),
+});
+
+/** What opening a room sends (the `state` event, without its `t`). */
+export const RoomSnapshotSchema = z.object({
+  me: str,
+  book: BookMetaSchema,
+  messages: z.array(MessageSchema),
+  epics: z.array(EpicSchema),
+  roomTasks: opt(z.array(TaskSchema)),
+  members: strings,
+  online: strings,
+  names: opt(z.record(str, str)),
+  avatars: opt(z.record(str, num)),
+  pending: opt(strings),
+  requests: opt(z.array(AccessRequestSchema)),
+  suggestions: z.array(SuggestionSchema),
+  files: opt(z.array(AttachmentSchema)),
+  filesN: opt(num),
+  filesAll: opt(bool),
+  reminders: opt(z.array(ReminderSchema)),
+  acks: opt(z.array(AckSchema)),
+  receipts: opt(z.array(ReceiptSchema)),
+  counts: opt(z.record(str, num)),
+  countsAt: opt(num),
+  full: opt(strings),
+  complete: opt(bool),
+  origins: opt(z.array(MessageSchema)),
+  docs: opt(z.record(str, str)),
+  doc: opt(str),
+  docNotes: opt(strings),
+  decisions: opt(z.array(DecisionSchema)),
+  pins: opt(z.array(PinSchema)),
+  polls: opt(z.record(str, PollSchema)),
+});
+/** The room as the browser keeps it: the snapshot plus its id and who is typing. */
+export type Room = z.infer<typeof RoomSnapshotSchema> & {
   id: string;
-  title: string;
-  done: boolean;
-  status: TaskStatus;
-  owner?: string | null;
-  due?: string | null;
-  flags?: string[];
-}
-export interface Epic {
-  id: string;
-  title: string;
-  tasks: Task[];
-  archived?: boolean;
-  owner?: string | null;
-  from_msg?: number | null;
-  parent?: string | null;
-  kept?: boolean;
-  files?: { id: string; name: string; type: string; n: number }[];
-  flags?: string[];
-  prod?: { stage: string; note?: string; at?: number } | null;
-}
-export interface Attachment {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  author: string;
-  ts: number;
-  embed?: boolean;
-}
-export interface Message {
-  id: number;
-  thread: string;
-  author: string;
-  ts: number;
-  text: string;
-  kind?: string | null;
-  tag?: string | null;
-  via?: string | null;
-  reply_to?: number | null;
-  choices?: string | null;
-  poll?: string | null;
-  card?: string | null;
-  quiet?: boolean;
-  cut?: boolean;
-  for_who?: string | null;
-  files?: Attachment[];
-}
-export interface Ack {
-  msg_id: number;
-  agent?: string;
-  email: string;
-  who: string;
-  status: string;
-  ts: number;
-  note?: string | null;
-}
-export interface Reminder {
-  id: string;
-  name?: string | null;
-  text: string;
-  owner: string;
-  enabled: boolean;
-  error?: string | null;
-  every?: string | null;
-  cron?: string | null;
-  next_at?: number | null;
-  thread?: string;
-  tz?: string;
-  file_id?: string | null;
-}
-export interface Room {
-  id: string;
-  me: string;
-  book: BookMeta;
-  messages: Message[];
-  epics: Epic[];
-  roomTasks?: Task[];
   typing: Record<string, string>;
-  members: string[];
-  online: string[];
-  names?: Record<string, string>;
-  avatars?: Record<string, number>;
-  pending?: string[];
-  requests?: { email: string; name?: string | null; ts: number }[];
-  suggestions: Suggestion[];
-  files?: Attachment[];
-  filesN?: number;
-  filesAll?: boolean;
-  reminders?: Reminder[];
-  acks?: Ack[];
-  receipts?: { email: string; who: string; read: number; delivered: number }[];
-  counts?: Record<string, number>;
-  countsAt?: number;
-  full?: string[];
-  complete?: boolean;
-  origins?: Message[];
-  docs?: Record<string, string>;
-  doc?: string;
-  docNotes?: string[];
-  decisions?: Decision[];
-  pins?: Pin[];
-  polls?: Record<string, Poll>;
-}
-export type DocumentContentEvent = {
-  t: "doc";
-  text: string;
-  epic?: string | null;
-  stale?: false;
-  fetched?: boolean;
-  by?: string;
 };
-export type DocumentInvalidationEvent = {
-  t: "doc";
-  epic: string;
-  stale: true;
-  by?: string;
-};
-export type RoomEvent =
-  | ({ t: "state" } & Omit<Room, "id" | "typing">)
-  | { t: "msg"; m: Message }
-  | { t: "moved"; id: number; thread: string }
-  | { t: "delta"; id: number; text: string }
-  | { t: "typing"; id: number; mode: string; note?: string }
-  | { t: "closed"; id: number; choices: string }
-  | { t: "epics"; epics: Epic[]; roomTasks?: Task[] }
-  | { t: "epicsPatch"; changed: Epic[]; order: string[]; roomTasks?: Task[] }
-  | DocumentContentEvent
-  | DocumentInvalidationEvent
-  | { t: "docNotes"; notes: string[] }
-  | { t: "meta"; title?: string; folder?: string; summary?: string }
-  | { t: "suggestions"; suggestions: Room["suggestions"] }
-  | { t: "requests"; requests: Room["requests"] }
-  | {
-      t: "members";
-      members: string[];
-      pending?: string[];
-      requests?: Room["requests"];
-      names?: Room["names"];
-      avatars?: Room["avatars"];
-    }
-  | { t: "files"; files: Attachment[] }
-  | { t: "fileAdd"; file: Attachment }
-  | { t: "reminders"; reminders: Reminder[] }
-  | { t: "decisions"; decisions: Decision[] }
-  | { t: "pins"; pins: Room["pins"] }
-  | { t: "receipts"; receipts: Room["receipts"] }
-  | { t: "older"; messages: Message[]; thread: string; more: boolean }
-  | { t: "acks" | "ackRows"; acks: Ack[] }
-  | { t: "poll"; poll: Poll }
-  | { t: "online"; online: string[] }
-  | { t: "conns" }
-  | { t: "error"; error?: string }
-  | { t: "blocked"; text: string; reason: string };
+
+export type {
+  DocumentContentEvent,
+  DocumentInvalidationEvent,
+  RoomEvent,
+} from "./events";

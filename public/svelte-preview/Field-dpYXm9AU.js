@@ -1,4 +1,4 @@
-// ../vibebook/node_modules/svelte/src/internal/shared/utils.js
+// node_modules/svelte/src/internal/shared/utils.js
 var e = Array.isArray, t = Array.prototype.indexOf, n = Array.prototype.includes, r = Array.from, i = Object.defineProperty, a = Object.getOwnPropertyDescriptor, o = Object.getOwnPropertyDescriptors, s = Object.prototype, c = Array.prototype, l = Object.getPrototypeOf, u = Object.isExtensible;
 function d(e) {
 	return typeof e == "function";
@@ -24,7 +24,7 @@ function h(e, t) {
 	for (let r of e) if (n.push(r), n.length === t) break;
 	return n;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/constants.js
+// node_modules/svelte/src/internal/client/constants.js
 var g = 1 << 24, _ = 1024, v = 2048, y = 4096, b = 8192, x = 16384, S = 32768, ee = 1 << 25, C = 65536, w = 1 << 19, te = 1 << 20, ne = 1 << 25, re = 1 << 21, ie = 1 << 22, ae = 1 << 23, oe = Symbol("$state"), se = Symbol("component"), ce = Symbol("legacy props"), le = Symbol(""), ue = Symbol("attributes"), T = Symbol("class"), de = Symbol("style"), fe = Symbol("text"), pe = Symbol("form reset"), me = new class extends Error {
 	name = "StaleReactionError";
 	message = "The reaction that called `getAbortSignal()` was re-run or destroyed";
@@ -41,7 +41,7 @@ function xe() {
 function Se() {
 	console.warn("https://svelte.dev/e/svelte_boundary_reset_noop");
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/hydration.js
+// node_modules/svelte/src/internal/client/dom/hydration.js
 var k = !1;
 function Ce(e) {
 	k = e;
@@ -83,7 +83,7 @@ function Oe(e) {
 	if (!e || e.nodeType !== 8) throw be(), E;
 	return e.data;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/equality.js
+// node_modules/svelte/src/internal/client/reactivity/equality.js
 function ke(e) {
 	return e === this.v;
 }
@@ -96,7 +96,7 @@ function je(e) {
 function Me(e) {
 	throw Error("https://svelte.dev/e/lifecycle_outside_component");
 }
-// ../vibebook/node_modules/svelte/src/internal/client/errors.js
+// node_modules/svelte/src/internal/client/errors.js
 function Ne() {
 	throw Error("https://svelte.dev/e/async_derived_orphan");
 }
@@ -130,7 +130,7 @@ function He() {
 function Ue() {
 	throw Error("https://svelte.dev/e/svelte_boundary_reset_onerror");
 }
-// ../vibebook/node_modules/svelte/src/internal/shared/context.js
+// node_modules/svelte/src/internal/shared/context.js
 function We(e) {
 	let t = e.p;
 	for (; t !== null && t.c === null;) t = t.p;
@@ -139,7 +139,7 @@ function We(e) {
 function Ge(e, t) {
 	return e === null && Me(t), e.c ??= new Map(We(e) || void 0);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/context.js
+// node_modules/svelte/src/internal/client/context.js
 var Ke = null;
 function qe(e) {
 	Ke = e;
@@ -182,7 +182,7 @@ function Qe(e = {}) {
 function $e() {
 	return !0;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/task.js
+// node_modules/svelte/src/internal/client/dom/task.js
 var et = [];
 function tt() {
 	var e = et;
@@ -200,7 +200,7 @@ function nt(e) {
 function rt() {
 	for (; et.length > 0;) tt();
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/status.js
+// node_modules/svelte/src/internal/client/reactivity/status.js
 var it = ~(v | y | _);
 function P(e, t) {
 	e.f = e.f & it | t;
@@ -208,11 +208,11 @@ function P(e, t) {
 function at(e) {
 	e.f & 512 || e.deps === null ? P(e, _) : P(e, y);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/utils.js
+// node_modules/svelte/src/internal/client/reactivity/utils.js
 function ot(e, t) {
 	e.f & 2048 ? t.set(e, v) : e.f & 4096 && t.get(e) !== 2048 && t.set(e, y), P(e, _);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/misc.js
+// node_modules/svelte/src/internal/client/dom/elements/misc.js
 function st(e, t) {
 	if (t) {
 		let t = document.body;
@@ -232,7 +232,7 @@ function ut() {
 		});
 	}, { capture: !0 }));
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/shared.js
 function dt(e) {
 	var t = V, n = H;
 	er(null), tr(null);
@@ -249,7 +249,7 @@ function ft(e, t, n, r = n) {
 		i(), r(!0);
 	} : () => r(!0), ut();
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/async.js
+// node_modules/svelte/src/internal/client/reactivity/async.js
 function pt(e, t, n, r) {
 	let i = $e() ? _t : bt;
 	var a = e.filter((e) => !e.settled), o = t.map(i);
@@ -393,7 +393,7 @@ function wt(e) {
 function Tt(e) {
 	if (e.effects !== null) for (let t of e.effects) t.teardown && t.fn !== null && yr(t);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/batch.js
+// node_modules/svelte/src/internal/client/reactivity/batch.js
 var Et = null, I = null, Dt = null, Ot = null, kt = null, At = !1, jt = !1, Mt = null, Nt = null, Pt = 0, Ft = 1, It = class e {
 	id = Ft++;
 	started = !1;
@@ -680,7 +680,7 @@ function Ut(e) {
 	P(e, _);
 	for (var t = e.first; t !== null;) Ut(t), t = t.next;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/sources.js
+// node_modules/svelte/src/internal/client/reactivity/sources.js
 var Wt = /* @__PURE__ */ new Set(), Gt = /* @__PURE__ */ new Map(), Kt = !1;
 function qt(e, t) {
 	return {
@@ -967,7 +967,7 @@ function xn(e, t) {
 		throw e;
 	}
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/effects.js
+// node_modules/svelte/src/internal/client/reactivity/effects.js
 function Sn(e) {
 	H === null && (V === null && Le(e), Ie()), Zn && Fe(e);
 }
@@ -1169,7 +1169,7 @@ function Yn(e, t) {
 		t.append(n), n = i;
 	}
 }
-// ../vibebook/node_modules/svelte/src/internal/client/legacy.js
+// node_modules/svelte/src/internal/client/legacy.js
 var Xn = null, Zn = !1;
 function Qn(e) {
 	Zn = e;
@@ -1359,7 +1359,7 @@ function Tr(e, t = /* @__PURE__ */ new Set()) {
 		}
 	}
 }
-// ../vibebook/node_modules/svelte/src/attachments/index.js
+// node_modules/svelte/src/attachments/index.js
 function Er() {
 	return Symbol(ve);
 }
@@ -1416,7 +1416,7 @@ var Nr = ["touchstart", "touchmove"];
 function Pr(e) {
 	return Nr.includes(e);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/events.js
+// node_modules/svelte/src/internal/client/dom/elements/events.js
 var Fr = Symbol("events"), Ir = /* @__PURE__ */ new Set(), Lr = /* @__PURE__ */ new Set();
 function Rr(e) {
 	if (!k) return;
@@ -1504,7 +1504,7 @@ function Kr(e) {
 		}
 	}
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/reconciler.js
+// node_modules/svelte/src/internal/client/dom/reconciler.js
 var qr = globalThis?.window?.trustedTypes && /* @__PURE__ */ globalThis.window.trustedTypes.createPolicy("svelte-trusted-html", { createHTML: (e) => e });
 function Jr(e) {
 	return qr?.createHTML(e) ?? e;
@@ -1513,7 +1513,7 @@ function Yr(e) {
 	var t = vn("template");
 	return t.innerHTML = Jr(e.replaceAll("<!>", "<!---->")), t.content;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/template.js
+// node_modules/svelte/src/internal/client/dom/template.js
 function Xr(e, t) {
 	var n = H;
 	n.nodes === null && (n.nodes = {
@@ -1585,7 +1585,7 @@ function ei() {
 	}
 	return (window.__svelte ??= {}).uid ??= 1, `c${window.__svelte.uid++}`;
 }
-// ../vibebook/node_modules/svelte/src/reactivity/create-subscriber.js
+// node_modules/svelte/src/reactivity/create-subscriber.js
 function ti(e) {
 	let t = 0, n = qt(0), r;
 	return () => {
@@ -1596,7 +1596,7 @@ function ti(e) {
 		})));
 	};
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/boundary.js
+// node_modules/svelte/src/internal/client/dom/blocks/boundary.js
 var ni = C | w;
 function ri(e, t, n, r) {
 	new ii(e, t, n, r);
@@ -1828,7 +1828,7 @@ function ui(e, t) {
 	let n = li.get(e);
 	return n ? (li.delete(e), n(t)) : Promise.resolve();
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/branches.js
+// node_modules/svelte/src/internal/client/dom/blocks/branches.js
 var di = class {
 	anchor;
 	#e = /* @__PURE__ */ new Map();
@@ -1891,7 +1891,7 @@ var di = class {
 		} else k && (this.anchor = A), this.#a(n);
 	}
 };
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/if.js
+// node_modules/svelte/src/internal/client/dom/blocks/if.js
 function q(e, t, n = !1) {
 	var r;
 	k && (r = A, Te());
@@ -1914,7 +1914,7 @@ function q(e, t, n = !1) {
 		}), e || o(-1, null);
 	}, a);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/key.js
+// node_modules/svelte/src/internal/client/dom/blocks/key.js
 var fi = Symbol("NaN");
 function pi(e, t, n) {
 	k && Te();
@@ -1924,7 +1924,7 @@ function pi(e, t, n) {
 		e !== e && (e = fi), i && typeof e == "object" && e && (e = {}), r.ensure(e, n);
 	});
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/each.js
+// node_modules/svelte/src/internal/client/dom/blocks/each.js
 function mi(e, t) {
 	return t;
 }
@@ -2114,7 +2114,7 @@ function wi(e, t, n = !1, r = !1, i = !1, a = !1) {
 		}
 	});
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/snippet.js
+// node_modules/svelte/src/internal/client/dom/blocks/snippet.js
 function J(e, t, ...n) {
 	var r = new di(e);
 	In(() => {
@@ -2122,7 +2122,7 @@ function J(e, t, ...n) {
 		r.ensure(e, e && ((t) => e(t, ...n)));
 	}, C);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/blocks/svelte-component.js
+// node_modules/svelte/src/internal/client/dom/blocks/svelte-component.js
 function Ti(e, t, n) {
 	var r;
 	k && (r = A, Te());
@@ -2135,7 +2135,7 @@ function Ti(e, t, n) {
 		} else i.ensure(e, e && ((t) => n(t, e)));
 	}, C);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/actions.js
+// node_modules/svelte/src/internal/client/dom/elements/actions.js
 function Ei(e, t, n) {
 	Mn(() => {
 		var r = Cr(() => t(e, n?.()) || {});
@@ -2149,7 +2149,7 @@ function Ei(e, t, n) {
 		if (r?.destroy) return () => r.destroy();
 	});
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/attachments.js
+// node_modules/svelte/src/internal/client/dom/elements/attachments.js
 function Di(e, t) {
 	var n = void 0, r;
 	Ln(() => {
@@ -2158,7 +2158,7 @@ function Di(e, t) {
 		})));
 	});
 }
-// ../vibebook/node_modules/clsx/dist/clsx.mjs
+// node_modules/clsx/dist/clsx.mjs
 function Oi(e) {
 	var t, n, r = "";
 	if (typeof e == "string" || typeof e == "number") r += e;
@@ -2174,7 +2174,7 @@ function ki() {
 	for (var e, t, n = 0, r = "", i = arguments.length; n < i; n++) (e = arguments[n]) && (t = Oi(e)) && (r && (r += " "), r += t);
 	return r;
 }
-// ../vibebook/node_modules/svelte/src/internal/shared/attributes.js
+// node_modules/svelte/src/internal/shared/attributes.js
 function Ai(e) {
 	return typeof e == "object" ? ki(e) : e ?? "";
 }
@@ -2232,7 +2232,7 @@ function Fi(e, t) {
 	}
 	return e == null ? null : String(e);
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/class.js
+// node_modules/svelte/src/internal/client/dom/elements/class.js
 function Ii(e, t, n, r, i, a) {
 	var o = e[T];
 	if (k || o !== n || o === void 0) {
@@ -2244,7 +2244,7 @@ function Ii(e, t, n, r, i, a) {
 	}
 	return a;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/style.js
+// node_modules/svelte/src/internal/client/dom/elements/style.js
 function Li(e, t = {}, n, r) {
 	for (var i in n) {
 		var a = n[i];
@@ -2259,7 +2259,7 @@ function Ri(e, t, n, r) {
 	} else r && (Array.isArray(r) ? (Li(e, n?.[0], r[0]), Li(e, n?.[1], r[1], "important")) : Li(e, n, r));
 	return r;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
 function zi(e, t) {
 	t ? e.hasAttribute("selected") || e.setAttribute("selected", "") : e.removeAttribute("selected");
 }
@@ -2321,7 +2321,7 @@ function Gi(e) {
 	}
 	return !1;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/attributes.js
+// node_modules/svelte/src/internal/client/dom/elements/attributes.js
 var Ki = Symbol("class"), qi = Symbol("style"), Ji = Symbol("is custom element"), Yi = Symbol("is html"), Xi = he ? "link" : "LINK", Zi = he ? "input" : "INPUT", Qi = he ? "option" : "OPTION", $i = he ? "select" : "SELECT", ea = he ? "progress" : "PROGRESS";
 function ta(e) {
 	if (k) {
@@ -2463,7 +2463,7 @@ function ca(e) {
 	}
 	return n;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
 function la(e, t, n = t) {
 	var r = /* @__PURE__ */ new WeakSet();
 	ft(e, "input", async (i) => {
@@ -2525,7 +2525,7 @@ function ma(e) {
 function ha(e) {
 	return e === "" ? null : +e;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
 function ga(e, t) {
 	return e === t || e?.[oe] === t;
 }
@@ -2549,7 +2549,7 @@ function _a(e = Qe(), t, n, r) {
 		};
 	}), e;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/dom/elements/bindings/universal.js
+// node_modules/svelte/src/internal/client/dom/elements/bindings/universal.js
 function va(e, t, n, r, i) {
 	var a = () => {
 		r(n[e]);
@@ -2560,13 +2560,13 @@ function va(e, t, n, r, i) {
 		n.removeEventListener(t, a);
 	});
 }
-// ../vibebook/node_modules/svelte/src/store/utils.js
+// node_modules/svelte/src/store/utils.js
 function ya(e, t, n) {
 	if (e == null) return t(void 0), n && n(void 0), f;
 	let r = Cr(() => e.subscribe(t, n));
 	return r.unsubscribe ? () => r.unsubscribe() : r;
 }
-// ../vibebook/node_modules/svelte/src/store/shared/index.js
+// node_modules/svelte/src/store/shared/index.js
 var ba = [];
 function xa(e, t = f) {
 	let n = null, r = /* @__PURE__ */ new Set();
@@ -2599,7 +2599,7 @@ function Sa(e) {
 	let t;
 	return ya(e, (e) => t = e)(), t;
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/store.js
+// node_modules/svelte/src/internal/client/reactivity/store.js
 var Ca = !1, wa = Symbol("unmounted");
 function Ta(e, t, n) {
 	let r = n[t] ??= {
@@ -2647,7 +2647,7 @@ function ka(e) {
 		Ca = t;
 	}
 }
-// ../vibebook/node_modules/svelte/src/internal/client/reactivity/props.js
+// node_modules/svelte/src/internal/client/reactivity/props.js
 var Aa = {
 	get(e, t) {
 		if (!e.exclude.has(t)) return e.props[t];
@@ -2764,9 +2764,9 @@ function Pa(e) {
 function Fa(e) {
 	Ke === null && Me("onDestroy"), Pa(() => () => Cr(e));
 }
-// ../vibebook/node_modules/svelte/src/internal/disclose-version.js
+// node_modules/svelte/src/internal/disclose-version.js
 typeof window < "u" && ((window.__svelte ??= {}).v ??= /* @__PURE__ */ new Set()).add("5");
-// ../vibebook/node_modules/tailwind-merge/dist/bundle-mjs.mjs
+// node_modules/tailwind-merge/dist/bundle-mjs.mjs
 var Ia = (e, t) => {
 	let n = Array(e.length + t.length);
 	for (let t = 0; t < e.length; t++) n[t] = e[t];
@@ -4590,7 +4590,7 @@ function _s(e, t) {
 		t.src && !U(n) ? e(o) : e(s, -1);
 	}), j(i), Fn((e) => Ii(i, 1, e), [() => Ai(ms("tw:inline-grid tw:size-8 tw:shrink-0 tw:place-items-center tw:overflow-hidden tw:rounded-full tw:border tw:border-border tw:bg-muted tw:font-sans tw:text-xs tw:font-medium tw:text-foreground", t.class))]), K(e, i), N();
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/is.js
+// node_modules/svelte-toolbelt/dist/utils/is.js
 function vs(e) {
 	return typeof e == "function";
 }
@@ -4606,7 +4606,7 @@ var bs = [
 function xs(e) {
 	return e == null || bs.includes(typeof e) ? !0 : Array.isArray(e) ? e.every((e) => xs(e)) : typeof e == "object" && Object.getPrototypeOf(e) === Object.prototype;
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/box/box-extras.svelte.js
+// node_modules/svelte-toolbelt/dist/box/box-extras.svelte.js
 var Ss = Symbol("box"), Cs = Symbol("is-writable");
 function $(e, t) {
 	let n = /* @__PURE__ */ F(e);
@@ -4668,7 +4668,7 @@ function ks(e) {
 		}
 	};
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/box/box.svelte.js
+// node_modules/svelte-toolbelt/dist/box/box.svelte.js
 function As(e) {
 	let t = /* @__PURE__ */ L(nn(e));
 	return {
@@ -4683,7 +4683,7 @@ function As(e) {
 	};
 }
 As.from = Es, As.with = $, As.flatten = Ds, As.readonly = Os, As.isBox = ws, As.isWritableBox = Ts;
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/compose-handlers.js
+// node_modules/svelte-toolbelt/dist/utils/compose-handlers.js
 function js(...e) {
 	return function(t) {
 		for (let n of e) if (n) {
@@ -4692,7 +4692,7 @@ function js(...e) {
 		}
 	};
 }
-// ../vibebook/node_modules/inline-style-parser/esm/index.mjs
+// node_modules/inline-style-parser/esm/index.mjs
 var Ms = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g, Ns = /\n/g, Ps = /^\s*/, Fs = /^(\*?[-#/*\\\w]+(\[[0-9a-z_-]+\])?)\s*/, Is = /^:\s*/, Ls = /^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};])+)/, Rs = /^[;\s]*/, zs = /^\s+|\s+$/g, Bs = "\n", Vs = "/", Hs = "*", Us = "", Ws = "comment", Gs = "declaration";
 function Ks(e, t) {
 	if (typeof e != "string") throw TypeError("First argument must be a string");
@@ -4775,7 +4775,7 @@ function Ks(e, t) {
 function qs(e) {
 	return e ? e.replace(zs, Us) : Us;
 }
-// ../vibebook/node_modules/style-to-object/esm/index.mjs
+// node_modules/style-to-object/esm/index.mjs
 function Js(e, t) {
 	let n = null;
 	if (!e || typeof e != "string") return n;
@@ -4786,7 +4786,7 @@ function Js(e, t) {
 		i ? t(r, a, e) : a && (n ||= {}, n[r] = a);
 	}), n;
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/strings.js
+// node_modules/svelte-toolbelt/dist/utils/strings.js
 var Ys = /\d/, Xs = [
 	"-",
 	"_",
@@ -4832,7 +4832,7 @@ function tc(e) {
 function nc(e) {
 	return e ? e[0].toLowerCase() + e.slice(1) : "";
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/css-to-style-obj.js
+// node_modules/svelte-toolbelt/dist/utils/css-to-style-obj.js
 var rc = 1e3, ic = /* @__PURE__ */ new Map();
 function ac(e) {
 	let t = ic.get(e);
@@ -4875,13 +4875,13 @@ function uc(e) {
 	let t = {};
 	return lc(t, e), t;
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/execute-callbacks.js
+// node_modules/svelte-toolbelt/dist/utils/execute-callbacks.js
 function dc(...e) {
 	return (...t) => {
 		for (let n of e) typeof n == "function" && n(...t);
 	};
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/style-to-css.js
+// node_modules/svelte-toolbelt/dist/utils/style-to-css.js
 function fc(e, t) {
 	let n = RegExp(e, "g");
 	return (e) => {
@@ -4903,12 +4903,12 @@ function gc(e) {
 	}
 	return t;
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/style.js
+// node_modules/svelte-toolbelt/dist/utils/style.js
 function _c(e = {}) {
 	return gc(e).replace("\n", " ");
 }
 var vc = new Set(/* @__PURE__ */ "onabort.onanimationcancel.onanimationend.onanimationiteration.onanimationstart.onauxclick.onbeforeinput.onbeforetoggle.onblur.oncancel.oncanplay.oncanplaythrough.onchange.onclick.onclose.oncompositionend.oncompositionstart.oncompositionupdate.oncontextlost.oncontextmenu.oncontextrestored.oncopy.oncuechange.oncut.ondblclick.ondrag.ondragend.ondragenter.ondragleave.ondragover.ondragstart.ondrop.ondurationchange.onemptied.onended.onerror.onfocus.onfocusin.onfocusout.onformdata.ongotpointercapture.oninput.oninvalid.onkeydown.onkeypress.onkeyup.onload.onloadeddata.onloadedmetadata.onloadstart.onlostpointercapture.onmousedown.onmouseenter.onmouseleave.onmousemove.onmouseout.onmouseover.onmouseup.onpaste.onpause.onplay.onplaying.onpointercancel.onpointerdown.onpointerenter.onpointerleave.onpointermove.onpointerout.onpointerover.onpointerup.onprogress.onratechange.onreset.onresize.onscroll.onscrollend.onsecuritypolicyviolation.onseeked.onseeking.onselect.onselectionchange.onselectstart.onslotchange.onstalled.onsubmit.onsuspend.ontimeupdate.ontoggle.ontouchcancel.ontouchend.ontouchmove.ontouchstart.ontransitioncancel.ontransitionend.ontransitionrun.ontransitionstart.onvolumechange.onwaiting.onwebkitanimationend.onwebkitanimationiteration.onwebkitanimationstart.onwebkittransitionend.onwheel".split("."));
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/merge-props.js
+// node_modules/svelte-toolbelt/dist/utils/merge-props.js
 function yc(e) {
 	return vc.has(e);
 }
@@ -4957,10 +4957,10 @@ function bc(...e) {
 	}
 	return typeof t.style == "object" && (t.style = _c(t.style).replaceAll("\n", " ")), t.hidden === !1 && (t.hidden = void 0, delete t.hidden), t.disabled === !1 && (t.disabled = void 0, delete t.disabled), t;
 }
-// ../vibebook/node_modules/runed/dist/internal/configurable-globals.js
+// node_modules/runed/dist/internal/configurable-globals.js
 var xc = typeof window < "u" ? window : void 0;
 typeof window < "u" && window.document, typeof window < "u" && window.navigator, typeof window < "u" && window.location;
-// ../vibebook/node_modules/runed/dist/internal/utils/dom.js
+// node_modules/runed/dist/internal/utils/dom.js
 function Sc(e) {
 	let t = e.activeElement;
 	for (; t?.shadowRoot;) {
@@ -4970,7 +4970,7 @@ function Sc(e) {
 	}
 	return t;
 }
-// ../vibebook/node_modules/svelte/src/reactivity/map.js
+// node_modules/svelte/src/reactivity/map.js
 var Cc = class extends Map {
 	#e = /* @__PURE__ */ new Map();
 	#t = /* @__PURE__ */ L(0);
@@ -5079,11 +5079,11 @@ new class {
 		return this.#t?.(), this.#e ? Sc(this.#e) : null;
 	}
 }();
-// ../vibebook/node_modules/runed/dist/internal/utils/is.js
+// node_modules/runed/dist/internal/utils/is.js
 function wc(e) {
 	return typeof e == "function";
 }
-// ../vibebook/node_modules/runed/dist/utilities/context/context.js
+// node_modules/runed/dist/utilities/context/context.js
 var Tc = class {
 	#e;
 	#t;
@@ -5109,7 +5109,7 @@ var Tc = class {
 		return Ye(this.#t, e);
 	}
 };
-// ../vibebook/node_modules/runed/dist/utilities/watch/watch.svelte.js
+// node_modules/runed/dist/utilities/watch/watch.svelte.js
 function Ec(e, t) {
 	switch (e) {
 		case "post":
@@ -5137,11 +5137,11 @@ function kc(e, t, n) {
 	Dc(e, "pre", t, n);
 }
 Oc.pre = kc;
-// ../vibebook/node_modules/runed/dist/internal/utils/get.js
+// node_modules/runed/dist/internal/utils/get.js
 function Ac(e) {
 	return wc(e) ? e() : e;
 }
-// ../vibebook/node_modules/runed/dist/utilities/element-size/element-size.svelte.js
+// node_modules/runed/dist/utilities/element-size/element-size.svelte.js
 var jc = class {
 	#e = {
 		width: 0,
@@ -5203,17 +5203,17 @@ var jc = class {
 		return U(this.#o);
 	}
 };
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/on-destroy-effect.svelte.js
+// node_modules/svelte-toolbelt/dist/utils/on-destroy-effect.svelte.js
 function Mc(e) {
 	Dn(() => () => {
 		e();
 	});
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/after-tick.js
+// node_modules/svelte-toolbelt/dist/utils/after-tick.js
 function Nc(e) {
 	br().then(e);
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/dom.js
+// node_modules/svelte-toolbelt/dist/utils/dom.js
 var Pc = 1, Fc = 9, Ic = 11;
 function Lc(e) {
 	return ys(e) && e.nodeType === Pc && typeof e.nodeName == "string";
@@ -5258,7 +5258,7 @@ function Gc(e) {
 	}
 	return t;
 }
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/dom-context.svelte.js
+// node_modules/svelte-toolbelt/dist/utils/dom-context.svelte.js
 var Kc = class {
 	element;
 	#e = /* @__PURE__ */ F(() => this.element.current ? this.element.current.getRootNode() ?? document : document);
@@ -5283,7 +5283,7 @@ var Kc = class {
 	setTimeout = (e, t) => this.getWindow().setTimeout(e, t);
 	clearTimeout = (e) => this.getWindow().clearTimeout(e);
 };
-// ../vibebook/node_modules/svelte-toolbelt/dist/utils/attach-ref.js
+// node_modules/svelte-toolbelt/dist/utils/attach-ref.js
 function qc(e, t) {
 	return { [Er()]: (n) => ws(e) ? (e.current = n, Cr(() => t?.(n)), () => {
 		"isConnected" in n && n.isConnected || (e.current = null, t?.(null));
@@ -5291,7 +5291,7 @@ function qc(e, t) {
 		"isConnected" in n && n.isConnected || (e(null), t?.(null));
 	}) };
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/attrs.js
+// node_modules/bits-ui/dist/internal/attrs.js
 function Jc(e) {
 	return e ? "true" : "false";
 }
@@ -5329,13 +5329,13 @@ function el(e) {
 		getAttr: t.getAttr
 	};
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/kbd-constants.js
+// node_modules/bits-ui/dist/internal/kbd-constants.js
 var tl = "ArrowDown", nl = "ArrowLeft", rl = "ArrowRight", il = "ArrowUp", al = "Home", ol = "PageDown", sl = "PageUp";
-// ../vibebook/node_modules/bits-ui/dist/internal/locale.js
+// node_modules/bits-ui/dist/internal/locale.js
 function cl(e) {
 	return window.getComputedStyle(e).getPropertyValue("direction");
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/get-directional-keys.js
+// node_modules/bits-ui/dist/internal/get-directional-keys.js
 var ll = [
 	tl,
 	sl,
@@ -5364,7 +5364,7 @@ function pl(e = "ltr", t = "horizontal") {
 		prevKey: fl(e, t)
 	};
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/is.js
+// node_modules/bits-ui/dist/internal/is.js
 var ml = typeof document < "u", hl = gl();
 function gl() {
 	return ml && window?.navigator?.userAgent && (/iP(ad|hone|od)/.test(window.navigator.userAgent) || window?.navigator?.maxTouchPoints > 2 && /iPad|Macintosh/.test(window?.navigator.userAgent));
@@ -5384,7 +5384,7 @@ function bl(e) {
 function xl(e) {
 	return e !== null;
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/css-escape.js
+// node_modules/bits-ui/dist/internal/css-escape.js
 function Sl(e) {
 	if (typeof CSS < "u" && typeof CSS.escape == "function") return CSS.escape(e);
 	let t = e.length, n = -1, r, i = "", a = e.charCodeAt(0);
@@ -5392,7 +5392,7 @@ function Sl(e) {
 	for (; ++n < t;) r = e.charCodeAt(n), i += r === 0 ? "�" : r >= 1 && r <= 31 || r === 127 || n === 0 && r >= 48 && r <= 57 || n === 1 && r >= 48 && r <= 57 && a === 45 ? "\\" + r.toString(16) + " " : r >= 128 || r === 45 || r === 95 || r >= 48 && r <= 57 || r >= 65 && r <= 90 || r >= 97 && r <= 122 ? e.charAt(n) : "\\" + e.charAt(n);
 	return i;
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/roving-focus-group.js
+// node_modules/bits-ui/dist/internal/roving-focus-group.js
 var Cl = class {
 	#e;
 	#t = As(null);
@@ -5536,13 +5536,13 @@ var Cl = class {
 		this.#o !== null && (window.cancelAnimationFrame(this.#o), this.#o = null);
 	}
 };
-// ../vibebook/node_modules/bits-ui/dist/internal/noop.js
+// node_modules/bits-ui/dist/internal/noop.js
 function El() {}
-// ../vibebook/node_modules/bits-ui/dist/internal/create-id.js
+// node_modules/bits-ui/dist/internal/create-id.js
 function Dl(e, t) {
 	return t === void 0 ? `bits-${e}` : `bits-${e}-${t}`;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/dialog.svelte.js
+// node_modules/bits-ui/dist/bits/dialog/dialog.svelte.js
 var Ol = el({
 	component: "dialog",
 	parts: [
@@ -5911,7 +5911,7 @@ function zl(e, t) {
 		t.child ? e(d) : e(p, -1);
 	}), K(e, l), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/portal/portal-consumer.svelte
+// node_modules/bits-ui/dist/bits/utilities/portal/portal-consumer.svelte
 function Bl(e, t) {
 	var n = G();
 	pi(B(n), () => t.children, (e) => {
@@ -5919,7 +5919,7 @@ function Bl(e, t) {
 		J(B(n), () => t.children ?? f), K(e, n);
 	}), K(e, n);
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/config/bits-config.js
+// node_modules/bits-ui/dist/bits/utilities/config/bits-config.js
 var Vl = new Tc("BitsConfig");
 function Hl() {
 	let e = new Ul(null, {});
@@ -5942,7 +5942,7 @@ function Wl(e, t) {
 		if (e !== null) return n(e.opts)?.current;
 	});
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/config/prop-resolvers.js
+// node_modules/bits-ui/dist/bits/utilities/config/prop-resolvers.js
 function Gl(e, t) {
 	return (n) => {
 		let r = Hl();
@@ -5955,7 +5955,7 @@ function Gl(e, t) {
 	};
 }
 var Kl = Gl((e) => e.defaultPortalTo, "body");
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/portal/portal.svelte
+// node_modules/bits-ui/dist/bits/utilities/portal/portal.svelte
 function ql(e, t) {
 	M(t, !0);
 	let n = Kl(() => t.to), r = Ze(), i = /* @__PURE__ */ F(a);
@@ -5986,7 +5986,7 @@ function ql(e, t) {
 		t.disabled && e(u);
 	}), K(e, c), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/events.js
+// node_modules/bits-ui/dist/internal/events.js
 var Jl = /* @__PURE__ */ new WeakMap();
 function Yl(e, t = e.composedPath()) {
 	Jl.set(e, t);
@@ -6004,7 +6004,7 @@ function Ql(e, t) {
 function $l(e, t) {
 	Yl(t, Xl(e));
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/debounce.js
+// node_modules/bits-ui/dist/internal/debounce.js
 function eu(e, t = 500) {
 	let n = null, r = null, i = (...e) => {
 		i.destroy(), r = e, n = setTimeout(i.flush, t);
@@ -6017,21 +6017,21 @@ function eu(e, t = 500) {
 		n !== null && (clearTimeout(n), n = null), r = null;
 	}, i;
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/elements.js
+// node_modules/bits-ui/dist/internal/elements.js
 function tu(e, t) {
 	return e === t || e.contains(t);
 }
 function nu(e) {
 	return e?.ownerDocument ?? document;
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/dom.js
+// node_modules/bits-ui/dist/internal/dom.js
 function ru(e, t) {
 	let { clientX: n, clientY: r } = e, i = t.getBoundingClientRect();
 	return n < i.left || n > i.right || r < i.top || r > i.bottom;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/menu/context-menu-attributes.js
+// node_modules/bits-ui/dist/bits/menu/context-menu-attributes.js
 var iu = "data-context-menu-trigger", au = "data-context-menu-content";
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/dismissible-layer/use-dismissable-layer.svelte.js
+// node_modules/bits-ui/dist/bits/utilities/dismissible-layer/use-dismissable-layer.svelte.js
 globalThis.bitsDismissableLayers ??= /* @__PURE__ */ new Map();
 var ou = class e {
 	static create(t) {
@@ -6173,7 +6173,7 @@ function uu(e) {
 	} });
 	return $l(e, a), a;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/dismissible-layer/dismissible-layer.svelte
+// node_modules/bits-ui/dist/bits/utilities/dismissible-layer/dismissible-layer.svelte
 function du(e, t) {
 	M(t, !0);
 	let n = Y(t, "interactOutsideBehavior", 3, "close"), r = Y(t, "onInteractOutside", 3, El), i = Y(t, "onFocusOutside", 3, El), a = Y(t, "isValidEvent", 3, () => !1), o = ou.create({
@@ -6188,7 +6188,7 @@ function du(e, t) {
 	var s = G();
 	J(B(s), () => t.children ?? f, () => ({ props: o.props })), K(e, s), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/escape-layer/use-escape-layer.svelte.js
+// node_modules/bits-ui/dist/bits/utilities/escape-layer/use-escape-layer.svelte.js
 globalThis.bitsEscapeLayers ??= /* @__PURE__ */ new Map();
 var fu = class e {
 	static create(t) {
@@ -6218,7 +6218,7 @@ function pu(e) {
 	let [r] = t[0];
 	return r === e;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/escape-layer/escape-layer.svelte
+// node_modules/bits-ui/dist/bits/utilities/escape-layer/escape-layer.svelte
 function mu(e, t) {
 	M(t, !0);
 	let n = Y(t, "escapeKeydownBehavior", 3, "close"), r = Y(t, "onEscapeKeydown", 3, El);
@@ -6231,7 +6231,7 @@ function mu(e, t) {
 	var i = G();
 	J(B(i), () => t.children ?? f), K(e, i), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope-manager.js
+// node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope-manager.js
 var hu = class e {
 	static instance;
 	#e = ks([]);
@@ -6450,7 +6450,7 @@ var hu = class e {
 	if (t ||= {}, !e) throw Error("No node provided");
 	return yu.call(e, Ku) !== !1 && Bu(t, e);
 };
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope.svelte.js
+// node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope.svelte.js
 function Ju(e, t) {
 	let n = t.getRootNode();
 	for (; e;) {
@@ -6574,7 +6574,7 @@ var Yu = class e {
 		} };
 	}
 };
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope.svelte
+// node_modules/bits-ui/dist/bits/utilities/focus-scope/focus-scope.svelte
 function Xu(e, t) {
 	M(t, !0);
 	let n = Y(t, "enabled", 3, !1), r = Y(t, "trapFocus", 3, !1), i = Y(t, "loop", 3, !1), a = Y(t, "onCloseAutoFocus", 3, El), o = Y(t, "onOpenAutoFocus", 3, El), s = Yu.use({
@@ -6588,7 +6588,7 @@ function Xu(e, t) {
 	var c = G();
 	J(B(c), () => t.focusScope ?? f, () => ({ props: s.props })), K(e, c), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/text-selection-layer/use-text-selection-layer.svelte.js
+// node_modules/bits-ui/dist/bits/utilities/text-selection-layer/use-text-selection-layer.svelte.js
 var Zu = () => {};
 globalThis.bitsTextSelectionLayers ??= /* @__PURE__ */ new Map();
 var Qu = class e {
@@ -6643,7 +6643,7 @@ function nd(e) {
 	let n = t.at(-1);
 	return n ? n[0] === e : !1;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/text-selection-layer/text-selection-layer.svelte
+// node_modules/bits-ui/dist/bits/utilities/text-selection-layer/text-selection-layer.svelte
 function rd(e, t) {
 	M(t, !0);
 	let n = Y(t, "preventOverflowTextSelection", 3, !0), r = Y(t, "onPointerDown", 3, El), i = Y(t, "onPointerUp", 3, El);
@@ -6657,12 +6657,12 @@ function rd(e, t) {
 	var a = G();
 	J(B(a), () => t.children ?? f), K(e, a), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/use-id.js
+// node_modules/bits-ui/dist/internal/use-id.js
 globalThis.bitsIdCounter ??= { current: 0 };
 function id(e = "bits") {
 	return globalThis.bitsIdCounter.current++, `${e}-${globalThis.bitsIdCounter.current}`;
 }
-// ../vibebook/node_modules/bits-ui/dist/internal/shared-state.svelte.js
+// node_modules/bits-ui/dist/internal/shared-state.svelte.js
 var ad = class {
 	#e;
 	#t = 0;
@@ -6778,7 +6778,7 @@ function xd(e) {
 	for (let [t, n] of e) if (n) return !0;
 	return !1;
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/utilities/scroll-lock/scroll-lock.svelte
+// node_modules/bits-ui/dist/bits/utilities/scroll-lock/scroll-lock.svelte
 function Sd(e, t) {
 	M(t, !0);
 	let n = Y(t, "preventScroll", 3, !0), r = Y(t, "restoreScrollDelay", 3, null), i = Y(t, "blockPointer", 3, () => !0);
@@ -6786,7 +6786,7 @@ function Sd(e, t) {
 		n() && new bd(n(), () => r(), i());
 	}), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog-overlay.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog-overlay.svelte
 var Cd = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -6827,7 +6827,7 @@ function Td(e, t) {
 		(s.shouldRender || i()) && e(d);
 	}), K(e, l), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog-trigger.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog-trigger.svelte
 var Ed = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -6857,7 +6857,7 @@ function Od(e, t) {
 		t.child ? e(d) : e(p, -1);
 	}), K(e, l), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog-description.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog-description.svelte
 var kd = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -6885,7 +6885,7 @@ function jd(e, t) {
 		t.child ? e(u) : e(d, -1);
 	}), K(e, c), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog.svelte
 function Md(e, t) {
 	M(t, !0);
 	let n = Y(t, "open", 15, !1), r = Y(t, "onOpenChange", 3, El), i = Y(t, "onOpenChangeComplete", 3, El);
@@ -6899,7 +6899,7 @@ function Md(e, t) {
 	var a = G();
 	J(B(a), () => t.children ?? f), K(e, a), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog-close.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog-close.svelte
 var Nd = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -6930,7 +6930,7 @@ function Fd(e, t) {
 		t.child ? e(d) : e(p, -1);
 	}), K(e, l), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/dialog/components/dialog-content.svelte
+// node_modules/bits-ui/dist/bits/dialog/components/dialog-content.svelte
 var Id = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -7065,7 +7065,7 @@ function zd(e, t) {
 		(_.shouldRender || a()) && e(S);
 	}), K(e, b), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/tabs/tabs.svelte.js
+// node_modules/bits-ui/dist/bits/tabs/tabs.svelte.js
 var Bd = el({
 	component: "tabs",
 	parts: [
@@ -7235,7 +7235,7 @@ var Bd = el({
 function Kd(e) {
 	return e ? "active" : "inactive";
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/tabs/components/tabs.svelte
+// node_modules/bits-ui/dist/bits/tabs/components/tabs.svelte
 var qd = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -7276,7 +7276,7 @@ function Yd(e, t) {
 		t.child ? e(_) : e(v, -1);
 	}), K(e, h), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/tabs/components/tabs-content.svelte
+// node_modules/bits-ui/dist/bits/tabs/components/tabs-content.svelte
 var Xd = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -7308,7 +7308,7 @@ function Qd(e, t) {
 		t.child ? e(d) : e(p, -1);
 	}), K(e, l), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/tabs/components/tabs-list.svelte
+// node_modules/bits-ui/dist/bits/tabs/components/tabs-list.svelte
 var $d = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -7336,7 +7336,7 @@ function tf(e, t) {
 		t.child ? e(u) : e(d, -1);
 	}), K(e, c), N();
 }
-// ../vibebook/node_modules/bits-ui/dist/bits/tabs/components/tabs-trigger.svelte
+// node_modules/bits-ui/dist/bits/tabs/components/tabs-trigger.svelte
 var nf = /* @__PURE__ */ new Set([
 	"$$slots",
 	"$$events",
@@ -7392,7 +7392,7 @@ function lf(e, t) {
 		Fn(() => ra(n, "d", U(t))), K(e, n);
 	}), j(n), Fn((e) => Ii(n, 0, e), [() => Ai(ms("tw:size-4 tw:shrink-0", t.class))]), K(e, n), N();
 }
-// ../vibebook/node_modules/tailwind-variants/dist/chunk-K5X3OHSH.js
+// node_modules/tailwind-variants/dist/chunk-K5X3OHSH.js
 var uf = Array.isArray, df = (e) => {
 	if (!e && e !== 0 && e !== 0n) return "";
 	if (typeof e == "string") return e;
@@ -9008,13 +9008,11 @@ var xh = /* @__PURE__ */ new Set([
 	"$$legacy",
 	"label",
 	"icon",
-	"variant",
-	"ref"
+	"variant"
 ]);
 function Sh(e, t) {
-	M(t, !0);
-	let n = Y(t, "variant", 3, "ghost"), r = Y(t, "ref", 15, null), i = /* @__PURE__ */ ja(t, xh);
-	bh(e, Na(() => i, {
+	let n = Y(t, "variant", 3, "ghost"), r = /* @__PURE__ */ ja(t, xh);
+	bh(e, Na(() => r, {
 		get variant() {
 			return n();
 		},
@@ -9025,19 +9023,13 @@ function Sh(e, t) {
 		get title() {
 			return t.label;
 		},
-		get ref() {
-			return r();
-		},
-		set ref(e) {
-			r(e);
-		},
 		children: (e, n) => {
 			lf(e, { get name() {
 				return t.icon;
 			} });
 		},
 		$$slots: { default: !0 }
-	})), N();
+	}));
 }
 // svelte/lib/ui/Tabs.svelte
 var Ch = /* @__PURE__ */ W("<!> <!>", 1);

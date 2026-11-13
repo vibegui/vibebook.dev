@@ -1,6 +1,9 @@
-import type { RoomCommand } from "../shared/commands";
+import type { CommandOutcome, RoomCommand } from "../shared/commands";
 import type { RoomEvent } from "../shared/room";
 import { receiveRoomEvent, sendRoomCommand } from "./transport";
+
+/** How long `request` waits for the server's answer before it gives up (the command may still have run). */
+export const REQUEST_TIMEOUT_MS = 10_000;
 
 type Socket = Pick<
   WebSocket,
@@ -30,6 +33,24 @@ export function createRoomConnection(options: RoomConnectionOptions) {
   let hasSnapshot = false;
   let tries = 0;
   let lastCode = "";
+  // Correlated commands waiting for their `result` (one per cid). A dropped socket answers them all: the server may
+  // or may not have run them, and the caller decides (the snapshot after reconnect shows what happened).
+  const pending = new Map<
+    string,
+    { done: (r: CommandOutcome) => void; timer: Timer }
+  >();
+  const prefix = Math.random().toString(36).slice(2, 8);
+  let nextId = 0;
+  const settle = (cid: string, r: CommandOutcome) => {
+    const p = pending.get(cid);
+    if (!p) return;
+    pending.delete(cid);
+    cancel(p.timer);
+    p.done(r);
+  };
+  const settleAll = (error: string) => {
+    for (const cid of [...pending.keys()]) settle(cid, { ok: false, error });
+  };
   const clearTimers = () => {
     if (retry !== undefined) cancel(retry);
     if (stable !== undefined) cancel(stable);
@@ -38,6 +59,7 @@ export function createRoomConnection(options: RoomConnectionOptions) {
   const dispose = () => {
     disposed = true;
     clearTimers();
+    settleAll("disconnected");
     const previous = socket;
     socket = null;
     if (previous) {
@@ -62,6 +84,13 @@ export function createRoomConnection(options: RoomConnectionOptions) {
     current.onmessage = (message) => {
       if (!owns()) return;
       const event = receiveRoomEvent(message.data);
+      if (event.t === "result") {
+        settle(
+          event.cid,
+          event.ok ? { ok: true } : { ok: false, error: event.error },
+        );
+        return;
+      }
       if (event.t === "state") hasSnapshot = true;
       options.onEvent(event);
     };
@@ -69,6 +98,7 @@ export function createRoomConnection(options: RoomConnectionOptions) {
       if (!owns()) return;
       socket = null;
       clearTimers();
+      settleAll("disconnected");
       current.onopen = current.onmessage = current.onclose = null;
       if (event.code === 4003) {
         dispose();
@@ -89,8 +119,29 @@ export function createRoomConnection(options: RoomConnectionOptions) {
       if (!socket && retry === undefined && !disposed) connect();
     },
     dispose,
+    /** The existing bridge: true = queued on an open socket, nothing more. */
     send(command: RoomCommand) {
       return sendRoomCommand(socket, command);
+    },
+    /** Send a command and wait for the server's answer: ok, or why it was refused. Resolves (never rejects) with
+     *  "offline" when there is no open socket, "disconnected" when the socket drops first, "timeout" after
+     *  REQUEST_TIMEOUT_MS. Invalid commands throw, like `send`. */
+    request(
+      command: RoomCommand,
+      timeoutMs = REQUEST_TIMEOUT_MS,
+    ): Promise<CommandOutcome> {
+      const cid = `${prefix}-${++nextId}`;
+      return new Promise<CommandOutcome>((resolve) => {
+        if (!sendRoomCommand(socket, command, cid))
+          return resolve({ ok: false, error: "offline" });
+        pending.set(cid, {
+          done: resolve,
+          timer: schedule(
+            () => settle(cid, { ok: false, error: "timeout" }),
+            timeoutMs,
+          ),
+        });
+      });
     },
     /** Request a fresh snapshot using the normal reconnect/backoff path. */
     resync() {

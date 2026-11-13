@@ -6,7 +6,7 @@ import { LISTEN_FRESH, poke } from "./person";
 import { EMAIL_RE } from "./auth";
 import { cookieLang, reqLang } from "./lang";
 import { uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
-import { MeData, MeResult } from "../shared/schemas";
+import { MeBook, MeData, MeFriend, MeResult, MeWait } from "../shared/schemas";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
 import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, setRoomIcon, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
@@ -28,7 +28,7 @@ async function currentVersion(env: Env, url: string) {
 }
 
 /** GET /api/me: served from your Person DO while nothing changed (rooms, waits and your own writes poke it stale). */
-async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req: Request): Promise<MeResult> {
+export async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req: Request): Promise<MeResult> {
   const db = env.DB;
   const person = env.PEOPLE.get(env.PEOPLE.idFromName(email));
   const cached = await person.fetch("https://person/me").catch(() => null);
@@ -61,12 +61,26 @@ async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, em
   // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
   const lang = cookieLang(req) ?? (me?.lang ? null : reqLang(req));
   if (me && lang && lang !== me.lang) ctx.waitUntil(db.prepare(`UPDATE users SET lang = ? WHERE email = ?`).bind(lang, email).run());
-  // D1 rows are checked before they leave the Worker (and before they are cached). The columns are all nullable in
-  // D1, so a row the schema doesn't expect is logged and served as before rather than taking every home down.
-  const raw = { email, name: me?.name ?? null, avatar: me?.avatar ?? null, books: books.results, friends: friends.results, waits };
-  const parsed = MeData.safeParse(raw);
-  if (!parsed.success) console.error("/api/me rows off schema", parsed.error.issues.slice(0, 3));
-  const out = parsed.success ? parsed.data : (raw as MeData);
+  // Every D1 column is nullable: the columns a legacy row may leave empty get their neutral value, then each row is
+  // checked on its own. A row that still doesn't fit is dropped and logged (never served or cached unchecked), so one
+  // bad row costs that row, not the whole home.
+  const dropped: string[] = [];
+  const keep = <T>(list: string, schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } }, rows: unknown[]) =>
+    rows.flatMap((row) => {
+      const r = schema.safeParse(row);
+      if (r.success) return [r.data];
+      dropped.push(list);
+      return [];
+    });
+  const out: MeData = {
+    email,
+    name: me?.name ?? null,
+    avatar: me?.avatar ?? null,
+    books: keep("books", MeBook, books.results),
+    friends: keep("friends", MeFriend, friends.results.map((f) => ({ ...f, joined: Number(f.joined ?? 0), shared: Number(f.shared ?? 0) }))),
+    waits: keep("waits", MeWait, waits.map((w) => ({ ...w, room: w.room ?? "", thread: w.thread ?? "main", author: w.author ?? "", text: w.text ?? "", ts: w.ts ?? 0 }))),
+  };
+  if (dropped.length) console.error("/api/me dropped rows off schema", dropped);
   const gen = cached?.headers.get("x-gen");
   if (gen) ctx.waitUntil(person.fetch("https://person/me", { method: "PUT", body: JSON.stringify(out), headers: { "x-gen": gen } }).then(() => {}, () => {}));
   return { ...out, v: await currentVersion(env, req.url) };
