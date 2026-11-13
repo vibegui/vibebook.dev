@@ -69,7 +69,11 @@ export default defineConfig(({ mode, command }) => ({
   plugins: [
     ...(mode === "app"
       ? [
-          appDevelopment(projectRoot, "http://127.0.0.1:8787"),
+          appDevelopment(
+            projectRoot,
+            "http://127.0.0.1:8787",
+            "http://127.0.0.1:5173",
+          ),
           serviceWorkerDevelopment(projectRoot),
         ]
       : []),

@@ -1,4 +1,6 @@
 import { relative, resolve } from "node:path";
+import { Readable } from "node:stream";
+import type { IncomingHttpHeaders } from "node:http";
 import type { Plugin, ProxyOptions } from "vite";
 import {
   createDevelopmentRequestPolicy,
@@ -41,7 +43,7 @@ export function sourceShell(html: string): string {
   );
 }
 
-export function workerProxy(target: string, viteOrigin: string): ProxyOptions {
+function loopbackWorker(target: string): URL {
   const worker = new URL(target);
   if (
     worker.protocol !== "http:" ||
@@ -53,6 +55,11 @@ export function workerProxy(target: string, viteOrigin: string): ProxyOptions {
     worker.hash
   )
     throw new Error("Development Worker must be a loopback HTTP origin");
+  return worker;
+}
+
+export function workerProxy(target: string, viteOrigin: string): ProxyOptions {
+  const worker = loopbackWorker(target);
   return {
     target: worker.origin,
     changeOrigin: true,
@@ -73,6 +80,37 @@ export function workerProxy(target: string, viteOrigin: string): ProxyOptions {
   };
 }
 
+function postHeaders(
+  incoming: IncomingHttpHeaders,
+  worker: string,
+  vite: string,
+) {
+  const excluded = new Set([
+    "host",
+    "connection",
+    "keep-alive",
+    "proxy-connection",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+    ...(incoming.connection ?? "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase()),
+  ]);
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(incoming)) {
+    if (value === undefined || excluded.has(name.toLowerCase())) continue;
+    for (const part of Array.isArray(value) ? value : [value])
+      headers.append(name, part);
+  }
+  // Match the existing HTTP/WS proxy trust boundary; never trust incoming Host.
+  if (incoming.origin === vite) headers.set("origin", worker);
+  return headers;
+}
+
 /** Runtime/contract edits need fresh connections; component/CSS edits use HMR. */
 export function requiresAppReload(root: string, file: string): boolean {
   return /^(?:src|shared|collab)\//.test(
@@ -81,8 +119,13 @@ export function requiresAppReload(root: string, file: string): boolean {
 }
 
 /** Development only: authorized Worker HTML and source modules on one origin. */
-export function appDevelopment(root: string, worker: string): Plugin {
+export function appDevelopment(
+  root: string,
+  worker: string,
+  viteOrigin = "http://127.0.0.1:5173",
+): Plugin {
   const policy = createDevelopmentRequestPolicy(root);
+  const workerOrigin = loopbackWorker(worker).origin;
   return {
     name: "vibebook-app-development",
     apply: "serve",
@@ -120,19 +163,59 @@ export function appDevelopment(root: string, worker: string): Plugin {
             );
             return;
           }
-          if (!isSourceApp(req.url) || req.method !== "GET") return next();
-          const headers = new Headers();
+          const consentPost =
+            req.method === "POST" &&
+            parsed.pathname === "/authorize" &&
+            parsed.searchParams.get("ui") === "svelte";
+          if (!isSourceApp(req.url) || (req.method !== "GET" && !consentPost))
+            return next();
+          if (consentPost && (req.aborted || res.destroyed)) return;
+          const headers = consentPost
+            ? postHeaders(req.headers, workerOrigin, viteOrigin)
+            : new Headers();
           if (req.headers.cookie) headers.set("cookie", req.headers.cookie);
           if (req.headers["accept-language"])
             headers.set(
               "accept-language",
               String(req.headers["accept-language"]),
             );
-          const response = await fetch(workerRequestUrl(req.url, worker), {
-            headers,
-            redirect: "manual",
-          });
-          const html = await response.text();
+          const cancellation = new AbortController();
+          const abort = () => {
+            cancellation.abort();
+            req.destroy();
+          };
+          const disconnected = () => {
+            if (!res.writableEnded) abort();
+          };
+          if (consentPost) {
+            req.once("aborted", abort);
+            res.once("close", disconnected);
+          }
+          let response: Response, html: string;
+          try {
+            const options: RequestInit & { duplex?: "half" } = {
+              headers,
+              redirect: "manual",
+            };
+            if (consentPost) {
+              options.method = "POST";
+              // Node and DOM publish separate declarations for the same WHATWG
+              // byte stream; this is their single transport adaptation boundary.
+              options.body = Readable.toWeb(req) as ReadableStream<Uint8Array>;
+              options.duplex = "half";
+              options.signal = cancellation.signal;
+            }
+            response = await fetch(
+              workerRequestUrl(req.url, workerOrigin),
+              options,
+            );
+            html = await response.text();
+          } finally {
+            if (consentPost) {
+              req.off("aborted", abort);
+              res.off("close", disconnected);
+            }
+          }
           res.statusCode = response.status;
           for (const [name, value] of response.headers)
             if (
@@ -142,27 +225,41 @@ export function appDevelopment(root: string, worker: string): Plugin {
                 "etag",
                 "cache-control",
                 "set-cookie",
-              ].includes(name)
+              ].includes(name) ||
+              (consentPost && ["etag", "cache-control"].includes(name))
             )
               res.setHeader(name, value);
           const cookies = response.headers.getSetCookie();
           if (cookies.length) res.setHeader("set-cookie", cookies);
-          res.setHeader("cache-control", "no-store");
+          if (!consentPost) res.setHeader("cache-control", "no-store");
           const nativeErrorShell =
             [400, 404, 500].includes(response.status) &&
             /<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["'](?:login|access|consent)["'])[^>]*>/i.test(
               html,
             );
           if (
-            (!response.ok && !nativeErrorShell) ||
+            (consentPost
+              ? !nativeErrorShell ||
+                !/<meta\b(?=[^>]*\bname=["']vb-page["'])(?=[^>]*\bcontent=["']consent["'])[^>]*>/i.test(
+                  html,
+                ) ||
+                !/^text\/html(?:;|$)/i.test(
+                  response.headers.get("content-type") ?? "",
+                )
+              : !response.ok && !nativeErrorShell) ||
             !html.includes("/svelte-preview/app.js")
           ) {
             res.end(html);
             return;
           }
+          if (consentPost) {
+            res.removeHeader("etag");
+            res.setHeader("cache-control", "no-store");
+          }
           // transformIndexHtml injects /@vite/client and the normal Svelte HMR runtime.
           res.end(await server.transformIndexHtml(req.url, sourceShell(html)));
         } catch (error) {
+          if (req.aborted || res.destroyed) return;
           res.statusCode = String(error).includes("[client-boundary]")
             ? 403
             : 502;
