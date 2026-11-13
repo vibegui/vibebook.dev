@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onDestroy, tick } from "svelte";
+  import { get } from "svelte/store";
+  import { onDestroy, tick, untrack } from "svelte";
   import type { Room, Epic } from "../../../shared/room";
-  import type { SendRoomCommand } from "../../../shared/commands";
+  import type { RoomMutations } from "../room-sidebar/session";
   import Button from "../../lib/ui/Button.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import Avatar from "../../lib/ui/Avatar.svelte";
@@ -27,7 +28,7 @@
     room,
     thread,
     session,
-    send,
+    mutations,
     onopen,
     onarchchange,
     vb,
@@ -35,7 +36,7 @@
     room: Room;
     thread: string;
     session: NavigationSession;
-    send: SendRoomCommand;
+    mutations: RoomMutations;
     onopen: (id: string) => void;
     onarchchange: (archived: boolean) => void;
     vb: {
@@ -47,6 +48,10 @@
   } = $props();
   const uid = $props.id();
   let navigation = $derived(session.state);
+  const mutation = untrack(() => mutations.state);
+  const busy = $derived(
+    $mutation.phase === "pending" || $mutation.phase === "unconfirmed",
+  );
   let error = $state("");
   let drag = $state<string | null>(null);
   let dropTarget = $state<string | null>(null);
@@ -109,23 +114,22 @@
     dropTarget = null;
     error = "";
   }
-  function submit(command: Parameters<SendRoomCommand>[0]) {
-    if (disposed || session.roomId !== room.id) return false;
+  async function submit(command: Parameters<RoomMutations["run"]>[0]) {
+    if (disposed || busy || session.roomId !== room.id) return false;
     error = "";
-    try {
-      if (send(command)) return true;
-    } catch {
-      /* Keep the recoverable control state. */
-    }
-    error = vb.t("Não deu pra enviar agora. Tente de novo.");
-    return false;
+    const success = await mutations.run(command);
+    return success;
   }
-  function add(event: SubmitEvent) {
+  async function add(event: SubmitEvent) {
     event.preventDefault();
     if (disposed) return;
-    const title = $navigation.draft.trim();
+    const title = $navigation.draft.trim(),
+      original = $navigation.draft,
+      draftOwner = navigation;
     if (!title) return input?.focus();
-    if (submit({ t: "epic", title })) $navigation.draft = "";
+    if (await submit({ t: "epic", title }))
+      if (get(draftOwner).draft === original)
+        draftOwner.update((value) => ({ ...value, draft: "" }));
   }
   function siblings(id: string) {
     const parent = forest.parents.get(id);
@@ -135,7 +139,7 @@
     const peers = siblings(id);
     return peers[peers.findIndex((epic) => epic.id === id) + direction];
   }
-  function reorder(from: string, to: string, after: boolean) {
+  async function reorder(from: string, to: string, after: boolean) {
     const ids = reorderEpics(room.epics, from, to, after);
     if (!ids || disposed) return;
     requested = null;
@@ -145,8 +149,10 @@
       active instanceof HTMLElement && rowNodes.get(from)?.contains(active)
         ? active
         : null;
-    if (submit({ t: "epic.order", ids }))
-      requested = { ids, from, anchor, generation: version, thread };
+    const targetThread = thread;
+    if (await submit({ t: "epic.order", ids }))
+      if (!disposed && generation === version && thread === targetThread)
+        requested = { ids, from, anchor, generation: version, thread };
   }
   function registerRow(node: HTMLElement, id: string) {
     rowNodes.set(id, node);
@@ -206,13 +212,15 @@
     if (mode === "active" && target) reorder(id, target.id, direction === 1);
   }
   function startDrag(event: DragEvent, id: string) {
-    if (mode !== "active" || !event.dataTransfer) return event.preventDefault();
+    if (busy || mode !== "active" || !event.dataTransfer)
+      return event.preventDefault();
     event.dataTransfer.setData("text/vb-epic", id);
     event.dataTransfer.effectAllowed = "move";
     drag = id;
   }
   function canDrop(event: DragEvent, id: string) {
     return (
+      !busy &&
       mode === "active" &&
       drag !== id &&
       event.dataTransfer?.types.includes("text/vb-epic")
@@ -281,7 +289,7 @@
               <div
                 role="group"
                 aria-label={epic.title}
-                draggable={value === "active"}
+                draggable={!busy && value === "active"}
                 ondragstart={(event) => startDrag(event, epic.id)}
                 ondragend={() => {
                   drag = null;
@@ -375,6 +383,7 @@
                     >{vb.t("Dono do épico")}</Label
                   >
                   <Select
+                    disabled={busy}
                     id={`${rowIds.get(epic.id)}-owner`}
                     aria-label={`${vb.t("Dono do épico")}: ${epic.title}`}
                     value={epic.owner ?? ""}
@@ -396,14 +405,14 @@
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={!adjacent(epic.id, -1)}
+                        disabled={busy || !adjacent(epic.id, -1)}
                         aria-label={`${vb.t("Mover para cima")}: ${epic.title}`}
                         onclick={() => move(epic.id, -1)}
                         >{vb.t("Mover para cima")}</Button
                       ><Button
                         variant="outline"
                         size="sm"
-                        disabled={!adjacent(epic.id, 1)}
+                        disabled={busy || !adjacent(epic.id, 1)}
                         aria-label={`${vb.t("Mover para baixo")}: ${epic.title}`}
                         onclick={() => move(epic.id, 1)}
                         >{vb.t("Mover para baixo")}</Button
@@ -430,6 +439,7 @@
                 placeholder={vb.t("Novo épico: escreva o título…")}
                 enterkeyhint="done"
               /><IconButton
+                disabled={busy}
                 type="submit"
                 icon="plus"
                 variant="primary"

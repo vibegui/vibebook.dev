@@ -20,7 +20,6 @@
     origin = null,
     replyCount = 0,
     vb,
-    legacy,
     actions,
     onloadolder,
   }: ChatProps = $props();
@@ -58,7 +57,6 @@
           typing={room.typing[origin.id]}
           {vb}
           {room}
-          {legacy}
           {actions}
         />
         <div
@@ -83,7 +81,6 @@
           typing={room.typing[message.id]}
           {vb}
           {room}
-          {legacy}
           {actions}
           footer={footers.get(message.id)}
         />{/each}

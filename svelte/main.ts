@@ -28,6 +28,10 @@ export {
 import Decisions from "./Decisions.svelte";
 import Reminders from "./Reminders.svelte";
 import Sidebar from "./Sidebar.svelte";
+import ThreadHeader from "./features/room-sidebar/ThreadHeader.svelte";
+import SuggestionPreview from "./features/room-sidebar/SuggestionPreview.svelte";
+export { createRoomMutations } from "./features/room-sidebar/session";
+export { suggestionIdentity } from "../shared/suggestions";
 import Chat from "./Chat.svelte";
 import Composer from "./Composer.svelte";
 export { createComposerDrafts } from "./features/composer/drafts";
@@ -48,6 +52,8 @@ const views = {
   reminders: Reminders,
   decisions: Decisions,
   sidebar: Sidebar,
+  threadHeader: ThreadHeader,
+  suggestionPreview: SuggestionPreview,
   chat: Chat,
   composer: Composer,
 };

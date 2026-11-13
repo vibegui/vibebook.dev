@@ -1,4 +1,5 @@
 import "server-only";
+import { matchesSuggestion } from "../shared/suggestions";
 import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../shared/composition";
 import { reorderEpics } from "./epic-order";
 import { TASK_STATUSES } from "../shared/room";
@@ -1869,6 +1870,7 @@ export class Book extends DurableObject<Env> {
         return this.closePoll(String(m.id), email);
       case "suggestion": {
         const s = this.suggestions();
+        if (!matchesSuggestion(s[Number(m.i)], m.expected)) return new Refused("suggestion changed");
         const [picked] = s.splice(Number(m.i), 1);
         if (!picked) return;
         this.set("suggestions", JSON.stringify(s));

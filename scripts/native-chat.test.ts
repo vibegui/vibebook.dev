@@ -8,7 +8,6 @@ import {
   agentMark,
   reminderParts,
 } from "../svelte/features/chat/model";
-import { adaptLegacyChatMarkup } from "../svelte/features/chat/legacyMarkup";
 const message = (id: number, text = "text", thread = "main"): Message => ({
   id,
   text,
@@ -132,18 +131,6 @@ test("worker state excludes branched origins, respects latest completion and fal
   expect(threadWorkers(r, "pre:0", 12000)).toEqual([]);
   expect(agentMark("Codex")).toBe("◎");
 });
-test("temporary rich-body adaptation removes legacy classes and inline percentage geometry while preserving action hooks", () => {
-  const html = adaptLegacyChatMarkup(
-    '<div class="poll"><button data-vote="1" class="opt mine"><span class="fill" style="width:42%"></span>Option</button><form class="choice" data-choice="7"></form></div>',
-  );
-  expect(html).not.toContain('class="');
-  expect(html).not.toContain('style="');
-  expect(html).toContain('data-chat-rich="opt mine"');
-  expect(html).toContain('<progress max="100" value="42"');
-  expect(html).toContain('data-vote="1"');
-  expect(html).toContain('data-choice="7"');
-});
-
 test("latest done or dismissed ack never revives an older doing session in footer or epic worker fallback", () => {
   const r = room([message(1)]);
   r.epics = [{ id: "e", title: "Epic", from_msg: 1, tasks: [] }];

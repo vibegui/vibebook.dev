@@ -5,7 +5,7 @@ import type {
   RichNavigation,
 } from "./features/rich-text/types";
 export type ChatMessage = Message & { runs?: number[]; group?: ChatMessage[] };
-/** Formatting data only. HTML ownership is explicitly listed in LegacyChatIntegrations. */
+/** Formatting data only; all message presentation is native. */
 export type ChatBridge = {
   t: (text: string, vars?: Record<string, string | number>) => string;
   name: (email: string) => string;
@@ -19,11 +19,6 @@ export type ChatBridge = {
   waiting: (id: number) => boolean;
   typingLabel?: (mode: string) => string;
   typingNote?: (id: number) => string | undefined;
-};
-/** Temporary, incomplete migrations: F15 origin thread-card bodies.
- * These callbacks may return trusted/sanitized HTML, never an entire message/frame/footer. Remove each with its slice. */
-export type LegacyChatIntegrations = {
-  threadCards: (id: number) => string;
 };
 export type ChatEmbedControls = {
   thread: string;
@@ -61,7 +56,6 @@ export type ChatProps = {
   origin?: ChatMessage | null;
   replyCount?: number;
   vb: ChatBridge;
-  legacy: LegacyChatIntegrations;
   actions: ChatActions;
   onloadolder: () => void;
 };

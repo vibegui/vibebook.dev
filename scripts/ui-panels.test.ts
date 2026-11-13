@@ -1,3 +1,4 @@
+import { createRoomMutations } from "../svelte/features/room-sidebar/session";
 import { afterEach, describe, expect, test } from "bun:test";
 import { plugin } from "bun";
 import type { Component, ComponentProps } from "svelte";
@@ -1277,14 +1278,6 @@ describe("native Svelte chat", () => {
     waiting: () => false,
     ...overrides,
   });
-  const legacy = (
-    overrides: Partial<
-      import("../svelte/chatTypes").LegacyChatIntegrations
-    > = {},
-  ): import("../svelte/chatTypes").LegacyChatIntegrations => ({
-    threadCards: () => "",
-    ...overrides,
-  });
   function renderChat(room: Room, extra: Partial<ChatProps> = {}) {
     const target = window.document.createElement("div");
     window.document.body.append(target);
@@ -1295,7 +1288,6 @@ describe("native Svelte chat", () => {
       more: false,
       replyCount: 0,
       vb: bridge(),
-      legacy: legacy(),
       actions: {
         request: async (): Promise<CommandOutcome> => ({ ok: true }),
         draftReply: () => {},
@@ -1868,32 +1860,79 @@ describe("native Svelte chat", () => {
   test("special reminder origins omit self-linking cards without removing native DOM", () => {
     const origin = { ...message(7, "Reminder origin"), tag: "reminder" };
     const normal = { ...message(8, "Reminder reply"), tag: "reminder" };
-    const seen: number[] = [];
-    const room = { ...fixture(), messages: [normal] };
-    const { target, update } = renderChat(room, {
-      origin,
-      legacy: legacy({
-        threadCards: (id) => {
-          seen.push(id);
-          return "<button data-test-thread-card>Open thread</button>";
-        },
-      }),
-    });
-    expect(seen).not.toContain(7);
-    expect(seen).toContain(8);
+    const room = {
+      ...fixture(),
+      messages: [normal],
+      epics: [
+        { id: "origin-card", title: "Origin thread", tasks: [], from_msg: 7 },
+        { id: "normal-card", title: "Reply thread", tasks: [], from_msg: 8 },
+      ],
+    };
+    const { target, update } = renderChat(room, { origin });
     expect(
-      target.querySelector("[data-chat-origin] [data-test-thread-card]"),
+      target.querySelector("[data-chat-origin] [data-thread-card]"),
     ).toBeNull();
     expect(target.querySelector("[data-chat-origin] #m7")).toBeNull();
-    expect(target.querySelectorAll("#m8 [data-test-thread-card]")).toHaveLength(
-      1,
-    );
+    expect(target.querySelectorAll("#m8 [data-thread-card]")).toHaveLength(1);
     update({ ...room, messages: [{ ...normal, text: "Updated reminder" }] });
     expect(
-      target.querySelector("[data-chat-origin] [data-test-thread-card]"),
+      target.querySelector("[data-chat-origin] [data-thread-card]"),
     ).toBeNull();
-    expect(target.querySelectorAll("#m8 [data-test-thread-card]")).toHaveLength(
-      1,
+    expect(target.querySelectorAll("#m8 [data-thread-card]")).toHaveLength(1);
+  }, 30_000);
+  test("native thread cards use canonical descendants and exact metadata-only file callbacks", async () => {
+    const source = message(71, "Request"),
+      room: Room = {
+        ...fixture(),
+        messages: [source],
+        epics: [
+          {
+            id: "child",
+            title: "<b>Thread</b>",
+            tasks: [],
+            from_msg: 71,
+            files: [
+              { id: "aa11", name: "report.pdf", type: "application/pdf", n: 4 },
+            ],
+          },
+        ],
+      };
+    const targets: import("../svelte/features/rich-text/types").RichNavigation[] =
+        [],
+      files: import("../svelte/features/rich-text/types").RichFileReference[] =
+        [];
+    const { target, update } = renderChat(room, {
+      actions: {
+        request: async () => ({ ok: true }),
+        draftReply: () => {},
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+        navigateRich: (value) => targets.push(value),
+        openFileReference: (value) => files.push(value),
+      },
+    });
+    const card = target.querySelector<HTMLButtonElement>(
+      '[data-thread-card="child"]',
+    )!;
+    expect(card.textContent).toContain("<b>Thread</b>");
+    expect(card.querySelector("b")).toBeNull();
+    card.click();
+    expect(targets).toEqual([{ kind: "thread", id: "child" }]);
+    const file = target.querySelector<HTMLAnchorElement>('a[href*="aa11"]')!;
+    expect(file.textContent).toContain("v4");
+    file.click();
+    expect(files).toEqual([
+      { roomId: room.id, id: "aa11", name: "report.pdf" },
+    ]);
+    update({ ...room, epics: [] });
+    card.click();
+    file.click();
+    await tick();
+    expect(targets).toHaveLength(1);
+    expect(files).toHaveLength(1);
+    expect(target.querySelector("[data-legacy-chat-content]") === null).toBe(
+      true,
     );
   }, 30_000);
   test("native chat controls call typed actions and preserve exact attachment versions and sandbox restrictions", async () => {
@@ -2031,7 +2070,7 @@ describe("native Svelte chat", () => {
     ).toBe("visto por 1");
     expect(target.querySelectorAll("[data-message-footer]")).toHaveLength(1);
   }, 30_000);
-  test("native quiet rows retain folding, status ownership and explicit legacy rich body integrations", () => {
+  test("native quiet rows retain folding, status ownership and canonical native thread cards", () => {
     const reminder = {
       ...message(1, "⏰ **daily** report\n\nDetails"),
       tag: "reminder",
@@ -2074,12 +2113,11 @@ describe("native Svelte chat", () => {
         },
       ],
     };
-    const { target } = renderChat(room, {
-      legacy: legacy({
-        threadCards: (id) =>
-          `<button data-test-thread-card="${id}">origin card</button>`,
-      }),
-    });
+    room.epics = [
+      { id: "card-one", title: "One", tasks: [], from_msg: 1 },
+      { id: "card-two", title: "Two", tasks: [], from_msg: 2 },
+    ];
+    const { target } = renderChat(room);
     expect(target.querySelector("#m1") === null).toBe(true);
     expect(target.querySelector("#m2 details")?.textContent).toContain(
       "rodou 2×",
@@ -2095,9 +2133,7 @@ describe("native Svelte chat", () => {
       true,
     );
     expect(target.querySelector("#m3 [data-native-vote]") !== null).toBe(true);
-    expect(target.querySelectorAll("#m2 [data-test-thread-card]")).toHaveLength(
-      2,
-    );
+    expect(target.querySelectorAll("#m2 [data-thread-card]")).toHaveLength(2);
   });
   test("room replacement disposes native action feedback and detached message handlers", async () => {
     let resolveCopy!: () => void;
@@ -2326,13 +2362,7 @@ describe("stable native sidebar integration", () => {
       onarchchange: () => {},
       vb: {
         ...vb,
-        bookTitle: () => room.book.title,
-        roomMark: () => "",
-        roomStrip: () => "",
-        sbxRows: () => "",
-        agentRows: () => "",
         epicBusy: () => null,
-        waitPill: () => "",
         waitsIn: () => [],
       },
       ...extra,
@@ -2414,45 +2444,74 @@ describe("stable native sidebar integration", () => {
       second.target.querySelector<HTMLElement>("[data-epic=child]")?.hidden,
     ).toBe(false);
   }, 30_000);
-  test("native epic drafts survive rejected and thrown sends; owner controls await canonical state", () => {
+  test("native epic drafts survive refused and uncertain requests; owner controls await ACK plus canonical state", async () => {
     const room = fixture();
-    let fail: "false" | "throw" | null = "false";
+    let fail: "offline" | "throw" | null = "offline";
     const commands: RoomCommand[] = [];
     const rendered = sidebar(room, {
-      send(command) {
-        if (fail === "throw") throw Error("offline");
-        if (fail === "false") return false;
+      request: async (command) => {
+        if (fail === "throw") throw Error("lost ACK");
+        if (fail === "offline") return { ok: false, error: "offline" };
         commands.push(command);
-        return true;
+        return { ok: true };
       },
     });
     const draft =
       rendered.target.querySelector<HTMLInputElement>("#newEpic input")!;
     draft.value = "Retain title";
-    draft.dispatchEvent(new window.Event("input", { bubbles: true }));
+    draft.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
     const form = rendered.target.querySelector<HTMLFormElement>("#newEpic")!;
-    for (const failure of ["false", "throw"] as const) {
+    for (const failure of ["offline", "throw"] as const) {
       fail = failure;
       form.dispatchEvent(
-        new window.Event("submit", { bubbles: true, cancelable: true }),
+        new Event("submit", { bubbles: true, cancelable: true }),
       );
+      await tick();
+      await tick();
       flushSync();
       expect(draft.value).toBe("Retain title");
-      expect(rendered.target.querySelector("[role=alert]")).not.toBeNull();
+      if (failure === "offline")
+        expect(rendered.target.querySelector("[role=alert]") !== null).toBe(
+          true,
+        );
+      else {
+        expect(rendered.target.textContent).toContain("Ainda sem confirmação");
+        [...rendered.target.querySelectorAll("button")]
+          .find((button) => button.textContent?.trim() === "Conferi a sala")!
+          .click();
+        flushSync();
+      }
     }
     fail = null;
     form.dispatchEvent(
-      new window.Event("submit", { bubbles: true, cancelable: true }),
+      new Event("submit", { bubbles: true, cancelable: true }),
     );
+    await tick();
+    await tick();
+    flushSync();
+    expect(draft.value).toBe("Retain title");
+    expect(commands).toEqual([{ t: "epic", title: "Retain title" }]);
+    const created: Room = {
+      ...room,
+      epics: [
+        ...room.epics,
+        { id: "created", title: "Retain title", tasks: [] },
+      ],
+    };
+    rendered.view.update({ ...rendered.props, room: created });
+    await tick();
+    await tick();
     flushSync();
     expect(draft.value).toBe("");
-    expect(commands).toEqual([{ t: "epic", title: "Retain title" }]);
     const owner = rendered.target.querySelector<HTMLSelectElement>(
       "[data-epic=e] select",
     )!;
     owner.value = "you@test";
     change(owner);
+    await tick();
+    await tick();
+    flushSync();
     expect(commands.at(-1)).toEqual({
       t: "epic.owner",
       id: "e",
@@ -2462,19 +2521,23 @@ describe("stable native sidebar integration", () => {
     rendered.view.update({
       ...rendered.props,
       room: {
-        ...room,
-        epics: room.epics.map((epic) => ({ ...epic, owner: "you@test" })),
+        ...created,
+        epics: created.epics.map((epic) =>
+          epic.id === "e" ? { ...epic, owner: "you@test" } : epic,
+        ),
       },
     });
+    await tick();
+    flushSync();
     expect(owner.value).toBe("you@test");
     rendered.destroy();
     form.dispatchEvent(
-      new window.Event("submit", { bubbles: true, cancelable: true }),
+      new Event("submit", { bubbles: true, cancelable: true }),
     );
-    flushSync();
+    await tick();
     expect(commands).toHaveLength(2);
   }, 30_000);
-  test("native order controls submit a full permutation without optimistic mutation or stale targets", () => {
+  test("native order controls submit a full permutation without optimistic mutation or stale targets", async () => {
     const room = fixture();
     room.epics.push({ id: "other", title: "Other", tasks: [] });
     const rendered = sidebar(room);
@@ -2482,6 +2545,7 @@ describe("stable native sidebar integration", () => {
       '[aria-label="Mover para baixo: Epic"]',
     )!;
     down.click();
+    await tick();
     flushSync();
     expect(rendered.events).toEqual([{ t: "epic.order", ids: ["other", "e"] }]);
     expect(room.epics.map((epic) => epic.id)).toEqual(["e", "other"]);
@@ -2503,11 +2567,14 @@ describe("stable native sidebar integration", () => {
     )!;
     down.focus();
     down.click();
+    await tick();
     flushSync();
     rendered.view.update({
       ...rendered.props,
       room: { ...room, epics: [room.epics[1], room.epics[0]] },
     });
+    await tick();
+    await rendered.settle(0, { ok: true });
     await tick();
     flushSync();
     expect(document.activeElement).toBe(
@@ -2519,6 +2586,7 @@ describe("stable native sidebar integration", () => {
     rendered.view.update(rendered.props);
     down.focus();
     down.click();
+    await tick();
     flushSync();
     const draft =
       rendered.target.querySelector<HTMLInputElement>("#newEpic input")!;
@@ -2527,6 +2595,8 @@ describe("stable native sidebar integration", () => {
       ...rendered.props,
       room: { ...room, epics: [room.epics[1], room.epics[0]] },
     });
+    await tick();
+    await rendered.settle(1, { ok: true });
     await tick();
     flushSync();
     expect(document.activeElement).toBe(draft);
@@ -2560,13 +2630,7 @@ describe("stable native sidebar integration", () => {
     window.document.body.append(target);
     const sidebarBridge: SidebarProps["vb"] = {
       ...vb,
-      bookTitle: () => room.book.title,
-      roomMark: () => '<span class="ri"></span>',
-      roomStrip: () => "",
-      sbxRows: () => "",
-      agentRows: () => "",
       epicBusy: () => null,
-      waitPill: () => "",
       waitsIn: () => [],
     };
     const props: SidebarProps = {
@@ -3987,5 +4051,295 @@ describe("native composer ownership and interactions", () => {
     );
     await tick();
     expect(sent).toHaveLength(0);
+  }, 30_000);
+});
+
+describe("native room sidebar header and suggestion ownership", () => {
+  function deferredMutationOutcome() {
+    let resolve!: (value: CommandOutcome) => void;
+    const promise = new Promise<CommandOutcome>((done) => {
+      resolve = done;
+    });
+    return { promise, resolve };
+  }
+  const bridge: SidebarProps["vb"] = {
+    t: vb.t,
+    name: vb.name,
+    ago: vb.ago,
+    epicBusy: () => null,
+    waitsIn: () => [],
+  };
+  async function closed(role: string) {
+    for (
+      let frame = 0;
+      frame < 10 && document.querySelector(`[role="${role}"]`);
+      frame++
+    )
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    flushSync();
+    expect(document.querySelector(`[role="${role}"]`) === null).toBe(true);
+  }
+  test("native epic delete confirmation cancels on canonical replacement and old detached actions cannot write", async () => {
+    const room = fixture(),
+      commands: RoomCommand[] = [],
+      owner = createRoomMutations(room.me, room.id),
+      request = async (command: RoomCommand): Promise<CommandOutcome> => {
+        commands.push(command);
+        return { ok: true };
+      };
+    peopleCleanups.push(() => owner.dispose());
+    owner.sync(room, request);
+    const target = document.createElement("div");
+    document.body.append(target);
+    const props: import("../svelte/features/room-sidebar/types").ThreadHeaderProps =
+      {
+        room,
+        thread: "e",
+        owner,
+        vb: bridge,
+        onopenside: () => {},
+        onrenameroom: () => {},
+      };
+    const view = mountView("threadHeader", target, props);
+    active.push(view);
+    target
+      .querySelector<HTMLButtonElement>('[aria-label="Apagar épico"]')!
+      .click();
+    flushSync();
+    await tick();
+    const dialog = document.querySelector('[role="alertdialog"]')!,
+      confirm = [...dialog.querySelectorAll("button")].find(
+        (button) => button.textContent?.trim() === "Apagar",
+      )!;
+    const replacement: Room = {
+      ...room,
+      epics: room.epics.map((epic) => ({
+        ...epic,
+        title: "Replaced canonical target",
+      })),
+    };
+    owner.sync(replacement, request);
+    view.update({ ...props, room: replacement });
+    await closed("alertdialog");
+    confirm.click();
+    await tick();
+    expect(commands).toHaveLength(0);
+    const at = active.indexOf(view);
+    active.splice(at, 1);
+    view.destroy();
+    target
+      .querySelector<HTMLButtonElement>('[aria-label="Apagar épico"]')
+      ?.click();
+    await tick();
+    expect(commands).toHaveLength(0);
+  }, 30_000);
+  test("native epic rename retains text until ACK and canonical title and archive uses direct correlated action", async () => {
+    const room = fixture(),
+      owner = createRoomMutations(room.me, room.id),
+      commands: RoomCommand[] = [],
+      responses: ReturnType<typeof deferredMutationOutcome>[] = [];
+    peopleCleanups.push(() => owner.dispose());
+    const request = (command: RoomCommand) => {
+      commands.push(command);
+      const response = deferredMutationOutcome();
+      responses.push(response);
+      return response.promise;
+    };
+    owner.sync(room, request);
+    const target = document.createElement("div");
+    document.body.append(target);
+    const props: import("../svelte/features/room-sidebar/types").ThreadHeaderProps =
+      {
+        room,
+        thread: "e",
+        owner,
+        vb: bridge,
+        onopenside: () => {},
+        onrenameroom: () => {},
+      };
+    const view = mountView("threadHeader", target, props);
+    active.push(view);
+    target.querySelector<HTMLButtonElement>('[aria-label="Renomear"]')!.click();
+    flushSync();
+    await tick();
+    const dialog = document.querySelector('[role="dialog"]')!,
+      input = dialog.querySelector<HTMLInputElement>("input")!;
+    input.value = "Typed title";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    dialog
+      .querySelector("form")!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await tick();
+    expect(commands).toEqual([
+      { t: "epic.rename", id: "e", title: "Typed title" },
+    ]);
+    expect(input.value).toBe("Typed title");
+    responses[0]!.resolve({ ok: true });
+    await tick();
+    expect(document.querySelector('[role="dialog"]') !== null).toBe(true);
+    const next: Room = {
+      ...room,
+      epics: room.epics.map((epic) => ({ ...epic, title: "Typed title" })),
+    };
+    owner.sync(next, request);
+    view.update({ ...props, room: next });
+    await closed("dialog");
+    target
+      .querySelector<HTMLButtonElement>('[aria-label="Arquivar épico"]')!
+      .click();
+    await tick();
+    expect(commands.at(-1)).toEqual({
+      t: "epic.archive",
+      id: "e",
+      archived: true,
+    });
+  }, 30_000);
+  test("suggestion accept sends displayed snapshot only, handles server refusal and stale room controls", async () => {
+    const room: Room = {
+        ...fixture(),
+        suggestions: [
+          { title: "<script>safe</script>", why: "Why", tasks: ["One"] },
+        ],
+      },
+      owner = createRoomMutations(room.me, room.id),
+      commands: RoomCommand[] = [],
+      response = deferredMutationOutcome();
+    peopleCleanups.push(() => owner.dispose());
+    const request = (command: RoomCommand) => {
+      commands.push(command);
+      return response.promise;
+    };
+    owner.sync(room, request);
+    const target = document.createElement("div");
+    document.body.append(target);
+    const props: import("../svelte/features/room-sidebar/types").SuggestionPreviewProps =
+      {
+        room,
+        index: 0,
+        owner,
+        vb: {
+          t: vb.t,
+          name: vb.name,
+          ago: vb.ago,
+          hhmm: () => "09:00",
+          waiting: () => false,
+        },
+      };
+    const view = mountView("suggestionPreview", target, props);
+    active.push(view);
+    expect(target.querySelector("script")).toBeNull();
+    expect(target.textContent).toContain("<script>safe</script>");
+    const accept = [...target.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Pedir pro meu agent"),
+    )!;
+    accept.click();
+    accept.click();
+    await tick();
+    expect(commands).toEqual([
+      { t: "suggestion", i: 0, accept: true, expected: room.suggestions[0] },
+    ]);
+    response.resolve({ ok: false, error: "suggestion changed" });
+    await tick();
+    await tick();
+    flushSync();
+    expect(target.querySelector("[role=alert]") !== null).toBe(true);
+    const at = active.indexOf(view);
+    active.splice(at, 1);
+    view.destroy();
+    accept.click();
+    await tick();
+    expect(commands).toHaveLength(1);
+  }, 30_000);
+});
+
+describe("native collapsed sidebar and typed presence", () => {
+  test("collapsed create expands and focuses retained draft; partial sandbox presence stays native", async () => {
+    const room = fixture(),
+      target = document.createElement("div");
+    document.body.append(target);
+    let expanded = 0,
+      agentsOpened = 0;
+    const props: SidebarProps = {
+      room,
+      thread: "main",
+      collapsed: true,
+      roomTint: "purple",
+      navigation: createNavigationSession(room.id),
+      pins: syncPinsSession(null, room),
+      request: async () => ({ ok: false, error: "offline" }),
+      send: () => false,
+      onopen: () => {},
+      onarchchange: () => {},
+      onopenpinfile: () => {},
+      onopenpinapp: () => {},
+      ontogglerail: () => {
+        expanded++;
+      },
+      onagents: () => {
+        agentsOpened++;
+      },
+      vb: {
+        t: vb.t,
+        name: vb.name,
+        ago: vb.ago,
+        epicBusy: () => null,
+        waitsIn: () => [],
+      },
+      presence: {
+        agents: [
+          {
+            email: room.me,
+            who: "Codex",
+            repo: null,
+            listening: true,
+            all_rooms: true,
+            seen_at: 1,
+            context: { tokens: 90, window: 100, at: 1, limits: null },
+          },
+        ],
+        sandboxes: [
+          {
+            id: "sandbox-one",
+            email: room.me,
+            name: null,
+            state: "running",
+            run_s: 1,
+            rate: 1,
+            disk_rate: 0,
+            created_at: Date.now(),
+            checked_at: Date.now(),
+          },
+        ],
+      },
+    };
+    props.navigation.state.update((value) => ({
+      ...value,
+      draft: "Retained native draft",
+    }));
+    const view = mountView("sidebar", target, props);
+    active.push(view);
+    target
+      .querySelector<HTMLButtonElement>('[aria-label="Novo épico"]')!
+      .click();
+    expect(expanded).toBe(1);
+    view.update({ ...props, collapsed: false });
+    await tick();
+    flushSync();
+    const input = target.querySelector<HTMLInputElement>("#newEpic input")!;
+    expect(input.value).toBe("Retained native draft");
+    expect(document.activeElement === input).toBe(true);
+    expect(
+      target.querySelector("[data-agent-presence]")?.textContent,
+    ).toContain("90%");
+    const sandbox = [...target.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("sandbox"),
+    )!;
+    sandbox.click();
+    expect(agentsOpened).toBe(1);
+    expect(target.querySelector("[data-legacy-chat-content]") === null).toBe(
+      true,
+    );
   }, 30_000);
 });

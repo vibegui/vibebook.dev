@@ -8,22 +8,16 @@ F22 includes the ongoing vanilla compact receipt requirement observed in `public
 
 `LegacyChatIntegrations` is a temporary body-fragment contract, not a native rich-content implementation. It cannot return frames, message actions, attachments or footers.
 
-The former `richText` fragment is retired by the native typed renderer described in [native rich text](native-rich-text.md). `LegacyChatContent.svelte` remains the named HTML boundary for the remaining fragment below.
-
-The former `interactiveBody` fragment and its delegated controls are retired by [native interactive message bodies](native-chat-interactive.md).
-
-- `threadCards`: origin thread-card bodies, descendant file summaries and their navigation still come from the host (remaining F15 ownership).
-
-The temporary adapter replaces legacy class hooks with `data-chat-rich` roles. Tailwind descendant utilities provide presentation; percentage bars use native progress values and line charts retain SVG geometry attributes. First-party inline declarations do not cross this boundary. This adapter must disappear with the relevant typed native rich-content/card/poll/thread-card implementations; it is not a permanent design-system primitive.
+The former rich-text, interactive-body and thread-card HTML fragments are now native. See [rich text](native-rich-text.md), [interactive bodies](native-chat-interactive.md) and [room sidebar/thread outputs](native-room-sidebar.md). The final `LegacyChatContent` integration and markup adapter are removed from the real Message mount.
 
 `ChatActions.mountEmbed` explicitly retains the F49 app protocol as a temporary lifecycle integration. Native Embed owns sandboxed iframe markup, intrinsic bounded media geometry, inline consent queues and disposal. The host registers exact frames and checks null origin/source plus mounted-room/thread identity; consent completion is rechecked before writes. This protocol integration is not a completed native Apps migration.
 
-The host still owns history paging, message filtering/privacy, deep-message navigation, scroll anchoring, composer/reply drafts, file-viewer lifecycle, speech/upload flows and the room shell. Scoped callbacks name those remaining integrations directly. No Boolean send contract is widened; this read/presentation slice introduces no new server mutation protocol.
+The host still owns history paging, deep-message navigation, scroll anchoring and the room shell. Native Composer and Viewer own their separate accepted source slices; private message projection is typed. Scoped callbacks name those remaining integrations directly. No Boolean send contract is widened; this read/presentation slice introduces no new server mutation protocol.
 
 No reaction schema, command or UI was found in the inspected baseline. Emoji input/shortcodes are separate existing features and remain intact.
 
 ## Validation scope
 
-Pure tests cover immutable folding, continuity boundaries, authoritative ack deduplication/expiry, receipt targeting and self-agent exclusion, workers, and temporary markup adaptation. DOM tests cover streaming anchor stability, quotes/origins, quiet rows, typed actions, exact attachment IDs and iframe sandboxing, compact receipt interaction, explicit rich-body preservation and disposal after room replacement.
+Pure tests cover immutable folding, continuity boundaries, authoritative ack deduplication/expiry, receipt targeting and self-agent exclusion, workers, and canonical descendant-file projection. DOM tests cover streaming anchor stability, quotes/origins, quiet rows, typed actions, exact attachment IDs and iframe sandboxing, compact receipt interaction, explicit rich-body preservation and disposal after room replacement.
 
 Only the focused pure suite may be run during source implementation. DOM, type, style, build, browser, mobile/scroll, and published artifact gates require root integration validation. F15–F23 remain pending as full parity rows; this document is not evidence of full chat or M6 completion.

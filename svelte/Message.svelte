@@ -4,12 +4,7 @@
   import RichContent from "./features/rich-text/RichContent.svelte";
   import type { RichMode } from "./features/rich-text/types";
   import type { Room } from "../shared/room";
-  import type {
-    ChatActions,
-    ChatBridge,
-    ChatMessage,
-    LegacyChatIntegrations,
-  } from "./chatTypes";
+  import type { ChatActions, ChatBridge, ChatMessage } from "./chatTypes";
   import {
     agentMark,
     continues,
@@ -25,7 +20,7 @@
   import MessageActions from "./features/chat/MessageActions.svelte";
   import MessageFooter from "./features/chat/MessageFooter.svelte";
   import Attachments from "./features/chat/Attachments.svelte";
-  import LegacyChatContent from "./integrations/LegacyChatContent.svelte";
+  import ThreadCards from "./features/room-sidebar/ThreadCards.svelte";
   import { swipeMessage } from "./features/chat/swipe";
   let {
     message: m,
@@ -34,7 +29,6 @@
     typing,
     vb,
     room,
-    legacy,
     actions,
     footer,
   }: {
@@ -44,7 +38,6 @@
     typing?: string;
     vb: ChatBridge;
     room: Room;
-    legacy: LegacyChatIntegrations;
     actions: ChatActions;
     footer?: Footer;
   } = $props();
@@ -273,8 +266,11 @@
             )} · <time title={timestamp}>{day(m.ts)}</time></summary
           >{@render rich(m.text)}
         </details>{/if}
-      {#if !origin && kind !== "issue" && kind !== "notice"}{#each kind === "reminder" ? group : [m] as source (source.id)}<LegacyChatContent
-            html={legacy.threadCards(source.id)}
+      {#if !origin && kind !== "issue" && kind !== "notice"}{#each kind === "reminder" ? group : [m] as source (source.id)}<ThreadCards
+            {room}
+            messageId={source.id}
+            {actions}
+            {vb}
           />{/each}{/if}
       {#if footer && !origin}<MessageFooter {footer} {vb} />{/if}
     </div>

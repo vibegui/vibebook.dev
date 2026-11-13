@@ -7,22 +7,13 @@ import type { NavigationSession } from "./features/navigation/session";
 import type { PinsSession } from "./features/pins/session";
 import type { PinAppTarget } from "./features/pins/model";
 
-/** Temporary formatting bridge for sidebar sections that still await native migration. */
+/** Formatting and canonical status data only; native sidebar never accepts HTML. */
 export type SidebarBridge = {
   t: (text: string, vars?: Record<string, string | number>) => string;
-  icon: (name: string, size?: number) => string;
-  avatar: (email: string, online?: boolean) => string;
   ago: (ts: number) => string;
   name: (email: string) => string;
   avatarUrl?: (email: string) => string | undefined;
-  bookTitle: () => string;
-  roomMark: (classes: string) => string;
-  /** Retained only for old test fixtures; native room strips never call this callback. */
-  roomStrip?: () => string;
-  sbxRows: () => string;
-  agentRows: (email: string) => string;
   epicBusy: (epic: Epic) => string | null;
-  waitPill: (thread: string) => string;
   waitsIn: (thread: string) => unknown[];
 };
 
@@ -30,6 +21,18 @@ export type SidebarProps = {
   appNavigation?: { controller: AppNavigationSession; lang: HomeLanguage };
   room: Room;
   thread: string;
+  collapsed?: boolean;
+  roomIcon?: string;
+  roomTint?: string | null;
+  locale?: string;
+  mutations?: import("./features/room-sidebar/session").RoomMutations;
+  presence?: import("./features/room-sidebar/model").Presence;
+  ontogglerail?: () => void;
+  onrenameroom?: () => void;
+  onopenside?: () => void;
+  onagents?: () => void;
+  /** Pending F50 shell geometry adapter, disposed with its native handle. */
+  mountSheetHandle?: (node: HTMLElement) => () => void;
   foldOpen?: { off: boolean; friends: boolean | null };
   friends?: string[];
   vb: SidebarBridge;

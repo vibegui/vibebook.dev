@@ -47,6 +47,7 @@ if (native) {
     "svelte/features/documents",
     "svelte/features/file-viewer",
     "svelte/features/composer",
+    "svelte/features/room-sidebar",
   ])
     await collect(directory);
   files.push(
@@ -59,11 +60,12 @@ if (native) {
     "svelte/Reminders.svelte",
     "svelte/Decisions.svelte",
     "svelte/People.svelte",
+    "svelte/Sidebar.svelte",
+    "svelte/sidebar.ts",
     "svelte/Chat.svelte",
     "svelte/Composer.svelte",
     "svelte/Message.svelte",
     "svelte/chatTypes.ts",
-    "svelte/integrations/LegacyChatContent.svelte",
     "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",

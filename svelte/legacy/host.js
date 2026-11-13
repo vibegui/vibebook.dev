@@ -1,7 +1,6 @@
 import {permissionAsk as isPermAsk,visibleChatMessages,privateAskForOther,permissionReply} from "../features/chat/privacy";
 import {canAnswer,choicesOf} from "../features/chat-interactive/model";
 import {emojify} from "../../shared/emoji";
-import {adaptLegacyChatMarkup} from "../features/chat/legacyMarkup";
 import {createFilesSession} from "../features/files/session";
 import { messageIdentity } from "../features/home/model";
 import { createPersonalConnection } from "../features/home/connection";
@@ -1255,6 +1254,7 @@ function ensureNativeHome() {
       nativeDocumentOwner?.dispose();nativeDocumentOwner=null;nativeDocumentDrafts.clear();
       nativeViewer?.reset();
       composerDrafts.reset();
+      nativeRoomMutations?.dispose();nativeRoomMutations=null;
       myBooks = null;
       myWaits = [];
       friends = [];
@@ -2190,7 +2190,16 @@ const viewMounts = new Map();
 let boardLayoutCleanup = () => {};
 let sideNavigation = null;
 let sidePins = null;
-const sidebarDragHandles = new WeakSet();
+let nativeRoomMutations = null;
+function syncRoomMutations(){
+ if(!S)return null;
+ if(nativeRoomMutations&&(nativeRoomMutations.roomId!==S.id||nativeRoomMutations.account!==S.me)){nativeRoomMutations.dispose();nativeRoomMutations=null;}
+ if(!nativeRoomMutations)nativeRoomMutations=UI.createRoomMutations(S.me,S.id);
+ const roomId=S.id,account=S.me,connection=roomConnection;
+ nativeRoomMutations.sync(S,(command)=>S?.id===roomId&&S.me===account&&connection&&roomConnection===connection&&currentRoomId()===roomId?connection.request(command):Promise.resolve({ok:false,error:"offline"}));
+ return nativeRoomMutations;
+}
+const roomSidebarBridge=()=>({t,name,ago,epicBusy,waitsIn,avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;}});
 function disposeView(kind) {
   const mounted = viewMounts.get(kind);
   if (!mounted) return;
@@ -2218,6 +2227,7 @@ function clearViews() {
   nativeFilesSession?.dispose();
   nativeFilesSession=null;
   sideNavigation = null;
+  nativeRoomMutations?.dispose();nativeRoomMutations=null;
   disposePinsSession(sidePins);
   sidePins = null;
   boardLayoutCleanup();
@@ -2238,6 +2248,7 @@ function onEvent(ev, id,documentEpoch) {
   // the newly opened room (or its home screen).
   if (currentRoomId() !== id) return;
   const previousState = S;
+  const suggestionIntent=nativeRoomMutations?.suggestionIntent();
   if (ev.t === "epicsPatch" && S) {
     const known = new Set([
       ...S.epics.map((e) => e.id),
@@ -2262,6 +2273,7 @@ function onEvent(ev, id,documentEpoch) {
   if(S&&documentAuthorization)nativeDocumentDrafts.authorize(S,documentEpoch);
   if(S&&nativeDocumentOwner)renderDoc(false,documentAuthorization);
   syncViewer(ev.t === "state");
+  syncRoomMutations();
   switch (ev.t) {
     case "state": {
       nativePwa.account(S.me);
@@ -2317,21 +2329,15 @@ function onEvent(ev, id,documentEpoch) {
       renderTasks();
       return;
     case "suggestions": {
-      const was = isPre()
-        ? previousState?.suggestions[Number(thread.slice(4))]?.title
-        : undefined;
-      if (skipFrom !== null) {
-        const n = S.suggestions.length;
-        thread = n ? `pre:${Math.min(skipFrom, n - 1)}` : "main";
-        skipFrom = null;
-        renderChat();
-      } else if (isPre() && preOf()?.title !== was) {
-        const j = S.suggestions.findIndex((x) => x.title === was);
-        thread = j >= 0 ? `pre:${j}` : "main";
-        renderChat();
+      const previous=isPre()?previousState?.suggestions[Number(thread.slice(4))]:null;
+      const identity=previous&&UI.suggestionIdentity(previous);
+      if(isPre()&&previous){
+        const index=S.suggestions.findIndex(value=>UI.suggestionIdentity(value)===identity);
+        if(index>=0)thread=`pre:${index}`;
+        else if(suggestionIntent?.identity===identity&&!suggestionIntent.accept&&S.suggestions.length)thread=`pre:${Math.min(suggestionIntent.index,S.suggestions.length-1)}`;
+        else thread="main";
       }
-      renderSide();
-      return;
+      renderSide();renderChat("stay");return;
     }
     case "requests": renderSide(); return;
     case "members": renderSide(); renderComposer(); return;
@@ -2423,7 +2429,7 @@ function renderBook() {
   <div class="book ${railMode ? "rail" : ""}">
     <aside class="side tw:[@media(max-width:900px)]:max-h-[calc(var(--vvh,100dvh)_-_max(96px,var(--vvh,100dvh)*.2))]!" id="side"></aside>
     <main class="chat">
-      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><h2 id="threadTitle"></h2><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><span data-native-pwa-bell></span><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
+      <div class="chathead"><a class="phHome" href="/app" data-nav aria-label="${t("Seus vibebooks")}" title="${t("Seus vibebooks")}">${icon("back", 20)}</a><div id="threadTitle" class="tw:min-w-0 tw:flex-1"></div><button class="ghost" id="toggleBoard" title="${t("Quadro de tarefas (kanban)")}" aria-pressed="false">${icon("board")}<span class="lbl">${t("Quadro")}</span></button><button class="ghost inboxBtn" id="inboxBtn" title="${t("Caixa de entrada: o que espera por você")}" aria-label="${t("Caixa de entrada")}">${icon("inbox")}<b class="kN" hidden></b></button><span data-native-pwa-bell></span><button class="ghost" id="myClaude" aria-pressed="false" hidden>✻ <span class="lbl">Agent</span></button><button class="ghost" id="toggleDoc" title="${t("mostrar/ocultar documento")}">${icon("doc")}<span class="lbl">Doc</span></button></div>
       <div class="docPeek" id="docPeek"><div id="nativeDocumentPeek"></div></div>
       <div id="tasksHome" hidden><div class="tasks" id="tasks"></div></div>
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
@@ -2833,79 +2839,12 @@ function toggleRail() {
   renderSide();
 }
 
-function renderRail(el) {
-  el.innerHTML = `
-    <button class="iconBtn" id="railToggle" title="${t("Abrir menu")}" aria-label="${t("Abrir menu")}" aria-expanded="false">${SIDEBAR_ICON}</button>
-    <a data-nav href="/app" class="iconBtn" title="${t("Seus vibebooks")}" aria-label="${t("Seus vibebooks")}" style="text-decoration:none">${icon("back", 20)}</a>
-    <div class="railSep"></div>
-    <div class="railList">
-      <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
-      ${S.epics
-        .filter((e) => !e.archived || e.id === thread)
-        .map((e) => {
-          const d = e.tasks.filter((t) => t.done).length,
-            pct = e.tasks.length ? (100 * d) / e.tasks.length : 0;
-          return `
-        <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
-          ${e.owner ? `<span class="rbOwner">${ownerPic(e.owner)}</span>` : esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`;
-        })
-        .join("")}
-      <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">${icon("plus", 18)}</button>
-    </div>
-    <div class="railPeople">${(S.requests || []).length ? `<button class="rb askBadge" id="railAsks" title="${t("{n} pedindo pra entrar", { n: S.requests.length })}" aria-label="${t("{n} pedindo pra entrar", { n: S.requests.length })}">+${S.requests.length}</button>` : ""}${S.members
-      .slice(0, 8)
-      .map((m) => avatar(m, S.online.includes(m)))
-      .join("")}</div>`;
-  el.querySelector("#railToggle").onclick = toggleRail;
-  el.querySelector("#railAsks")?.addEventListener("click", toggleRail);
-  el.querySelector("#railAdd").onclick = () => {
-    toggleRail();
-    document.querySelector("#newEpic input")?.focus();
-  };
-  // The board follows the thread: an epic filters it to that epic, the main room shows every epic.
-  el.querySelectorAll("[data-thread]").forEach(
-    (b) =>
-      (b.onclick = () => {
-        thread = b.dataset.thread;
-        documentScopeReset = true;
-        boardEpic = thread === "main" || isPre() ? null : thread;
-        renderSide();
-        renderChat();
-        renderKanban();
-        renderDoc();
-      }),
-  );
-}
-
 // A pre-epic: one of @vibe's suggestions, opened in the main panel like an epic, to create or discard.
 const isPre = () => thread.startsWith("pre:");
 const preOf = () => (isPre() ? S.suggestions[Number(thread.slice(4))] : null);
-let skipFrom = null; // index of a suggestion just discarded: show the next one
 function renderPre(el) {
-  const s = preOf();
-  if (!s) {
-    thread = "main";
-    return renderChat();
-  }
-  el.innerHTML = `<div class="preCard">
-    <p class="kicker">✦ ${t("O @vibe sugere um épico")}</p>
-    <h3>${esc(s.title)}</h3>
-    <p class="${s.why ? "" : "muted"}">${esc(s.why || t("Ele viu isso na conversa e acha que vale virar um épico, com as tarefas abaixo."))}</p>
-    ${s.tasks.length ? `<h4>${t("Tarefas propostas")}</h4><ul>${s.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-    <div class="row"><button class="primary" id="preAccept">${t("Pedir pro meu agent")}</button><button class="ghost" id="preSkip">${t("Descartar")}</button></div>
-    <p class="muted">${t("Vira um pedido seu na sala: seu agent confere se ainda faz sentido, ajusta o doc e as tarefas e cria o épico.")}</p>
-  </div>`;
-  const i = Number(thread.slice(4));
-  // Accepting posts the suggestion as your request in the main thread (the server writes it); your Claude makes the epic.
-  el.querySelector("#preAccept").onclick = () => {
-    send({ t: "suggestion", i, accept: true });
-    thread = "main";
-    renderChat();
-  };
-  el.querySelector("#preSkip").onclick = () => {
-    skipFrom = i;
-    send({ t: "suggestion", i });
-  };
+ const suggestion=preOf();if(!suggestion){thread="main";return renderChat();}
+ renderView("suggestionPreview",el,{room:S,index:Number(thread.slice(4)),owner:syncRoomMutations(),vb:chatBridge()});
 }
 
 // Each person's connected Claudes, under them in "Pessoas": listening to this room now (green), or last seen.
@@ -3103,17 +3042,6 @@ const usd = (n) =>
     LANG === "en" ? "." : ",",
   );
 // "Pessoas e agents": the room's cloud sandboxes come first (they spend money), each with its owner, state and cost.
-function sbxRows() {
-  if (roomAgents.id !== S?.id || !roomAgents.sandboxes?.length) return "";
-  return roomAgents.sandboxes
-    .map(
-      (
-        x,
-      ) => `<button type="button" class="member sbxRow ${esc(x.state || "")}" data-sbx-open title="${esc(x.name)} · ${t("de {who}", { who: esc(name(x.email)) })}">
-    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name)}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${usd(sbxCost(x))}</span></button>`,
-    )
-    .join("");
-}
 // Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
 let qOpen = false; // the queue shows 4 until "mostrar mais"
@@ -3708,13 +3636,6 @@ const waitsIn = (t) =>
   myWaits.filter(
     (w) => w.book_id === S?.id && (t === undefined || w.thread === t),
   );
-const waitPill = (th) => {
-  const ws = waitsIn(th),
-    n = ws.length;
-  return n
-    ? `<b class="wN${clW(ws)}" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>`
-    : "";
-};
 // Deploy stage after "Claude fez" (set by agents with update_epic prod): 🚀 no ar, ✓✓ verificado em prod.
 const prodMark = (e) =>
   !e.prod
@@ -3734,43 +3655,6 @@ const epicIco = (e, pick) =>
     ? `<span class="ri epOwner" style="background:${color(e.owner)}" ${pick ? `data-epowner="${e.id}" role="button" tabindex="0" ` : ""}title="${esc(t("Dono: {who}", { who: name(e.owner) }))}${pick ? ` · ${t("clique pra trocar")}` : ""}">${ownerPic(e.owner)}</span>`
     : `<span class="ri" style="background:${color(e.title)};color:#fff" ${pick ? `data-epowner="${e.id}" role="button" tabindex="0" title="${t("Sem dono · clique pra escolher")}"` : ""}>${esc(initials(e.title))}</span>`;
 // Click an epic's icon: pick its owner among the room's people (or none). WS epic.owner.
-function ownerMenu(anchor, id) {
-  document.getElementById("ownMenu")?.remove();
-  const ep = S.epics.find((e) => e.id === id);
-  if (!ep) return;
-  const m = document.createElement("div");
-  m.id = "ownMenu";
-  m.className = "ownMenu";
-  m.setAttribute("role", "menu");
-  m.innerHTML = `<p>${t("Dono do épico")}</p>${S.members.map((x) => `<button type="button" role="menuitemradio" aria-checked="${ep.owner === x}" data-own="${esc(x)}">${avatar(x)}<span>${esc(name(x))}</span>${ep.owner === x ? icon("check", 14) : ""}</button>`).join("")}<button type="button" role="menuitemradio" aria-checked="${!ep.owner}" data-own=""><span class="avatar none">–</span><span>${t("Sem dono")}</span>${ep.owner ? "" : icon("check", 14)}</button>`;
-  document.body.append(m);
-  const r = anchor.getBoundingClientRect();
-  m.style.left = `${Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8))}px`;
-  m.style.top = `${r.bottom + 6 + m.offsetHeight > innerHeight ? Math.max(8, r.top - m.offsetHeight - 6) : r.bottom + 6}px`;
-  const close = () => {
-    m.remove();
-    removeEventListener("pointerdown", out, true);
-    removeEventListener("keydown", esc_);
-  };
-  const out = (e) => {
-    if (!m.contains(e.target)) close();
-  };
-  const esc_ = (e) => {
-    if (e.key === "Escape") close();
-  };
-  setTimeout(() => {
-    addEventListener("pointerdown", out, true);
-    addEventListener("keydown", esc_);
-  });
-  m.querySelectorAll("[data-own]").forEach(
-    (b) =>
-      (b.onclick = () => {
-        send({ t: "epic.owner", id, owner: b.dataset.own });
-        close();
-      }),
-  );
-  m.querySelector("button")?.focus();
-}
 // Your Claude's open question (a<msg> wait) in another thread of this room: one line on top of whatever thread you're
 // in, so an approval never hides in a conversation you're not looking at. "Ver" jumps to it.
 function renderAskBar() {
@@ -3788,64 +3672,13 @@ function renderAskBar() {
     goToMsg(Number(e.currentTarget.dataset.askgo));
 }
 function renderSide() {
-  syncInbox();
-  renderAskBar();
-  const el = document.getElementById("side");
-  if (!el || !S) return;
-  renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
-  sideNavigation = syncNavigationSession(sideNavigation, S, thread, archOpen);
-  sidePins = syncPinsSession(sidePins, S);
-  if (liveState) requestPinnedFiles(sidePins, S, send);
-  if (railMode && window.innerWidth > 900) {
-    disposeView("sidebar");
-    return renderRail(el);
-  }
-  const roomId = S.id;
-  const pinsSession = sidePins;
-  /** @type {import("../roomConnection").RequestRoomCommand} */
-  const requestPinCommand = (command, timeoutMs) => {
-    if (!pinsSession.active || sidePins !== pinsSession || S?.id !== roomId)
-      return Promise.resolve({ ok: false, error: "offline" });
-    return (
-      roomConnection?.request(command, timeoutMs) ??
-      Promise.resolve({ ok: false, error: "offline" })
-    );
-  };
-  const openSideThread = (id) => {
-    if (S?.id !== roomId) return;
-    if(deferViewerIntent(()=>openSideThread(id)))return;
-    closeSheet(true);
-    thread = id;
-    documentScopeReset = true;
-    boardEpic = thread === "main" || isPre() ? null : thread;
-    renderSide();
-    renderChat();
-    renderKanban();
-    renderDoc();
-  };
-  renderView("sidebar", el, {room:S, thread, navigation:sideNavigation, pins:pinsSession, request:requestPinCommand, onopenpinfile:(file) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) openNativeFile(file); }, onopenpinapp:(app) => { if (pinsSession.active && sidePins === pinsSession && S?.id === roomId) cardGo(`#app:${app.connectionId}/${app.tool}`); }, send:(command) => S?.id === roomId ? send(command) : false, onopen:openSideThread, onarchchange:(value) => { if (S?.id === roomId) archOpen = value; }, foldOpen, friends, appNavigation:{controller:nativeAppNav,lang:LANG}, vb:{t,icon,avatar,ago,name,avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;},bookTitle,roomMark,sbxRows,agentRows,epicBusy,waitPill,waitsIn}});
-  el.querySelector("#railToggle").onclick = toggleRail;
-  const grab = el.querySelector(".sheetGrab");
-  if (grab && !sidebarDragHandles.has(grab)) {
-    sheetDrag(grab, "side", false);
-    sidebarDragHandles.add(grab);
-  }
-  // The root row's "editar" chip renames the room; it sits inside the row's button, so it stops the row's click.
-  const rename = el.querySelector("#sideRename");
-  if (rename)
-    rename.onclick = (e) => {
-      e.stopPropagation();
-      renameThread();
-    };
-  // Same actions as the header's ✓ 🗑 (hidden on phones): close the sheet, then run them.
-  const archive = el.querySelector("#sideArch"); if (archive) archive.onclick = () => { closeSheet(); document.getElementById("epicArch")?.click(); };
-  const remove = el.querySelector("#sideDel"); if (remove) remove.onclick = () => { closeSheet(); document.getElementById("epicDel")?.click(); };
-  el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
-    closeSheet(true);
-    thread = b.dataset.thread; documentScopeReset = true; boardEpic = thread === "main" || isPre() ? null : thread; renderSide(); renderChat(); renderKanban(); renderDoc();
-  });
-  document.title = `${S.book?.title ?? "vibebook"} · vibebook`;
-  setFavicon(bookTitle());
+ syncInbox();renderAskBar();const el=document.getElementById("side");if(!el||!S)return;
+ renderMyClaude();sideNavigation=syncNavigationSession(sideNavigation,S,thread,archOpen);sidePins=syncPinsSession(sidePins,S);if(liveState)requestPinnedFiles(sidePins,S,send);
+ const roomId=S.id,account=S.me,pinsSession=sidePins,owner=syncRoomMutations();
+ const current=()=>S?.id===roomId&&S.me===account&&currentRoomId()===roomId;
+ const open=(id)=>{if(!current())return;if(deferViewerIntent(()=>open(id)))return;closeSheet(true);thread=id;documentScopeReset=true;boardEpic=thread==="main"||isPre()?null:thread;renderSide();renderChat();renderKanban();renderDoc();};
+ renderView("sidebar",el,{room:S,thread,collapsed:railMode&&innerWidth>900,roomIcon:iconUrl(myBooks?.find(book=>book.id===roomId)),roomTint:myBooks?.find(book=>book.id===roomId)?.tint,locale:LOCALE,mutations:owner,presence:roomAgents.id===roomId?{agents:roomAgents.list,sandboxes:roomAgents.sandboxes||[]}:{agents:[],sandboxes:[]},navigation:sideNavigation,pins:pinsSession,request:(command,timeout)=>current()&&sidePins===pinsSession?request(command,timeout):Promise.resolve({ok:false,error:"offline"}),send:(command)=>current()?send(command):false,onopen:open,onarchchange:(value)=>{if(current())archOpen=value;},onopenpinfile:(file)=>{if(current()&&sidePins===pinsSession)openNativeFile(file);},onopenpinapp:(app)=>{if(current())cardGo(`#app:${app.connectionId}/${app.tool}`);},ontogglerail:()=>{if(current())toggleRail();},onrenameroom:()=>{if(current()){ensureNativeHome();nativeAppNav.askRename(roomId);}},onopenside:()=>{if(current())closeSheet();},onagents:()=>{if(current())document.dispatchEvent(new CustomEvent("vb:pane",{detail:"agents"}));},mountSheetHandle:(node)=>{sheetDrag(node,"side",false);return ()=>{node.onclick=node.onpointerdown=node.onpointermove=node.onpointerup=node.onpointercancel=null;};},foldOpen,friends,appNavigation:{controller:nativeAppNav,lang:LANG},vb:roomSidebarBridge()});
+ document.title=`${S.book?.title??"vibebook"} · vibebook`;setFavicon(bookTitle());
 }
 
 // Profile picture: pick, crop to a centered square, resize to 256px JPEG in the browser, upload.
@@ -4055,26 +3888,8 @@ function renderTasks() {
   if (!el) return;
   renderDoc();
   const epic = S.epics.find((e) => e.id === thread);
-  const head = document.getElementById("threadTitle");
-  const chev = `<button type="button" class="thChev" aria-label="${t("Trocar de conversa")}" title="${t("Trocar de conversa")}">${icon("chevronDown", 18)}</button>`;
-  const wireChev = () =>
-    (head.querySelector(".thChev").onclick = () => openSheet("side"));
-  // On phones the icon + name + ▾ are one raised button, like the selected row in the sheet it opens (.thread.sel).
-  const pick = (mark, name) =>
-    `<span class="thPick">${mark.replace('class="ri', 'class="ri thMark')}${name}${chev}</span>`;
-  if (preOf()) {
-    disposeView("tasks");
-    head.innerHTML = `${pick(`<span class="ri">${esc(initials(preOf().title))}</span>`, `<span class="epicName" id="roomName">${esc(preOf().title)}</span>`)}<small class="folderChip">✦ ${t("sugestão do @vibe")}</small>`;
-    wireChev();
-    document.getElementById("roomName").onclick = () =>
-      ROOM_PHONE.matches && openSheet("side");
-    el.innerHTML = "";
-    renderPeek();
-    return;
-  }
-  head.innerHTML = epic
-    ? `${pick(`<span class="ri" style="background:${color(epic.title)};color:#fff">${esc(initials(epic.title))}</span>`, `<span class="epicName" id="roomName" title="${t("Clique para renomear")}">${esc(epic.title)}</span>`)}<button class="ghost x" id="epicArch" title="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${epic.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(epic.archived ? "undo" : "check")}</button><button class="ghost x" id="epicDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash")}</button>`
-    : `${pick(roomMark("ri roomIco"), `<span class="epicName" id="roomName" title="${esc(S.book?.summary || t("Clique para renomear"))}">${esc(bookTitle())}</span>`)}${S.book?.folder ? `<small class="folderChip">${icon("folder", 12)} ${esc(S.book.folder)}</small>` : ""}`;
+  const head=document.getElementById("threadTitle"),roomId=S.id,account=S.me;
+  renderView("threadHeader",head,{room:S,thread,titleId:"roomName",owner:syncRoomMutations(),vb:roomSidebarBridge(),roomIcon:iconUrl(myBooks?.find(book=>book.id===roomId)),onopenside:()=>{if(S?.id===roomId&&S.me===account)openSheet("side");},onrenameroom:()=>{if(S?.id===roomId&&S.me===account){ensureNativeHome();nativeAppNav.askRename(roomId);}}});
   // Who is the room waiting on: open tasks with an owner, across every epic.
   const waiting = {};
   for (const t of [...S.epics.flatMap((e) => e.tasks), ...(S.roomTasks || [])])
@@ -4096,10 +3911,6 @@ function renderTasks() {
   kb.title = mineN
     ? `${t("Quadro de tarefas")} · ${t("Esperando você")}: ${mineN}`
     : t("Quadro de tarefas (kanban)");
-  wireChev();
-  // Phones: the name is the thread switcher; renaming moves to the ✎ in the switcher sheet.
-  document.getElementById("roomName").onclick = () =>
-    ROOM_PHONE.matches ? openSheet("side") : renameThread();
   // Phone ←: inside an epic (or a suggestion) it goes back to the room's main thread; in the main thread, home.
   const back = $app.querySelector(".phHome");
   if (back) {
@@ -4114,9 +3925,6 @@ function renderTasks() {
       selectThread("main");
     };
   }
-  head.querySelector(".thPick").onclick = (e) => {
-    if (ROOM_PHONE.matches && !e.target.closest(".thChev")) openSheet("side");
-  };
   renderPeek();
   // In the main thread, the room's own tasks (the room doc's "## Tarefas") get the same card.
   const list =
@@ -4126,8 +3934,6 @@ function renderTasks() {
       : null);
   el.style.display = list ? "" : "none";
   if (!list) return;
-  if (epic) document.getElementById("epicArch").onclick = () => send({ t: "epic.archive", id: epic.id, archived: !epic.archived });
-  if (epic) document.getElementById("epicDel").onclick = () => { if (confirm(t("Apagar o épico \"{title}\", as tasks e a discussão dele? Não dá pra desfazer.", { title: epic.title }))) send({ t: "epic.del", id: epic.id }); };
   disposeView("tasks");
 }
 
@@ -4170,69 +3976,6 @@ const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.r
 const hhmm = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
-const threadCard = (e) => {
-  const replies = S.messages.filter((x) => x.thread === e.id),
-    last = replies.at(-1);
-  const nReplies = S.counts
-    ? (S.counts[e.id] ?? 0) +
-      replies.filter((x) => x.id > (S.countsAt ?? 0)).length
-    : replies.length;
-  const d = e.tasks.filter((t) => t.status === "done").length;
-  return `${epicIco(e)}<span class="tc-t"><b>${esc(e.title)}</b><small>${e.archived ? `✓ ${t("concluído")} · ` : ""}${e.tasks.length ? `${t("{d}/{n} tarefas", { d, n: e.tasks.length })} · ` : ""}${nReplies === 1 ? t("1 resposta") : t("{n} respostas", { n: nReplies })}${last ? ` · ${ago(last.ts) === t("agora") ? t("agora") : t("última há {ago}", { ago: ago(last.ts) })}` : ""}</small></span><span class="tc-go">→</span>`;
-};
-// The files an epic tree produced (the epic and its sub-epics, any depth): what's loaded in the tab first (newest),
-// then what the room says each epic has (epics[].files). Shown under its thread card, so a channel reads as a list of
-// the reports and prints that came out of it.
-function treeFiles(eid) {
-  const kids = new Map();
-  for (const e of S.epics || [])
-    if (e.parent) {
-      if (!kids.has(e.parent)) kids.set(e.parent, []);
-      kids.get(e.parent).push(e.id);
-    }
-  const ids = [eid];
-  for (let i = 0; i < ids.length && ids.length < 60; i++)
-    for (const k of kids.get(ids[i]) || []) if (!ids.includes(k)) ids.push(k);
-  const set = new Set(ids),
-    by = new Map();
-  for (const m of [...S.messages].reverse())
-    if (set.has(m.thread))
-      for (const f of m.files || []) {
-        const o = by.get(f.name);
-        if (o) o.seen.add(f.id);
-        else by.set(f.name, { f, seen: new Set([f.id]), n: 0 });
-      }
-  for (const id of ids)
-    for (const f of S.epics.find((x) => x.id === id)?.files || []) {
-      const o = by.get(f.name);
-      if (o) o.n = Math.max(o.n, f.n, o.seen.size);
-      else by.set(f.name, { f, seen: new Set([f.id]), n: f.n });
-    }
-  return [...by.values()].map((o) => ({
-    ...o.f,
-    n: Math.max(o.n, o.seen.size),
-  }));
-}
-const treeFilesHtml = (eid) => {
-  const fs = treeFiles(eid);
-  if (!fs.length) return "";
-  const chips = fs
-    .slice(0, 6)
-    .map(
-      (f) =>
-        `<a class="fchip" href="/api/books/${S.id}/files/${f.id}" title="${esc(f.name)}">${fileIcon(f, 14)}<span>${esc(f.name)}</span>${f.n > 1 ? `<small>v${f.n}</small>` : ""}</a>`,
-    )
-    .join("");
-  return `<div class="tcFiles" data-files-of="${eid}">${chips}${fs.length > 6 ? `<small class="mute">+${fs.length - 6}</small>` : ""}</div>`;
-};
-const threadCards = (msgId) =>
-  (S.epics || [])
-    .filter((e) => e.from_msg === msgId)
-    .map(
-      (e) =>
-        `<button type="button" class="tcard" data-goepic="${e.id}">${threadCard(e)}</button>${treeFilesHtml(e.id)}`,
-    )
-    .join("");
 function refreshThreadCards() {
   // Cards are inside Svelte-owned message content. Update its props instead of
   // inserting untracked siblings or removing its HTML anchors.
@@ -4243,8 +3986,6 @@ document.addEventListener("click", (ev) => {
   if (back) {
     return goToMsg(Number(back.dataset.gomain),"main");
   }
-  const b = ev.target.closest("[data-chat-rich~=tcard][data-goepic]"); if (!b) return;
-  selectThread(b.dataset.goepic);
 });
 // The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
@@ -5118,7 +4859,7 @@ function renderThreadFiles() {
  renderView("threadFiles",el,{room:S,thread,lang:LANG,onopen:(file,trigger)=>{if(S?.id===roomId&&S.me===account&&trigger.isConnected)openNativeFile(file,trigger);}});
 }
 function renderComposer(){
- const target=document.getElementById("composer");if(!target||!S)return;
+ const target=document.getElementById("composer");if(!target||!S)return;if(isPre()){disposeView("composer");return;}
  const roomId=S.id,composerThread=thread;let mounted;
  const current=()=>S?.id===roomId&&thread===composerThread&&target.isConnected&&viewMounts.get("composer")===mounted;
  renderView("composer",target,{room:S,thread,vb:chatBridge(),drafts:composerDrafts,request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"offline"}),upload:(input,signal)=>createRoomApi(roomId,(url,init)=>fetch(url,{...init,signal})).uploadFile(input),agents:roomAgents.id===roomId?(roomAgents.sandboxes||[]):[],navigate:(id)=>{if(current())goToMsg(id,composerThread);},hidden:isPre()||!!target.closest(".book")?.classList.contains("boardview")});
@@ -5136,6 +4877,7 @@ function renderChat(keep) {
     disposeView("chat");
     return renderPre(el);
   }
+  disposeView("suggestionPreview");
   // Opening an epic with no conversation yet: show its doc (goal + tasks) instead of an empty panel, if it was closed.
   if (win.thread !== thread || win.room !== S.id) {
     const bk = $app.querySelector(".book");
@@ -5189,7 +4931,7 @@ function renderChat(keep) {
   const roomId=S.id, chatThread=thread;
   let chatMount;
   const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
-  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;composerEntry()?.reply(q,draft.text);},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
+  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;composerEntry()?.reply(q,draft.text);},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
   chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   if (keep === "stay") { el.scrollTop = t0; pinOnLoad(el); } // a state refresh while reading above
