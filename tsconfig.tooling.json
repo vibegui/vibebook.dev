@@ -58,6 +58,7 @@
     "scripts/decisions.test.ts",
     "scripts/epic-order.test.ts",
     "scripts/files-browser.ts",
-    "scripts/native-people.test.ts"
+    "scripts/native-people.test.ts",
+    "scripts/native-secondary-panels-browser.ts"
   ]
 }
