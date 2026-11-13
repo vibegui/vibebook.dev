@@ -14,6 +14,8 @@ const privateSentinel = "FAKE_PRIVATE_CONFIG_MUST_NEVER_SHIP";
 try {
   for (const path of [
     "client",
+    ".wrangler/qa-generated",
+    "scripts",
     "public/fonts",
     "src",
     "shared/server",
@@ -24,6 +26,22 @@ try {
     ".vibebook",
   ])
     await mkdir(join(root, path), { recursive: true });
+  await writeFile(
+    join(root, ".wrangler/qa-generated/index.js"),
+    'export const value = "GENERATED_BACKEND_MUST_NEVER_SHIP";',
+  );
+  await writeFile(
+    join(root, ".wrangler/qa-generated/style.css"),
+    '.generated { --probe: "GENERATED_BACKEND_MUST_NEVER_SHIP"; }',
+  );
+  await writeFile(
+    join(root, "scripts/build.ts"),
+    'export const value = "TOOLING_MUST_NEVER_SHIP";',
+  );
+  await symlink(
+    join(root, ".wrangler/qa-generated/index.js"),
+    join(root, "shared/generated.woff2"),
+  );
   await writeFile(
     join(root, "src/private.ts"),
     `export type Contract = { id: string }; export const value = ${JSON.stringify(backendSentinel)};`,
@@ -154,6 +172,22 @@ try {
     "PASS browser-safe dependency helpers in a package server directory",
   );
   const cases = [
+    [
+      "generated backend raw string",
+      'import value from "../.wrangler/qa-generated/index.js?raw"; export { value };',
+    ],
+    [
+      "generated backend URL",
+      'import value from "../.wrangler/qa-generated/index.js?url"; export { value };',
+    ],
+    [
+      "generated backend symlink raw string",
+      'import value from "../shared/generated.woff2?raw"; export { value };',
+    ],
+    [
+      "project tooling raw string",
+      'import value from "../scripts/build.ts?raw"; export { value };',
+    ],
     ["direct backend import", 'export { value } from "../src/private";'],
     [
       "raw backend source import",
@@ -291,6 +325,18 @@ try {
       [
         "private symlink URL",
         '@font-face {font-family:"probe";src:url("../shared/config-link.txt")}',
+      ],
+      [
+        "generated backend asset URL",
+        '.probe {background:url("../.wrangler/qa-generated/index.js")}',
+      ],
+      [
+        "generated backend CSS import",
+        '@import "../.wrangler/qa-generated/style.css";',
+      ],
+      [
+        "generated backend symlink font",
+        '@font-face {font-family:"probe";src:url("../shared/generated.woff2")}',
       ],
       ["backend CSS import", '@import "../src/private.css";'],
       ["nested backend CSS import", '@import "../shared/nested.css";'],

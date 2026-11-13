@@ -17,6 +17,7 @@
     "svelte/vite.config.ts",
     "scripts/dev-app.ts",
     "scripts/app-development.test.ts",
+    "scripts/client-boundary-policy.test.ts",
     "scripts/browser-build.ts",
     "scripts/browser-check.ts",
     "scripts/build-collab.ts",
