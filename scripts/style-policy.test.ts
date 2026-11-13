@@ -72,6 +72,24 @@ test("closed card variants select Tailwind utilities without permitting CSSOM or
     expect(auditPresentation(file, source).length).toBeGreaterThan(0);
 });
 
+test("number-format options do not permit inline CSS or arbitrary style objects", () => {
+  const file = "svelte/features/room-sidebar/Test.svelte";
+  for (const source of [
+    '<span>{new Intl.NumberFormat("en", {style: "currency", currency: "USD"}).format(1)}</span>',
+    '<script>const formatter = Intl.NumberFormat("pt", {style: "percent"});</script>',
+  ])
+    expect(auditPresentation(file, source)).toEqual([]);
+  for (const source of [
+    '<script>const options = {style: "currency"};</script>',
+    '<script>const value = other.NumberFormat("en", {style: "currency"});</script>',
+    '<script>const value = new Intl.NumberFormat("en", {style: "color:red"});</script>',
+    '<script>const value = new Intl.NumberFormat("en", {style: {color: "red"}});</script>',
+    '<span style="color:red">Currency</span>',
+    '<script>node.style.color = "red";</script>',
+  ])
+    expect(auditPresentation(file, source).length).toBeGreaterThan(0);
+});
+
 test("stylesheet policy distinguishes tokens from custom selector and import escapes", () => {
   expect(
     auditTailwind(

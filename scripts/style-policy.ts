@@ -205,6 +205,22 @@ export function auditPresentation(
         ].includes(other.text)
       );
     };
+    // ECMA-402's number-format option is unrelated to CSS. Only the literal
+    // built-in constructor/call option is allowed; generic style objects stay banned.
+    const numberFormatOption = (node: ts.PropertyAssignment) => {
+      const options = node.parent;
+      if (!ts.isObjectLiteralExpression(options)) return false;
+      const call = options.parent;
+      return (
+        (ts.isNewExpression(call) || ts.isCallExpression(call)) &&
+        call.expression.getText(ast) === "Intl.NumberFormat" &&
+        call.arguments?.[1] === options &&
+        ts.isStringLiteral(node.initializer) &&
+        ["decimal", "currency", "percent", "unit"].includes(
+          node.initializer.text,
+        )
+      );
+    };
     const visit = (node: ts.Node) => {
       const at = offset + node.getStart(ast);
       if (
@@ -231,6 +247,10 @@ export function auditPresentation(
         ts.isPropertyAssignment(node) &&
         ["style", "cssText"].includes(
           node.name.getText(ast).replace(/["']/g, ""),
+        ) &&
+        !(
+          node.name.getText(ast).replace(/["']/g, "") === "style" &&
+          numberFormatOption(node)
         )
       )
         add(at, "First-party style object");
