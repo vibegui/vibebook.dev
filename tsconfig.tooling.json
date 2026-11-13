@@ -3,15 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun",
-      "svelte"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -83,6 +76,7 @@
     "scripts/native-file-viewer.test.ts",
     "scripts/native-file-viewer-dom.test.ts",
     "scripts/native-file-viewer-browser.ts",
-    "scripts/native-composer.test.ts"
+    "scripts/native-composer.test.ts",
+    "scripts/room-access-lifecycle.test.ts"
   ]
 }

@@ -2121,6 +2121,16 @@ function roomSkeleton(id) {
       <form class="composer" onsubmit="return false"><div class="row"><textarea rows="1" disabled placeholder="${t("Mensagem…")}"></textarea><button class="primary" disabled style="opacity:.5">${t("Enviar")}</button></div></form></main>
     <section class="doc"><div class="skDoc"><i style="width:40%"></i><i></i><i class="s"></i><i></i><i class="s"></i></div></section></div>`;
 }
+function dropUnavailableRoom(id, connection) {
+  if (roomConnection !== connection) return false;
+  roomCache.delete(id);
+  nativeViewer?.reset();
+  clearViews();
+  S = null;
+  roomStore.replace(null);
+  roomConnection = null;
+  return true;
+}
 function openBook(id) {
   thread =
     pendingThread || new URLSearchParams(location.search).get("t") || "main";
@@ -2151,13 +2161,11 @@ function openBook(id) {
       if (roomConnection === connection) onEvent(event, id);
     },
     onRemoved: () => {
-      if (roomConnection !== connection) return;
-      clearViews();
+      if (!dropUnavailableRoom(id, connection)) return;
       $app.innerHTML = `<div class="home"><p>${t("Você foi removido deste vibebook.")}</p><a data-nav href="/app">${icon("back")} ${t("seus vibebooks")}</a></div>`;
     },
     onUnavailable: () => {
-      if (roomConnection !== connection) return;
-      clearViews();
+      if (!dropUnavailableRoom(id, connection)) return;
       $app.innerHTML = `<div class="home"><p>${t("Sem acesso a este vibebook. Peça para alguém de dentro te convidar.")}</p><a data-nav href="/app">← ${t("voltar")}</a></div>`;
     },
   });

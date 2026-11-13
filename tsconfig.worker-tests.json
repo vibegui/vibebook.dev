@@ -9,6 +9,7 @@
     "scripts/service-boundaries.test.ts",
     "scripts/auth-ui.test.ts",
     "scripts/native-auth.test.ts",
-    "scripts/native-auth-post.test.ts"
+    "scripts/native-auth-post.test.ts",
+    "scripts/document-scope-guards.test.ts"
   ]
 }
