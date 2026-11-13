@@ -218,6 +218,8 @@
   .askBar { margin: 10px 28px 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; border-radius: 12px; background: color-mix(in srgb, #e8590c 14%, var(--panel)); border: 1px solid color-mix(in srgb, #e8590c 45%, var(--line)); font-size: 13.5px; line-height: 1.35; flex: none; }
   .askBar[hidden] { display: none; } .askBar > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .askBar b { color: #e8590c; }
   .swWait.cl, .thread .wN.cl { background: #e8590c; color: #fff; }
+  /* Only your tasks waiting here: a small dot, no number (the number is for asks). */
+  .swWait.tdot, .thread .wN.tdot { min-width: 0; width: 9px; height: 9px; padding: 0; }
   .claudeBar[hidden] { display: none; } .claudeBar > span:not(.star) { flex: 1; min-width: 0; } .claudeBar { flex: none; } .claudeBar small { display: block; color: var(--mute); font-size: 12px; }
   .claudeBar .star { color: var(--accent); font-size: 16px; } .claudeBar.wait .star { animation: spin 2.4s linear infinite; display: inline-block; }
   .claudeBar.ok .star { color: #1f9d8a; } .claudeBar [data-x] { width: 32px; height: 32px; padding: 0; font-size: 18px; flex: none; } .claudeBar button.primary, .claudeBar [data-on] { white-space: nowrap; flex: none; }
@@ -271,6 +273,24 @@
   .me .avatar { cursor: pointer; }
   .nameAsk { display: grid; gap: 6px; background: var(--ai-bg); border-radius: 16px; padding: 18px 20px; margin-bottom: 28px; max-width: 520px; }
   .nameAsk .row { margin-top: 6px; }
+  /* First visit with no room yet (onboarding()): one step per screen. */
+  .onb { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px 28px; box-sizing: border-box; }
+  .obTop { width: 100%; max-width: 560px; display: flex; align-items: center; margin-bottom: 9vh; }
+  .obTop .brand { font-size: 26px; margin: 0; flex: 1; } .obTop .brand a { color: var(--accent); text-decoration: none; }
+  .obCard { width: 100%; max-width: 560px; display: grid; gap: 14px; }
+  .obCard h1 { font-family: var(--serif, Georgia, serif); font-size: 32px; line-height: 1.15; margin: 0; }
+  .obCard > p.muted { margin: 0 0 6px; font-size: 16px; line-height: 1.5; }
+  .obDots { display: flex; gap: 6px; align-items: center; color: var(--mute); font-size: 13px; }
+  .obDots i { width: 22px; height: 4px; border-radius: 2px; background: var(--line); } .obDots i.on, .obDots i.ok { background: var(--accent); }
+  .obDots span { margin-left: 6px; }
+  .obRow { display: flex; gap: 8px; } .obRow input { flex: 1; min-width: 0; }
+  .obActs { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .obCard textarea { width: 100%; box-sizing: border-box; font-size: 16px; }
+  .obCard .err { color: var(--danger, #e5484d); margin: 0; }
+  .obPic { justify-self: start; display: inline-flex; gap: 8px; align-items: center; }
+  .obPic .avatar { width: 22px; height: 22px; }
+  .obCard .setup { margin: 0; } .obCard .setupHead { display: none; }
+  .obOut { margin-top: auto; font-size: 13px; color: var(--mute); }
   .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px; text-align: center; color: var(--mute); }
 
   /* book */
@@ -376,9 +396,7 @@
   .arch summary::before { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 8px 2px 2px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; } .arch[open] summary::before { transform: rotate(45deg); }
   .thread.archived { opacity: .6; }
   .thread.pre { background: none; border: 1.5px dashed var(--line); color: var(--mute); }
-  /* A Claude working on this epic: the asterisk turns slowly and a soft light runs around the row. */
-  .thread.busy { position: relative; isolation: isolate; }
-  .thread.busy::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; background: conic-gradient(from var(--spin-a, 0deg), transparent 0 70%, var(--claude) 85%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: claudeRing 2.8s linear infinite; z-index: -1; }
+  /* A Claude working on this epic: the asterisk turns slowly (the light around the row was noise, Gui 13/11). */
   @property --spin-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
   @keyframes claudeRing { to { --spin-a: 360deg; } }
   .claudeSpin { color: var(--claude); font-size: 15px; line-height: 1; display: inline-grid; place-items: center; width: 1em; height: 1em; transform-origin: 50% 50%; animation: claudeTurn 3.2s linear infinite; flex: none; }
@@ -1531,6 +1549,18 @@ const EN = {
   "Um pedido, uma ideia, uma tarefa pra alguém… eu acho a sala e o épico certos.": "A request, an idea, a task for someone… I'll find the right room and epic.",
   "Achar a sala →": "Find the room →",
   "Como seus amigos te chamam?": "What do your friends call you?",
+  "Tarefa sua pendente": "A task of yours is pending",
+  "Passo {n} de 3": "Step {n} of 3",
+  "Continuar": "Continue",
+  "Trocar foto": "Change photo",
+  "Adicionar foto (opcional)": "Add a photo (optional)",
+  "Conecte seu Claude": "Connect your Claude",
+  "No vibebook cada pessoa traz o próprio Claude: ele lê a sala, trabalha nas tarefas e te pergunta antes de agir. Cole isto no Claude Code, dentro da pasta do projeto:": "In vibebook everyone brings their own Claude: it reads the room, works on the tasks and asks you before acting. Paste this into Claude Code, inside the project folder:",
+  "Pular por agora": "Skip for now",
+  "Sua primeira sala": "Your first room",
+  "Uma sala por projeto: conversa, doc e tarefas. Diga o que é e com quem; quem você citar é convidado.": "One room per project: chat, doc and tasks. Say what it is and with whom; anyone you name gets invited.",
+  "Criar a sala": "Create the room",
+  "Pular e ver a home": "Skip and see the home",
   "O pessoal e os agents vão te chamar assim.": "People and agents will call you that.",
   "Seu nome": "Your name",
   "Salvar": "Save",
@@ -2118,8 +2148,10 @@ const ghChips = (h) => h.replace(/<a ([^>]*?)href="https:\/\/github\.com\/([\w.-
 const fileChips = (h) => h.replace(/<a ([^>]*?)href="(https?:\/\/[^"\/]+)?\/api\/books\/([0-9a-f]+)\/files\/([0-9a-f]+)"([^>]*)>([\s\S]*?)<\/a>/g, (all, pre, host, room, fid, post, text) => {
   if (!S?.id || room !== S.id || (host && host !== location.origin)) return all;
   const f = (S.files || []).find((x) => x.id === fid) || allMsgs().flatMap((x) => x.files || []).find((x) => x.id === fid);
+  // The state brings only the newest 12 files: an older one's name comes with files.get, then the chat redraws.
+  if (!f && !S.filesAll) { S.chipMiss = true; if (!S.filesAsked) { S.filesAsked = true; setTimeout(() => send({ t: "files.get" })); } }
   const own = text.replace(/<[^>]*>/g, "").trim();
-  const nameOf = f?.name || (own && !/^https?:\/\//.test(own) ? own : "arquivo");
+  const nameOf = f?.name || (own && !/^https?:\/\//.test(own) ? own : t("arquivo"));
   const vs = f ? fileVersions(f.name) : [];
   const n = vs.length > 1 ? vs.length - vs.findIndex((v) => v.id === fid) : 0;
   return `<a ${pre}href="/api/books/${room}/files/${fid}"${post} class="fchip" title="${esc(nameOf)}">${fileIcon(f || { type: /\.html?$/i.test(nameOf) ? "text/html" : "" }, 14)}<span>${esc(nameOf)}</span>${n ? `<small>v${n}</small>` : ""}</a>`;
@@ -2150,6 +2182,14 @@ let myWaits = []; // "Esperando você" (/api/me waits): what people are waiting 
 // A Claude of yours stopped at a question (a<msg> = its ask in the room, b<msg> = blocked in the terminal): those
 // counts turn orange-red instead of yellow, so "your Claude is stuck" stands out from people waiting.
 const clW = (ws) => (ws.some((w) => /^[ab]\d/.test(w.ref)) ? " cl" : "");
+// The number is what asks for your reply: Jev read a message as an ask of you, a person tagged you, your Claude asks
+// (m/a/b). Your open tasks (t) are only a small yellow dot (Gui, 13/11: one count for both was noise).
+const asksOf = (ws) => ws.filter((w) => !w.ref.startsWith("t"));
+const waitBadge = (ws, cls = "swWait") => {
+  const a = asksOf(ws);
+  if (a.length) return `<b class="${cls}${clW(a)}" title="${a.length === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n: a.length })}">${a.length}</b>`;
+  return ws.length ? `<b class="${cls} tdot" title="${t("Tarefa sua pendente")}"></b>` : "";
+};
 // One icon set for the whole app (lucide-style strokes): icon(name, size) → inline SVG. Brand marks (✻ Claude, ✦ @vibe) stay glyphs.
 const ICONS = {
   link: `<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>`,
@@ -2280,7 +2320,7 @@ function renderSwitcher() {
   // A Claude working in the room right now: the same turning ✻ as an epic's.
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy" title="${t("um agent está trabalhando aqui")}">✻</b>` : "");
   // How many things people are waiting on you for in that room ("Esperando você").
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}" title="${n === 1 ? t("1 coisa esperando você") : t("{n} coisas esperando você", { n })}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   // A cloud sandbox running in the room (it costs money): an orange ring and a ☁ on the tile.
   const cloud = (b) => (b.sandboxes_running ? `<b class="swCloud" title="${t("sandbox na nuvem rodando")}">☁</b>` : "");
   const item = (b) => `<a class="sw-item" href="/b/${b.id}" data-nav data-id="${b.id}" draggable="true" data-drag aria-label="${esc(b.title)}"><i class="pill"></i><span class="tw${b.sandboxes_running ? " cloud" : ""}">${tile(b, "lg")}${dot(b)}${busy(b)}${waitN(b)}${cloud(b)}</span></a>`;
@@ -2515,7 +2555,7 @@ async function home() {
   if (/^\/(b|login|archived)\b/.test(location.pathname)) return keepMe(me); // left home while it loaded
   const changed = JSON.stringify(me) !== meJson;
   keepMe(me);
-  if (!changed && $app.querySelector("#ask")) return;
+  if (!changed && $app.querySelector("#ask, .onb")) return;
   const typed = document.getElementById("askText")?.value;
   homeWith(me);
   if (typed) { const ta = document.getElementById("askText"); if (ta) ta.value = typed; }
@@ -2526,6 +2566,7 @@ function homeWith(me) {
   avatarV = Object.fromEntries([...me.friends.filter((f) => f.avatar).map((f) => [f.email, f.avatar]), ...(me.avatar ? [[me.email, me.avatar]] : [])]);
   const first = (me.name || "").split(" ")[0];
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  if (!me.books.length && !obOff()) return onboarding(me);
   if (PHONE.matches) return phoneHome(me);
   $app.innerHTML = `
   <div class="home">
@@ -2589,6 +2630,67 @@ function homeWith(me) {
   wireHome(me);
 }
 
+// First visit with no room yet (Gui, 13/11: the full home was too much at once): one step per screen, the same on
+// phones. 1 your name (photo optional), 2 your Claude (the connect card, it moves on by itself once one connects;
+// Pular remembers it), 3 your first room ("O que é e com quem?" = startRoom, which opens it). The step comes from the
+// data, so a reload lands on the right one; "Pular e ver a home" turns it off in this browser.
+let obBack = 0, obAgent = false;
+const obOff = () => { try { return localStorage.getItem("vb.obDone") === "1"; } catch { return false; } };
+function onboarding(me) {
+  let skip = false; try { skip = localStorage.getItem("vb.obClaude") === "1"; } catch {}
+  const step = obBack || (!me.name ? 1 : !obAgent && !skip ? 2 : 3);
+  const of = t("Passo {n} de 3", { n: step });
+  const dots = [1, 2, 3].map((i) => `<i class="${i === step ? "on" : i < step ? "ok" : ""}"></i>`).join("");
+  const body = step === 1
+    ? `<h1>${t("Como seus amigos te chamam?")}</h1><p class="muted">${t("O pessoal e os agents vão te chamar assim.")}</p>
+      <form id="obName" class="obRow"><input name="n" required maxlength="60" value="${esc(me.name || "")}" placeholder="${t("Seu nome")}" autocomplete="given-name" /><button class="primary">${t("Continuar")}</button></form>
+      <button type="button" class="ghost obPic" data-pic>${me.avatar ? avatar(me.email) : icon("camera")} ${me.avatar ? t("Trocar foto") : t("Adicionar foto (opcional)")}</button>`
+    : step === 2
+    ? `<h1>${t("Conecte seu Claude")}</h1><p class="muted">${t("No vibebook cada pessoa traz o próprio Claude: ele lê a sala, trabalha nas tarefas e te pergunta antes de agir. Cole isto no Claude Code, dentro da pasta do projeto:")}</p>
+      <div id="obClaude"></div>
+      <div class="obActs"><button type="button" class="ghost" data-back="1">${t("Voltar")}</button><button type="button" class="ghost" data-skip>${t("Pular por agora")}</button></div>`
+    : `<h1>${t("Sua primeira sala")}</h1><p class="muted">${t("Uma sala por projeto: conversa, doc e tarefas. Diga o que é e com quem; quem você citar é convidado.")}</p>
+      <form id="obRoom"><textarea name="t" rows="3" required placeholder="${t("Ex.: viagem de avião pra SP com os dogs, eu e a Alexia")}"></textarea></form>
+      <p class="err" hidden></p>
+      <div class="obActs"><button type="button" class="ghost" data-back="${obAgent ? 1 : 2}">${t("Voltar")}</button><button type="submit" form="obRoom" class="primary">${t("Criar a sala")}</button></div>`;
+  $app.innerHTML = `<div class="onb">
+    <header class="obTop"><div class="brand"><a href="/">vibebook</a></div>${langSwitch()}</header>
+    <main class="obCard"><div class="obDots" aria-label="${of}">${dots}<span>${of}</span></div>${body}</main>
+    <button type="button" class="ghost obOut" data-obdone>${t("Pular e ver a home")}</button>
+    <input type="file" id="picFile" accept="image/png,image/jpeg,image/webp" hidden /></div>`;
+  const redraw = () => homeWith(meCache || me);
+  $app.querySelector("[data-pic]")?.addEventListener("click", pickPic);
+  $app.querySelectorAll("[data-back]").forEach((b) => b.onclick = () => { obBack = Number(b.dataset.back); redraw(); });
+  $app.querySelector("[data-obdone]").onclick = () => { try { localStorage.setItem("vb.obDone", "1"); } catch {} redraw(); };
+  const name = document.getElementById("obName");
+  if (name) {
+    name.n.focus();
+    name.onsubmit = async (e) => { e.preventDefault(); const n = name.n.value.trim(); if (!n) return; obBack = 0; keepMe(await api("/api/me", { name: n }).then(() => api("/api/me"))); redraw(); };
+  }
+  const claude = document.getElementById("obClaude");
+  if (claude) {
+    // Connected (now, or already): a second of ✓ when it just happened, then the next step.
+    claude._onConnect = (fresh) => {
+      if (fresh) claude.innerHTML = `<div class="setup done"><span class="setupIcon">${icon("check", 22)}</span><div><b>${t("Seu agent conectou.")}</b></div></div>`;
+      setTimeout(() => { if (document.body.contains(claude)) { obAgent = true; obBack = 0; redraw(); } }, fresh ? 1500 : 0);
+    };
+    $app.querySelector("[data-skip]").onclick = () => { try { localStorage.setItem("vb.obClaude", "1"); } catch {} clearTimeout(setupPoll); obBack = 0; redraw(); };
+    connectCard(claude);
+  }
+  const room = document.getElementById("obRoom");
+  if (room) {
+    const ta = room.t, err = $app.querySelector(".obCard .err"), go = $app.querySelector('[form="obRoom"]');
+    ta.focus();
+    ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); room.requestSubmit(); } };
+    room.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = ta.value.trim(); if (!text) return ta.focus();
+      go.disabled = true; go.textContent = t("Criando…");
+      try { await startRoom(text); } catch (x) { err.hidden = false; err.textContent = x.message; go.disabled = false; go.textContent = t("Criar a sala"); }
+    };
+  }
+}
+
 // Phones: top bar (☰, logo, you), your rooms as an icon grid (last opened first, 70% of the screen), and the
 // router box at the bottom (30%). Everything else (waits, your Claude, friends, theme, archive, sign out) is in ☰.
 const PHONE = matchMedia("(max-width: 720px)");
@@ -2597,12 +2699,12 @@ const MENU_ICON = icon("menu", 22);
 function phoneHome(me) {
   const rooms = [...me.books].sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0) || b.updated_at - a.updated_at);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   $app.innerHTML = `
   <div class="phome">
     <header class="ptop">
-      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${myWaits.length ? `<b class="swWait${clW(myWaits)}">${myWaits.length}</b>` : ""}</button>
+      <button class="ghost pbtn" id="pMenu" aria-label="Menu">${MENU_ICON}${waitBadge(myWaits)}</button>
       <a class="plogo" href="/"><span class="tile logo">${SW_LOGO}</span>vibebook</a>
       <button class="me" id="myName" aria-label="${t("Seu perfil")}">${avatar(me.email)}</button>
     </header>
@@ -2956,6 +3058,7 @@ async function connectCard(el, room) {
   const r = await fetch("/api/agents").then((x) => x.json()).catch(() => null);
   if (!r || !document.body.contains(el)) return;
   noClaude = !r.agents.length;
+  if (r.agents.length && el._onConnect) return el._onConnect(!!el.dataset.waiting);
   if (S && el.id === "agentNudge") renderMyClaude();
   if (r.agents.length) {
     if (el.dataset.waiting) {
@@ -3115,7 +3218,7 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
@@ -3763,7 +3866,7 @@ function renderRail(el) {
     <div class="railList">
       <button class="rb geral ${thread === "main" ? "sel" : ""} ${iconUrl(myBooks?.find((b) => b.id === S.id)) ? "hasIcon" : ""}" style="background:${coverColor(bookTitle())}" data-thread="main" title="${esc(bookTitle())}" aria-label="${esc(bookTitle())}">${roomMark("")}</button>
       ${S.epics.filter((e) => !e.archived || e.id === thread).map((e) => { const d = e.tasks.filter((t) => t.done).length, pct = e.tasks.length ? (100 * d) / e.tasks.length : 0; return `
-        <button class="rb ${thread === e.id ? "sel" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
+        <button class="rb ${thread === e.id ? "sel" : ""} ${asksIn(e.id) ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length}" aria-label="${esc(e.title)}" style="background:${color(e.title)}">
           ${e.owner ? `<span class="rbOwner">${ownerPic(e.owner)}</span>` : esc(initials(e.title))}${e.tasks.length ? `<span class="ring" style="--p:${pct}%"></span>` : ""}</button>`; }).join("")}
       <button class="rb add" id="railAdd" title="${t("Novo épico")}" aria-label="${t("Novo épico")}">${icon("plus", 18)}</button>
     </div>
@@ -4168,7 +4271,8 @@ function renderWorking() {
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
-const waitPill = (th) => { const ws = waitsIn(th), n = ws.length; return n ? `<b class="wN${clW(ws)}" title="${n === 1 ? t("Alguém está esperando você aqui") : t("{n} coisas esperando você aqui", { n })}">${n}</b>` : ""; };
+const waitPill = (th) => waitBadge(waitsIn(th), "wN");
+const asksIn = (th) => asksOf(waitsIn(th)).length;
 // Deploy stage after "Claude fez" (set by agents with update_epic prod): 🚀 no ar, ✓✓ verificado em prod.
 const prodMark = (e) => !e.prod ? "" : e.prod.stage === "verified"
   ? `<span class="prodMark ok" title="${esc(t("Verificado em prod") + (e.prod.note ? `: ${e.prod.note}` : ""))}">✓✓</span>`
@@ -4228,7 +4332,7 @@ function epicTree(list) {
   return list.filter((e) => !(e.parent && ids.has(e.parent))).map(node).join("") + list.filter((e) => !seen.has(e.id)).map((e) => epicRow(e)).join("");
 }
 const epicRow = (e, lead = "") => { const d = e.tasks.filter((t) => t.done).length, busy = epicBusy(e); return `
-        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${waitsIn(e.id).length ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
+        <button class="thread ${thread === e.id ? "sel" : ""} ${e.archived ? "archived" : ""} ${busy ? "busy" : ""} ${asksIn(e.id) ? "waiting" : ""}" data-thread="${e.id}" title="${esc(e.title)} · ${d}/${e.tasks.length} tasks${e.archived ? ` · ${t("arquivado")}` : ""}${busy ? ` · ${t("{who} está trabalhando aqui", { who: esc(busy) })}` : ""}">
           ${lead}${epicIco(e, true)}<span class="rt">${esc(e.title)}</span>
           ${busy ? `<span class="claudeSpin" aria-label="${t("{who} está trabalhando", { who: esc(busy) })}">✻</span>` : ""}${waitPill(e.id)}${prodMark(e)}<span class="n">${e.tasks.length ? `${d}/${e.tasks.length}` : ""}</span></button>`; };
 // Pinned: links, apps and files the room keeps at hand (shared; WS pin.add / pin.del, MCP pin / unpin).
@@ -4289,7 +4393,7 @@ function renderSide() {
       <div class="sideTop"><a data-nav href="/app" class="muted">${icon("back")} vibebooks</a>${(() => { const ep = S.epics.find((e) => e.id === thread); return ep ? `<button class="iconBtn phOnly" id="sideArch" title="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico (concluído)")}" aria-label="${ep.archived ? t("Desarquivar épico") : t("Arquivar épico")}">${icon(ep.archived ? "undo" : "check", 18)}</button><button class="iconBtn phOnly" id="sideDel" title="${t("Apagar épico")}" aria-label="${t("Apagar épico")}">${icon("trash", 18)}</button>` : ""; })()}<button class="iconBtn" id="railToggle" title="${t("Recolher menu")}" aria-label="${t("Recolher menu")}" aria-expanded="true">${SIDEBAR_ICON}</button></div>
     </div>
     <div class="sec threadsSec">
-      <button class="thread ${thread === "main" ? "sel" : ""} ${waitsIn("main").length ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
+      <button class="thread ${thread === "main" ? "sel" : ""} ${asksIn("main") ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
         const open = S.epics.filter((e) => !e.archived);
@@ -4467,7 +4571,7 @@ function roomStrip() {
   const recent = [...(myBooks || [])].filter((b) => b.id !== S?.id && !b.archived_at).sort((a, b) => (b.opened_at ?? 0) - (a.opened_at ?? 0)).slice(0, 3);
   const dot = (b) => (b.last_human_id > b.read_id ? `<b class="dot h"></b>` : b.last_agent_id > b.read_id ? `<b class="dot a"></b>` : "");
   const busy = (b) => (b.busy_until > Date.now() ? `<b class="swBusy">✻</b>` : "");
-  const waitN = (b) => { const ws = myWaits.filter((w) => w.book_id === b.id), n = ws.length; return n ? `<b class="swWait${clW(ws)}">${n}</b>` : ""; };
+  const waitN = (b) => waitBadge(myWaits.filter((w) => w.book_id === b.id));
   // "Todos" sits on the left (where ← goes back), search on the right.
   return `<nav class="roomStrip" aria-label="${t("Seus vibebooks")}"><a data-nav href="/app" class="rsAll"><span class="tile md">${icon("grid", 20)}</span><span>${t("Todos")}</span></a>${recent.map((b) => `<a data-nav href="/b/${b.id}" title="${esc(b.title)}"><span class="tw">${tile(b, "md")}${dot(b)}${busy(b)}${waitN(b)}</span><span>${esc(b.title)}</span></a>`).join("")}${"<i></i>".repeat(3 - recent.length)}<button type="button" class="rsAll" id="sideRooms" aria-label="${t("Trocar de sala")}"><span class="tile md">${SW_SEARCH}</span><span>${t("Buscar")}</span></button></nav>`;
 }
