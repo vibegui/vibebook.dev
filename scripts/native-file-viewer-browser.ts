@@ -1,9 +1,10 @@
 // Real loopback Worker/R2/Book/browser verification. No room-state interception or fabricated canonical rows.
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
-import { chromium, expect, type Page } from "@playwright/test";
+import { chromium, expect as baseExpect, type Page } from "@playwright/test";
 import * as z from "zod/mini";
 import { createRoomApi } from "../svelte/transport";
+const expect = baseExpect.configure({ timeout: 60_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
 assert(
   /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(base),
@@ -117,6 +118,13 @@ try {
     '<!doctype html><title>Native HTML fixture</title><h1>Sandboxed real HTML</h1><script>try{void parent.document;document.body.dataset.isolation="failed"}catch{document.body.dataset.isolation="blocked"}</script>',
     "text/html",
   );
+  const csv = await upload(
+    "viewer.csv",
+    Array.from({ length: 45 }, (_, row) =>
+      Array.from({ length: 60 }, (_, column) => `${row}:${column}`).join(","),
+    ).join("\n"),
+    "text/csv",
+  );
   const image = await upload(
       "viewer.png",
       Buffer.from(
@@ -131,6 +139,7 @@ try {
     old: old.id,
     newest: newest.id,
     html: html.id,
+    csv: csv.id,
     image: image.id,
     audio: audio.id,
     pdf: document.id,
@@ -172,6 +181,18 @@ try {
   );
   await page.getByRole("button", { name: "Close file", exact: true }).click();
   await expect.poll(() => new URL(page.url()).hash).toBe("");
+  await open("f".repeat(64));
+  await expect(page.locator('[data-file-viewer] [role="alert"]')).toContainText(
+    "This file is no longer available",
+  );
+  await open(csv.id);
+  await expect(page.locator("[data-file-viewer] td")).toHaveCount(1000);
+  await expect(page.locator("[data-file-viewer]")).toContainText(
+    "Preview shortened",
+  );
+  await page.getByRole("button", { name: "Next rows", exact: true }).click();
+  await expect(page.locator("[data-file-viewer] td").first()).toHaveText("20:0");
+  await expect(page.locator("[data-file-viewer] td")).toHaveCount(1000);
   await open(image.id);
   await expect(page.locator("[data-file-viewer] img")).toBeVisible();
   assert(
