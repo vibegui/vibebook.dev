@@ -16,12 +16,12 @@ not silently replace either source digest when Studio releases again.
 | Observed role | Family | Weight | Size / line height | Tracking |
 | --- | --- | --- | --- | --- |
 | Body | Inter var | 400 | 16px / 24px | normal |
-| Workspace display heading | Inter var | 500 | 22px / 27.5px | -0.44px |
-| Compact pane heading | Inter var | 500 | 13px / 18px | -0.065px |
-| Section heading | Inter var | 500 | 15px / 18.75px | -0.075px |
-| Monospace badge | CommitMono | 400 | 11px / 16px | 0.11px |
+| Visible heading sample 0 (H2) | Inter var | 500 | 22px / 27.5px | -0.44px |
+| Visible heading sample 1 (H1) | Inter var | 500 | 13px / 18px | -0.065px |
+| Visible heading sample 2 (H2) | Inter var | 500 | 15px / 18.75px | -0.075px |
+| Visible monospace span | CommitMono | 400 | 11px / 16px | 0.11px |
 
-These are observed roles, not permission to apply one heading/badge size to every
+These are structural samples, not permission to apply one heading/badge size to every
 app component. Inter normal and CommitMono were actually loaded. Inter italic
 and Switzer were declared but unloaded in the inspected workspace; Switzer is
 not evidence of the heading family. The semantic weights remain 400/500/500/600.
