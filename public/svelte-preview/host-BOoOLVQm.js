@@ -2320,7 +2320,7 @@ function Un() {
       <div class="kanban" id="kanban"></div>
       <div id="composer"></div>
     </main>
-    <section class="doc">
+    <section class="doc tw:[@media(max-width:900px)]:has-[form:focus-within]:h-room-sheet-expanded! tw:[@media(max-width:900px)]:has-[form:focus-within]:rounded-none!">
       <button type="button" class="sheetGrab" id="docGrab" aria-label="${b("Fechar documento")}"><i></i></button>
       <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="${b("Redimensionar documento")}" tabindex="0"></div>
       <div id="nativeDocumentToolbar"></div>
