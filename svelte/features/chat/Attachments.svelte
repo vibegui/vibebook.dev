@@ -25,7 +25,11 @@
   const url = (file: Attachment) =>
     `/api/books/${encodeURIComponent(roomId)}/files/${encodeURIComponent(file.id)}`;
   function open(event: MouseEvent, file: Attachment) {
-    if (!active || !(event.currentTarget instanceof HTMLElement) || !event.currentTarget.isConnected) {
+    if (
+      !active ||
+      !(event.currentTarget instanceof HTMLElement) ||
+      !event.currentTarget.isConnected
+    ) {
       event.preventDefault();
       return;
     }

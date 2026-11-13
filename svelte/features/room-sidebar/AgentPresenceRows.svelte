@@ -52,7 +52,9 @@
       ><span
         >{agent.listening
           ? t(agent.all_rooms ? "ouvindo todas as salas agora" : "ouvindo")
-          : ago(agent.seen_at)}</span
+          : agent.seen_at === null
+            ? "—"
+            : ago(agent.seen_at)}</span
       >
     </div>
     {#if agent.context}{@const context = agent.context}{@const percent =
