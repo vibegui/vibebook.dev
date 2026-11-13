@@ -26,6 +26,8 @@
 
 Add new vanilla commits affecting behavior/data contracts here before integrating them. A changed vanilla baseline requires an intentional ledger entry and parity update, not overwriting previous benchmark evidence.
 
+| `3fff34f` / room 2028 | Tall image attachments use a readable minimum width and top-cropped thumbnail; opening the viewer retains the full image | Integrated the vanilla commit without changing the default variant. Port equivalent Tailwind thumbnail geometry to native chat, with a responsive clamp for parents narrower than 220px; retain full-image viewer behavior | Vanilla source integrated in `55438e5`; native thumbnail source and actual desktop/mobile geometry verification remain pending |
+
 | Native composer F17 baseline audit / vanilla `1bc200c` speech follow-up | Current vanilla `public/app.html` supports SpeechRecognition/WebKit dictation and Hold-Space, while the inspected hybrid host omitted the controls and handlers | Native Composer restores capability-gated mic/350ms hold/tap/fast-typing behavior through a typed scoped controller, with locale/interim text and permission/cancellation ownership | Source plus synthetic capability fixtures only; actual microphone permission/delivery, browser support and mobile behavior remain root browser/manual gates |
 
 | Native F26 snapshot safety follow-up | Suggestions are index-addressed; an unseen removal can shift another suggestion into the clicked index | New native accept/skip includes optional expected canonical snapshot; server refuses mismatch before mutation, while old vanilla index-only commands remain unchanged | Pure/DOM source fixtures authored; integrated Worker/DOM/browser gates remain pending |
