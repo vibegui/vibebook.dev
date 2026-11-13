@@ -7,6 +7,8 @@
 // - The app's HTML (`ui://` resource) is served with a CSP built from the resource's own `_meta.ui.csp` and runs in an
 //   opaque-origin iframe (srcdoc, sandbox allow-scripts); its tools/call go through the host page to /call here.
 // - Agents: MCP tools `connections`, `app_call`, `app_open` (src/agent.ts).
+import * as z from "zod/mini";
+import { ConnectionContext } from "../shared/schemas";
 import type { Env } from "./index";
 import { checkUrl } from "./reader";
 import { findSecret } from "./secrets";
@@ -18,7 +20,25 @@ import { AuthNeeded, finishAuth, forget, identityJwt, signedInTo, startAuth, tok
 export type Who = { email: string; room: string; origin: string };
 
 export type Conn = { id: string; book_id: string; owner: string; scope: "room" | "me"; url: string; title: string; enc: string | null; iv: string | null; tools: string | null; ctx: string | null; created_at: number };
-type Tool = { name: string; title?: string; description?: string; inputSchema?: unknown; annotations?: { readOnlyHint?: boolean; title?: string }; _meta?: { ui?: { resourceUri?: string; visibility?: string[] }; "ui/resourceUri"?: string } };
+// A server's tools as it lists them (external input): checked when listed and again when read back from D1, so the
+// public connection answers and the app host only ever see the shape below. Extra keys in annotations/_meta are kept
+// (hosts and apps read more than we name). A tool that doesn't fit is dropped, not trusted.
+const ToolSchema = z.object({
+  name: z.string(),
+  title: z.optional(z.string()),
+  description: z.optional(z.string()),
+  inputSchema: z.optional(z.unknown()),
+  annotations: z.optional(z.looseObject({ readOnlyHint: z.optional(z.boolean()), title: z.optional(z.string()) })),
+  _meta: z.optional(
+    z.looseObject({
+      ui: z.optional(z.looseObject({ resourceUri: z.optional(z.string()), visibility: z.optional(z.array(z.string())) })),
+      "ui/resourceUri": z.optional(z.string()),
+    }),
+  ),
+});
+type Tool = z.infer<typeof ToolSchema>;
+const toolList = (v: unknown): Tool[] => (Array.isArray(v) ? v.flatMap((t) => { const r = ToolSchema.safeParse(t); return r.success ? [r.data] : []; }) : []);
+const json = (s: string | null, empty: unknown) => { try { return s ? JSON.parse(s) : empty; } catch { return empty; } };
 
 const MAX_CONNS = 10; // per room
 const PROTOCOL = "2025-06-18";
@@ -28,8 +48,12 @@ const MIME_APP = "text/html;profile=mcp-app";
 export const canUse = (c: Conn, email: string) => c.scope === "room" || c.owner === email;
 export const uiOf = (t: Tool) => { const u = t._meta?.ui?.resourceUri ?? t._meta?.["ui/resourceUri"]; return typeof u === "string" && u.startsWith("ui://") ? u : null; };
 const modelVisible = (t: Tool) => !t._meta?.ui?.visibility || t._meta.ui.visibility.includes("model");
-const toolsOf = (c: Conn): Tool[] => { try { return JSON.parse(c.tools || "[]"); } catch { return []; } };
-const ctxOf = (c: Conn): Record<string, { text: string; by: string; at: number }> => { try { return JSON.parse(c.ctx || "{}"); } catch { return {}; } };
+const toolsOf = (c: Conn): Tool[] => toolList(json(c.tools, []));
+const ctxOf = (c: Conn): Record<string, z.infer<typeof ConnectionContext>> => {
+  const all = json(c.ctx, {});
+  if (!all || typeof all !== "object" || Array.isArray(all)) return {};
+  return Object.fromEntries(Object.entries(all).flatMap(([k, v]) => { const r = ConnectionContext.safeParse(v); return r.success ? [[k, r.data]] : []; }));
+};
 const firstLine = (s = "") => s.split("\n")[0].slice(0, 200);
 
 /** What the app and agents get: no token, no raw URL path (it may carry a key). */
@@ -116,14 +140,14 @@ export async function rpc(env: Env, c: Pick<Conn, "id" | "url" | "enc" | "iv">, 
   }
 }
 async function listTools(env: Env, c: Pick<Conn, "id" | "url" | "enc" | "iv">, who: Who) {
-  const out: Tool[] = [];
+  const out: unknown[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < 5; page++) { // ≤5 pages: a server can't make us loop
     const r = await rpc(env, c, "tools/list", cursor ? { cursor } : {}, who);
-    out.push(...(r?.tools ?? []));
-    cursor = r?.nextCursor; if (!cursor) break;
+    if (Array.isArray(r?.tools)) out.push(...r.tools);
+    cursor = typeof r?.nextCursor === "string" ? r.nextCursor : undefined; if (!cursor) break;
   }
-  return out.slice(0, 200).map((t) => ({ name: String(t.name), title: t.title, description: String(t.description ?? "").slice(0, 2000), inputSchema: t.inputSchema, annotations: t.annotations, _meta: t._meta }));
+  return toolList(out.slice(0, 200)).map((t) => ({ ...t, description: (t.description ?? "").slice(0, 2000) }));
 }
 
 /** One tool on a connection the caller may use. Tools must be on the cached list (refresh to pick up new ones). */

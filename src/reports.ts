@@ -162,7 +162,10 @@ async function wsStateLine(env: Env, start: number, end: number) {
   // Who opens rooms that often (a phone reconnecting on every wake, a tab left open across deploys…): name only.
   const who = await env.DB.prepare(`SELECT user, count(*) AS n, sum(json_extract(dims, '$.bytes')) AS b FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? GROUP BY user ORDER BY n DESC LIMIT 3`).bind(start, end).all<{ user: string; n: number; b: number }>();
   const people = who.results.map((x) => `${(x.user ?? "?").split("@")[0]} ${x.n}× (${bytes(x.b)})`).join(" · ");
-  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})${people ? `\n  - Quem mais abriu: ${people}` : ""}${pushes ? `\n- Empurrões grandes pelo WS (≥20 KB): ${pushes}` : ""}`;
+  // Reconnects by the close code of the socket they replace (rc): 1006 = dropped without a close (network/sleep), 1001 = going away (deploy/tab), none = a fresh open.
+  const rcs = await env.DB.prepare(`SELECT coalesce(json_extract(dims, '$.rc'), '-') AS rc, count(*) AS n FROM events WHERE name = 'ws_state' AND ts >= ? AND ts < ? GROUP BY rc ORDER BY n DESC LIMIT 6`).bind(start, end).all<{ rc: string; n: number }>();
+  const rcLine = rcs.results.map((x) => `${x.rc === "-" ? "abertura" : `rc ${x.rc}`} ${x.n}×`).join(" · ");
+  return `\n- Abrir sala (estado do WS, últimas 24h): **${r.n}×**, média ${bytes(r.avg)}, maior ${bytes(r.mx)} (sala ${big?.book}: ${big?.top})${people ? `\n  - Quem mais abriu: ${people}` : ""}${rcLine ? `\n  - Reconexões pelo código do socket anterior: ${rcLine}` : ""}${pushes ? `\n- Empurrões grandes pelo WS (≥20 KB): ${pushes}` : ""}`;
 }
 
 /** The Claudes' tool calls (agent_call) by tool and client: what the /mcp requests are. */

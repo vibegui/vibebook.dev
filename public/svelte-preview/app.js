@@ -2,6 +2,6 @@
 if (new URLSearchParams(location.search).get("gallery") === "1") {
 	let e = document.getElementById("app");
 	if (!e) throw Error("Missing gallery root");
-	let { mountGallery: t } = await import("./main-CI9dWiDK.js");
+	let { mountGallery: t } = await import("./main-4nFoapQw.js");
 	t(e);
-} else await import("./host-BhQjXvmt.js");
+} else await import("./host-eqPu1e9v.js");
