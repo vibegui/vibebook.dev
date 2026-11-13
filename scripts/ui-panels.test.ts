@@ -19,6 +19,7 @@ import {
 import { createFilesSession } from "../svelte/features/files/session";
 import type { FilesProps } from "../svelte/features/files/types";
 import type { PeopleAction } from "../svelte/features/people/model";
+import { createComposerDrafts } from "../svelte/features/composer/drafts";
 import { boardModel } from "../svelte/features/board/model";
 import {
   getBoardContainer,
@@ -3350,4 +3351,641 @@ describe("native People interactions", () => {
     staleCurrentFriend.click();
     expect(calls).toEqual(["invite:old@test.com"]);
   });
+});
+
+describe("native composer ownership and interactions", () => {
+  const chatBridge: import("../svelte/chatTypes").ChatBridge = {
+    t: vb.t,
+    name: vb.name,
+    ago: vb.ago,
+    hhmm: () => "09:00",
+    waiting: () => false,
+    locale: "pt-BR",
+  };
+  const attachment = (id = "aa11"): import("../shared/room").Attachment => ({
+    id,
+    name: "note.txt",
+    type: "text/plain",
+    size: 1,
+    author: "me@test",
+    ts: 1,
+  });
+  function renderComposer(
+    room: Room,
+    extra: Partial<
+      import("../svelte/features/composer/types").ComposerProps
+    > = {},
+  ) {
+    const drafts = createComposerDrafts();
+    peopleCleanups.push(() => drafts.dispose());
+    const target = document.createElement("main"),
+      slot = document.createElement("div");
+    target.append(slot);
+    document.body.append(target);
+    const props: import("../svelte/features/composer/types").ComposerProps = {
+      room,
+      thread: "main",
+      vb: chatBridge,
+      drafts,
+      request: async () => ({ ok: false, error: "offline" }),
+      upload: async () => attachment(),
+      navigate: () => {},
+      ...extra,
+    };
+    const view = mountView("composer", slot, props);
+    active.push(view);
+    return {
+      target,
+      drafts,
+      entry: drafts.entry({
+        account: room.me,
+        roomId: room.id,
+        thread: props.thread,
+      }),
+      update(next: Room, thread = props.thread) {
+        view.update({ ...props, room: next, thread });
+      },
+      destroy() {
+        const at = active.indexOf(view);
+        if (at >= 0) active.splice(at, 1);
+        view.destroy();
+      },
+    };
+  }
+  function edit(target: Element, value: string) {
+    const input = target.querySelector<HTMLTextAreaElement>("textarea")!;
+    input.value = value;
+    input.setSelectionRange(value.length, value.length);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    return input;
+  }
+  async function dialogClosed() {
+    for (
+      let frame = 0;
+      frame < 10 && document.querySelector('[role="dialog"]');
+      frame++
+    )
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    flushSync();
+    expect(document.querySelector('[role="dialog"]') === null).toBe(true);
+  }
+  test("native composer Enter preserves draft until correlated ACK and canonical message; Shift/IME never submit", async () => {
+    const room = fixture(),
+      sent: RoomCommand[] = [];
+    let resolve!: (outcome: CommandOutcome) => void;
+    const { target, update } = renderComposer(room, {
+      request: (command) => {
+        sent.push(command);
+        return new Promise((done) => (resolve = done));
+      },
+    });
+    const input = edit(target, "keep until canonical");
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        isComposing: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(sent).toHaveLength(0);
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(sent[0]).toMatchObject({
+      t: "msg",
+      thread: "main",
+      text: "keep until canonical",
+    });
+    resolve({ ok: true });
+    await tick();
+    flushSync();
+    expect(input.value).toBe("keep until canonical");
+    update({
+      ...room,
+      messages: [
+        {
+          id: 1,
+          thread: "main",
+          author: room.me,
+          kind: null,
+          text: "keep until canonical",
+          ts: 1,
+        },
+      ],
+    });
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "",
+    );
+  }, 30_000);
+  test("composer mention keyboard selection and emoji replace the saved selection without submitting", async () => {
+    const room = { ...fixture(), names: { "you@test": "José Silva" } };
+    const { target } = renderComposer(room);
+    const input = edit(target, "@jo");
+    expect(target.querySelector('[role="listbox"]')?.textContent).toContain(
+      "@jose",
+    );
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await tick();
+    flushSync();
+    expect(input.value).toBe("@jose ");
+    edit(target, "before selected after");
+    input.setSelectionRange(7, 15);
+    input.dispatchEvent(new Event("select", { bubbles: true }));
+    target
+      .querySelector<HTMLButtonElement>('button[aria-label="Emoji"]')!
+      .click();
+    flushSync();
+    await tick();
+    const fire = document.querySelector<HTMLButtonElement>(
+      '[role="dialog"] button[aria-label=":fire:"]',
+    )!;
+    expect(fire !== null).toBe(true);
+    fire.click();
+    await tick();
+    flushSync();
+    await dialogClosed();
+    expect(input.value).toBe("before 🔥 after");
+  }, 30_000);
+  test("more menu keyboard focus and thread drafts stay scoped across remounts", async () => {
+    const room = fixture();
+    const { target, update } = renderComposer(room);
+    edit(target, "main draft");
+    const more = target.querySelector<HTMLButtonElement>(
+      "[data-composer-more]",
+    )!;
+    more.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    flushSync();
+    await tick();
+    const items = target.querySelectorAll<HTMLButtonElement>(
+      '[role="menu"] button',
+    );
+    expect(items.length).toBe(3);
+    expect(document.activeElement === items[0]).toBe(true);
+    items[0].dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    expect(document.activeElement === items[1]).toBe(true);
+    items[1].dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Escape",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    flushSync();
+    expect(target.querySelector('[role="menu"]') === null).toBe(true);
+    update(room, "e");
+    edit(target, "epic draft");
+    update(room, "main");
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "main draft",
+    );
+    update(room, "e");
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "epic draft",
+    );
+  }, 30_000);
+  test("attachment upload removal aborts and revokes preview; late completion cannot repopulate tray", async () => {
+    const originalCreate = URL.createObjectURL,
+      originalRevoke = URL.revokeObjectURL,
+      revoked: string[] = [];
+    URL.createObjectURL = () => "blob:composer-fixture";
+    URL.revokeObjectURL = (url) => revoked.push(url);
+    peopleCleanups.push(() => {
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
+    });
+    let resolve!: (meta: import("../shared/schemas").UploadFileResult) => void,
+      signal: AbortSignal | undefined;
+    const { target } = renderComposer(fixture(), {
+      upload: (_input, owner) => {
+        signal = owner;
+        return new Promise((done) => (resolve = done));
+      },
+    });
+    const transfer = new window.DataTransfer();
+    transfer.items.add(
+      new window.File([new Uint8Array([1])], "photo.png", {
+        type: "image/png",
+      }),
+    );
+    const input = target.querySelector<HTMLInputElement>('input[type="file"]')!;
+    Object.defineProperty(input, "files", {
+      configurable: true,
+      value: transfer.files,
+    });
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(
+      target.querySelector('img[src="blob:composer-fixture"]') !== null,
+    ).toBe(true);
+    target
+      .querySelector<HTMLButtonElement>('button[aria-label="Remover anexo"]')!
+      .click();
+    flushSync();
+    expect(signal?.aborted).toBe(true);
+    expect(revoked).toContain("blob:composer-fixture");
+    resolve({ ...attachment(), name: "photo.png", type: "image/png" });
+    await tick();
+    flushSync();
+    expect(target.querySelector("[data-composer-attachment]") === null).toBe(
+      true,
+    );
+  }, 30_000);
+  test("foreign modal paste never starts a hidden upload but composer paste still works", async () => {
+    let uploads = 0;
+    const { target } = renderComposer(fixture(), {
+      upload: async () => {
+        uploads++;
+        return attachment();
+      },
+    });
+    target.querySelector<HTMLButtonElement>("[data-composer-more]")!.click();
+    flushSync();
+    await tick();
+    Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="menu"] button'),
+    )
+      .find((button) => button.textContent?.includes("Criar votação"))!
+      .click();
+    flushSync();
+    await tick();
+    const transfer = new window.DataTransfer();
+    transfer.items.add(
+      new window.File([new Uint8Array([1])], "note.txt", {
+        type: "text/plain",
+      }),
+    );
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: transfer });
+    document
+      .querySelector<HTMLButtonElement>(
+        '[role="dialog"] button[aria-label="Fechar"]',
+      )!
+      .dispatchEvent(event);
+    expect(uploads).toBe(0);
+    document
+      .querySelector<HTMLButtonElement>(
+        '[role="dialog"] button[aria-label="Fechar"]',
+      )!
+      .click();
+    await tick();
+    flushSync();
+    await dialogClosed();
+    const paste = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, "clipboardData", { value: transfer });
+    target.querySelector<HTMLTextAreaElement>("textarea")!.dispatchEvent(paste);
+    expect(uploads).toBe(1);
+  }, 30_000);
+  test("native poll creation keeps form until ACK plus same-thread authoritative poll message", async () => {
+    const room = fixture(),
+      sent: RoomCommand[] = [];
+    let resolve!: (outcome: CommandOutcome) => void;
+    const { target, update } = renderComposer(room, {
+      request: (command) => {
+        sent.push(command);
+        return new Promise((done) => (resolve = done));
+      },
+    });
+    target.querySelector<HTMLButtonElement>("[data-composer-more]")!.click();
+    flushSync();
+    await tick();
+    Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="menu"] button'),
+    )
+      .find((button) => button.textContent?.includes("Criar votação"))!
+      .click();
+    flushSync();
+    await tick();
+    const inputs = document.querySelectorAll<HTMLInputElement>(
+      '[role="dialog"] input:not([type="checkbox"])',
+    );
+    for (const [index, value] of [
+      [0, "Question"],
+      [1, "First"],
+      [2, "Second"],
+    ] as const) {
+      inputs[index].value = value;
+      inputs[index].dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    flushSync();
+    Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
+    )
+      .find((button) => button.textContent === "Criar votação")!
+      .click();
+    expect(sent[0]).toMatchObject({
+      t: "poll.create",
+      thread: "main",
+      question: "Question",
+      options: ["First", "Second"],
+    });
+    resolve({ ok: true });
+    await tick();
+    flushSync();
+    expect(
+      document.querySelector<HTMLInputElement>('[role="dialog"] input')?.value,
+    ).toBe("Question");
+    update({
+      ...room,
+      messages: [
+        { id: 1, thread: "main", author: room.me, text: "", ts: 1, poll: "p" },
+      ],
+      polls: {
+        p: {
+          id: "p",
+          author: room.me,
+          question: "Question",
+          options: ["First", "Second"],
+          multi: false,
+          closed: false,
+          votes: [[], []],
+        },
+      },
+    });
+    await tick();
+    flushSync();
+    await dialogClosed();
+    expect(target.textContent).toContain("Votação criada");
+  }, 30_000);
+  test("uncertain identical candidate retains draft and blocks duplicate until explicit local review", async () => {
+    const room = fixture(),
+      sent: RoomCommand[] = [];
+    let resolve!: (outcome: CommandOutcome) => void;
+    const { target, update } = renderComposer(room, {
+      request: (command) => {
+        sent.push(command);
+        return new Promise((done) => (resolve = done));
+      },
+    });
+    edit(target, "same text");
+    target.querySelector<HTMLButtonElement>("[data-composer-send]")!.click();
+    resolve({ ok: false, error: "disconnected" });
+    await tick();
+    flushSync();
+    update({
+      ...room,
+      messages: [
+        { id: 1, thread: "main", author: room.me, text: "same text", ts: 1 },
+      ],
+    });
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "same text",
+    );
+    expect(
+      target.querySelector<HTMLButtonElement>("[data-composer-send]")?.disabled,
+    ).toBe(true);
+    expect(sent).toHaveLength(1);
+    Array.from(target.querySelectorAll<HTMLButtonElement>("button"))
+      .find((button) => button.textContent?.includes("Conferi a sala; manter"))!
+      .click();
+    flushSync();
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "same text",
+    );
+    expect(sent).toHaveLength(1);
+  }, 30_000);
+  test("native mic capability projects interim text and cancels stale recognition across thread changes", async () => {
+    const engines: import("../svelte/features/composer/speech").SpeechRecognizer[] =
+      [];
+    let starts = 0,
+      aborts = 0;
+    const factory: import("../svelte/features/composer/speech").SpeechFactory =
+      () => {
+        const rec: import("../svelte/features/composer/speech").SpeechRecognizer =
+          {
+            lang: "",
+            continuous: false,
+            interimResults: false,
+            onresult: null,
+            onerror: null,
+            onend: null,
+            start() {
+              starts++;
+            },
+            stop() {
+              this.onend?.({});
+            },
+            abort() {
+              aborts++;
+            },
+          };
+        engines.push(rec);
+        return rec;
+      };
+    const room = fixture(),
+      { target, update } = renderComposer(room, { speechFactory: factory });
+    const input = edit(target, "base");
+    input.focus();
+    target
+      .querySelector<HTMLButtonElement>('button[aria-label="Ditar mensagem"]')!
+      .dispatchEvent(
+        new PointerEvent("pointerdown", {
+          pointerId: 1,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    expect(starts).toBe(1);
+    expect(engines[0].lang).toBe("pt-BR");
+    engines[0].onresult?.({ results: [[{ transcript: "spoken" }]] });
+    flushSync();
+    expect(input.value).toBe("base spoken");
+    const late = engines[0].onresult;
+    update(room, "e");
+    edit(target, "new thread");
+    late?.({ results: [[{ transcript: "late old speech" }]] });
+    flushSync();
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "new thread",
+    );
+    expect(aborts).toBeGreaterThan(0);
+    target
+      .querySelector<HTMLButtonElement>('button[aria-label="Ditar mensagem"]')!
+      .click();
+    expect(starts).toBe(2);
+    engines[1].onerror?.({ error: "not-allowed" });
+    flushSync();
+    expect(target.textContent).toContain(
+      "O navegador não deixou usar o microfone.",
+    );
+  }, 30_000);
+  test("native Hold-Space starts only after threshold; contenteditable and unavailable capability remain ordinary", async () => {
+    let starts = 0;
+    const rec: import("../svelte/features/composer/speech").SpeechRecognizer = {
+      lang: "",
+      continuous: false,
+      interimResults: false,
+      onresult: null,
+      onerror: null,
+      onend: null,
+      start() {
+        starts++;
+      },
+      stop() {
+        this.onend?.({});
+      },
+      abort() {},
+    };
+    const { target } = renderComposer(fixture(), { speechFactory: () => rec });
+    const input = edit(target, "hold");
+    input.focus();
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: " ",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    input.dispatchEvent(
+      new KeyboardEvent("keyup", { key: " ", bubbles: true }),
+    );
+    flushSync();
+    expect(input.value).toBe("hold ");
+    expect(starts).toBe(0);
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: " ",
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 370));
+    expect(starts).toBe(1);
+    input.dispatchEvent(
+      new KeyboardEvent("keyup", { key: " ", bubbles: true }),
+    );
+    const foreign = document.createElement("div");
+    foreign.contentEditable = "true";
+    document.body.append(foreign);
+    foreign.focus();
+    const event = new KeyboardEvent("keydown", {
+      key: " ",
+      bubbles: true,
+      cancelable: true,
+    });
+    foreign.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(starts).toBe(1);
+    const unsupported = renderComposer(
+      { ...fixture(), id: "unsupported" },
+      { speechFactory: null },
+    );
+    expect(
+      unsupported.target.querySelector(
+        'button[aria-label="Ditar mensagem"]',
+      ) === null,
+    ).toBe(true);
+  }, 30_000);
+  test("deleted-thread recovery reviews original content, reports clipboard failure and discards only the local draft", async () => {
+    const room = fixture(),
+      sent: RoomCommand[] = [];
+    const { target, drafts, update } = renderComposer(room, {
+      request: async (command) => {
+        sent.push(command);
+        return { ok: true };
+      },
+    });
+    const orphan = drafts.entry({
+      account: room.me,
+      roomId: room.id,
+      thread: "deleted-original",
+    });
+    orphan.edit("Original private draft");
+    flushSync();
+    const review = [...target.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Review draft"),
+    );
+    expect(!!review).toBe(true);
+    review!.click();
+    flushSync();
+    await tick();
+    const dialog = document.querySelector('[role="dialog"]')!;
+    expect(
+      dialog.querySelector<HTMLTextAreaElement>("textarea")?.value,
+    ).toContain("Original private draft");
+    expect(
+      dialog.querySelector<HTMLTextAreaElement>("textarea")?.readOnly,
+    ).toBe(true);
+    const original = navigator.clipboard.writeText;
+    try {
+      navigator.clipboard.writeText = async () => {
+        throw new Error("denied");
+      };
+      [...dialog.querySelectorAll("button")]
+        .find((button) => button.textContent?.trim() === "Copy")!
+        .click();
+      await tick();
+      expect(dialog.textContent).toContain("Could not copy");
+    } finally {
+      navigator.clipboard.writeText = original;
+    }
+    [...dialog.querySelectorAll("button")]
+      .find((button) => button.textContent?.includes("Discard draft"))!
+      .click();
+    flushSync();
+    await dialogClosed();
+    expect(drafts.orphans(room)).toHaveLength(0);
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "",
+    );
+    expect(sent).toHaveLength(0);
+    orphan.edit("detached discarded draft");
+    update({ ...room, me: "other@test" });
+    expect(target.textContent).not.toContain("Original private draft");
+  }, 30_000);
+  test("account reset clears drafts and detached form cannot send after disposal", async () => {
+    const sent: RoomCommand[] = [];
+    const { target, drafts, destroy, update } = renderComposer(fixture(), {
+      request: async (command) => {
+        sent.push(command);
+        return { ok: true };
+      },
+    });
+    edit(target, "private old account");
+    const stale = target.querySelector("form")!;
+    drafts.reset();
+    update({ ...fixture(), me: "you@test" });
+    expect(target.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+      "",
+    );
+    destroy();
+    stale.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+    await tick();
+    expect(sent).toHaveLength(0);
+  }, 30_000);
 });

@@ -1,11 +1,19 @@
 // Native SVG data, kept independent of the legacy markup renderer and application state.
 export const iconPaths = {
+  mic: [
+    "M9 3a3 3 0 0 1 6 0v8a3 3 0 0 1-6 0V3Z",
+    "M5 10v2a7 7 0 0 0 14 0v-2M12 19v4m-4 0h8",
+  ],
   bell: ["M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9", "M10 21h4"],
   bellOff: [
     "m3 3 18 18",
     "M6 6a6 6 0 0 0 0 2c0 7-3 7-3 9h14",
     "M18 8a6 6 0 0 0-8-5",
     "M10 21h4",
+  ],
+  smile: [
+    "M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
+    "M8 9h.01M16 9h.01M7 14a5 5 0 0 0 10 0",
   ],
   expand: ["M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5"],
   external: [

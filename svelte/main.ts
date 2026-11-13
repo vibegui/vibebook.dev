@@ -22,6 +22,8 @@ import Decisions from "./Decisions.svelte";
 import Reminders from "./Reminders.svelte";
 import Sidebar from "./Sidebar.svelte";
 import Chat from "./Chat.svelte";
+import Composer from "./Composer.svelte";
+export { createComposerDrafts } from "./features/composer/drafts";
 export { createRoomStore } from "./roomStore";
 export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
@@ -37,6 +39,7 @@ const views = {
   decisions: Decisions,
   sidebar: Sidebar,
   chat: Chat,
+  composer: Composer,
 };
 type ViewName = keyof typeof views;
 export function mountView<K extends ViewName>(

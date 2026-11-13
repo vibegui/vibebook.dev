@@ -1,5 +1,6 @@
+import {permissionAsk as isPermAsk,visibleChatMessages,privateAskForOther,permissionReply} from "../features/chat/privacy";
 import {canAnswer,choicesOf} from "../features/chat-interactive/model";
-import {EMOJI,emojify} from "../../shared/emoji";
+import {emojify} from "../../shared/emoji";
 import {adaptLegacyChatMarkup} from "../features/chat/legacyMarkup";
 import {createFilesSession} from "../features/files/session";
 import { messageIdentity } from "../features/home/model";
@@ -43,6 +44,33 @@ const EN = {
   "Gráfico": "Chart",
   "Escolha uma opção": "Choose an option",
   "Ainda sem confirmação. Confira a sala antes de enviar novamente.": "Still unconfirmed. Check the room before sending again.",
+  "Ouvindo… Escape para parar.": "Listening… Escape to stop.",
+  "O ditado foi interrompido. Seu rascunho foi mantido.": "Dictation stopped. Your draft was kept.",
+  "Ditar mensagem": "Dictate message",
+  "Segure pra ditar (ou segure o espaço)": "Hold to dictate (or hold Space)",
+  "O navegador não deixou usar o microfone.": "The browser did not allow microphone access.",
+  "Não foi possível iniciar o ditado.": "Could not start dictation.",
+  "O upload não foi confirmado. Confira os arquivos antes de tentar novamente.": "The upload was not confirmed. Check the files before trying again.",
+  "A conta mudou; selecione o arquivo novamente.": "The account changed; select the file again.",
+  "Pronto": "Ready",
+  "Enviado": "Sent",
+  "Enviado. Seu novo rascunho foi mantido.": "Sent. Your new draft was kept.",
+  "Votação criada": "Poll created",
+  "Rascunho mantido": "Draft kept",
+  "Rascunho descartado": "Draft discarded",
+  "Conferi a sala; manter rascunho": "I reviewed the room; keep draft",
+  "Conferi a sala; descartar rascunho": "I reviewed the room; discard draft",
+  "Ver mensagem correspondente": "View matching message",
+  "Confira a votação na sala antes de tentar novamente.": "Check the poll in the room before trying again.",
+  "A mensagem não está mais disponível.": "The message is no longer available.",
+  "A mensagem pode ter no máximo 4000 caracteres.": "A message can contain up to 4000 characters.",
+  "Anexe no máximo 10 arquivos por mensagem.": "Attach up to 10 files per message.",
+  "Espere os anexos terminarem ou remova-os.": "Wait for the attachments to finish or remove them.",
+  "A mensagem não está mais disponível. Cancele a resposta para continuar.": "The message is no longer available. Cancel the reply to continue.",
+  "Envie ou descarte um dos seus 64 rascunhos antes de abrir outro.": "Send or discard one of your 64 drafts before opening another.",
+  "O tópico não está mais disponível. Seu rascunho foi mantido.": "The thread is no longer available. Your draft was kept.",
+  "Arquivo maior que o limite: 10MB, ou 50MB para áudio.": "File exceeds the limit: 10MB, or 50MB for audio.",
+  "Arquivo vazio.": "Empty file.",
   "Tentar novamente": "Try again",
   "online": "online",
   "offline": "offline",
@@ -1218,6 +1246,7 @@ function ensureNativeHome() {
     },
     onIdentityChange: () => {
       nativeViewer?.reset();
+      composerDrafts.reset();
       myBooks = null;
       myWaits = [];
       friends = [];
@@ -2047,49 +2076,13 @@ async function connectCard(el, room, current = () => true) {
 }
 
 // ---------------- book ----------------
+const composerDrafts=UI.createComposerDrafts();
 let roomConnection = null;
 const roomStore = UI.createRoomStore();
 let S = null; // compatibility bridge for host integrations; the typed store owns WS state
 const typingNotes = new Map(); // transient display notes, not persisted room data
 let thread = "main";
 let friends = []; // emails of people you already share something with
-let attached = []; // composer attachments: { file, url, meta?, error? }
-const AUDIO_EXT = {
-  m4a: "audio/x-m4a",
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  aac: "audio/aac",
-  ogg: "audio/ogg",
-  oga: "audio/ogg",
-  opus: "audio/ogg",
-  webm: "audio/webm",
-  flac: "audio/flac",
-};
-const FILE_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
-  "text/html",
-  "text/markdown",
-  "text/plain",
-  "text/csv",
-  "audio/mp4",
-  "audio/x-m4a",
-  "audio/m4a",
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/x-wav",
-  "audio/wave",
-  "audio/aac",
-  "audio/x-aac",
-  "audio/ogg",
-  "audio/webm",
-  "audio/flac",
-  "audio/x-flac",
-];
 const fileIcon = (f, size) =>
   icon(
     f.type === "text/html"
@@ -2136,7 +2129,6 @@ function openBook(id) {
   S = null;
   typingNotes.clear();
   liveState = false;
-  attached = [];
   ensureNativeHome();
   void nativePersonal.refresh();
   // Placeholder in the room's own layout, shown only if the socket takes more than 200ms.
@@ -2319,7 +2311,7 @@ function onEvent(ev, id) {
       return;
     }
     case "requests": renderSide(); return;
-    case "members": renderSide(); return;
+    case "members": renderSide(); renderComposer(); return;
     case "files": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); return;
     case "fileAdd": renderSide(); renderFiles(); connsFilesChanged(); syncViewer(); renderThreadFiles(); return;
     case "reminders": renderReminders(); return;
@@ -2363,14 +2355,8 @@ function onEvent(ev, id) {
       renderSide();
       return;
     case "blocked": {
-      const input = document.getElementById("input");
-      if (input && !input.value) input.value = ev.text;
-      alert(
-        t(
-          "Não enviei: parece {reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.",
-          { reason: ev.reason },
-        ),
-      );
+      // Uncorrelated legacy frames are informational; only cid results own native operation state.
+      toast(t("Não enviei: parece {reason}. Segredo não entra na sala, nem pra você nem pros agents. Manda por um canal seguro.",{reason:esc(ev.reason)}));
       return;
     }
   }
@@ -2405,7 +2391,7 @@ function renderBells(){
   document.querySelectorAll('[data-native-install-slot]').forEach(target=>nativePwaMounts.push(UI.mountPwa(target,'install',nativePwa,LANG)));
 }
 function notifyMsg(message){if(S)nativePwa.notify(message,S,thread,mentionTarget,m=>m.author==='ai'?'@vibe':m.kind==='agent'?t('{via} de {who}',{via:m.via||'agent',who:name(m.author)}):name(m.author));}
-if(import.meta.hot)import.meta.hot.dispose(()=>{disposePwaMounts();nativePwa.dispose();});
+if(import.meta.hot)import.meta.hot.dispose(()=>{disposePwaMounts();nativePwa.dispose();composerDrafts.dispose();});
 
 function renderBook() {
   clearViews();
@@ -2420,23 +2406,7 @@ function renderBook() {
       <div class="agentNudge" id="agentNudge" hidden></div><div class="claudeBar" id="claudeBar" hidden></div><div class="askBar" id="askBar" hidden></div><div class="thFiles" id="thFiles" hidden></div>
       <div class="msgs" id="msgs"></div>
       <div class="kanban" id="kanban"></div>
-      <form class="composer" id="composer">
-        <div class="tray" id="tray"></div>
-        <div class="replyBar" id="replyBar" hidden></div>
-        <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
-        <div class="row">
-          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>
-          <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${t("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${t("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
-          <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
-          <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
-            <button type="button" role="menuitem" id="attach">${icon("paperclip")} ${t("Anexar arquivo")} <small>${t("ou Cmd+V")}</small></button>
-            <button type="button" role="menuitem" id="mentionBtn">${icon("at")} ${t("Mencionar alguém")} <small>@</small></button>
-            <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
-          </div>
-          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,text/plain,.txt,text/csv,.csv,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
-          <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
-        </div>
-      </form>
+      <div id="composer"></div>
     </main>
     <section class="doc">
       <button type="button" class="docEditBar" id="docEditBar"></button>
@@ -2455,16 +2425,7 @@ function renderBook() {
     </section>
     <div class="sheetDim" id="sheetDim"></div>
   </div>
-  <dialog id="pollDlg">
-    <h3>${t("Nova votação")}</h3>
-    <form id="pollForm">
-      <input name="q" required maxlength="300" placeholder="${t("Pergunta (ex.: Qual cruzeiro?)")}" />
-      <div id="pollOpts" style="display:grid;gap:8px"></div>
-      <button type="button" class="link" id="addOpt" style="justify-self:start">+ ${t("opção")}</button>
-      <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="multi" /> ${t("cada pessoa pode escolher várias")}</label>
-      <div class="acts"><button type="button" id="pollCancel">${t("Cancelar")}</button><button class="primary">${t("Criar votação")}</button></div>
-    </form>
-  </dialog>`;
+`;
   const book = $app.querySelector(".book");
   // The doc sheet hangs right under the room header, whose height varies (safe area, wrapped title).
   const headObs = new ResizeObserver(() => {
@@ -2500,6 +2461,7 @@ function renderBook() {
         book.querySelector(":scope > .chat > #composer"),
       );
     book.classList.toggle("boardview", on);
+    renderComposer();
     book.classList.toggle("nodoc", on); // the board wants the width
     document
       .getElementById("toggleBoard")
@@ -2542,384 +2504,6 @@ function renderBook() {
     const cur = document.querySelector(".doc").getBoundingClientRect().width;
     if (e.key === "ArrowLeft") setDocW(cur + 24);
     else if (e.key === "ArrowRight") setDocW(cur - 24);
-  };
-  const input = document.getElementById("input");
-  // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
-  // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.
-  {
-    const btn = document.getElementById("emojiBtn"),
-      box = document.getElementById("emojiPop"),
-      q = document.getElementById("emojiQ"),
-      grid = document.getElementById("emojiGrid");
-    const all = [
-      ...new Map(Object.entries(EMOJI).map(([k, v]) => [v, k])).entries(),
-    ]; // [emoji, first name]
-    const draw = () => {
-      const w = q.value.trim().toLowerCase().replace(/:/g, "");
-      grid.innerHTML = all
-        .filter(
-          ([e, k]) =>
-            !w ||
-            Object.entries(EMOJI).some(([n, v]) => v === e && n.includes(w)),
-        )
-        .map(
-          ([e, k]) =>
-            `<button type="button" title=":${esc(k)}:" data-emoji="${e}">${e}</button>`,
-        )
-        .join("");
-    };
-    const close = () => {
-      box.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    };
-    btn.onclick = (ev) => {
-      ev.stopPropagation();
-      if (!box.hidden) return close();
-      q.value = "";
-      draw();
-      box.hidden = false;
-      btn.setAttribute("aria-expanded", "true");
-      if (!matchMedia("(pointer: coarse)").matches) q.focus();
-    };
-    q.oninput = draw;
-    q.onkeydown = (ev) => {
-      if (ev.key === "Escape") {
-        close();
-        input.focus();
-      }
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        grid.querySelector("button")?.click();
-      }
-    };
-    grid.onclick = (ev) => {
-      const b = ev.target.closest("[data-emoji]");
-      if (!b) return;
-      const a = input.selectionStart ?? input.value.length,
-        z = input.selectionEnd ?? a;
-      input.value =
-        input.value.slice(0, a) + b.dataset.emoji + input.value.slice(z);
-      input.focus();
-      input.selectionStart = input.selectionEnd = a + b.dataset.emoji.length;
-      input.dispatchEvent(new Event("input"));
-      close();
-    };
-    document.addEventListener("click", (ev) => {
-      if (!box.hidden && !box.contains(ev.target) && ev.target !== btn) close();
-    });
-  }
-  // @ autocomplete: people in the room (you excluded), filtered by what follows the @.
-  const pop = document.getElementById("mentionPop");
-  let picks = [],
-    pickAt = 0,
-    atStart = -1;
-  const closePop = () => {
-    pop.hidden = true;
-    picks = [];
-    atStart = -1;
-  };
-  const choose = (i) => {
-    const p = picks[i];
-    if (!p) return;
-    const caret = input.selectionStart;
-    input.value = `${input.value.slice(0, atStart)}@${p.handle} ${input.value.slice(caret)}`;
-    const at = atStart + p.handle.length + 2;
-    input.setSelectionRange(at, at);
-    closePop();
-    input.focus();
-    input.oninput();
-  };
-  const renderPop = () => {
-    pop.innerHTML = picks
-      .map(
-        (p, i) =>
-          `<button type="button" role="option" class="${i === pickAt ? "sel" : ""}" data-i="${i}">${avatar(p.email)}<b>@${esc(p.handle)}</b><small>${esc(p.label)}</small></button>`,
-      )
-      .join("");
-    pop.hidden = !picks.length;
-  };
-  pop.onmousedown = (e) => {
-    const b = e.target.closest("[data-i]");
-    if (b) {
-      e.preventDefault();
-      choose(Number(b.dataset.i));
-    }
-  };
-  const updatePop = () => {
-    const before = input.value.slice(0, input.selectionStart);
-    const m = before.match(/(^|\s)@([\p{L}\p{N}._-]*)$/u);
-    if (!m) return closePop();
-    atStart = before.length - m[2].length - 1;
-    const q = fold(m[2]);
-    const people = [
-      ...(S.members || [])
-        .filter((e) => e !== S.me)
-        .map((e) => ({
-          email: e,
-          handle: handleOf(e),
-          label: name(e) === handleOf(e) ? e : name(e),
-        })),
-    ];
-    // Your cloud sandboxes here: @<name> sends the message to that Claude only.
-    if (roomAgents.id === S.id)
-      for (const x of roomAgents.sandboxes || [])
-        if (x.email === S.me)
-          people.push({
-            email: x.email,
-            handle: x.name,
-            label: t("seu agent no sandbox"),
-          });
-    picks = people
-      .filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q))
-      .slice(0, 8);
-    pickAt = 0;
-    renderPop();
-  };
-  input.oninput = () => {
-    input.style.height = "auto";
-    input.style.height = `${input.scrollHeight}px`;
-    updatePop();
-  };
-  input.onblur = () => setTimeout(closePop, 100);
-  input.onkeydown = (e) => {
-    if (!pop.hidden && picks.length) {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        pickAt =
-          (pickAt + (e.key === "ArrowDown" ? 1 : picks.length - 1)) %
-          picks.length;
-        return renderPop();
-      }
-      if ((e.key === "Enter" || e.key === "Tab") && !e.isComposing) {
-        e.preventDefault();
-        return choose(pickAt);
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        return closePop();
-      }
-    }
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      document.getElementById("composer").requestSubmit();
-    }
-  };
-  // Attachments: paste, drop or 📎. Upload right away; send once all are done.
-  const tray = document.getElementById("tray");
-  const sendBtn = document.getElementById("sendBtn");
-  // Phones: the tap would first blur the textarea, the keyboard closes, the composer moves and the click misses the
-  // button (a second tap needed). Send on touchend instead, without letting the textarea lose focus.
-  sendBtn.addEventListener("touchend", (e) => {
-    if (sendBtn.disabled) return;
-    e.preventDefault();
-    document.getElementById("composer").requestSubmit();
-  });
-  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-  const renderTray = () => {
-    tray.innerHTML = attached
-      .map(
-        (
-          p,
-          i,
-        ) => `<div class="pend ${!p.meta && !p.error ? "up" : ""} ${p.error ? "err" : ""}" title="${esc(p.error || p.file.name)}">
-      ${p.url ? `<img src="${p.url}" alt="">` : `${icon("file", 22)}<br>${esc(p.file.name.slice(0, 18))}`}${p.error ? `<span style="position:relative;z-index:1">${esc(p.error)}</span>` : ""}
-      <button type="button" class="rm" data-rm="${i}" aria-label="${t("Remover anexo")}">${icon("x")}</button></div>`,
-      )
-      .join("");
-    tray.querySelectorAll("[data-rm]").forEach(
-      (b) =>
-        (b.onclick = () => {
-          const [p] = attached.splice(Number(b.dataset.rm), 1);
-          if (p?.url) URL.revokeObjectURL(p.url);
-          renderTray();
-        }),
-    );
-    const uploading = attached.some((p) => !p.meta && !p.error);
-    sendBtn.disabled = uploading;
-    sendBtn.textContent = uploading ? t("Enviando…") : t("Enviar");
-  };
-  const addFiles = (list) => {
-    for (let file of list) {
-      if (!file.type && /\.html?$/i.test(file.name))
-        file = new File([file], file.name, { type: "text/html" });
-      if (!file.type && /\.md$/i.test(file.name))
-        file = new File([file], file.name, { type: "text/markdown" });
-      // .csv often arrives as application/vnd.ms-excel (Excel on the Mac) or with no type: go by the extension.
-      const text = { txt: "text/plain", csv: "text/csv" }[
-        (/\.(\w+)$/.exec(file.name)?.[1] || "").toLowerCase()
-      ];
-      if (text && file.type !== text)
-        file = new File([file], file.name, { type: text });
-      // Recordings often come with no type (or a generic one) from Files/Finder: take it from the extension.
-      const aext =
-        AUDIO_EXT[(/\.(\w+)$/.exec(file.name)?.[1] || "").toLowerCase()];
-      if (aext && !file.type.startsWith("audio/"))
-        file = new File([file], file.name, { type: aext });
-      if (!FILE_TYPES.includes(file.type)) {
-        alert(
-          `${file.name}: ${t("só imagens (png, jpg, webp, gif), PDF, HTML, Markdown, .txt, .csv e áudio.")}`,
-        );
-        continue;
-      }
-      const audio = file.type.startsWith("audio/");
-      if (file.size > (audio ? 50 : 10) * 1024 * 1024) {
-        alert(
-          `${file.name}: ${audio ? t("áudio maior que 50MB.") : t("maior que 10MB.")}`,
-        );
-        continue;
-      }
-      if (!file.name || file.name === "image.png")
-        file = new File(
-          [file],
-          `print-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`,
-          { type: file.type },
-        );
-      const p = {
-        file,
-        url: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
-      };
-      attached.push(p);
-      createRoomApi(S.id)
-        .uploadFile({ name: file.name, type: file.type, body: file })
-        .then((result) => {
-          p.meta = result;
-        })
-        .catch((error) => {
-          p.error = error.message || t("sem conexão");
-        })
-        .finally(renderTray);
-    }
-    renderTray();
-  };
-  const fileInput = document.getElementById("fileInput");
-  // "+" menu: attach, mention, poll. Closes on pick, outside click or Escape.
-  const plusBtn = document.getElementById("plusBtn"),
-    plusMenu = document.getElementById("plusMenu");
-  const togglePlus = (open = plusMenu.hidden) => {
-    plusMenu.hidden = !open;
-    plusBtn.setAttribute("aria-expanded", String(open));
-  };
-  plusBtn.onclick = (e) => {
-    e.stopPropagation();
-    togglePlus();
-  };
-  // Phone, keyboard up: the tap used to blur the box, the keyboard dropped, the composer moved down under the finger
-  // and the click landed elsewhere (a second tap needed). Keeping the focus keeps the keyboard and the button in place.
-  plusBtn.onmousedown = plusBtn.onpointerdown = (e) => {
-    if (document.activeElement?.id === "input") e.preventDefault();
-  };
-  plusMenu.onclick = () => togglePlus(false);
-  plusMenu.closest("main").addEventListener("click", (e) => {
-    if (!plusMenu.hidden && !plusMenu.contains(e.target)) togglePlus(false);
-  });
-  plusMenu.onkeydown = (e) => {
-    if (e.key === "Escape") {
-      togglePlus(false);
-      plusBtn.focus();
-    }
-  };
-  document.getElementById("mentionBtn").onclick = () => {
-    const at = input.selectionStart ?? input.value.length,
-      before = input.value.slice(0, at);
-    const ins = before && !/\s$/.test(before) ? " @" : "@";
-    input.value = before + ins + input.value.slice(at);
-    input.focus();
-    input.setSelectionRange(at + ins.length, at + ins.length);
-    setTimeout(() => input.oninput(), 120); // after input.onblur's delayed closePop
-  };
-  document.getElementById("attach").onclick = () => fileInput.click();
-  fileInput.onchange = () => {
-    addFiles([...fileInput.files]);
-    fileInput.value = "";
-  };
-  // Cmd+V of a screenshot: some apps (CleanShot…) only fill clipboardData.items, and focus may be outside the box.
-  document.onpaste = (e) => {
-    const t = e.target,
-      typing =
-        t instanceof HTMLElement &&
-        (t.isContentEditable || /^(INPUT|TEXTAREA)$/.test(t.tagName));
-    if (!input.isConnected || (typing && t !== input)) return;
-    let files = [...(e.clipboardData?.files ?? [])];
-    if (!files.length)
-      files = [...(e.clipboardData?.items ?? [])]
-        .filter((i) => i.kind === "file")
-        .map((i) => i.getAsFile())
-        .filter(Boolean);
-    if (files.length) {
-      e.preventDefault();
-      addFiles(files);
-      input.focus();
-    }
-  };
-  const chatEl = $app.querySelector(".chat");
-  chatEl.addEventListener("dragover", (e) => {
-    if ([...e.dataTransfer.types].includes("Files")) {
-      e.preventDefault();
-      chatEl.classList.add("drop");
-    }
-  });
-  chatEl.addEventListener("dragleave", (e) => {
-    if (!chatEl.contains(e.relatedTarget)) chatEl.classList.remove("drop");
-  });
-  chatEl.addEventListener("drop", (e) => {
-    e.preventDefault();
-    chatEl.classList.remove("drop");
-    addFiles([...e.dataTransfer.files]);
-  });
-
-  document.getElementById("composer").onsubmit = (e) => {
-    e.preventDefault();
-    if (attached.some((p) => !p.meta && !p.error)) return;
-    const text = input.value.trim();
-    const files = attached.filter((p) => p.meta).map((p) => p.meta.id);
-    if (!text && !files.length) return;
-    send({ t: "msg", thread, text, files, reply_to: replyTo?.id });
-    replyTo = null;
-    renderReply();
-    attached.forEach((p) => p.url && URL.revokeObjectURL(p.url));
-    attached = [];
-    input.value = "";
-    input.oninput();
-    renderTray();
-  };
-
-  // Polls: create via dialog, vote/close via delegation on the message list.
-  const dlg = document.getElementById("pollDlg");
-  const opts = document.getElementById("pollOpts");
-  const addOpt = (v = "") => {
-    opts.insertAdjacentHTML(
-      "beforeend",
-      `<input name="opt" maxlength="200" placeholder="${t("Opção {n}", { n: opts.children.length + 1 })}" value="${esc(v)}" />`,
-    );
-  };
-  document.getElementById("pollBtn").onclick = () => {
-    document.getElementById("pollForm").reset();
-    opts.innerHTML = "";
-    addOpt();
-    addOpt();
-    addOpt();
-    dlg.showModal();
-  };
-  document.getElementById("addOpt").onclick = () => {
-    if (opts.children.length < 10) addOpt();
-    opts.lastElementChild.focus();
-  };
-  document.getElementById("pollCancel").onclick = () => dlg.close();
-  document.getElementById("pollForm").onsubmit = (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const options = [...f.querySelectorAll('[name="opt"]')]
-      .map((i) => i.value.trim())
-      .filter(Boolean);
-    if (options.length < 2) return alert(t("Coloque pelo menos 2 opções."));
-    send({
-      t: "poll.create",
-      thread,
-      question: f.q.value,
-      options,
-      multi: f.multi.checked,
-    });
-    dlg.close();
   };
   // Right panel: Documento / Arquivos
   const setPane = (pane) => {
@@ -3661,10 +3245,6 @@ let qOpen = false; // the queue shows 4 until "mostrar mais"
 let roomDocClick = () => {},
   roomDocPane = () => {};
 // The plugin's PermissionRequest hook posts this (claude-plugin/hooks/permission.sh); the pick goes to the hook, not to a Claude's queue.
-const isPermAsk = (q) =>
-  q.kind === "agent" &&
-  /^\u23f8/.test(q.text || "") &&
-  /"options":\["Aprovar","Negar"\]/.test(q.choices || "");
 function myQueue() {
   const since = Date.now() - 48 * 3600e3,
     byMsg = new Map();
@@ -4823,26 +4403,8 @@ document.addEventListener("click", (ev) => {
 // The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.
-let replyTo = null;
-const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll ? t("votação") : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120);
-const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: "Agent", who: name(m.author) }) : name(m.author));
-function renderReply() {
-  const bar = document.getElementById("replyBar");
-  if (!bar) return;
-  if (replyTo && replyTo.thread !== thread) replyTo = null;
-  bar.hidden = !replyTo;
-  if (replyTo)
-    bar.innerHTML = `<span>${icon("reply", 13)} ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">${icon("x")}</button>`;
-  document.getElementById("replyX")?.addEventListener("click", () => {
-    replyTo = null;
-    renderReply();
-  });
-}
-function startReply(id) {
-  replyTo = S.messages.find((x) => x.id === id) ?? null;
-  renderReply();
-  document.getElementById("input")?.focus();
-}
+function composerEntry(){return S?composerDrafts.entry({account:S.me,roomId:S.id,thread}):null;}
+function startReply(id){const message=allMsgs().find(message=>message.id===id);if(!message||privateAskForOther(S,message)||permissionReply(S,message))return;if(message.thread!==thread)selectThread(message.thread);composerEntry()?.reply(message);}
 document.addEventListener("click", (ev) => {
   const ml = ev.target.closest("a.mlink[data-msg], a[data-chat-rich~=mlink][data-msg]");
   if (ml) { ev.preventDefault(); return goToMsg(Number(ml.dataset.msg)); }
@@ -4889,7 +4451,6 @@ function goToMsg(id, th) {
   el.scrollIntoView({ block: "center", behavior: "smooth" });
   el.dispatchEvent(new CustomEvent("vb:message-highlight"));
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo && document.activeElement?.id === "input") { replyTo = null; renderReply(); } });
 // Choices: an agent asks its human to pick (post with choices). That person sees radio/checkboxes + Enviar; the
 // pick is sent as their message replying to the question, which is also how the block knows it was answered.
 // Native cards (MCP post card, json-render's spec shape, validated by src/card.ts): every string escaped, no HTML.
@@ -4929,8 +4490,6 @@ document.addEventListener("click", (e) => { const g = e.target.closest("[data-ca
 // message counts), but it isn't drawn in the chat: the ask shows "✓ Aprovado por X" instead.
 // Someone else's Claude asking them (⏸ permission, ❓ question) is between that person and their Claude: the rest of
 // the room doesn't see it (it filled shared threads with "Aprovar/Negar" and "ok", Nov 2026).
-const othersAsk = (m) => m?.kind === "agent" && m.author !== S.me && /^(⏸ Seu Claude|❓ Seu Claude)/.test(m.text || "");
-const isPermAnswer = (m) => { if (!m?.reply_to || m.kind === "agent") return false; const q = S.messages.find((x) => x.id === m.reply_to); return !!q && isPermAsk(q) && q.author === m.author; };
 function renderDecisions() {
   const el = document.getElementById("decPane");
   if (!el) return;
@@ -5713,11 +5272,18 @@ function renderThreadFiles() {
  el.hidden=false;
  renderView("threadFiles",el,{room:S,thread,lang:LANG,onopen:(file,trigger)=>{if(S?.id===roomId&&S.me===account&&trigger.isConnected)openNativeFile(file,trigger);}});
 }
+function renderComposer(){
+ const target=document.getElementById("composer");if(!target||!S)return;
+ const roomId=S.id,composerThread=thread;let mounted;
+ const current=()=>S?.id===roomId&&thread===composerThread&&target.isConnected&&viewMounts.get("composer")===mounted;
+ renderView("composer",target,{room:S,thread,vb:chatBridge(),drafts:composerDrafts,request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"offline"}),upload:(input,signal)=>createRoomApi(roomId,(url,init)=>fetch(url,{...init,signal})).uploadFile(input),agents:roomAgents.id===roomId?(roomAgents.sandboxes||[]):[],navigate:(id)=>{if(current())goToMsg(id,composerThread);},hidden:isPre()||!!target.closest(".book")?.classList.contains("boardview")});
+ mounted=viewMounts.get("composer");
+}
 function renderChat(keep) {
   renderAskBar();
   renderThreadFiles();
   syncUrl();
-  renderReply();
+  renderComposer();
   renderTasks();
   const el = document.getElementById("msgs");
   $app.querySelector(".book")?.classList.toggle("pre", isPre());
@@ -5755,13 +5321,7 @@ function renderChat(keep) {
   }
   if (win.thread !== thread || win.room !== S.id)
     win = { thread, room: S.id, n: WIN };
-  const all = S.messages.filter(
-    (m) =>
-      m.thread === thread &&
-      !isPermAnswer(m) &&
-      !othersAsk(m) &&
-      !othersAsk(S.messages.find((x) => x.id === m.reply_to)),
-  );
+  const all = visibleChatMessages(S,thread);
   if (
     liveState &&
     all.length < WIN &&
@@ -5784,7 +5344,7 @@ function renderChat(keep) {
   const roomId=S.id, chatThread=thread;
   let chatMount;
   const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
-  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;replyTo=q;renderReply();const box=document.getElementById("input");if(box){box.value=draft.text;box.dispatchEvent(new Event("input",{bubbles:true}));box.focus();}},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
+  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{request:(command)=>current()?request(command):Promise.resolve({ok:false,error:"disconnected"}),draftReply:(draft)=>{if(!current())return;const q=allMsgs().find(m=>m.id===draft.messageId);if(!q||q.thread!==draft.thread||!canAnswer(S,q)||!choicesOf(q.choices)||choicesOf(q.choices).closed||isPermAsk(q))return;if(q.thread!==thread)selectThread(q.thread);if(S?.id!==roomId)return;composerEntry()?.reply(q,draft.text);},openApp:(target)=>{if(current()&&/^(room|[a-f0-9]{12})$/.test(target.connection)&&/^[\w.-]{1,100}$/.test(target.tool))cardGo(`#app:${target.connection}/${target.tool}`);},navigateRich:(target)=>{if(current())cardGo(target.kind==="thread"?`#e${target.id}`:target.id?`#doc:${target.id}`:"#doc");},openFileReference:(file)=>{if(current()&&file.roomId===roomId&&/^[0-9a-f]+$/.test(file.id))openNativeFile(file.id,undefined,file.name);},mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openNativeFile(file);}},onloadolder:()=>{if(current())loadOlder();}});
   chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   if (keep === "stay") { el.scrollTop = t0; pinOnLoad(el); } // a state refresh while reading above

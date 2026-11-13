@@ -34,10 +34,7 @@ export function cardView(raw: Message["card"], roomId: string): Card | null {
     return null;
   }
 }
-export const permissionAsk = (message: Message) =>
-  message.kind === "agent" &&
-  /^\u23f8/.test(message.text || "") &&
-  /"options":\["Aprovar","Negar"\]/.test(message.choices || "");
+export { permissionAsk } from "../chat/privacy";
 export const answerOf = (room: Room, message: Message): Message | undefined =>
   room.messages
     .filter(

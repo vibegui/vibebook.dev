@@ -45,6 +45,7 @@ if (native) {
     "svelte/features/app-navigation",
     "svelte/features/rooms",
     "svelte/features/file-viewer",
+    "svelte/features/composer",
   ])
     await collect(directory);
   files.push(
@@ -58,6 +59,7 @@ if (native) {
     "svelte/Decisions.svelte",
     "svelte/People.svelte",
     "svelte/Chat.svelte",
+    "svelte/Composer.svelte",
     "svelte/Message.svelte",
     "svelte/chatTypes.ts",
     "svelte/integrations/LegacyChatContent.svelte",

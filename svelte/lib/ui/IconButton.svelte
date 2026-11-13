@@ -6,6 +6,7 @@
   let {
     label,
     icon,
+    title,
     variant = "ghost",
     ref = $bindable(null),
     ...rest
@@ -21,5 +22,5 @@
   bind:ref
   size="icon"
   aria-label={label}
-  title={label}><Icon name={icon} /></Button
+  title={title ?? label}><Icon name={icon} /></Button
 >
