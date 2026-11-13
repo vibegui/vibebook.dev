@@ -31,6 +31,9 @@ if (native) {
     "svelte/features/board",
     "svelte/features/navigation",
     "svelte/features/pins",
+    "svelte/features/reminders",
+    "svelte/features/files",
+    "svelte/features/decisions",
   ])
     await collect(directory);
   files.push(
@@ -39,6 +42,9 @@ if (native) {
     "svelte/TaskList.svelte",
     "svelte/Tasks.svelte",
     "svelte/Board.svelte",
+    "svelte/Files.svelte",
+    "svelte/Reminders.svelte",
+    "svelte/Decisions.svelte",
     "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",

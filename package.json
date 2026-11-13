@@ -54,17 +54,17 @@
     "check:ui": "svelte-check --tsconfig svelte/tsconfig.json",
     "test:ui": "bun test --conditions=browser scripts/ui-panels.test.ts",
     "check:client-boundary": "bun scripts/client-boundary-check.ts",
-    "test:store": "bun test scripts/room-store.test.ts scripts/navigation.test.ts scripts/pins.test.ts",
+    "test:store": "bun test scripts/room-store.test.ts scripts/navigation.test.ts scripts/pins.test.ts scripts/reminders.test.ts scripts/native-files.test.ts scripts/decisions.test.ts",
     "check:protocol": "bun scripts/protocol-check.ts",
     "test:browser": "bun scripts/browser-check.ts",
     "measure:ui": "bun scripts/ui-metrics.ts",
     "check:backend": "node node_modules/@typescript/native/bin/tsc --noEmit && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --lib es2022,dom --skipLibCheck mcp-app/app.ts && node node_modules/@typescript/native/bin/tsc --ignoreConfig --noEmit --strict --target es2022 --module esnext --moduleResolution bundler --types node --skipLibCheck cli/vibebook.ts && bun scripts/i18n-check.ts",
     "check:bundle": "bun scripts/ui-build-check.ts",
-    "test:build": "bun test scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts scripts/ui-variant.test.ts scripts/ui-variant-boundary.test.ts",
+    "test:build": "bun test scripts/client-boundary-policy.test.ts scripts/app-development.test.ts scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts scripts/ui-variant.test.ts scripts/ui-variant-boundary.test.ts",
     "dev:ui": "vite build --watch --config svelte/vite.config.ts",
     "test:connection": "bun test scripts/room-connection.test.ts scripts/host-lifecycle.test.ts",
     "check:tooling": "node node_modules/@typescript/native/bin/tsc -p tsconfig.tooling.json",
-    "format:check": "prettier --check 'svelte/**/*.{ts,svelte,css}' shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts' vanilla/inbox/*.ts vanilla/inbox/*.svelte scripts/ui-variant-boundary.test.ts scripts/vanilla-isolation-check.ts scripts/migration-inventory.ts scripts/rpc-routes.test.ts scripts/me-cache.test.ts scripts/service-boundaries.test.ts scripts/style-policy.ts scripts/style-policy.test.ts scripts/style-check.ts scripts/capture-studio.ts scripts/design-system-browser.ts scripts/ui-variants.test.ts scripts/studio-browser.ts scripts/native-browser-fixtures.ts scripts/tasks-browser.ts scripts/board-browser.ts scripts/navigation.test.ts scripts/native-test-mcp.ts scripts/navigation-browser.ts scripts/epic-order.test.ts scripts/pins.test.ts scripts/pins-browser.ts",
+    "format:check": "prettier --check 'svelte/**/*.{ts,svelte,css}' shared/*.ts 'scripts/{browser-build,build-collab,build-mcp,bun-client-boundary.test,client-boundary-check,host-lifecycle.test,protocol-check,room-connection.test,room-store.test,ui-build-check,ui-metrics,ui-panels.test,ui-version.test,ui-variant.test,browser-check}.ts' vanilla/inbox/*.ts vanilla/inbox/*.svelte scripts/ui-variant-boundary.test.ts scripts/vanilla-isolation-check.ts scripts/migration-inventory.ts scripts/rpc-routes.test.ts scripts/me-cache.test.ts scripts/service-boundaries.test.ts scripts/style-policy.ts scripts/style-policy.test.ts scripts/style-check.ts scripts/capture-studio.ts scripts/design-system-browser.ts scripts/ui-variants.test.ts scripts/studio-browser.ts scripts/native-browser-fixtures.ts scripts/tasks-browser.ts scripts/board-browser.ts scripts/navigation.test.ts scripts/native-test-mcp.ts scripts/navigation-browser.ts scripts/epic-order.test.ts scripts/pins.test.ts scripts/pins-browser.ts scripts/dev-app.ts scripts/app-development.test.ts scripts/client-boundary-policy.test.ts scripts/reminders.test.ts scripts/native-files.test.ts scripts/decisions.test.ts",
     "build:vanilla-ui": "vite build --mode vanilla --config svelte/vite.config.ts",
     "build:collab:svelte": "bun -e 'import { buildCollab } from \"./scripts/build-collab\"; await buildCollab({outfile:\"public/collab-svelte.js\"})'",
     "check:vanilla": "svelte-check --tsconfig vanilla/tsconfig.json && bun scripts/vanilla-isolation-check.ts",
@@ -80,6 +80,8 @@
     "test:tasks": "bun scripts/tasks-browser.ts",
     "test:board": "bun scripts/board-browser.ts",
     "test:epic-navigation": "bun scripts/navigation-browser.ts",
-    "test:pins": "bun scripts/pins-browser.ts"
+    "test:pins": "bun scripts/pins-browser.ts",
+    "dev:app": "bun scripts/dev-app.ts",
+    "test:dev-app": "bun test scripts/app-development.test.ts"
   }
 }
