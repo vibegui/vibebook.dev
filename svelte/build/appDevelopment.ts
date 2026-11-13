@@ -79,7 +79,7 @@ export function workerProxy(target: string, viteOrigin: string): ProxyOptions {
   };
 }
 
-function postHeaders(
+function sourceHeaders(
   incoming: IncomingHttpHeaders,
   worker: string,
   vite: string,
@@ -125,6 +125,23 @@ function postHeaders(
   // Match the existing HTTP/WS proxy trust boundary; never trust incoming Host.
   if (incoming.origin !== undefined)
     headers.set("origin", incoming.origin === vite ? worker : incoming.origin);
+  if (incoming.referer !== undefined) {
+    try {
+      const referrer = new URL(incoming.referer);
+      if (
+        referrer.origin === vite &&
+        !referrer.username &&
+        !referrer.password
+      ) {
+        const translated = new URL(worker);
+        translated.pathname = referrer.pathname;
+        translated.search = referrer.search;
+        headers.set("referer", translated.href);
+      }
+    } catch {
+      /* Preserve invalid metadata for the Worker rather than granting trust. */
+    }
+  }
   return headers;
 }
 
@@ -204,9 +221,12 @@ export function appDevelopment(
           if (!isSourceApp(req.url) || (req.method !== "GET" && !consentPost))
             return next();
           if (consentPost && (req.aborted || res.destroyed)) return;
-          const headers = consentPost
-            ? postHeaders(req.headers, workerOrigin, viteOrigin)
-            : new Headers();
+          const headers = sourceHeaders(req.headers, workerOrigin, viteOrigin);
+          if (!consentPost) {
+            // Source shell GETs carry no body; keep their transport framing empty.
+            headers.delete("content-length");
+            headers.delete("content-encoding");
+          }
           if (req.headers.cookie) headers.set("cookie", req.headers.cookie);
           if (req.headers["accept-language"])
             headers.set(

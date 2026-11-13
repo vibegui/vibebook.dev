@@ -287,7 +287,7 @@ test("selected consent POST forwards exact raw form, cookie and origin boundary 
                   : (origin ?? null),
               );
               expect(request.headers.get("referer")).toBe(
-                "http://127.0.0.1:5173/authorize?ui=svelte",
+                "http://127.0.0.1:8787/authorize?ui=svelte",
               );
               expect(request.headers.get("host")).toBeNull();
               expect(request.headers.get("connection")).toBeNull();
@@ -494,6 +494,71 @@ test("consent POST byte adapter preserves backpressure, rejects decoded chunks a
         throw Error("POST bypassed");
       });
       expect(res.statusCode).toBe(mode === "decoded" ? 502 : 400);
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("source GET access-return Referer preserves the Worker's real autoAccess trust predicate", async () => {
+  const middleware = consentMiddleware(),
+    previousFetch = globalThis.fetch;
+  try {
+    for (const referrer of [
+      undefined,
+      "http://127.0.0.1:5173/login?next=%2Fb%2Fabcdef%3Fpedir%3D1",
+      "https://evil.test/login",
+      "http://127.0.0.1:5173.evil.test/login",
+      "http://localhost:5173/login",
+      "http://user@127.0.0.1:5173/login",
+      "not a URL",
+      "http://127.0.0.1:8787/login",
+    ]) {
+      const translated = referrer?.startsWith("http://127.0.0.1:5173/")
+        ? referrer.replace("http://127.0.0.1:5173", "http://127.0.0.1:8787")
+        : referrer;
+      globalThis.fetch = Object.assign(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          expect(String(input)).toBe(
+            "http://127.0.0.1:8787/b/abcdef?ui=svelte&pedir=1",
+          );
+          const headers = new Headers(init?.headers);
+          expect(headers.get("referer")).toBe(translated ?? null);
+          expect(headers.get("origin")).toBe("https://evil.test");
+          expect(headers.get("sec-fetch-site")).toBe("cross-site");
+          expect(headers.get("cookie")).toBe("session=local");
+          expect(headers.get("content-length")).toBeNull();
+          // Exact predicate used by src/index.ts accessPage metadata. This proves
+          // forwarding parity, not a real browser access request or permission grant.
+          const url = new URL(String(input)),
+            auto =
+              url.searchParams.has("pedir") &&
+              (headers.get("referer") ?? "").startsWith(`${url.origin}/`);
+          expect(auto).toBe(!!translated?.startsWith("http://127.0.0.1:8787/"));
+          return new Response("worker access metadata", {
+            status: 200,
+            headers: { "content-type": "text/plain" },
+          });
+        },
+        { preconnect: previousFetch.preconnect },
+      );
+      const req = {
+          url: "/b/abcdef?ui=svelte&pedir=1",
+          method: "GET",
+          headers: {
+            ...(referrer ? { referer: referrer } : {}),
+            origin: "https://evil.test",
+            "sec-fetch-site": "cross-site",
+            cookie: "session=local",
+            connection: "origin, referer, sec-fetch-site, cookie",
+            "content-length": "42",
+          },
+        },
+        res = consentResponse();
+      await middleware(req, res, () => {
+        throw Error("source access GET bypassed");
+      });
+      expect(res.statusCode).toBe(200);
     }
   } finally {
     globalThis.fetch = previousFetch;
