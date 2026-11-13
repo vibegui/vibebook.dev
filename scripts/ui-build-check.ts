@@ -3,7 +3,7 @@ import { readdir, readFile } from "node:fs/promises";
 const dir = new URL("../public/svelte-preview/", import.meta.url);
 async function snapshot() {
   const files = (await readdir(dir))
-    .filter((name) => name.endsWith(".js"))
+    .filter((name) => /\.(?:js|css)$/.test(name))
     .sort();
   const assets: Array<readonly [string, string]> = await Promise.all(
     files.map(
@@ -45,7 +45,7 @@ const changed = [...new Set([...before.keys(), ...after.keys()])].filter(
 );
 if (changed.length) {
   console.error(
-    `Generated UI assets were stale: ${changed.join(", ")}. Review and commit public/app-svelte.html and all public/svelte-preview/*.js files, then rerun check.`,
+    `Generated UI assets were stale: ${changed.join(", ")}. Review and commit public/app-svelte.html and all public/svelte-preview JS/CSS assets, then rerun check.`,
   );
   process.exit(1);
 }

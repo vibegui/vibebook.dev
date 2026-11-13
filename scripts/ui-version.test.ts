@@ -31,6 +31,56 @@ async function fixture(run: (directory: string) => Promise<void>) {
 }
 
 describe("app shell content version", () => {
+  test("rejects a real emitted chunk importing the versioned bootstrap", () =>
+    fixture(async (directory) => {
+      const client = join(directory, "client");
+      await mkdir(client);
+      await writeFile(
+        join(client, "app.ts"),
+        'export const shared = () => document.title; console.log("bootstrap");',
+      );
+      await writeFile(
+        join(client, "gallery.ts"),
+        'import { shared } from "./app"; export const render = () => shared();',
+      );
+      await expect(
+        build({
+          configFile: false,
+          root: client,
+          logLevel: "silent",
+          plugins: [uiVersion(directory)],
+          build: {
+            outDir: join(directory, "svelte-preview"),
+            lib: {
+              entry: {
+                app: join(client, "app.ts"),
+                gallery: join(client, "gallery.ts"),
+              },
+              formats: ["es"],
+              fileName: (_format, name) => `${name}.js`,
+            },
+          },
+        }),
+      ).rejects.toThrow("imports bootstrap app.js");
+    }));
+  test("generated Tailwind CSS changes the update version and is linked exactly once", () =>
+    fixture(async (directory) => {
+      const path = join(directory, "svelte-preview/ui.css");
+      await writeFile(path, ".bg-card{background:white}");
+      await expect(versionAppShell(directory)).rejects.toThrow(
+        "ui.css exactly once",
+      );
+      await writeFile(
+        join(directory, "app-svelte.html"),
+        shell + '<link rel="stylesheet" href="/svelte-preview/ui.css">',
+      );
+      const first = await versionAppShell(directory);
+      expect(
+        await readFile(join(directory, "app-svelte.html"), "utf8"),
+      ).toContain(`/svelte-preview/ui.css?v=${first}`);
+      await writeFile(path, ".bg-card{background:ivory}");
+      expect(await versionAppShell(directory)).not.toBe(first);
+    }));
   test("unchanged builds are stable, preserve layout and use the same version for CSS/JS", () =>
     fixture(async (directory) => {
       const version = await versionAppShell(directory);

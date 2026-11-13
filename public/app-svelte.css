@@ -1,3 +1,5 @@
+/* Transitional preview styles; remove as native features migrate. Never imported by vanilla. */
+@layer legacy {
 :root {
     /* Every color once, light and dark (light-dark follows color-scheme: auto = the system, or the rail's toggle). */
     color-scheme: light dark;
@@ -994,21 +996,6 @@
   dialog { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); color: var(--ink); padding: 24px; width: min(440px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px oklch(0.2 0.08 250 / .5); }
   dialog::backdrop { background: oklch(0.2 0.05 250 / .35); }
   #inboxBtn { position: relative; } #inboxBtn .kN { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 10px/16px system-ui, sans-serif; text-align: center; }
-  dialog.inbox { width: min(560px, calc(100% - 24px)); max-height: min(80vh, 720px); padding: 18px; display: none; flex-direction: column; gap: 10px; }
-  dialog.inbox[open] { display: flex; }
-  dialog.inbox header, dialog.inbox .ibTabs { flex: none; }
-  dialog.inbox header { display: flex; align-items: center; gap: 10px; } dialog.inbox header h2 { margin: 0; font-size: 18px; flex: 1; }
-  dialog.inbox .ibTabs { display: flex; gap: 6px; }
-  dialog.inbox .ibTabs button { flex: none; white-space: nowrap; border: 1px solid var(--line); background: none; color: var(--ink-2, inherit); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
-  dialog.inbox .ibTabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-  dialog.inbox ul { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; min-height: 0; overscroll-behavior: contain; }
-  dialog.inbox li { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); }
-  dialog.inbox li a { flex: 1; display: flex; gap: 10px; padding: 10px 4px; color: inherit; text-decoration: none; min-width: 0; }
-  dialog.inbox li a:hover { background: var(--hover); }
-  dialog.inbox li .wt { display: flex; flex-direction: column; gap: 4px; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
-  dialog.inbox li .wt > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } dialog.inbox li small { color: var(--mute); }
-  dialog.inbox li > button { margin-top: 8px; }
-  dialog.inbox .ibEmpty { color: var(--mute); padding: 18px 0; text-align: center; }
   dialog.welcome { width: min(520px, calc(100% - 32px)); padding: 30px 30px 22px; }
   dialog.welcome .wIco { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--ai-bg); color: var(--accent); margin-bottom: 16px; }
   dialog.welcome h3 { font-size: 26px; line-height: 1.15; margin-bottom: 10px; }
@@ -1321,3 +1308,5 @@
   @media (max-width: 900px) { body.has-sw #switcher { display: none; } body.has-sw #app { margin-left: 0; } }
 
   .preview table { overflow-wrap: normal; } .preview th { white-space: nowrap; } .preview td { min-width: 7em; max-width: 26em; vertical-align: top; } /* .preview's overflow-wrap: anywhere let every cell shrink to one letter: cells keep whole words and the table scrolls sideways */
+
+}

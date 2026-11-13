@@ -3,7 +3,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Plugin } from "vite";
 
-async function browserScripts(
+async function browserAssets(
   directory: string,
   prefix = "",
 ): Promise<string[]> {
@@ -12,8 +12,8 @@ async function browserScripts(
     entries.map(async (entry) => {
       const name = prefix + entry.name;
       if (entry.isDirectory())
-        return browserScripts(join(directory, entry.name), `${name}/`);
-      return entry.isFile() && entry.name.endsWith(".js") ? [name] : [];
+        return browserAssets(join(directory, entry.name), `${name}/`);
+      return entry.isFile() && /\.(?:js|css)$/.test(entry.name) ? [name] : [];
     }),
   );
   return files.flat().sort();
@@ -23,7 +23,7 @@ async function browserScripts(
 export async function versionAppShell(
   publicDirectory: string,
 ): Promise<string> {
-  const scripts = await browserScripts(join(publicDirectory, "svelte-preview"));
+  const scripts = await browserAssets(join(publicDirectory, "svelte-preview"));
   if (!scripts.includes("app.js"))
     throw new Error(
       "Cannot version the app shell before svelte-preview/app.js is built",
@@ -59,8 +59,16 @@ export async function versionAppShell(
   // Do not hash the shell or inject another line: that would either make each
   // rebuild change its own input or couple the HTML layout to build metadata.
   let css = 0,
-    app = 0;
+    app = 0,
+    utilities = 0;
   const next = shell
+    .replace(
+      /(\bhref=["'])\/svelte-preview\/ui\.css(?:\?[^"']*)?(["'])/g,
+      (_match, start: string, end: string) => {
+        utilities++;
+        return `${start}/svelte-preview/ui.css?v=${version}${end}`;
+      },
+    )
     .replace(
       /(\bhref=["'])\/app-svelte\.css(?:\?[^"']*)?(["'])/g,
       (_match, start: string, end: string) => {
@@ -79,6 +87,10 @@ export async function versionAppShell(
     throw new Error(
       "App shell must reference app-svelte.css and svelte-preview/app.js exactly once",
     );
+  if (scripts.includes("ui.css") && utilities !== 1)
+    throw new Error(
+      "App shell must reference emitted svelte-preview/ui.css exactly once",
+    );
   if (next !== shell) await writeFile(shellPath, next);
   return version;
 }
@@ -87,6 +99,18 @@ export function uiVersion(publicDirectory: string): Plugin {
   return {
     name: "vibebook-ui-version",
     apply: "build",
+    generateBundle(_options, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (
+          chunk.type === "chunk" &&
+          [...chunk.imports, ...chunk.dynamicImports].includes("app.js")
+        ) {
+          throw new Error(
+            `Browser chunk ${chunk.fileName} imports bootstrap app.js; a versioned HTML entry would execute twice`,
+          );
+        }
+      }
+    },
     async writeBundle() {
       await versionAppShell(publicDirectory);
     },

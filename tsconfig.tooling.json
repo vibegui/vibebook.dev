@@ -29,6 +29,19 @@
     "scripts/ui-metrics.ts",
     "scripts/ui-panels.test.ts",
     "scripts/ui-version.test.ts",
-    "scripts/ui-variant.test.ts"
+    "scripts/ui-variant.test.ts",
+    "scripts/ui-variant-boundary.test.ts",
+    "scripts/vanilla-isolation-check.ts",
+    "scripts/migration-inventory.ts",
+    "scripts/rpc-routes.test.ts",
+    "scripts/style-policy.ts",
+    "scripts/style-policy.test.ts",
+    "scripts/style-check.ts",
+    "scripts/capture-studio.ts",
+    "scripts/design-system-browser.ts",
+    "scripts/ui-variants.test.ts",
+    "scripts/studio-browser.ts",
+    "scripts/native-browser-fixtures.ts",
+    "scripts/tasks-browser.ts"
   ]
 }

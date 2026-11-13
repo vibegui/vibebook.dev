@@ -1,0 +1,61 @@
+{
+  "scope": "Native reset containment, Gallery/Inbox and task regression; incremental evidence only",
+  "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
+  "capturedAt": "2026-11-13T01:08:05.091Z",
+  "command": "bun run check",
+  "exitCode": 0,
+  "tests": {
+    "passed": 77,
+    "failed": 0,
+    "assertions": 364
+  },
+  "svelteCheck": {
+    "preview": "0 errors and 0 warnings",
+    "vanilla": "0 errors and 0 warnings"
+  },
+  "logSha256": "265641bedf9889cf0d1d26568d15a11ce4cd77ec8890777dd727a2465526a61a",
+  "frontendTypeProgram": {
+    "command": "node node_modules/@typescript/native/bin/tsc -p svelte/tsconfig.json --listFilesOnly",
+    "files": 405,
+    "backendRuntimeSources": [],
+    "cloudflareWorkerTypes": [],
+    "apiDeclarations": [
+      ".api-types/shared/schemas.d.ts",
+      ".api-types/src/api.d.ts"
+    ]
+  },
+  "defaultAssetDiff": {
+    "baseline": "12b202f",
+    "paths": [
+      "public/app.html",
+      "public/svelte/ui.js",
+      "public/collab.js",
+      "public/sw.js",
+      "public/manifest.webmanifest",
+      "src/webpush.ts"
+    ],
+    "changed": []
+  },
+  "browserProof": {
+    "file": "docs/svelte-migration/native-coexistence/verification.json",
+    "sourceCommit": "b902751c167f4d8144b2e089439f24953bd12100",
+    "scopes": [
+      "Gallery and Inbox",
+      "Native task panel, not full feature parity/production acceptance"
+    ],
+    "status": "pass"
+  },
+  "cssBoundary": {
+    "vite": "Plain CSS and actual Tailwind: private/backend URLs, aliases, symlinks, public symlinks, nested imports reject; safe fonts pass; server positive/client negative fixtures pass",
+    "bun": "Native CSS resolution rejects private font, backend URL, nested backend import and private symlink; safe font passes",
+    "sdkTypingException": "Vite 8.3.8 async alias resolver declaration: one documented @ts-expect-error in build adapter, covered by real resolver fixtures",
+    "nativeReset": "All49 emitted base rules confined to native descendants; no unlowered @scope; real legacy room CSS/geometry unchanged for445desktop/467mobile elements in both themes"
+  },
+  "limits": [
+    "Local DEV_EMAIL and explicit browser fixtures; no authenticated production acceptance.",
+    "Vanilla remains default; the Svelte application still has a legacy host and styling outside migrated surfaces.",
+    "Actual authenticated Studio workspace comparison, complete native features/schema/RPC migration, full-app/backend/contract HMR and final performance budgets remain pending.",
+    "Baseline is12b202f; later peer-reported API/viewer changes must be integrated and verified separately.",
+    "WebSocket send success means queued data, not server acknowledgment; browser persistence and reconnect are tested separately."
+  ]
+}

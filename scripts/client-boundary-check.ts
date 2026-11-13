@@ -3,7 +3,8 @@ import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { build } from "vite";
-import { clientBoundary } from "../svelte/build/clientBoundary";
+import tailwindcss from "@tailwindcss/vite";
+import { clientBoundary, projectRoot } from "../svelte/build/clientBoundary";
 
 // Real Vite graph builds: these exercise resolution, aliases, transitive imports and type erasure.
 const root = await mkdtemp(join(tmpdir(), "vibebook-client-boundary-"));
@@ -13,6 +14,7 @@ const privateSentinel = "FAKE_PRIVATE_CONFIG_MUST_NEVER_SHIP";
 try {
   for (const path of [
     "client",
+    "public/fonts",
     "src",
     "shared/server",
     "packages/server-only",
@@ -25,6 +27,18 @@ try {
   await writeFile(
     join(root, "src/private.ts"),
     `export type Contract = { id: string }; export const value = ${JSON.stringify(backendSentinel)};`,
+  );
+  await writeFile(
+    join(root, "src/private.css"),
+    `.backend { --probe: "${backendSentinel}"; }`,
+  );
+  await writeFile(
+    join(root, "shared/nested.css"),
+    '@import "../src/private.css";',
+  );
+  await writeFile(
+    join(root, "shared/public-font.woff2"),
+    "FAKE_PUBLIC_FONT_ALLOWED",
   );
   await writeFile(
     join(root, "shared/value.ts"),
@@ -72,15 +86,30 @@ try {
     'export const value = "browser-safe-dependency";',
   );
   await symlink(join(root, ".dev.vars"), join(root, "shared/config-link.txt"));
-  const compile = async (source: string, external: string[] = []) => {
+  const compile = async (
+    source: string,
+    external: string[] = [],
+    withTailwind = false,
+  ) => {
     await writeFile(entry, source);
     return build({
       configFile: false,
       root: join(root, "client"),
+      publicDir: join(root, "public"),
       logLevel: "silent",
-      plugins: [clientBoundary({ projectRoot: root })],
+      plugins: [
+        clientBoundary({ projectRoot: root }),
+        ...(withTailwind ? [tailwindcss()] : []),
+      ],
       resolve: {
         alias: [
+          {
+            find: "tailwindcss",
+            replacement: join(
+              projectRoot,
+              "node_modules/tailwindcss/index.css",
+            ),
+          },
           { find: "@backend", replacement: join(root, "src") },
           {
             find: /^@configuration(?=\?|$)/,
@@ -91,7 +120,7 @@ try {
       build: {
         write: false,
         minify: false,
-        lib: { entry, formats: ["es"] },
+        lib: { entry, formats: ["es"], cssFileName: "fixture" },
         rolldownOptions: { external },
       },
     });
@@ -234,6 +263,97 @@ try {
     /\[client-boundary\]/,
   );
   console.log("PASS rejects externally configured private symlink");
+  // CSS asset reads bypass Vite's normal module hooks. Test both plain CSS and
+  // the actual Tailwind font-registration path, including nested imports.
+  for (const withTailwind of [false, true]) {
+    const prefix = withTailwind
+      ? '@import "tailwindcss" prefix(tw) source(none);\n'
+      : "";
+    const style = join(root, "client/fixture.css");
+    const cssEntry =
+      'import "./fixture.css"; export const value = "css-fixture";';
+    await writeFile(
+      style,
+      prefix +
+        '@font-face {font-family:"public";src:url("../shared/public-font.woff2")}',
+    );
+    await compile(cssEntry, [], withTailwind);
+    console.log(
+      `PASS ${withTailwind ? "Tailwind" : "CSS"} browser-safe font asset`,
+    );
+    for (const [name, css] of [
+      [
+        "private font URL",
+        '@font-face {font-family:"probe";src:url("../.dev.vars")}',
+      ],
+      ["backend URL asset", '.probe {background:url("../src/private.ts")}'],
+      ["backend alias URL", '.probe {background:url("@backend/private.ts")}'],
+      [
+        "private symlink URL",
+        '@font-face {font-family:"probe";src:url("../shared/config-link.txt")}',
+      ],
+      ["backend CSS import", '@import "../src/private.css";'],
+      ["nested backend CSS import", '@import "../shared/nested.css";'],
+    ]) {
+      await writeFile(style, prefix + css);
+      await assert.rejects(
+        compile(cssEntry, [], withTailwind),
+        /\[client-boundary\]/,
+        `${name} must fail before CSS asset emission`,
+      );
+      console.log(`PASS rejects ${withTailwind ? "Tailwind" : "CSS"} ${name}`);
+    }
+    const publicLink = join(root, "public/fonts/private-link.woff2");
+    await symlink(join(root, ".dev.vars"), publicLink);
+    try {
+      await writeFile(
+        style,
+        prefix +
+          '@font-face {font-family:"probe";src:url("/fonts/private-link.woff2")}',
+      );
+      await assert.rejects(
+        compile(cssEntry, [], withTailwind),
+        /\[client-boundary\]/,
+        "public font symlink must not expose a private target",
+      );
+      console.log(
+        `PASS rejects ${withTailwind ? "Tailwind" : "CSS"} public asset symlink`,
+      );
+    } finally {
+      await rm(publicLink);
+    }
+  }
+  // Browser boundaries must not reject Vite's separate server optimizer/build.
+  // The same backend and Node values rejected above remain valid server code.
+  await writeFile(
+    entry,
+    'export {value} from "../src/private"; export {readFile} from "node:fs";',
+  );
+  const serverBuild = await build({
+    configFile: false,
+    root: join(root, "client"),
+    logLevel: "silent",
+    plugins: [clientBoundary({ projectRoot: root })],
+    build: {
+      ssr: entry,
+      write: false,
+      minify: false,
+      rolldownOptions: { external: ["node:fs"] },
+    },
+  });
+  const serverCode = (Array.isArray(serverBuild) ? serverBuild : [serverBuild])
+    .flatMap((result) => {
+      assert("output" in result, "expected server bundle, not watcher");
+      return result.output;
+    })
+    .filter((chunk) => chunk.type === "chunk")
+    .map((chunk) => chunk.code)
+    .join("\n");
+  assert(serverCode.includes(backendSentinel));
+  assert(serverCode.includes("node:fs"));
+  console.log(
+    "PASS separate server environment permits backend and Node imports",
+  );
 } finally {
   await rm(root, { recursive: true, force: true });
 }

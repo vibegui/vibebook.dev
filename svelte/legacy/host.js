@@ -12,6 +12,8 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
+  "Não deu pra resolver agora. Tente de novo.": "Couldn't resolve this request. Try again.",
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
   "Sem dono · clique pra escolher": "No owner · click to pick one",
@@ -976,7 +978,7 @@ function swSearch() {
     renderSwitchList();
   }, 250);
 }
-function openSwitch() { if (!myBooks) return; swQ.value = ""; swPick = 0; swHits = null; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
+function openSwitch() { if (!myBooks) return; UI.dismissDialogs(); closeInbox(); swQ.value = ""; swPick = 0; swHits = null; renderSwitchList(); swDlg.showModal(); swQ.focus(); }
 swQ.oninput = () => { swPick = 0; swSearch(); renderSwitchList(); };
 swQ.onkeydown = (e) => {
   const n = swList.querySelectorAll("a").length;
@@ -1001,6 +1003,8 @@ swDlg.onclick = (e) => { if (e.target === swDlg) swDlg.close(); };
 document.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && document.body.classList.contains("has-sw")) { e.preventDefault(); swDlg.open ? swDlg.close() : openSwitch(); } });
 
 function route() {
+  UI.dismissDialogs();
+  closeInbox();
   clearViews();
   renderSwitcher();
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
@@ -1062,6 +1066,8 @@ async function login() {
 }
 // Back/forward between threads of the open room only switches the thread; anything else reroutes.
 window.addEventListener("popstate", () => {
+  UI.dismissDialogs();
+  closeInbox();
   if (viewerPop() || sheetPop()) return;
   const m = location.pathname.match(/^\/b\/([a-z0-9]+)/);
   // A cached snapshot survives home navigation; it cannot stand in for a mounted room/socket.
@@ -1495,36 +1501,49 @@ function renderWaits() {
 // Caixa de entrada: the same waits as the home ("Esperando você": asks to you, your tasks in review, your Claude
 // waiting on you), opened from any room, "Esta sala" or "Todas"; a click goes to the message, ✓ resolves an ask.
 let inboxAll = false;
+let inboxGeneration = 0;
+function closeInbox() {
+  inboxGeneration++;
+  const node = document.getElementById("inbox");
+  node?._unmount?.();
+  if (node) node._unmount = null;
+}
 function syncInbox() {
+  document.getElementById("inbox")?._unmount?.updateWaits(myWaits);
   const b = document.getElementById("inboxBtn"); if (!b) return;
   const n = myWaits.length, k = b.querySelector(".kN");
   k.hidden = !n; k.textContent = n; k.className = `kN${clW(myWaits)}`;
 }
-// The inbox is the first piece of the app in Svelte (svelte/Inbox.svelte → public/svelte/ui.js, loaded on first
-// open, epic "Front-end framework evaluation"): the dialog and its CSS stay here, the component draws inside it.
+// Native Svelte Inbox owns its accessible dialog, tabs, SVG/avatar rendering and Tailwind styles.
+// This temporary host only supplies the room callbacks until the remaining application shell is ported.
 let uiLoad;
 const loadUI = () => Promise.resolve(UI);
 function openInbox() {
+  closeInbox();
+  const generation = inboxGeneration;
   let d = document.getElementById("inbox");
-  if (!d) { d = document.createElement("dialog"); d.id = "inbox"; d.className = "inbox"; document.body.appendChild(d); d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); }
+  if (!d) { d = document.createElement("div"); d.id = "inbox"; document.body.appendChild(d); }
+  const close = () => { if (generation === inboxGeneration) closeInbox(); };
   loadUI().then(({ mountInbox }) => {
-    d._unmount?.(); d.replaceChildren();
+    if (generation !== inboxGeneration) return;
+    d.replaceChildren();
     d._unmount = mountInbox(d, {
-      waits: myWaits, roomId: S?.id ?? null, all: inboxAll, vb: { t, icon, avatar, ago },
+      waits: myWaits, roomId: S?.id ?? null, all: inboxAll, vb: { t, ago },
+      displayName: name,
+      avatarUrl: (email) => { const v = S?.avatars?.[email] ?? avatarV[email]; return v ? `/api/avatar/${encodeURIComponent(email)}?v=${v}` : undefined; },
       ontab: (v) => (inboxAll = v),
-      onclose: () => d.close(),
+      onclose: close,
       onopen: (w, e) => {
-        d.close();
+        close();
         const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
         if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid, w.thread); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
       },
-      onresolve: (w) => {
-        myWaits = myWaits.filter((x) => x !== w);
-        renderSwitcher(); renderWaits(); if (S) renderSide(); openInbox();
-        api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+      onresolve: async (w) => {
+        await api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref });
+        myWaits = myWaits.filter((x) => x.book_id !== w.book_id || x.ref !== w.ref);
+        renderSwitcher(); renderWaits(); if (S) renderSide();
       },
     });
-    if (!d.open) d.showModal();
   }).catch(() => toast(t("Não deu pra abrir agora. Tente de novo.")));
 }
 document.addEventListener("click", (e) => { if (e.target.closest?.("#inboxBtn")) openInbox(); });
@@ -2976,7 +2995,7 @@ function sheetPop() {
   delete bk.dataset.sheet;
   return true;
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open]")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !e.defaultPrevented && $app.querySelector(".book[data-sheet]") && !document.querySelector("dialog[open], [data-dialog-content]")) closeSheet(); });
 // Drag a sheet by its handle (or the peek bar): it follows the finger, and lets go open or closed past a quarter.
 // A tap (no drag) is a plain click: opens from the peek bar, closes from the handle.
 function sheetDrag(handle, which, opening, onTap) {

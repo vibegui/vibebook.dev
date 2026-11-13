@@ -1,5 +1,7 @@
 # Svelte rollout and migration plan
 
+The [full migration acceptance plan](svelte-full-migration-plan.md) defines completion of the entire Svelte/TypeScript/RPC migration, the Tailwind-only atomic design system and the Studio-matched theme. This earlier document covers the initial preview rollout.
+
 The immediate deliverable is an online Svelte preview that can be opened beside the current vanilla application against the same room. Vanilla remains the default until Gimenes and Gui accept the Svelte version. New vanilla fixes must continue to reach the preview where relevant; the vanilla app remains maintained throughout the experiment.
 
 ## Version selection and isolation

@@ -1,0 +1,58 @@
+{
+  "scope": "Only dependency-supplied runtime internals; no first-party presentation overrides",
+  "entries": [
+    {
+      "family": "Bits UI/Floating UI internals",
+      "packages": [
+        {
+          "name": "bits-ui",
+          "version": "2.21.0"
+        },
+        {
+          "name": "@floating-ui/dom",
+          "version": "1.8.0"
+        }
+      ],
+      "sources": [
+        "bits-ui/dist/bits/utilities/floating-layer/use-floating-layer.svelte.js",
+        "bits-ui/dist/internal/floating-svelte/use-floating.svelte.js",
+        "@floating-ui/dom/dist/floating-ui.dom.esm.js"
+      ],
+      "purpose": "Tooltip positioning, size, transform origin and collision measurements only",
+      "verification": "Component browser tests inspect positioning and cleanup; app appearance stays in Tailwind classes. Dialog body style mutations are disabled; a Tailwind :has utility owns scroll locking."
+    },
+    {
+      "family": "CodeMirror 6 view internals",
+      "packages": [
+        {
+          "name": "@codemirror/view",
+          "version": "6.43.15"
+        },
+        {
+          "name": "style-mod",
+          "version": "4.1.4"
+        }
+      ],
+      "sources": [
+        "@codemirror/view/dist/index.js",
+        "style-mod/src/style-mod.js"
+      ],
+      "purpose": "Dependency editor structure, input/caret geometry and required behavior only",
+      "verification": "Existing first-party collab theme overrides remain migration debt and are not covered by this exception."
+    },
+    {
+      "family": "Yjs/y-codemirror.next integration",
+      "packages": [
+        {
+          "name": "y-codemirror.next",
+          "version": "0.3.5"
+        }
+      ],
+      "sources": [
+        "y-codemirror.next/src/y-remote-selections.js"
+      ],
+      "purpose": "Dependency collaborator caret/selection rendering only",
+      "verification": "Editor lifecycle and concurrent editing browser gates remain required at final acceptance."
+    }
+  ]
+}
