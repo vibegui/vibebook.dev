@@ -2218,7 +2218,7 @@ function clearViews() {
 }
 const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
 const chatBridge = () => ({ t, name, knownNames, pageUrl:location.href, locale:LOCALE, avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;}, ago, hhmm, typingLabel: (mode) => modeLabel[mode] ?? mode, typingNote: (id) => typingNotes.get(id), dateTime: (ts) => new Date(ts).toLocaleString(LOCALE), waiting: (id) => myWaits.some((w) => w.book_id === S.id && w.ref === `m${id}`) });
-function selectThread(id) { thread = id; boardEpic = id === "main" ? null : id; docRoom = false; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
+function selectThread(id) { if(deferViewerIntent(()=>selectThread(id)))return; thread = id; boardEpic = id === "main" ? null : id; docRoom = false; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
 
 
 function onEvent(ev, id) {
@@ -4358,6 +4358,7 @@ function renderSide() {
   };
   const openSideThread = (id) => {
     if (S?.id !== roomId) return;
+    if(deferViewerIntent(()=>openSideThread(id)))return;
     closeSheet(true);
     thread = id;
     docRoom = false;
@@ -4523,12 +4524,14 @@ function renderPeek() {
 const ROOM_PHONE = matchMedia("(max-width: 900px)");
 let sheetSkip = false;
 function openSheet(which) {
+  if(deferViewerIntent(()=>openSheet(which)))return;
   const bk = $app.querySelector(".book");
   if (!bk || !ROOM_PHONE.matches || bk.dataset.sheet === which) return;
   if (!bk.dataset.sheet) navigation.pushState({ sheet: 1 }, "", location.href);
   bk.dataset.sheet = which;
 }
 function closeSheet(pick) {
+  if(deferViewerIntent(()=>closeSheet(pick)))return;
   const bk = $app.querySelector(".book");
   if (!bk?.dataset.sheet) return;
   bk.querySelector(
@@ -4682,13 +4685,7 @@ function renderTasks() {
       if (thread === "main") return;
       e.preventDefault();
       e.stopPropagation();
-      thread = "main";
-      docRoom = false;
-      boardEpic = null;
-      renderSide();
-      renderChat();
-      renderKanban();
-      renderDoc();
+      selectThread("main");
     };
   }
   head.querySelector(".thPick").onclick = (e) => {
@@ -4712,6 +4709,10 @@ const fileUrl = (f) => `/api/books/${S.id}/files/${f.id}`;
 // Native file presentation owns preview resources, version identity and history.
 let nativeViewer = null, nativeViewerMount = null, nativeViewerTarget = null;
 const IOS_PWA = (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+function deferViewerIntent(callback) {
+ const id=S?.id,account=S?.me;
+ return nativeViewer?.deferNavigation(()=>{if(S?.id===id&&S?.me===account&&currentRoomId()===id)callback();})??false;
+}
 function syncViewer(fresh=false) {
   if (!nativeViewer || !S || !roomConnection || currentRoomId() !== S.id) return;
   const roomId=S.id, account=S.me, connection=roomConnection;
@@ -4814,20 +4815,10 @@ function refreshThreadCards() {
 document.addEventListener("click", (ev) => {
   const back = ev.target.closest("[data-gomain]");
   if (back) {
-    thread = "main";
-    boardEpic = null;
-    docRoom = false;
-    renderSide();
-    renderChat();
-    renderKanban();
-    renderDoc();
-    return document
-      .getElementById(`m${back.dataset.gomain}`)
-      ?.scrollIntoView({ block: "center" });
+    return goToMsg(Number(back.dataset.gomain),"main");
   }
   const b = ev.target.closest("[data-chat-rich~=tcard][data-goepic]"); if (!b) return;
-  thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
-  renderSide(); renderChat(); renderKanban(); renderDoc();
+  selectThread(b.dataset.goepic);
 });
 // The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
@@ -4861,6 +4852,7 @@ document.addEventListener("click", (ev) => {
 // window when it's loaded but not drawn, else pages back through the thread (≤15 × 100) until it shows up.
 let goPending = null;
 function goToMsg(id, th) {
+  if(deferViewerIntent(()=>goToMsg(id,th)))return;
   const m = S.messages.find((x) => x.id === id),
     want = m?.thread || th;
   if (
@@ -4904,6 +4896,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo 
 // Buttons work like choices: only the person whose Claude asked can press one, and it's posted as their reply.
 // A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
 function cardGo(to) {
+  if(deferViewerIntent(()=>cardGo(to)))return;
   if (to.startsWith("#app:")) {
     const [cid, tool] = to.slice(5).split("/");
     connApp = { cid, tool };
