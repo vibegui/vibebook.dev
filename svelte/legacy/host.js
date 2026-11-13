@@ -40,6 +40,9 @@ const LANG =
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "Gráfico": "Chart",
+  "Escolha uma opção": "Choose an option",
+  "Ainda sem confirmação. Confira a sala antes de enviar novamente.": "Still unconfirmed. Check the room before sending again.",
   "Tentar novamente": "Try again",
   "online": "online",
   "offline": "offline",

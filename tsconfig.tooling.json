@@ -3,15 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun",
-      "svelte"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -75,6 +68,9 @@
     "scripts/native-auth-dom.test.ts",
     "scripts/native-home.test.ts",
     "scripts/native-home-dom.test.ts",
-    "scripts/native-home-fixtures.ts"
+    "scripts/native-home-fixtures.ts",
+    "scripts/i18n-policy.ts",
+    "scripts/i18n-policy.test.ts",
+    "scripts/i18n-check.ts"
   ]
 }
