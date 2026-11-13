@@ -317,7 +317,7 @@ export function createFileViewer(options: {
     if (history.deferNavigation(() => open(input, element))) return true;
     const files = knownViewerFiles(room),
       found = files.find((file) => file.id === input.id);
-    if (room.filesAll && !found) return false;
+    if (room.filesAll && !found && input.metadata) return false;
     if (input.metadata && (!found || !sameFile(found, input.metadata)))
       return false;
     const previous = get(state);

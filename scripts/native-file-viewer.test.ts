@@ -416,3 +416,14 @@ test("canonical membership removal closes preview and fences prior media callbac
   expect(session.open({ roomId: "aaaaaa", id: "aa" })).toBe(false);
   session.dispose();
 });
+
+test("an unknown exact deep link reports canonical missing without opening a stale full witness", () => {
+  const { session } = fixture();
+  expect(session.open({ roomId: "aaaaaa", id: "ff" })).toBe(true);
+  expect(get(session.state).error).toBe("missing");
+  expect(get(session.state).content).toBeNull();
+  expect(
+    session.open({ roomId: "aaaaaa", id: "ff", metadata: attachment("ff") }),
+  ).toBe(false);
+  session.dispose();
+});
