@@ -153,8 +153,22 @@ afterEach(() => {
   window.document.body.innerHTML = "";
   window.localStorage.clear();
 });
+// Poll actual DOM state and report identity as a boolean, avoiding huge DOM graphs.
+async function expectFocusedAfterUpdates(expected: Element | null) {
+  expect(expected instanceof HTMLElement).toBe(true);
+  // ACK, canonical reconciliation and Svelte's scheduled focus settle separately.
+  // Always cross a frame, including when checking that intervening focus stays put.
+  for (let frame = 0; frame < 10; frame++) {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    flushSync();
+    await tick();
+    if (document.activeElement === expected) break;
+  }
+  expect(document.activeElement === expected).toBe(true);
+}
 // Bits retains closed content until its exit-animation frame completes.
-// Poll the actual DOM condition; do not print Happy DOM graphs on failure.
 async function expectAlertDialogClosed() {
   for (let frame = 0; frame < 10; frame++) {
     if (!document.querySelector('[role="alertdialog"]')) break;
@@ -2613,7 +2627,7 @@ describe("stable native sidebar integration", () => {
     await rendered.settle(0, { ok: true });
     await tick();
     flushSync();
-    expect(document.activeElement).toBe(
+    await expectFocusedAfterUpdates(
       rendered.target.querySelector('[data-epic-thread="e"]'),
     );
     expect(
@@ -2635,7 +2649,7 @@ describe("stable native sidebar integration", () => {
     await rendered.settle(1, { ok: true });
     await tick();
     flushSync();
-    expect(document.activeElement).toBe(draft);
+    await expectFocusedAfterUpdates(draft);
   }, 30_000);
   test("epic ordering focus callbacks cannot target a replaced room view", async () => {
     const room = fixture();
@@ -2658,7 +2672,7 @@ describe("stable native sidebar integration", () => {
     draft.focus();
     await tick();
     flushSync();
-    expect(document.activeElement).toBe(draft);
+    await expectFocusedAfterUpdates(draft);
   }, 30_000);
   test("repeated room updates preserve keyed navigation and form drafts", () => {
     let room = fixture();
