@@ -1,5 +1,5 @@
 import type { RequestRoomCommand } from "./roomConnection";
-import type { Message, Attachment } from "../shared/room";
+import type { Message, Attachment, Room } from "../shared/room";
 import type {
   RichFileReference,
   RichNavigation,
@@ -49,4 +49,19 @@ export type ChatActions = {
   reply: (id: number) => void;
   navigate: (id: number, thread?: string) => void;
   openFile: (file: Attachment) => void;
+};
+
+/** Real Chat props are also used by source-only tooling tests, which do not compile Svelte declarations. */
+export type ChatProps = {
+  room: Room;
+  thread: string;
+  list: ChatMessage[];
+  previous?: ChatMessage;
+  more?: boolean | number;
+  origin?: ChatMessage | null;
+  replyCount?: number;
+  vb: ChatBridge;
+  legacy: LegacyChatIntegrations;
+  actions: ChatActions;
+  onloadolder: () => void;
 };

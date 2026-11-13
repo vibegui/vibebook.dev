@@ -38,7 +38,7 @@ export const permissionAsk = (message: Message) =>
   message.kind === "agent" &&
   /^\u23f8/.test(message.text || "") &&
   /"options":\["Aprovar","Negar"\]/.test(message.choices || "");
-export const answerOf = (room: Room, message: Message) =>
+export const answerOf = (room: Room, message: Message): Message | undefined =>
   room.messages
     .filter(
       (answer) =>
@@ -47,7 +47,7 @@ export const answerOf = (room: Room, message: Message) =>
         answer.kind !== "agent",
     )
     .sort((a, b) => a.id - b.id)[0];
-export const canAnswer = (room: Room, message: Message) =>
+export const canAnswer = (room: Room, message: Message): boolean =>
   room.members.includes(room.me) &&
   message.kind === "agent" &&
   message.author === room.me &&

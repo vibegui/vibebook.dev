@@ -1,13 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Message from "./Message.svelte";
-  import type { Room } from "../shared/room";
-  import type {
-    ChatActions,
-    ChatBridge,
-    ChatMessage,
-    LegacyChatIntegrations,
-  } from "./chatTypes";
+  import type { ChatProps } from "./chatTypes";
   import {
     foldMessages,
     messageFooters,
@@ -29,19 +23,7 @@
     legacy,
     actions,
     onloadolder,
-  }: {
-    room: Room;
-    thread: string;
-    list: ChatMessage[];
-    previous?: ChatMessage;
-    more?: boolean | number;
-    origin?: ChatMessage | null;
-    replyCount?: number;
-    vb: ChatBridge;
-    legacy: LegacyChatIntegrations;
-    actions: ChatActions;
-    onloadolder: () => void;
-  } = $props();
+  }: ChatProps = $props();
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => {

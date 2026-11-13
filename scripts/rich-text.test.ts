@@ -35,7 +35,7 @@ const text = (nodes: readonly RichNode[]): string =>
 const tags = (nodes: readonly RichNode[]) =>
   walk(nodes)
     .filter((node) => node.kind === "element")
-    .map((node) => node.tag);
+    .map((node) => String(node.tag));
 test("GFM blocks, inline syntax, code, tables, lists, references and soft breaks remain native typed nodes", () => {
   const ast = richText(
     '# Heading\n\n> quoted **strong** and *em* ~~gone~~ `x < y`\n\n3. three\n4. four\n\n- [x] checked\n- [ ] open\n\n| A | B |\n|:-|--:|\n| one | two |\n\n```ts\nconst x = "<script>";\n```\n\n[reference][r]\n\n[r]: https://example.org "Title"\n\nfirst\nsecond\n\n---',

@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs";
 import { compile, compileModule } from "svelte/compiler";
 import { Window as HappyDOMWindow } from "happy-dom";
 import type { Room } from "../svelte/roomStore";
+import type { ChatProps } from "../svelte/chatTypes";
 import type { CommandOutcome, RoomCommand } from "../shared/commands";
 import type { PanelBridge, PanelProps } from "../svelte/panels";
 import type { SidebarProps } from "../svelte/sidebar";
@@ -1283,17 +1284,10 @@ describe("native Svelte chat", () => {
     threadCards: () => "",
     ...overrides,
   });
-  function renderChat(
-    room: Room,
-    extra: Partial<
-      import("svelte").ComponentProps<
-        typeof import("../svelte/Chat.svelte").default
-      >
-    > = {},
-  ) {
+  function renderChat(room: Room, extra: Partial<ChatProps> = {}) {
     const target = window.document.createElement("div");
     window.document.body.append(target);
-    const props = {
+    const props: ChatProps = {
       room,
       thread: "e",
       list: room.messages,
@@ -1396,7 +1390,7 @@ describe("native Svelte chat", () => {
       author: fixture().me,
       card: JSON.stringify(input),
     };
-    let room = { ...fixture(), id: "abc123", messages: [q] };
+    let room: Room = { ...fixture(), id: "abc123", messages: [q] };
     const sent: RoomCommand[] = [];
     let resolve!: (result: CommandOutcome) => void;
     const { target, update } = renderChat(room, {
