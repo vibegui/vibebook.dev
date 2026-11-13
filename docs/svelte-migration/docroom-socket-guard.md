@@ -1,5 +1,13 @@
 # DocRoom closed-peer send guard
 
+Integrated and formatted at `00ce754`. The full RPC suite passes **55 tests and
+491 assertions**, including all three pinned-dependency regression cases. Strict
+tooling and Worker-test typing also pass. Backend, MCP and CLI type commands
+completed; their combined command initially failed the final translation audit.
+The four missing translations were added and the translation audit rerun passes.
+The rebuilt real Worker/browser reconnect and revoke gate is still required;
+the earlier browser report predates this fix and cannot prove its runtime result.
+
 The real native Document browser run exposed Worker errors from pinned `y-durableobjects` 1.0.5. Its startup registers every hibernated socket and its document/awareness notification callback sends unconditionally. During membership kicks, unregistering one socket removes awareness states and broadcasts to other peers which may already be closed. The dependency catches/logs that broadcast error internally, so DocRoom's existing outer close catch cannot prevent it. Startup sync has the same unguarded send path.
 
 DocRoom now overrides only the protected registration boundary. Closed sockets are skipped. A private socket view guards every dependency send using the actual socket's readyState; a send-race TypeError is tolerated only for the exact observed message and a non-OPEN post-error state. All other faults propagate. The view is removed from the protected session map immediately after synchronous setup; the original socket owns the exact dependency unsubscribe function. Existing protocol setup, awareness bookkeeping/removal, close/error handlers, hibernation, storage commits, authorization, membership kicks, alarms and awareness interval cancellation are unchanged. No dependency fork or new timer was added.

@@ -40,6 +40,10 @@ const LANG =
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const EN = {
+  "reseta": "resets",
+  "sandbox": "sandbox",
+  "Apagar": "Delete",
+  "Conferi a sala": "I checked the room",
   "Você não tem acesso a esta sala.": "You do not have access to this room.",
   "Rascunhos de conversas removidas": "Drafts from deleted threads",
   "Revisar rascunho": "Review draft",
