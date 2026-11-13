@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MAX_OPTIONS } from "../../../shared/composition";
   import { untrack, onDestroy } from "svelte";
   import type { ComposerEntry } from "./drafts";
   import type { ChatBridge } from "../../chatTypes";
@@ -63,7 +64,7 @@
     <Label
       >{vb.t("Pergunta (ex.: Qual cruzeiro?)")}<Input
         required
-        maxlength={300}
+        maxlength={POLL_QUESTION_LIMIT}
         value={$draft.poll.question}
         disabled={busy}
         oninput={(event) => {
@@ -75,7 +76,7 @@
     <div class="tw:grid tw:gap-2">
       {#each $draft.poll.options as value, index}<Input
           aria-label={vb.t("Opção {n}", { n: index + 1 })}
-          maxlength={200}
+          maxlength={POLL_OPTION_LIMIT}
           {value}
           disabled={busy}
           oninput={(event) => option(index, event.currentTarget.value)}
@@ -83,7 +84,7 @@
     </div>
     <Button
       variant="link"
-      disabled={busy || $draft.poll.options.length >= 10}
+      disabled={busy || $draft.poll.options.length >= POLL_MAX_OPTIONS}
       onclick={(event) => {
         if (allowed(event))
           entry.editPoll({ options: [...$draft.poll.options, ""] });

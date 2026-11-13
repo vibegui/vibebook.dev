@@ -1,3 +1,4 @@
+import { FILE_TYPES as UPLOAD_FILE_TYPES, maxBytes } from "../../../shared/composition";
 import { EMOJI } from "../../../shared/emoji";
 import type { Attachment, Message, Room } from "../../../shared/room";
 import type { ComposerAgent } from "./types";
@@ -12,11 +13,7 @@ export const AUDIO_EXT: Readonly<Record<string, string>> = {
   webm: "audio/webm",
   flac: "audio/flac",
 };
-export const FILE_TYPES = new Set(
-  "image/png image/jpeg image/webp image/gif application/pdf text/html text/markdown text/plain text/csv audio/mp4 audio/x-m4a audio/m4a audio/mpeg audio/mp3 audio/wav audio/x-wav audio/wave audio/aac audio/x-aac audio/ogg audio/webm audio/flac audio/x-flac".split(
-    " ",
-  ),
-);
+export const FILE_TYPES = new Set(UPLOAD_FILE_TYPES);
 export const FILE_ACCEPT =
   "image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,text/plain,.txt,text/csv,.csv,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac";
 export const mediaType = (value: string) =>
@@ -43,7 +40,7 @@ export const fileIssue = (file: File) =>
   !FILE_TYPES.has(mediaType(file.type))
     ? "type"
     : file.size >
-        (mediaType(file.type).startsWith("audio/") ? 50 : 10) * 1024 * 1024
+        maxBytes(mediaType(file.type))
       ? "size"
       : file.size === 0
         ? "empty"

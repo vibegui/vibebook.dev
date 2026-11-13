@@ -1,4 +1,6 @@
 import "server-only";
+import { FILE_TYPES, maxBytes } from "../shared/composition";
+export { AUDIO_TYPES, FILE_TYPES, MAX_FILE_BYTES, MAX_AUDIO_BYTES, maxBytes } from "../shared/composition";
 import type { UploadFileResponse } from "../shared/rpc";
 import { checkEmbed } from "./embed";
 import { poke } from "./person";
@@ -104,13 +106,8 @@ export async function setRoomIcon(env: Env, bookId: string, img: { type: string;
 // Files: images, PDF, HTML, Markdown, plain text, CSV and audio (no SVG: it can carry script without our sandbox applying to <img>).
 // HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
 // Audio: recordings already made (iPhone's Voice Memos exports .m4a, recorders .mp3/.wav); played with <audio> in the app.
-export const AUDIO_TYPES = ["audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
-export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "text/plain", "text/csv", ...AUDIO_TYPES];
 /** reminders/<name>.md: a room reminder (Book.reminderFile reads its schedule). */
 export const REMINDER_FILE = /^reminders\/([^\\/\u0000-\u001f]{1,60})\.md$/i;
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
-export const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
-export const maxBytes = (type: string) => (type.startsWith("audio/") ? MAX_AUDIO_BYTES : MAX_FILE_BYTES);
 export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown, texto, CSV e áudio).";
 export const sizeError = (type: string) => `Arquivo vazio ou maior que ${maxBytes(type) / 1024 / 1024}MB.`;
 export type StoredFile = UploadFileResponse;

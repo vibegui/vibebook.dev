@@ -1,4 +1,5 @@
 import "server-only";
+import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../shared/composition";
 import { reorderEpics } from "./epic-order";
 import { TASK_STATUSES } from "../shared/room";
 import type { PostMessageResponse } from "../shared/rpc";
@@ -886,13 +887,13 @@ export class Book extends DurableObject<Env> {
     return { ok: true };
   }
   createPoll(thread: string, author: string, question: string, options: string[], multi: boolean) {
-    const opts = options.map((o) => o.trim().slice(0, 200)).filter(Boolean).slice(0, 10);
-    if (!question.trim() || opts.length < 2) return null;
+    const opts = options.map((o) => o.trim().slice(0, POLL_OPTION_LIMIT)).filter(Boolean).slice(0, POLL_MAX_OPTIONS);
+    if (!question.trim() || opts.length < POLL_MIN_OPTIONS) return null;
     const id = rid();
     this.sql.exec(
       `INSERT INTO polls (id, question, options, multi, author, ts) VALUES (?, ?, ?, ?, ?, ?)`,
       id,
-      question.trim().slice(0, 300),
+      question.trim().slice(0, POLL_QUESTION_LIMIT),
       JSON.stringify(opts),
       multi ? 1 : 0,
       author,
@@ -1199,7 +1200,7 @@ export class Book extends DurableObject<Env> {
   async agentPost(bookId: string, email: string, raw: string, thread = "main", fileIds: string[] = [], via = "", done = false, embed = false, replyTo?: number, choices?: { options: string[]; multi: boolean }, card?: Card, agent?: string) {
     this.bind(bookId);
     this.unblock(email);
-    const text = raw.trim().slice(0, 4000);
+    const text = raw.trim().slice(0, MESSAGE_TEXT_LIMIT);
     // embed: the file is HTML the agent posted inline (checked by checkEmbed); the app draws it inside the message.
     const files = (fileIds.length ? this.files().filter((f) => fileIds.includes(f.id)) : []).map((f) => (embed ? { ...f, embed: true } : f));
     if (!text && !files.length && !card) return { ok: false, error: "empty message" };
@@ -1419,7 +1420,7 @@ export class Book extends DurableObject<Env> {
   /** A person posting from the home router (not over WS): same rules as the chat. */
   async humanPost(bookId: string, email: string, raw: string, thread = "main"): Promise<PostMessageResponse> {
     this.bind(bookId);
-    const text = raw.trim().slice(0, 4000);
+    const text = raw.trim().slice(0, MESSAGE_TEXT_LIMIT);
     if (!text) return { ok: false, error: "Mensagem vazia." };
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
     const secret = findSecret(text);
@@ -1746,9 +1747,9 @@ export class Book extends DurableObject<Env> {
   private async runCommand(ws: WebSocket, email: string, m: RoomCommand): Promise<unknown> {
     switch (m.t) {
       case "msg": {
-        const text = String(m.text ?? "").trim().slice(0, 4000);
+        const text = String(m.text ?? "").trim().slice(0, MESSAGE_TEXT_LIMIT);
         const thread = m.thread === "main" || this.epics().some((e) => e.id === m.thread) ? m.thread : null;
-        const ids = Array.isArray(m.files) ? m.files.map(String).slice(0, 10) : [];
+        const ids = Array.isArray(m.files) ? m.files.map(String).slice(0, MESSAGE_FILE_LIMIT) : [];
         const files = ids.length ? this.files().filter((f) => ids.includes(f.id)) : [];
         if ((!text && !files.length) || !thread) return new Refused(thread ? "empty message" : "unknown thread");
         const secret = findSecret(text);

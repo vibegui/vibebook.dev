@@ -1,3 +1,4 @@
+import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../../../shared/composition";
 import { visibleMessage } from "../chat/privacy";
 import { get, writable, type Writable } from "svelte/store";
 import type { Room, Message, Attachment, Poll } from "../../../shared/room";
@@ -395,7 +396,7 @@ export function createComposerDrafts(clock = defaultClock) {
         if (!valid() || !upload) return;
         for (const input of files) {
           const current = get(state);
-          if (current.attachments.length >= 10) {
+          if (current.attachments.length >= MESSAGE_FILE_LIMIT) {
             state.update((s) => ({ ...s, error: "attachments-limit" }));
             break;
           }
@@ -510,7 +511,7 @@ export function createComposerDrafts(clock = defaultClock) {
           state.update((s) => ({ ...s, error: "attachments-pending" }));
           return;
         }
-        if (text.length > 4000) {
+        if (text.length > MESSAGE_TEXT_LIMIT) {
           state.update((s) => ({ ...s, error: "text-limit" }));
           return;
         }
@@ -639,10 +640,10 @@ export function createComposerDrafts(clock = defaultClock) {
           };
         if (
           !form.question ||
-          form.question.length > 300 ||
-          form.options.length < 2 ||
-          form.options.length > 10 ||
-          form.options.some((value) => value.length > 200)
+          form.question.length > POLL_QUESTION_LIMIT ||
+          form.options.length < POLL_MIN_OPTIONS ||
+          form.options.length > POLL_MAX_OPTIONS ||
+          form.options.some((value) => value.length > POLL_OPTION_LIMIT)
         ) {
           state.update((s) => ({ ...s, pollError: "poll-invalid" }));
           return;
