@@ -194,6 +194,8 @@
               text={$view.content.text ?? ""}
               room={$view.room}
               actions={ownedActions}
+              policy="file-preview"
+              pageUrl={location.href}
             />
           {:else if $view.content.kind === "csv" && $view.phase === "ready"}<div
               class="tw:max-w-full tw:overflow-auto"
