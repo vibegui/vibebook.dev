@@ -1,6 +1,13 @@
 // Pure owners/protocol fixtures. These assertions do not represent Worker or browser acceptance.
 import { expect, test } from "bun:test";
 import { get } from "svelte/store";
+type PersonalSocketFixture = {
+  readyState: WebSocket["readyState"];
+  onopen: WebSocket["onopen"];
+  onmessage: WebSocket["onmessage"];
+  onclose: WebSocket["onclose"];
+  close(): void;
+};
 import { createHomeApi } from "../svelte/features/home/api";
 import { createPersonalSession } from "../svelte/features/home/personal";
 import {
@@ -506,12 +513,12 @@ test("personal socket ignores replaced/disposed callbacks and current-room messa
     visible = 0,
     unlistened = false;
   let visibility = () => {};
-  function socket() {
+  function socket(): PersonalSocketFixture & { message(data: unknown): void } {
     return {
       readyState: 0,
-      onopen: null as WebSocket["onopen"],
-      onmessage: null as WebSocket["onmessage"],
-      onclose: null as WebSocket["onclose"],
+      onopen: null,
+      onmessage: null,
+      onclose: null,
       close() {
         this.readyState = 3;
       },
@@ -697,54 +704,278 @@ test("first authenticated room state fences an earlier Me response with unknown 
   personal.dispose();
 });
 
-test('account revision synchronously fences routed send before page unmount', async () => {
-  const timer = manualClock(), posted = deferred<{ok:true;id:number;thread:string}>();
+test("account revision synchronously fences routed send before page unmount", async () => {
+  const timer = manualClock(),
+    posted = deferred<{ ok: true; id: number; thread: string }>();
   let current = me();
-  const personal = createPersonalSession(homeApi({me:async()=>current,post:()=>posted.promise}), {clock:timer.clock});
+  const personal = createPersonalSession(
+    homeApi({ me: async () => current, post: () => posted.promise }),
+    { clock: timer.clock },
+  );
   await personal.refresh();
-  const navigated:unknown[] = [], home = createHomeSession(personal, value=>navigated.push(value), timer.clock);
-  home.edit('private A request'); await home.suggest(); const pending = home.send();
-  current = me({email:'b@test.com'}); personal.acceptIdentity(current.email); personal.editAsk('new B draft');
-  expect(get(home.state).result).toBe(null); home.edit('stale A callback'); home.suggest();
-  posted.resolve({ok:true,id:99,thread:'epic-1'}); await pending; await settle();
-  expect(get(personal.draft).ask).toBe('new B draft'); expect(navigated).toEqual([]);
-  home.dispose(); personal.dispose();
+  const navigated: unknown[] = [],
+    home = createHomeSession(
+      personal,
+      (value) => navigated.push(value),
+      timer.clock,
+    );
+  home.edit("private A request");
+  await home.suggest();
+  const pending = home.send();
+  current = me({ email: "b@test.com" });
+  personal.acceptIdentity(current.email);
+  personal.editAsk("new B draft");
+  expect(get(home.state).result).toBe(null);
+  home.edit("stale A callback");
+  home.suggest();
+  posted.resolve({ ok: true, id: 99, thread: "epic-1" });
+  await pending;
+  await settle();
+  expect(get(personal.draft).ask).toBe("new B draft");
+  expect(navigated).toEqual([]);
+  home.dispose();
+  personal.dispose();
 });
-test('account revision clears Archived cache and fences late restore before page unmount', async () => {
-  const timer = manualClock(), restored = deferred<{ok:true}>(); let current = me(), reads = 0;
-  const book = {id:'aaaaaa',title:'Private A',folder:null,summary:null,updated_at:1,archived_at:2,members:null};
-  const personal = createPersonalSession(homeApi({me:async()=>current,archived:async()=>{reads++;return {books:[book]};},archive:()=>restored.promise}),{clock:timer.clock});
-  await personal.refresh(); const archive = createArchivedSession(personal,timer.clock); await archive.load(); const pending = archive.restore(book.id);
-  current=me({email:'b@test.com'}); personal.acceptIdentity(current.email); expect(get(archive.state).books).toEqual([]);
-  restored.resolve({ok:true}); await pending; await archive.load(); timer.advance(10_000); await settle();
-  expect(reads).toBe(1); expect(get(archive.state).pending).toBe(null); expect(get(archive.state).error).toBe(''); archive.dispose();personal.dispose();
+test("account revision clears Archived cache and fences late restore before page unmount", async () => {
+  const timer = manualClock(),
+    restored = deferred<{ ok: true }>();
+  let current = me(),
+    reads = 0;
+  const book = {
+    id: "aaaaaa",
+    title: "Private A",
+    folder: null,
+    summary: null,
+    updated_at: 1,
+    archived_at: 2,
+    members: null,
+  };
+  const personal = createPersonalSession(
+    homeApi({
+      me: async () => current,
+      archived: async () => {
+        reads++;
+        return { books: [book] };
+      },
+      archive: () => restored.promise,
+    }),
+    { clock: timer.clock },
+  );
+  await personal.refresh();
+  const archive = createArchivedSession(personal, timer.clock);
+  await archive.load();
+  const pending = archive.restore(book.id);
+  current = me({ email: "b@test.com" });
+  personal.acceptIdentity(current.email);
+  expect(get(archive.state).books).toEqual([]);
+  restored.resolve({ ok: true });
+  await pending;
+  await archive.load();
+  timer.advance(10_000);
+  await settle();
+  expect(reads).toBe(1);
+  expect(get(archive.state).pending).toBe(null);
+  expect(get(archive.state).error).toBe("");
+  archive.dispose();
+  personal.dispose();
 });
-test('account revision closes create and search owners without relying on host callback', async () => {
-  const timer=manualClock(), created=deferred<{id:string;unknown:string[];invited:string[];cost:number}>(), searched=deferred<{rooms:number;epics:[];messages:[]}>();let current=me();
-  const personal=createPersonalSession(homeApi({me:async()=>current,startRoom:()=>created.promise,search:()=>searched.promise}),{clock:timer.clock});await personal.refresh();const navigation:unknown[]=[],creator=createNewRoomSession(personal,target=>navigation.push(target),timer.clock),search=createSearchSession(personal,target=>navigation.push(target),timer.clock);
-  creator.open();creator.edit('A room');const pending=creator.submit();search.open();search.edit('private A');timer.advance(250);
-  current=me({email:'b@test.com'});personal.acceptIdentity(current.email);personal.editCreate('B room');created.resolve({id:'aaaaaa',unknown:[],invited:[],cost:0});searched.resolve({rooms:1,epics:[],messages:[]});await pending;await settle();
-  expect(get(personal.draft).create).toBe('B room');expect(get(creator.state).open).toBe(false);expect(get(search.state).query).toBe('');expect(get(search.state).result).toBe(null);expect(navigation).toEqual([]);creator.dispose();search.dispose();personal.dispose();
+test("account revision closes create and search owners without relying on host callback", async () => {
+  const timer = manualClock(),
+    created = deferred<{
+      id: string;
+      unknown: string[];
+      invited: string[];
+      cost: number;
+    }>(),
+    searched = deferred<{ rooms: number; epics: []; messages: [] }>();
+  let current = me();
+  const personal = createPersonalSession(
+    homeApi({
+      me: async () => current,
+      startRoom: () => created.promise,
+      search: () => searched.promise,
+    }),
+    { clock: timer.clock },
+  );
+  await personal.refresh();
+  const navigation: unknown[] = [],
+    creator = createNewRoomSession(
+      personal,
+      (target) => navigation.push(target),
+      timer.clock,
+    ),
+    search = createSearchSession(
+      personal,
+      (target) => navigation.push(target),
+      timer.clock,
+    );
+  creator.open();
+  creator.edit("A room");
+  const pending = creator.submit();
+  search.open();
+  search.edit("private A");
+  timer.advance(250);
+  current = me({ email: "b@test.com" });
+  personal.acceptIdentity(current.email);
+  personal.editCreate("B room");
+  created.resolve({ id: "aaaaaa", unknown: [], invited: [], cost: 0 });
+  searched.resolve({ rooms: 1, epics: [], messages: [] });
+  await pending;
+  await settle();
+  expect(get(personal.draft).create).toBe("B room");
+  expect(get(creator.state).open).toBe(false);
+  expect(get(search.state).query).toBe("");
+  expect(get(search.state).result).toBe(null);
+  expect(navigation).toEqual([]);
+  creator.dispose();
+  search.dispose();
+  personal.dispose();
 });
-test('agent invalidations during a read replay once and do not publish stale grants', async () => {
-  const timer=manualClock(), old=deferred<{agents:[];last_used:number|null}>();let reads=0;
-  const personal=createPersonalSession(homeApi({agents:()=>++reads===1?old.promise:Promise.resolve({agents:[],last_used:9})}),{clock:timer.clock});const pending=personal.refreshAgents();personal.observe({kind:'agents',book:'*'});personal.observe({kind:'agents',book:'aaaaaa'});timer.advance(600);expect(reads).toBe(1);old.resolve({agents:[],last_used:1});await pending;await settle();expect(reads).toBe(2);expect(get(personal.state).agents?.last_used).toBe(9);personal.dispose();
+test("agent invalidations during a read replay once and do not publish stale grants", async () => {
+  const timer = manualClock(),
+    old = deferred<{ agents: []; last_used: number | null }>();
+  let reads = 0;
+  const personal = createPersonalSession(
+    homeApi({
+      agents: () =>
+        ++reads === 1
+          ? old.promise
+          : Promise.resolve({ agents: [], last_used: 9 }),
+    }),
+    { clock: timer.clock },
+  );
+  const pending = personal.refreshAgents();
+  personal.observe({ kind: "agents", book: "*" });
+  personal.observe({ kind: "agents", book: "aaaaaa" });
+  timer.advance(600);
+  expect(reads).toBe(1);
+  old.resolve({ agents: [], last_used: 1 });
+  await pending;
+  await settle();
+  expect(reads).toBe(2);
+  expect(get(personal.state).agents?.last_used).toBe(9);
+  personal.dispose();
 });
-test('room path matching rejects suffixes and encoded separators', () => {
-  for(const path of ['/b/aaaaaa/extra','/b/aaaaaa%2Fother','/b/aaaaaa-evil','/b/a'])expect(applicationRoute('https://vb.test'+path).kind).toBe('document');expect(applicationRoute('https://vb.test/b/aaaaaa/').kind).toBe('room');
+test("room path matching rejects suffixes and encoded separators", () => {
+  for (const path of [
+    "/b/aaaaaa/extra",
+    "/b/aaaaaa%2Fother",
+    "/b/aaaaaa-evil",
+    "/b/a",
+  ])
+    expect(applicationRoute("https://vb.test" + path).kind).toBe("document");
+  expect(applicationRoute("https://vb.test/b/aaaaaa/").kind).toBe("room");
 });
-test('each successful personal reconnect reconciles once and old socket open cannot refresh', async () => {
-  const {createPersonalConnection}=await import('../svelte/features/home/connection');const timer=manualClock();let reads=0;
-  function socket(){return {readyState:0,onopen:null as WebSocket['onopen'],onmessage:null as WebSocket['onmessage'],onclose:null as WebSocket['onclose'],close(){this.readyState=3;},open(){this.readyState=1;if(this.onopen)Reflect.apply(this.onopen,this,[{}]);},lost(){this.readyState=3;if(this.onclose)Reflect.apply(this.onclose,this,[{}]);}};}
-  const sockets:ReturnType<typeof socket>[]=[],connection=createPersonalConnection({url:()=> 'wss://vb.test/ws-me',onAccount:()=>{},onAgents:()=>{},onConnected:()=>{reads++;},onVisible:()=>{},currentRoom:()=>null,visible:()=>true,listenVisibility:()=>()=>{},createSocket:()=>{const next=socket();sockets.push(next);return next;},clock:timer.clock});connection.start();sockets[0]!.open();sockets[0]!.open();expect(reads).toBe(1);sockets[0]!.lost();timer.advance(1000);sockets[0]!.open();expect(reads).toBe(1);sockets[1]!.open();expect(reads).toBe(2);connection.dispose();sockets[1]!.open();expect(reads).toBe(2);
+test("each successful personal reconnect reconciles once and old socket open cannot refresh", async () => {
+  const { createPersonalConnection } =
+    await import("../svelte/features/home/connection");
+  const timer = manualClock();
+  let reads = 0;
+  function socket(): PersonalSocketFixture & { open(): void; lost(): void } {
+    return {
+      readyState: 0,
+      onopen: null,
+      onmessage: null,
+      onclose: null,
+      close() {
+        this.readyState = 3;
+      },
+      open() {
+        this.readyState = 1;
+        if (this.onopen) Reflect.apply(this.onopen, this, [{}]);
+      },
+      lost() {
+        this.readyState = 3;
+        if (this.onclose) Reflect.apply(this.onclose, this, [{}]);
+      },
+    };
+  }
+  const sockets: ReturnType<typeof socket>[] = [],
+    connection = createPersonalConnection({
+      url: () => "wss://vb.test/ws-me",
+      onAccount: () => {},
+      onAgents: () => {},
+      onConnected: () => {
+        reads++;
+      },
+      onVisible: () => {},
+      currentRoom: () => null,
+      visible: () => true,
+      listenVisibility: () => () => {},
+      createSocket: () => {
+        const next = socket();
+        sockets.push(next);
+        return next;
+      },
+      clock: timer.clock,
+    });
+  connection.start();
+  sockets[0]!.open();
+  sockets[0]!.open();
+  expect(reads).toBe(1);
+  sockets[0]!.lost();
+  timer.advance(1000);
+  sockets[0]!.open();
+  expect(reads).toBe(1);
+  sockets[1]!.open();
+  expect(reads).toBe(2);
+  connection.dispose();
+  sockets[1]!.open();
+  expect(reads).toBe(2);
 });
 
-test('agents timeout releases ownership even when aborted transport never settles', async () => {
-  const timer=manualClock(), old=deferred<{agents:[];last_used:number|null}>();let reads=0;
-  const personal=createPersonalSession(homeApi({agents:()=>++reads===1?old.promise:Promise.resolve({agents:[],last_used:7})}),{clock:timer.clock});const pending=personal.refreshAgents();timer.advance(20_000);await personal.refreshAgents();expect(reads).toBe(2);expect(get(personal.state).agents?.last_used).toBe(7);old.resolve({agents:[],last_used:1});await pending;expect(get(personal.state).agents?.last_used).toBe(7);personal.dispose();
+test("agents timeout releases ownership even when aborted transport never settles", async () => {
+  const timer = manualClock(),
+    old = deferred<{ agents: []; last_used: number | null }>();
+  let reads = 0;
+  const personal = createPersonalSession(
+    homeApi({
+      agents: () =>
+        ++reads === 1
+          ? old.promise
+          : Promise.resolve({ agents: [], last_used: 7 }),
+    }),
+    { clock: timer.clock },
+  );
+  const pending = personal.refreshAgents();
+  timer.advance(20_000);
+  await personal.refreshAgents();
+  expect(reads).toBe(2);
+  expect(get(personal.state).agents?.last_used).toBe(7);
+  old.resolve({ agents: [], last_used: 1 });
+  await pending;
+  expect(get(personal.state).agents?.last_used).toBe(7);
+  personal.dispose();
 });
 
-test('navigation account reset releases private rename draft and return-focus reference', async () => {
-  const {createAppNavigationSession}=await import('../svelte/features/app-navigation/controller');const timer=manualClock();let current=me({books:[room('aaaaaa',{title:'Private A title'})]});const personal=createPersonalSession(homeApi({me:async()=>current}),{clock:timer.clock});await personal.refresh();const rooms=createRoomsSession(personal,timer.clock),controller=createAppNavigationSession(personal,rooms,{navigate:()=>{},home:()=>{},archived:()=>{},settings:()=>{},rename:async()=>({ok:true})});
-  const trigger={isConnected:true} as HTMLElement;controller.syncPath('https://vb.test/b/aaaaaa/');controller.openSettings('aaaaaa',trigger);controller.askRename('aaaaaa');expect(get(controller.state).renameDraft).toBe('Private A title');expect(controller.returnFocus(null)).toBe(trigger);current=me({email:'b@test.com'});personal.acceptIdentity(current.email);expect(get(controller.state).renameDraft).toBe('');expect(controller.returnFocus(null)).toBe(null);controller.dispose();rooms.dispose();personal.dispose();
+test("navigation account reset releases private rename draft and return-focus reference", async () => {
+  const { createAppNavigationSession } =
+    await import("../svelte/features/app-navigation/controller");
+  const timer = manualClock();
+  let current = me({ books: [room("aaaaaa", { title: "Private A title" })] });
+  const personal = createPersonalSession(homeApi({ me: async () => current }), {
+    clock: timer.clock,
+  });
+  await personal.refresh();
+  const rooms = createRoomsSession(personal, timer.clock),
+    controller = createAppNavigationSession(personal, rooms, {
+      navigate: () => {},
+      home: () => {},
+      archived: () => {},
+      settings: () => {},
+      rename: async () => ({ ok: true }),
+    });
+  const trigger = { isConnected: true } as HTMLElement;
+  controller.syncPath("https://vb.test/b/aaaaaa/");
+  controller.openSettings("aaaaaa", trigger);
+  controller.askRename("aaaaaa");
+  expect(get(controller.state).renameDraft).toBe("Private A title");
+  expect(controller.returnFocus(null)).toBe(trigger);
+  current = me({ email: "b@test.com" });
+  personal.acceptIdentity(current.email);
+  expect(get(controller.state).renameDraft).toBe("");
+  expect(controller.returnFocus(null)).toBe(null);
+  controller.dispose();
+  rooms.dispose();
+  personal.dispose();
 });
