@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { Hono } from "hono";
-import { api, type ApiCtx, type ApiServices } from "../src/api";
+import { keysApi as api, type ApiCtx, type ApiServices } from "../src/api";
 
 // Exercise the real handlers/validators without Worker bindings or unchecked Env casts.
 // Authentication middleware and persistence are separate Worker integration gates.
@@ -9,6 +9,7 @@ function fixture(overrides: Partial<ApiServices> = {}) {
   const posted: { room: string; text: string; thread: string }[] = [];
   const uploaded: { room: string; type: string; size: number; name: string }[] =
     [];
+  const saved: { table: string; value: string }[] = [];
   const svc: ApiServices = {
     isMember: async () => true,
     humanPost: async (room, text, thread) => {
@@ -57,6 +58,12 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     startRoom: async () => ({ id: "room" }),
     routeHome: async () => ({ pick: null }),
     sameOrigin: true,
+    allowSecretTry: async () => true,
+    saveSecret: async (table, value) => {
+      saved.push({ table, value });
+    },
+    checkFreestyleKey: async (key) =>
+      key.startsWith("good") ? null : "401 unauthorized",
     ...overrides,
   };
   const app = new Hono<ApiCtx>()
@@ -72,7 +79,7 @@ function fixture(overrides: Partial<ApiServices> = {}) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(value),
     });
-  return { app, json, writes, posted, uploaded };
+  return { app, json, writes, posted, uploaded, saved };
 }
 
 test("post validates HTTP input and preserves success and business-error responses", async () => {
@@ -220,4 +227,47 @@ test("room and wait mutations validate inputs and scope writes to the signed-in 
   expect(
     f.writes.every((write) => write.values.includes("test@example.com")),
   ).toBe(true);
+});
+
+test("freestyle key and Claude token: validated, checked, sealed, never echoed back", async () => {
+  const f = fixture();
+  const status = await f.app.request("/api/freestyle");
+  expect(await status.json()).toEqual({ connected: false });
+  expect((await f.json("/api/freestyle", { key: "short" })).status).toBe(400);
+  const refused = await f.json("/api/freestyle", {
+    key: "bad-key-0123456789abcdef",
+  });
+  expect(refused.status).toBe(400);
+  expect(await refused.json()).toEqual({
+    error: "O freestyle recusou a key: 401 unauthorized",
+  });
+  const accepted = await f.json("/api/freestyle", {
+    key: "  good-key-0123456789abcdef  ",
+  });
+  expect(await accepted.json()).toEqual({ ok: true });
+  expect((await f.json("/api/claude-token", { token: "nope" })).status).toBe(
+    400,
+  );
+  const wrapped = await f.json("/api/claude-token", {
+    token: "sk-ant-oat01-abcdefghij\n  klmnopqrstuvwxyz",
+  });
+  expect(await wrapped.json()).toEqual({ ok: true });
+  expect(f.saved).toEqual([
+    { table: "freestyle_keys", value: "good-key-0123456789abcdef" },
+    {
+      table: "claude_tokens",
+      value: "sk-ant-oat01-abcdefghijklmnopqrstuvwxyz",
+    },
+  ]);
+  for (const path of ["/api/freestyle", "/api/claude-token"])
+    expect((await f.app.request(path, { method: "DELETE" })).status).toBe(200);
+  expect(f.writes.map((w) => w.values)).toEqual([
+    ["test@example.com"],
+    ["test@example.com"],
+  ]);
+  const limited = fixture({ allowSecretTry: async () => false });
+  expect(
+    (await limited.json("/api/claude-token", { token: "sk-ant-x" })).status,
+  ).toBe(429);
+  expect(limited.saved).toHaveLength(0);
 });

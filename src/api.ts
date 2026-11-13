@@ -12,6 +12,9 @@ import * as zm from "zod/mini";
 import { validator } from "hono/validator";
 import type * as z from "zod/mini";
 import {
+  ClaudeTokenBody,
+  type ConnectedResult,
+  FreestyleKeyBody,
   CreateRoomBody,
   type CreateRoomResult,
   RouteResult,
@@ -90,6 +93,12 @@ export interface ApiServices {
   routeHome(text: string): Promise<unknown | false>;
   /** The request came from our own pages (no Origin, or ours). */
   sameOrigin: boolean;
+  /** Per-person rate limit for pasting secrets (LOGIN_LIMIT): false = over it. */
+  allowSecretTry(key: string): Promise<boolean>;
+  /** Seal and keep one of the person's secrets (replaces the old one). */
+  saveSecret(table: "freestyle_keys" | "claude_tokens", value: string): Promise<void>;
+  /** Ask freestyle whether this API key works: null = it does, else freestyle's reason. */
+  checkFreestyleKey(key: string): Promise<string | null>;
 }
 export type ApiCtx = { Variables: { email: string; svc: ApiServices } };
 
@@ -311,4 +320,42 @@ export const homeApi = roomApi
     }
   });
 
-export type AppType = typeof homeApi;
+// Slice 6: your freestyle.sh key and Claude subscription token (cloud agents). Only "connected" ever comes back.
+const tooMany = { error: "Muitas tentativas. Espera um minuto." } satisfies ErrorBody;
+export const keysApi = homeApi
+  .get("/api/freestyle", async (c) => {
+    const rows = await c.get("svc").sqlAll(`SELECT 1 FROM freestyle_keys WHERE email = ?`, c.get("email"));
+    return c.json({ connected: rows.length > 0 } satisfies ConnectedResult, 200);
+  })
+  .post("/api/freestyle", body(FreestyleKeyBody), async (c) => {
+    const svc = c.get("svc");
+    if (!(await svc.allowSecretTry(`fs:${c.get("email")}`))) return c.json(tooMany, 429);
+    const key = (c.req.valid("json").key ?? "").trim();
+    if (key.length < 16 || key.length > 400) return c.json({ error: "Essa não parece uma API key do freestyle." } satisfies ErrorBody, 400);
+    const refused = await svc.checkFreestyleKey(key);
+    if (refused !== null) return c.json({ error: `O freestyle recusou a key: ${refused}` } satisfies ErrorBody, 400);
+    await svc.saveSecret("freestyle_keys", key);
+    svc.track("freestyle_connected");
+    return c.json(ok, 200);
+  })
+  .delete("/api/freestyle", async (c) => {
+    await c.get("svc").sql(`DELETE FROM freestyle_keys WHERE email = ?`, c.get("email"));
+    return c.json(ok, 200);
+  })
+  // The person's Claude subscription token (from `claude setup-token` in their own terminal): sandboxes start logged in.
+  .post("/api/claude-token", body(ClaudeTokenBody), async (c) => {
+    const svc = c.get("svc");
+    if (!(await svc.allowSecretTry(`ct:${c.get("email")}`))) return c.json(tooMany, 429);
+    // The terminal wraps the long token over lines: copied, it comes with spaces/newlines in the middle.
+    const tok = (c.req.valid("json").token ?? "").replace(/\s+/g, "");
+    if (!/^sk-ant-[A-Za-z0-9_.-]{20,2000}$/.test(tok)) return c.json({ error: "Isso não parece um token do claude setup-token (começa com sk-ant-)." } satisfies ErrorBody, 400);
+    await svc.saveSecret("claude_tokens", tok);
+    svc.track("claude_token_saved");
+    return c.json(ok, 200);
+  })
+  .delete("/api/claude-token", async (c) => {
+    await c.get("svc").sql(`DELETE FROM claude_tokens WHERE email = ?`, c.get("email"));
+    return c.json(ok, 200);
+  });
+
+export type AppType = typeof keysApi;

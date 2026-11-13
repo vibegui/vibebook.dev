@@ -34,14 +34,14 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 | POST | `/api/books/:id/sandboxes` | `src/sandbox.ts:308` | JSON RPC | 37 | todo |
 | POST | `/api/books/:id/tint` | `src/api.ts` | JSON RPC | 37 | tested (slice 2) |
 | POST | `/api/books/start` | `src/api.ts` | JSON RPC | 2 | tested (slice 5) |
-| POST | `/api/claude-token` | `src/sandbox.ts:238` | JSON RPC | 2 | todo |
-| DELETE | `/api/claude-token` | `src/sandbox.ts:249` | JSON RPC | 2 | todo |
+| POST | `/api/claude-token` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
+| DELETE | `/api/claude-token` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
 | GET | `/api/dev/as` | `src/index.ts:405` | local dev only (DEV_EMAIL, loopback) | 0 | n/a (documented) |
 | GET | `/api/dev/digest` | `src/index.ts:397` | local dev only (DEV_EMAIL, loopback) | 0 | n/a (documented) |
 | GET | `/api/dev/report` | `src/index.ts:401` | local dev only (DEV_EMAIL, loopback) | 0 | n/a (documented) |
-| GET | `/api/freestyle` | `src/sandbox.ts:236` | JSON RPC | 2 | todo |
-| POST | `/api/freestyle` | `src/sandbox.ts:253` | JSON RPC | 2 | todo |
-| DELETE | `/api/freestyle` | `src/sandbox.ts:268` | JSON RPC | 2 | todo |
+| GET | `/api/freestyle` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
+| POST | `/api/freestyle` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
+| DELETE | `/api/freestyle` | `src/api.ts` | JSON RPC | 2 | tested (slice 6) |
 | POST | `/api/friends` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | DELETE | `/api/friends/:email` | `src/api.ts` | JSON RPC | 2 | tested (slice 3) |
 | GET | `/api/mcp-oauth/callback` | `src/mcpconn.ts:245` | browser navigation / redirect | 0 | n/a (documented) |

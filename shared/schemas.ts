@@ -187,3 +187,9 @@ export const RouteResult = z.object({
   cost: z.number(),
 });
 export type RouteResult = z.infer<typeof RouteResult>;
+
+// Slice 6: the person's freestyle API key and Claude subscription token (sealed on the server, never sent back).
+export const ConnectedResult = z.object({ connected: z.boolean() });
+export type ConnectedResult = z.infer<typeof ConnectedResult>;
+export const FreestyleKeyBody = z.object({ key: z.optional(z.string()) });
+export const ClaudeTokenBody = z.object({ token: z.optional(z.string()) });
