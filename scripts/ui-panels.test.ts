@@ -1281,31 +1281,20 @@ describe("native Svelte chat", () => {
     overrides: Partial<import("../svelte/chatTypes").ChatBridge> = {},
   ): import("../svelte/chatTypes").ChatBridge => ({
     t: vb.t,
-    icon: vb.icon,
     name: vb.name,
-    avatar: vb.avatar,
-    agentAvatar: (email) => `<span class="avatar">${escape(email)}</span>`,
     ago: vb.ago,
     hhmm: () => "09:00",
-    continues: () => false,
     waiting: () => false,
-    remHtml: (m) =>
-      `<div class="msg remMsg" id="m${m.id}"><div class="body">${escape(m.text)}</div></div>`,
-    issueHtml: (m) =>
-      `<div class="msg issueMsg" id="m${m.id}">${escape(m.text)}</div>`,
-    isNotice: (m) => m.author === "ai" && m.tag === "notice",
-    noticeHtml: (m) =>
-      `<div class="msg noticeMsg" id="m${m.id}">${escape(m.text)}</div>`,
-    mentions: (s) => s,
-    md: (s) => `<p>${escape(s)}</p>`,
-    linkify: (s) => s,
-    esc: escape,
-    quoteHtml: (id) =>
-      `<button class="quote" data-quote="${id}">Quoted message ${id}</button>`,
-    attHtml: () => "",
-    cardHtml: () => "",
-    choiceHtml: () => "",
-    pollHtml: () => "",
+    ...overrides,
+  });
+  const legacy = (
+    overrides: Partial<
+      import("../svelte/chatTypes").LegacyChatIntegrations
+    > = {},
+  ): import("../svelte/chatTypes").LegacyChatIntegrations => ({
+    richText: (text, mode) =>
+      mode === "markdown" ? `<p>${escape(text)}</p>` : escape(text),
+    interactiveBody: () => "",
     threadCards: () => "",
     ...overrides,
   });
@@ -1326,6 +1315,8 @@ describe("native Svelte chat", () => {
       more: false,
       replyCount: 0,
       vb: bridge(),
+      legacy: legacy(),
+      actions: { reply: () => {}, navigate: () => {}, openFile: () => {} },
       onloadolder: () => {},
       ...extra,
     };
@@ -1351,7 +1342,7 @@ describe("native Svelte chat", () => {
       }),
     });
     const row = target.querySelector("#m1")!;
-    expect(row.querySelector(".typing")?.textContent).toBe(
+    expect(row.querySelector("[data-message-typing]")?.textContent).toBe(
       "<img src=x onerror=alert(1)> Working…",
     );
     expect(row.querySelector("img")).toBeNull();
@@ -1359,12 +1350,14 @@ describe("native Svelte chat", () => {
       room = { ...room, messages: [message(1, text)], typing: {} };
       update(room);
       expect(target.querySelector("#m1")).toBe(row);
-      expect(row.querySelector(".txt")?.textContent).toBe(text);
-      expect(row.querySelector(".typing")).toBeNull();
+      expect(row.querySelector("[data-legacy-chat-content]")?.textContent).toBe(
+        text,
+      );
+      expect(row.querySelector("[data-message-typing]")).toBeNull();
     }
     update({ ...room, messages: [...room.messages, message(2, "next reply")] });
-    expect(target.querySelectorAll(".msg")).toHaveLength(2);
-    expect(target.querySelectorAll('[data-reply="1"]')).toHaveLength(1);
+    expect(target.querySelectorAll("[data-chat-message]")).toHaveLength(2);
+    expect(target.querySelectorAll('[data-native-reply="1"]')).toHaveLength(1);
   }, 30_000);
   test("quotes, native actions, origin and quiet notices survive chat refresh", () => {
     const origin = message(7, "Original request");
@@ -1382,56 +1375,418 @@ describe("native Svelte chat", () => {
       replyCount: 2,
       onloadolder: () => pages++,
     });
-    expect(target.querySelector(".origin #m7")).toBeNull();
-    expect(target.querySelector('.origin [data-gomain="7"]')).not.toBeNull();
-    expect(target.querySelector("#m8 .quote")?.getAttribute("data-quote")).toBe(
-      "7",
-    );
-    expect(target.querySelector("#m9.noticeMsg")?.textContent).toBe(
-      "Archived safely",
-    );
-    expect(target.querySelector('#m8 [data-copylink="8"]')).not.toBeNull();
+    expect(target.querySelector("[data-chat-origin] #m7")).toBeNull();
+    expect(
+      target.querySelector('[data-chat-origin] [data-native-origin="7"]'),
+    ).not.toBeNull();
+    expect(
+      target
+        .querySelector("#m8 [data-native-quote]")
+        ?.getAttribute("data-native-quote"),
+    ).toBe("7");
+    expect(
+      target.querySelector("#m9 details > [data-legacy-chat-content]")
+        ?.textContent,
+    ).toBe("Archived safely");
+    expect(
+      target.querySelector('#m8 [data-native-copylink="8"]'),
+    ).not.toBeNull();
     target.querySelector<HTMLElement>("#olderBtn")!.click();
     expect(pages).toBe(1);
     update({
       ...room,
       messages: [{ ...reply, text: "Updated response" }, notice],
     });
-    expect(target.querySelector("#m8 .txt")?.textContent).toBe(
-      "Updated response",
-    );
-    expect(target.querySelectorAll(".origin")).toHaveLength(1);
+    expect(
+      target.querySelector("#m8 [data-legacy-chat-content]")?.textContent,
+    ).toBe("Updated response");
+    expect(target.querySelectorAll("[data-chat-origin]")).toHaveLength(1);
     expect(target.querySelectorAll("#m9")).toHaveLength(1);
   }, 30_000);
   test("special reminder origins omit self-linking cards without removing native DOM", () => {
     const origin = { ...message(7, "Reminder origin"), tag: "reminder" };
     const normal = { ...message(8, "Reminder reply"), tag: "reminder" };
-    const seen: { id: number; origin: boolean }[] = [];
+    const seen: number[] = [];
     const room = { ...fixture(), messages: [normal] };
     const { target, update } = renderChat(room, {
       origin,
-      vb: bridge({
-        remHtml: (m, isOrigin = false) => {
-          seen.push({ id: m.id, origin: isOrigin });
-          return (
-            '<div class="msg remMsg" id="m' +
-            m.id +
-            '"><div class="body">' +
-            escape(m.text) +
-            (isOrigin ? "" : '<button class="tcard">Open thread</button>') +
-            "</div></div>"
-          );
+      legacy: legacy({
+        threadCards: (id) => {
+          seen.push(id);
+          return "<button data-test-thread-card>Open thread</button>";
         },
       }),
     });
-    expect(seen).toContainEqual({ id: 7, origin: true });
-    expect(target.querySelector(".origin .tcard")).toBeNull();
-    expect(target.querySelector(".origin #m7")).toBeNull();
-    expect(target.querySelectorAll("#m8 .tcard")).toHaveLength(1);
+    expect(seen).not.toContain(7);
+    expect(seen).toContain(8);
+    expect(
+      target.querySelector("[data-chat-origin] [data-test-thread-card]"),
+    ).toBeNull();
+    expect(target.querySelector("[data-chat-origin] #m7")).toBeNull();
+    expect(target.querySelectorAll("#m8 [data-test-thread-card]")).toHaveLength(
+      1,
+    );
     update({ ...room, messages: [{ ...normal, text: "Updated reminder" }] });
-    expect(target.querySelector(".origin .tcard")).toBeNull();
-    expect(target.querySelectorAll("#m8 .tcard")).toHaveLength(1);
+    expect(
+      target.querySelector("[data-chat-origin] [data-test-thread-card]"),
+    ).toBeNull();
+    expect(target.querySelectorAll("#m8 [data-test-thread-card]")).toHaveLength(
+      1,
+    );
   }, 30_000);
+  test("native chat controls call typed actions and preserve exact attachment versions and sandbox restrictions", async () => {
+    const file = (id: string, type: string, embed = false) => ({
+      id,
+      name: "report.html",
+      type,
+      embed,
+      author: "you@test",
+      ts: 1,
+      size: 10,
+    });
+    const files = [
+      file("old-version", "text/html"),
+      file("image", "image/png"),
+      file("audio", "audio/mpeg"),
+      file("embedded", "text/html", true),
+    ];
+    const origin = { ...message(7, "Original <request>"), thread: "main" };
+    const row = { ...message(8, "Body"), reply_to: 7, files };
+    const room = { ...fixture(), messages: [row], origins: [origin] };
+    const replied: number[] = [],
+      navigated: { id: number; thread?: string }[] = [],
+      opened: string[] = [],
+      copied: string[] = [];
+    window.navigator.clipboard.writeText = async (text) => {
+      copied.push(text);
+    };
+    const { target } = renderChat(room, {
+      origin,
+      actions: {
+        reply: (id) => replied.push(id),
+        navigate: (id, thread) => navigated.push({ id, thread }),
+        openFile: (selected) => opened.push(selected.id),
+      },
+    });
+    target.querySelector<HTMLButtonElement>("#m8 [data-native-reply]")!.click();
+    target.querySelector<HTMLButtonElement>("#m8 [data-native-quote]")!.click();
+    target.querySelector<HTMLButtonElement>("[data-native-origin]")!.click();
+    expect(replied).toEqual([8]);
+    expect(navigated).toEqual([
+      { id: 7, thread: "main" },
+      { id: 7, thread: "main" },
+    ]);
+    target.querySelector<HTMLButtonElement>("#m8 [data-native-copy]")!.click();
+    await tick();
+    flushSync();
+    expect(copied).toContain("Body");
+    target
+      .querySelector<HTMLButtonElement>("#m8 [data-native-copylink]")!
+      .click();
+    await tick();
+    flushSync();
+    expect(copied.at(-1)).toContain("/b/r?t=e#m8");
+    const attachments = target.querySelector<HTMLElement>(
+      "#m8 [data-message-attachments]",
+    )!;
+    attachments
+      .querySelector<HTMLAnchorElement>('a[href$="old-version"]')!
+      .click();
+    expect(opened).toEqual(["old-version"]);
+    expect(attachments.querySelector("audio")?.getAttribute("src")).toContain(
+      "/audio",
+    );
+    expect(attachments.querySelector("img")?.getAttribute("src")).toContain(
+      "/image",
+    );
+    const iframe = attachments.querySelector("iframe")!;
+    expect(iframe.getAttribute("src")).toContain("/embedded");
+    expect(iframe.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(iframe.hasAttribute("srcdoc")).toBe(false);
+  }, 30_000);
+  test("compact native receipts show five faces, overflow and read/delivery details on focus and tap", async () => {
+    const room: Room = {
+      ...fixture(),
+      messages: [message(1, "Receipt target")],
+    };
+    room.receipts = Array.from({ length: 7 }, (_, i) => ({
+      email: `reader${i}@test.com`,
+      who: i % 2 ? "Codex" : "Claude",
+      read: i < 6 ? 1 : 0,
+      delivered: 1,
+    }));
+    room.acks = [
+      {
+        msg_id: 1,
+        email: "blocked@test.com",
+        who: "Codex",
+        status: "blocked",
+        ts: 1,
+        note: "<script>unsafe()</script>",
+      },
+    ];
+    const { target, update } = renderChat(room);
+    const footer = target.querySelector<HTMLElement>(
+      "#m1 [data-message-footer]",
+    )!;
+    expect(footer.querySelectorAll("[data-reader-read]")).toHaveLength(5);
+    expect(footer.textContent).toContain("+2");
+    expect(footer.querySelector("script") === null).toBe(true);
+    expect(footer.textContent).toContain("<script>unsafe()</script>");
+    const seen = footer.querySelector<HTMLButtonElement>(
+      "button[aria-expanded]",
+    )!;
+    expect(seen.getAttribute("aria-label")).toBe("visto por 6 de 7");
+    seen.focus();
+    await tick();
+    flushSync();
+    expect(footer.querySelector('[role="tooltip"]')?.textContent).toContain(
+      "reader6@test.com",
+    );
+    expect(footer.querySelector('[role="tooltip"]')?.textContent).toContain(
+      "recebeu",
+    );
+    seen.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    flushSync();
+    expect(footer.querySelector('[role="tooltip"]') === null).toBe(true);
+    seen.click();
+    flushSync();
+    expect(seen.getAttribute("aria-expanded")).toBe("true");
+    seen.click();
+    flushSync();
+    expect(seen.getAttribute("aria-expanded")).toBe("false");
+    const anchor = target.querySelector("#m1");
+    update({ ...room, receipts: [{ ...room.receipts[6], read: 1 }], acks: [] });
+    expect(target.querySelector("#m1") === anchor).toBe(true);
+    expect(
+      target
+        .querySelector("#m1 [data-message-footer] button")
+        ?.getAttribute("aria-label"),
+    ).toBe("visto por 1");
+    expect(target.querySelectorAll("[data-message-footer]")).toHaveLength(1);
+  }, 30_000);
+  test("native quiet rows retain folding, status ownership and explicit legacy rich body integrations", () => {
+    const reminder = {
+      ...message(1, "⏰ **daily** report\n\nDetails"),
+      tag: "reminder",
+    };
+    const latest = { ...reminder, id: 2, ts: 2000 };
+    const interactive = {
+      ...message(3, "@person **rich**"),
+      card: "{}",
+      choices: "{}",
+      poll: "p",
+    };
+    const room = {
+      ...fixture(),
+      messages: [reminder, latest, interactive],
+      acks: [
+        {
+          msg_id: 2,
+          email: "agent@test",
+          who: "Codex",
+          status: "done",
+          ts: 2000,
+        },
+      ],
+    };
+    const { target } = renderChat(room, {
+      legacy: legacy({
+        richText: (text) => `<span data-test-rich>${escape(text)}</span>`,
+        interactiveBody: () =>
+          '<div data-cardbtn="3">card</div><form data-choice="3">choices</form><div data-poll="p"><button data-vote="0">poll</button></div>',
+        threadCards: (id) =>
+          `<button data-test-thread-card="${id}">origin card</button>`,
+      }),
+    });
+    expect(target.querySelector("#m1") === null).toBe(true);
+    expect(target.querySelector("#m2 details")?.textContent).toContain(
+      "rodou 2×",
+    );
+    expect(
+      target.querySelector("#m2 [data-message-footer]")?.textContent,
+    ).toContain("fez isso");
+    expect(target.querySelector("#m3 [data-test-rich]")?.textContent).toBe(
+      "@person **rich**",
+    );
+    expect(target.querySelector("#m3 [data-cardbtn]") !== null).toBe(true);
+    expect(target.querySelector("#m3 [data-choice]") !== null).toBe(true);
+    expect(target.querySelector("#m3 [data-vote]") !== null).toBe(true);
+    expect(target.querySelectorAll("#m2 [data-test-thread-card]")).toHaveLength(
+      2,
+    );
+  });
+  test("room replacement disposes native action feedback and detached message handlers", async () => {
+    let resolveCopy!: () => void;
+    window.navigator.clipboard.writeText = () =>
+      new Promise<void>((resolve) => {
+        resolveCopy = resolve;
+      });
+    const room = { ...fixture(), messages: [message(1, "Old room")] };
+    const replied: number[] = [];
+    const { target, update } = renderChat(room, {
+      actions: {
+        reply: (id) => replied.push(id),
+        navigate: () => {},
+        openFile: () => {},
+      },
+    });
+    const staleReply = target.querySelector<HTMLButtonElement>(
+      "[data-native-reply]",
+    )!;
+    target.querySelector<HTMLButtonElement>("[data-native-copy]")!.click();
+    update({ ...room, id: "next", messages: [message(2, "Next room")] });
+    staleReply.click();
+    resolveCopy();
+    await tick();
+    flushSync();
+    expect(replied).toEqual([]);
+    expect(target.textContent).not.toContain("Copiado");
+    expect(target.querySelector("#m1") === null).toBe(true);
+    expect(target.querySelector("#m2") !== null).toBe(true);
+  }, 30_000);
+  test("native embeds own consent, bounded media geometry and cleanup while retaining the typed protocol integration", async () => {
+    const embedded = {
+      id: "embedded",
+      name: "app.html",
+      type: "text/html",
+      embed: true,
+      author: "you@test",
+      ts: 1,
+      size: 10,
+    };
+    const room = {
+      ...fixture(),
+      messages: [{ ...message(1, "App"), files: [embedded] }],
+    };
+    let controls: import("../svelte/chatTypes").ChatEmbedControls | undefined;
+    let detached = 0;
+    const mounted: string[] = [];
+    const { target, update } = renderChat(room, {
+      actions: {
+        reply: () => {},
+        navigate: () => {},
+        openFile: () => {},
+        mountEmbed: (frame, file, next) => {
+          mounted.push(file.id);
+          controls = next;
+          expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+          return () => {
+            detached++;
+          };
+        },
+      },
+    });
+    const original = controls!;
+    const frame = target.querySelector("iframe")!;
+    expect(mounted).toEqual(["embedded"]);
+    original.resize(Number.POSITIVE_INFINITY);
+    flushSync();
+    expect(frame.getAttribute("height")).toBe("320");
+    original.resize(1000);
+    flushSync();
+    expect(Number(frame.getAttribute("height"))).toBeLessThanOrEqual(420);
+    expect(frame.hasAttribute("style")).toBe(false);
+    const consent = original.ask(
+      "post a message",
+      "<script>hostile detail</script>",
+    );
+    flushSync();
+    expect(target.querySelector("script") === null).toBe(true);
+    expect(target.querySelector("q")?.textContent).toBe(
+      "<script>hostile detail</script>",
+    );
+    const cancel = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="group"] button'),
+    ).find((button) => button.textContent?.includes("Cancelar"))!;
+    cancel.click();
+    await expect(consent).resolves.toBe(false);
+    const lateConsent = original.ask("write after switch", "old room");
+    flushSync();
+    update({ ...room, id: "next" });
+    await expect(lateConsent).resolves.toBe(false);
+    expect(detached).toBe(1);
+    expect(target.textContent).not.toContain("old room");
+    const current = target.querySelector("iframe")!;
+    const before = current.getAttribute("height");
+    original.resize(40);
+    flushSync();
+    expect(current.getAttribute("height")).toBe(before);
+  }, 30_000);
+  test("origin embeds retain their source thread in the explicit protocol integration", () => {
+    const embedded = {
+      id: "origin-file",
+      name: "origin.html",
+      type: "text/html",
+      embed: true,
+      author: "you@test",
+      ts: 1,
+      size: 10,
+    };
+    const threads: string[] = [];
+    renderChat(
+      { ...fixture(), messages: [message(8, "Epic reply")] },
+      {
+        origin: { ...message(7, "Origin"), thread: "main", files: [embedded] },
+        actions: {
+          reply: () => {},
+          navigate: () => {},
+          openFile: () => {},
+          mountEmbed: (_frame, _file, controls) => {
+            threads.push(controls.thread);
+            return () => {};
+          },
+        },
+      },
+    );
+    expect(threads).toEqual(["main"]);
+  });
+  test("multitouch cancels a locked native swipe before it can reply or copy", () => {
+    const replied: number[] = [];
+    const { target } = renderChat(
+      { ...fixture(), messages: [message(1, "Swipe target")] },
+      {
+        actions: {
+          reply: (id) => replied.push(id),
+          navigate: () => {},
+          openFile: () => {},
+        },
+      },
+    );
+    const row = target.querySelector<HTMLElement>("#m1")!;
+    const touch = (
+      type: string,
+      points: { clientX: number; clientY: number }[],
+    ) => {
+      const event = new window.Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", { value: points });
+      row.dispatchEvent(event);
+    };
+    touch("touchstart", [{ clientX: 0, clientY: 0 }]);
+    touch("touchmove", [{ clientX: 75, clientY: 1 }]);
+    expect(row.getAttribute("data-swipe")).toBe("reply");
+    touch("touchstart", [
+      { clientX: 75, clientY: 1 },
+      { clientX: 90, clientY: 5 },
+    ]);
+    touch("touchend", []);
+    expect(replied).toEqual([]);
+    expect(row.hasAttribute("data-swipe")).toBe(false);
+    touch("touchstart", [{ clientX: 0, clientY: 0 }]);
+    touch("touchmove", [{ clientX: 75, clientY: 1 }]);
+    touch("touchmove", [
+      { clientX: 75, clientY: 1 },
+      { clientX: 90, clientY: 5 },
+    ]);
+    touch("touchend", []);
+    expect(replied).toEqual([]);
+    touch("touchstart", [{ clientX: 0, clientY: 0 }]);
+    touch("touchmove", [{ clientX: 75, clientY: 1 }]);
+    touch("touchend", []);
+    expect(replied).toEqual([1]);
+  });
 });
 
 describe("stable native sidebar integration", () => {

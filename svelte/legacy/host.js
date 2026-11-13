@@ -1,3 +1,4 @@
+import {adaptLegacyChatMarkup} from "../features/chat/legacyMarkup";
 import {createFilesSession} from "../features/files/session";
 // Existing host integrations retained during the incremental TypeScript migration.
 // Native room views and wire contracts live in the typed modules alongside this file.
@@ -19,6 +20,10 @@ const EN = {
   "Tentar novamente": "Try again",
   "online": "online",
   "offline": "offline",
+  "visto por {n}": "seen by {n}",
+  "visto por {n} de {m}": "seen by {n} of {m}",
+  "leu": "read",
+  "recebeu": "delivered",
   "Email inválido.": "Invalid email.",
   "Esta pessoa já está na sala.": "This person is already in the room.",
   "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
@@ -1735,7 +1740,7 @@ function clearViews() {
   pinRO.disconnect();
 }
 const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
-const chatBridge = () => ({ t, icon, name, avatar, agentAvatar, ago, hhmm, continues, remHtml, issueHtml, isNotice, noticeHtml, mentions, md, linkify, esc, quoteHtml, attHtml, cardHtml, choiceHtml, pollHtml, threadCards, typingLabel: (mode) => modeLabel[mode] ?? mode, typingNote: (id) => typingNotes.get(id), dateTime: (ts) => new Date(ts).toLocaleString(LOCALE), waiting: (id) => myWaits.some((w) => w.book_id === S.id && w.ref === `m${id}`) });
+const chatBridge = () => ({ t, name, locale:LOCALE, avatarUrl:(email)=>{const v=S?.avatars?.[email]??avatarV[email];return v?`/api/avatar/${encodeURIComponent(email)}?v=${v}`:undefined;}, ago, hhmm, typingLabel: (mode) => modeLabel[mode] ?? mode, typingNote: (id) => typingNotes.get(id), dateTime: (ts) => new Date(ts).toLocaleString(LOCALE), waiting: (id) => myWaits.some((w) => w.book_id === S.id && w.ref === `m${id}`) });
 function selectThread(id) { thread = id; boardEpic = id === "main" ? null : id; docRoom = false; leaveBoard(); renderSide(); renderChat(); renderKanban(); renderDoc(); }
 
 
@@ -1765,12 +1770,12 @@ function onEvent(ev, id) {
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
       loadRoomAgents();
-      if (firstLoad) renderBook(); else { renderSide(); renderChat(stick ? undefined : "stay"); renderDoc(true); renderTasks(); renderKanban(); renderFiles(false, true); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(stick ? undefined : "stay"); renderDoc(true); renderTasks(); renderKanban(); renderFiles(false, true); renderApps(); renderReminders(); renderDecisions(); }
       return;
     }
     case "closed": renderChat("stay"); return;
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { renderChat(true); refreshThreadCards(); renderSide(); } break; }
-    case "msg": seenHere(ev.m.id); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
+    case "msg": seenHere(ev.m.id); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
       // appendMsg refreshed the native parent choices/card along with its reply.
       if (ev.m.reply_to && ev.m.thread !== thread) renderChat("stay");
       notifyMsg(ev.m); return;
@@ -1782,7 +1787,7 @@ function onEvent(ev, id) {
       renderChat("stay"); return;
     case "epicsPatch":
     case "epics":
-      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); syncEnd(); if (thread === "main") refreshThreadCards(); return;
+      if (thread !== "main" && !isPre() && !S.epics.some((e) => e.id === thread)) thread = "main"; renderSide(); renderTasks(); renderKanban(); renderChat("stay"); return;
     case "docNotes": renderDoc(); return;
     case "doc": {
       // A big epic doc comes as "stale": the tab showing it fetches it, the others drop their copy. Only the doc on
@@ -1810,7 +1815,7 @@ function onEvent(ev, id) {
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
     case "pins": renderSide(); renderFiles(); renderApps(); return;
     case "error": toast(esc(ev.error || t("falhou"))); return;
-    case "receipts": renderReceipts(); return;
+    case "receipts": renderChat("stay"); return;
     case "older": {
       olderBusy = false;
       if (!ev.more) olderDone[S.id + ev.thread] = true;
@@ -1823,9 +1828,9 @@ function onEvent(ev, id) {
       }
       return;
     }
-    case "acks": renderReceipts(); renderSide(); renderWorking(); return;
+    case "acks": renderChat("stay"); renderSide(); return;
     case "ackRows": { // just the rows that changed: replace by message + agent
-      renderReceipts(); renderSide(); renderWorking(); return;
+      renderChat("stay"); renderSide(); return;
     }
     case "poll": renderChat("stay"); return;
     case "online": renderSide(); return;
@@ -2703,45 +2708,8 @@ const mainWorker = () => {
   const k = acks.find((a) => a.status === "doing" && Date.now() - a.ts < 20 * 60e3 && acks.find((b) => b.msg_id === a.msg_id && b.who === a.who) === a);
   return k ? { who: k.who, email: k.email } : null;
 };
-// Every Claude on it, for the card at the end of the thread: each live "doing" ack (its newest on that message), one
-// per Claude; with none, the single fallback above (a recent non-delivery post).
-const liveDoing = (acks) => {
-  const seen = new Set(), out = [];
-  for (const a of acks) {
-    const k = `${a.who}|${a.email}`;
-    if (a.status === "doing" && Date.now() - a.ts < 20 * 60e3 && !seen.has(k) && acks.find((b) => b.msg_id === a.msg_id && b.who === a.who && b.email === a.email) === a) { seen.add(k); out.push({ who: a.who, email: a.email }); }
-  }
-  return out;
-};
-const threadWorkers = () => {
-  if (isPre()) return [];
-  const e = thread === "main" ? null : S.epics.find((x) => x.id === thread);
-  let ids;
-  if (e) {
-    if (e.archived > 0) return [];
-    const branched = new Set((S.epics || []).filter((x) => x.id !== e.id).map((x) => x.from_msg));
-    ids = new Set(allMsgs().filter((m) => m.thread === e.id && !branched.has(m.id)).map((m) => m.id)); ids.add(e.from_msg);
-  } else {
-    const epicFrom = new Set((S.epics || []).map((x) => x.from_msg));
-    ids = new Set(allMsgs().filter((m) => m.thread === "main" && !epicFrom.has(m.id)).map((m) => m.id));
-  }
-  const all = liveDoing((S.acks || []).filter((a) => ids.has(a.msg_id) && a.status !== "dismissed").sort((x, y) => y.ts - x.ts));
-  if (all.length) return all;
-  const one = e ? epicWorker(e) : mainWorker();
-  return one ? [one] : [];
-};
 const epicBusy = (e) => { const w = epicWorker(e); return w ? t("{via} de {who}", { via: w.who, who: name(w.email) }) : null; };
 // The same, inside the open epic's thread: a card at the end (in place of the empty-thread hint) saying who is on it.
-function renderWorking() {
-  const el = document.getElementById("msgs");
-  if (!el || !S) return;
-  el.querySelector("#working")?.remove();
-  const ws = threadWorkers();
-  el.querySelector(".empty")?.classList.toggle("hidden", !!ws.length);
-  if (!ws.length) return;
-  const who = (w) => `<b>${t("{via} de {who}", { via: esc(w.who), who: esc(name(w.email)) })}</b>`;
-  el.insertAdjacentHTML("beforeend", `<div id="working" class="working"><span class="wAv">${ws.slice(0, 4).map((w) => agentAvatar(w.email, w.who)).join("")}</span><div>${ws.length === 1 ? `${who(ws[0])} ${t("está trabalhando nisso")}` : `${ws.map(who).join(", ")} ${t("estão trabalhando nisso")}`}<small>${t("O andamento e a entrega aparecem aqui nesta thread.")}</small></div><span class="spin">✻</span></div>`);
-}
 // "Esperando você" inside the room: which threads (and messages) someone is waiting on you in, so the rail's yellow
 // count leads somewhere. From /api/me waits (refreshed every 30s).
 const waitsIn = (t) => myWaits.filter((w) => w.book_id === S?.id && (t === undefined || w.thread === t));
@@ -3122,14 +3090,6 @@ document.addEventListener("click", (e) => {
   openViewer(u.pathname, f?.type?.startsWith("image/") ? "img" : "frame", f?.name || l.textContent.trim() || "arquivo");
 });
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
-const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed
-  ? `<div class="embedBox"><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe><a class="embedOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 15)}</a></div></div>`
-  : f.type.startsWith("audio/")
-  ? `<div class="audioAtt"><audio controls preload="metadata" src="${fileUrl(f)}"></audio><a href="${fileUrl(f)}" target="_blank" rel="noopener" download="${esc(f.name)}">${icon("mic", 14)} ${esc(f.name)} <small>${kb(f.size)}</small></a></div>`
-  : f.type.startsWith("image/")
-  ? `<a href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}><img src="${fileUrl(f)}" alt="${esc(f.name)}" loading="lazy" /></a>`
-  : `<a class="fileChip" href="${fileUrl(f)}" target="_blank" rel="noopener" ${viewAttrs(f)}>${fileIcon(f)} ${esc(f.name)} <small>${kb(f.size)}</small></a>`).join("")}</div>` : "";
-
 function pollHtml(id) {
   const p = S.polls?.[id]; if (!p) return "";
   const counts = p.votes.map((v) => v.length);
@@ -3150,7 +3110,6 @@ function pollHtml(id) {
 
 const hhmm = (ts) => new Date(ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 // Same author (and kind), within 5 minutes, no poll in between: drop the name and avatar, keep the time on hover.
-const continues = (prev, m) => !!prev && prev.author === m.author && (prev.kind || null) === (m.kind || null) && (prev.tag || null) === (m.tag || null) && m.ts - prev.ts < 5 * 60_000 && !prev.poll && !m.poll;
 // A request that became an epic shows it as a thread under the message (Slack/Discord style); click to open it.
 const threadCard = (e) => {
   const replies = S.messages.filter((x) => x.thread === e.id), last = replies.at(-1);
@@ -3188,31 +3147,16 @@ document.addEventListener("click", (ev) => {
     thread = "main"; boardEpic = null; docRoom = false; renderSide(); renderChat(); renderKanban(); renderDoc();
     return document.getElementById(`m${back.dataset.gomain}`)?.scrollIntoView({ block: "center" });
   }
-  const b = ev.target.closest(".tcard[data-goepic]"); if (!b) return;
+  const b = ev.target.closest("[data-chat-rich~=tcard][data-goepic]"); if (!b) return;
   thread = b.dataset.goepic; boardEpic = thread; docRoom = false;
   renderSide(); renderChat(); renderKanban(); renderDoc();
 });
 // The "finished" line at the bottom of an archived epic: always last, gone as soon as the epic reopens.
-function syncEnd() {
-  const el = document.getElementById("msgs"); if (!el) return;
-  el.querySelectorAll(".endMark, .prodStage").forEach((x) => x.remove());
-  const e = S.epics.find((x) => x.id === thread);
-  const p = e?.prod;
-  const stage = !p ? "" : p.stage === "verified"
-    ? `<div class="prodStage ok"><b>✓✓ ${t("Verificado em prod")}</b>${p.note ? `<span>${esc(p.note)}</span>` : ""}</div>`
-    : `<div class="prodStage"><b>🚀 ${t("No ar")}</b><span>${t("Falta o agent verificar em prod.")}</span></div>`;
-  if (e?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${t("Agent fez")}</b><span>${t("Escreva aqui pra continuar: ele reabre.")}</span></div>`);
-  if (stage) el.insertAdjacentHTML("beforeend", stage);
-}
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.
 let replyTo = null;
 const snip = (m) => (m.text || m.files?.map((f) => f.name).join(", ") || (m.poll ? t("votação") : "")).replace(/\*\*|`|^[#>]+ ?/gm, "").replace(/\s+/g, " ").trim().slice(0, 120);
 const replyWho = (m) => (m.author === "ai" ? "@vibe" : m.kind === "agent" ? t("{via} de {who}", { via: "Agent", who: name(m.author) }) : name(m.author));
-const quoteHtml = (id) => {
-  const o = S.messages.find((x) => x.id === id);
-  return `<button type="button" class="quote" data-goto="${id}" title="${t("Ver a mensagem respondida")}">${icon("reply", 13)} ${o ? `<b>${esc(replyWho(o))}</b> ${esc(snip(o))}` : t("mensagem anterior")}</button>`;
-};
 function renderReply() {
   const bar = document.getElementById("replyBar"); if (!bar) return;
   if (replyTo && replyTo.thread !== thread) replyTo = null;
@@ -3220,51 +3164,14 @@ function renderReply() {
   if (replyTo) bar.innerHTML = `<span>${icon("reply", 13)} ${t("Respondendo a <b>{who}</b>", { who: esc(replyWho(replyTo)) })}: ${esc(snip(replyTo))}</span><button type="button" class="ghost" id="replyX" aria-label="${t("Cancelar resposta")}" title="${t("Cancelar")}">${icon("x")}</button>`;
   document.getElementById("replyX")?.addEventListener("click", () => { replyTo = null; renderReply(); });
 }
-// Copy: the message's text as written (markdown included); a file-only message copies its file names.
-// iOS Safari may refuse the async clipboard at the end of a drag (not a "real" tap): first the old synchronous copy
-// (a selected textarea + execCommand, which iOS accepts inside the gesture), then the clipboard API, and if both
-// refuse, the toast offers a Copiar button whose tap is a gesture iOS always accepts.
-function copySync(txt) {
-  const ta = document.createElement("textarea");
-  ta.value = txt; ta.readOnly = true; ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px";
-  document.body.append(ta); ta.focus({ preventScroll: true }); ta.setSelectionRange(0, txt.length);
-  let ok = false; try { ok = document.execCommand("copy"); } catch {}
-  ta.remove(); return ok;
-}
-// A link to one message (/b/<room>?t=<thread>#m<id>): someone in the room who opens it lands on it, in its thread.
-function copyLink(id) {
-  const m = allMsgs().find((x) => x.id === id); if (!m) return;
-  const url = `${location.origin}/b/${S.id}${m.thread && m.thread !== "main" ? `?t=${encodeURIComponent(m.thread)}` : ""}#m${id}`;
-  const done = () => { toast(`✓ ${t("Link copiado")}`, 1600); navigator.vibrate?.(15); };
-  if (copySync(url)) return done();
-  (navigator.clipboard?.writeText(url) ?? Promise.reject()).then(done, () => toast(`${t("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copylink="${id}">${t("Copiar link")}</button>`));
-}
-function copyMsg(id) {
-  const m = S.messages.find((x) => x.id === id); if (!m) return;
-  const txt = m.text || m.files?.map((f) => f.name).join("\n") || "";
-  if (!txt) return toast(t("Essa mensagem não tem texto pra copiar."), 2500);
-  const done = () => { toast(`✓ ${t("Copiado")}`, 1600); navigator.vibrate?.(15); };
-  if (copySync(txt)) return done();
-  (navigator.clipboard?.writeText(txt) ?? Promise.reject()).then(done, () => {
-    toast(`${t("O navegador pediu um toque pra copiar.")} <button type="button" class="primary" data-copymsg="${id}">${t("Copiar")}</button>`);
-  });
-}
 function startReply(id) {
   replyTo = S.messages.find((x) => x.id === id) ?? null;
   renderReply();
   document.getElementById("input")?.focus();
 }
 document.addEventListener("click", (ev) => {
-  const r = ev.target.closest("[data-reply]");
-  if (r) return startReply(Number(r.dataset.reply));
-  const cp = ev.target.closest("[data-copymsg]");
-  if (cp) return copyMsg(Number(cp.dataset.copymsg));
-  const cl = ev.target.closest("[data-copylink]");
-  if (cl) return copyLink(Number(cl.dataset.copylink));
-  const ml = ev.target.closest("a.mlink[data-msg]");
+  const ml = ev.target.closest("a.mlink[data-msg], a[data-chat-rich~=mlink][data-msg]");
   if (ml) { ev.preventDefault(); return goToMsg(Number(ml.dataset.msg)); }
-  const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
-  goToMsg(Number(q.dataset.goto));
 });
 // A message referenced by a reply quote or a [link](#m123): switch to its thread if needed, then scroll to it and flash.
 // Goes to a message: switches to its thread (th when the message isn't loaded yet: the inbox, a #m link), widens the
@@ -3287,34 +3194,9 @@ function goToMsg(id, th) {
   goPending = null;
   stick = false; // reading up there now: new content below must not pull the chat back down
   el.scrollIntoView({ block: "center", behavior: "smooth" });
-  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  el.dispatchEvent(new CustomEvent("vb:message-highlight"));
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo && document.activeElement?.id === "input") { replyTo = null; renderReply(); } });
-// Touch: drag a message right past 60px to reply, left past 60px to copy (it follows the finger, then snaps back).
-let sw = null;
-document.addEventListener("touchstart", (e) => { const m = !e.target.closest("pre, table, .embedBox") && e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
-// Once the drag reads as horizontal (10px, more sideways than up/down) it's locked: the list stops scrolling until
-// the finger lifts. A drag that starts vertical is a scroll and never becomes a reply.
-document.addEventListener("touchmove", (e) => {
-  if (!sw) return;
-  const dx = e.touches[0].clientX - sw.x, dy = e.touches[0].clientY - sw.y;
-  if (!sw.locked) {
-    if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }
-    if (Math.abs(dx) < 10 || Math.abs(dx) <= Math.abs(dy)) return;
-    sw.locked = true; sw.m.classList.add("swipe");
-  }
-  e.preventDefault();
-  sw.dx = dx; sw.m.style.transform = `translateX(${Math.max(-80, Math.min(dx, 80))}px)`;
-  sw.m.dataset.sw = dx < 0 ? `← ${t("Copiar")}` : `${t("Responder")} →`;
-  sw.m.classList.toggle("swL", dx < 0); sw.m.classList.toggle("swR", dx > 0); sw.m.classList.toggle("swGo", Math.abs(dx) > 60);
-}, { passive: false });
-document.addEventListener("touchend", () => {
-  if (!sw) return;
-  const { m, dx } = sw; sw = null;
-  m.classList.remove("swipe", "swL", "swR", "swGo"); m.style.transform = "";
-  if (dx > 60) startReply(Number(m.id.slice(1)));
-  else if (dx < -60) copyMsg(Number(m.id.slice(1)));
-});
 // Choices: an agent asks its human to pick (post with choices). That person sees radio/checkboxes + Enviar; the
 // pick is sent as their message replying to the question, which is also how the block knows it was answered.
 // Native cards (MCP post card, json-render's spec shape, validated by src/card.ts): every string escaped, no HTML.
@@ -3371,11 +3253,11 @@ function cardGo(to) {
 }
 document.addEventListener("click", (e) => { const g = e.target.closest("[data-cardgo]"); if (g) { e.preventDefault(); cardGo(g.dataset.cardgo); } });
 // ⤢ on a card table: the table full screen, like an image (wide tables scroll inside the card).
-document.addEventListener("click", (e) => { const b = e.target.closest("[data-vtopen]"); if (!b) return; const tb = b.parentElement.querySelector("table"); if (tb) openViewer(tb, "table", b.closest(".vcard")?.querySelector(".vh b")?.textContent || t("Tabela")); });
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-vtopen]"); if (!b) return; const tb = b.parentElement.querySelector("table"); if (tb) openViewer(tb, "table", b.closest(".vcard, [data-chat-rich~=vcard]")?.querySelector(".vh b, [data-chat-rich~=vh] b")?.textContent || t("Tabela")); });
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-cardbtn]"); if (!b) return;
   const q = S.messages.find((x) => x.id === Number(b.dataset.cardbtn));
-  b.closest(".vcard")?.querySelectorAll("[data-cardbtn]").forEach((x) => (x.disabled = true));
+  b.closest(".vcard, [data-chat-rich~=vcard]")?.querySelectorAll("[data-cardbtn]").forEach((x) => (x.disabled = true));
   send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.v, files: [], reply_to: Number(b.dataset.cardbtn) });
 });
 // A permission ask (Aprovar/Negar from the plugin's hook) is answered in place: the button, then Confirmar (never by
@@ -3394,8 +3276,8 @@ function permHtml(m, c, ans) {
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-perm] [data-pv], [data-perm] [data-pconfirm], [data-perm] [data-pcancel]"); if (!b) return;
   const box = b.closest("[data-perm]"), id = Number(box.dataset.perm);
-  if (b.dataset.pv) { const ok = b.dataset.pv === "Aprovar"; box.innerHTML = `<span class="pq">${ok ? t("Aprovar este pedido?") : t("Negar este pedido?")}</span><button type="button" class="${ok ? "primary" : "danger"}" data-pconfirm="${b.dataset.pv}">${t("Confirmar")}</button><button type="button" class="ghost" data-pcancel="1">${t("Cancelar")}</button>`; box.classList.add("confirm"); return; }
-  if (b.dataset.pcancel) { const m = S.messages.find((x) => x.id === id); if (m) box.outerHTML = choiceHtml(m); return; }
+  if (b.dataset.pv) { const ok = b.dataset.pv === "Aprovar"; box.innerHTML = adaptLegacyChatMarkup(`<span class="pq">${ok ? t("Aprovar este pedido?") : t("Negar este pedido?")}</span><button type="button" class="${ok ? "primary" : "danger"}" data-pconfirm="${b.dataset.pv}">${t("Confirmar")}</button><button type="button" class="ghost" data-pcancel="1">${t("Cancelar")}</button>`); box.dataset.chatRich = "permAsk confirm"; return; }
+  if (b.dataset.pcancel) { const m = S.messages.find((x) => x.id === id); if (m) box.outerHTML = adaptLegacyChatMarkup(choiceHtml(m)); return; }
   const q = S.messages.find((x) => x.id === id);
   box.querySelectorAll("button").forEach((x) => (x.disabled = true));
   send({ t: "msg", thread: q?.thread ?? thread, text: b.dataset.pconfirm, files: [], reply_to: id });
@@ -3418,7 +3300,7 @@ function choiceHtml(m) {
   return `<div class="choice ro">${c.options.map((o) => `<span class="opt">${esc(o)}</span>`).join("")}<small>${t("esperando {who}", { who: esc(name(m.author)) })}</small></div>`;
 }
 document.addEventListener("change", (e) => {
-  const f = e.target.closest("form.choice"); if (!f) return;
+  const f = e.target.closest("form.choice, form[data-chat-rich~=choice]"); if (!f) return;
   const box = document.getElementById("input"); if (!box) return;
   // "Outro" clears the box for your own words (and, single choice, unpicks the others).
   if (e.target.dataset.other) { if (e.target.checked) { if (!f.dataset.multi) f.querySelectorAll("input").forEach((i) => (i.checked = i === e.target)); box.value = ""; } }
@@ -3427,42 +3309,6 @@ document.addEventListener("change", (e) => {
   box.dispatchEvent(new Event("input", { bubbles: true }));
   box.focus();
 });
-// Reminders read as one quiet line (⏰ name · whose · time); the same reminder firing again with nothing in between
-// folds into that line ("rodou N×"), so an hourly reminder doesn't fill the room. Click opens its text.
-// The Claudes' report_issue lines (vibebook's product room) fold the same way: consecutive ones are one ⚠ line.
-const remKey = (m) => m?.tag === "reminder" ? (m.text || "").split("\n")[0] : m?.tag === "issue" ? "⚠issue" : null;
-function foldReminders(list) {
-  const out = [];
-  for (const m of list) {
-    const k = remKey(m), p = out[out.length - 1];
-    if (k && remKey(p) === k) out[out.length - 1] = { ...m, runs: [...(p.runs || [p.ts]), m.ts], group: [...(p.group || [p]), m] };
-    else out.push(m);
-  }
-  return out;
-}
-function issueHtml(m) {
-  const all = (m.group || [m]).slice().reverse(); // newest first
-  const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
-  const parts = (x) => { const [h, ...r] = (x.text || "").split("\n\n"); return { head: h.replace(/^⚠\s*/, ""), what: r.join("\n\n") }; };
-  const last = parts(all[0]);
-  return `<div class="msg remMsg issueMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("alert", 14)}<span class="remT"><b>${all.length > 1 ? t("{n} issues dos agents", { n: all.length }) : t("Issue de um agent")}</b> ${esc(last.what.replace(/\s+/g, " ").slice(0, 140))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day(m.ts)}</span></summary><div class="txt issueList">${all.map((x) => { const p = parts(x); return `<div class="iss"><small>${day(x.ts)} · ${mentions(md(p.head))}<span class="issAct"><button type="button" class="rbtn" data-copymsg="${x.id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 13)}</button><button type="button" class="rbtn" data-reply="${x.id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 13)}</button></span></small><div>${esc(p.what)}</div></div>`; }).join("")}</div></details></div></div>`;
-}
-function remHtml(m, origin = false) {
-  const [head, ...rest] = (m.text || "").split("\n\n"), runs = m.runs || [m.ts];
-  const h = head.replace(/^⏰\s*/, ""), nm = h.match(/^\*\*(.+?)\*\*\s*(.*)$/);
-  const day = (ts) => new Date(ts).toDateString() === new Date().toDateString() ? hhmm(ts) : `${new Date(ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(ts)}`;
-  return `<div class="msg remMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary>${icon("clock", 14)}<span class="remT">${nm ? `<b>${esc(nm[1])}</b> ${esc(nm[2])}` : esc(h)}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${runs.length > 1 ? `${t("rodou {n}×", { n: runs.length })} · ` : ""}${day(m.ts)}</span></summary>${rest.length ? `<div class="txt">${mentions(md(rest.join("\n\n")))}</div>` : ""}${runs.length > 1 ? `<small class="remRuns">${runs.map(day).join(" · ")}</small>` : ""}</details>${origin ? "" : (m.group || [m]).map((x) => threadCards(x.id)).join("")}</div></div>`;
-}
-// @vibe's routine lines (archived, reopened, proof ask, nudges) read as one quiet line too; click opens the full text.
-// Older reopen lines have no tag, so they're matched by their opening.
-const isNotice = (m) => m.author === "ai" && (m.tag === "notice" || m.tag === "done" || /^↩ (Reabri|I reopened)/.test(m.text || ""));
-function noticeHtml(m) {
-  const one = (m.text || "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
-  const day = new Date(m.ts).toDateString() === new Date().toDateString() ? hhmm(m.ts) : `${new Date(m.ts).toLocaleDateString(LOCALE, { day: "numeric", month: "short" })} ${hhmm(m.ts)}`;
-  return `<div class="msg remMsg noticeMsg" id="m${m.id}">${mact(m.id)}<div class="body"><details><summary><span class="vibeMark" aria-hidden="true">✦</span><span class="remT">${mentions(esc(one))}</span><span class="remWhen" title="${esc(new Date(m.ts).toLocaleString(LOCALE))}">${day}</span></summary><div class="txt">${mentions(md(m.text || ""))}</div></details></div></div>`;
-}
-// Hover actions (Copiar / Responder) shared by messages and the quiet reminder/issue lines.
-const mact = (id) => `<span class="mact"><button type="button" class="rbtn" data-copymsg="${id}" title="${t("Copiar")}" aria-label="${t("Copiar o texto desta mensagem")}">${icon("copy", 14)} ${t("Copiar")}</button><button type="button" class="rbtn" data-copylink="${id}" title="${t("Copiar link")}" aria-label="${t("Copiar o link desta mensagem")}">${icon("link", 14)} ${t("Copiar link")}</button><button type="button" class="rbtn" data-reply="${id}" title="${t("Responder")}" aria-label="${t("Responder a esta mensagem")}">${icon("reply", 14)} ${t("Responder")}</button></span>`;
 function renderDecisions() {
   const el = document.getElementById("decPane"); if (!el) return;
   const list = S.decisions || [];
@@ -3640,12 +3486,14 @@ async function vbCall(name, a = {}, ask) {
 // iframe; one window listener finds the frame by e.source. tools/call: a remote app's own server (through the Worker),
 // otherwise vibebook's tools (VB_TOOLS) as the person looking, writes behind appAsk. ui/message = post as you (asked).
 const hosts = new WeakMap();
+const nativeChatEmbeds = new Set();
 function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remote app, first?, tool?, base?, toolName?, embed? }
-  const post = (m) => frame.contentWindow?.postMessage({ jsonrpc: "2.0", ...m }, "*");
-  const ask = (what, detail) => appAsk(o.ask(), what, detail);
+  const post = (m) => {if(!o.current||o.current())frame.contentWindow?.postMessage({ jsonrpc: "2.0", ...m }, "*");};
+  const ask = async (what, detail) => {if(o.current&&!o.current())return false;const answer=await (o.askNative?o.askNative(what,detail):appAsk(o.ask(),what,detail));return answer&&(!o.current||o.current());};
   const call = (name, args) => (o.call ? o.call(name, args || {}) : vbCall(name, args || {}, ask));
   const dark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
   return async (m) => {
+    if(o.current&&!o.current())return;
     const ok = (result) => m.id !== undefined && post({ id: m.id, result });
     try {
       switch (m.method) {
@@ -3660,6 +3508,7 @@ function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remot
           return;
         case "ui/notifications/size-changed": { // embeds grow to fit, capped (420px or 55% of a phone): taller ones scroll inside, ⤢ opens them
           if (!o.embed || typeof m.params?.height !== "number") return;
+          if(o.resize){o.resize(m.params.height);return;}
           const cap = Math.min(420, Math.round(innerHeight * 0.55)), h = Math.max(Math.ceil(m.params.height) + 2, 40);
           frame.style.height = `${Math.min(h, cap)}px`; frame.closest(".embedWrap")?.classList.toggle("clipped", h > cap);
           return;
@@ -3701,7 +3550,7 @@ addEventListener("message", (e) => {
   // same WindowProxy, so e.source alone would let that site talk to the host.
   if (e.origin !== "null") return;
   const panel = document.querySelector(".connFrame");
-  const fr = panel?.contentWindow === e.source ? panel : [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
+  const fr = panel?.contentWindow === e.source ? panel : [...document.querySelectorAll("iframe.embed"),...nativeChatEmbeds].find((f) => f.isConnected && f.contentWindow === e.source);
   if (!fr) return;
   // Embeds saved before Nov 2026 carry the old bridge: { vbEmbed: 1, h } / { vbEmbed: 1, send }.
   if (d.vbEmbed === 1) return embedHost(fr)(typeof d.h === "number" ? { method: "ui/notifications/size-changed", params: { height: d.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(d.send || "") }] } });
@@ -3802,8 +3651,10 @@ function renderChat(keep) {
     if (thread !== "main" && bk?.classList.contains("nodoc") && !bk.classList.contains("boardview") && (taskWaits || !S.messages.some((m) => m.thread === thread))) bk.classList.remove("nodoc");
     // Point at what's yours here: what's waiting on you (tasks, messages), else your own open tasks. Bring the first
     // into view and let them shine (a sweep of light over the item itself, nothing clipped).
+    const attentionRoom=S.id, attentionThread=thread;
     if (thread !== "main" || waitsIn(thread).length) setTimeout(() => {
-      let els = [...document.querySelectorAll(".task.waitTask, .msg.waitMsg .txt")];
+      if(S?.id!==attentionRoom||thread!==attentionThread)return;
+      let els = [...document.querySelectorAll(".task.waitTask")];
       if (!els.length) els = [...document.querySelectorAll(".task.mine")];
       // Only a task is scrolled to (it lives in the doc panel). A waiting message just shines where it is: jumping the
       // chat up to it on entering looked like the room scrolled to a random old message.
@@ -3817,19 +3668,21 @@ function renderChat(keep) {
     fillOf.add(S.id + thread); olderBusy = true;
     send({ t: "older", thread, before: all[0]?.id ?? 0 });
   }
-  const list = foldReminders(all.slice(-win.n));
+  const list = all.slice(-win.n);
   const more = all.length > list.length || (all.length && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread]);
   const h0 = el.scrollHeight, t0 = el.scrollTop;
   const src=S.epics.find(e=>e.id===thread)?.from_msg;
   const origin=src && (S.messages.find(m=>m.id===src)||S.origins?.find(m=>m.id===src));
   const replyCount=S.counts ? (S.counts[thread]??0)+all.filter(m=>m.id>(S.countsAt??0)).length : all.length;
-  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),onloadolder:loadOlder});
-  renderWorking();
+  const roomId=S.id, chatThread=thread;
+  let chatMount;
+  const current=()=>S?.id===roomId&&thread===chatThread&&el.isConnected&&viewMounts.get("chat")===chatMount;
+  renderView("chat",el,{room:S,thread,list,previous:all[all.length-list.length-1],more,origin:origin||null,replyCount,vb:chatBridge(),legacy:{richText:(text,mode)=>adaptLegacyChatMarkup(mode==="markdown"?mentions(md(text)):mode==="inline"?mentions(esc(text)):mentions(linkify(esc(text)))),interactiveBody:(message)=>adaptLegacyChatMarkup((message.card?cardHtml(message):"")+(message.choices?choiceHtml(message):"")+(message.poll?pollHtml(message.poll):"")),threadCards:(id)=>adaptLegacyChatMarkup(threadCards(id))},actions:{mountEmbed:(frame,file,controls)=>{nativeChatEmbeds.add(frame);hosts.set(frame,makeHost(frame,{embed:true,thread:controls.thread,current:()=>current()&&frame.isConnected,askNative:controls.ask,resize:controls.resize}));return ()=>{nativeChatEmbeds.delete(frame);hosts.delete(frame);};},reply:(id)=>{if(current())startReply(id);},navigate:(id,target)=>{if(current())goToMsg(id,target);},openFile:(file)=>{const canonical=[...(S?.files||[]),...(S?allMsgs().flatMap(m=>m.files||[]):[])].some(f=>f.id===file.id&&f.name===file.name&&f.type===file.type&&f.size===file.size&&f.ts===file.ts&&f.author===file.author);if(current()&&canonical)openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}},onloadolder:()=>{if(current())loadOlder();}});
+  chatMount=viewMounts.get("chat");
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
-  syncEnd();
-  if (keep === "stay") { el.scrollTop = t0; renderReceipts(); pinOnLoad(el); } // a state refresh while reading above
-  else if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; renderReceipts(); pinOnLoad(el); }
-  else { scrollDown(true); pinOnLoad(el); renderReceipts(); }
+  if (keep === "stay") { el.scrollTop = t0; pinOnLoad(el); } // a state refresh while reading above
+  else if (keep) { el.scrollTop = t0 + el.scrollHeight - h0; pinOnLoad(el); }
+  else { scrollDown(true); pinOnLoad(el); }
 }
 function pullOlder() {
   const all = S.messages.filter((m) => m.thread === thread);
@@ -3843,51 +3696,9 @@ function loadOlder() {
   olderBusy = true;
   send({ t: "older", thread, before: all[0].id });
 }
-// One status footer per message (.mfoot), the same line for every state: what Claudes are doing about it (acks) first,
-// then who has read it (receipts). Color only says the state; only ⏸ (a Claude needs you in its terminal) stands out.
+// Model labels are still shared by legacy agent/account surfaces; native chat owns its status model.
 // Model ids read the same everywhere (prettyModel).
 const prettyModel = (s) => String(s ?? "").replace(/^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)(?:-\d{8})?$/i, (_, f, a, b) => `Claude ${f[0].toUpperCase()}${f.slice(1)} ${a}.${b}`);
-function renderReceipts() {
-  const el = document.getElementById("msgs"); if (!el) return;
-  el.querySelectorAll(".mfoot").forEach((x) => x.remove());
-  const foot = {}; // msg id → { st: [html], rd: [html] }
-  const at = (id) => (foot[id] ??= { st: [], rd: [] });
-  const via = (k) => t("{via} de {who}", { via: esc(prettyModel(k.who)), who: esc(name(k.email)) });
-  const seenAck = new Set();
-  for (const k of S.acks || []) {
-    if (k.status === "dismissed") continue; // you took it out of your Claude's queue; nothing to show
-    const key = `${k.msg_id}|${k.who}|${k.email}`;
-    if (seenAck.has(key)) continue;
-    seenAck.add(key);
-    // "doing" is live only while the agent shows activity (post / task move bumps ts); 20 min quiet or idle =
-    // nobody is on it now: say who the epic waits on (owners of its open tasks) instead of a spinner.
-    const doing = k.status === "doing" && Date.now() - k.ts < 20 * 60e3;
-    const who = via(k), when = `<time title="${esc(new Date(k.ts).toLocaleString(LOCALE))}">${ago(k.ts)}</time>`;
-    let cls, ico, txt;
-    if (k.status === "blocked") { cls = "need"; ico = "⏸"; txt = `${t("{who} espera você no terminal", { who })}${k.note ? `: <b>${esc(k.note)}</b>` : ""} · ${when}`; }
-    else if (doing) { cls = "doing"; ico = `<span class="spin"></span>`; txt = `${t("{who} está fazendo isso", { who })} · ${when}`; }
-    else if (k.status === "done") { cls = "did"; ico = "✓"; txt = t("{who} fez isso", { who }); }
-    else {
-      const owners = [...new Set((S.epics || []).filter((e) => e.from_msg === k.msg_id && !e.archived).flatMap((e) => e.tasks.filter((t) => t.status !== "done" && t.owner).map((t) => name(t.owner))))];
-      if (owners.length) { cls = "wait"; ico = "⏳"; txt = t("aguardando {who}", { who: owners.map(esc).join(", ") }); }
-      else { cls = "idle"; ico = "–"; txt = `${t("{who} parou", { who })} · ${when}`; }
-    }
-    at(k.msg_id).st.push(`<span class="ms ${cls}"><i>${ico}</i><span>${txt}</span></span>`);
-  }
-  // Receipts: each agent once, at the newest message it reached (✓✓ read, ✓ only delivered), full name on hover;
-  // an agent that acked the message shows its ack instead. Its own person's agent posts don't count.
-  const list = S.messages.filter((m) => m.thread === thread);
-  for (const r of S.receipts || []) {
-    const m = list.findLast((x) => x.id <= Math.max(r.read, r.delivered) && !(x.kind === "agent" && x.author === r.email));
-    if (!m || seenAck.has(`${m.id}|${r.who}|${r.email}`)) continue;
-    const read = r.read >= m.id, who = via(r);
-    at(m.id).rd.push(`<span class="${read ? "rd" : ""}" title="${read ? t("lido por {who}", { who }) : t("entregue, ainda não lido por {who}", { who })}">${read ? "✓✓" : "✓"} ${esc(prettyModel(r.who))}</span>`);
-  }
-  for (const [id, f] of Object.entries(foot)) {
-    const body = document.querySelector(`#m${id} .body`); if (!body) continue;
-    body.insertAdjacentHTML("beforeend", `<div class="mfoot">${f.st.join("")}${f.rd.length ? `<span class="mr">${f.rd.join("")}</span>` : ""}</div>`);
-  }
-}
 function appendMsg(m) {
   renderChat(stick || (m.author === S.me && m.kind !== "agent") ? undefined : "stay");
 }
@@ -3897,7 +3708,7 @@ let stick = true; // was the reader at the bottom of the chat?
 const pinRO = new ResizeObserver(() => { const el = document.getElementById("msgs"); if (el && stick) el.scrollTop = el.scrollHeight; });
 function pinOnLoad(root) {
   if (!root) return;
-  (root.classList?.contains("msg") ? [root] : root.querySelectorAll(".msg")).forEach((m) => pinRO.observe(m));
+  (root.hasAttribute?.("data-chat-message") ? [root] : root.querySelectorAll("[data-chat-message]")).forEach((m) => pinRO.observe(m));
 }
 function scrollDown(force) {
   const el = document.getElementById("msgs"); if (!el) return;

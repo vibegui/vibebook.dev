@@ -37,6 +37,7 @@ if (native) {
     "svelte/features/people",
     "svelte/features/pwa",
     "svelte/features/notifications",
+    "svelte/features/chat",
   ])
     await collect(directory);
   files.push(
@@ -49,6 +50,10 @@ if (native) {
     "svelte/Reminders.svelte",
     "svelte/Decisions.svelte",
     "svelte/People.svelte",
+    "svelte/Chat.svelte",
+    "svelte/Message.svelte",
+    "svelte/chatTypes.ts",
+    "svelte/integrations/LegacyChatContent.svelte",
     "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",
