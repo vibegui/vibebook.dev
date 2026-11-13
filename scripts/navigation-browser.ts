@@ -154,7 +154,7 @@ try {
   const submit = nav.getByRole("button", { name: "Create epic", exact: true });
   await navigate();
   step(
-    "Checking nested metadata, keyboard disclosure and rail draft retention",
+    "Checking nested metadata, keyboard disclosure and live draft retention",
   );
   await expect(row(child)).toHaveAttribute("data-depth", "1");
   await expect(row(leaf)).toHaveAttribute("data-depth", "2");
@@ -164,12 +164,16 @@ try {
   await expect(
     row(parent).getByRole("img", { name: "Work in a sub-epic", exact: true }),
   ).toBeVisible();
-  await draft.fill("Draft survives rail remount");
-  await page.locator("#railToggle").click();
-  await expect(nav).toHaveCount(0);
-  await page.locator("#railToggle").click();
-  await expect(nav).toBeVisible();
-  await expect(draft).toHaveValue("Draft survives rail remount");
+  await draft.fill("Draft survives live updates");
+  await agent("update_epic", {
+    room_id: id,
+    epic_id: leaf,
+    title: "Leaf initial live update",
+  });
+  await expect(row(leaf).locator("[data-epic-title]")).toContainText(
+    "Leaf initial live update",
+  );
+  await expect(draft).toHaveValue("Draft survives live updates");
   await expect(row(child)).toBeHidden();
   await navigate(leaf);
   await expect(row(leaf)).toBeVisible();
@@ -185,11 +189,7 @@ try {
     "Leaf updated remotely",
   );
   await expect(row(leaf)).toBeHidden();
-  await page.locator("#railToggle").click();
-  await page.locator('#side button[data-thread="main"]').click();
-  await page.locator(`#side button[data-thread="${leaf}"]`).click();
-  await page.locator("#railToggle").click();
-  await expect(row(leaf)).toBeVisible();
+  await disclosure(parent).click();
   await title(parent).click();
   await expect(title(parent)).toHaveAttribute("aria-current", "page");
   await title(parent).click();
@@ -354,7 +354,7 @@ try {
   assert.deepEqual(errors, []);
   result.status = "pass";
   console.log(
-    "PASS native epic navigation: hierarchy, disclosure, rail state, archive, owner, ordering/drag, persistence, disconnect/retry, responsive EN/PT axe",
+    "PASS native epic navigation: hierarchy, disclosure, live draft state, archive, owner, ordering/drag, persistence, disconnect/retry, responsive EN/PT axe",
   );
 } catch (error) {
   result.status = "fail";
