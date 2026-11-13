@@ -1751,7 +1751,7 @@ function onEvent(ev, id) {
       if (roomCache.size > 12) roomCache.delete(roomCache.keys().next().value);
       if (S.messages.length) seenHere(S.messages.at(-1).id);
       loadRoomAgents();
-      if (firstLoad) renderBook(); else { renderSide(); renderChat(stick ? undefined : "stay"); renderDoc(true); renderTasks(); renderKanban(); renderFiles(); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
+      if (firstLoad) renderBook(); else { renderSide(); renderChat(stick ? undefined : "stay"); renderDoc(true); renderTasks(); renderKanban(); renderFiles(false, true); renderApps(); renderReminders(); renderDecisions(); renderReceipts(); renderWorking(); }
       return;
     }
     case "closed": renderChat("stay"); return;
@@ -3789,17 +3789,17 @@ function renderReminders() {
   document.getElementById("remCount").textContent=list.length ? ` ${list.length}${bad ? " ⚠" : ""}` : "";
   renderView("reminders",el,{room:S,thread,vb:panelBridge(),send});
 }
-function renderFiles(load = false) {
+function renderFiles(load = false, freshSnapshot = false) {
   const el=document.getElementById("filesPane"); if(!el || !S) return;
   renderPeek();
   const n=S.filesN ?? S.files?.length ?? 0;
   document.getElementById("fileCount").textContent=n ? ` ${n}` : "";
   if(nativeFilesSession?.roomId!==S.id){nativeFilesSession?.dispose();nativeFilesSession=createFilesSession(S.id);}
   const session=nativeFilesSession, roomId=S.id, connection=roomConnection;
-  session.sync(S);
+  session.sync(S, freshSnapshot);
   const current=()=>nativeFilesSession===session&&S?.id===roomId&&roomConnection===connection&&location.pathname===`/b/${roomId}`;
   const request=(command)=>current()&&connection?connection.request(command):Promise.resolve({ok:false,error:t("sem conexão")});
-  if(load)void session.load(request);
+  if(load || (freshSnapshot && el.parentElement?.dataset.pane === "files"))void session.load(request);
   renderView("files",el,{room:S,thread,vb:panelBridge(),send,session,request,onfolderchange:()=>{if(current())el.scrollTop=0;},onopenfile:(file)=>{if(current())openViewer(`/api/books/${roomId}/files/${encodeURIComponent(file.id)}`,file.type.startsWith("image/")?"img":"frame",file.name);}});
 }
 // 📌 on a file tile or app card: pins it to the sidebar (or unpins).

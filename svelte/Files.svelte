@@ -20,6 +20,10 @@
   $effect(() => {
     session.sync(room);
   });
+  const issueText = (issue: string) =>
+    issue === "unconfirmed"
+      ? vb.t("Ainda não recebi a confirmação. Confira antes de tentar de novo.")
+      : issue;
   function select(kind: string, dir: string, folder = false) {
     if (!mounted) return;
     session.select(kind, dir);
@@ -129,7 +133,7 @@
     </p>{/if}
   {#if $state.loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
   {#if $state.loadError}<p role="alert" class="tw:text-destructive">
-      {$state.loadError}
+      {issueText($state.loadError)}
     </p>
     <Button
       variant="outline"
@@ -138,6 +142,6 @@
       }}>{vb.t("Tentar novamente")}</Button
     >{/if}
   {#if $state.error}<p role="alert" class="tw:text-destructive">
-      {$state.error}
+      {issueText($state.error)}
     </p>{/if}
 </section>

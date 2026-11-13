@@ -219,3 +219,120 @@ test("replaced exact-version metadata and wrong-room actions never send or open"
     throw Error("wrong room");
   });
 });
+function fakeClock() {
+  const jobs = new Set<() => void>();
+  return {
+    jobs,
+    clock: {
+      schedule(fn: () => void) {
+        jobs.add(fn);
+        return fn;
+      },
+      cancel(handle: unknown) {
+        jobs.delete(handle as () => void);
+      },
+    },
+    fire() {
+      for (const fn of [...jobs]) {
+        jobs.delete(fn);
+        fn();
+      }
+    },
+  };
+}
+test("fresh partial reconnect reloads once while ordinary renders preserve in-flight loading and failure", async () => {
+  const time = fakeClock(),
+    f = file("f"),
+    r = { ...room([f]), filesAll: true },
+    session = createFilesSession("room", time.clock);
+  session.sync(r);
+  session.select("md", "reports");
+  let calls = 0;
+  const request = async () => {
+    calls++;
+    return { ok: true } as const;
+  };
+  await session.load(request);
+  expect(calls).toBe(0);
+  const partial = { ...r, filesAll: false, filesN: 30 };
+  session.sync(partial, true);
+  await session.load(request);
+  for (let i = 0; i < 5; i++) {
+    session.sync(partial);
+    await session.load(request);
+  }
+  expect(calls).toBe(1);
+  time.fire();
+  expect(get(session.state).loadError).toBe("unconfirmed");
+  // Ordinary renders never auto-call load; failure survives until explicit retry or a new state generation.
+  session.sync({ ...partial });
+  expect(get(session.state).loadError).toBe("unconfirmed");
+  await session.load(request);
+  expect(calls).toBe(2);
+  session.sync({ ...partial, filesAll: true });
+  expect(get(session.state).loading).toBe(false);
+  session.sync({ ...partial }, true);
+  await session.load(request);
+  expect(calls).toBe(3);
+  expect(get(session.state)).toMatchObject({
+    directory: "reports",
+    kind: "md",
+  });
+  session.dispose();
+  expect(time.jobs.size).toBe(0);
+});
+test("collaborator reversal before pin ACK expires without optimistic changes and explicit retry recovers", async () => {
+  const time = fakeClock(),
+    f = file("f"),
+    r = room([f]),
+    session = createFilesSession("room", time.clock);
+  session.sync(r);
+  let ack!: (value: { ok: true }) => void;
+  const pending = session.toggle(
+    f,
+    () => new Promise((resolve) => (ack = resolve)),
+  );
+  session.sync({ ...r, pins: [{ id: "p", kind: "file", ref: "f" }] });
+  session.sync({ ...r, pins: [] });
+  ack({ ok: true });
+  await pending;
+  expect(get(session.state).pending?.ack).toBe(true);
+  time.fire();
+  expect(get(session.state)).toMatchObject({
+    pending: null,
+    error: "unconfirmed",
+  });
+  expect(r.pins).toEqual([]);
+  let calls = 0;
+  await session.toggle(f, async () => {
+    calls++;
+    return { ok: true };
+  });
+  expect(calls).toBe(1);
+  session.sync({ ...r, pins: [{ id: "p2", kind: "file", ref: "f" }] });
+  expect(get(session.state)).toMatchObject({ pending: null, error: "" });
+  expect(time.jobs.size).toBe(0);
+});
+test("stale metadata ACK and scheduled callbacks cannot mutate a new snapshot or a disposed session", async () => {
+  const time = fakeClock(),
+    f = file("f"),
+    r = room([f]),
+    session = createFilesSession("room", time.clock);
+  session.sync(r);
+  let finish!: (value: { ok: false; error: string }) => void;
+  const old = session.load(() => new Promise((resolve) => (finish = resolve)));
+  session.sync({ ...r }, true);
+  await session.load(async () => ({ ok: true }));
+  finish({ ok: false, error: "old rejection" });
+  await old;
+  expect(get(session.state)).toMatchObject({ loading: true, loadError: "" });
+  const obsolete = [...time.jobs];
+  session.sync({ ...r, filesAll: true });
+  await session.toggle(f, async () => ({ ok: true }));
+  const pinCallbacks = [...time.jobs];
+  session.dispose();
+  const before = get(session.state);
+  for (const fn of [...obsolete, ...pinCallbacks]) fn();
+  expect(get(session.state)).toEqual(before);
+  expect(time.jobs.size).toBe(0);
+});
