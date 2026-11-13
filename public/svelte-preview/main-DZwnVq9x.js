@@ -21002,7 +21002,7 @@ function _x(e, t = Date.now()) {
 	let n = e, r = (/\.(\w+)$/.exec(n.name)?.[1] || "").toLowerCase(), i = gx(n.type);
 	!i && /\.html?$/i.test(n.name) && (i = "text/html"), !i && r === "md" && (i = "text/markdown"), r === "txt" && (i = "text/plain"), r === "csv" && (i = "text/csv"), px[r] && !i.startsWith("audio/") && (i = px[r]);
 	let a = !n.name || n.name === "image.png" ? `print-${new Date(t).toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png` : n.name;
-	return (i !== n.type || a !== n.name) && (n = new File([n], a, { type: i })), n;
+	return (i !== n.type || a !== n.name) && (n = new File([n.slice()], a, { type: i })), n;
 }
 var vx = (e) => mx.has(gx(e.type)) ? e.size > fx(gx(e.type)) ? "size" : e.size === 0 ? "empty" : null : "type", yx = (e) => e.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9._-]/g, "");
 function bx(e, t, n, r = {}, i = []) {

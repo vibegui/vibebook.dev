@@ -36,7 +36,8 @@ export function normalizeFile(input: File, now = Date.now()): File {
       ? `print-${new Date(now).toISOString().slice(0, 16).replace(/[:T]/g, "-")}.png`
       : file.name;
   if (type !== file.type || name !== file.name)
-    file = new File([file], name, { type });
+    // A Blob part avoids older Bun retaining the original File's name.
+    file = new File([file.slice()], name, { type });
   return file;
 }
 export const fileIssue = (file: File) =>
