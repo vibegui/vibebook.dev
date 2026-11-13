@@ -3069,6 +3069,7 @@ function openViewer(url, kind, fname) {
   // send it to someone in the room, it opens the same file for them.
   if (!d.open) navigation.pushState({ viewer: 1 }, "", d.dataset.fid ? `${location.pathname}${location.search}#f${d.dataset.fid}` : location.href);
   d.showModal();
+  refreshVersions();
 }
 // Versions of a file = the room's files with the same name (each upload of report.html is one), newest first. The
 // state brings only the newest 12 files: what's loaded shows now, the rest once files.get answers (refreshVersions).

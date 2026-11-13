@@ -32,10 +32,12 @@
     },
     "fixes": {
       "pt": [
-        "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior."
+        "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior.",
+        "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo."
       ],
       "en": [
-        "A new file version no longer leaves detached buttons able to open or pin the previous version."
+        "A new file version no longer leaves detached buttons able to open or pin the previous version.",
+        "The version picker appears when opening a file after its complete history has loaded."
       ]
     }
   },
