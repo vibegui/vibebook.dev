@@ -1,4 +1,5 @@
 import { uploadsApi, type ApiServices } from "./api";
+import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
 import { services } from "./services";
 import { uiNavigationUrl, uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import "server-only";
@@ -176,7 +177,7 @@ app.use("*", async (c, next) => {
   const origin = c.req.header("origin");
   const writes = !["GET", "HEAD", "OPTIONS"].includes(c.req.method) || c.req.header("upgrade")?.toLowerCase() === "websocket";
   if (writes && !CROSS_OK.test(url.pathname) && ((origin && origin !== url.origin) || c.req.header("sec-fetch-site") === "cross-site"))
-    return c.json({ error: "cross-site request refused" }, 403);
+    return c.json(CROSS_SITE, 403);
   await next();
   if (NO_FRAME.test(url.pathname) && c.res.status !== 101) {
     c.res = new Response(c.res.body, c.res);
@@ -363,7 +364,7 @@ app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) {
     const file = fileLink(c);
-    return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json({ error: "unauthenticated" }, 401);
+    return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json(UNAUTHENTICATED, 401);
   }
   // The users row once per isolate, off the request path: a D1 write here cost every request a round trip.
   if (!knownUsers.has(email)) {

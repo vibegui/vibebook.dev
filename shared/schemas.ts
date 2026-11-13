@@ -440,3 +440,14 @@ export type AvatarResult = z.infer<typeof AvatarResult>;
 /** icon = the new version, or null when the icon was removed (a JSON body). */
 export const RoomIconResult = z.object({ ok: z.literal(true), icon: num });
 export type RoomIconResult = z.infer<typeof RoomIconResult>;
+
+/** The answers the Worker's global middleware gives before any route runs (src/index.ts), so they are not in AppType:
+ *  every /api call can get them. 401 = signed out; 403 = a write from another site (the cross-site guard). Routes'
+ *  own 403s ({ error: "forbidden" }) are in AppType. */
+export const UNAUTHENTICATED = { error: "unauthenticated" } as const;
+export const CROSS_SITE = { error: "cross-site request refused" } as const;
+export const GLOBAL_FAILURE_STATUSES = [401, 403] as const;
+export type GlobalFailure = {
+  status: (typeof GLOBAL_FAILURE_STATUSES)[number];
+  error: string;
+};

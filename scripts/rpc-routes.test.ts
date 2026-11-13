@@ -643,3 +643,22 @@ test("avatar and room icon: same origin, type, size and rate limits keep their o
     ).status,
   ).toBe(403);
 });
+
+test("global middleware answers (401 signed out, 403 cross-site) are typed by globalFailure", async () => {
+  const { globalFailure } = await import("../svelte/lib/client/api");
+  const { CROSS_SITE, UNAUTHENTICATED } = await import("../shared/schemas");
+  expect(globalFailure({ status: 401 }, UNAUTHENTICATED)).toEqual({
+    status: 401,
+    error: "unauthenticated",
+  });
+  expect(globalFailure({ status: 403 }, CROSS_SITE)).toEqual({
+    status: 403,
+    error: "cross-site request refused",
+  });
+  expect(globalFailure({ status: 401 }, "<html>")).toEqual({
+    status: 401,
+    error: "HTTP 401",
+  });
+  expect(globalFailure({ status: 200 }, {})).toBeNull();
+  expect(globalFailure({ status: 404 }, { error: "not found" })).toBeNull();
+});

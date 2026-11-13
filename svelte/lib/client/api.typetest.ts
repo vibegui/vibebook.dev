@@ -1,7 +1,7 @@
 // Compile-time contract tests (M2): checked by svelte-check, never run or bundled. Each @ts-expect-error must stay an
 // error; if a server change makes it compile, the contract moved and this file fails the check.
 import type { InferRequestType, InferResponseType } from "hono/client";
-import type { Client } from "./api";
+import { globalFailure, type Client } from "./api";
 import type {
   SandboxesResult,
   ConnectionsResult,
@@ -259,3 +259,23 @@ sameAs<
     RoomIconResult
   >
 >(true);
+
+// Error bodies are typed too: no `any` leaks from a validator's untyped context (architecture review, room 1931).
+type IsAny<T> = 0 extends 1 & T ? true : false;
+type Upload415 = InferResponseType<
+  (typeof api.api.books)[":id"]["files"]["$post"],
+  415
+>;
+sameAs<Equal<IsAny<Upload415["error"]>, false>>(true);
+sameAs<Equal<Upload415["error"], string>>(true);
+type Avatar415 = InferResponseType<typeof api.api.me.avatar.$post, 415>;
+sameAs<Equal<IsAny<Avatar415["error"]>, false>>(true);
+type Conn401 = InferResponseType<
+  (typeof api.api.books)[":id"]["connections"][":cid"]["call"]["$post"],
+  401
+>;
+sameAs<Equal<IsAny<Conn401["error"]>, false>>(true);
+// Global middleware failures (401/403) come through a typed helper, not `any`.
+type GF = NonNullable<ReturnType<typeof globalFailure>>;
+sameAs<Equal<IsAny<GF["error"]>, false>>(true);
+sameAs<Equal<GF["status"], 401 | 403>>(true);

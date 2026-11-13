@@ -194,7 +194,9 @@ const roomPosts = new Hono<ApiCtx>()
     "/api/books/:id/files",
     validator("header", (value, c) => {
       const r = UploadHeaders.safeParse(value);
-      return r.success ? r.data : c.json({ error: c.get("svc").typesError } satisfies ErrorBody, 415);
+      // The validator's context is untyped: name the services' type so the 415 body stays { error: string }.
+      const svc: ApiServices = c.get("svc");
+      return r.success ? r.data : c.json({ error: svc.typesError } satisfies ErrorBody, 415);
     }),
     async (c) => {
       const svc = c.get("svc"), id = c.req.param("id");

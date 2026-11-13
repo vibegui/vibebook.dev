@@ -26,7 +26,11 @@ export class Person extends DurableObject<Env> {
         return new Response(null, { status: 204 });
       }
       const me = await this.ctx.storage.get<{ body: string; at: number }>("me");
-      return me && Date.now() - me.at < 5 * 60e3 ? new Response(me.body, { headers: { "content-type": "application/json" } }) : new Response(null, { status: 404, headers: { "x-gen": String(gen) } });
+      // The generation rides on hits too: a hit the Worker can't use (written by an older deploy, off today's schema) is
+      // recomputed and replaced under the same race guard, instead of costing D1 reads until it expires.
+      return me && Date.now() - me.at < 5 * 60e3
+        ? new Response(me.body, { headers: { "content-type": "application/json", "x-gen": String(gen) } })
+        : new Response(null, { status: 404, headers: { "x-gen": String(gen) } });
     }
     const msg = await req.text();
     if (msg.includes('"t":"me"')) { // stale: the next /api/me reads D1
