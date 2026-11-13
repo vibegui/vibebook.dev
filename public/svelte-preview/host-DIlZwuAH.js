@@ -3311,7 +3311,7 @@ function oi(e, t, n) {
 		e.target.classList.contains("vbody") && r.close();
 	}), r.addEventListener("close", () => {
 		r.querySelector(".vbody").innerHTML = "", history.state?.viewer && (di = !0, history.back());
-	}), document.body.appendChild(r)), li(r, e, t, n), r.open || ue.pushState({ viewer: 1 }, "", r.dataset.fid ? `${location.pathname}${location.search}#f${r.dataset.fid}` : location.href), r.showModal();
+	}), document.body.appendChild(r)), li(r, e, t, n), r.open || ue.pushState({ viewer: 1 }, "", r.dataset.fid ? `${location.pathname}${location.search}#f${r.dataset.fid}` : location.href), r.showModal(), ci();
 }
 function si(e) {
 	let t = /* @__PURE__ */ new Map();
