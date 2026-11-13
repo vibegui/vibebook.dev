@@ -476,6 +476,9 @@
     "CommitMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
   --spacing: 0.25rem;
+  --spacing-room-sheet-expanded: calc(
+    var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px)
+  );
   --text-xs: 0.75rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;

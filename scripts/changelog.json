@@ -55,7 +55,8 @@
         "Editar o documento de uma conversa removida não sobrescreve mais o documento da sala.",
         "Na prévia Svelte, perder acesso limpa os dados da sala em cache e fecha arquivos abertos.",
         "A revisão de rascunhos de conversas removidas respeita o idioma escolhido.",
-        "Na prévia Svelte, capturas de tela longas ficam legíveis na conversa, com o topo em destaque; abrir o anexo mostra a imagem inteira."
+        "Na prévia Svelte, capturas de tela longas ficam legíveis na conversa, com o topo em destaque; abrir o anexo mostra a imagem inteira.",
+        "No celular, os botões dos formulários da prévia Svelte ficam no lugar quando o foco sai do campo de texto."
       ],
       "en": [
         "A new file version no longer leaves detached buttons able to open or pin the previous version.",
@@ -68,7 +69,8 @@
         "Editing a deleted conversation’s document no longer overwrites the room document.",
         "In the Svelte preview, losing access clears cached room data and closes open file previews.",
         "Draft review for deleted conversations follows the selected language.",
-        "In the Svelte preview, tall screenshots stay readable in chat with a crop from the top; opening the attachment shows the full image."
+        "In the Svelte preview, tall screenshots stay readable in chat with a crop from the top; opening the attachment shows the full image.",
+        "On mobile, Svelte preview form buttons stay in place when focus leaves a text field."
       ]
     }
   },
