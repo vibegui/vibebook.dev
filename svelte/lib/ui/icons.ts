@@ -1,5 +1,13 @@
 // Native SVG data, kept independent of the legacy markup renderer and application state.
 export const iconPaths = {
+  folder: [
+    "M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z",
+  ],
+  file: [
+    "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z",
+    "M14 2v6h6",
+  ],
+  pin: ["m16 3 5 5-4 1-3 5-4-4 5-3Z", "m10 14-7 7"],
   close: ["M18 6 6 18M6 6l12 12"],
   check: ["m20 6-11 11-5-5"],
   chevronDown: ["m6 9 6 6 6-6"],

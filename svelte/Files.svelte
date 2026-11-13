@@ -1,173 +1,147 @@
 <script lang="ts">
-  import { fileKind, kb, type PanelProps, type RoomFile } from "./panels";
-  let { room, vb, send }: PanelProps = $props();
-  const kinds = [
-    ["all", "Tudo"],
-    ["img", "Imagens"],
-    ["md", "Markdown"],
-    ["txt", "Texto e CSV"],
-    ["html", "HTML"],
-    ["pdf", "PDF"],
-    ["audio", "Áudios"],
-    ["other", "Outros"],
-  ];
-  let kind = $state("all"),
-    dir = $state("");
-  const files = $derived(room.files || []);
-  const counts = $derived.by(() => {
-    const n: Record<string, number> = { all: files.length };
-    for (const f of files) {
-      const k = fileKind(f);
-      n[k] = (n[k] || 0) + 1;
-    }
-    return n;
-  });
-  const activeKind = $derived(counts[kind] ? kind : "all");
-  const shown = $derived(
-    files.filter((f) => activeKind === "all" || fileKind(f) === activeKind),
-  );
-  const dirOf = (f: RoomFile) =>
-    f.name.includes("/") ? f.name.slice(0, f.name.lastIndexOf("/")) : "";
-  const activeDir = $derived(
-    dir && shown.some((f) => dirOf(f) === dir || dirOf(f).startsWith(dir + "/"))
-      ? dir
-      : "",
-  );
-  const pre = $derived(activeDir ? activeDir + "/" : "");
-  $effect(() => {
-    if (!counts[kind]) kind = "all";
-    if (dir && activeDir !== dir) dir = "";
-  });
-  function enter(e: MouseEvent, next: string) {
-    dir = next;
-    const pane = (e.currentTarget as HTMLElement).closest<HTMLElement>(
-      "#filesPane",
-    );
-    if (pane) pane.scrollTop = 0;
-  }
-  const view = $derived.by(() => {
-    const dirs = new Map<string, number>(),
-      here: RoomFile[] = [];
-    for (const f of shown) {
-      const d = dirOf(f);
-      if (d === activeDir) here.push(f);
-      else if (d.startsWith(pre)) {
-        const sub = d.slice(pre.length).split("/")[0];
-        dirs.set(sub, (dirs.get(sub) || 0) + 1);
-      }
-    }
-    const versions: Record<string, number> = {};
-    if (activeDir)
-      for (const f of here) versions[f.name] = (versions[f.name] || 0) + 1;
-    return {
-      dirs: [...dirs].sort((a, b) => a[0].localeCompare(b[0])),
-      list: activeDir
-        ? here.filter((f, i) => here.findIndex((x) => x.name === f.name) === i)
-        : here,
-      versions,
+  import { onMount } from "svelte";
+  import Button from "./lib/ui/Button.svelte";
+  import Icon from "./lib/ui/Icon.svelte";
+  import IconButton from "./lib/ui/IconButton.svelte";
+  import { filesModel, fileKinds } from "./features/files/model";
+  import type { FilesProps } from "./features/files/types";
+  import { kb } from "./panels";
+  let { room, vb, session, request, onopenfile, onfolderchange }: FilesProps =
+    $props();
+  let mounted = false;
+  onMount(() => {
+    mounted = true;
+    return () => {
+      mounted = false;
     };
   });
-  const url = (f: RoomFile) => `/api/books/${room.id}/files/${f.id}`;
-  const pin = (f: RoomFile) =>
-    room.pins?.find((p) => p.kind === "file" && p.ref === f.id);
-  function toggle(e: MouseEvent, f: RoomFile) {
-    e.preventDefault();
-    e.stopPropagation();
-    const p = pin(f);
-    send(
-      p
-        ? { t: "pin.del", id: p.id }
-        : { t: "pin.add", kind: "file", ref: f.id },
-    );
+  const state = $derived(session.state);
+  const view = $derived(filesModel(room, $state.kind, $state.directory));
+  $effect(() => {
+    session.sync(room);
+  });
+  const issueText = (issue: string) =>
+    issue === "unconfirmed"
+      ? vb.t("Ainda não recebi a confirmação. Confira antes de tentar de novo.")
+      : issue;
+  function select(kind: string, dir: string, folder = false) {
+    if (!mounted) return;
+    session.select(kind, dir);
+    if (folder) onfolderchange();
   }
 </script>
 
-{#if files.length}
-  {#if counts.all > 1}<div class="ftabs">
-      {#each kinds.filter(([k]) => counts[k]) as [k, label]}<button
-          type="button"
-          class="ftab"
-          class:on={k === activeKind}
-          data-fkind={k}
-          onclick={() => (kind = k)}
-          >{vb.t(label)} <small>{counts[k]}</small></button
-        >{/each}
-    </div>{/if}
-  {#if activeDir}<div class="fcrumb">
-      <button
-        type="button"
-        class="ghost"
-        data-fdir={activeDir.includes("/")
-          ? activeDir.slice(0, activeDir.lastIndexOf("/"))
-          : ""}
-        onclick={(e) =>
-          enter(
-            e,
-            activeDir.includes("/")
-              ? activeDir.slice(0, activeDir.lastIndexOf("/"))
-              : "",
-          )}>← {vb.t("voltar")}</button
-      ><b>{@html vb.icon("folder", 14)} {activeDir}/</b>
-    </div>{/if}
-  <div class="fgrid">
-    {#each view.dirs as [d, n]}<button
-        type="button"
-        class="ftile fdir"
-        data-fdir={pre + d}
-        onclick={(e) => enter(e, pre + d)}
-        ><div class="thumb">{@html vb.icon("folder", 34)}</div>
-        <b>{d}/</b><small
-          >{n === 1 ? vb.t("1 arquivo") : vb.t("{n} arquivos", { n })}</small
-        ></button
-      >{/each}
-    {#each view.list as f (f.id)}
-      <a
-        class="ftile"
-        href={url(f)}
-        target="_blank"
-        rel="noopener"
-        title={f.name}
-        data-view={f.type.startsWith("image/") ? "img" : "frame"}
-        data-name={f.name}
+<section
+  data-vb-native="files"
+  class="tw:flex tw:flex-col tw:gap-3 tw:p-3 tw:text-foreground"
+  aria-label={vb.t("Arquivos")}
+>
+  {#if room.files?.length}
+    {#if view.counts.all > 1}<div
+        class="tw:flex tw:flex-wrap tw:gap-1"
+        aria-label={vb.t("Arquivos")}
       >
-        <div class="thumb">
-          {#if f.type.startsWith("image/")}<img
-              src={url(f)}
-              alt={f.name}
-              loading="lazy"
-            />{:else}{@html vb.icon(
-              f.type === "text/html"
-                ? "globe"
-                : f.type.startsWith("audio/")
-                  ? "mic"
-                  : "file",
-              30,
-            )}{/if}
-        </div>
-        <b>{f.name.slice(pre.length)}</b><small
-          >{vb.name(f.author)} · {vb.ago(f.ts)} · {view.versions[f.name] > 1
-            ? vb.t("{n} versões", { n: view.versions[f.name] })
-            : kb(f.size)}</small
+        {#each fileKinds.filter(([kind]) => view.counts[kind]) as [kind, label]}
+          <Button
+            variant={view.kind === kind ? "secondary" : "ghost"}
+            size="sm"
+            data-fkind={kind}
+            aria-pressed={view.kind === kind}
+            onclick={() => select(kind, view.dir)}
+            >{vb.t(label)} <small>{view.counts[kind]}</small></Button
+          >
+        {/each}
+      </div>{/if}
+    {#if view.dir}<div class="tw:flex tw:items-center tw:gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onclick={() =>
+            select(
+              view.kind,
+              view.dir.includes("/")
+                ? view.dir.slice(0, view.dir.lastIndexOf("/"))
+                : "",
+              true,
+            )}>← {vb.t("voltar")}</Button
+        ><Icon name="folder" /><b>{view.dir}/</b>
+      </div>{/if}
+    <div class="tw:grid tw:grid-cols-2 tw:gap-3 tw:sm:grid-cols-3">
+      {#each view.folders as [name, count]}<Button
+          data-fdir={view.prefix + name}
+          variant="outline"
+          class="tw:h-auto tw:flex-col tw:items-start tw:whitespace-normal tw:p-3"
+          onclick={() => select(view.kind, view.prefix + name, true)}
+          ><Icon name="folder" class="tw:size-8" /><b>{name}/</b><small
+            >{count === 1
+              ? vb.t("1 arquivo")
+              : vb.t("{n} arquivos", { n: count })}</small
+          ></Button
+        >{/each}
+      {#each view.list as file (file.id)}
+        {@const pinned =
+          room.pins?.some(
+            (pin) => pin.kind === "file" && pin.ref === file.id,
+          ) ?? false}
+        <article
+          data-file-id={file.id}
+          class="tw:min-w-0 tw:rounded-lg tw:border tw:border-border tw:bg-card tw:p-3"
         >
-        <button
-          type="button"
-          class="ghost pinBtn"
-          class:on={!!pin(f)}
-          data-pin-kind="file"
-          data-pin-ref={f.id}
-          title={vb.t(pin(f) ? "Desafixar" : "Fixar na lateral")}
-          aria-label={vb.t(pin(f) ? "Desafixar" : "Fixar na lateral")}
-          aria-pressed={!!pin(f)}
-          onclick={(e) => toggle(e, f)}>{@html vb.icon("pin", 14)}</button
-        >
-      </a>
-    {/each}
-  </div>
-  {#if !view.list.length && !view.dirs.length}<div class="empty">
-      {vb.t("Nada aqui.")}
-    </div>{/if}
-{:else}<div class="empty">
-    {vb.t(
-      "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.",
-    )}
-  </div>{/if}
+          <Button
+            variant="ghost"
+            class="tw:h-auto tw:w-full tw:min-w-0 tw:flex-col tw:items-start tw:gap-2 tw:whitespace-normal tw:p-0 tw:text-left"
+            title={file.name}
+            onclick={() => {
+              if (mounted) session.open(file, onopenfile);
+            }}
+          >
+            {#if file.type.startsWith("image/")}<img
+                class="tw:h-24 tw:w-full tw:rounded-md tw:object-contain"
+                src={`/api/books/${encodeURIComponent(room.id)}/files/${encodeURIComponent(file.id)}`}
+                alt={file.name}
+                loading="lazy"
+              />{:else}<Icon name="file" class="tw:size-8" />{/if}
+            <b class="tw:break-all">{file.name.slice(view.prefix.length)}</b
+            ><small class="tw:text-muted-foreground"
+              >{vb.name(file.author)} · {vb.ago(file.ts)} · {(view.versions.get(
+                file.name,
+              ) ?? 0) > 1
+                ? vb.t("{n} versões", { n: view.versions.get(file.name)! })
+                : kb(file.size)}</small
+            >
+          </Button>
+          <IconButton
+            icon="pin"
+            label={vb.t(pinned ? "Desafixar" : "Fixar na lateral")}
+            aria-pressed={pinned}
+            disabled={!!$state.pending}
+            loading={$state.pending?.id === file.id}
+            onclick={() => {
+              if (mounted) void session.toggle(file, request);
+            }}
+          />
+        </article>
+      {/each}
+    </div>
+    {#if !view.list.length && !view.folders.length}<p>
+        {vb.t("Nada aqui.")}
+      </p>{/if}
+  {:else if !$state.loading && !$state.loadError}<p>
+      {vb.t(
+        "Cole uma imagem no chat (Cmd+V), arraste um arquivo ou use o clipe. Tudo que for enviado neste vibebook fica aqui.",
+      )}
+    </p>{/if}
+  {#if $state.loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
+  {#if $state.loadError}<p role="alert" class="tw:text-destructive">
+      {issueText($state.loadError)}
+    </p>
+    <Button
+      variant="outline"
+      onclick={() => {
+        if (mounted) void session.load(request);
+      }}>{vb.t("Tentar novamente")}</Button
+    >{/if}
+  {#if $state.error}<p role="alert" class="tw:text-destructive">
+      {issueText($state.error)}
+    </p>{/if}
+</section>
