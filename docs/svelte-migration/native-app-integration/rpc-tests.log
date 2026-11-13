@@ -1,0 +1,73 @@
+$ bun test scripts/rpc-routes.test.ts scripts/epic-order.test.ts scripts/me-cache.test.ts scripts/service-boundaries.test.ts scripts/auth-ui.test.ts scripts/file-cache.test.ts scripts/document-scope-guards.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/auth-ui.test.ts:
+(pass) provider start without a client id returns to the login in the same UI [51.21ms]
+(pass) a failed provider callback keeps the UI carried by its next [25.10ms]
+(pass) the consent page's sign-out form returns to the login in the same UI [59.58ms]
+(pass) login context: providers, a safe next and only known provider errors [96.07ms]
+(pass) email start and verify: body checked, origin checked, service status passed through [73.75ms]
+(pass) a room link's context for the access page [21.17ms]
+(pass) logout answers JSON to the app; logout-all reports a signed-out caller [24.82ms]
+(pass) an MCP sign-in started from the Svelte preview comes back to the same app, on the connection [4.47ms]
+
+scripts/document-scope-guards.test.ts:
+(pass) actual correlated doc dispatch refuses a deleted target before mutation and preserves root metadata [71.97ms]
+(pass) actual command checks the current epic after deletion, and known target is never retargeted [3.66ms]
+(pass) absent null and empty epic retain the legacy root-document dispatch semantics [8.12ms]
+(pass) actual late Yjs mirror for missing epic is a complete no-op before binding or metadata/task writes [2.07ms]
+(pass) actual live Yjs mirrors still update only their exact scope and unchanged mirrors remain no-ops [3.80ms]
+(pass) actual epic deletion removes its data and kicks only the captured exact relay; late mirror cannot resurrect it [4.47ms]
+(pass) missing or empty epic and an unbound room never kick the root or an invented relay [2.47ms]
+(pass) failed disconnect stays server-visible without changing completed deletion or retargeting [5.27ms]
+(pass) actual doc.get reads root storage for absent null and empty target while preserving empty epic wire [15.56ms]
+(pass) actual doc.get reads only the supplied live epic and refuses a deleted epic before metadata access [10.68ms]
+
+scripts/me-cache.test.ts:
+CIMD (Client ID Metadata Document) is disabled: add '"compatibility_flags": ["global_fetch_strictly_public"]' to your wrangler.jsonc to enable. See: https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public
+/api/me dropped rows off schema [ "friends" ]
+(pass) an off-schema cache is recomputed, replaced, and the next request skips D1 [33.27ms]
+/api/me dropped rows off schema [ "friends" ]
+(pass) an answer computed before a poke is not stored after it (race guard kept) [5.99ms]
+
+scripts/service-boundaries.test.ts:
+(pass) freestyle: well-formed answers parse, malformed ones are errors with the path (ids hidden) [20.72ms]
+(pass) MCP: malformed stored tools and context are dropped before a connection is shown [34.87ms]
+
+scripts/rpc-routes.test.ts:
+(pass) post validates HTTP input and preserves success and business-error responses [60.23ms]
+(pass) room operations reject nonmembers before any write [41.79ms]
+(pass) binary upload validates metadata, encoded names and limits [40.44ms]
+(pass) push settings expose the public key and validate subscription writes [35.36ms]
+(pass) room and wait mutations validate inputs and scope writes to the signed-in person [32.60ms]
+(pass) freestyle key and Claude token: validated, checked, sealed, never echoed back [50.28ms]
+(pass) room agents: members only, listening and context derived from the rows, bad limits JSON dropped [42.70ms]
+(pass) sandboxes: members only, errors keep their old status and shape [49.61ms]
+(pass) connections: members only, typed bodies, sign_in on 401, errors keep { error } and status [60.68ms]
+(pass) me: the home's one read, typed end to end [10.26ms]
+(pass) personal query contracts preserve first duplicates, search normalization and UI fallback [35.56ms]
+(pass) personal query contracts leave rate limits and cached me payloads unchanged [21.43ms]
+(pass) personal event contracts decode raw ws-me data and retain the literal new-message flag [10.21ms]
+(pass) avatar and room icon: same origin, type, size and rate limits keep their old answers [92.09ms]
+(pass) global middleware answers (401 signed out, 403 cross-site) are typed by globalFailure [35.70ms]
+(pass) native raw-body adapters (icon, avatar) go through the typed routes and check the answers [50.96ms]
+(pass) connected Claudes (OAuth grants): list, revoke a list, revoke one; bad bodies and other origins refused [41.36ms]
+(pass) consent context: the page's facts and handle, the binding cookie passed on, refusals with the client's redirect [31.04ms]
+(pass) router A/B stats: the person's numbers, one room only for its members [29.18ms]
+(pass) model spend: only in the report rooms, for their members [29.33ms]
+
+scripts/epic-order.test.ts:
+(pass) a full permutation of 600+ epics is applied whole, past index 500 [20.92ms]
+(pass) a partial list reorders only those epics, in the slots they occupy [7.48ms]
+(pass) unknown ids, repeats and non-strings are dropped; nothing is lost or duplicated [1.64ms]
+(pass) a message longer than the cap only uses its first MAX_ORDER ids [11.31ms]
+
+scripts/file-cache.test.ts:
+(pass) every supported private file type varies by the actual account cookie [7.70ms]
+(pass) account cache partition leaves MIME, disposition and HTML sandbox intact [1.69ms]
+(pass) plain text and unknown types retain non-executable serving policies [0.95ms]
+
+ 49 pass
+ 0 fail
+ 448 expect() calls
+Ran 49 tests across 7 files. [3.62s]

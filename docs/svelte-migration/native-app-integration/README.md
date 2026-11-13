@@ -30,6 +30,19 @@ variable shadowing the browser `document`; `3b178f2` renames it. Neither earlier
 failed run is a passing type-check result. The tooling rerun now passes; the
 Svelte rerun remains pending.
 
+At source `ea2e3a7`, `bun run test:build` passes 67 tests and 2,618 assertions
+([log](build-tests.log)). This includes negative client/server import and Vite
+source-serving fixtures, default/preview separation, development proxy byte and
+origin handling, and startup supervisor ownership. These fixture results do not
+replace the real application HMR browser gate. `bun run test:rpc` also passes
+49 tests and 448 assertions ([log](rpc-tests.log)), including schema/route,
+service-boundary, private-file cache and document-scope fixtures.
+
+The backend/MCP/CLI type commands completed at this source checkpoint; the
+combined backend command initially failed at its final translation check.
+`ea2e3a7` fixes Portuguese/English draft recovery keys and the separately rerun
+translation check passes. A later integrated full command remains required.
+
 ## Remaining acceptance
 
 Run the strict Svelte/tooling/backend checks after final source integration,
