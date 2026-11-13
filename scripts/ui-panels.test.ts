@@ -1138,6 +1138,66 @@ describe("stable native sidebar integration", () => {
     flushSync();
     expect(rendered.events).toHaveLength(1);
   }, 30_000);
+  test("confirmed epic ordering restores disabled-control focus without stealing an intervening field", async () => {
+    const room = fixture();
+    room.epics.push({ id: "other", title: "Other", tasks: [] });
+    const rendered = sidebar(room);
+    const down = rendered.target.querySelector<HTMLButtonElement>(
+      '[aria-label="Mover para baixo: Epic"]',
+    )!;
+    down.focus();
+    down.click();
+    flushSync();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(
+      rendered.target.querySelector('[data-epic-thread="e"]'),
+    );
+    expect(
+      rendered.target.querySelector("[role=status]")?.textContent,
+    ).toContain("Ordem dos épicos atualizada.");
+    rendered.view.update(rendered.props);
+    down.focus();
+    down.click();
+    flushSync();
+    const draft =
+      rendered.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.focus();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(draft);
+  }, 30_000);
+  test("epic ordering focus callbacks cannot target a replaced room view", async () => {
+    const room = fixture();
+    room.epics.push({ id: "other", title: "Other", tasks: [] });
+    const rendered = sidebar(room);
+    const down = rendered.target.querySelector<HTMLButtonElement>(
+      '[aria-label="Mover para baixo: Epic"]',
+    )!;
+    down.focus();
+    down.click();
+    flushSync();
+    rendered.view.update({
+      ...rendered.props,
+      room: { ...room, epics: [room.epics[1], room.epics[0]] },
+    });
+    rendered.destroy();
+    const next = sidebar({ ...room, id: "next" });
+    const draft =
+      next.target.querySelector<HTMLInputElement>("#newEpic input")!;
+    draft.focus();
+    await tick();
+    flushSync();
+    expect(document.activeElement).toBe(draft);
+  }, 30_000);
   test("repeated room updates preserve keyed navigation and form drafts", () => {
     let room = fixture();
     const target = window.document.createElement("div");

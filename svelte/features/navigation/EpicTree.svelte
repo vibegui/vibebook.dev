@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import type { Room, Epic } from "../../../shared/room";
   import type { SendRoomCommand } from "../../../shared/commands";
   import Button from "../../lib/ui/Button.svelte";
@@ -53,8 +53,21 @@
   let dropAfter = $state(false);
   let input: HTMLInputElement | null = $state(null);
   let disposed = false;
+  const rowNodes = new Map<string, HTMLElement>();
+  let generation = 0;
+  type OrderRequest = {
+    ids: string[];
+    from: string;
+    thread: string;
+    generation: number;
+    anchor: HTMLElement | null;
+  };
+  let requested = $state<OrderRequest | null>(null);
+  let announcement = $state("");
   onDestroy(() => {
     disposed = true;
+    generation++;
+    rowNodes.clear();
   });
   const indentation = [
     "tw:pl-0",
@@ -87,6 +100,8 @@
 
   function switchMode(value: string) {
     if (disposed) return;
+    generation++;
+    requested = null;
     const archived = value === "archived";
     navigation.update((state) => ({ ...state, archived }));
     onarchchange(archived);
@@ -122,7 +137,69 @@
   }
   function reorder(from: string, to: string, after: boolean) {
     const ids = reorderEpics(room.epics, from, to, after);
-    if (ids) submit({ t: "epic.order", ids });
+    if (!ids || disposed) return;
+    requested = null;
+    const version = ++generation;
+    const active = document.activeElement;
+    const anchor =
+      active instanceof HTMLElement && rowNodes.get(from)?.contains(active)
+        ? active
+        : null;
+    if (submit({ t: "epic.order", ids }))
+      requested = { ids, from, anchor, generation: version, thread };
+  }
+  function registerRow(node: HTMLElement, id: string) {
+    rowNodes.set(id, node);
+    return {
+      destroy() {
+        if (rowNodes.get(id) === node) rowNodes.delete(id);
+      },
+    };
+  }
+  $effect(() => {
+    const request = requested;
+    if (!request) return;
+    if (request.thread !== thread || mode !== "active") {
+      requested = null;
+      generation++;
+      return;
+    }
+    const current = room.epics.map((epic) => epic.id);
+    if (!current.includes(request.from)) {
+      requested = null;
+      restoreOrderFocus(request);
+      return;
+    }
+    const known = new Set(current),
+      expectedIds = new Set(request.ids);
+    const expected = request.ids.filter((id) => known.has(id));
+    const actual = current.filter((id) => expectedIds.has(id));
+    if (
+      actual.length !== expected.length ||
+      actual.some((id, index) => id !== expected[index])
+    )
+      return;
+    requested = null;
+    announcement = vb.t("Ordem dos épicos atualizada.");
+    restoreOrderFocus(request);
+  });
+  function restoreOrderFocus(request: OrderRequest) {
+    const anchor = request.anchor;
+    if (!anchor) return;
+    const eligible = () =>
+      document.activeElement === document.body ||
+      document.activeElement === anchor;
+    if (!eligible()) return;
+    void tick().then(() => {
+      if (disposed || request.generation !== generation || !eligible()) return;
+      if (document.activeElement === anchor && !anchor.matches(":disabled"))
+        return;
+      const row = rowNodes.get(request.from);
+      if (row?.hidden) return;
+      const target =
+        row?.querySelector<HTMLElement>("[data-epic-thread]") ?? input;
+      target?.focus({ preventScroll: true });
+    });
   }
   function move(id: string, direction: -1 | 1) {
     const target = adjacent(id, direction);
@@ -194,6 +271,7 @@
             {@const parent = forest.byId.get(forest.parents.get(epic.id) ?? "")}
             {@const working = vb.epicBusy(epic)}
             <li
+              use:registerRow={epic.id}
               id={rowIds.get(epic.id)}
               hidden={row.hidden}
               data-epic={epic.id}
@@ -375,6 +453,7 @@
       {/if}
     {/snippet}
   </Tabs>
+  <p role="status" aria-live="polite" class="tw:sr-only">{announcement}</p>
   {#if error}<p role="alert" class="tw:m-0 tw:text-sm tw:text-destructive">
       {error}
     </p>{/if}

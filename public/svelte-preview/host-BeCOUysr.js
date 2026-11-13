@@ -1,4 +1,4 @@
-import { a as e, c as t, i as n, l as r, o as i, r as a, s as o, t as s } from "./main-9CfvjquZ.js";
+import { a as e, c as t, i as n, l as r, o as i, r as a, s as o, t as s } from "./main-SMaYoTgU.js";
 import { p as c } from "./Field-Y4VaoJzU.js";
 // svelte/navigation.ts
 function l(e, t, n) {
@@ -79,6 +79,7 @@ var m = p === "en" ? "en-US" : "pt-BR", ne = {
 	"clique pra trocar": "click to change",
 	"Sem dono · clique pra escolher": "No owner · click to pick one",
 	"Dono do épico": "Epic owner",
+	"Ordem dos épicos atualizada.": "Epic order updated.",
 	"Abrir galho": "Expand branch",
 	"Fechar galho": "Collapse branch",
 	"Subépico de {title}": "Sub-epic of {title}",

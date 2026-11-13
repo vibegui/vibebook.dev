@@ -20,6 +20,7 @@ const EN = {
   "clique pra trocar": "click to change",
   "Sem dono · clique pra escolher": "No owner · click to pick one",
   "Dono do épico": "Epic owner",
+  "Ordem dos épicos atualizada.": "Epic order updated.",
   "Abrir galho": "Expand branch",
   "Fechar galho": "Collapse branch",
   "Subépico de {title}": "Sub-epic of {title}",
