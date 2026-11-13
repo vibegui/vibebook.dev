@@ -3,7 +3,7 @@ import {canAnswer,choicesOf} from "../features/chat-interactive/model";
 import {emojify} from "../../shared/emoji";
 import {createFilesSession} from "../features/files/session";
 import { messageIdentity } from "../features/home/model";
-import { createPersonalConnection } from "../features/home/connection";
+import { createApplicationPersonalChannel } from "../features/application/personal-channel";
 import { createHomeApi } from "../features/home/api";
 import { createPersonalSession } from "../features/home/personal";
 import { createRoomsSession } from "../features/rooms/session";
@@ -1211,49 +1211,8 @@ function seenHere(upto) {
 // No polling: the person's channel (/ws-me, src/person.ts) says when something outside the open room changed
 // ({t:"me"}: rail, waits, version; {t:"agents", book}: that room's Claudes and sandboxes) and the app fetches it once.
 // Coming back to the tab refreshes once too (a phone drops sockets in the background).
-let nativePersonalConnection = null,
-  agentsRefreshTimer = 0;
+let nativePersonalChannel = null;
 const currentRoomId = () => roomIdFromPath(location.pathname);
-function connectMe() {
-  if (nativePersonalConnection) return;
-  nativePersonalConnection = createPersonalConnection({
-    url: () =>
-      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws-me`,
-    onAccount: () => nativePersonal.observe({ kind: "account" }),
-    onAgents: (book) => {
-      nativePersonal.observe({ kind: "agents", book });
-      const id = currentRoomId(),
-        connection = roomConnection;
-      if (connection && (book === "*" || book === id)) {
-        clearTimeout(agentsRefreshTimer);
-        agentsRefreshTimer = setTimeout(() => {
-          if (roomConnection === connection && currentRoomId() === id)
-            {loadRoomAgents();nativeAgents.refreshAccount();}
-        }, 600);
-      }
-    },
-    onConnected: () => {
-      nativePersonal.invalidate();
-      void nativePersonal.refresh();
-      void nativePersonal.refreshAgents();
-      nativeAgents.refreshAccount();
-      if (roomConnection && S?.id === currentRoomId()) loadRoomAgents();
-    },
-    onVisible: () => {
-      nativePersonal.invalidate();
-      void nativePersonal.refresh();
-      void nativePersonal.refreshAgents();
-      if (roomConnection && S?.id === currentRoomId()) loadRoomAgents();
-    },
-    currentRoom: currentRoomId,
-    visible: () => document.visibilityState === "visible",
-    listenVisibility: (callback) => {
-      document.addEventListener("visibilitychange", callback);
-      return () => document.removeEventListener("visibilitychange", callback);
-    },
-  });
-  nativePersonalConnection.start();
-}
 
 function ensureNativeHome() {
   if (nativePersonal) return;
@@ -1283,11 +1242,10 @@ function ensureNativeHome() {
       roomAgents = { id: null, list: [] };
       nativeAgents.reset();nativeAgentOwner=null;
       disposeNativeApps();
-      clearTimeout(agentsRefreshTimer);
+      nativePersonalChannel?.routeChanged();
           roomConnection?.dispose();
       roomConnection = null;
       S = null;
-      nativePersonalConnection?.restart();
       queueMicrotask(route);
     },
   });
@@ -1307,6 +1265,7 @@ function ensureNativeHome() {
     current: () => location.href,
     history,
     beforeChange: () => {
+      nativePersonalChannel?.routeChanged();
       nativeViewer?.closeNavigation();
       UI.dismissDialogs();
       closeInbox();
@@ -1366,13 +1325,27 @@ function ensureNativeHome() {
       ...(me.avatar ? [[me.email, me.avatar]] : []),
     ]);
     renderSwitcher();
-    connectMe();
     if (S && currentRoomId() === S.id) {
       renderSide();
       if (before !== JSON.stringify(myWaits)) renderChat(true);
       setFavicon(bookTitle());
     }
   });
+  nativePersonalChannel = createApplicationPersonalChannel({
+    personal: nativePersonal,
+    agents: nativeAgents,
+    listenIdentity: callback => nativePersonal.state.subscribe(({me,identityRevision}) => callback({account:me?.email??null,revision:identityRevision})),
+    currentRoom: currentRoomId,
+    room: () => roomConnection && S?.id === currentRoomId() ? {roomId:S.id,account:S.me,connection:roomConnection} : null,
+    refreshRoom: loadRoomAgents,
+    url: () => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws-me`,
+    visible: () => document.visibilityState === "visible",
+    listenVisibility: callback => {
+      document.addEventListener("visibilitychange",callback);
+      return () => document.removeEventListener("visibilitychange",callback);
+    },
+  });
+  nativePersonalChannel.start();
   nativePersonal.start();
 }
 function renderSwitcher() {
@@ -1429,7 +1402,7 @@ function nativeHomeProps() {
 }
 function route() {
   ensureNativeHome();
-  clearTimeout(agentsRefreshTimer);
+  nativePersonalChannel?.routeChanged();
   closeRoomOverlaysForNavigation();
   nativeViewer?.reset();
   homeSettingsCleanup();
@@ -2929,7 +2902,7 @@ if (import.meta.hot)
     nativeViewer?.dispose();
     nativeViewerMount?.destroy();
     nativeViewerTarget?.remove();
-    clearTimeout(agentsRefreshTimer);
+    nativePersonalChannel?.routeChanged();
     homeSettingsCleanup();logoutWithPwa.dispose();
     nativeAccount?.dispose();nativeAccountMount?.destroy();nativeAccountTarget?.remove();
     document.removeEventListener("visibilitychange",deviceVisibility);nativeDeviceLock.dispose();nativeDeviceLockMount.destroy();nativeDeviceLockTarget.remove();
@@ -2940,7 +2913,7 @@ if (import.meta.hot)
     clearViews();
     chatViewport.dispose();
     nativeAppNav?.dispose();
-    nativePersonalConnection?.dispose();
+    nativePersonalChannel?.dispose();
     nativeRooms?.dispose();
     nativePersonal?.dispose();
     nativeNavMount?.destroy();
