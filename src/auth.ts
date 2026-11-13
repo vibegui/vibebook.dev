@@ -4,6 +4,7 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
 import type { Env } from "./index";
 import { track } from "./track";
+import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 
 const COOKIE = "vb_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -68,7 +69,10 @@ async function startSession(c: Context<{ Bindings: Env }>, email: string) {
 
 // Only follow same-site relative paths after login.
 // /authorize?… is the agent-connect consent page (OAuth), reached through login.
-const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+|archived$|authorize\?|api\/books\/[a-z0-9]+\/files\/[a-z0-9]+$)/.test(next) ? next : "/app");
+const safeNext = (next: string | undefined) => (next && /^\/(app|b\/[a-z0-9]+|archived(?:$|\?)|authorize\?|api\/books\/[a-z0-9]+\/files\/[a-z0-9]+$)/.test(next) ? next : "/app");
+
+/** The login page for an error or a retry, in the same UI as where the person was going (`next` carries ?ui=svelte). */
+const loginUrl = (c: Context, next: string | undefined, query: string) => uiNavigationUrl(`/login${query}`, c.req.url, uiVariant(new URL(safeNext(next), c.req.url)));
 
 const codeHash = (env: Env, email: string, code: string) => hmac(env.SESSION_SECRET, `code:${email}:${code}`);
 
@@ -167,7 +171,7 @@ auth.post("/email/verify", async (c) => {
 });
 
 auth.get("/google/start", async (c) => {
-  if (!c.env.GOOGLE_CLIENT_ID) return c.redirect("/login");
+  if (!c.env.GOOGLE_CLIENT_ID) return c.redirect(loginUrl(c, c.req.query("next"), ""));
   const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
   setCookie(c, "vb_oauth", `${state}|${safeNext(c.req.query("next"))}`, { httpOnly: true, secure: true, sameSite: "Lax", path: "/auth", maxAge: 600 });
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -185,7 +189,7 @@ auth.get("/google/start", async (c) => {
 auth.get("/google/callback", async (c) => {
   const [state, next] = (getCookie(c, "vb_oauth") ?? "").split("|");
   deleteCookie(c, "vb_oauth", { path: "/auth" });
-  if (!state || state !== c.req.query("state") || !c.req.query("code")) return c.redirect("/login?error=google");
+  if (!state || state !== c.req.query("state") || !c.req.query("code")) return c.redirect(loginUrl(c, next, "?error=google"));
   const tok = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -197,11 +201,11 @@ auth.get("/google/callback", async (c) => {
       grant_type: "authorization_code",
     }),
   }).then((r) => r.json<{ access_token?: string }>());
-  if (!tok.access_token) return c.redirect("/login?error=google");
+  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=google"));
   const info = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
     headers: { authorization: `Bearer ${tok.access_token}` },
   }).then((r) => r.json<{ email?: string; email_verified?: boolean; given_name?: string; name?: string }>());
-  if (!info.email || !info.email_verified) return c.redirect("/login?error=google");
+  if (!info.email || !info.email_verified) return c.redirect(loginUrl(c, next, "?error=google"));
   await startSession(c, info.email);
   c.executionCtx.waitUntil(track(c.env, "login", { user: info.email.toLowerCase(), dims: { method: "google" } }));
   const gname = (info.given_name || info.name || "").trim().slice(0, 60);
@@ -251,7 +255,7 @@ auth.post("/logout", async (c) => {
   // A form post (the consent page's "Not you?") signs out and goes back to the login with where it came from.
   if (!c.req.header("content-type")?.includes("form")) return c.json({ ok: true });
   const next = safeNext(String((await c.req.parseBody()).next ?? ""));
-  return c.redirect(`/login?next=${encodeURIComponent(next)}`, 303);
+  return c.redirect(loginUrl(c, next, `?next=${encodeURIComponent(next)}`), 303);
 });
 // Every browser signed in as you (phone, laptop, a stolen cookie) is signed out; your Claudes' logins are separate.
 auth.post("/logout-all", async (c) => {
@@ -271,7 +275,7 @@ export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => `&#${ch.c
 // mail clients), brand blue, Caprasimo-like title with safe fallbacks, white card on the app's background.
 // GitHub, same shape as Google: state in a cookie, code for a token, then only the account's primary verified email.
 auth.get("/github/start", async (c) => {
-  if (!c.env.GITHUB_CLIENT_ID) return c.redirect("/login");
+  if (!c.env.GITHUB_CLIENT_ID) return c.redirect(loginUrl(c, c.req.query("next"), ""));
   const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
   setCookie(c, "vb_oauth", `${state}|${safeNext(c.req.query("next"))}`, { httpOnly: true, secure: true, sameSite: "Lax", path: "/auth", maxAge: 600 });
   const url = new URL("https://github.com/login/oauth/authorize");
@@ -288,7 +292,7 @@ auth.get("/github/start", async (c) => {
 auth.get("/github/callback", async (c) => {
   const [state, next] = (getCookie(c, "vb_oauth") ?? "").split("|");
   deleteCookie(c, "vb_oauth", { path: "/auth" });
-  if (!state || state !== c.req.query("state") || !c.req.query("code")) return c.redirect("/login?error=github");
+  if (!state || state !== c.req.query("state") || !c.req.query("code")) return c.redirect(loginUrl(c, next, "?error=github"));
   const tok = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
@@ -299,11 +303,11 @@ auth.get("/github/callback", async (c) => {
       redirect_uri: `${new URL(c.req.url).origin}/auth/github/callback`,
     }),
   }).then((r) => r.json<{ access_token?: string }>()).catch(() => ({}) as { access_token?: string });
-  if (!tok.access_token) return c.redirect("/login?error=github");
+  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=github"));
   const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok.access_token}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
   const emails = await gh("/user/emails").then((r) => (r.ok ? r.json<{ email: string; primary: boolean; verified: boolean }[]>() : [])).catch(() => []);
   const email = emails.find((e) => e.primary && e.verified)?.email;
-  if (!email) return c.redirect("/login?error=github");
+  if (!email) return c.redirect(loginUrl(c, next, "?error=github"));
   await startSession(c, email);
   c.executionCtx.waitUntil(track(c.env, "login", { user: email.toLowerCase(), dims: { method: "github" } }));
   const user = await gh("/user").then((r) => (r.ok ? r.json<{ name?: string; login?: string }>() : {}) as Promise<{ name?: string; login?: string }>).catch(() => ({}) as { name?: string; login?: string });

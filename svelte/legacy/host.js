@@ -3583,7 +3583,7 @@ function renderConns() {
         <button type="button" class="ghost" data-conn-ref="${c.id}" title="${t("Atualizar")}" aria-label="${t("Atualizar")}">↻</button>${c.mine ? `<button type="button" class="ghost" data-conn-del="${c.id}" title="${t("Remover conexão")}" aria-label="${t("Remover conexão")}">${icon("x", 14)}</button>` : ""}</div>
         ${c.auth === "identity" ? (c.signed_in
           ? `<small class="mute connWho">${t("Você entrou em {host} com a sua conta.", { host: esc(c.host) })} <button type="button" class="link" data-conn-out="${c.id}">${t("Sair")}</button></small>`
-          : `<div class="connSign"><small>${t("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: esc(c.host) })}</small><a class="primary" href="/api/books/${S.id}/connections/${c.id}/signin">${t("Entrar em {host}", { host: esc(c.host) })}</a></div>`) : ""}
+          : `<div class="connSign"><small>${t("Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.", { host: esc(c.host) })}</small><a class="primary" href="/api/books/${S.id}/connections/${c.id}/signin?ui=svelte">${t("Entrar em {host}", { host: esc(c.host) })}</a></div>`) : ""}
         ${c.apps.length ? (() => { const sc = c.apps.filter((a) => a.screen), few = sc.length && !connMore.has(c.id); return appBtns(c.id, few ? sc : c.apps) + (sc.length && sc.length < c.apps.length ? `<button type="button" class="link connMore" data-conn-more="${c.id}">${few ? t("ver todas ({n})", { n: c.apps.length }) : t("só as telas")}</button>` : ""); })() : `<small class="mute">${t("{n} tools, nenhum app", { n: c.tools.length })}</small>`}</div>`).join("")}`;
   const f = document.getElementById("connForm");
   if (f && keep) for (const [k, v] of Object.entries(keep)) if (f.elements[k] && k !== "scope") f.elements[k].value = v;
@@ -3594,7 +3594,7 @@ function renderConns() {
     const btn = f.querySelector(".primary"); btn.disabled = true; btn.textContent = t("Conectando…");
     try {
       const r = await api(`/api/books/${S.id}/connections`, { url: f.url.value.trim(), scope: f.scope.value });
-      if (r.connection?.needs_sign_in) return void (location.href = `/api/books/${S.id}/connections/${r.connection.id}/signin`);
+      if (r.connection?.needs_sign_in) return void (location.href = `/api/books/${S.id}/connections/${r.connection.id}/signin?ui=svelte`);
       connForm = false; conns = null; renderConns();
     }
     catch (x) { toast(esc(x.message)); btn.disabled = false; btn.textContent = t("Conectar"); }

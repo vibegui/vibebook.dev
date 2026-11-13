@@ -561,6 +561,8 @@ try {
     "Canonical older pinned file body",
   );
   await viewer.getByRole("button", { name: "Close", exact: true }).click();
+  // Closing the viewer pops its #f<id> history entry; a goto racing that back() is aborted.
+  await expect.poll(() => new URL(page.url()).hash).toBe("");
 
   step("Checking EN/PT responsive accessibility and keyboard focus");
   const audit = async (language: "en" | "pt", width: number, dark: boolean) => {
