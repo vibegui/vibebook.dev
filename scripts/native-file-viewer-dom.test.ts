@@ -198,7 +198,10 @@ test("CSV pagination bounds active cells and reports omitted parsed columns with
     Array.from({ length: 60 }, (_, column) => `${row}:${column}`).join(","),
   ).join("\n");
   await render(csv);
-  expect(document.querySelectorAll("[data-file-viewer] td").length).toBe(1000);
+  expect(
+    document.querySelectorAll("[data-file-viewer] th, [data-file-viewer] td")
+      .length,
+  ).toBe(1000);
   expect(document.querySelector("[data-file-viewer]")?.textContent).toContain(
     "Preview shortened",
   );
@@ -207,10 +210,16 @@ test("CSV pagination bounds active cells and reports omitted parsed columns with
   )!;
   next.click();
   await settle();
+  expect(document.querySelector("[data-file-viewer] th")?.textContent).toBe(
+    "0:0",
+  );
   expect(document.querySelector("[data-file-viewer] td")?.textContent).toBe(
     "20:0",
   );
-  expect(document.querySelectorAll("[data-file-viewer] td").length).toBe(1000);
+  expect(
+    document.querySelectorAll("[data-file-viewer] th, [data-file-viewer] td")
+      .length,
+  ).toBe(1000);
   expect(
     document.querySelector('[data-file-viewer] a[target="_blank"]'),
   ).not.toBeNull();

@@ -186,13 +186,20 @@ try {
     "This file is no longer available",
   );
   await open(csv.id);
-  await expect(page.locator("[data-file-viewer] td")).toHaveCount(1000);
+  await expect(
+    page.locator("[data-file-viewer] th, [data-file-viewer] td"),
+  ).toHaveCount(1000);
   await expect(page.locator("[data-file-viewer]")).toContainText(
     "Preview shortened",
   );
   await page.getByRole("button", { name: "Next rows", exact: true }).click();
-  await expect(page.locator("[data-file-viewer] td").first()).toHaveText("20:0");
-  await expect(page.locator("[data-file-viewer] td")).toHaveCount(1000);
+  await expect(page.locator("[data-file-viewer] th").first()).toHaveText("0:0");
+  await expect(page.locator("[data-file-viewer] td").first()).toHaveText(
+    "20:0",
+  );
+  await expect(
+    page.locator("[data-file-viewer] th, [data-file-viewer] td"),
+  ).toHaveCount(1000);
   await open(image.id);
   await expect(page.locator("[data-file-viewer] img")).toBeVisible();
   assert(

@@ -30,7 +30,17 @@
   const csv = $derived(
     csvText === null ? { rows: [], truncated: false } : csvData(csvText),
   );
-  const rows = $derived(csv.rows.slice(csvPage * 20, (csvPage + 1) * 20));
+  const headers = $derived(
+    Array.from(
+      {
+        length: csv.rows.reduce((count, row) => Math.max(count, row.length), 0),
+      },
+      (_, index) => csv.rows[0]?.[index] ?? "",
+    ),
+  );
+  const rows = $derived(
+    csv.rows.slice(csvPage * 19 + 1, (csvPage + 1) * 19 + 1),
+  );
   $effect(() => {
     void $view.content?.operation;
     csvPage = 0;
@@ -191,6 +201,18 @@
               <table
                 class="tw:w-full tw:border-collapse tw:text-left tw:text-sm"
               >
+                <thead
+                  ><tr
+                    >{#each headers as cell, index}<th
+                        scope="col"
+                        aria-label={cell.trim()
+                          ? undefined
+                          : `${text("column")} ${index + 1}`}
+                        class="tw:whitespace-pre-wrap tw:border tw:border-border tw:p-2 tw:font-semibold"
+                        >{cell}</th
+                      >{/each}</tr
+                  ></thead
+                >
                 <tbody
                   >{#each rows as row}<tr
                       >{#each row as cell}<td
@@ -224,11 +246,14 @@
               }}>{text("previous")}</Button
             ><span
               >{text("rows")}
-              {csvPage * 20 + 1}–{Math.min((csvPage + 1) * 20, csv.rows.length)} /
+              {csvPage * 19 + 2}–{Math.min(
+                (csvPage + 1) * 19 + 1,
+                csv.rows.length,
+              )} /
               {csv.rows.length}</span
             ><Button
               variant="outline"
-              disabled={(csvPage + 1) * 20 >= csv.rows.length}
+              disabled={(csvPage + 1) * 19 + 1 >= csv.rows.length}
               onclick={(event) => {
                 if (event.currentTarget.isConnected) csvPage++;
               }}>{text("next")}</Button
