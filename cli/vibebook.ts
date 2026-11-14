@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.8";
+const VERSION = "1.6.9";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -514,6 +514,13 @@ function herdrServer(appMode = false) {
         return send(200, { ok: true });
       }
       herdr("workspace", "focus", ws);
+      // The workspace alone landed on whatever tab was active there: with an old Claude and a new one in the same
+      // workspace, ↗ showed the wrong one (Gui, 14/11). Focus the tab of the room's Claude: the session in the map,
+      // else any live Claude in the workspace.
+      const panes = (herdr("pane", "list").panes as Pane[]).filter((p) => p.workspace_id === ws);
+      const sess = map[u.searchParams.get("room") ?? ""]?.session;
+      const pane = panes.find((p) => sess && p.agent_session?.value === sess) ?? panes.find((p) => p.agent === "claude");
+      if (pane?.tab_id) herdr("tab", "focus", pane.tab_id);
       const app = terminalApp();
       if (app) execFileSync("open", ["-a", app]);
       send(200, { ok: true });

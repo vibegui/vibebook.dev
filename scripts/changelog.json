@@ -44,8 +44,12 @@
       ]
     },
     "fixes": {
-      "pt": [],
-      "en": []
+      "pt": [
+        "A ↗ da sala volta a abrir a aba do Claude da sala no herdr, não a aba que estava aberta no workspace; quando o navegador bloqueia o acesso ao computador, o aviso diz como liberar"
+      ],
+      "en": [
+        "The room's ↗ opens the room Claude's tab in herdr again, not whatever tab was open in that workspace; when the browser blocks access to this computer, the notice says how to allow it"
+      ]
     }
   },
   {
