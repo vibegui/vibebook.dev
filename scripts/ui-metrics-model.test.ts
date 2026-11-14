@@ -5,6 +5,7 @@ import { assessBudgets, type MetricSummary } from "./ui-metrics-budgets";
 import { metricShell } from "./ui-metrics-shell";
 import { MeResult } from "../shared/schemas";
 import { me } from "./native-home-fixtures";
+import { readFile } from "node:fs/promises";
 test("deterministic public long-room shapes use real initial window and paging semantics", () => {
   const first = createMetricRoom(workloads.long, "A", 421),
     again = createMetricRoom(workloads.long, "A", 421),
@@ -169,4 +170,23 @@ test("shell preflight rejects duplicate Worker metadata and incoherent native ve
     source.replace(`app.js?v=${built}`, `app.js?v=${built}&v=${built}`),
   ])
     expect(() => metricShell(invalid, '"original-etag"', "svelte")).toThrow();
+});
+
+test("shell preflight distinguishes actual metadata from comments, raw text and inert templates", () => {
+  const built = "abcdef0123456789abcd";
+  const source = `<html><head><!-- <meta name="vb-v"> --><style>/* <meta name="vb-v"> */</style><script>// <meta name="vb-v">
+const ghost = '<script src="/svelte-preview/app.js?v=wrong">';</script><template><meta name="vb-v"><script src="/svelte-preview/app.js?v=wrong"></script></template><link href="/svelte-preview/ui.css?v=${built}"></head><body><script src="/svelte-preview/app.js?v=${built}"></script></body></html>`;
+  const served = metricShell(source, '"actual-original-etag"', "svelte");
+  expect(served.entryVersion).toBe(built);
+  expect(served.body.replace(`<meta name="vb-v" content="${served.version}" />`, "")).toBe(source);
+  expect(() => metricShell(source.replace("<head>", '<head><meta name="VB-V" content="old">'), '"etag"', "svelte")).toThrow();
+});
+
+test("checked-in vanilla and native shells preserve exact source while adding actual Worker metadata", async () => {
+  for (const variant of ["vanilla", "svelte"] as const) {
+    const source = await readFile(new URL(variant === "vanilla" ? "../public/app.html" : "../public/app-svelte.html", import.meta.url), "utf8");
+    const served = metricShell(source, `"original-${variant}-etag"`, variant);
+    expect(served.body.replace(`<meta name="vb-v" content="${served.version}" />`, "")).toBe(source);
+    expect(served.entryVersion === null).toBe(variant === "vanilla");
+  }
 });

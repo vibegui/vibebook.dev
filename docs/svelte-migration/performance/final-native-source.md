@@ -73,3 +73,12 @@ versions and fixture digests accompany every run. No old report, neutral layout
 gallery, captured private room or directory-wide chunk sum is substituted for
 this complete-app comparison. Real Worker functional and production acceptance
 remain separate gates.
+
+Run 43558814116 also stopped in shell preflight, before any browser or timing
+sample: the metadata regex matched a literal `<meta name="vb-v">` inside the
+vanilla inline JavaScript update comment. Preflight now parses actual HTML
+elements and uses the original head source offset for insertion; comments,
+script/style raw text and inert template contents do not count as active
+metadata or bundle references. Actual duplicate metadata and incoherent bundle
+references still fail. This correction changes no trials, readiness checks or
+budgets; neither failed preflight supplies performance measurements.

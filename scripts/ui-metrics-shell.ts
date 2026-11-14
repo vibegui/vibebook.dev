@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { parse, type DefaultTreeAdapterTypes as Tree } from "parse5";
 import { UI_VERSION_HEX_LENGTH } from "../shared/uiVersion";
 
 /** The real Worker appends its original static asset ETag to the served head
@@ -12,35 +13,26 @@ export function metricShell(
 ) {
   const version = originalETag.replace(/[^\w-]/g, "");
   assert(version, "Original shell ETag must identify the controlled response");
-  assert(
-    !/<meta\b[^>]*\bname=["']vb-v["']/i.test(source),
-    "Static app shell must not already contain Worker-owned vb-v metadata",
-  );
-  const opening = /<head\b[^>]*>/i.exec(source),
-    closing = /<\/head\s*>/i.exec(source);
-  assert(
-    opening && closing && opening.index < closing.index,
-    "App shell must contain one actual head for Worker metadata",
-  );
-  const prefix = source.slice(0, closing.index),
-    suffix = source.slice(closing.index);
-  assert(
-    !/<head\b/i.test(
-      source.slice(opening.index + opening[0].length, closing.index),
-    ),
-    "Duplicate head cannot be safely augmented",
-  );
+  let duplicateHead = false;
+  const document = parse(source, { sourceCodeLocationInfo: true, onParseError(error) { if (error.code === "misplaced-start-tag-for-head-element") duplicateHead = true; } });
+  const elements: Tree.Element[] = [];
+  function visit(node: Tree.Node) {
+    if ("tagName" in node) elements.push(node);
+    // Raw script/style text and comments are not elements; template.content
+    // belongs to an inert fragment, not the served document's active metadata.
+    if ("childNodes" in node) for (const child of node.childNodes) visit(child);
+  }
+  visit(document);
+  const attr = (node: Tree.Element, name: string) => node.attrs.find(attr => attr.name === name)?.value;
+  assert(!elements.some(node => node.tagName === "meta" && attr(node, "name")?.toLowerCase() === "vb-v"), "Static app shell must not already contain Worker-owned vb-v metadata");
+  const heads = elements.filter(node => node.tagName === "head"), head = heads[0]?.sourceCodeLocation;
+  assert(!duplicateHead && heads.length === 1 && head?.startTag && head.endTag, "App shell must contain one actual head for Worker metadata");
+  const prefix = source.slice(0, head.endTag.startOffset), suffix = source.slice(head.endTag.startOffset);
   let entryVersion: string | null = null;
   if (variant === "svelte") {
-    const entry = [
-      ...source.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi),
-    ]
-      .map((match) => new URL(match[1]!, "https://metrics.invalid"))
+    const entry = elements.filter(node => node.tagName === "script").flatMap(node => { const src = attr(node, "src"); return src ? [new URL(src, "https://metrics.invalid")] : []; })
       .filter((url) => url.pathname === "/svelte-preview/app.js");
-    const style = [
-      ...source.matchAll(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/gi),
-    ]
-      .map((match) => new URL(match[1]!, "https://metrics.invalid"))
+    const style = elements.filter(node => node.tagName === "link").flatMap(node => { const href = attr(node, "href"); return href ? [new URL(href, "https://metrics.invalid")] : []; })
       .filter((url) => url.pathname === "/svelte-preview/ui.css");
     assert(
       entry.length === 1 && style.length === 1,
