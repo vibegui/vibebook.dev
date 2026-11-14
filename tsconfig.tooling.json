@@ -72,6 +72,7 @@
     "scripts/native-secondary-panels-browser.ts",
     "scripts/native-chat.test.ts",
     "scripts/rich-text.test.ts",
+    "scripts/entities-compatibility.test.ts",
     "scripts/native-interactive.test.ts",
     "scripts/native-auth-dom.test.ts",
     "scripts/native-home.test.ts",
