@@ -1178,8 +1178,8 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
         const output = recordValue(out) ? out : null;
         ok = output?.ok !== false;
         // get_file hands back MCP content parts (an image) instead of JSON.
-        const parts = Array.isArray(output?.__content) ? output.__content : undefined;
-        result = parts ? { content: parts } : { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: !ok };
+        const parts = output?.__content;
+        result = Array.isArray(parts) ? { content: parts } : { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: !ok };
       } catch (e) {
         ok = false;
         result = { content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }], isError: true };
