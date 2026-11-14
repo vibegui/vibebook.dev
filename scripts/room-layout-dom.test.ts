@@ -114,14 +114,22 @@ test("Board node, draft and component owner survive full/pane placement and rail
   await settle();
   button("Board pane").click();
   await settle();
+  const chat = target.querySelector("[data-room-chat]")!;
+  const foreign = document.createElement("div"); foreign.id = "kanban"; foreign.className = "doc"; foreign.textContent = "Untrusted duplicate legacy identity"; chat.append(foreign);
+  draft!.focus(); draft!.setSelectionRange(3, 8);
   button("Full Board").click();
   await settle();
+  expect(document.activeElement === draft).toBe(true);
   button("Sidebar rail").click();
   await settle();
+  expect(document.activeElement === draft).toBe(true);
   button("Board pane").click();
   await settle();
-  expect(target.querySelector("[data-layout-fixture-board]")).toBe(board);
-  expect(target.querySelector("#layout-fixture-board-draft")).toBe(draft);
+  expect(target.querySelector("[data-layout-fixture-board]") === board).toBe(true);
+  expect(target.querySelector("#layout-fixture-board-draft") === draft).toBe(true);
+  expect(document.activeElement === draft).toBe(true);
+  expect(draft!.selectionStart).toBe(3); expect(draft!.selectionEnd).toBe(8);
+  expect(foreign.parentElement === chat).toBe(true);
   expect(draft!.value).toBe("Owned Board Unicode 🧪");
   expect(target.querySelector("[data-layout-mounts]")?.textContent).toBe("1");
 });
@@ -156,5 +164,11 @@ test("native range has a real input path; detached/disposed callbacks cannot cha
   }
   await settle();
   expect(input?.getAttribute("max")).toBe(before);
+  expect(localStorage.getItem("vb.room-layout-fixture.docW")).toBe("260");
+  window.dispatchEvent(new Event("resize"));
+  await settle();
+  expect(input?.getAttribute("max")).toBe(before);
+  button("Dispose layout").click();
+  await settle();
   expect(localStorage.getItem("vb.room-layout-fixture.docW")).toBe("260");
 });

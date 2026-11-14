@@ -81,7 +81,6 @@ if (native) {
     "svelte/Composer.svelte",
     "svelte/Message.svelte",
     "svelte/chatTypes.ts",
-    "svelte/legacy/boardLayout.ts",
     "svelte/styles.ts",
     "svelte/index.html",
   );
