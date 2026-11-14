@@ -1,7 +1,7 @@
 // Real browser HTTP/form + native SDK boundary. Synthetic cookie/file server,
 // no Worker/D1/R2/session authorization claim and no canonical room mutations.
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, type Page } from "@playwright/test";
@@ -26,6 +26,8 @@ export async function auditAppDocumentFilePost(options: {
   }[] = [];
   const consoleCategories: string[] = [];
   const errors: string[] = [];
+  const events: Record<string, unknown>[] = [];
+  const responseDocuments: Record<string, unknown>[] = [];
   const report: Record<string, unknown> = {
     status: "running",
     phase: "output-directory",
@@ -34,9 +36,24 @@ export async function auditAppDocumentFilePost(options: {
     http,
     consoleCategories,
     pageErrors: errors,
+    events,
+    responseDocuments,
   };
   let ownedServer: Bun.Server<undefined> | undefined;
   let ownedPage: Page | undefined;
+  const extraPages: Page[] = [];
+  let removePageListener: (() => void) | undefined;
+  const event = (value: Record<string, unknown>) => {
+    if (events.length < 64) events.push(value);
+  };
+  const safeURL = (value: string) => {
+    if (value === "about:blank" || value === "chrome-error://chromewebdata/") return value;
+    try {
+      const url = new URL(value);
+      if (url.origin !== ownedServer?.url.origin) return "unexpected-origin";
+      return ["/",filePath,"/replacement","/native-bridge.js"].includes(url.pathname) ? url.origin + url.pathname : "unexpected-local-path";
+    } catch { return "invalid-url"; }
+  };
   try {
     await mkdir(output, { recursive: true });
     report.phase = "build-native-bridge";
@@ -112,8 +129,15 @@ export async function auditAppDocumentFilePost(options: {
               { error: "Invalid controlled file navigation" },
               { status: 400 },
             );
+          const rendered = withAppDocumentBootstrap(original, parsed.data.nonce);
+          if (responseDocuments.length < 4) responseDocuments.push({
+            bytes: Buffer.byteLength(rendered), sha256: createHash("sha256").update(rendered).digest("hex"),
+            doctype: /^<!doctype html>/i.test(rendered), stageMarkup: rendered.includes('<p id="stage">initial</p>'),
+            scriptOpen: (rendered.match(/<script>/g) ?? []).length, scriptClose: (rendered.match(/<\/script>/g) ?? []).length,
+            contentType: fileHeaders("text/html", "apps/file-positive.html")["content-type"],
+          });
           return new Response(
-            withAppDocumentBootstrap(original, parsed.data.nonce),
+            rendered,
             {
               headers: {
                 ...fileHeaders("text/html", "apps/file-positive.html"),
@@ -151,6 +175,22 @@ export async function auditAppDocumentFilePost(options: {
     report.phase = "new-page";
     const page = await options.page.context().newPage();
     ownedPage = page;
+    const onPage = (extra: Page) => {
+      extraPages.push(extra);
+      event({kind:"new-page", url:safeURL(extra.url())});
+      extra.on("framenavigated",frame=>event({kind:"extra-navigation",main:frame===extra.mainFrame(),url:safeURL(frame.url())}));
+    };
+    page.context().on("page",onPage);
+    removePageListener = () => page.context().off("page",onPage);
+    page.on("framenavigated",frame=>event({kind:"navigation",main:frame===page.mainFrame(),url:safeURL(frame.url())}));
+    page.on("download",download=>event({kind:"download",url:safeURL(download.url())}));
+    page.on("response",response=>{
+      if (safeURL(response.url()) !== new URL(filePath,server.url).href) return;
+      let mainFrame: boolean | null = null;
+      try { mainFrame = response.frame()===page.mainFrame(); } catch { /* Some responses have no associated frame. */ }
+      event({kind:"file-response",url:safeURL(response.url()),status:response.status(),method:response.request().method(),navigation:response.request().isNavigationRequest(),redirected:response.request().redirectedFrom()!==null,mainFrame});
+    });
+    page.on("requestfailed",request=>event({kind:"request-failed",url:safeURL(request.url()),navigation:request.isNavigationRequest(),error:request.failure()?.errorText === "net::ERR_BLOCKED_BY_RESPONSE" ? "blocked-by-response" : request.failure()?.errorText === "net::ERR_ABORTED" ? "aborted" : "other"}));
     page.on("pageerror", (error) => errors.push(error.name));
     page.on("console", (message) => {
       const text = message.text();
@@ -296,6 +336,25 @@ export async function auditAppDocumentFilePost(options: {
   } finally {
     const cleanupErrors: string[] = [];
     if (ownedPage) {
+      try {
+        const page = ownedPage;
+        const element = await page.$("#file-positive-frame");
+        const child = await element?.contentFrame();
+        const expectedName = element ? await element.getAttribute("name") : null;
+        report.browser = {
+          topURL:safeURL(page.url()), ownedFrameURL:child?safeURL(child.url()):null,
+          expectedTargetPresent:!!expectedName, ownedFrameNameMatches:!!child&&child.name()===expectedName,
+          frameAttributes:element?await element.evaluate(node=>({connected:node.isConnected,srcPresent:node.hasAttribute("src"),srcdocPresent:node.hasAttribute("srcdoc")})).catch(()=>null):null,
+          frames:await Promise.all(page.frames().slice(0,16).map(async(frame)=>({
+            url:safeURL(frame.url()),main:frame===page.mainFrame(),owned:frame===child,targetNameMatches:!!expectedName&&frame.name()===expectedName,
+            parentURL:frame.parentFrame()?safeURL(frame.parentFrame()!.url()):null,
+            dom:await frame.evaluate(()=>({ready:document.readyState,mode:document.compatMode,doctype:document.doctype?.name??null,stage:document.querySelectorAll("#stage").length,scriptCount:document.scripts.length})).catch(()=>null),
+          }))),
+          extraPages:extraPages.map(extra=>({closed:extra.isClosed(),url:safeURL(extra.url())})),
+        };
+      } catch { report.browserDiagnosticsFailed = true; }
+      removePageListener?.();
+      for (const extra of extraPages) await extra.close().catch(()=>{cleanupErrors.push("extra-page-close");});
       await ownedPage
         .evaluate(() => Reflect.get(window, "filePostProof")?.dispose())
         .catch(() => {});
