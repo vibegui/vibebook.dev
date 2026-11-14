@@ -115,8 +115,13 @@ test("Board node, draft and component owner survive full/pane placement and rail
   button("Board pane").click();
   await settle();
   const chat = target.querySelector("[data-room-chat]")!;
-  const foreign = document.createElement("div"); foreign.id = "kanban"; foreign.className = "doc"; foreign.textContent = "Untrusted duplicate legacy identity"; chat.append(foreign);
-  draft!.focus(); draft!.setSelectionRange(3, 8);
+  const foreign = document.createElement("div");
+  foreign.id = "kanban";
+  foreign.className = "doc";
+  foreign.textContent = "Untrusted duplicate legacy identity";
+  chat.append(foreign);
+  draft!.focus();
+  draft!.setSelectionRange(3, 8);
   button("Full Board").click();
   await settle();
   expect(document.activeElement === draft).toBe(true);
@@ -125,10 +130,15 @@ test("Board node, draft and component owner survive full/pane placement and rail
   expect(document.activeElement === draft).toBe(true);
   button("Board pane").click();
   await settle();
-  expect(target.querySelector("[data-layout-fixture-board]") === board).toBe(true);
-  expect(target.querySelector("#layout-fixture-board-draft") === draft).toBe(true);
+  expect(target.querySelector("[data-layout-fixture-board]") === board).toBe(
+    true,
+  );
+  expect(target.querySelector("#layout-fixture-board-draft") === draft).toBe(
+    true,
+  );
   expect(document.activeElement === draft).toBe(true);
-  expect(draft!.selectionStart).toBe(3); expect(draft!.selectionEnd).toBe(8);
+  expect(draft!.selectionStart).toBe(3);
+  expect(draft!.selectionEnd).toBe(8);
   expect(foreign.parentElement === chat).toBe(true);
   expect(draft!.value).toBe("Owned Board Unicode 🧪");
   expect(target.querySelector("[data-layout-mounts]")?.textContent).toBe("1");

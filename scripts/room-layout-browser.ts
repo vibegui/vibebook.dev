@@ -178,11 +178,29 @@ try {
   // trusted pointer clicks intentionally move focus to their clicked control.
   const retainedDraft = board.getByLabel("Retained Board draft");
   await retainedDraft.focus();
-  await page.getByRole("button", { name: "Full Board", exact: true }).evaluate(node => { if (!(node instanceof HTMLButtonElement)) throw Error("Expected a native button"); node.click(); });
+  await page
+    .getByRole("button", { name: "Full Board", exact: true })
+    .evaluate((node) => {
+      if (!(node instanceof HTMLButtonElement))
+        throw Error("Expected a native button");
+      node.click();
+    });
   await expect(retainedDraft).toBeFocused();
-  await page.getByRole("button", { name: "Sidebar rail", exact: true }).evaluate(node => { if (!(node instanceof HTMLButtonElement)) throw Error("Expected a native button"); node.click(); });
+  await page
+    .getByRole("button", { name: "Sidebar rail", exact: true })
+    .evaluate((node) => {
+      if (!(node instanceof HTMLButtonElement))
+        throw Error("Expected a native button");
+      node.click();
+    });
   await expect(retainedDraft).toBeFocused();
-  await page.getByRole("button", { name: "Board pane", exact: true }).evaluate(node => { if (!(node instanceof HTMLButtonElement)) throw Error("Expected a native button"); node.click(); });
+  await page
+    .getByRole("button", { name: "Board pane", exact: true })
+    .evaluate((node) => {
+      if (!(node instanceof HTMLButtonElement))
+        throw Error("Expected a native button");
+      node.click();
+    });
   await expect(retainedDraft).toBeFocused();
   report.boardIdentity = true;
   checkpoint("mobile/one-sheet-entry-back-forward");
