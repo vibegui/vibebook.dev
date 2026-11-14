@@ -44,7 +44,7 @@
     if (tag === "p")
       return "tw:my-2 tw:font-sans tw:tracking-normal tw:leading-6";
     if (tag === "pre")
-      return "tw:my-3 tw:max-w-full tw:overflow-x-auto tw:whitespace-pre tw:rounded-control tw:bg-muted tw:p-3 tw:font-mono tw:text-xs tw:leading-5";
+      return "tw:my-3 tw:max-w-full tw:overflow-x-auto tw:whitespace-pre tw:rounded-control tw:bg-muted tw:p-3 tw:font-mono tw:text-xs tw:leading-5 tw:focus-visible:outline-2 tw:focus-visible:outline-ring";
     if (tag === "code" || tag === "kbd" || tag === "samp")
       return "tw:font-mono tw:text-xs";
     if (tag === "blockquote")
@@ -193,6 +193,7 @@
         xmlns={node.namespace}
         {...node.attrs}
         data-code-language={node.language}
+        tabindex={node.namespace === HTML_NS && node.tag === "pre" ? 0 : undefined}
         class={elementClass(node.tag, node.namespace, node.attrs)}
         >{#if node.task !== undefined}<span
             aria-hidden="true"
