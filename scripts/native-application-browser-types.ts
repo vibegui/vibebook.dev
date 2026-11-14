@@ -11,6 +11,8 @@ export type NativeApplicationAuditFixture = {
   base: string;
   roomId: string;
   ownerEmail: string;
+  /** Actual agent post used to exercise the existing Markdown/code path. */
+  codeMessageId?: number;
   output: string;
   createProfile(
     profile: NativeApplicationProfile,

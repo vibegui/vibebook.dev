@@ -226,7 +226,12 @@ async function identity(
     { name: "vb_lang", value: profile.lang, url: base },
   ]);
   await context.addInitScript(
-    (theme) => localStorage.setItem("vb.theme", theme),
+    (theme) => {
+      // Context init scripts also run in opaque App frames. Theme is an
+      // application-document fixture, not a write into untrusted child realms.
+      if (window !== window.top) return;
+      localStorage.setItem("vb.theme", theme);
+    },
     profile.theme,
   );
   const response = await context.request.get(`${base}/api/me?ui=svelte`);
@@ -472,7 +477,8 @@ try {
     roomB = "",
     epic = "",
     roomTitle = "",
-    fileId = "";
+    fileId = "",
+    codeMessageId = 0;
   const docSeed = `# Native integrated document\n\nCanonical Unicode café 日本語 ${token}\n`,
     fileText = `Real R2 integrated viewer ${token}\n`;
   const agent = await nativeTestAgent(a, base);
@@ -517,11 +523,14 @@ try {
           roomA,
           `Real fixture ${token} row ${String(index).padStart(3, "0")} — neutral reproducible message text for reading-anchor coverage.`,
         );
-      await post(
-        owner.context,
-        roomA,
-        "```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
-      );
+      // Human posts intentionally render literally. Use a real agent post for
+      // the existing Markdown path, never change product rendering for a test.
+      const codeMessage = PostMessageResult.parse(await agent("post", {
+        room_id:roomA, thread:"main", model:"native-browser-fixture",
+        text:"```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
+      }));
+      assert(codeMessage.ok);
+      codeMessageId=codeMessage.id;
       await post(owner.context, roomA, `Real epic message ${token}`, epic);
       const file = AttachmentSchema.parse(
         await roomApi(owner.context, roomA).uploadFile({
@@ -559,6 +568,7 @@ try {
         roomB,
         epic,
         fileId,
+        codeMessageId,
         vanillaDefault: true,
         entrySha256: createHash("sha256")
           .update(await entryResponse.body())
@@ -1165,6 +1175,7 @@ try {
     base,
     roomId: roomA,
     ownerEmail,
+    codeMessageId,
     output,
     openPane: openIntegratedPane,
     openSidebar: openIntegratedSidebar,
