@@ -229,8 +229,9 @@ try {
   await expect.poll(alpha).toBe(0);
   // Closing changes presentation before Back completes. Do not let a pending
   // sheet traversal contaminate this independent media-query transition.
+  const historyPage = page;
   const hasSheetEntry = () =>
-    page.evaluate(() => {
+    historyPage.evaluate(() => {
       const state: unknown = history.state;
       return (
         state !== null && typeof state === "object" && "vbRoomSheet" in state

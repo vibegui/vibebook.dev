@@ -67,7 +67,6 @@ if (native) {
     await collect(directory);
   files.push(
     "svelte/Inbox.svelte",
-    "svelte/InboxMount.svelte",
     "svelte/TaskList.svelte",
     "svelte/Tasks.svelte",
     "svelte/Board.svelte",
