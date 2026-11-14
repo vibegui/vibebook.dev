@@ -1074,21 +1074,29 @@
   #inboxBtn { position: relative; } #inboxBtn .kN { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--wait-bg); color: var(--wait-ink); font: 700 10px/16px system-ui, sans-serif; text-align: center; }
   dialog.inbox { width: min(560px, calc(100% - 24px)); max-height: min(80vh, 720px); padding: 18px; display: none; flex-direction: column; gap: 10px; }
   dialog.inbox[open] { display: flex; }
-  dialog.inbox header, dialog.inbox .ibTabs { flex: none; }
-  dialog.inbox header { display: flex; align-items: center; gap: 10px; } dialog.inbox header h2 { margin: 0; font-size: 18px; flex: 1; }
-  dialog.inbox .ibTabs { display: flex; gap: 6px; }
-  dialog.inbox .ibTabs button { flex: none; white-space: nowrap; border: 1px solid var(--line); background: none; color: var(--ink-2, inherit); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
-  dialog.inbox .ibTabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-  dialog.inbox .ibBody { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; }
-  dialog.inbox .ibSec { margin: 0 0 2px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); display: flex; gap: 6px; align-items: baseline; } dialog.inbox .ibSec small { font-weight: 600; }
-  dialog.inbox ul { list-style: none; margin: 0; padding: 0; }
-  dialog.inbox li { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); }
-  dialog.inbox li a { flex: 1; display: flex; gap: 10px; padding: 10px 4px; color: inherit; text-decoration: none; min-width: 0; }
-  dialog.inbox li a:hover { background: var(--hover); }
-  dialog.inbox li .wt { display: flex; flex-direction: column; gap: 4px; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
-  dialog.inbox li .wt > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } dialog.inbox li small { color: var(--mute); }
-  dialog.inbox li > button { margin-top: 8px; }
-  dialog.inbox .ibEmpty { color: var(--mute); padding: 18px 0; text-align: center; }
+  /* In a room the inbox is a place, like an epic (Gui 14/11: "substituir o chat e o doc"): it takes the chat and doc
+     columns, the sidebar stays; picking any thread leaves it. */
+  .book.inboxOpen > .chat, .book.inboxOpen > .doc { display: none; }
+  .book.inboxOpen .thread.sel:not(.sideInbox) { background: transparent; box-shadow: none; font-weight: inherit; }
+  .inbox.inView { grid-column: 2 / -1; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 20px max(20px, calc((100% - 760px) / 2)) 0; background: var(--bg); }
+  .inbox.inView header h2 { font-size: 22px; }
+  .inbox.inView .ibBody { padding-bottom: 32px; }
+  @media (max-width: 900px) { .inbox.inView { grid-column: 1 / -1; padding: 14px 14px 0; } }
+  .inbox header, .inbox .ibTabs { flex: none; }
+  .inbox header { display: flex; align-items: center; gap: 10px; } .inbox header h2 { margin: 0; font-size: 18px; flex: 1; }
+  .inbox .ibTabs { display: flex; gap: 6px; }
+  .inbox .ibTabs button { flex: none; white-space: nowrap; border: 1px solid var(--line); background: none; color: var(--ink-2, inherit); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
+  .inbox .ibTabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .inbox .ibBody { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; }
+  .inbox .ibSec { margin: 0 0 2px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); display: flex; gap: 6px; align-items: baseline; } .inbox .ibSec small { font-weight: 600; }
+  .inbox ul { list-style: none; margin: 0; padding: 0; }
+  .inbox li { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); }
+  .inbox li a { flex: 1; display: flex; gap: 10px; padding: 10px 4px; color: inherit; text-decoration: none; min-width: 0; }
+  .inbox li a:hover { background: var(--hover); }
+  .inbox li .wt { display: flex; flex-direction: column; gap: 4px; min-width: 0; line-height: 1.4; overflow-wrap: anywhere; }
+  .inbox li .wt > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } .inbox li small { color: var(--mute); }
+  .inbox li > button { margin-top: 8px; }
+  .inbox .ibEmpty { color: var(--mute); padding: 18px 0; text-align: center; }
   dialog.welcome { width: min(520px, calc(100% - 32px)); padding: 30px 30px 22px; }
   dialog.welcome .wIco { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--ai-bg); color: var(--accent); margin-bottom: 16px; }
   dialog.welcome h3 { font-size: 26px; line-height: 1.15; margin-bottom: 10px; }
@@ -3048,8 +3056,23 @@ const loadUI = () => (uiLoad ??= import("/svelte/ui.js"));
 // Mentions and tasks come from /api/inbox (cross-room); waits are instant from /api/me (myWaits). The dialog opens at
 // once with what we have, then the fetch fills the other two sections.
 let inboxExtra = { mentions: [], tasks: [] };
+const inboxBook = () => (S ? document.querySelector(".book:not(.skel)") : null);
+function closeInbox() {
+  const d = document.getElementById("inbox"); if (!d) return;
+  if (d.tagName === "DIALOG") { if (d.open) d.close(); return; }
+  d._unmount?.(); d.remove(); inboxBook()?.classList.remove("inboxOpen");
+  document.getElementById("sideInbox")?.classList.remove("sel");
+}
 function openInbox() {
   let d = document.getElementById("inbox");
+  const book = inboxBook();
+  if (d && (d.tagName === "DIALOG") === !!book) { d._unmount?.(); d.remove(); d = null; }
+  if (!d && book) {
+    d = document.createElement("section"); d.id = "inbox"; d.className = "inbox inView"; d.setAttribute("aria-label", t("Caixa de entrada"));
+    d.close = closeInbox; Object.defineProperty(d, "open", { get: () => document.body.contains(d) }); d.showModal = () => {};
+    book.querySelector(".chat").before(d); book.classList.add("inboxOpen");
+    document.getElementById("sideInbox")?.classList.add("sel");
+  }
   if (!d) { d = document.createElement("dialog"); d.id = "inbox"; d.className = "inbox"; document.body.appendChild(d); d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); }
   loadUI().then(({ mountInbox }) => {
     const goTo = (bid, th, mid) => {
@@ -4439,7 +4462,7 @@ function renderSide() {
     </div>
     <div class="sec threadsSec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${asksIn("main") ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
-      <button type="button" class="thread sideInbox" id="sideInbox" title="${t("Caixa de entrada: o que espera por você")}">${icon("inbox")}<span class="rt">${t("Caixa de entrada")}</span>${myWaits.length ? `<span class="n${clW(myWaits)}">${myWaits.length}</span>` : ""}</button>
+      <button type="button" class="thread sideInbox${document.querySelector("#inbox.inView") ? " sel" : ""}" id="sideInbox" title="${t("Caixa de entrada: o que espera por você")}">${icon("inbox")}<span class="rt">${t("Caixa de entrada")}</span>${myWaits.length ? `<span class="n${clW(myWaits)}">${myWaits.length}</span>` : ""}</button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
         // An archived epic you opened shows in the tree, in its place (dimmed), and leaves when you go elsewhere.
@@ -4519,6 +4542,7 @@ function renderSide() {
     };
   });
   el.querySelectorAll("[data-thread]").forEach((b) => b.onclick = () => {
+    closeInbox();
     // A parent epic you're already in: clicking its row again opens/closes its branch (a big target besides the ›).
     const chev = b.dataset.thread === thread && b.querySelector(`[data-chev="${b.dataset.thread}"]`);
     if (chev) return chev.click();
