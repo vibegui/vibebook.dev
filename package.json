@@ -50,7 +50,7 @@
   },
   "scripts": {
     "verify:app-navigation": "bun scripts/native-app-navigation-browser.ts",
-    "dev": "bun run build:api-types && bun run build:collab:svelte && bun run build:ui && bun run build:mcp && wrangler dev",
+    "dev": "bun run build:collab && bun run build:ui && bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
     "check": "bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run check:styles:native && bun run check:styles && bun run test:store && bun run test:rpc && bun run test:auth && bun run test:home && bun run test:viewer && bun run test:ui && bun run test:ui:variants && bun run test:build && bun run test:connection && bun run check:worker-tests && bun run check:pwa && bun run test:pwa && bun run check:tooling && bun run format:check",

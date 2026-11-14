@@ -59,6 +59,20 @@ observed count mismatch, but does not yet distinguish failed application disposa
 from a delayed transport close handshake. No timeout or lifecycle assertion is
 relaxed. The root cause and a passing 20-cycle rerun remain required.
 
+The later [run 43563524139](https://github.com/vibegui/vibebook.dev/actions/runs/43563524139)
+at `743a4e0` explicitly completed server close acknowledgements and passed all
+seven core phases plus **all twenty lifecycle cycles**, with all 66 observed
+closes clean and completed within 27 ms. Its overall result remains failed:
+all eight profile runs found Home `link-in-text-block` accessibility violations,
+and the replacement-app probe was inconclusive during upload setup. Home palette
+comparisons recorded zero mismatches; later Room/font/interaction checks still
+need to pass. The inline Home link now has a persistent underline for the rerun.
+Original reports and exact artifact identities are retained in
+[the run 8 receipt](native-application-browser/2026-11-14-run8/README.md).
+See [the socket analysis](socket-close-handshake.md) for the remaining heap and
+observer limitations; passing socket/editor assertions are not a blanket
+leak-free claim or production acceptance.
+
 ## Performance and deployment
 
 The archived [controlled report](performance/2026-11-13/README.md) failed budgets

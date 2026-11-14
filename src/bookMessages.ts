@@ -24,11 +24,14 @@ function json(raw: unknown, kind: string, issue: StoredIssue): unknown {
     return null;
   }
 }
-const Choices = z.catchall(z.object({
-  options: z.array(z.string()),
-  multi: z.optional(z.nullable(z.boolean())),
-  closed: z.optional(z.nullable(z.union([z.boolean(), z.string()]))),
-}), z.json());
+const Choices = z.catchall(
+  z.object({
+    options: z.array(z.string()),
+    multi: z.optional(z.nullable(z.boolean())),
+    closed: z.optional(z.nullable(z.union([z.boolean(), z.string()]))),
+  }),
+  z.json(),
+);
 export function storedChoices(raw: unknown, issue: StoredIssue = ignore) {
   const value = json(raw, "choices-json", issue);
   if (value == null) return null;
@@ -40,9 +43,16 @@ export function storedChoices(raw: unknown, issue: StoredIssue = ignore) {
 /** JSON-safe extensions are recursive, while the DO RPC type mapper must stay
  * finite. Only the string crosses that internal boundary; MCP restores the
  * existing public object after the RPC response has arrived. */
-export function agentMessageFromWire<T extends { choices_wire?: string }>(message: T) {
+export function agentMessageFromWire<T extends { choices_wire?: string }>(
+  message: T,
+) {
   const { choices_wire, ...rest } = message;
-  return { ...rest, choices: choices_wire ? storedChoices(choices_wire) ?? undefined : undefined };
+  return {
+    ...rest,
+    choices: choices_wire
+      ? (storedChoices(choices_wire) ?? undefined)
+      : undefined,
+  };
 }
 export function storedCard(
   raw: unknown,
