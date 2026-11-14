@@ -68,6 +68,7 @@ let launcherStart: string | null = null;
 const shutdowns: { exitCode: number; observedDescendants: number }[] = [];
 let sampler: ReturnType<typeof setInterval> | undefined;
 let interrupted = false;
+let restoreGeneration: (() => Promise<void>) | undefined;
 const interrupt = () => {
   interrupted = true;
   process.exitCode = 130;
@@ -729,6 +730,15 @@ try {
     limitation: "Generated shared code may trigger an automatic full-runtime reload; an in-memory composer draft is not promised across that boundary. No reload is forced by the fixture.",
   };
   result.generator = generationEvidence;
+  restoreGeneration = async () => {
+    await poll(async () => {
+      if (digest(await readFile(generatedPath, "utf8")) !== originalGeneratedSHA) return false;
+      const shell = await readFile(resolve(root, "public/app.html"), "utf8");
+      if (!shell.includes(originalHost.path)) return false;
+      return digest(await readFile(resolve(root, "public", originalHost.path.slice(1)), "utf8")) === originalHost.sha256;
+    }, "cleanup restores generated bootstrap and original host bytes", 60_000, true);
+    generationEvidence.cleanupRestoredGeneratedArtifacts = true;
+  };
   const generatorMarker = `hmr-bootstrap-${token}`;
   const supervisorPID = child!.pid;
   const supervisorIdentity = launcherStart;
@@ -787,6 +797,8 @@ try {
   else { await expect(composer).toHaveValue(generationDraft); assert.equal(roomSockets, socketsBeforeRestore); }
   generationEvidence.restoration = { automaticDocumentReload: restoreReloaded, priorDraftRetained: await composer.inputValue() === generationDraft, generatedSHA: originalGeneratedSHA, hostPath: originalHost.path, hostSHA: originalHost.sha256, snapshots, roomSockets };
   generationEvidence.ownedDraftPaneRoundtrip = "pass";
+  await restoreGeneration();
+  restoreGeneration = undefined;
   generationEvidence.status = "pass";
   await page.evaluate(value => Object.assign(window, { __hmrVerificationDocument: value }), token);
 
@@ -877,6 +889,7 @@ try {
   } catch (error) {
     cleanup.push(String(error));
   }
+  try { await restoreGeneration?.(); } catch (error) { cleanup.push(String(error)); }
   await browser?.close().catch((error) => {
     cleanup.push(String(error));
   });
