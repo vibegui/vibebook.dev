@@ -4785,6 +4785,31 @@ describe("native account", () => {
     await tick();
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
   });
+  test("connected old account form is inert after same-account close and reopen before DOM flush", async () => {
+    const h = await account();
+    const input = document.querySelector<HTMLInputElement>("#account-name")!;
+    input.value = "Retained local draft";
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const oldForm = input.closest("form")!;
+    h.owner.close();
+    h.owner.open("profile");
+    expect(oldForm.isConnected).toBe(true);
+    oldForm.dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
+    expect(h.names).toEqual([]);
+    flushSync();
+    await tick();
+    const currentInput =
+      document.querySelector<HTMLInputElement>("#account-name")!;
+    expect(currentInput.value).toBe("Retained local draft");
+    currentInput
+      .closest("form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    expect(h.names).toEqual(["Retained local draft"]);
+  });
 });
 
 describe("native agent settings and sandbox ownership", () => {
@@ -4918,9 +4943,18 @@ describe("native agent settings and sandbox ownership", () => {
       terminal.dispose();
     });
     expect(target.querySelector("img") === null).toBe(true);
-    [...target.querySelectorAll<HTMLButtonElement>("article button")]
-      .find((button) => button.textContent === "Remove")!
-      .click();
+    const removeButtons = [
+      ...target.querySelectorAll<HTMLButtonElement>("article button"),
+    ];
+    const removeButton = removeButtons.find(
+      (button) => button.textContent?.trim() === "Remove",
+    );
+    expect(
+      removeButton,
+      JSON.stringify(removeButtons.map((button) => button.textContent)),
+    ).toBeDefined();
+    expect(removeButton?.disabled).toBe(false);
+    removeButton!.click();
     flushSync();
     await tick();
     expect(document.querySelector('[role="alertdialog"]') !== null).toBe(true);
@@ -5026,9 +5060,18 @@ test("denied native agent metadata can recover through explicit read-only retry"
   flushSync();
   await tick();
   denied = false;
-  [...target.querySelectorAll<HTMLButtonElement>("button")]
-    .find((button) => button.textContent === "Retry")!
-    .click();
+  const retryButtons = [
+    ...target.querySelectorAll<HTMLButtonElement>("button"),
+  ];
+  const retryButton = retryButtons.find(
+    (button) => button.textContent?.trim() === "Retry",
+  );
+  expect(
+    retryButton,
+    JSON.stringify(retryButtons.map((button) => button.textContent)),
+  ).toBeDefined();
+  expect(retryButton?.disabled).toBe(false);
+  retryButton!.click();
   for (let frame = 0; frame < 10 && !owner.current(); frame++) {
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => resolve()),
