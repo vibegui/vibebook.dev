@@ -138,7 +138,6 @@
     "scripts/application-version.test.ts",
     "scripts/native-application-browser.ts",
     "scripts/native-application-ci.ts",
-    "scripts/native-application-lifecycle.ts",
     "scripts/app-hmr-ci.ts",
     "scripts/build-app-document.ts",
     "scripts/app-document-build.test.ts",
@@ -146,6 +145,7 @@
     "scripts/app-document-browser.ts",
     "scripts/app-document.test.ts",
     "scripts/vanilla-app-document.test.ts",
-    "scripts/app-document-adversarial-browser.ts"
+    "scripts/app-document-adversarial-browser.ts",
+    "scripts/font-forensics-browser.ts"
   ]
 }

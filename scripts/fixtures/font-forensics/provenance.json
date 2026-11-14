@@ -1,0 +1,8 @@
+{
+  "diagnosticOnly": true,
+  "accepted": false,
+  "original": {"file":"InterVariable-693b77d4f3.woff2","sha256":"693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3","bytes":352240},
+  "roundtrip": {"file":"roundtrip-inter-693b77d4f3.woff2","sha256":"693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3","bytes":352240,"tools":"CPython 3.13.11; fontTools 4.68.0; Brotli 1.2.1; TTFont(lazy=True,recalcBBoxes=False,recalcTimestamp=False).save(reorderTables=False), original WOFF2 flavor"},
+  "rejected": {"file":"rejected-inter-785911cf3a.woff2","sha256":"785911cf3a4486d7b0e2573bd5093500f9d9a6c3cfcb021e65d40e4fc7bdeb1d","bytes":202292,"tools":"subset-font 2.9.0; fontkit 2.0.4; HarfBuzz 15.0.0 (harfbuzzjs 1.6.4); historical scripts/font-subsets/build.ts + diagnostic.ts research recipe; preserved original name table","priorEvidence":"Chromium 158.0.8127.18: 45/45 DOM geometry equal, 38/45 natural32px raster equal; NOT accepted"},
+  "license":"Inter OFL 1.1; original notice retained next to research artifacts. No application imports or CSS references permitted."
+}
