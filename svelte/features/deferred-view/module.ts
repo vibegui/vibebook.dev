@@ -1,5 +1,5 @@
 import { get, writable } from "svelte/store";
-import { authClock, type AuthClock } from "../auth/owner";
+import { clientClock, type ClientClock } from "../../lib/client/clock";
 
 export type DeferredModuleState<T> =
   | { phase: "idle" | "loading" | "error"; component: null }
@@ -12,7 +12,7 @@ export function createDeferredModule<T>(
   load: () => Promise<T>,
   options: {
     current(): boolean;
-    clock?: AuthClock;
+    clock?: ClientClock;
     timeoutMs?: number;
   },
 ) {
@@ -20,7 +20,7 @@ export function createDeferredModule<T>(
     phase: "idle",
     component: null,
   });
-  const clock = options.clock ?? authClock,
+  const clock = options.clock ?? clientClock,
     timeoutMs = options.timeoutMs ?? 20_000;
   let current = options.current,
     active = true,

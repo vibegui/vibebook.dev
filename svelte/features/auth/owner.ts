@@ -1,12 +1,8 @@
+import { clientClock, type ClientClock } from "../../lib/client/clock";
 export const AUTH_REQUEST_TIMEOUT = 20_000;
-export type AuthClock = {
-  schedule(fn: () => void, ms: number): unknown;
-  cancel(handle: unknown): void;
-};
-export const authClock: AuthClock = {
-  schedule: (fn, ms) => setTimeout(fn, ms),
-  cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-};
+// Preserve the established auth API while keeping the timer primitive neutral.
+export type AuthClock = ClientClock;
+export const authClock = clientClock;
 /** One mounted page owns each async action. An expired/replaced request never navigates or steals a newer draft. */
 export function createAuthOwner(clock: AuthClock = authClock) {
   let active = true,
