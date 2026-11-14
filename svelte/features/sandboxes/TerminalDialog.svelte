@@ -65,7 +65,7 @@
   {@const ticket = $view.generation}
   <Dialog
     open={$view.open}
-    title={`${text("terminal")} · ${$view.name}`}
+    title={`${text("terminal")} · ${$view.name ?? text("unnamed")}`}
     description={text("terminalHelp")}
     closeLabel={text("close")}
     fullScreen

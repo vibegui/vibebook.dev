@@ -1,3 +1,4 @@
+import { roomSandbox } from "./sandboxRows";
 // Typed application routes (M2): validated Hono handlers chained into one app whose type (AppType) the Svelte client
 // consumes through hc<AppType> (svelte/lib/client/api.ts, import type only: no backend code reaches the browser).
 // The vanilla app calls the same paths with the same payloads. Routes move here slice by slice
@@ -36,7 +37,6 @@ import {
   AgentDbRow,
   AgentLimits,
   type AgentsResult,
-  RoomSandbox,
   ClaudeTokenBody,
   type ConnectedResult,
   FreestyleKeyBody,
@@ -507,7 +507,7 @@ export const agentsApi = keysApi.get("/api/books/:id/agents", async (c) => {
   if (!me) return c.json(forbidden, 403);
   const out: AgentsResult = {
     claude_on: !!me.claude_on,
-    sandboxes: sbx.map((s) => RoomSandbox.parse(s)),
+    sandboxes: sbx.flatMap((row) => { try { return [roomSandbox(row)]; } catch { console.error("room sandbox has invalid identity"); return []; } }),
     agents: rows.map((row) => {
       const a = AgentDbRow.parse(row);
       return {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sandboxStateText } from "../sandboxes/copy";
+  import { sandboxText, sandboxStateText } from "../sandboxes/copy";
   import type { Presence } from "./model";
   import { sandboxCost } from "./model";
   import Button from "../../lib/ui/Button.svelte";
@@ -19,6 +19,7 @@
 </script>
 
 {#each presence.sandboxes as sandbox (sandbox.id)}
+  {@const cost = sandboxCost(sandbox, Date.now())}
   <Button
     variant="ghost"
     class="tw:h-auto tw:w-full tw:justify-start tw:gap-2 tw:whitespace-normal tw:text-left"
@@ -35,10 +36,12 @@
         )}</small
       ></span
     ><span class="tw:text-xs tw:text-muted-foreground"
-      >{new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: "USD",
-      }).format(sandboxCost(sandbox, Date.now()))}</span
+      >{cost === null
+        ? sandboxText(locale.startsWith("en") ? "en" : "pt", "costUnknown")
+        : new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: "USD",
+          }).format(cost)}</span
     >
   </Button>
 {/each}

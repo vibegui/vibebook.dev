@@ -2081,6 +2081,8 @@ const EN = {
   "Pausar": "Pause",
   "Retomar": "Resume",
   "Apagar sandbox": "Delete sandbox",
+  "Estimativa indisponível": "Estimate unavailable",
+  "Sem nome": "Unnamed",
   "Um agent na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.": "An agent in the cloud for this room, set up by agents/&lt;name&gt;.md in the files. Running costs about US$0.13/hour on your account; paused, only the disk.",
   "Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.": "Disconnect your freestyle.sh account? The sandboxes stay there, but vibebook can no longer start, pause or open their terminal.",
   "Apagar este sandbox? A VM e tudo que está nela somem do freestyle.sh.": "Delete this sandbox? The VM and everything in it are gone from freestyle.sh.",
@@ -4158,12 +4160,13 @@ function renderAgentsPane(on, live, path, w) {
 // What a sandbox has cost so far, in USD: hours running × its rate (+ the time since the last check while it runs),
 // plus disk for its whole life. From the owner's last list refresh; good enough to see money moving.
 const sbxCost = (x) => ((x.run_s || 0) / 3600 + (x.state === "running" && x.checked_at ? (Date.now() - x.checked_at) / 3600e3 : 0)) * (x.rate || 0) + ((Date.now() - x.created_at) / 3600e3) * (x.disk_rate || 0);
+const sbxCostUnknown = (x) => x.cost_unknown === true || x.created_at == null || !Number.isFinite(x.created_at);
 const usd = (n) => `US$${n < 10 ? n.toFixed(2) : Math.round(n)}`.replace(".", LANG === "en" ? "." : ",");
 // "Pessoas e agents": the room's cloud sandboxes come first (they spend money), each with its owner, state and cost.
 function sbxRows() {
   if (roomAgents.id !== S?.id || !roomAgents.sandboxes?.length) return "";
   return roomAgents.sandboxes.map((x) => `<button type="button" class="member sbxRow ${esc(x.state || "")}" data-sbx-open title="${esc(x.name)} · ${t("de {who}", { who: esc(name(x.email)) })}">
-    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name)}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${usd(sbxCost(x))}</span></button>`).join("");
+    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name ?? t("Sem nome"))}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${sbxCostUnknown(x) ? t("Estimativa indisponível") : usd(sbxCost(x))}</span></button>`).join("");
 }
 // Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
@@ -4203,8 +4206,8 @@ function sbxHtml() {
     ? `<div class="fsOn">${icon("check", 13)} ${t("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${t("remover")}</button></div>`
     : `<div class="agCard col"><b>${t("Conecte sua conta do Claude")}</b><small>${t("No seu terminal, rode:")}</small><div class="cpCmd"><code>claude setup-token</code><button type="button" class="ghost" data-cp="claude setup-token">${t("Copiar")}</button></div><small>${t("Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
       <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "ct" ? t("Salvando…") : t("Salvar")}</button></form>${sbx.errAt === "ct" && sbx.err ? `<p class="agErr">${esc(sbx.err)}</p>` : ""}</div>`;
-  return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
-      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${sbx.logs?.[x.id] ? `<pre class="sbxLog">${esc(sbx.logs[x.id])}</pre>` : !x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
+  return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name ?? t("Sem nome"))}</b>
+      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${sbx.logs?.[x.id] ? `<pre class="sbxLog">${esc(sbx.logs[x.id])}</pre>` : !x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${x.cost_unknown ? t("Estimativa indisponível") : usd(x.cost || 0)}</span></div>
       <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${esc(x.id)}">${t("Terminal")}</button>`}
       ${x.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${esc(x.id)}">${t("Pausar")}</button>` : x.state === "paused" || x.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${esc(x.id)}">${t("Retomar")}</button>` : ""}
       ${!x.ready && x.state === "running" ? `<button class="ghost" data-sbx-setup="${esc(x.id)}" title="${t("Rodar o setup de novo")}" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "setup:" + x.id ? t("Rodando setup… (até 4 min)") : t("Refazer setup")}</button>` : ""}

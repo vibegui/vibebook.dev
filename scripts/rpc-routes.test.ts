@@ -996,3 +996,76 @@ test("model spend: only in the report rooms, for their members", async () => {
     (await outsider.app.request("/api/metrics/ai-spend?room=report")).status,
   ).toBe(403);
 });
+
+test("room sandbox presence normalizes nullable and malformed SQLite metadata without changing membership or row order", async () => {
+  const { Database } = await import("bun:sqlite");
+  const db = new Database(":memory:");
+  try {
+    db.run(
+      "CREATE TABLE sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, state TEXT, run_s INTEGER, rate REAL, disk_rate REAL, checked_at INTEGER, created_at INTEGER)",
+    );
+    db.run(
+      "INSERT INTO sandboxes VALUES ('bad','owner@test','room',X'0102',NULL,'broken',0,0,0,NULL), ('null','owner@test','room',NULL,NULL,NULL,NULL,NULL,NULL,NULL), ('valid','owner@test','room','valid','paused',0,0,0,0,0), (NULL,'owner@test','room','missing','paused',0,0,0,0,0), ('private','other@test','other','private','running',0,0,0,0,0)",
+    );
+    const rows = db
+      .query(
+        "SELECT id,email,name,state,run_s,rate,disk_rate,checked_at,created_at FROM sandboxes WHERE book_id='room' ORDER BY created_at",
+      )
+      .all();
+    const queries: { sql: string; values: (string | number | null)[] }[] = [];
+    const f = fixture({
+      sqlAll: async (sql, ...values) => {
+        queries.push({ sql, values });
+        return sql.includes("FROM sandboxes")
+          ? rows
+          : sql.includes("SELECT claude_on")
+            ? [{ claude_on: 0 }]
+            : [];
+      },
+    });
+    const response = await f.app.request("/api/books/room/agents");
+    expect(response.status).toBe(200);
+    const { AgentsResult } = await import("../shared/schemas");
+    const value = AgentsResult.parse(await response.json());
+    expect(value.sandboxes.map((row: { id: string }) => row.id)).toEqual([
+      "bad",
+      "null",
+      "valid",
+    ]);
+    expect(value.sandboxes[0]).toMatchObject({
+      name: null,
+      run_s: null,
+      created_at: null,
+      cost_unknown: true,
+    });
+    expect(value.sandboxes[1]).toMatchObject({
+      name: null,
+      run_s: null,
+      created_at: null,
+      cost_unknown: true,
+    });
+    expect(value.sandboxes[2]).toMatchObject({
+      name: "valid",
+      run_s: 0,
+      rate: 0,
+      disk_rate: 0,
+      checked_at: 0,
+      created_at: 0,
+      cost_unknown: false,
+    });
+    expect(
+      queries.find((query) => query.sql.includes("FROM sandboxes"))?.values,
+    ).toEqual(["room"]);
+    expect(
+      queries.find((query) => query.sql.includes("SELECT claude_on"))?.values,
+    ).toEqual(["room", "test@example.com"]);
+    const outsider = fixture({
+      sqlAll: async (sql) => (sql.includes("SELECT claude_on") ? [] : rows),
+    });
+    expect((await outsider.app.request("/api/books/room/agents")).status).toBe(
+      403,
+    );
+  } finally {
+    db.close();
+  }
+});

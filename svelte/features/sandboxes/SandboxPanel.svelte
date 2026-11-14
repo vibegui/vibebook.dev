@@ -234,7 +234,9 @@
       >
         <div class="tw:flex tw:items-start tw:gap-3">
           <div class="tw:min-w-0 tw:flex-1">
-            <strong class="tw:block tw:break-words">☁ {card.name}</strong>
+            <strong class="tw:block tw:break-words"
+              >☁ {card.name ?? text("unnamed")}</strong
+            >
             <p class="tw:m-0 tw:text-xs tw:text-muted-foreground">
               {sandboxStateText(card.state, lang)} · {new Intl.NumberFormat(
                 lang,
@@ -248,10 +250,12 @@
               </p>{/if}
           </div>
           <span class="tw:text-xs"
-            >{new Intl.NumberFormat(lang, {
-              style: "currency",
-              currency: "USD",
-            }).format(card.cost)}</span
+            >{card.cost_unknown
+              ? text("costUnknown")
+              : new Intl.NumberFormat(lang, {
+                  style: "currency",
+                  currency: "USD",
+                }).format(card.cost)}</span
           >
         </div>
         {#if $view.logs[card.id] || (!card.ready && card.log)}<details>
@@ -300,7 +304,7 @@
                 kind: "sandbox",
                 id: card.id,
                 identity: sandboxIdentity(card),
-                name: card.name,
+                name: card.name ?? text("unnamed"),
               };
             }}>{text("remove")}</Button
           >

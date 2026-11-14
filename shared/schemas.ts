@@ -229,6 +229,7 @@ export const RoomSandbox = z.object({
   disk_rate: num,
   checked_at: num,
   created_at: num,
+  cost_unknown: z.optional(z.boolean()),
 });
 export const AgentsResult = z.object({
   claude_on: z.boolean(),
@@ -253,15 +254,16 @@ export const AgentDbRow = z.object({
 // Slice 8: the person's own cloud sandboxes in a room (freestyle.sh VMs; the key never leaves the server).
 export const SandboxCard = z.object({
   id: z.string(),
-  name: z.string(),
+  name: z.nullable(z.string()),
   vm_id: z.string(),
   ready: z.boolean(),
   state: z.string(),
   error: z.optional(z.string()),
   log: z.optional(z.string()),
-  created_at: z.number(),
+  created_at: z.nullable(z.number()),
   rate: z.number(),
   cost: z.number(),
+  cost_unknown: z.optional(z.boolean()),
 });
 export const SandboxesResult = z.object({
   connected: z.boolean(),

@@ -1,4 +1,6 @@
 import * as z from "zod/mini";
+import { SandboxesResult } from "../shared/schemas";
+import { sandboxTarget, sandboxSetup, sandboxCleanupName, sandboxIdentity, sandboxMetrics, sandboxEstimate, runningSeconds } from "./sandboxRows";
 import { pokeRoom } from "./person";
 import { track as trackEvent } from "./track";
 // Cloud agents: a Claude Code that lives in a freestyle.sh VM instead of on someone's computer.
@@ -191,7 +193,7 @@ async function writeClaudeEnv(env: Env, key: string, email: string, vmId: string
   const tok = await loadKey(env, email, "claude_tokens").catch(() => null);
   if (tok) await fs(key, "PUT", `/v5/vms/${vmId}/fs/write`, { path: "/tmp/vibebook-env", content: `export CLAUDE_CODE_OAUTH_TOKEN='${tok.replace(/'/g, "")}'\n`, mode: 384 });
 }
-type Row = { id: string; email: string; book_id: string; name: string; vm_id: string; identity_id: string | null; ready: number; created_at: number };
+
 const MAX_PER_ROOM = 3;
 
 /** agents/<name>.md from the room's files (the newest with that name written by this person: its sh blocks run in their
@@ -237,17 +239,17 @@ export async function createSandbox(env: Env, email: string, bookId: string, raw
  * login and Claude token, a syntax check, the setup, and Claude restarted in tmux. Returns the log's last lines. */
 export async function redoSetup(env: Env, email: string, sid: string, origin: string) {
   useEnv(env);
-  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  const r = sandboxSetup(await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first());
   const k = await loadKey(env, email).catch(() => null);
   if (!r || !k) throw new Error("not found");
   const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
   if (vm.state !== "running") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
   const book = await env.DB.prepare(`SELECT title FROM books WHERE id = ?`).bind(r.book_id).first<{ title: string }>();
-  const md = await agentFile(env, r.book_id, r.email, r.name, String(book?.title ?? "sala"), origin);
+  const md = await agentFile(env, r.book_id, email, r.name, String(book?.title ?? "sala"), origin);
   await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-setup.sh", content: setupScript({ roomId: r.book_id, folder: r.name, md, origin }), mode: 493 });
   await fs(k, "PUT", `/v5/vms/${r.vm_id}/fs/write`, { path: "/tmp/vibebook-CLAUDE.md", content: md });
-  await writeClaudeEnv(env, k, r.email, r.vm_id);
-  await writeVibebookLogin(env, k, r.email, r.vm_id, origin, r.name, r.book_id);
+  await writeClaudeEnv(env, k, email, r.vm_id);
+  await writeVibebookLogin(env, k, email, r.vm_id, origin, r.name, r.book_id);
   const x = await fs(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, {
     command: `mkdir -p ~/${r.name}; cp /tmp/vibebook-CLAUDE.md ~/${r.name}/CLAUDE.md 2>/dev/null; rm -f ~/.vibebook-setup-done; tmux kill-session -t claude 2>/dev/null; bash -n /tmp/vibebook-setup.sh 2>&1 | head -5 && timeout 260 bash /tmp/vibebook-setup.sh; echo "---"; test -f ~/.vibebook-setup-done && echo READY; tail -n 15 ~/vibebook-setup.log 2>/dev/null | cut -c1-200`,
     timeoutMs: 280000,
@@ -266,44 +268,48 @@ const roomChanged = (env: Env, book: string) => Promise.all([pokeRoom(env, book,
 export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, origin: string) {
   useEnv(env);
   const key = () => loadKey(env, email).catch(() => null);
-  const mine = (sid: string) => env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first() as Promise<Row | null>;
+  const mine = async (sid: string) => sandboxTarget(await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first());
   const track = (name: string, book: string) => ctx.waitUntil(trackEvent(env, name, { user: email, dims: { book } }));
   return {
     async list(roomId: string) {
-      const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE book_id = ? AND email = ? ORDER BY created_at`).bind(roomId, email).all()).results as Row[];
+      const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE book_id = ? AND email = ? ORDER BY created_at`).bind(roomId, email).all()).results.flatMap(raw => { try { const row = sandboxTarget(raw); return row ? [row] : []; } catch { console.error("sandbox row has invalid target"); return []; } });
       const k = rows.length ? await key() : null;
       const sandboxes = await Promise.all(rows.map(async (r) => {
         let state = "unknown", error: string | undefined, log: string | undefined;
-        const x = r as Row & { run_s?: number; rate?: number; disk_rate?: number };
+        let metrics = sandboxMetrics(r.raw);
+        let providerFailed = false;
         try {
           if (!k) throw new Error("freestyle desconectado");
           const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
           // totalRunSeconds counts finished runs; a running VM adds the current one (since its last state change).
-          if (vm.state === "running" && vm.updatedAt) vm.totalRunSeconds = (vm.totalRunSeconds ?? 0) + Math.max(0, (Date.now() - Date.parse(vm.updatedAt)) / 1000);
           state = vm.state;
+          const run_s = runningSeconds(vm, Date.now());
+          if (vm.resources === undefined || vm.totalRunSeconds === undefined || (vm.state === "running" && vm.updatedAt === undefined)) throw new Error("freestyle: incomplete VM estimate");
           // freestyle's list prices (Nov 2026): what this VM has cost so far = hours running × (vCPU + memory) + disk the whole time.
-          const res = vm.resources ?? { cpu: 0, memory: 0, storage: 0 };
-          const rate = res.cpu * 0.04032 + (res.memory / 1024) * 0.0129, disk = (res.storage / 1024) * 0.000086;
-          Object.assign(x, { run_s: vm.totalRunSeconds ?? 0, rate, disk_rate: disk });
-          ctx.waitUntil(env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, Math.round(vm.totalRunSeconds ?? 0), rate, disk, Date.now(), r.id).run());
+          const res = vm.resources;
+          const finite = z.number().check(z.minimum(0));
+          const rate = finite.parse(finite.parse(res.cpu) * 0.04032 + (finite.parse(res.memory) / 1024) * 0.0129), disk = finite.parse((finite.parse(res.storage) / 1024) * 0.000086);
+          metrics = { run_s, rate, disk_rate: disk, unknown: false };
+          ctx.waitUntil(env.DB.prepare(`UPDATE sandboxes SET state = ?, run_s = ?, rate = ?, disk_rate = ?, checked_at = ? WHERE id = ?`).bind(state, Math.round(run_s), rate, disk, Date.now(), r.id).run());
           if (!r.ready && state === "running") {
             const o = await fs(k, "POST", `/v5/vms/${r.vm_id}/exec-await`, { command: "if [ -f ~/.vibebook-setup-done ]; then echo done; elif [ -f ~/vibebook-setup.log ]; then tail -n 2 ~/vibebook-setup.log | cut -c1-160; else echo nolog; fi", timeoutMs: 10000 }, FsExec);
             const out = (o.stdout ?? "").trim();
-            if (out === "done") { r.ready = 1; await env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
+            if (out === "done") { r.ready = true; await env.DB.prepare(`UPDATE sandboxes SET ready = 1 WHERE id = ?`).bind(r.id).run(); }
             else log = out === "nolog" ? "o setup não começou (sem log)" : out.split("\n").pop() || (o.stderr ?? "").slice(0, 160);
           }
         } catch (e) {
-          error = (e as Error).message;
+          providerFailed = true;
+          error = e instanceof Error ? e.message : String(e);
           if (/ 404:/.test(error)) state = "deleted";
         }
-        const cost = ((x.run_s ?? 0) / 3600) * (x.rate ?? 0) + ((Date.now() - r.created_at) / 3600_000) * (x.disk_rate ?? 0);
-        return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, ...(error ? { error } : {}), ...(log ? { log } : {}), created_at: r.created_at, rate: x.rate ?? 0, cost };
+        const estimate = sandboxEstimate(metrics, r.created_at, Date.now(), providerFailed);
+        return { id: r.id, name: r.name, vm_id: r.vm_id, ready: !!r.ready, state, ...(error ? { error } : {}), ...(log ? { log } : {}), created_at: r.created_at, rate: metrics.rate, ...estimate };
       }));
       const [fsKey, claude] = await Promise.all([
         env.DB.prepare(`SELECT 1 FROM freestyle_keys WHERE email = ?`).bind(email).first(),
         env.DB.prepare(`SELECT 1 FROM claude_tokens WHERE email = ?`).bind(email).first(),
       ]);
-      return { connected: !!fsKey, claude: !!claude, sandboxes };
+      return SandboxesResult.parse({ connected: !!fsKey, claude: !!claude, sandboxes });
     },
     /** Throws an Error whose message is user-facing (no key, the room's limit, freestyle's refusal). */
     async create(roomId: string, name: string) {
@@ -318,8 +324,7 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
       if (!r || !k) return "not_found";
       try { await fs(k, "POST", `/v5/vms/${r.vm_id}/${act}`); } catch (e) { return (e as Error).message; }
       await env.DB.prepare(`UPDATE sandboxes SET state = ? WHERE id = ?`).bind(act === "pause" ? "paused" : "running", r.id).run(); // the rail's ☁ follows at once
-      track(`sandbox_${act}`, r.book_id);
-      ctx.waitUntil(roomChanged(env, r.book_id));
+      if (r.book_id) { track(`sandbox_${act}`, r.book_id); ctx.waitUntil(roomChanged(env, r.book_id)); }
       return null;
     },
     /** Run the setup again (it skips what's already installed): for a sandbox stuck preparing. Throws on failure. */
@@ -329,18 +334,22 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
       const r = await mine(sid), k = await key();
       if (!r) return false;
       if (k) await fs(k, "DELETE", `/v5/vms/${r.vm_id}`).catch((e) => { if (!/ 404:/.test(e.message)) throw e; });
-      if (k && r.identity_id) await fs(k, "DELETE", `/v5/identities/${r.identity_id}`).catch(() => {});
+      const ident = z.nullable(z.string().check(z.minLength(1))).safeParse(r.raw.identity_id ?? null);
+      if (k && ident.success && ident.data) await fs(k, "DELETE", `/v5/identities/${ident.data}`).catch(() => {});
       await env.DB.prepare(`DELETE FROM sandboxes WHERE id = ?`).bind(r.id).run();
-      ctx.waitUntil(roomChanged(env, r.book_id));
+      if (r.book_id) ctx.waitUntil(roomChanged(env, r.book_id));
       // Its Claude goes too: the vibebook grants made for it are revoked and it leaves "Conectados" (its folder = its name).
-      const { items } = await env.OAUTH_PROVIDER.listUserGrants(r.email);
-      for (const g of items) if (g.metadata?.client === "vibebook sandbox" && g.metadata?.sandbox === r.name) await env.OAUTH_PROVIDER.revokeGrant(g.id, r.email).catch(() => {});
+      const cleanupName = sandboxCleanupName(r.name);
+      if (cleanupName !== null) {
+      const { items } = await env.OAUTH_PROVIDER.listUserGrants(email);
+      for (const g of items) if (g.metadata?.client === "vibebook sandbox" && g.metadata?.sandbox === cleanupName) await env.OAUTH_PROVIDER.revokeGrant(g.id, email).catch(() => {});
       // Kept (receipts point at it), just no longer listening or recently here.
       const gone = `SELECT id FROM agents WHERE email = ?1 AND client = 'vibebook sandbox' AND repo = ?2`;
       await env.DB.batch([
-        env.DB.prepare(`UPDATE agents SET listening_at = NULL WHERE id IN (${gone})`).bind(r.email, r.name),
-        env.DB.prepare(`UPDATE agent_reads SET seen_at = 0 WHERE agent IN (${gone})`).bind(r.email, r.name),
-      ]);
+        env.DB.prepare(`UPDATE agents SET listening_at = NULL WHERE id IN (${gone})`).bind(email, cleanupName),
+        env.DB.prepare(`UPDATE agent_reads SET seen_at = 0 WHERE agent IN (${gone})`).bind(email, cleanupName),
+       ]);
+      }
       return true;
     },
     /** A 15-minute token that reaches only this VM's terminal: the browser opens the PTY straight to freestyle.
@@ -348,9 +357,9 @@ export function sandboxOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void
     async terminal(sid: string) {
       const r = await mine(sid), k = await key();
       if (!r || !k) return null;
+      let ident = sandboxIdentity(r.raw);
       const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
       if (vm.state !== "running" && vm.state !== "starting") await fs(k, "POST", `/v5/vms/${r.vm_id}/start`);
-      let ident = r.identity_id;
       if (!ident) {
         ident = (await fs(k, "POST", "/v5/identities", {}, FsCreated)).id;
         await fs(k, "POST", `/v5/identities/${ident}/permissions/vm`, { vmId: r.vm_id });
@@ -373,7 +382,7 @@ export async function agentSandboxes(env: Env, email: string) {
   useEnv(env);
   const k = await loadKey(env, email).catch(() => null);
   if (!k) return { connected: false, sandboxes: [], note: "your human hasn't connected freestyle.sh (Agents → Na nuvem in a room)" };
-  const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE email = ? ORDER BY created_at`).bind(email).all()).results as Row[];
+  const rows = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE email = ? ORDER BY created_at`).bind(email).all()).results.flatMap(raw => { try { const row = sandboxTarget(raw); return row ? [row] : []; } catch { console.error("sandbox row has invalid target"); return []; } });
   const out = await Promise.all(rows.map(async (r) => {
     try {
       const vm = await fs(k, "GET", `/v5/vms/${r.vm_id}`, undefined, FsVm);
@@ -386,7 +395,7 @@ export async function agentSandboxes(env: Env, email: string) {
 }
 export async function agentSandboxPower(env: Env, email: string, sid: string, action: "pause" | "start") {
   useEnv(env);
-  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  const r = sandboxTarget(await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first());
   if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
   const k = await loadKey(env, email).catch(() => null);
   if (!k) throw new Error("your human's freestyle.sh isn't connected");
@@ -397,7 +406,7 @@ export async function agentSandboxPower(env: Env, email: string, sid: string, ac
 }
 export async function agentSandboxExec(env: Env, email: string, sid: string, command: string, timeoutS = 60) {
   useEnv(env);
-  const r = (await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first()) as Row | null;
+  const r = sandboxTarget(await env.DB.prepare(`SELECT * FROM sandboxes WHERE id = ? AND email = ?`).bind(sid, email).first());
   if (!r) throw new Error(`no sandbox ${sid} of your human's (call sandboxes)`);
   const k = await loadKey(env, email).catch(() => null);
   if (!k) throw new Error("your human's freestyle.sh isn't connected");

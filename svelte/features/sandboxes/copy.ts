@@ -1,5 +1,7 @@
 export type SandboxLocale = "pt" | "en";
 const pt = {
+  unnamed: "Sem nome",
+  costUnknown: "Estimativa indisponível",
   running: "rodando",
   stopped: "parado",
   paused: "pausado",
@@ -75,6 +77,8 @@ const pt = {
 } as const;
 export type SandboxCopyKey = keyof typeof pt;
 const en: Record<SandboxCopyKey, string> = {
+  unnamed: "Unnamed",
+  costUnknown: "Estimate unavailable",
   running: "running",
   stopped: "stopped",
   paused: "paused",

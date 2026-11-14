@@ -35,7 +35,7 @@ export type TerminalState = {
   open: boolean;
   generation: number;
   id: string;
-  name: string;
+  name: string | null;
   phase:
     | "idle"
     | "loading"
