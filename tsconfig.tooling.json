@@ -148,6 +148,7 @@
     "scripts/app-document-file-browser.ts",
     "scripts/ui-chunk-attribution.ts",
     "scripts/ui-chunk-diagnostics.test.ts",
-    "scripts/navigation-presentation.test.ts"
+    "scripts/navigation-presentation.test.ts",
+    "scripts/agent-grant-boundary.test.ts"
   ]
 }

@@ -8,7 +8,7 @@ import { adminOverview, DIMENSIONS, trafficOverview } from "./analytics";
 import type { Env } from "./index";
 
 const MCP_APP_MIME = "text/html;profile=mcp-app";
-const HTML = bundledHtml as unknown as string;
+const HTML = bundledHtml;
 
 const RESOURCES = [
   { uri: "ui://vibebook/admin", name: "Back office", description: "KPIs, atividade por dia, funil, uso da AI, pessoas e vibebooks." },

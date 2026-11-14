@@ -11,9 +11,10 @@ import type { Env } from "./index";
 import { track } from "./track";
 import type { AgentGrantsResult, ConsentContext, ConsentError } from "../shared/schemas";
 import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
+import { withAgentGrant, type AgentProps } from "./agentGrant";
+export type { AgentProps } from "./agentGrant";
 
 export const SCOPE = "rooms";
-export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string; room?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
 
 // The resource URL is the request's own origin, so local dev (http://localhost:8787) works like prod.
 const providers = new Map<string, OAuthProvider<Env>>();
@@ -23,7 +24,7 @@ export function providerFor(origin: string, defaultHandler: ExportedHandler<Env>
     p = new OAuthProvider<Env>({
       apiRoute: "/mcp",
       apiHandler: {
-        fetch: (req: Request, env: Env, ctx: ExecutionContext) => handleAgentMcp(req, env, ctx, (ctx as unknown as { props: AgentProps }).props),
+        fetch: (req: Request, env: Env, ctx: ExecutionContext) => withAgentGrant(ctx.props, props => handleAgentMcp(req, env, ctx, props)),
       },
       defaultHandler,
       authorizeEndpoint: "/authorize",

@@ -24,6 +24,7 @@
     "scripts/google-invite-auth.test.ts",
     "scripts/jev-response.test.ts",
     "scripts/decision-provider.test.ts",
-    "scripts/app-document-file.test.ts"
+    "scripts/app-document-file.test.ts",
+    "scripts/agent-grant-boundary.test.ts"
   ]
 }

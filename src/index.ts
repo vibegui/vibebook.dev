@@ -564,6 +564,9 @@ app.get("/ws/:id", async (c) => {
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
 mountConnections(app, { isMember, track });
+const appHandler: ExportedHandler<Env> = {
+  fetch: (request, env, ctx) => app.fetch(request, env, ctx),
+};
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -576,7 +579,7 @@ export default {
     }
     if (url.pathname.startsWith("//")) return new Response("not found", { status: 404 });
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
-    return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
+    return providerFor(url.origin, appHandler).fetch(request, env, ctx);
   },
   // 11:00 and 21:00 UTC = 8h and 18h in São Paulo: the catch-up e-mail.
   scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
