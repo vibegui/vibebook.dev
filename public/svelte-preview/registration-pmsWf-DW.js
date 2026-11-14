@@ -1,29 +1,29 @@
-import { n as e, t } from "./shared-Cn4mm4KY.js";
-import { _ as n, d as r, g as i, m as a, n as o, v as s } from "./api-CwXbABNL.js";
+import { r as e, t } from "./index-client-B2aDKUZc.js";
+import { A as n, E as r, O as i, S as a, k as o, n as s } from "./api-Dv5tb54t.js";
 // svelte/features/notifications/api.ts
 async function c(e) {
 	let t = await e.json().catch(() => null);
 	if (!e.ok) {
-		let n = r.safeParse(t);
+		let n = a.safeParse(t);
 		throw Error(n.success ? n.data.error : `HTTP ${e.status}`);
 	}
 	return t;
 }
 function l(e) {
-	let t = o("/", e).api.push;
+	let t = s("/", e).api.push;
 	return {
 		async key() {
 			return i.parse(await c(await t.key.$get())).key;
 		},
 		async subscribe(e) {
-			let r = n.parse(e);
-			return a.parse(await c(await t.subscribe.$post({ json: r })));
+			let n = o.parse(e);
+			return r.parse(await c(await t.subscribe.$post({ json: n })));
 		},
 		async unsubscribe(e) {
-			return a.parse(await c(await t.unsubscribe.$post({ json: { endpoint: e } })));
+			return r.parse(await c(await t.unsubscribe.$post({ json: { endpoint: e } })));
 		},
 		async test() {
-			return s.parse(await c(await t.test.$post()));
+			return n.parse(await c(await t.test.$post()));
 		}
 	};
 }

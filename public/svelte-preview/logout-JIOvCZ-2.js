@@ -1,4 +1,4 @@
-import { a as e, i as t, o as n, t as r } from "./registration-3E5PConC.js";
+import { a as e, i as t, o as n, t as r } from "./registration-pmsWf-DW.js";
 // svelte/features/notifications/logout.ts
 async function i(i) {
 	if (i) return i.beforeLogout();
