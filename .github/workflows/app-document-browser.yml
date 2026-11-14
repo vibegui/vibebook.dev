@@ -34,5 +34,6 @@ jobs:
           path: |
             .artifacts/app-document/results.json
             .artifacts/app-document/adversarial/results.json
+            .artifacts/app-document/file-post/results.json
           if-no-files-found: warn
           retention-days: 7

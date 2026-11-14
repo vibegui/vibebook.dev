@@ -1,4 +1,5 @@
 import { auditAppDocumentAdversarial } from "./app-document-adversarial-browser";
+import { auditAppDocumentFilePost } from "./app-document-file-browser";
 import { chromium, expect, type Browser, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -44,7 +45,7 @@ const errors: string[] = [];
 const evidence: Record<string, unknown> = {
   revision: process.env.TEST_REVISION ?? "unrecorded",
   scope:
-    "real Chromium opaque srcdoc/native MessageEvent; no Worker/file POST/provider proof",
+    "real Chromium opaque srcdoc and controlled file POST/native SDK/MessageEvent; no Worker membership/R2/provider proof",
   status: "running",
 };
 try {
@@ -164,6 +165,7 @@ try {
     hostModuleURL: new URL("/app-document-host.js", server.url).href,
     output,
   });
+  evidence.filePost = await auditAppDocumentFilePost({page:activePage,output});
   evidence.status = "passed";
 } catch (error) {
   evidence.status = "failed";

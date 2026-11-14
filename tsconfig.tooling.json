@@ -142,6 +142,7 @@
     "scripts/font-forensics-browser.ts",
     "scripts/native-app-document-actions.test.ts",
     "scripts/app-document-watch.ts",
-    "scripts/app-document-watch.test.ts"
+    "scripts/app-document-watch.test.ts",
+    "scripts/app-document-file-browser.ts"
   ]
 }
