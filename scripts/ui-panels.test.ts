@@ -2288,6 +2288,29 @@ describe("native Svelte chat", () => {
     ).find((button) => button.textContent?.includes("Cancelar"))!;
     cancel.click();
     await expect(consent).resolves.toBe(false);
+    const firstQuestion = original.ask("A", "visible A"),
+      secondQuestion = original.ask("B", "unseen B");
+    flushSync();
+    const oldAllow = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="group"] button'),
+    ).find((button) => button.textContent?.includes("Permitir"))!;
+    oldAllow.click();
+    oldAllow.click();
+    await expect(firstQuestion).resolves.toBe(true);
+    for (let frame = 0; frame < 10 && target.querySelector("q")?.textContent !== "unseen B"; frame++) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      flushSync();
+      await tick();
+    }
+    expect(target.querySelector("q")?.textContent).toBe("unseen B");
+    oldAllow.click();
+    flushSync();
+    expect(target.querySelector("q")?.textContent).toBe("unseen B");
+    const nextCancel = Array.from(
+      target.querySelectorAll<HTMLButtonElement>('[role="group"] button'),
+    ).find((button) => button.textContent?.includes("Cancelar"))!;
+    nextCancel.click();
+    await expect(secondQuestion).resolves.toBe(false);
     const lateConsent = original.ask("write after switch", "old room");
     flushSync();
     update({ ...room, id: "next" });
