@@ -69,7 +69,8 @@
         "Um HTML aberto ao lado não aparece duas vezes: no chat ele vira uma linha pequena (\"aberto ao lado\"), e a prévia volta quando você fecha o painel",
         "No card de um HTML, Abrir abre ao lado do chat; a tela cheia virou o ícone pequeno à direita",
         "O roteador aprende com você: quando você diz pro seu Claude \"não era contigo\" (ou que ele perdeu uma mensagem), vira um caso de teste que toda mudança no roteador precisa passar",
-        "No Modo Fire, se o pedido cabe num card nativo (métricas, um painel, uma tabela, uma lista), o Haiku monta o card no chat e cada fala nova atualiza o mesmo card; página HTML só quando precisa"
+        "No Modo Fire, se o pedido cabe num card nativo (métricas, um painel, uma tabela, uma lista), o Haiku monta o card no chat e cada fala nova atualiza o mesmo card; página HTML só quando precisa",
+        "🎤: um toque começa a ditar e outro para (sem segurar); segurar 3 segundos liga o Modo Fire"
       ],
       "en": [
         "The inbox now shows, besides what's waiting on you, the mentions of you and your open tasks (to do, doing, review) across every room — in three sections, with a this-room / all toggle",
@@ -82,7 +83,8 @@
         "An HTML file open beside the chat isn't shown twice: in the chat it becomes a small row (\"open beside\"), and the preview comes back when you close the panel",
         "On an HTML card, Open opens it beside the chat; full screen is now the small icon on the right",
         "The router learns from you: when you tell your Claude \"that wasn't for you\" (or that it missed a message), it becomes a test case every change to the router must pass",
-        "In Fire mode, when a native card can answer (metrics, a dashboard, a table, a list), Haiku builds the card in the chat and each new piece of speech updates the same card; an HTML page only when it needs one"
+        "In Fire mode, when a native card can answer (metrics, a dashboard, a table, a list), Haiku builds the card in the chat and each new piece of speech updates the same card; an HTML page only when it needs one",
+        "🎤: one tap starts dictation and another stops it (no holding); holding for 3 seconds turns on Fire mode"
       ]
     },
     "fixes": {

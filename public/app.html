@@ -1958,6 +1958,7 @@ const EN = {
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
   "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to this card. Review and improve what it did.",
+  "Toque pra ditar (toque de novo pra parar) · segure 3 s pro Modo Fire": "Tap to dictate (tap again to stop) · hold 3 s for Fire mode",
   "Modo Fire": "Fire mode",
   "<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).": "<b>Live:</b> what you say goes, at every pause, straight to a fast model (Haiku).",
   "<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.": "<b>It applies it right away</b> to the file open beside the chat (or starts a new page), and the panel updates with every version.",
@@ -3647,7 +3648,7 @@ function renderBook() {
         <div class="fireBar" id="fireBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Segure pra ditar (ou segure o espaço)")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}
+          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Toque pra ditar (toque de novo pra parar) · segure 3 s pro Modo Fire")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}
           <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${t("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${t("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
           <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
@@ -3769,19 +3770,27 @@ function renderBook() {
       if (held) { held = false; stop(); return; }
       if (pending) typeSpace();
     });
-    // Hold 🎤: dictation while held; held 3 s, it charges into Modo Fire (live speech applied by the fast model).
-    let fireT = 0, fireRaf = 0;
+    // 🎤: a tap starts dictation and another tap stops it (Gui 14/11, #2364: no holding, on the phone or the desktop).
+    // Holding it charges Modo Fire: the ring shows after 0.4 s and fills to 3 s.
+    let fireT = 0, fireRaf = 0, showT = 0, fired = false;
     mic?.addEventListener("pointerdown", (e) => {
       e.preventDefault(); mic.setPointerCapture?.(e.pointerId);
-      if (fireLive()) return fireStop();
-      start();
+      fired = false;
+      if (fireLive()) { fired = true; return fireStop(); }
       const t0 = performance.now();
-      mic.classList.add("charging");
-      const tick = () => { mic.style.setProperty("--fireP", `${Math.min(100, (performance.now() - t0) / 30)}%`); fireRaf = requestAnimationFrame(tick); };
-      tick();
-      fireT = setTimeout(() => { cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); stop(); fireArm(); }, 3000);
+      showT = setTimeout(() => {
+        mic.classList.add("charging");
+        const tick = () => { mic.style.setProperty("--fireP", `${Math.min(100, (performance.now() - t0) / 30)}%`); fireRaf = requestAnimationFrame(tick); };
+        tick();
+      }, 400);
+      fireT = setTimeout(() => { fired = true; cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); stop(); fireArm(); }, 3000);
     });
-    for (const ev of ["pointerup", "pointercancel"]) mic?.addEventListener(ev, () => { clearTimeout(fireT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); if (!fireLive()) stop(); });
+    mic?.addEventListener("pointerup", () => {
+      clearTimeout(fireT); clearTimeout(showT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging");
+      if (fired) return;
+      if (rec) stop(); else start(); // a tap: toggle dictation
+    });
+    mic?.addEventListener("pointercancel", () => { clearTimeout(fireT); clearTimeout(showT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); });
   }
   // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
   // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.
