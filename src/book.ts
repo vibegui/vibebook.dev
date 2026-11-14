@@ -1093,8 +1093,12 @@ export class Book extends DurableObject<Env> {
         .map((x) => `${who(x.author)}${x.kind === "agent" ? " (Claude)" : ""}: ${x.text}`)
         .join("\n");
       const epic = epics.find((e) => e.id === thread);
+      // Whom it's addressed to, for the router's rule: the author of the message it replies to, and the epic's owner.
+      const replyAuthor = m.reply_to ? ((this.sql.exec<{ author: string }>(`SELECT author FROM messages WHERE id = ?`, m.reply_to).toArray()[0]?.author) ?? null) : null;
       return {
         id: m.id as number,
+        reply_author: replyAuthor,
+        epic_owner: epic?.owner ?? null,
         thread,
         topic: epic?.title ?? (thread === "main" ? "sala principal" : thread),
         author: m.author as string,
