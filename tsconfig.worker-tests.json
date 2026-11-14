@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["bun", "@cloudflare/workers-types"]
+    "types": [
+      "bun",
+      "@cloudflare/workers-types"
+    ]
   },
   "include": [
     "scripts/me-cache.test.ts",
@@ -18,6 +21,7 @@
     "scripts/epic-delete-guards.test.ts",
     "scripts/session-boundary.test.ts",
     "scripts/mcp-request-boundary.test.ts",
-    "scripts/github-identity.test.ts"
+    "scripts/github-identity.test.ts",
+    "scripts/report-analytics.test.ts"
   ]
 }
