@@ -157,6 +157,7 @@ export async function auditNativeAppNavigation(fixture: NativeAppNavigationFixtu
         await expect(frame.locator("#result")).toHaveText(marker); evidence.verdict="read-inherited";
       } else if(evidence.replacementOutcome==="refused") evidence.verdict="explicit-denial";
       else throw Error("No explicit replacement read verdict");
+      assert.deepEqual(evidence.pageErrors,[],"Browser/protocol failures cannot establish a clean read verdict");
       evidence.status="diagnosed";
     });
   } catch(error) {
