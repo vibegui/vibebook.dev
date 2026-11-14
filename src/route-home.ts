@@ -5,9 +5,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { Env } from "./index";
+import { cachedHomeEpics } from "./storedContainers";
+import type { RoomPick as SharedRoomPick } from "../shared/schemas";
 
-type Epic = { id: string; title: string; open?: number };
-export type RoomPick = { book_id: string; book_title: string; epic_id: string | null; epic_title: string | null };
+export type RoomPick = z.infer<typeof SharedRoomPick>;
 
 const MAX_ROOMS = 40;
 
@@ -18,13 +19,7 @@ export async function routeMessage(env: Env, email: string, text: string) {
   )
     .bind(email, MAX_ROOMS)
     .all<{ id: string; title: string; folder: string | null; summary: string | null; epics: string | null }>();
-  const rooms = rows.results.map((b) => {
-    let epics: Epic[] = [];
-    try {
-      epics = b.epics ? JSON.parse(b.epics) : [];
-    } catch {}
-    return { ...b, epics };
-  });
+  const rooms = rows.results.map((b) => ({ ...b, epics: cachedHomeEpics(b.epics) }));
   if (!rooms.length) return { pick: null, alternatives: [], new_room_title: text.slice(0, 60), cost: 0 };
 
   const listing = rooms

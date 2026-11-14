@@ -1,10 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": [
-      "bun",
-      "@cloudflare/workers-types"
-    ]
+    "types": ["bun", "@cloudflare/workers-types"]
   },
   "include": [
     "scripts/me-cache.test.ts",
@@ -24,6 +21,7 @@
     "scripts/mcp-request-boundary.test.ts",
     "scripts/github-identity.test.ts",
     "scripts/report-analytics.test.ts",
+    "scripts/stored-json-consumers.test.ts",
     "scripts/google-invite-auth.test.ts",
     "scripts/jev-response.test.ts",
     "scripts/decision-provider.test.ts",

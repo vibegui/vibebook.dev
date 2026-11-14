@@ -5,6 +5,7 @@
 // active filter EXCEPT its own, so clicking "BR" filters pages and sources but
 // leaves the country list whole to click through.
 import type { Env } from "./index";
+import { eventDimensions } from "./storedContainers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // ponytail: raw rows aggregated in JS; move rankings to SQL GROUP BY if a window ever passes this.
@@ -58,12 +59,7 @@ async function load(env: Pick<Env, "DB">, days: number, where = "") {
     .bind(since, MAX_EVENTS)
     .all<Record<string, string>>();
   return results.map((r): Raw => {
-    let dims: Record<string, unknown> = {};
-    try {
-      dims = JSON.parse(r.dims);
-    } catch {
-      // a corrupt dims blob must not drop the event
-    }
+    const dims = eventDimensions(r.dims);
     return { day: r.day, name: r.name, path: r.path, country: r.country, visitor: r.visitor || r.user, user: r.user, dims };
   });
 }
