@@ -61,6 +61,10 @@ export type ChatProps = {
   more?: boolean | number;
   origin?: ChatMessage | null;
   replyCount?: number;
+  needsYou?: {
+    view: import("./features/needs-you/model").NeedsView;
+    owner: import("./features/needs-you/session").NeedsYouSession;
+  };
   vb: ChatBridge;
   actions: ChatActions;
   onloadolder: () => void;

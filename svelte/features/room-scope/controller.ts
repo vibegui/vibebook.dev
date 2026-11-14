@@ -13,6 +13,7 @@ import type {
 import { createChatViewport, type KeepChat } from "../chat-viewport/controller";
 import { createChatSurface } from "../chat-viewport/surface";
 import { createChatPresentation } from "../chat-viewport/presentation";
+import { createNeedsYou } from "../needs-you/session";
 import type { AppsAuthority } from "../apps/authority";
 import { createFilesSession } from "../files/session";
 import { createFileChipIndex } from "../rich-text/fileIndex";
@@ -179,6 +180,31 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
     cancel: clock?.cancel,
   });
   const chatPresentation = createChatPresentation(viewport);
+  const needsYou = createNeedsYou({
+    current,
+    read: () => {
+      const value = room();
+      return value
+        ? { room: value, thread: selected(), waits: me()?.waits ?? [] }
+        : null;
+    },
+    storage: browser.storage,
+    clock: clock ? { ...clock, now: () => Date.now() } : undefined,
+    resolve: (bookId, ref, signal) =>
+      services.personal.api.resolve(bookId, ref, signal),
+    navigate: (id, thread) => navigateMessage(id, thread),
+    changed: () => {
+      if (current()) project(viewport.pinned() ? undefined : "stay");
+    },
+    denied: () => {
+      if (current()) services.actions.sessionLost();
+    },
+    resolved: () => {
+      if (!current()) return;
+      services.personal.invalidate();
+      if (current()) void services.personal.refresh();
+    },
+  });
   const readApi = createFileReadApi(browser.fetcher);
   const guardRead = async <T>(operation: Promise<T>): Promise<T> => {
     try {
@@ -928,6 +954,10 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
                   : visible.length,
                 vb: bridge,
                 actions,
+                needsYou: (() => {
+                  const view = needsYou.view();
+                  return view ? { view, owner: needsYou } : undefined;
+                })(),
                 onloadolder: () => {
                   if (owned()) viewport.loadOlder();
                 },
@@ -1151,6 +1181,7 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
     document.dispose();
     viewer.dispose();
     viewport.dispose();
+    needsYou.dispose();
     files.dispose();
     disposePinsSession(pins);
     mutations.dispose();

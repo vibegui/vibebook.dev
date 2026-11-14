@@ -15,6 +15,7 @@
   import { cn } from "../../lib/ui/utils";
   import {
     archivedEpics,
+    activeEpics,
     epicForest,
     reorderEpics,
     visibleEpics,
@@ -84,7 +85,7 @@
     "tw:pl-10",
     "tw:pl-12",
   ];
-  const active = $derived(room.epics.filter((epic) => !epic.archived));
+  const active = $derived(activeEpics(room.epics, thread));
   const archived = $derived(archivedEpics(room.epics, room.messages));
   const mode = $derived(
     $navigation.archived && archived.length > 0 ? "archived" : "active",
@@ -257,7 +258,10 @@
 >
   <Tabs
     items={[
-      { value: "active", label: `${vb.t("Épicos")} · ${active.length}` },
+      {
+        value: "active",
+        label: `${vb.t("Épicos")} · ${active.filter((epic) => !epic.archived).length}`,
+      },
       {
         value: "archived",
         label: `${vb.t("Arquivados")} · ${archived.length}`,
@@ -304,9 +308,9 @@
                 }}
                 ondrop={(event) => drop(event, epic.id)}
                 class={cn(
-                  "tw:flex tw:items-center tw:gap-1 tw:rounded-control tw:border tw:border-transparent",
+                  "tw:flex tw:items-center tw:gap-1 tw:rounded-control tw:border tw:border-transparent tw:border-l-4",
                   thread === epic.id &&
-                    "tw:bg-sidebar-accent tw:text-sidebar-accent-foreground",
+                    "tw:border-l-primary tw:bg-sidebar-accent tw:text-sidebar-accent-foreground",
                   dropTarget === epic.id &&
                     (dropAfter ? "tw:border-b-primary" : "tw:border-t-primary"),
                   drag === epic.id && "tw:opacity-50",
@@ -346,7 +350,9 @@
                   <span
                     class="tw:min-w-0 tw:flex-1 tw:break-words"
                     data-epic-title
-                    >{epic.title}{#if parent}<span class="tw:sr-only">
+                    >{epic.title}{#if epic.archived}<span
+                        class="tw:ml-1 tw:text-xs">({vb.t("Arquivado")})</span
+                      >{/if}{#if parent}<span class="tw:sr-only">
                         · {vb.t("Subépico de {title}", {
                           title: parent.title,
                         })}</span
@@ -372,7 +378,9 @@
                       )}>{epic.prod.stage === "verified" ? "✓✓" : "🚀"}</span
                     >{/if}
                   {#if epic.tasks.length}<span
-                      class="tw:shrink-0 tw:text-xs tw:text-muted-foreground"
+                      class={thread === epic.id
+                        ? "tw:shrink-0 tw:text-xs tw:text-sidebar-accent-foreground"
+                        : "tw:shrink-0 tw:text-xs tw:text-muted-foreground"}
                       >{epic.tasks.filter((task) => task.done).length}/{epic
                         .tasks.length}</span
                     >{/if}

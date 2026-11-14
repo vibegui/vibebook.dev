@@ -3,15 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "types": [
-      "bun",
-      "svelte"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["bun", "svelte"],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -123,6 +116,7 @@
     "scripts/room-layout-browser.ts",
     "scripts/browser-static-gallery.ts",
     "scripts/native-room-sidebar.test.ts",
+    "scripts/native-needs-you.test.ts",
     "scripts/native-attachment-crop-browser.ts",
     "scripts/native-documents-browser.ts",
     "scripts/native-documents-ownership-browser.ts",

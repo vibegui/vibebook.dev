@@ -2750,6 +2750,40 @@ describe("stable native sidebar integration", () => {
       },
     };
   }
+  test("selected archived epic remains in normal order with an accent bar and readable cue", async () => {
+    const room = fixture();
+    room.epics = [
+      { id: "a", title: "First", order: 1, tasks: [] },
+      {
+        id: "b",
+        title: "Archived target",
+        archived: true,
+        order: 2,
+        tasks: [],
+      },
+      { id: "c", title: "Last", order: 3, tasks: [] },
+    ];
+    const h = sidebar(room, { thread: "b" });
+    flushSync();
+    expect(
+      [...h.target.querySelectorAll<HTMLElement>("[data-epic-thread]")].map(
+        (row) => row.getAttribute("data-epic-thread"),
+      ),
+    ).toEqual(["a", "b", "c"]);
+    const row = h.target.querySelector<HTMLElement>('[data-epic-thread="b"]');
+    expect(row !== null).toBe(true);
+    expect(row!.textContent).toContain("Arquivado");
+    expect(row!.parentElement!.classList.contains("tw:border-l-primary")).toBe(
+      true,
+    );
+    expect(row!.parentElement!.classList.contains("tw:opacity-50")).toBe(false);
+    h.view.update({ ...h.props, thread: "main" });
+    await tick();
+    flushSync();
+    expect(h.target.querySelector('[data-epic-thread="b"]') === null).toBe(
+      true,
+    );
+  });
   test("selected main-thread count uses the secondary surface foreground", async () => {
     const room = fixture();
     const h = sidebar(room, { thread: "main" });
@@ -5537,4 +5571,101 @@ describe("native Apps catalog", () => {
     );
     expect(h.target.textContent).not.toContain("example.test");
   }, 30_000);
+});
+
+test("native needs-you endcard captures visible rows and rejects old connected controls before flush", async () => {
+  const { createNeedsYou } =
+    await import("../svelte/features/needs-you/session");
+  const { default: Harness } = await import("./needs-you-harness.svelte");
+  const room = { ...fixture(), roomTasks: [] };
+  const ask: import("../svelte/types").Wait = {
+    book_id: room.id,
+    room: room.book.title,
+    ref: "m7",
+    thread: "main",
+    topic: null,
+    author: room.me,
+    author_name: null,
+    text: "Original canonical question",
+    ts: 1,
+  };
+  let waits = [ask],
+    thread = "main",
+    changed = () => {};
+  const writes: string[] = [],
+    navigated: number[] = [];
+  const owner = createNeedsYou({
+    current: () => true,
+    read: () => ({ room, thread, waits }),
+    storage: window.localStorage,
+    resolve: async (_room, ref) => {
+      writes.push(ref);
+      return { ok: true };
+    },
+    navigate: (id) => {
+      navigated.push(id);
+    },
+    changed: () => changed(),
+    denied: () => {},
+    resolved: () => {},
+  });
+  const values = writable(owner.view());
+  changed = () => values.set(owner.view());
+  const target = window.document.createElement("div");
+  window.document.body.append(target);
+  const component = flushSync(() =>
+    mount(Harness, {
+      target,
+      props: {
+        values,
+        owner,
+        vb: { ...vb, hhmm: () => "09:00", waiting: () => false },
+      },
+    }),
+  );
+  active.push({
+    destroy() {
+      owner.dispose();
+      flushSync(() => {
+        void unmount(component);
+      });
+    },
+  });
+  const oldDone = target.querySelector<HTMLButtonElement>(
+    '[aria-label="Feito / não é comigo"]',
+  );
+  expect(oldDone !== null).toBe(true);
+  expect(target.textContent).toContain("Original canonical question");
+  waits = [{ ...ask, text: "Edited canonical question" }];
+  changed();
+  expect(oldDone!.isConnected).toBe(true);
+  oldDone!.click();
+  expect(writes).toEqual([]);
+  await tick();
+  flushSync();
+  const currentDone = target.querySelector<HTMLButtonElement>(
+    '[aria-label="Feito / não é comigo"]',
+  );
+  expect(currentDone !== null).toBe(true);
+  thread = "e";
+  changed();
+  expect(currentDone!.isConnected).toBe(true);
+  currentDone!.click();
+  expect(writes).toEqual([]);
+  await tick();
+  flushSync();
+  expect(target.querySelector("[data-native-needs-you]") === null).toBe(true);
+  thread = "main";
+  changed();
+  await tick();
+  flushSync();
+  const liveDone = target.querySelector<HTMLButtonElement>(
+    '[aria-label="Feito / não é comigo"]',
+  );
+  expect(liveDone !== null).toBe(true);
+  liveDone!.click();
+  await tick();
+  flushSync();
+  expect(writes).toEqual(["m7"]);
+  expect(navigated).toEqual([]);
 });

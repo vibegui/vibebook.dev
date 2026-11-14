@@ -114,7 +114,10 @@
     {#each [{ id: "main", title: room.book.title, tasks: [], owner: undefined }, ...room.epics.filter((epic) => !epic.archived || epic.id === thread)] as epic (epic.id)}
       <Button
         variant={thread === epic.id ? "secondary" : "ghost"}
-        class="tw:h-auto tw:flex-col tw:gap-1 tw:p-1"
+        class={[
+          "tw:h-auto tw:flex-col tw:gap-1 tw:border-l-4 tw:border-l-transparent tw:p-1",
+          thread === epic.id && "tw:border-l-primary",
+        ]}
         aria-current={thread === epic.id ? "page" : undefined}
         title={epic.title}
         onclick={(event) => {

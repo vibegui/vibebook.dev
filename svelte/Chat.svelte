@@ -11,6 +11,7 @@
   } from "./features/chat/model";
   import Button from "./lib/ui/Button.svelte";
   import Avatar from "./lib/ui/Avatar.svelte";
+  import NeedsYou from "./features/needs-you/NeedsYou.svelte";
   let {
     room,
     thread,
@@ -19,6 +20,7 @@
     more = false,
     origin = null,
     replyCount = 0,
+    needsYou,
     vb,
     actions,
     onloadolder,
@@ -168,5 +170,6 @@
             {vb.t("Falta o agent verificar em prod.")}
           </p>{/if}
       </div>{/if}
+    {#if needsYou}<NeedsYou {...needsYou} {vb} />{/if}
   </section>
 {/key}

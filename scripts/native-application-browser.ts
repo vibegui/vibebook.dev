@@ -805,6 +805,24 @@ try {
           `Peer hidden update ${token}`,
         );
         reading.peerMessage = id;
+        const needsTitle = `Actual needs-you task ${token}`;
+        const needsTask = z
+          .object({ ok: z.literal(true), task_id: z.string() })
+          .parse(
+            await agent("add_task", {
+              room_id: roomA,
+              epic_id: "main",
+              title: needsTitle,
+              owner: ownerEmail,
+            }),
+          );
+        await expect
+          .poll(() =>
+            aWire.store
+              .get()
+              ?.roomTasks?.some((task) => task.id === needsTask.task_id),
+          )
+          .toBe(true);
         await checkpoint("actual-canonical-peer-message");
         await expect
           .poll(() =>
@@ -904,6 +922,34 @@ try {
           "Real repin must reveal the actual canonical peer tail",
         );
         Object.assign(reading, { repinnedWindow });
+        const needsCard = a.locator("[data-native-needs-you]");
+        await expect(needsCard).toContainText(needsTitle);
+        await needsCard
+          .getByRole("button", {
+            name: new RegExp("Done / not for me|Feito / não é comigo"),
+          })
+          .click();
+        await expect(needsCard).toBeHidden();
+        await agent("set_task_status", {
+          room_id: roomA,
+          task_id: needsTask.task_id,
+          status: "doing",
+        });
+        await expect(needsCard).toContainText(needsTitle);
+        await agent("set_task_status", {
+          room_id: roomA,
+          task_id: needsTask.task_id,
+          status: "done",
+        });
+        await expect(needsCard).toBeHidden();
+        Object.assign(reading, {
+          needsYou: {
+            canonicalTask: needsTask.task_id,
+            dismissed: true,
+            statusChangeResurfaced: true,
+            doneRemoved: true,
+          },
+        });
         await checkpoint("real-wheel-unpin-before-own-ui-send");
         await scroller.hover();
         await a.mouse.wheel(0, -800);
