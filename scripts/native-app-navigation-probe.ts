@@ -12,6 +12,7 @@ import {
 import { createRoomApi } from "../svelte/transport";
 import { localBrowserError } from "./native-browser-fixtures";
 import type { NativeApplicationAuditFixture } from "./native-application-browser-types";
+import { probeHTTP, probeFailure, type ProbePhase } from "./native-app-probe-diagnostics";
 
 const expect = baseExpect.configure({ timeout: 30_000 });
 export type NativeAppNavigationFixture = Pick<
@@ -34,6 +35,10 @@ export type NativeAppNavigationEvidence = {
   replacementInitialize?: string | null;
   replacementErrorCode?: string | null;
   failure?: string;
+  phase: ProbePhase;
+  failurePhase?: ProbePhase;
+  failureSourceFrames?: string[];
+  http: ReturnType<typeof probeHTTP>[];
   pageErrors: { name: string; locations: string[] }[];
   scope: string;
   gaps: string[];
@@ -87,6 +92,8 @@ export async function auditNativeAppNavigation(
   const marker = `Controlled read marker ${randomBytes(16).toString("hex")}`;
   const evidence: NativeAppNavigationEvidence = {
     status: "running",
+    phase: "listen",
+    http: [],
     verdict: "pending",
     markerSha256: createHash("sha256").update(marker).digest("hex"),
     initialUserOpen: false,
@@ -138,6 +145,7 @@ export async function auditNativeAppNavigation(
       `${origin}/replacement`,
     );
     assert(!initial.includes(marker) && !replacement.includes(marker));
+    evidence.phase = "profile";
     const created = await fixture.createProfile({
       lang: "en",
       theme: "light",
@@ -151,9 +159,11 @@ export async function auditNativeAppNavigation(
         localBrowserError(error, [fixture.base, origin]),
       ),
     );
+    evidence.phase = "identity";
     const meResponse = await owned.request.get(
       `${fixture.base}/api/me?ui=svelte`,
     );
+    evidence.http.push(probeHTTP(evidence.phase, meResponse.status()));
     assert(meResponse.ok());
     assert.equal(
       MeResult.parse(await meResponse.json()).email,
@@ -162,6 +172,7 @@ export async function auditNativeAppNavigation(
     await fixture.step(
       "controlled room-App setup and trusted initial read",
       async () => {
+        evidence.phase = "room-create";
         const roomResponse = await owned.request.post(
           `${fixture.base}/api/books`,
           {
@@ -169,6 +180,7 @@ export async function auditNativeAppNavigation(
             data: { title: "Controlled iframe replacement probe" },
           },
         );
+        evidence.http.push(probeHTTP(evidence.phase, roomResponse.status()));
         assert(roomResponse.ok());
         const room = CreateRoomResult.parse(await roomResponse.json());
         evidence.roomId = room.id;
@@ -187,11 +199,14 @@ export async function auditNativeAppNavigation(
               ? undefined
               : Buffer.from(await request.arrayBuffer()),
           });
+          // Classify an error body only in memory; never retain or print it.
+          evidence.http.push(probeHTTP("app-upload", response.status(), response.ok() ? undefined : await response.json().catch(() => null)));
           return new Response(new Uint8Array(await response.body()), {
             status: response.status(),
             headers: response.headers(),
           });
         });
+        evidence.phase = "app-upload";
         const file = await api.uploadFile({
           name: "apps/capability-probe.html",
           type: "text/html",
@@ -199,6 +214,7 @@ export async function auditNativeAppNavigation(
         });
         assert.equal(file.name, "apps/capability-probe.html");
         evidence.fileId = file.id;
+        evidence.phase = "marker-post";
         const posted = await owned.request.post(
           `${fixture.base}/api/books/${room.id}/post`,
           {
@@ -206,18 +222,22 @@ export async function auditNativeAppNavigation(
             data: { text: marker, thread: "main" },
           },
         );
+        evidence.http.push(probeHTTP(evidence.phase, posted.status()));
         assert(posted.ok());
         const message = PostMessageResult.parse(await posted.json());
         assert(message.ok);
         evidence.messageId = message.id;
+        evidence.phase = "room-open";
         await page.goto(`${fixture.base}/b/${room.id}?ui=svelte`);
         await expect(page.locator("[data-native-room-header]")).toBeVisible();
         await fixture.openPane(page, "apps");
+        evidence.phase = "app-open";
         await page
           .locator("[data-native-apps]")
           .getByRole("button", { name: /capability-probe/ })
           .click();
         evidence.initialUserOpen = true;
+        evidence.phase = "initial-read";
         const frame = page.frameLocator("[data-native-app-frame] iframe");
         await expect(frame.locator("#stage")).toHaveText("initial");
         await expect(frame.locator("#result")).toHaveAttribute(
@@ -231,6 +251,7 @@ export async function auditNativeAppNavigation(
     await fixture.step(
       "same iframe replacement-document controlled readonly probe",
       async () => {
+        evidence.phase = "replacement-navigation";
         const selector = "[data-native-app-frame] iframe",
           frame = page.frameLocator(selector),
           element = page.locator(selector);
@@ -301,6 +322,7 @@ export async function auditNativeAppNavigation(
           "Replacement must come from the controlled second real HTTP origin",
         );
         evidence.replacementOriginDiffers = origin !== fixture.base;
+        evidence.phase = "replacement-read";
         await expect(frame.locator("#result")).not.toHaveAttribute(
           "data-outcome",
           "pending",
@@ -331,7 +353,10 @@ export async function auditNativeAppNavigation(
   } catch (error) {
     evidence.status = "inconclusive";
     evidence.verdict = "inconclusive";
-    evidence.failure = error instanceof Error ? error.name : "UnknownError";
+    const failure = probeFailure(error);
+    evidence.failure = failure.name;
+    evidence.failurePhase = evidence.phase;
+    evidence.failureSourceFrames = failure.sourceFrames;
   } finally {
     await context?.close();
     server.closeAllConnections();

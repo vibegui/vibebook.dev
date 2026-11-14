@@ -11,3 +11,19 @@ The helper always writes `native-app-navigation.json` with those separate verdic
 Source review found that the current transport checks null origin, exact live WindowProxy and current component/room owner, but no document epoch. Installed ext-apps 1.7.4 uses the same browsing-context source check; second initialization is accepted and pre-initialization requests warn rather than create an authorization boundary. Self-navigation may therefore preserve capability while selected identity is unchanged. This is a source-level concern pending this real-browser probe, not a confirmed exploit claim. It also applies to late replies routed to that WindowProxy. Legitimate reload currently reuses the bridge; the original initial-result notification is one-shot.
 
 A load-only epoch/disposal guard could block post-load calls/late replies/consents, but replacement scripts may execute before `load`, so it cannot establish strict document identity. A complete document capability design would need a host-controlled bootstrap/document nonce or transferred message channel, plus explicit reload semantics and SDK compatibility validation. No new policy or guard is implemented here. This focused probe does not establish BFCache restoration behavior, remote MCP/provider behavior, or a global security pass. Opaque sandbox origin remains required.
+
+Worker run 43563524139 stopped during fixture setup after room creation and
+before an uploaded file ID, initial user open or positive read. Its generic
+`Error` cannot establish a bridge verdict. Source inspection identifies a
+deterministic setup constraint: room-app uploads require `checkEmbed`; that
+fails closed when `decide` returns null, while the CI runner sets
+`MODEL_JUDGE=off`. No model review, secret filtering, upload constraint or
+authority assertion is bypassed to make this probe pass.
+
+New diagnostics retain a fixed current/failure phase, observed HTTP statuses
+and allowlisted error classifications (including HTML review unavailable), not
+request/response bodies or provider messages. Captured source locations come
+from the classification call site, never an untrusted exception stack, and
+exception names are allowlisted. Remote evidence must corroborate the actual
+HTTP refusal before any product/security fix is inferred. Formatter, diagnostic
+unit tests, tooling and browser rerun remain unrun at this source checkpoint.
