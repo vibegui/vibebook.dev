@@ -33,6 +33,7 @@ import { parseCommandEnvelope, record } from "../shared/validation";
 import type { RoomEvent } from "../shared/room";
 import {
   createMetricRoom,
+  metricInbox,
   checkedEvent,
   summarize,
   workloads,
@@ -265,6 +266,8 @@ const server = Bun.serve({
             providers: { google: false, github: false },
           }),
         );
+      if (request.method === "GET" && path === "/api/inbox")
+        return json(metricInbox(current.rooms));
       if (path === "/api/agents")
         return json(AgentGrantsResult.parse({ agents: [], last_used: null }));
       if (/^\/api\/books\/[a-f0-9]+\/agents$/.test(path))
@@ -464,6 +467,7 @@ const results: { [key: string]: unknown } = {
     "Desktop and 390px Chromium viewports use 4x CPU throttling and reduced motion. A narrow viewport is not a touch hardware/iOS/Safari/IME/GPU acceptance claim.",
     "Entry readiness requires the complete canonical synthetic Markdown preview on desktop before fonts and two frames. Mobile must keep that document hidden. Older runs only asserted chat readiness; their timing endpoints are not interchangeable with this stronger contract. Their captured resource bytes remain historical evidence.",
     "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
+    "Inbox readiness now includes its schema-validated HTTP fixture and every current-room task title; prior heading-only Inbox intervals are not interchangeable. The seeded rooms, main acceptance endpoints and budgets are unchanged.",
     "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
     "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
     "Deferred bytes cover only exercised interactions and Inbox. Editor/Yjs/MCP/media/tool graphs not visited are unmeasured, not zero.",
@@ -1302,6 +1306,19 @@ async function run(
     await expect(
       inbox.getByRole("heading", { name: "Inbox", exact: true }),
     ).toBeVisible();
+    const inboxTasks = metricInbox(rooms).tasks.filter(
+      (task) => task.book_id === rooms[1].id,
+    );
+    assert(
+      inboxTasks.length > 0,
+      "The common fixture must exercise current-room Inbox task loading",
+    );
+    for (const task of inboxTasks)
+      await expect(inbox.getByText(task.title, { exact: true })).toHaveCount(1);
+    assert(
+      (runFixture.http["/api/inbox"] ?? 0) > 0,
+      "Inbox readiness requires its canonical fixture HTTP response",
+    );
     await result("inboxDeferred", true);
     await inbox.getByRole("button", { name: "Close", exact: true }).click();
     await expect(inbox).not.toBeVisible();

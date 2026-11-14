@@ -7,6 +7,7 @@ import {
   type RoomEvent,
 } from "../shared/room";
 import { isRoomEvent } from "../shared/validation";
+import { InboxResult } from "../shared/schemas";
 export type Workload = {
   name: string;
   messages: number;
@@ -265,4 +266,43 @@ export function createMetricRoom(
       .digest("hex"),
     firstActiveEpic: epics.find((epic) => !epic.archived)!.id,
   };
+}
+
+/** The synthetic rooms have no queued mentions/waits; their own open tasks
+ * must still reach both current Inbox frontends through the real HTTP shape. */
+export function metricInbox(
+  rooms: readonly ReturnType<typeof createMetricRoom>[],
+) {
+  return InboxResult.parse({
+    waits: [],
+    mentions: [],
+    tasks: rooms.slice(0, 30).flatMap(({ id, root }) => {
+      const tasks = (
+        items: Room["epics"][number]["tasks"],
+        epicId: string,
+        title: string | null,
+      ) =>
+        items
+          .filter(
+            (task) =>
+              task.owner === root.me && !task.done && task.status !== "done",
+          )
+          .map((task) => ({
+            book_id: id,
+            room: root.book.title,
+            epic_id: epicId,
+            epic: title,
+            task_id: task.id,
+            title: task.title,
+            status: task.status ?? "todo",
+            due: task.due ?? null,
+          }));
+      return [
+        ...root.epics
+          .filter((epic) => !epic.archived)
+          .flatMap((epic) => tasks(epic.tasks, epic.id, epic.title ?? null)),
+        ...tasks(root.roomTasks ?? [], "main", null),
+      ];
+    }),
+  });
 }

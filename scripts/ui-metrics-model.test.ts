@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { createMetricRoom, workloads, summarize } from "./ui-metrics-model";
+import {
+  createMetricRoom,
+  metricInbox,
+  workloads,
+  summarize,
+} from "./ui-metrics-model";
 import { isRoomEvent } from "../shared/validation";
 import { assessBudgets, type MetricSummary } from "./ui-metrics-budgets";
 import { metricShell } from "./ui-metrics-shell";
@@ -7,6 +12,49 @@ import { MeResult } from "../shared/schemas";
 import { me } from "./native-home-fixtures";
 import { readFile } from "node:fs/promises";
 import { metricDocumentContent } from "./ui-metrics-document-model";
+test("current Inbox fixture keeps owned open tasks and excludes archived, done and other-person tasks", () => {
+  const room = createMetricRoom(workloads.normal, "A", 421);
+  const task = (
+    id: string,
+    owner: string,
+    status: "todo" | "doing" | "done" = "todo",
+  ) => ({ id, title: id, owner, status, done: status === "done", due: null });
+  room.root.epics = [
+    {
+      id: "active",
+      title: "Active",
+      tasks: [
+        task("owned", room.root.me),
+        task("doing", room.root.me, "doing"),
+        task("done", room.root.me, "done"),
+        task("other", "other@example.test"),
+      ],
+    },
+    {
+      id: "archived",
+      title: "Archived",
+      archived: true,
+      tasks: [task("hidden", room.root.me)],
+    },
+  ];
+  room.root.roomTasks = [task("main-task", room.root.me)];
+  const inbox = metricInbox([room]);
+  expect(inbox.waits).toEqual([]);
+  expect(inbox.mentions).toEqual([]);
+  expect(
+    inbox.tasks.map((item) => [
+      item.book_id,
+      item.epic_id,
+      item.task_id,
+      item.status,
+      item.due,
+    ]),
+  ).toEqual([
+    [room.id, "active", "owned", "todo", null],
+    [room.id, "active", "doing", "doing", null],
+    [room.id, "main", "main-task", "todo", null],
+  ]);
+});
 test("deterministic public long-room shapes use real initial window and paging semantics", () => {
   const first = createMetricRoom(workloads.long, "A", 421),
     again = createMetricRoom(workloads.long, "A", 421),
