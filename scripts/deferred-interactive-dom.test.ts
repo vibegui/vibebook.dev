@@ -2,7 +2,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { plugin } from "bun";
 import { readFileSync } from "node:fs";
-import { compile } from "svelte/compiler";
+import { compile, compileModule } from "svelte/compiler";
 import { Window } from "happy-dom";
 import { writable } from "svelte/store";
 const environment = new Window({ url: "http://localhost/" });
@@ -38,6 +38,13 @@ for (const name of [
 plugin({
   name: "deferred-interactive-owned-source",
   setup(build) {
+    build.onLoad({ filter: /\.svelte\.js$/ }, (args) => ({
+      contents: compileModule(readFileSync(args.path, "utf8"), {
+        filename: args.path,
+        generate: "client",
+      }).js.code,
+      loader: "js",
+    }));
     build.onLoad({ filter: /\.svelte$/ }, (args) => ({
       contents: compile(readFileSync(args.path, "utf8"), {
         filename: args.path,
