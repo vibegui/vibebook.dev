@@ -835,29 +835,45 @@ try {
   await step(
     "native live Document ↔ vanilla live Document through actual Yjs/DocRoom",
     async () => {
+      const documentEvidence: { checkpoint: string; completed: string[] } = { checkpoint: "create-vanilla-peer", completed: [] };
+      report.document = documentEvidence;
+      const documentCheckpoint = (name: string) => {
+        documentEvidence.completed.push(documentEvidence.checkpoint);
+        documentEvidence.checkpoint = name;
+        console.info("[native-application:document] " + name);
+      };
       const vanilla = await peer.context.newPage();
       vanilla.on("pageerror", (error) =>
         errors.push(localBrowserError(error, base)),
       );
       await vanilla.goto(`${base}/b/${roomA}`);
+      documentCheckpoint("vanilla-real-room-ready");
       await expect(vanilla.locator(".book:not(.skel)")).toBeAttached();
       const welcome = vanilla.locator("dialog.welcome[open]");
       if (await welcome.isVisible())
         await welcome.getByRole("button", { name: /^(Skip|Pular)$/ }).click();
+      documentCheckpoint("vanilla-edit-mode");
       if ((await vanilla.locator(".doc").getAttribute("data-view")) !== "edit")
         await vanilla.locator("#docEditBar").click();
       const oldEditor = vanilla.locator("#cm .cm-content");
       await expect(oldEditor).toBeVisible();
+      documentCheckpoint("native-live-editor-synchronized");
       const editor = await nativeEdit(a);
+      documentCheckpoint("native-canonical-document-seed");
       await expect(editor).toContainText(docSeed.split("\n")[2]!);
+      documentCheckpoint("native-insert-unicode");
       await editor.click();
       await a.keyboard.press("ControlOrMeta+End");
       await a.keyboard.insertText(`\nNative integrated edit ${token}`);
+      documentCheckpoint("native-edit-arrives-at-vanilla");
       await expect(oldEditor).toContainText(`Native integrated edit ${token}`);
+      documentCheckpoint("vanilla-insert-unicode");
       await oldEditor.click();
       await vanilla.keyboard.press("ControlOrMeta+End");
       await vanilla.keyboard.insertText(`\nVanilla integrated edit ${token}`);
+      documentCheckpoint("vanilla-edit-arrives-at-native");
       await expect(editor).toContainText(`Vanilla integrated edit ${token}`);
+      documentCheckpoint("real-mcp-read-confirms-mirror");
       await expect
         .poll(
           async () =>
@@ -870,7 +886,9 @@ try {
             ).doc,
         )
         .toContain(`Vanilla integrated edit ${token}`);
+      documentCheckpoint("close-vanilla-peer");
       await vanilla.close();
+      documentCheckpoint("passed");
     },
   );
   await step(
@@ -989,6 +1007,11 @@ try {
   report.failure = {
     name: error instanceof Error ? error.name : "UnknownError",
     phase: phases.at(-1)?.name ?? "setup",
+    // Only repository-owned source locations, never exception text, URLs,
+    // document content or authorization material from the first stack line.
+    sourceLocations: error instanceof Error ? [...new Set(
+      [...(error.stack ?? "").matchAll(/\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g)].map(match => match[1]),
+    )] : [],
   };
   process.exitCode = interrupted ? 130 : 1;
 } finally {
