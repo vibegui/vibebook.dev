@@ -31,7 +31,6 @@
   <section
     data-native-needs-you
     data-vb-native
-    role="region"
     aria-label={vb.t("O que precisa de você aqui")}
     class="tw:mx-3 tw:mt-4 tw:space-y-2 tw:rounded-surface tw:border tw:border-warning/30 tw:bg-warning/10 tw:p-3 tw:font-sans tw:text-foreground"
   >

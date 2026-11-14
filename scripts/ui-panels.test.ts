@@ -2753,15 +2753,14 @@ describe("stable native sidebar integration", () => {
   test("selected archived epic remains in normal order with an accent bar and readable cue", async () => {
     const room = fixture();
     room.epics = [
-      { id: "a", title: "First", order: 1, tasks: [] },
+      { id: "a", title: "First", tasks: [] },
       {
         id: "b",
         title: "Archived target",
         archived: true,
-        order: 2,
         tasks: [],
       },
-      { id: "c", title: "Last", order: 3, tasks: [] },
+      { id: "c", title: "Last", tasks: [] },
     ];
     const h = sidebar(room, { thread: "b" });
     flushSync();
@@ -5654,7 +5653,10 @@ test("native needs-you endcard captures visible rows and rejects old connected c
   expect(writes).toEqual([]);
   await tick();
   flushSync();
-  expect(target.querySelector("[data-native-needs-you]") === null).toBe(true);
+  expect(
+    target.querySelector("[data-native-needs-you]")?.textContent,
+  ).toContain("Original title");
+  expect(target.textContent).not.toContain("Edited canonical question");
   thread = "main";
   changed();
   await tick();

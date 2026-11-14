@@ -8,6 +8,7 @@
   import Avatar from "./lib/ui/Avatar.svelte";
   import IconButton from "./lib/ui/IconButton.svelte";
   import Button from "./lib/ui/Button.svelte";
+  import { cn } from "./lib/ui/utils";
   import WaitBadge from "./features/waits/WaitBadge.svelte";
   import Progress from "./lib/ui/Progress.svelte";
   import ThreadHeader from "./features/room-sidebar/ThreadHeader.svelte";
@@ -114,10 +115,10 @@
     {#each [{ id: "main", title: room.book.title, tasks: [], owner: undefined }, ...room.epics.filter((epic) => !epic.archived || epic.id === thread)] as epic (epic.id)}
       <Button
         variant={thread === epic.id ? "secondary" : "ghost"}
-        class={[
+        class={cn(
           "tw:h-auto tw:flex-col tw:gap-1 tw:border-l-4 tw:border-l-transparent tw:p-1",
           thread === epic.id && "tw:border-l-primary",
-        ]}
+        )}
         aria-current={thread === epic.id ? "page" : undefined}
         title={epic.title}
         onclick={(event) => {
