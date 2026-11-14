@@ -1,14 +1,23 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import ts from "typescript";
 import { projectRoot } from "../svelte/build/clientBoundary";
+import { inventoryOutput } from "./inventory-output";
 
 const destination = join(projectRoot, "docs/svelte-migration");
+const output = inventoryOutput(process.argv.slice(2), projectRoot);
 const publishedBaseline = "d3e1473";
-const sources = ["src", "shared", "svelte", "collab", "vanilla"];
+const sources = [
+  "src",
+  "shared",
+  "svelte",
+  "collab",
+  "vanilla",
+  "service-worker",
+];
 type Location = { file: string; line: number };
 type NetworkCall = Location & {
   callee: string;
@@ -184,48 +193,55 @@ for (const absolute of files.sort()) {
   }
 }
 
-await mkdir(destination, { recursive: true });
-const baselinePath = join(destination, "baseline.json");
-let baselineExists = true;
-try {
-  await readFile(baselinePath);
-} catch {
-  baselineExists = false;
-}
-if (!baselineExists) {
-  const paths = [
-    "public/app.html",
-    "public/svelte/ui.js",
-    "public/collab.js",
-    "public/sw.js",
-    "public/manifest.webmanifest",
-    "src/webpush.ts",
-  ];
-  const assets = paths.map((path) => {
-    const body = execFileSync("git", ["show", `${publishedBaseline}:${path}`], {
-      cwd: projectRoot,
-      maxBuffer: 16 * 1024 * 1024,
+await mkdir(dirname(output.file), { recursive: true });
+// A separate current snapshot never creates or replaces the frozen baseline.
+if (!output.explicit) {
+  const baselinePath = join(destination, "baseline.json");
+  let baselineExists = true;
+  try {
+    await readFile(baselinePath);
+  } catch {
+    baselineExists = false;
+  }
+  if (!baselineExists) {
+    const paths = [
+      "public/app.html",
+      "public/svelte/ui.js",
+      "public/collab.js",
+      "public/sw.js",
+      "public/manifest.webmanifest",
+      "src/webpush.ts",
+    ];
+    const assets = paths.map((path) => {
+      const body = execFileSync(
+        "git",
+        ["show", `${publishedBaseline}:${path}`],
+        {
+          cwd: projectRoot,
+          maxBuffer: 16 * 1024 * 1024,
+        },
+      );
+      return {
+        path,
+        sha256: createHash("sha256").update(body).digest("hex"),
+        rawBytes: body.length,
+        gzipBytes: gzipSync(body).length,
+      };
     });
-    return {
-      path,
-      sha256: createHash("sha256").update(body).digest("hex"),
-      rawBytes: body.length,
-      gzipBytes: gzipSync(body).length,
-    };
-  });
-  await writeFile(
-    baselinePath,
-    JSON.stringify(
-      {
-        startingCommit: "9579bc4",
-        publishedBaseline,
-        variants: { vanilla: "/app and /b/ROOM", svelte: "?ui=svelte" },
-        assets,
-      },
-      null,
-      2,
-    ) + "\n",
-  );
+    await writeFile(
+      baselinePath,
+      JSON.stringify(
+        {
+          startingCommit: "9579bc4",
+          publishedBaseline,
+          variants: { vanilla: "/app and /b/ROOM", svelte: "?ui=svelte" },
+          assets,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  }
 }
 const inventory = {
   sourceRevision: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -261,10 +277,12 @@ const inventory = {
   styles,
 };
 await writeFile(
-  join(destination, "inventory.json"),
+  output.file,
   JSON.stringify(inventory, null, 2) + "\n",
+  // Refuse existing explicit targets, including symlinks/hard links to frozen records.
+  { flag: output.explicit ? "wx" : "w" },
 );
 console.log(JSON.stringify(inventory.counts));
 console.log(
-  `Wrote ${relative(projectRoot, destination)}/inventory.json; frozen vanilla baseline ${publishedBaseline}`,
+  `Wrote ${relative(projectRoot, output.file)}; frozen vanilla baseline ${publishedBaseline}`,
 );
