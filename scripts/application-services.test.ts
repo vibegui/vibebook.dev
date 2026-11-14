@@ -41,7 +41,10 @@ function event(room: Room): RoomEvent {
   const { id: _id, typing: _typing, ...state } = room;
   return { t: "state", ...state };
 }
-function fixture(initial = "http://vb.test/app") {
+function fixture(
+  initial = "http://vb.test/app",
+  shellVersion: string | null = "development",
+) {
   const timer = manualClock();
   let href = initial,
     currentMe = me(),
@@ -137,7 +140,7 @@ function fixture(initial = "http://vb.test/app") {
       },
       logoutWarning: () => {},
       logoutFailure: () => {},
-      shellVersion: "development",
+      shellVersion,
       clock: { ...timer.clock, now: () => now },
     },
     pwa: () => ({
@@ -605,4 +608,17 @@ test("known Personal global 401 revokes private scope and caches before login re
   expect(h.disposals()).toBe(1);
   h.services.dispose();
   expect(h.disposals()).toBe(1);
+});
+
+test("release availability compares the shell ETag, stays quiet on fresh load and recognizes a later release", async () => {
+  const h = fixture("http://vb.test/app?ui=svelte", "current-html-etag");
+  h.canonical(me({ v: "current-html-etag" }));
+  h.services.start();
+  await settle();
+  expect(get(h.services.state).availableVersion).toBeNull();
+  h.canonical(me({ v: "next-html-etag" }));
+  await h.services.personal.refresh(true);
+  await settle();
+  expect(get(h.services.state).availableVersion).toBe("next-html-etag");
+  h.services.dispose();
 });

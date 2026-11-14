@@ -122,6 +122,7 @@
     "scripts/terminal-vendor-policy.ts",
     "scripts/terminal-vendor-policy.test.ts",
     "scripts/native-agents-browser.ts",
-    "scripts/check-ci.ts"
+    "scripts/check-ci.ts",
+    "scripts/application-version.test.ts"
   ]
 }
