@@ -102,6 +102,17 @@ async function closeBrowser() {
   }
   await closing;
 }
+async function closeInvocationEvidence() {
+  return Promise.all([...contexts].flatMap(context=>context.pages()).map(async page=>{
+    try { return await page.evaluate(()=>window.__nativeSocketCloseObservations??[]); }
+    catch { return []; }
+  }));
+}
+function sourceLocations(error: unknown): string[] {
+  return error instanceof Error ? [...new Set(
+    [...(error.stack??"").matchAll(/\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g)].map(match=>match[1]!),
+  )] : [];
+}
 const signal = () => {
   interrupted = true;
   process.exitCode = 130;
@@ -1056,6 +1067,26 @@ try {
     },
   );
   await a.setViewportSize({ width: 1440, height: 1000 });
+  // All seven dependent core phases above must pass before any of these
+  // independent audits starts. Each later audit uses its own fresh contexts.
+  const independentAudits: {name:string;status:"running"|"passed"|"failed";failure?:{name:string;phase:string;sourceLocations:string[]};closeInvocations?:Awaited<ReturnType<typeof closeInvocationEvidence>>}[] = [];
+  const independentFailures: Error[] = [];
+  report.independentAudits=independentAudits;
+  const independentAudit=async(name:string,run:()=>Promise<void>)=>{
+    const result: (typeof independentAudits)[number]={name,status:"running"};
+    independentAudits.push(result);
+    try { if(interrupted)throw Error("Interrupted"); await run(); result.status="passed"; }
+    catch(error) {
+      result.status="failed";
+      result.failure={name:error instanceof Error?error.name:"UnknownError",phase:phases.at(-1)?.name??name,sourceLocations:sourceLocations(error)};
+      // Snapshot at this failure, before fresh audits or final teardown can
+      // let closing transports disappear and obscure the lifecycle evidence.
+      result.closeInvocations=await closeInvocationEvidence();
+      if(interrupted)throw error;
+      independentFailures.push(error instanceof Error?error:new Error("Independent audit failed"));
+    }
+  };
+  await independentAudit("lifecycle",async()=>{
   await auditNativeApplicationLifecycle({
     page: a,
     roomId: roomA,
@@ -1095,6 +1126,7 @@ try {
       report.lifecycle = evidence;
     },
   });
+  });
   const profileFixture: NativeApplicationAuditFixture = {
     base,
     roomId: roomA,
@@ -1112,7 +1144,11 @@ try {
       return { context: value.context, page };
     },
   };
-  report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
+  report.profileAuditArtifact="native-root-profiles.json";
+  await independentAudit("profiles",async()=>{
+    report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
+  });
+  await independentAudit("app-navigation-authority",async()=>{
   const appNavigation = await auditNativeAppNavigation(profileFixture);
   report.appNavigation = appNavigation;
   // A controlled replacement document inheriting the original App's room read
@@ -1127,45 +1163,24 @@ try {
       );
     },
   );
-  assert.deepEqual(errors, []);
+  });
+  await independentAudit("page-errors",async()=>{assert.deepEqual(errors, []);});
+  if(independentFailures.length)throw new AggregateError(independentFailures,"Independent native application audits failed; see each retained audit result");
   report.status = "passed";
 } catch (error) {
   report.status = interrupted ? "interrupted" : "failed";
   report.failure = {
     name: error instanceof Error ? error.name : "UnknownError",
-    phase: phases.at(-1)?.name ?? "setup",
+    phase: error instanceof AggregateError ? "post-core independent audits" : phases.at(-1)?.name ?? "setup",
     // Only repository-owned source locations, never exception text, URLs,
     // document content or authorization material from the first stack line.
-    sourceLocations:
-      error instanceof Error
-        ? [
-            ...new Set(
-              [
-                ...(error.stack ?? "").matchAll(
-                  /\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g,
-                ),
-              ].map((match) => match[1]),
-            ),
-          ]
-        : [],
+    sourceLocations:sourceLocations(error),
   };
   process.exitCode = interrupted ? 130 : 1;
 } finally {
   // Collect before closing the browser: teardown must not masquerade as an
   // application's earlier close invocation. The hook stores no socket refs.
-  report.browserCloseInvocations = await Promise.all(
-    [...contexts]
-      .flatMap((context) => context.pages())
-      .map(async (page) => {
-        try {
-          return await page.evaluate(
-            () => window.__nativeSocketCloseObservations ?? [],
-          );
-        } catch {
-          return [];
-        }
-      }),
-  );
+  report.browserCloseInvocations = await closeInvocationEvidence();
   await closeBrowser();
   contexts.clear();
   process.off("SIGINT", signal);
