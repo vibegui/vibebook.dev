@@ -136,7 +136,7 @@
     ><output data-layout-cancels>{cancelClicks}</output><output
       data-layout-sheet>{$view.sheet ?? "closed"}</output
     >
-  </div>
+  {/if}</div>
   <div
     data-layout-fixture-room
     class={rail

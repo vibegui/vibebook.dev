@@ -460,6 +460,8 @@ try {
   await expect(page.locator("[data-native-agent-setup]")).toBeVisible();
   await expect(capacityRoot).not.toHaveAttribute("data-sheet", /.+/);
   await expect(capacityRoot).toHaveAttribute("data-board-full", "false");
+  await expect.poll(() => capacityRoot.evaluate(root => root.firstElementChild?.clientHeight ?? 0)).toBeGreaterThan(0);
+  await page.evaluate(async () => { await document.fonts.ready; await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))); });
   const capacity = () => capacityRoot.evaluate(root => {
     const geometry = (element: Element | null) => {
       if (!(element instanceof HTMLElement)) return null;
@@ -486,6 +488,9 @@ try {
   await expect(page.locator("[data-room-document]")).toBeHidden();
   capacityEvidence.withoutDocument = await capacity();
   // Keep the original default-state requirement even if one diagnostic control makes Chat usable.
+  capacityEvidence.styleWrites = await page.evaluate(() => Reflect.get(window, "roomLayoutStyleWrites"));
+  assert.deepEqual(capacityEvidence.styleWrites, []);
+  assert.deepEqual(errors, []);
   assert(initialCapacity.chat && initialCapacity.chat.clientHeight > 0, "Initial mobile Chat must have positive usable height with real setup content and default closed sheets");
 
   report.status = "passed";
