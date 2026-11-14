@@ -702,6 +702,30 @@ try {
         assert(repinnedWindow.length<=60,"Repin retains a bounded message window");
         assert.equal(repinnedWindow.at(-1),"m"+id,"Real repin must reveal the actual canonical peer tail");
         Object.assign(reading,{repinnedWindow});
+        await checkpoint("real-wheel-unpin-before-own-ui-send");
+        await scroller.hover();
+        await a.mouse.wheel(0,-800);
+        await expect.poll(()=>scroller.evaluate(node=>node.scrollHeight-node.scrollTop-node.clientHeight)).toBeGreaterThan(200);
+        assert(await scroller.evaluate(node=>node.scrollTop)>150,"Own-send reading fixture must not trigger older-history loading");
+        const ownSendBefore=await anchor(a),ownText="Own native send while unpinned "+token;
+        Object.assign(reading,{ownSendBefore});
+        await checkpoint("own-ui-send-while-unpinned");
+        const composer=a.locator("[data-native-composer] #input");
+        await composer.fill(ownText);
+        await a.locator("[data-composer-send]").click();
+        await expect.poll(()=>aWire.store.get()?.messages.find(message=>message.text===ownText)?.id).toBeGreaterThan(0);
+        const ownId=aWire.store.get()?.messages.find(message=>message.text===ownText)?.id;
+        assert(ownId,"Real own-send canonical message must be observed");
+        Object.assign(reading,{ownMessage:ownId});
+        await checkpoint("own-canonical-message-forces-latest-bottom");
+        await expect(a.locator("[data-room-chat] #m"+ownId)).toBeVisible();
+        await expect(b.locator("[data-room-chat] #m"+ownId)).toContainText(ownText);
+        await expect(composer).toHaveValue("");
+        await expect.poll(()=>scroller.evaluate(node=>node.scrollHeight-node.scrollTop-node.clientHeight)).toBeLessThan(2);
+        const ownSendWindow=await windowIds();
+        assert(ownSendWindow.length<=60,"Own send must retain a bounded latest window");
+        assert.equal(ownSendWindow.at(-1),"m"+ownId,"Own send must reveal its actual canonical latest message");
+        Object.assign(reading,{ownSendWindow});
         await checkpoint("passed");
       } finally {
         try {
