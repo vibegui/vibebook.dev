@@ -27,6 +27,7 @@
     "scripts/build-mcp.ts",
     "scripts/bun-client-boundary.test.ts",
     "scripts/client-boundary-check.ts",
+    "scripts/worker-client-boundary-check.ts",
     "scripts/host-lifecycle.test.ts",
     "scripts/protocol-check.ts",
     "scripts/room-connection.test.ts",
