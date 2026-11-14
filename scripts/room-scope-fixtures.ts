@@ -8,6 +8,7 @@ import type {
 } from "../svelte/features/room-layout/types";
 import { shellFixture } from "./application-shell-fixtures";
 import { settle } from "./native-home-fixtures";
+import type { RoomTarget } from "../svelte/features/home/model";
 import type { PwaService } from "../svelte/features/pwa/service";
 import type { PushState } from "../svelte/features/notifications/reconcile";
 
@@ -49,12 +50,12 @@ function fixturePwa(): PwaService {
 
 /** Unit transport/geometry fixtures. These exercise actual feature owners;
  * synthetic canonical frames here are not a browser/server acceptance claim. */
-export async function roomScopeFixture() {
+export async function roomScopeFixture(target: string | RoomTarget = { roomId: "aaaaaa" }) {
   const app = shellFixture({}, { pwa: fixturePwa }),
     resources = createRoomResources();
   app.services.start();
   await settle();
-  app.services.actions.navigate({ roomId: "aaaaaa" });
+  app.services.actions.navigate(target);
   const room: Room = {
     id: "aaaaaa",
     me: "me@test.com",
@@ -144,7 +145,7 @@ export async function roomScopeFixture() {
       history: { pushState() {}, replaceState() {}, back() {} },
       storage: null,
       fetcher: async (input) => {
-        requests.push(String(input));
+        requests.push(input instanceof Request ? input.url : String(input));
         return new Response(JSON.stringify({ connections: [] }), {
           headers: { "content-type": "application/json" },
         });

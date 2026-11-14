@@ -1,5 +1,6 @@
 import { uiNavigationUrl } from "../../../shared/uiVariant";
-import { targetHref, messageIdentity, type RoomTarget } from "../home/model";
+import { targetHref, messageIdentity, copyRoomTarget, type RoomTarget } from "../home/model";
+import { appRouteTarget } from "../apps/model";
 export type ApplicationRoute =
   | { kind: "home" }
   | { kind: "archived" }
@@ -16,15 +17,19 @@ export function applicationRoute(href: string): ApplicationRoute {
   if (url.pathname === "/archived") return { kind: "archived" };
   if (roomId) {
     const mid = /^#m(\d+)$/.exec(url.hash)?.[1],
-      file = /^#f([a-z0-9]+)$/.exec(url.hash)?.[1];
+      file = /^#f([a-z0-9]+)$/.exec(url.hash)?.[1],
+      document = /^#doc(?::([\w-]+))?$/.exec(url.hash),
+      epic = /^#e([\w-]+)$/.exec(url.hash)?.[1],
+      app = appRouteTarget(url.hash);
     return {
       kind: "room",
       target: {
         roomId,
-        thread: url.searchParams.get("t") ?? "main",
+        thread: url.searchParams.get("t") ?? epic ?? document?.[1] ?? "main",
         messageId: messageIdentity(mid),
         fileId: file,
-        document: url.hash.startsWith("#doc"),
+        document: !!document,
+        ...(app ? { app } : {}),
       },
     };
   }
@@ -49,9 +54,10 @@ export function createApplicationRouter(options: {
     presentationThread?: PresentationThread,
   ) {
     if (!active) return;
-    if (options.deferNavigation?.(() => go(value, replace, presentationThread)))
+    const intent = typeof value === "string" ? value : copyRoomTarget(value);
+    if (options.deferNavigation?.(() => go(intent, replace, presentationThread)))
       return;
-    const target = typeof value === "string" ? value : targetHref(value),
+    const target = typeof intent === "string" ? intent : targetHref(intent),
       url = new URL(target, options.current());
     if (url.origin !== new URL(options.current()).origin) {
       options.document(url.href);

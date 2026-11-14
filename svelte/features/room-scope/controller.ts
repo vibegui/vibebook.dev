@@ -41,7 +41,7 @@ import {
   type AppsApi,
 } from "../apps/api";
 import { createAppRequests } from "../apps/requests";
-import { roomApps, type AppTarget } from "../apps/model";
+import { roomApps, appRouteHash, type AppTarget, type AppRouteTarget } from "../apps/model";
 import { mountNativeChatApp } from "../apps/embed";
 import {
   visibleChatMessages,
@@ -423,6 +423,16 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
       return;
     setPane("apps", { open: true });
     if (current()) apps.open(target);
+  }
+  function openAppRoute(target: AppRouteTarget) {
+    if (!current() || !appRouteHash(target) || defer(() => openAppRoute(target))) return;
+    if (target.tool !== undefined) { openApp({ connection: target.connection, tool: target.tool }); return; }
+    // A CID-only OAuth continuation returns to the refreshed catalog. It must
+    // never guess a tool, start sign-in again, or accept an old frame question.
+    appsStarted = true;
+    apps.back();
+    setPane("apps", { open: true });
+    if (current()) apps.load();
   }
   function retryRoom() {
     if (current() && !defer(retryRoom)) services.actions.retryRoom();
@@ -1039,6 +1049,10 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
     )
       return;
     document.chooseRoom(false);
+    if (intent.unavailableThread) {
+      showNotice(t("Esse épico não existe mais nesta sala."));
+      if (intent.target.document) return;
+    }
     if (intent.pane) setPane(intent.pane);
     if (intent.target.messageId)
       pendingMessage = {
@@ -1048,6 +1062,7 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
       };
     else if (intent.target.fileId) openFile(intent.target.fileId);
     else if (intent.target.document) setPane("doc", { open: true });
+    else if (intent.target.app) openAppRoute(intent.target.app);
     project("stay");
   }
   function transition(value: RootRoomTransition) {

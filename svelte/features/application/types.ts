@@ -20,6 +20,8 @@ export type ApplicationRoomIntent = {
   scope: ApplicationRoomScope;
   target: RoomTarget;
   pane?: DocumentPane;
+  /** Canonical room validation rejected this requested epic; never open its document as main. */
+  unavailableThread?: string;
 };
 /** A single live RoomShell, not a component/mount registry. Cleanup may only
  * detach the exact adapter installed by this scope. */

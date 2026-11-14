@@ -1,6 +1,20 @@
 import type { Room, Attachment } from "../../../shared/room";
 import type { Connection } from "../../../shared/schemas";
 export type AppTarget = { connection: string; tool: string };
+/** OAuth returns identify a connection catalog, not an invented tool to run. */
+export type AppRouteTarget = { connection: string; tool?: string };
+const appConnection = /^(?:room|[a-f0-9]{12})$/;
+const appTool = /^[\w.-]{1,100}$/;
+export function appRouteHash(target: AppRouteTarget): string | null {
+  if (typeof target.connection !== "string" || !appConnection.test(target.connection) || target.tool !== undefined && (typeof target.tool !== "string" || !appTool.test(target.tool))) return null;
+  return `#app:${target.connection}${target.tool === undefined ? "" : "/" + target.tool}`;
+}
+export function appRouteTarget(hash: string): AppRouteTarget | null {
+  const match = /^#app:([^/]+)(?:\/([^/]+))?$/.exec(hash);
+  if (!match) return null;
+  const target = { connection: match[1]!, ...(match[2] !== undefined ? { tool: match[2] } : {}) };
+  return appRouteHash(target) ? target : null;
+}
 export type RoomApp = { tool: string; title: string; file: Attachment };
 export function roomApps(room: Room): RoomApp[] {
   const seen = new Set<string>();

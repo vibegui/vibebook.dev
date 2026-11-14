@@ -12,6 +12,7 @@ import {
   createApplicationRouter,
 } from "../svelte/features/app-navigation/router";
 import { createDocumentDrafts } from "../svelte/features/documents/session";
+import { targetHref } from "../svelte/features/home/model";
 import type {
   ApplicationRoomAdapter,
   ApplicationRoomIntent,
@@ -620,5 +621,77 @@ test("release availability compares the shell ETag, stays quiet on fresh load an
   await h.services.personal.refresh();
   await settle();
   expect(get(h.services.state).availableVersion).toBe("next-html-etag");
+  h.services.dispose();
+});
+
+test("validated app catalog/tool and legacy epic/document hashes preserve explicit query precedence", () => {
+  const root = "http://vb.test/b/aaaaaa?ui=svelte", cid = "abcdef123456";
+  expect(applicationRoute(root + "#app:" + cid)).toMatchObject({ kind: "room", target: { thread: "main", app: { connection: cid } } });
+  const target = { roomId: "aaaaaa", thread: "other", app: { connection: "room", tool: "report-v2" } };
+  expect(applicationRoute(new URL(targetHref(target), root).href)).toMatchObject({ kind: "room", target });
+  expect(applicationRoute(root + "#eother")).toMatchObject({ kind: "room", target: { thread: "other", document: false } });
+  expect(applicationRoute(root + "#doc:other")).toMatchObject({ kind: "room", target: { thread: "other", document: true } });
+  expect(applicationRoute(root + "&t=main#doc:other")).toMatchObject({ kind: "room", target: { thread: "main", document: true } });
+  expect(applicationRoute(root + "&t=explicit#eother")).toMatchObject({ kind: "room", target: { thread: "explicit" } });
+  for (const hash of ["#app:foreign", "#app:" + cid + "/", "#app:" + cid + "/tool/extra", "#app:" + cid + "/%2e%2e", "#app:" + cid + "/<script>", "#doc:other:extra", "#document"]) {
+    const route = applicationRoute(root + hash);
+    expect(route.kind).toBe("room");
+    if (route.kind !== "room") throw Error("Expected room URL");
+    expect(route.target.app).toBeUndefined();
+    expect(route.target.document).toBe(false);
+  }
+});
+
+test("initial OAuth catalog return is delivered once after canonical room validation and late attachment", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa?ui=svelte#app:abcdef123456");
+  h.services.start(); await settle();
+  h.connections[0]!.callbacks.onEvent(event(canonical()));
+  const shell = adapter(); h.services.attachRoom(h.services.roomScope()!, shell.owner);
+  expect(shell.targets.map(intent => intent.target.app)).toEqual([{ connection: "abcdef123456" }]);
+  h.services.attachRoom(h.services.roomScope()!, adapter().owner);
+  expect(shell.targets).toHaveLength(1);
+  h.services.dispose();
+});
+
+test("app route ownership survives Viewer/Sheet deferral as an immutable target but cannot cross disposal", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa?ui=svelte");
+  h.services.start(); await settle(); h.connections[0]!.callbacks.onEvent(event(canonical()));
+  const shell = adapter(); h.services.attachRoom(h.services.roomScope()!, shell.owner); shell.targets.length = 0;
+  let holding = true, queued: (() => void) | undefined;
+  shell.owner.deferNavigation = callback => { if (!holding) return false; queued = callback; return true; };
+  const app = { connection: "abcdef123456", tool: "original" };
+  h.services.actions.navigate({ roomId: "aaaaaa", app });
+  app.tool = "changed-after-gesture";
+  expect(shell.targets).toHaveLength(0);
+  holding = false; queued?.();
+  expect(shell.targets.at(-1)?.target.app).toEqual({ connection: "abcdef123456", tool: "original" });
+  expect(h.connections).toHaveLength(1);
+  holding = true; h.services.actions.navigate("/b/aaaaaa?ui=svelte#app:abcdef123456");
+  h.services.dispose(); holding = false; queued?.();
+  expect(shell.targets).toHaveLength(1);
+});
+
+test("deleted legacy document target is marked unavailable instead of opening it as main", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa?ui=svelte#doc:deleted");
+  h.services.start(); await settle(); h.connections[0]!.callbacks.onEvent(event(canonical()));
+  const shell = adapter(); h.services.attachRoom(h.services.roomScope()!, shell.owner);
+  expect(shell.targets.at(-1)).toMatchObject({ target: { thread: "main", document: true }, unavailableThread: "deleted" });
+  expect(h.services.rootRoom.read().thread).toBe("main");
+  h.services.dispose();
+});
+
+test("an initial app continuation cannot survive room departure or negative canonical membership", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa?ui=svelte#app:abcdef123456");
+  h.services.start(); await settle(); h.connections[0]!.callbacks.onEvent(event(canonical()));
+  h.services.actions.navigate({ roomId: "bbbbbb" });
+  h.connections[1]!.callbacks.onEvent(event(canonical("bbbbbb")));
+  const next = adapter(); h.services.attachRoom(h.services.roomScope()!, next.owner);
+  expect(next.targets).toHaveLength(1);
+  expect(next.targets[0]?.target.app).toBeUndefined();
+  h.services.actions.navigate("/b/aaaaaa?ui=svelte#app:abcdef123456");
+  h.connections.at(-1)!.callbacks.onEvent(event({ ...canonical(), members: [] }));
+  expect(h.services.roomScope()).toBeNull();
+  expect(h.services.rootRoom.read().room).toBeNull();
+  expect(h.services.rootRoom.read().phase).toBe("removed");
   h.services.dispose();
 });

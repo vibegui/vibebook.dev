@@ -23,7 +23,7 @@ import {
 import { createAppsAuthority } from "../apps/authority";
 import { createApplicationPersonalChannel } from "./personal-channel";
 import type { createPersonalConnection } from "../home/connection";
-import type { RoomTarget } from "../home/model";
+import { copyRoomTarget, type RoomTarget } from "../home/model";
 import type { HomeSettings } from "../home/types";
 import type { DocumentPane } from "../documents/types";
 import type {
@@ -340,7 +340,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     pane?: DocumentPane,
   ) {
     pending = {
-      target: { ...target },
+      target: copyRoomTarget(target),
       navigation: router.generation(),
       roomGeneration,
       account,
@@ -382,6 +382,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     current.adapter.onTarget({
       scope,
       target: { ...value.target, thread },
+      ...(requested !== thread ? { unavailableThread: requested } : {}),
       ...(value.pane ? { pane: value.pane } : {}),
     });
   }
@@ -416,7 +417,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     }
     if (route.kind === "room") {
       pending = {
-        target: { ...route.target },
+        target: copyRoomTarget(route.target),
         navigation: router.generation(),
         roomGeneration: null,
         account: null,
@@ -432,7 +433,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
   ) {
     if (!active || !started || sessionDenied) return;
     if (resettingIdentity) {
-      queuedNavigation = { value, replace, presentationThread };
+      queuedNavigation = { value: typeof value === "string" ? value : copyRoomTarget(value), replace, presentationThread };
       return;
     }
     router.go(value, replace, presentationThread);

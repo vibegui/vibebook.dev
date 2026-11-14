@@ -107,3 +107,39 @@ test("document resize pixels do not rebuild Chat or feature props", async () => 
   expect(get(h.owner.state)).toBe(before);
   h.dispose();
 });
+
+test("CID-only OAuth return opens a fresh Apps catalog without selecting or invoking any tool", async () => {
+  const h = await roomScopeFixture("/b/aaaaaa?ui=svelte#app:abcdef123456");
+  await settle();
+  expect(get(h.app.services.state).pane).toBe("apps");
+  expect(get(h.owner.state)?.toolbar.pane).toBe("apps");
+  const apps = get(h.owner.state)!.apps.owner;
+  expect(get(apps.state).target).toBeNull();
+  expect(h.requests.filter(url => url.includes("/connections"))).toHaveLength(1);
+  expect(h.requests.every(url => url.endsWith("/connections"))).toBe(true);
+  h.dispose();
+});
+
+test("tool app route remains exact, while deferred catalog return cannot mutate a departed scope", async () => {
+  const h = await roomScopeFixture("/b/aaaaaa?ui=svelte#app:room/report-v2");
+  await settle();
+  expect(get(get(h.owner.state)!.apps.owner.state).target).toEqual({ connection: "room", tool: "report-v2" });
+  h.hold(); h.app.services.actions.navigate("/b/aaaaaa?ui=svelte#app:abcdef123456");
+  h.owner.dispose(); h.app.services.actions.home(); h.release();
+  expect(get(h.owner.state)).toBeNull();
+  expect(h.app.services.rootRoom.read().room).toBeNull();
+  h.dispose();
+});
+
+test("legacy document hashes select the real epic and never open a deleted epic as the main document", async () => {
+  const h = await roomScopeFixture("/b/aaaaaa?ui=svelte#doc:other");
+  expect(h.app.services.rootRoom.read().thread).toBe("other");
+  expect(get(get(h.owner.state)!.document.owner.state).target?.epicId).toBe("other");
+  h.owner.actions.setPane("files");
+  h.app.services.actions.navigate("/b/aaaaaa?ui=svelte#doc:deleted");
+  expect(h.app.services.rootRoom.read().thread).toBe("main");
+  expect(get(h.app.services.state).pane).toBe("files");
+  expect(get(h.owner.state)?.notice).toBeTruthy();
+  expect(h.app.roomCommands.some(command => command.t === "doc.get" && command.epic === "deleted")).toBe(false);
+  h.dispose();
+});
