@@ -24,23 +24,30 @@ test("GitHub callback refuses malformed identity and preserves safe native conti
     { email: "Fixture@example.test", primary: true, verified: true },
   ];
   let tokenStatus = 200;
+  const originalFetch = globalThis.fetch;
   const fetch = spyOn(globalThis, "fetch").mockImplementation(
-    async (input, init) => {
-      const url = String(input);
-      calls.push(url);
-      if (url === "https://github.com/login/oauth/access_token")
-        return Response.json(
-          { access_token: "synthetic-token" },
-          { status: tokenStatus },
+    Object.assign(
+      async (
+        input: Parameters<typeof globalThis.fetch>[0],
+        init?: Parameters<typeof globalThis.fetch>[1],
+      ) => {
+        const url = String(input);
+        calls.push(url);
+        if (url === "https://github.com/login/oauth/access_token")
+          return Response.json(
+            { access_token: "synthetic-token" },
+            { status: tokenStatus },
+          );
+        expect(new Headers(init?.headers).get("authorization")).toBe(
+          "Bearer synthetic-token",
         );
-      expect(new Headers(init?.headers).get("authorization")).toBe(
-        "Bearer synthetic-token",
-      );
-      if (url.endsWith("/user/emails")) return Response.json(emails);
-      if (url.endsWith("/user"))
-        return Response.json({ name: null, login: "fixture-login" });
-      throw Error("Unexpected provider URL");
-    },
+        if (url.endsWith("/user/emails")) return Response.json(emails);
+        if (url.endsWith("/user"))
+          return Response.json({ name: null, login: "fixture-login" });
+        throw Error("Unexpected provider URL");
+      },
+      { preconnect: originalFetch.preconnect },
+    ),
   );
   const request = () =>
     auth.request(
