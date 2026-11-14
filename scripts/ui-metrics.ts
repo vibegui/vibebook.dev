@@ -846,11 +846,31 @@ async function run(
           const r = row.getBoundingClientRect();
           return r.bottom > rect.top && r.top < rect.bottom;
         });
+      const room = element.closest("[data-native-room-layout]");
+      const geometry = (node: Element | null) => {
+        if (!(node instanceof HTMLElement)) return null;
+        const box = node.getBoundingClientRect(), css = getComputedStyle(node);
+        return {
+          top: box.top, bottom: box.bottom, width: box.width, height: box.height,
+          clientHeight: node.clientHeight, scrollHeight: node.scrollHeight,
+          display: css.display, position: css.position, overflowY: css.overflowY,
+          heightRule: css.height, minHeight: css.minHeight, maxHeight: css.maxHeight,
+          gridTemplateRows: css.gridTemplateRows, animationName: css.animationName,
+        };
+      };
       return {
         scrollTop: element.scrollTop,
         scrollHeight: element.scrollHeight,
         clientHeight: element.clientHeight,
         renderedMessages: rows.length,
+        nativeLayout: room ? {
+          pane: room.getAttribute("data-pane"), sheet: room.getAttribute("data-sheet"), boardFull: room.getAttribute("data-board-full"),
+          shell: geometry(room.closest("[data-native-app-shell]")),
+          root: geometry(room), viewport: geometry(room.firstElementChild),
+          cells: Object.fromEntries(["header", "peek", "attention", "chat", "composer", "document", "board"].map(role => [role, geometry(room.querySelector(`[data-room-${role}]`))])),
+          setup: geometry(room.querySelector("[data-native-agent-setup]")),
+          visualViewport: window.visualViewport ? { height: window.visualViewport.height, offsetTop: window.visualViewport.offsetTop } : null,
+        } : null,
         firstDOM: rows[0]?.id || null,
         firstVisible: visible[0]?.id || null,
       };
@@ -1037,6 +1057,8 @@ async function run(
     await checkpoint("history");
     const beforeHistory = await counters(),
       historyStart = await layout();
+    sample.historyBefore = historyStart;
+    assert(historyStart.clientHeight > 0, "History workload requires the real initial Chat scroller to have positive height");
     for (let index = 0; index < config.historyPages; index++) {
       const key = `history${index + 1}`,
         oldest = (await layout()).firstDOM,
@@ -1350,25 +1372,7 @@ async function run(
           results: window.__vbFrontendMetrics?.results ?? {},
         }))
         .catch(() => null);
-      sample.layoutAtFailure = await page
-        .evaluate(
-          ({ chatSelector, selector }) => {
-            const element = document.querySelector(chatSelector);
-            if (!element) return null;
-            const rows = element.querySelectorAll<HTMLElement>(
-              selector.replace(/^#msgs /, ""),
-            );
-            return {
-              scrollTop: element.scrollTop,
-              scrollHeight: element.scrollHeight,
-              clientHeight: element.clientHeight,
-              renderedMessages: rows.length,
-              firstDOM: rows[0]?.id || null,
-            };
-          },
-          { chatSelector, selector: messageRowSelector },
-        )
-        .catch(() => null);
+      sample.layoutAtFailure = await layout().catch(() => null);
     }
     if (!cancelled) process.exitCode = 1;
   } finally {
