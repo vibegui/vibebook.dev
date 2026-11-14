@@ -439,13 +439,16 @@ test("identity teardown flushes the old room before clearing application-owned d
   const target = { account: "me@test.com", roomId: "aaaaaa", epicId: null };
   const order: string[] = [];
   const shell = adapter();
-  shell.owner.reset = reason => {
+  shell.owner.reset = (reason) => {
     if (reason !== "identity") return;
     order.push("room");
     documents.set(target, { text: "Private old-account recovery", scroll: 0 });
   };
   h.services.attachRoom(h.services.roomScope()!, shell.owner);
-  h.duringIdentityReset(() => { order.push("bank"); documents.clear(); });
+  h.duringIdentityReset(() => {
+    order.push("bank");
+    documents.clear();
+  });
   h.canonical(me({ email: "b@test", name: "B", books: [] }));
   await h.services.personal.refresh();
   await settle();
