@@ -1008,9 +1008,16 @@ try {
   report.appNavigation = appNavigation;
   // A controlled replacement document inheriting the original App's room read
   // capability is a security finding, not a passing functional receipt.
-  await step("replacement App authority requires an explicit refusal", async () => {
-    assert.equal(appNavigation.verdict, "explicit-denial", "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass");
-  });
+  await step(
+    "replacement App authority requires an explicit refusal",
+    async () => {
+      assert.equal(
+        appNavigation.verdict,
+        "explicit-denial",
+        "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass",
+      );
+    },
+  );
   assert.deepEqual(errors, []);
   report.status = "passed";
 } catch (error) {
