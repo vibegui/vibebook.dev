@@ -1,3 +1,4 @@
+import { chunkDiagnostics } from "./build/chunkDiagnostics.ts";
 import { serviceWorkerDevelopment } from "./build/serviceWorkerDevelopment.ts";
 import tailwindcss from "@tailwindcss/vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
@@ -89,6 +90,12 @@ export default defineConfig(({ mode, command }) => ({
       compilerOptions: { css: mode === "vanilla" ? "injected" : "external" },
     }),
     ...(mode === "vanilla" ? [] : [uiVersion(join(projectRoot, "public"))]),
+    chunkDiagnostics({
+      root: projectRoot,
+      variant: mode === "vanilla" ? "vanilla" : "svelte",
+      enabled: process.env.VIBEBOOK_CHUNK_DIAGNOSTICS === "1",
+      revision: process.env.TEST_APP_REVISION,
+    }),
   ],
   build: {
     outDir:
