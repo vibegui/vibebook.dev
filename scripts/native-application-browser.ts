@@ -97,6 +97,12 @@ export async function openIntegratedPane(page: Page, pane: Exclude<DocumentPane,
   }
   await expect(layout).toHaveAttribute("data-pane", pane);
 }
+async function expectThread(page: Page, roomId: string, thread = "main") {
+  await expect.poll(() => {
+    const url = new URL(page.url());
+    return { path: url.pathname, ui: url.searchParams.get("ui"), thread: url.searchParams.get("t") ?? "main" };
+  }).toEqual({ path: "/b/" + roomId, ui: "svelte", thread });
+}
 async function nativeEdit(page: Page) {
   await openIntegratedPane(page, "doc"); const editor = page.locator("[data-document-editor] .cm-content");
   if (!await editor.isVisible()) await page.locator("[data-native-document] > footer").getByRole("button", { name: /^(Edit|Editar)$/ }).click();
@@ -142,12 +148,12 @@ try {
     await expect(a.locator('[data-vb-native="update"]')).toHaveCount(0);
     await a.locator(`[data-vb-native="home"] [data-room-id="${roomA}"] a`).click();
     await expect(a.locator("[data-native-app-shell] [data-native-room-layout]")).toBeVisible(); await expect.poll(() => aWire.store.get()?.me).toBe(ownerEmail);
-    const composer = a.locator("[data-native-composer] #input"); await composer.fill(`Root draft ${token}`); await openIntegratedSidebar(a); await a.locator(`[data-epic-thread="${epic}"]`).click(); await expect(a).toHaveURL(new RegExp(`#e${epic}$`)); await expect(composer).toHaveValue(""); await composer.fill(`Thread draft ${token}`);
-    await a.goBack(); await expect(a).not.toHaveURL(new RegExp(`#e${epic}$`)); await expect(composer).toHaveValue(`Root draft ${token}`);
+    const composer = a.locator("[data-native-composer] #input"); await composer.fill(`Root draft ${token}`); await openIntegratedSidebar(a); await a.locator(`[data-epic-thread="${epic}"]`).click(); await expectThread(a,roomA,epic); await expect(composer).toHaveValue(""); await composer.fill(`Thread draft ${token}`);
+    await a.goBack(); await expectThread(a,roomA); await expect(composer).toHaveValue(`Root draft ${token}`);
     await a.locator('[data-vb-native="room-navigation"]').getByRole("button", { name:"Your vibebooks", exact:true }).click(); await expect(a.locator('[data-vb-native="home"]')).toBeVisible();
     await a.locator(`[data-vb-native="home"] [data-room-id="${roomB}"] a`).click(); await expect(composer).toBeVisible(); await expect(composer).toHaveValue(""); await composer.fill(`Second room draft ${token}`);
     await a.goBack(); await expect(a.locator('[data-vb-native="home"]')).toBeVisible(); await a.goBack(); await expect(a.locator("[data-native-room-layout]")).toBeVisible(); await expect(composer).toHaveValue(`Root draft ${token}`);
-    await openIntegratedSidebar(a); await a.locator(`[data-epic-thread="${epic}"]`).click(); await expect(composer).toHaveValue(`Thread draft ${token}`); await a.goBack(); await expect(composer).toHaveValue(`Root draft ${token}`);
+    await openIntegratedSidebar(a); await a.locator(`[data-epic-thread="${epic}"]`).click(); await expectThread(a,roomA,epic); await expect(composer).toHaveValue(`Thread draft ${token}`); await a.goBack(); await expectThread(a,roomA); await expect(composer).toHaveValue(`Root draft ${token}`);
     await b.goto(`${base}/b/${roomA}?ui=svelte`); await expect.poll(() => bWire.store.get()?.me).toBe(peerEmail); await expect(b.locator("[data-native-composer] #input")).toBeVisible();
   });
   await step("actual native compose → Worker ACK/canonical Book WS → second native client", async () => {
@@ -180,8 +186,8 @@ try {
     await expect.poll(async()=>z.object({doc:z.string()}).parse(await agent("read_room",{room_id:roomA,thread:"main",limit:1})).doc).toContain(`Vanilla integrated edit ${token}`);await vanilla.close();
   });
   await step("mobile real sidebar thread entry and Viewer/sheet navigation baseline", async () => {
-    await a.setViewportSize({width:390,height:900});await openIntegratedSidebar(a);await a.locator(`[data-epic-thread="${epic}"]`).click();await expect(a).toHaveURL(new RegExp(`#e${epic}$`));await expect(a.locator("[data-native-composer] #input")).toHaveValue(`Thread draft ${token}`);
-    await a.goBack();await expect(a.locator("[data-native-room-layout]")).toBeVisible();await expect(a).not.toHaveURL(new RegExp(`#e${epic}$`));
+    await a.setViewportSize({width:390,height:900});await openIntegratedSidebar(a);await a.locator(`[data-epic-thread="${epic}"]`).click();await expectThread(a,roomA,epic);await expect(a.locator("[data-native-composer] #input")).toHaveValue(`Thread draft ${token}`);
+    await a.goBack();await expect(a.locator("[data-native-room-layout]")).toBeVisible();await expectThread(a,roomA);
     await openIntegratedPane(a,"files");await a.locator(`[data-vb-native="files"] [data-file-id="${fileId}"]`).getByRole("button").first().click();await expect(a.locator("[data-file-viewer]")).toBeVisible();
     await a.goBack();await expect(a.locator("[data-file-viewer]")).toHaveCount(0);await expect(a.locator("[data-native-room-layout]")).toHaveAttribute("data-sheet","doc");
     await a.goBack();await expect.poll(()=>a.locator("[data-native-room-layout]").getAttribute("data-sheet")).toBeNull();
@@ -194,10 +200,10 @@ try {
     async openRoom(id,thread) {
       // Preserve this document and application heap across real router cycles.
       await a.locator('[data-vb-native="room-navigation"] [data-room-id="'+id+'"] a').click();
-      await expect.poll(()=>new URL(a.url()).pathname+new URL(a.url()).hash).toBe('/b/'+id);
+      await expectThread(a,id);
       await expect(a.locator("[data-native-room-layout]")).toBeVisible();
       await expect(a.locator("[data-native-composer] #input")).toBeVisible();
-      if(thread) { await openIntegratedSidebar(a); await a.locator('[data-epic-thread="'+thread+'"]').click(); await expect.poll(()=>new URL(a.url()).hash).toBe('#e'+thread); }
+      if(thread) { await openIntegratedSidebar(a); await a.locator('[data-epic-thread="'+thread+'"]').click(); await expectThread(a,id,thread); }
     },
     async openEditor(){await nativeEdit(a);},
     async closeEditor(){ await a.locator("[data-native-document] > footer").getByRole("button",{name:"Done",exact:true}).click(); await expect(a.locator("[data-document-editor] .cm-editor")).toHaveCount(0); },
