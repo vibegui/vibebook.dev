@@ -9,7 +9,7 @@ The clean `b247805` inventory found 31 explicit `any` candidates, all in backend
 | `src/mcp.ts` | 1 | The same runtime envelope schema and argument-record guard protect admin method dispatch. |
 | `src/mcpauth.ts` | 6 | Replaced with runtime-validated discovery, registration, grant and error projections. Focused provider-boundary tests pass 7 tests / 92 assertions; final combined checks remain required. |
 | `src/mcpconn.ts` | 9 | Typed route contexts and runtime-narrowed external JSON/SSE and CSP metadata. Malformed CSP values cannot trigger coercion; focused tests pass 8 tests / 111 assertions. |
-| `src/reports.ts` | 12 | Validate the Cloudflare GraphQL response shapes consumed by reports; preserve explicit unavailable/error results. |
+| `src/reports.ts` | 12 | Replaced with runtime schemas for all four consumed GraphQL query shapes, REST zones and OpenRouter key usage. Successful `errors: null` envelopes remain compatible; malformed nested numbers/containers produce explicit unavailable results. Focused tests pass 8 tests / 48 assertions. |
 
 The session change passes three local tests / 15 assertions through actual Hono requests, HMAC signing and `sessionEmail`/`identify`: valid identity and revocation, signed malformed payloads, expiration and tampering. Strict backend checking also passes. The database is an explicit fixture port; production persistence and browser/OAuth acceptance are not established by this unit cohort.
 
@@ -31,3 +31,12 @@ HTTP assertions in `src/book.ts`, remaining provider JSON in other backend
 services, and localized vendor/runtime double assertions require separate
 inspection and disposition. M1 remains open until those paths and the final
 combined source have appropriate validation/evidence.
+
+The initial Book cohort validates stored notes/grade flags, epic hash caches,
+production metadata, suggestions, attachment summaries, file rows and polls,
+plus the internal file-write request. Valid siblings and older nullable optional
+fields remain supported; poll options are never filtered individually because
+their indices own persisted votes. Seven tests / 42 assertions include actual
+Book method and HTTP-handler calls through explicit SQL/DO fixture ports. See
+[book-stored-boundary.md](book-stored-boundary.md) for the remaining direct JSON,
+HTTP and scalar-cast paths; this cohort is not real SQLite/Worker evidence.

@@ -33,12 +33,21 @@ import type {
 } from "./native-application-browser-types";
 
 type SocketCloseObservation = {
-  path: string; invokedMs: number; readyBefore: number; readyAfter?: number;
-  codePassed: number | null; closedMs?: number; lifetimeAfterInvocationMs?: number;
-  closedCode?: number; wasClean?: boolean; threw?: string;
+  path: string;
+  invokedMs: number;
+  readyBefore: number;
+  readyAfter?: number;
+  codePassed: number | null;
+  closedMs?: number;
+  lifetimeAfterInvocationMs?: number;
+  closedCode?: number;
+  wasClean?: boolean;
+  threw?: string;
 };
 declare global {
-  interface Window { __nativeSocketCloseObservations?: SocketCloseObservation[]; }
+  interface Window {
+    __nativeSocketCloseObservations?: SocketCloseObservation[];
+  }
 }
 import { auditNativeApplicationProfiles } from "./native-application-profiles";
 import { auditNativeAppNavigation } from "./native-app-navigation-probe";
@@ -136,28 +145,54 @@ async function identity(
   context.setDefaultNavigationTimeout(90_000);
   await nativeBrowserFixtures(context, base);
   await context.addInitScript((origin) => {
-    const began = Date.now(), original = WebSocket.prototype.close;
+    const began = Date.now(),
+      original = WebSocket.prototype.close;
     const observations: SocketCloseObservation[] = [];
     window.__nativeSocketCloseObservations = observations;
-    WebSocket.prototype.close = function(this: WebSocket, ...args: Parameters<WebSocket["close"]>) {
+    WebSocket.prototype.close = function (
+      this: WebSocket,
+      ...args: Parameters<WebSocket["close"]>
+    ) {
       const url = new URL(this.url);
       const local = url.host === new URL(origin).host;
       const path = url.pathname;
-      if (!local || !/^\/(?:ws\/[a-f0-9]{6,40}|yjs\/[a-f0-9]{6,40}(?:~[\w-]+)?|ws-me)$/.test(path)) return original.apply(this,args);
-      const observation: SocketCloseObservation = {path,invokedMs:Date.now()-began,readyBefore:this.readyState,codePassed:args[0]??null};
-      if(observations.length===128)observations.shift();
+      if (
+        !local ||
+        !/^\/(?:ws\/[a-f0-9]{6,40}|yjs\/[a-f0-9]{6,40}(?:~[\w-]+)?|ws-me)$/.test(
+          path,
+        )
+      )
+        return original.apply(this, args);
+      const observation: SocketCloseObservation = {
+        path,
+        invokedMs: Date.now() - began,
+        readyBefore: this.readyState,
+        codePassed: args[0] ?? null,
+      };
+      if (observations.length === 128) observations.shift();
       observations.push(observation);
-      this.addEventListener("close", event => {
-        observation.closedMs=Date.now()-began;
-        observation.lifetimeAfterInvocationMs=observation.closedMs-observation.invokedMs;
-        observation.closedCode=event.code;
-        observation.wasClean=event.wasClean;
-      },{once:true});
-      try { return original.apply(this,args); }
-      catch(error) { observation.threw=error instanceof Error?error.name:"UnknownError"; throw error; }
-      finally { observation.readyAfter=this.readyState; }
+      this.addEventListener(
+        "close",
+        (event) => {
+          observation.closedMs = Date.now() - began;
+          observation.lifetimeAfterInvocationMs =
+            observation.closedMs - observation.invokedMs;
+          observation.closedCode = event.code;
+          observation.wasClean = event.wasClean;
+        },
+        { once: true },
+      );
+      try {
+        return original.apply(this, args);
+      } catch (error) {
+        observation.threw =
+          error instanceof Error ? error.name : "UnknownError";
+        throw error;
+      } finally {
+        observation.readyAfter = this.readyState;
+      }
     };
-  },base);
+  }, base);
   await context.addCookies([
     { name: "dev_as", value: email, url: base },
     { name: "vb_lang", value: profile.lang, url: base },
@@ -1118,10 +1153,19 @@ try {
 } finally {
   // Collect before closing the browser: teardown must not masquerade as an
   // application's earlier close invocation. The hook stores no socket refs.
-  report.browserCloseInvocations = await Promise.all([...contexts].flatMap(context=>context.pages()).map(async page=>{
-    try { return await page.evaluate(()=>window.__nativeSocketCloseObservations??[]); }
-    catch { return []; }
-  }));
+  report.browserCloseInvocations = await Promise.all(
+    [...contexts]
+      .flatMap((context) => context.pages())
+      .map(async (page) => {
+        try {
+          return await page.evaluate(
+            () => window.__nativeSocketCloseObservations ?? [],
+          );
+        } catch {
+          return [];
+        }
+      }),
+  );
   await closeBrowser();
   contexts.clear();
   process.off("SIGINT", signal);
