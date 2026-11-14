@@ -155,6 +155,7 @@ function sample() {
   }
 }
 async function launch(label: string) {
+  assert(!interrupted, "HMR harness interrupted before development launch");
   observed.clear();
   logFd = openSync(`${output}/${label}.log`, "w");
   child = Bun.spawn([process.execPath, "run", "dev:app"], {

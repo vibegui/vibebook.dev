@@ -44,7 +44,8 @@ try {
   );
   await writeFile(vars, syntheticVars, { flag: "wx", mode: 0o600 });
   ownedVars = true;
-  child = Bun.spawn([process.execPath, "run", "test:app-hmr"], {
+  assert(!interrupted, "Runner interrupted before harness launch");
+  child = Bun.spawn([process.execPath, "scripts/app-hmr-browser.ts"], {
     cwd: root,
     stdin: "ignore",
     stdout: "inherit",
