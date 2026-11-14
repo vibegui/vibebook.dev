@@ -5,9 +5,10 @@ export function rule(m: RuleMsg, email: string): { arm: "rule"; decision: "ignor
   if (m.author === email && m.agent) return "skip"; // your own Claudes' posts
   if (m.author === "ai") return m.tag === "reminder" && m.for_who === email ? { arm: "rule", decision: "wake", why: "seu lembrete" } : "skip";
   if (m.agent && !m.mentions_you) return "skip"; // other people's Claudes talking among themselves
-  // Your own messages are your instructions: they always reach your Claude (Gui, 13/11: an epic request in another
-  // room and his answer here were ignored). The router only filters what other people write.
-  if (m.author === email) return { arm: "rule", decision: "wake", why: "mensagem sua" };
+  // Your own messages go to Jev too (Gui, 14/11, #2319: "concordo em tirar a regra fixa"; Gimenes wanted to talk to
+  // a person without his Codex answering): route() asks whether you're talking to your Claude, biased to wake, since
+  // on 13/11 a request of Gui's was missed when the router could ignore his messages.
+  if (m.author === email) return null;
   // Another person's message that doesn't mention you is for whoever it answers or whoever owns the epic. Jev read
   // Gui's requests to his own Claude as work for Gimenes's (for_them 0.75), and Haiku answered one in Gimenes's name
   // (#2250, 14/11). No model needed to see who it's addressed to.

@@ -10,8 +10,8 @@ import { rule } from "./router-rule";
 /**
  * The hub's router (Nov 2026; an A/B of three arms in room f94aedb83899 #1959-#1961, then on for everyone with hybrid on
  * 14/11, #2245): a new message in a room where a person's Claude listens no longer wakes that Claude by itself. Fixed
- * rules first (your own messages always wake; other people's that answer someone else or sit in someone else's epic,
- * without mentioning you, are ignored), then Jev decides (is it for you, is it work, can the memory answer it, is it
+ * rules first (other people's messages that answer someone else or sit in someone else's epic, without mentioning
+ * you, are ignored; your own go to Jev, biased to wake: are you talking to your agent or to people?), then Jev decides (is it for you, is it work, can the memory answer it, is it
  * risky: ~1s, input-only billing) and Haiku writes only the answers, with their source. Off per person with
  * `users.router = 0`. Every decision is a D1 `router_log` row (`router_stats`, the room app).
  * Fails safe: a model that errs or times out means "wake", an answer with no source means "wake", and a risky message
@@ -76,7 +76,20 @@ async function jev(env: Env, name: string, memory: string, m: Msg) {
 }
 
 /** One message through its arm. Never throws: a failure is "wake". */
-async function route(env: Env, name: string, memory: string, m: Msg): Promise<Out> {
+/** Your own message: are you talking to your Claude, or only to other people? Wakes unless Jev is clearly sure it's
+ * the latter (< 0.25); Jev down = wake. */
+async function own(env: Env, name: string, memory: string, m: Msg): Promise<Out> {
+  const t0 = Date.now();
+  const r = await decide(env, { memory: memory.slice(0, 2000), thread: m.topic, recent: m.recent.slice(0, 1500), message: `${m.from}: ${m.text}`.slice(0, 1500) }, {
+    to_claude: { type: "noul", instructions: `${name} wrote this message. Is ${name} asking or telling their own AI agent (their Claude, Codex or any agent of theirs, maybe called by its name) something, or saying something it should act on or answer? Answer no only when ${name} is clearly talking to other people (answering a person, asking a person's opinion, @mentioning someone to ask them, chatting), or addressing another person's agent.` },
+  }).catch(() => null);
+  const p = r?.answers.to_claude?.noul;
+  if (p === undefined) return { arm: "hybrid", decision: "wake", why: "mensagem sua · Jev falhou", ms: Date.now() - t0, cost: 0 };
+  return { arm: "hybrid", decision: p < 0.25 ? "ignore" : "wake", why: `mensagem sua · pro seu Claude: ${p.toFixed(2)}`, ms: Date.now() - t0, cost: r?.cost ?? 0 };
+}
+
+async function route(env: Env, name: string, memory: string, m: Msg, email: string): Promise<Out> {
+  if (m.author === email) return own(env, name, memory, m);
   const t0 = Date.now();
   // The A/B is over (14/11, Gui: hybrid as the default): Jev decides, Haiku only writes the answers. The old arms stay
   // in router_log (and the Arm type) for the history.
@@ -116,7 +129,7 @@ export async function gate(env: Env, me: { email: string; agent: string }, bookI
       continue;
     }
     if (!fixed && ++routed > MAX_ROUTED) return true;
-    const out: Out = fixed ? { ...fixed, ms: 0, cost: 0 } : await route(env, input.name, input.memory, m);
+    const out: Out = fixed ? { ...fixed, ms: 0, cost: 0 } : await route(env, input.name, input.memory, m, me.email);
     // One decision per message and person, even with two listeners deciding at once: only the row's writer acts on it.
     const ins = await db
       .prepare(`INSERT INTO router_log (book_id, msg_id, email, arm, decision, why, source, ms, cost, text, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`)

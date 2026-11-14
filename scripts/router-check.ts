@@ -6,7 +6,7 @@ const d = (r: ReturnType<typeof rule>) => (r === null ? "model" : r === "skip" ?
 const cases: [string, ReturnType<typeof rule>, string][] = [
   ["Gui's request in Gui's epic, for Gimenes", rule({ ...base, author: G, epic_owner: G }, M), "ignore"],
   ["Gui replying to his own Claude, for Gimenes", rule({ ...base, author: G, reply_author: G }, M), "ignore"],
-  ["Gui's message, for Gui", rule({ ...base, author: G, epic_owner: M }, G), "wake"],
+  ["Gui's message, for Gui: Jev decides (biased to wake)", rule({ ...base, author: G, epic_owner: M }, G), "model"],
   ["Gui @mentions Gimenes in Gui's epic", rule({ ...base, author: G, epic_owner: G, mentions_you: true }, M), "model"],
   ["Gui replies to Gimenes's Claude", rule({ ...base, author: G, reply_author: M }, M), "model"],
   ["Gui in the main thread, no epic", rule({ ...base, author: G }, M), "model"],
