@@ -67,7 +67,14 @@ export class OpaqueAppTransport implements Transport {
     private legacy?: (value: { height: number } | { text: string }) => void,
     revoked?: () => void,
   ) {
-    this.documentHost = createAppDocumentHost({ frame, current, receive: value => this.receive(value), revoked: () => { if (!this.closed) revoked?.(); } });
+    this.documentHost = createAppDocumentHost({
+      frame,
+      current,
+      receive: (value) => this.receive(value),
+      revoked: () => {
+        if (!this.closed) revoked?.();
+      },
+    });
   }
   private receive = (value: unknown) => {
     if (this.closed || !this.current() || !this.documentHost.active()) return;
@@ -122,10 +129,18 @@ export class OpaqueAppTransport implements Transport {
       throw Error("App is no longer active");
     await this.documentHost.post(message);
   }
-  attest() { return this.documentHost.attest(); }
-  active() { return !this.closed && this.documentHost.active(); }
-  loadHtml(html: string) { this.documentHost.loadHtml(html); }
-  loadFile(url: string) { this.documentHost.loadFile(url); }
+  attest() {
+    return this.documentHost.attest();
+  }
+  active() {
+    return !this.closed && this.documentHost.active();
+  }
+  loadHtml(html: string) {
+    this.documentHost.loadHtml(html);
+  }
+  loadFile(url: string) {
+    this.documentHost.loadFile(url);
+  }
   async close() {
     if (this.closed) return;
     this.closed = true;

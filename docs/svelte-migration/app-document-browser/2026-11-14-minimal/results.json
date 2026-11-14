@@ -1,0 +1,21 @@
+{
+  "revision": "32d59ad91b7bb873023aa7999e12c891605d92f3",
+  "scope": "real Chromium opaque srcdoc/native MessageEvent; no Worker/file POST/provider proof",
+  "status": "passed",
+  "initial": {
+    "fixture": "initial",
+    "value": "private-fixture-value",
+    "trusted": true,
+    "source": true,
+    "origin": "http://127.0.0.1:40727"
+  },
+  "replacement": {
+    "fixture": "replacement",
+    "denied": true,
+    "leaked": false
+  },
+  "requests": 1,
+  "replacementRequests": 1,
+  "sameProxy": true,
+  "pageErrors": []
+}

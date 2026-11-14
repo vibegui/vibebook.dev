@@ -27,42 +27,62 @@
     bridgeRevoked = $state(false),
     bridgeFailed = $state(untrack(() => !actions.mountEmbed)),
     bridgeReady = $state(untrack(() => !actions.mountEmbed));
-  const consent = createAppConsent(() => active && !bridgeDenied && !bridgeFailed && !bridgeRevoked),
+  const consent = createAppConsent(
+      () => active && !bridgeDenied && !bridgeFailed && !bridgeRevoked,
+    ),
     question = consent.question;
   const ask = consent.ask;
   function attachFrame(node: HTMLIFrameElement) {
     const ticket = ++epoch;
     const current = () => active && epoch === ticket && node.isConnected;
     const detach = actions.mountEmbed?.(node, file, {
-          ask: (what, detail) => current() ? ask(what, detail) : Promise.resolve(false),
-          ready: () => {
-            if (current() && !bridgeDenied && !bridgeFailed && !bridgeRevoked) bridgeReady = true;
-          },
-          cancel: () => { if (current()) consent.cancel(); },
-          deny: () => {
-            if (!current()) return;
-            bridgeDenied = true;
-            consent.cancel();
-          },
-          fail: () => {
-            if (!current()) return;
-            bridgeFailed = true;
-            consent.cancel();
-          },
-          revoked: () => { if (current()) bridgeRevoked = true; },
-          thread: messageThread,
-          resize: (requested) => {
-            if (!current() || bridgeDenied || bridgeFailed || bridgeRevoked || !Number.isFinite(requested)) return;
-            const cap = Math.min(420, Math.round(window.innerHeight * 0.55));
-            const next = Math.max(Math.ceil(requested) + 2, 40);
-            height = Math.min(next, cap);
-            clipped = next > cap;
-          },
-        });
-    return { destroy() {
-      if (epoch === ticket) { epoch++; consent.cancel(); }
-      detach?.();
-    } };
+      ask: (what, detail) =>
+        current() ? ask(what, detail) : Promise.resolve(false),
+      ready: () => {
+        if (current() && !bridgeDenied && !bridgeFailed && !bridgeRevoked)
+          bridgeReady = true;
+      },
+      cancel: () => {
+        if (current()) consent.cancel();
+      },
+      deny: () => {
+        if (!current()) return;
+        bridgeDenied = true;
+        consent.cancel();
+      },
+      fail: () => {
+        if (!current()) return;
+        bridgeFailed = true;
+        consent.cancel();
+      },
+      revoked: () => {
+        if (current()) bridgeRevoked = true;
+      },
+      thread: messageThread,
+      resize: (requested) => {
+        if (
+          !current() ||
+          bridgeDenied ||
+          bridgeFailed ||
+          bridgeRevoked ||
+          !Number.isFinite(requested)
+        )
+          return;
+        const cap = Math.min(420, Math.round(window.innerHeight * 0.55));
+        const next = Math.max(Math.ceil(requested) + 2, 40);
+        height = Math.min(next, cap);
+        clipped = next > cap;
+      },
+    });
+    return {
+      destroy() {
+        if (epoch === ticket) {
+          epoch++;
+          consent.cancel();
+        }
+        detach?.();
+      },
+    };
   }
   onDestroy(() => {
     active = false;
@@ -70,7 +90,17 @@
     consent.dispose();
   });
   function retry(event: MouseEvent, generation: number) {
-    if (!active || generation !== frameGeneration || !bridgeFailed || bridgeDenied || !actions.mountEmbed || !event.currentTarget || !(event.currentTarget instanceof HTMLElement) || !event.currentTarget.isConnected) return;
+    if (
+      !active ||
+      generation !== frameGeneration ||
+      !bridgeFailed ||
+      bridgeDenied ||
+      !actions.mountEmbed ||
+      !event.currentTarget ||
+      !(event.currentTarget instanceof HTMLElement) ||
+      !event.currentTarget.isConnected
+    )
+      return;
     consent.cancel();
     bridgeFailed = false;
     bridgeRevoked = false;
@@ -96,15 +126,15 @@
 
 <div data-chat-embed class="tw:w-full tw:space-y-2">
   {#if !bridgeDenied}{#key frameGeneration}<iframe
-      use:attachFrame
-      sandbox="allow-scripts"
-      loading="lazy"
-      hidden={bridgeFailed}
-      aria-busy={!bridgeReady}
-      title={file.name}
-      {height}
-      class="tw:w-full tw:rounded-control tw:border tw:border-border"
-    ></iframe>{/key}{:else}<p
+        use:attachFrame
+        sandbox="allow-scripts"
+        loading="lazy"
+        hidden={bridgeFailed}
+        aria-busy={!bridgeReady}
+        title={file.name}
+        {height}
+        class="tw:w-full tw:rounded-control tw:border tw:border-border"
+      ></iframe>{/key}{:else}<p
       role="alert"
       class="tw:m-0 tw:text-sm tw:text-muted-foreground"
     >
@@ -114,10 +144,24 @@
       role="alert"
       class="tw:m-0 tw:text-sm tw:text-muted-foreground"
     >
-      {bridgeRevoked ? (vb.locale?.startsWith("en") ? "This app document closed. Reopen the app to continue." : "O documento deste app foi fechado. Abra o app de novo para continuar.") : vb.t(
-        "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.",
-      )}
-    </p>{#if actions.mountEmbed && !bridgeDenied}{#key frameGeneration}<Snapshot value={frameGeneration}>{#snippet children(generation)}<Button variant="outline" onclick={(event) => retry(event, generation)}>{vb.locale?.startsWith("en") ? "Reopen app" : "Abrir app de novo"}</Button>{/snippet}</Snapshot>{/key}{/if}{/if}
+      {bridgeRevoked
+        ? vb.locale?.startsWith("en")
+          ? "This app document closed. Reopen the app to continue."
+          : "O documento deste app foi fechado. Abra o app de novo para continuar."
+        : vb.t(
+            "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.",
+          )}
+    </p>
+    {#if actions.mountEmbed && !bridgeDenied}{#key frameGeneration}<Snapshot
+          value={frameGeneration}
+          >{#snippet children(generation)}<Button
+              variant="outline"
+              onclick={(event) => retry(event, generation)}
+              >{vb.locale?.startsWith("en")
+                ? "Reopen app"
+                : "Abrir app de novo"}</Button
+            >{/snippet}</Snapshot
+        >{/key}{/if}{/if}
   <a
     href={url}
     onclick={open}

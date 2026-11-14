@@ -377,7 +377,11 @@ export async function auditAppDocumentAdversarial(
     report.freshOpen = await state();
     await setup("legacy");
     await expect
-      .poll(async () => (await state()).observations.some((item) => item.kind === "legacy-response" && item.id === 1 && item.ok))
+      .poll(async () =>
+        (await state()).observations.some(
+          (item) => item.kind === "legacy-response" && item.id === 1 && item.ok,
+        ),
+      )
       .toBe(true);
     const live = await page.locator("[data-matrix-frame]").elementHandle();
     const realm = await live?.contentFrame();

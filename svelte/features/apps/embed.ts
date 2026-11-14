@@ -79,9 +79,13 @@ export function mountNativeChatApp(options: {
     const tools = createRoomAppTools({
       room: options.room,
       current: documentCurrent,
-      request: async command => {
-        const result = await appDocumentAction(current, () => bridge, () => options.request(command));
-        return result.ok ? result.value : {ok:false,error:"disconnected"};
+      request: async (command) => {
+        const result = await appDocumentAction(
+          current,
+          () => bridge,
+          () => options.request(command),
+        );
+        return result.ok ? result.value : { ok: false, error: "disconnected" };
       },
       name: options.name,
       ask: options.controls.ask,
@@ -92,10 +96,16 @@ export function mountNativeChatApp(options: {
         return current() ? result.connections : [];
       },
       call: async (cid, tool, args) => {
-        const result = await appDocumentAction(current, () => bridge, () => requests
-          .run((signal) => api.call(cid, tool, args, signal))
-          .catch(membershipError));
-        if (!result.ok || !documentCurrent()) throw Error("App is no longer active");
+        const result = await appDocumentAction(
+          current,
+          () => bridge,
+          () =>
+            requests
+              .run((signal) => api.call(cid, tool, args, signal))
+              .catch(membershipError),
+        );
+        if (!result.ok || !documentCurrent())
+          throw Error("App is no longer active");
         return protocol.remoteToolResult(result.value.result);
       },
       metric: (kind, roomOnly) =>
@@ -148,7 +158,9 @@ export function mountNativeChatApp(options: {
     });
     await bridge.ready;
     if (current()) {
-      bridge.loadFile(`/api/books/${encodeURIComponent(roomId)}/files/${encodeURIComponent(options.file.id)}`);
+      bridge.loadFile(
+        `/api/books/${encodeURIComponent(roomId)}/files/${encodeURIComponent(options.file.id)}`,
+      );
       options.controls.ready();
     }
   }

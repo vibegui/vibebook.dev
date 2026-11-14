@@ -536,14 +536,16 @@ try {
       // Human posts intentionally render literally. Use a real agent post for
       // the existing Markdown path, never change product rendering for a test.
       // MCP agentPost returns ok/id; HTTP humanPost additionally returns thread.
-      const codeMessage = z.object({ ok: z.literal(true), id: z.number() }).parse(
-        await agent("post", {
-          room_id: roomA,
-          thread: "main",
-          model: "native-browser-fixture",
-          text: "```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
-        }),
-      );
+      const codeMessage = z
+        .object({ ok: z.literal(true), id: z.number() })
+        .parse(
+          await agent("post", {
+            room_id: roomA,
+            thread: "main",
+            model: "native-browser-fixture",
+            text: "```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
+          }),
+        );
       assert(codeMessage.ok);
       codeMessageId = codeMessage.id;
       await post(owner.context, roomA, `Real epic message ${token}`, epic);

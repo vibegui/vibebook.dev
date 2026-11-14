@@ -37,7 +37,8 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
   const ownerCurrent = () =>
     active && options.current() && options.frame.isConnected;
   const current = () => ownerCurrent() && transport.active();
-  const attest = async () => ownerCurrent() && (await transport.attest()) && current();
+  const attest = async () =>
+    ownerCurrent() && (await transport.attest()) && current();
   const ask: AppAsk = async (what, detail) => {
     if (!current() || pendingAsks >= 16) return false;
     pendingAsks++;
@@ -71,11 +72,16 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
     },
     { hostContext: options.context() },
   );
-  const transport = new OpaqueAppTransport(options.frame, ownerCurrent, (value) => {
-    if ("height" in value) {
-      if (Number.isFinite(value.height)) options.resize?.(value.height);
-    } else void message(value.text).catch(() => {});
-  }, options.revoked);
+  const transport = new OpaqueAppTransport(
+    options.frame,
+    ownerCurrent,
+    (value) => {
+      if ("height" in value) {
+        if (Number.isFinite(value.height)) options.resize?.(value.height);
+      } else void message(value.text).catch(() => {});
+    },
+    options.revoked,
+  );
   bridge.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: current() ? options.tools : [],
   }));

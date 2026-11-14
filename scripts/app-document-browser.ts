@@ -61,6 +61,7 @@ try {
     const frame = document.createElement("iframe");
     frame.sandbox.add("allow-scripts");
     document.body.append(frame);
+    const initialWindow = frame.contentWindow;
     const state = {
       initial: null as unknown,
       replacement: null as unknown,
@@ -71,7 +72,11 @@ try {
     window.addEventListener("message", (event) => {
       if (event.source !== frame.contentWindow) return;
       if (event.data?.fixture === "initial") state.initial = event.data;
-      if (event.data?.fixture === "replacement") state.replacement = event.data;
+      if (event.data?.fixture === "replacement") {
+        state.replacement = event.data;
+        state.sameProxy =
+          initialWindow !== null && initialWindow === frame.contentWindow;
+      }
     });
     const host = module.createAppDocumentHost({
       frame,
@@ -106,7 +111,6 @@ try {
       <\/script>`);
     Object.assign(window, {
       navigateFixture() {
-        const before = frame.contentWindow;
         frame.contentWindow!.postMessage(
           {
             fixtureNavigate: true,
@@ -114,7 +118,6 @@ try {
           },
           "*",
         );
-        state.sameProxy = before === frame.contentWindow;
       },
       disposeFixture() {
         host.dispose();

@@ -87,21 +87,30 @@
       room: { id: props.room.id, title: props.room.book.title },
     };
   }
-  const callRemote = async (cid: string, name: string, args: unknown, documentRequest = true) => {
+  const callRemote = async (
+    cid: string,
+    name: string,
+    args: unknown,
+    documentRequest = true,
+  ) => {
     if (!current()) throw Error("App is no longer active");
-    const operation = () => requests
-      .run((signal) => props.api.call(cid, name, args, signal))
-      .catch((error: unknown) => {
-        if (error instanceof AppsFailure && error.accessDenied)
-          props.owner.revoke();
-        if (current() && error instanceof AppsFailure && error.signIn) {
-          signinNeeded = true;
-          props.owner.load();
-        }
-        throw error;
-      });
-    const result = documentRequest ? await appDocumentAction(current, () => bridge, operation) : {ok:true as const,value:await operation()};
-    if (!result.ok || !current() || (documentRequest && !documentCurrent())) throw Error("App is no longer active");
+    const operation = () =>
+      requests
+        .run((signal) => props.api.call(cid, name, args, signal))
+        .catch((error: unknown) => {
+          if (error instanceof AppsFailure && error.accessDenied)
+            props.owner.revoke();
+          if (current() && error instanceof AppsFailure && error.signIn) {
+            signinNeeded = true;
+            props.owner.load();
+          }
+          throw error;
+        });
+    const result = documentRequest
+      ? await appDocumentAction(current, () => bridge, operation)
+      : { ok: true as const, value: await operation() };
+    if (!result.ok || !current() || (documentRequest && !documentCurrent()))
+      throw Error("App is no longer active");
     if (!protocol) throw Error("App bridge unavailable");
     return protocol.remoteToolResult(result.value.result);
   };
@@ -114,8 +123,12 @@
     room: () => (documentCurrent() ? room() : null),
     current: documentCurrent,
     request: async (command) => {
-      const result = await appDocumentAction(current, () => bridge, () => props.request(command));
-      return result.ok ? result.value : {ok:false,error:"disconnected"};
+      const result = await appDocumentAction(
+        current,
+        () => bridge,
+        () => props.request(command),
+      );
+      return result.ok ? result.value : { ok: false, error: "disconnected" };
     },
     name: (email) => props.name(email),
     ask,
@@ -159,8 +172,9 @@
         ? Promise.resolve(
             toolOutput(roomRead(room() || props.room, {}, props.name)),
           )
-        : callRemote(selected.connection, selected.tool, {}, false).catch((error) =>
-            toolError(error instanceof Error ? error.message : "Tool failed"),
+        : callRemote(selected.connection, selected.tool, {}, false).catch(
+            (error) =>
+              toolError(error instanceof Error ? error.message : "Tool failed"),
           );
       bridge = protocol.createNativeAppBridge({
         frame,
@@ -170,7 +184,10 @@
           requests.dispose();
           consent.cancel();
           loading = false;
-          error = props.lang === "en" ? "This app was closed. Reopen it to continue." : "O app foi fechado. Abra de novo para continuar.";
+          error =
+            props.lang === "en"
+              ? "This app was closed. Reopen it to continue."
+              : "O app foi fechado. Abra de novo para continuar.";
         },
         context: () => ({ ...context(), toolInfo: { tool } }),
         tools: isRoom ? roomTools : [],
@@ -187,23 +204,30 @@
         contextText: isRoom
           ? undefined
           : async (text) => {
-              await appDocumentAction(current, () => bridge, () => requests
-                .run((signal) =>
-                  props.api.context(
-                    selected.connection,
-                    selected.tool,
-                    text,
-                    signal,
-                  ),
-                )
-                .catch(membershipError));
+              await appDocumentAction(
+                current,
+                () => bridge,
+                () =>
+                  requests
+                    .run((signal) =>
+                      props.api.context(
+                        selected.connection,
+                        selected.tool,
+                        text,
+                        signal,
+                      ),
+                    )
+                    .catch(membershipError),
+              );
             },
         t: (text, vars) => props.t(text, vars),
       });
       await bridge.ready;
       if (!current()) return;
       if (isRoom && app)
-        bridge.loadFile(`/api/books/${encodeURIComponent(props.room.id)}/files/${encodeURIComponent(app.file.id)}`);
+        bridge.loadFile(
+          `/api/books/${encodeURIComponent(props.room.id)}/files/${encodeURIComponent(app.file.id)}`,
+        );
       else if (ui) bridge.loadHtml(ui.html);
       loading = false;
     } catch (failure) {

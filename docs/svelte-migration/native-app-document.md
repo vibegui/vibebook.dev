@@ -36,3 +36,11 @@ rejection. These are unit/DOM fixtures, not a real browser security receipt.
 Formatter, tests, compilers, SDK/browser replacement and BFCache validation remain
 unrun for this native integration checkpoint. Core bootstrap generation/build
 and authenticated file-POST route are separate required dependencies.
+
+Parent checkpoint after integration: the native action cases and existing Apps
+model/authority tests pass together with the mounted Hono navigation fixtures
+(26 tests / 182 assertions, 2.54 seconds). Scoped native formatting and the thin
+document build/browser/tooling TypeScript project pass. The native component
+fixture changes remain source-only until repository CI, and the real Worker
+application replacement probe still requires a new run. These local results do
+not establish browser, CSP navigation, provider or production acceptance.

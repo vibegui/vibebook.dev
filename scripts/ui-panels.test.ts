@@ -2383,39 +2383,75 @@ describe("native Svelte chat", () => {
     expect(current.getAttribute("height")).toBe(before);
   }, 30_000);
   test("revoked native embed retains only a hidden denial frame and reopens a fresh owned iframe", async () => {
-    const embedded = {id:"document-file",name:"app.html",type:"text/html",embed:true,author:"you@test",ts:1,size:10};
+    const embedded = {
+      id: "document-file",
+      name: "app.html",
+      type: "text/html",
+      embed: true,
+      author: "you@test",
+      ts: 1,
+      size: 10,
+    };
     const controls: import("../svelte/chatTypes").ChatEmbedControls[] = [];
     let detached = 0;
-    const {target} = renderChat({...fixture(),messages:[{...message(1,"App"),files:[embedded]}]}, {actions:{
-      request: async ():Promise<CommandOutcome> => ({ok:true}),draftReply:()=>{},reply:()=>{},navigate:()=>{},openFile:()=>{},
-      mountEmbed: (_frame,_file,control) => {controls.push(control);return()=>{detached++;};},
-    }});
-    await tick(); flushSync();
+    const { target } = renderChat(
+      { ...fixture(), messages: [{ ...message(1, "App"), files: [embedded] }] },
+      {
+        actions: {
+          request: async (): Promise<CommandOutcome> => ({ ok: true }),
+          draftReply: () => {},
+          reply: () => {},
+          navigate: () => {},
+          openFile: () => {},
+          mountEmbed: (_frame, _file, control) => {
+            controls.push(control);
+            return () => {
+              detached++;
+            };
+          },
+        },
+      },
+    );
+    await tick();
+    flushSync();
     expect(controls).toHaveLength(1);
-    const original = controls[0], oldFrame = target.querySelector("iframe");
-    if (!(oldFrame instanceof HTMLIFrameElement)) throw Error("Expected real initial iframe");
+    const original = controls[0],
+      oldFrame = target.querySelector("iframe");
+    if (!(oldFrame instanceof HTMLIFrameElement))
+      throw Error("Expected real initial iframe");
     const asking = original.ask("write", "Old document consent");
     flushSync();
-    original.revoked?.(); original.fail?.(); flushSync();
+    original.revoked?.();
+    original.fail?.();
+    flushSync();
     await expect(asking).resolves.toBe(false);
     expect(oldFrame.isConnected).toBe(true);
     expect(oldFrame.hidden).toBe(true);
-    const reopen = [...target.querySelectorAll<HTMLButtonElement>("button")].find(button=>button.textContent?.includes("Abrir app de novo"));
+    const reopen = [
+      ...target.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((button) => button.textContent?.includes("Abrir app de novo"));
     expect(reopen).toBeDefined();
-    reopen!.click(); reopen!.click(); flushSync(); await tick(); flushSync();
+    reopen!.click();
+    reopen!.click();
+    flushSync();
+    await tick();
+    flushSync();
     const fresh = target.querySelector("iframe");
     expect(fresh).not.toBe(oldFrame);
     expect(oldFrame.isConnected).toBe(false);
     expect(controls).toHaveLength(2);
     expect(detached).toBe(1);
-    original.deny?.(); original.resize(1000); original.ready(); flushSync();
+    original.deny?.();
+    original.resize(1000);
+    original.ready();
+    flushSync();
     expect(target.querySelector("iframe")).toBe(fresh);
     expect(fresh?.getAttribute("src")).toBeNull();
     expect(fresh?.getAttribute("srcdoc")).toBeNull();
     expect(fresh?.getAttribute("height")).toBe("320");
     expect(fresh?.getAttribute("aria-busy")).toBe("true");
     expect(target.textContent).not.toContain("Old document consent");
-  },30_000);
+  }, 30_000);
   test("origin embeds retain their source thread in the explicit protocol integration", () => {
     const embedded = {
       id: "origin-file",

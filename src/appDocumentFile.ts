@@ -43,7 +43,9 @@ async function readClaim(request: Request): Promise<string | null> {
   }
   let body: string;
   try {
-    body = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
+    body = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(
+      bytes,
+    );
   } catch {
     return null;
   }
