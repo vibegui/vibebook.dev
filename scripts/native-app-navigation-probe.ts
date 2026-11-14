@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { createHash, randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-import { expect as baseExpect } from "@playwright/test";
+import { expect as baseExpect, type Page } from "@playwright/test";
 import {
   CreateRoomResult,
   MeResult,
@@ -44,6 +44,18 @@ export type NativeAppNavigationEvidence = {
   failureSourceFrames?: string[];
   http: ReturnType<typeof probeHTTP>[];
   reviewDenyControl: boolean;
+  fileNavigation?: { method: string; status: number }[];
+  browserPolicyErrors?: string[];
+  initialFrame?: {
+    count: number;
+    hidden: boolean;
+    hasSrc: boolean;
+    hasSrcdoc: boolean;
+    alerts: number;
+    childStage: string | null;
+    childOutcome: string | null;
+    childInitialize: string | null;
+  };
   pageErrors: { name: string; locations: string[] }[];
   scope: string;
   gaps: string[];
@@ -86,6 +98,7 @@ export async function auditNativeAppNavigation(
       "An inherited read is an observed security finding, never passing F46–48/M6 acceptance",
     ],
   };
+  let auditPage: Page | null = null;
   let replacement = "";
   const server = createServer((request, response) => {
     if (request.url !== "/replacement") {
@@ -129,6 +142,35 @@ export async function auditNativeAppNavigation(
     context = created.context;
     const { page } = created,
       owned = created.context;
+    auditPage = page;
+    evidence.fileNavigation = [];
+    evidence.browserPolicyErrors = [];
+    page.on("response", (response) => {
+      const path = `/api/books/${evidence.roomId}/files/${evidence.fileId}`;
+      if (response.url() === fixture.base + path)
+        evidence.fileNavigation?.push({
+          method: response.request().method(),
+          status: response.status(),
+        });
+    });
+    page.on("console", (message) => {
+      if (
+        message.type() !== "error" ||
+        (evidence.browserPolicyErrors?.length ?? 0) >= 10
+      )
+        return;
+      const text = message.text();
+      for (const category of [
+        "Content Security Policy",
+        "sandbox",
+        "Blocked",
+        "Refused",
+      ])
+        if (text.includes(category)) {
+          evidence.browserPolicyErrors?.push(category);
+          break;
+        }
+    });
     page.on("pageerror", (error) =>
       evidence.pageErrors.push(
         localBrowserError(error, [fixture.base, origin]),
@@ -354,6 +396,63 @@ export async function auditNativeAppNavigation(
       },
     );
   } catch (error) {
+    if (auditPage && !auditPage.isClosed()) {
+      const frameState = await auditPage
+        .evaluate(() => {
+          const frames = document.querySelectorAll<HTMLIFrameElement>(
+            "[data-native-app-frame] iframe",
+          );
+          const frame = frames[0];
+          return {
+            count: frames.length,
+            hidden: frame?.hidden ?? false,
+            hasSrc: frame?.hasAttribute("src") ?? false,
+            hasSrcdoc: frame?.hasAttribute("srcdoc") ?? false,
+            alerts: document.querySelectorAll(
+              "[data-native-app-frame] [role=alert]",
+            ).length,
+          };
+        })
+        .catch(() => null);
+      if (frameState) {
+        const child = auditPage
+          .frames()
+          .find(
+            (frame) =>
+              frame.parentFrame() === auditPage?.mainFrame() &&
+              frame
+                .url()
+                .includes(
+                  `/api/books/${evidence.roomId}/files/${evidence.fileId}`,
+                ),
+          );
+        const childState = await child
+          ?.evaluate(() => {
+            const stage = document.getElementById("stage")?.textContent;
+            const result = document.getElementById("result");
+            return {
+              childStage:
+                stage === "initial" || stage === "replacement" ? stage : null,
+              childOutcome:
+                ["pending", "read", "refused", "timeout", "unexpected"].find(
+                  (value) => value === result?.getAttribute("data-outcome"),
+                ) ?? null,
+              childInitialize:
+                ["pending", "answered", "refused"].find(
+                  (value) => value === result?.getAttribute("data-initialize"),
+                ) ?? null,
+            };
+          })
+          .catch(() => null);
+        evidence.initialFrame = {
+          ...frameState,
+          childStage: null,
+          childOutcome: null,
+          childInitialize: null,
+          ...childState,
+        };
+      }
+    }
     evidence.status = "inconclusive";
     evidence.verdict = "inconclusive";
     const failure = probeFailure(error);

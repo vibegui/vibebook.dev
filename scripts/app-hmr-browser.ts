@@ -706,101 +706,224 @@ try {
     retainedAfterReentry: true,
   };
 
-  step("Edit the actual app-document bootstrap and observe the owned generator without rebuilding or restarting");
+  step(
+    "Edit the actual app-document bootstrap and observe the owned generator without rebuilding or restarting",
+  );
   const bootstrapPath = "browser/app-document/bootstrap.ts";
-  const generatedPath = resolve(root, "shared/generated/appDocumentBootstrap.ts");
-  const originalBootstrapSHA = digest(await readFile(resolve(root, bootstrapPath), "utf8"));
+  const generatedPath = resolve(
+    root,
+    "shared/generated/appDocumentBootstrap.ts",
+  );
+  const originalBootstrapSHA = digest(
+    await readFile(resolve(root, bootstrapPath), "utf8"),
+  );
   const originalGeneratedSHA = digest(await readFile(generatedPath, "utf8"));
   const vanillaHost = async () => {
     const response = await context.request.get(`${base}/app`);
     assert(response.ok(), "Unselected vanilla shell must remain available");
     const html = await response.text();
-    const matches = [...html.matchAll(/import\(["'](\/app-document-host\.[a-f0-9]{20}\.js)["']\)/g)];
-    assert.equal(matches.length, 1, "Vanilla shell must select one content-addressed host");
+    const matches = [
+      ...html.matchAll(
+        /import\(["'](\/app-document-host\.[a-f0-9]{20}\.js)["']\)/g,
+      ),
+    ];
+    assert.equal(
+      matches.length,
+      1,
+      "Vanilla shell must select one content-addressed host",
+    );
     const path = matches[0]![1]!;
     const asset = await context.request.get(base + path);
-    assert(asset.ok(), "The selected document host asset must actually be served");
+    assert(
+      asset.ok(),
+      "The selected document host asset must actually be served",
+    );
     const body = await asset.text();
     return { path, sha256: digest(body), bytes: Buffer.byteLength(body), body };
   };
   const originalHost = await vanillaHost();
   const generationEvidence: Record<string, unknown> = {
-    status: "running", originalBootstrapSHA, originalGeneratedSHA,
-    originalHost: { path: originalHost.path, sha256: originalHost.sha256, bytes: originalHost.bytes },
-    limitation: "Generated shared code may trigger an automatic full-runtime reload; an in-memory composer draft is not promised across that boundary. No reload is forced by the fixture.",
+    status: "running",
+    originalBootstrapSHA,
+    originalGeneratedSHA,
+    originalHost: {
+      path: originalHost.path,
+      sha256: originalHost.sha256,
+      bytes: originalHost.bytes,
+    },
+    limitation:
+      "Generated shared code may trigger an automatic full-runtime reload; an in-memory composer draft is not promised across that boundary. No reload is forced by the fixture.",
   };
   result.generator = generationEvidence;
   restoreGeneration = async () => {
-    await poll(async () => {
-      if (digest(await readFile(generatedPath, "utf8")) !== originalGeneratedSHA) return false;
-      const shell = await readFile(resolve(root, "public/app.html"), "utf8");
-      if (!shell.includes(originalHost.path)) return false;
-      return digest(await readFile(resolve(root, "public", originalHost.path.slice(1)), "utf8")) === originalHost.sha256;
-    }, "cleanup restores generated bootstrap and original host bytes", 60_000, true);
+    await poll(
+      async () => {
+        if (
+          digest(await readFile(generatedPath, "utf8")) !== originalGeneratedSHA
+        )
+          return false;
+        const shell = await readFile(resolve(root, "public/app.html"), "utf8");
+        if (!shell.includes(originalHost.path)) return false;
+        return (
+          digest(
+            await readFile(
+              resolve(root, "public", originalHost.path.slice(1)),
+              "utf8",
+            ),
+          ) === originalHost.sha256
+        );
+      },
+      "cleanup restores generated bootstrap and original host bytes",
+      60_000,
+      true,
+    );
     generationEvidence.cleanupRestoredGeneratedArtifacts = true;
   };
   const generatorMarker = `hmr-bootstrap-${token}`;
   const supervisorPID = child!.pid;
   const supervisorIdentity = launcherStart;
   const assertSameSupervisor = () => {
-    assert.equal(child?.pid, supervisorPID, "Generator edits must not relaunch the dev supervisor");
-    assert.equal(identity(supervisorPID), supervisorIdentity, "The original dev supervisor must still be alive");
+    assert.equal(
+      child?.pid,
+      supervisorPID,
+      "Generator edits must not relaunch the dev supervisor",
+    );
+    assert.equal(
+      identity(supervisorPID),
+      supervisorIdentity,
+      "The original dev supervisor must still be alive",
+    );
   };
   const snapshotsBeforeGenerator = snapshots;
   const socketsBeforeGenerator = roomSockets;
-  await mutate(bootstrapPath, source => source.replace(
-    'MessageEvent data getter unavailable',
-    `MessageEvent data getter unavailable ${generatorMarker}`,
-  ));
+  await mutate(bootstrapPath, (source) =>
+    source.replace(
+      "MessageEvent data getter unavailable",
+      `MessageEvent data getter unavailable ${generatorMarker}`,
+    ),
+  );
   await poll(async () => {
     const generated = await readFile(generatedPath, "utf8");
-    return digest(generated) !== originalGeneratedSHA && generated.includes(generatorMarker);
+    return (
+      digest(generated) !== originalGeneratedSHA &&
+      generated.includes(generatorMarker)
+    );
   }, "actual bootstrap watcher regenerates the shared string");
   await poll(async () => {
     const served = await vanillaHost();
-    return served.path !== originalHost.path && served.sha256 !== originalHost.sha256 && served.body.includes(generatorMarker);
+    return (
+      served.path !== originalHost.path &&
+      served.sha256 !== originalHost.sha256 &&
+      served.body.includes(generatorMarker)
+    );
   }, "vanilla HTTP shell imports and serves the actual newly generated host");
   const mutatedHost = await vanillaHost();
-  generationEvidence.mutatedGeneratedSHA = digest(await readFile(generatedPath, "utf8"));
-  generationEvidence.mutatedHost = { path: mutatedHost.path, sha256: mutatedHost.sha256, bytes: mutatedHost.bytes };
+  generationEvidence.mutatedGeneratedSHA = digest(
+    await readFile(generatedPath, "utf8"),
+  );
+  generationEvidence.mutatedHost = {
+    path: mutatedHost.path,
+    sha256: mutatedHost.sha256,
+    bytes: mutatedHost.bytes,
+  };
   assertSameSupervisor();
-  await expect(composer).toBeVisible(); await expect(composer).toBeEnabled();
-  const mutationReloaded = await documentId() !== token;
-  if (mutationReloaded) await poll(() => snapshots > snapshotsBeforeGenerator && roomSockets > socketsBeforeGenerator, "real room reconnect after automatic generated-shared reload");
+  await expect(composer).toBeVisible();
+  await expect(composer).toBeEnabled();
+  const mutationReloaded = (await documentId()) !== token;
+  if (mutationReloaded)
+    await poll(
+      () =>
+        snapshots > snapshotsBeforeGenerator &&
+        roomSockets > socketsBeforeGenerator,
+      "real room reconnect after automatic generated-shared reload",
+    );
   else {
     await expect(composer).toHaveValue(`Unsent HMR draft ${token}`);
-    assert.equal(roomSockets, socketsBeforeGenerator, "A preserved document keeps its Book connection");
+    assert.equal(
+      roomSockets,
+      socketsBeforeGenerator,
+      "A preserved document keeps its Book connection",
+    );
   }
-  generationEvidence.mutation = { automaticDocumentReload: mutationReloaded, priorDraftRetained: await composer.inputValue() === `Unsent HMR draft ${token}`, snapshots, roomSockets };
+  generationEvidence.mutation = {
+    automaticDocumentReload: mutationReloaded,
+    priorDraftRetained:
+      (await composer.inputValue()) === `Unsent HMR draft ${token}`,
+    snapshots,
+    roomSockets,
+  };
   // Verify the real current document's app-owned bank after any automatic reload.
   const generationDraft = `After generation draft ${token}`;
   await composer.fill(generationDraft);
-  if (!(await filesTab.isVisible())) await page.locator("[data-native-document-toggle]").click();
-  await filesTab.click(); await expect(filesView).toBeVisible();
-  await page.locator('[data-room-document-toolbar] [data-document-pane="doc"]').click();
-  await expect(filesView).toBeHidden(); await expect(composer).toHaveValue(generationDraft);
-  await filesTab.click(); await expect(filesView).toBeVisible(); await expect(composer).toHaveValue(generationDraft);
+  if (!(await filesTab.isVisible()))
+    await page.locator("[data-native-document-toggle]").click();
+  await filesTab.click();
+  await expect(filesView).toBeVisible();
+  await page
+    .locator('[data-room-document-toolbar] [data-document-pane="doc"]')
+    .click();
+  await expect(filesView).toBeHidden();
+  await expect(composer).toHaveValue(generationDraft);
+  await filesTab.click();
+  await expect(filesView).toBeVisible();
+  await expect(composer).toHaveValue(generationDraft);
   const restoredDocumentToken = `${token}-generator`;
-  await page.evaluate(value => Object.assign(window, { __hmrVerificationDocument: value }), restoredDocumentToken);
-  const snapshotsBeforeRestore = snapshots, socketsBeforeRestore = roomSockets;
+  await page.evaluate(
+    (value) => Object.assign(window, { __hmrVerificationDocument: value }),
+    restoredDocumentToken,
+  );
+  const snapshotsBeforeRestore = snapshots,
+    socketsBeforeRestore = roomSockets;
   await restore(bootstrapPath);
-  await poll(async () => digest(await readFile(generatedPath, "utf8")) === originalGeneratedSHA, "restored source regenerates the exact original shared string");
+  await poll(
+    async () =>
+      digest(await readFile(generatedPath, "utf8")) === originalGeneratedSHA,
+    "restored source regenerates the exact original shared string",
+  );
   await poll(async () => {
     const served = await vanillaHost();
-    return served.path === originalHost.path && served.sha256 === originalHost.sha256 && !served.body.includes(generatorMarker);
+    return (
+      served.path === originalHost.path &&
+      served.sha256 === originalHost.sha256 &&
+      !served.body.includes(generatorMarker)
+    );
   }, "restored vanilla shell and served host return to their exact original hashes");
-  assert.equal(digest(await readFile(resolve(root, bootstrapPath), "utf8")), originalBootstrapSHA);
+  assert.equal(
+    digest(await readFile(resolve(root, bootstrapPath), "utf8")),
+    originalBootstrapSHA,
+  );
   assertSameSupervisor();
-  await expect(composer).toBeVisible(); await expect(composer).toBeEnabled();
-  const restoreReloaded = await documentId() !== restoredDocumentToken;
-  if (restoreReloaded) await poll(() => snapshots > snapshotsBeforeRestore && roomSockets > socketsBeforeRestore, "real room reconnect after generator restoration");
-  else { await expect(composer).toHaveValue(generationDraft); assert.equal(roomSockets, socketsBeforeRestore); }
-  generationEvidence.restoration = { automaticDocumentReload: restoreReloaded, priorDraftRetained: await composer.inputValue() === generationDraft, generatedSHA: originalGeneratedSHA, hostPath: originalHost.path, hostSHA: originalHost.sha256, snapshots, roomSockets };
+  await expect(composer).toBeVisible();
+  await expect(composer).toBeEnabled();
+  const restoreReloaded = (await documentId()) !== restoredDocumentToken;
+  if (restoreReloaded)
+    await poll(
+      () =>
+        snapshots > snapshotsBeforeRestore &&
+        roomSockets > socketsBeforeRestore,
+      "real room reconnect after generator restoration",
+    );
+  else {
+    await expect(composer).toHaveValue(generationDraft);
+    assert.equal(roomSockets, socketsBeforeRestore);
+  }
+  generationEvidence.restoration = {
+    automaticDocumentReload: restoreReloaded,
+    priorDraftRetained: (await composer.inputValue()) === generationDraft,
+    generatedSHA: originalGeneratedSHA,
+    hostPath: originalHost.path,
+    hostSHA: originalHost.sha256,
+    snapshots,
+    roomSockets,
+  };
   generationEvidence.ownedDraftPaneRoundtrip = "pass";
   await restoreGeneration();
   restoreGeneration = undefined;
   generationEvidence.status = "pass";
-  await page.evaluate(value => Object.assign(window, { __hmrVerificationDocument: value }), token);
+  await page.evaluate(
+    (value) => Object.assign(window, { __hmrVerificationDocument: value }),
+    token,
+  );
 
   step(
     "Edit shared contract, verify declaration watcher plus full reload/reconnection",
@@ -889,7 +1012,11 @@ try {
   } catch (error) {
     cleanup.push(String(error));
   }
-  try { await restoreGeneration?.(); } catch (error) { cleanup.push(String(error)); }
+  try {
+    await restoreGeneration?.();
+  } catch (error) {
+    cleanup.push(String(error));
+  }
   await browser?.close().catch((error) => {
     cleanup.push(String(error));
   });

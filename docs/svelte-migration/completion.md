@@ -98,3 +98,29 @@ Deployed commit, vanilla/Svelte URLs, final check identifiers, current schema/RP
 audit, Studio/profile/accessibility comparisons, performance samples, tested
 rollback, maintainer and acceptance date are **pending**. No open condition is
 waived by this report. The full goal remains active.
+
+### Document-channel and deferred-view checkpoint (06b0a7e)
+
+The sole PR now includes deferred native views, an owned serial bootstrap
+watcher and document-bound Apps in both frontends. The expanded real Chromium
+channel suite passed [43575694148](https://github.com/vibegui/vibebook.dev/actions/runs/43575694148),
+including the installed stock SDK, second-origin replacement denial, held
+outputs/consent, fresh reopening and permanently revoked subframe history.
+[The retained receipt](app-document-browser/2026-11-14-adversarial/README.md)
+explicitly excludes actual BFCache admission and application/provider acceptance.
+
+The real Worker run [43575694166](https://github.com/vibegui/vibebook.dev/actions/runs/43575694166)
+passes all seven functional phases and 20 lifecycle cycles with no page errors.
+It does **not** pass overall: all eight Room profiles stop at delivered-avatar
+contrast, and the authenticated room-App's initial read times out. Replacement
+authorization is therefore inconclusive in the actual application at this head.
+The standalone channel result does not clear this application gate. The contrast
+fix and safer frame/navigation diagnostics require reruns.
+
+Repository run [43575694145](https://github.com/vibegui/vibebook.dev/actions/runs/43575694145)
+also fails source checks: a stale raw-iframe-src DOM assertion, a font diagnostic
+inference error and an Ubuntu provider-test failure caused by another fixture
+leaving global fetch mocked. These fixes and a pre-flush embed reopen regression
+are being integrated. Committed native preview assets also require regeneration.
+No performance, final feature matrix, deployment or migration completion is
+claimed by these intermediate checks.

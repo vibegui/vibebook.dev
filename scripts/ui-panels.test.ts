@@ -2020,7 +2020,9 @@ describe("native Svelte chat", () => {
     const origin = { ...message(7, "Original <request>"), thread: "main" };
     const row = { ...message(8, "Body"), reply_to: 7, files };
     const room = { ...fixture(), messages: [row], origins: [origin] };
-    const mountedEmbeds: Parameters<NonNullable<ChatProps["actions"]["mountEmbed"]>>[] = [];
+    const mountedEmbeds: Parameters<
+      NonNullable<ChatProps["actions"]["mountEmbed"]>
+    >[] = [];
     const replied: number[] = [],
       navigated: { id: number; thread?: string }[] = [],
       opened: string[] = [],
@@ -2036,7 +2038,9 @@ describe("native Svelte chat", () => {
         reply: (id) => replied.push(id),
         navigate: (id, thread) => navigated.push({ id, thread }),
         openFile: (selected) => opened.push(selected.id),
-        mountEmbed: (...args) => { mountedEmbeds.push(args); },
+        mountEmbed: (...args) => {
+          mountedEmbeds.push(args);
+        },
       },
     });
     target.querySelector<HTMLButtonElement>("#m8 [data-native-reply]")!.click();
@@ -2450,7 +2454,10 @@ describe("native Svelte chat", () => {
     original.revoked?.();
     original.ready();
     original.resize(1000);
-    const oldAsk = original.ask("late old write", "Must not reopen old consent");
+    const oldAsk = original.ask(
+      "late old write",
+      "Must not reopen old consent",
+    );
     reopen!.click();
     expect(oldFrame.isConnected).toBe(true);
     flushSync();
