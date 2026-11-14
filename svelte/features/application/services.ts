@@ -10,15 +10,8 @@ import { createAgentsService } from "../agents/service";
 import type { AgentsApi } from "../agents/api";
 import type { PwaService } from "../pwa/service";
 import { createAppNavigationSession } from "../app-navigation/controller";
-import {
-  applicationRoute,
-  createApplicationRouter,
-  roomIdFromPath,
-} from "../app-navigation/router";
-import {
-  createRootRoomSession,
-  type RootRoomSnapshot,
-} from "../root-room/session";
+import { applicationRoute, createApplicationRouter, roomIdFromPath, type PresentationThread } from "../app-navigation/router";
+import { createRootRoomSession, type RootRoomSnapshot } from "../root-room/session";
 import { createAppsAuthority } from "../apps/authority";
 import { createApplicationPersonalChannel } from "./personal-channel";
 import type { createPersonalConnection } from "../home/connection";
@@ -55,40 +48,12 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
   onIdentityReset?: () => void;
 }) {
   const browser = options.browser;
-  const state = writable<ApplicationState>({
-    route: applicationRoute(browser.href()),
-    href: browser.href(),
-    navigationGeneration: 0,
-    pane: "doc",
-    availableVersion: null,
-    sessionDenied: false,
-    lifecycle: "idle",
-  });
-  let active = true,
-    started = false,
-    epoch = 0,
-    resettingIdentity = false,
-    sessionDenied = false,
-    pwaDisposed = false;
-  let queuedNavigation: {
-    value: string | RoomTarget;
-    replace: boolean;
-  } | null = null;
-  let lease: {
-    scope: ApplicationRoomScope;
-    adapter: ApplicationRoomAdapter;
-  } | null = null;
-  let pending: {
-    target: RoomTarget;
-    navigation: number;
-    roomGeneration: number | null;
-    account: string | null;
-    pane?: DocumentPane;
-  } | null = null;
-  let authority: {
-    scope: ApplicationRoomScope;
-    owner: ReturnType<typeof createAppsAuthority>;
-  } | null = null;
+  const state = writable<ApplicationState>({ route: applicationRoute(browser.href()), href: browser.href(), navigationGeneration: 0, pane: "doc", availableVersion: null, sessionDenied: false, lifecycle: "idle" });
+  let active = true, started = false, epoch = 0, resettingIdentity = false, sessionDenied = false, pwaDisposed = false;
+  let queuedNavigation: { value: string | RoomTarget; replace: boolean; presentationThread?: PresentationThread } | null = null;
+  let lease: { scope: ApplicationRoomScope; adapter: ApplicationRoomAdapter } | null = null;
+  let pending: { target: RoomTarget; navigation: number; roomGeneration: number | null; account: string | null; pane?: DocumentPane } | null = null;
+  let authority: { scope: ApplicationRoomScope; owner: ReturnType<typeof createAppsAuthority> } | null = null;
   const pwa = options.pwa();
   let identityRevision = 0;
   const personal = createPersonalSession(options.homeApi ?? createHomeApi(), {
@@ -361,14 +326,9 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     )
       return;
     pending = null; // A reentrant onTarget cannot replay this intent.
-    const requested = value.target.thread || "main",
-      room = root.read().room!;
-    const thread =
-      requested === "main" ||
-      requested.startsWith("pre:") ||
-      room.epics.some((epic) => epic.id === requested)
-        ? requested
-        : "main";
+    const requested = value.target.thread || "main", room = root.read().room!;
+    const suggestion = /^pre:(\d+)$/.exec(requested);
+    const thread = requested === "main" || suggestion && Number(suggestion[1]) < room.suggestions.length || room.epics.some(epic => epic.id === requested) ? requested : "main";
     root.selectThread(thread);
     if (
       !owns(scope) ||
@@ -422,13 +382,10 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       root.open(route.target.roomId, route.target.thread || "main");
     }
   }
-  function navigate(value: string | RoomTarget, replace = false) {
+  function navigate(value: string | RoomTarget, replace = false, presentationThread?: PresentationThread) {
     if (!active || !started || sessionDenied) return;
-    if (resettingIdentity) {
-      queuedNavigation = { value, replace };
-      return;
-    }
-    router.go(value, replace);
+    if (resettingIdentity) { queuedNavigation = { value, replace, presentationThread }; return; }
+    router.go(value, replace, presentationThread);
   }
   function resetIdentity() {
     const revision = get(personal.state).identityRevision;
@@ -449,13 +406,9 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     prior?.adapter.reset("identity");
     options.onIdentityReset?.();
     resettingIdentity = false;
-    const queued = queuedNavigation;
-    queuedNavigation = null;
-    if (queued) navigate(queued.value, queued.replace);
-    else if (started && !sessionDenied)
-      browser.enqueue(() => {
-        if (active && epoch === intent) activateRoute();
-      });
+    const queued = queuedNavigation; queuedNavigation = null;
+    if (queued) navigate(queued.value, queued.replace, queued.presentationThread);
+    else if (started && !sessionDenied) browser.enqueue(() => { if (active && epoch === intent) activateRoute(); });
   }
   function openAccount(section: HomeSettings = "all", trigger?: HTMLElement) {
     if (!active || !started || resettingIdentity || sessionDenied) return;
@@ -570,15 +523,18 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       };
     },
     actions: {
-      navigate,
-      home: () => navigate("/app"),
-      archived: () => navigate("/archived"),
-      openAccount,
-      logout,
-      sessionLost: denySession,
-      selectThread(thread: string) {
-        const snapshot = root.read();
-        if (snapshot.roomId) navigate({ roomId: snapshot.roomId, thread });
+      navigate, home: () => navigate("/app"), archived: () => navigate("/archived"), openAccount, logout, sessionLost: denySession,
+      selectThread(thread: string, options: { replace?: boolean; transient?: boolean } = {}) {
+        const scope = roomScope(), room = root.read().room;
+        if (!scope || !room) return;
+        const match = /^pre:(\d+)$/.exec(thread);
+        if (match) {
+          const index = Number(match[1]);
+          if (!Number.isSafeInteger(index) || index >= room.suggestions.length) return;
+          navigate({ roomId: scope.roomId, thread: "main" }, options.replace, `pre:${index}`);
+        } else if (!options.transient && (thread === "main" || room.epics.some(epic => epic.id === thread))) {
+          navigate({ roomId: scope.roomId, thread }, options.replace);
+        }
       },
       selectPane(pane: DocumentPane) {
         const scope = roomScope();

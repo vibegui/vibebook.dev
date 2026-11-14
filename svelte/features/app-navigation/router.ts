@@ -7,6 +7,8 @@ export type ApplicationRoute =
   | { kind: "document"; url: string };
 export const roomIdFromPath = (pathname: string) =>
   pathname.match(/^\/b\/([a-z0-9]{6,40})\/?$/)?.[1] ?? null;
+/** Local presentation only; reloading the serialized URL returns to main. */
+export type PresentationThread = `pre:${number}`;
 export function applicationRoute(href: string): ApplicationRoute {
   const url = new URL(href),
     roomId = roomIdFromPath(url.pathname);
@@ -41,9 +43,9 @@ export function createApplicationRouter(options: {
 }) {
   let generation = 0,
     active = true;
-  function go(value: string | RoomTarget, replace = false) {
+  function go(value: string | RoomTarget, replace = false, presentationThread?: PresentationThread) {
     if (!active) return;
-    if (options.deferNavigation?.(() => go(value, replace))) return;
+    if (options.deferNavigation?.(() => go(value, replace, presentationThread))) return;
     const target = typeof value === "string" ? value : targetHref(value),
       url = new URL(target, options.current());
     if (url.origin !== new URL(options.current()).origin) {
@@ -51,7 +53,10 @@ export function createApplicationRouter(options: {
       return;
     }
     const selected = uiNavigationUrl(url, options.current(), "svelte"),
-      route = applicationRoute(new URL(selected, options.current()).href);
+      serializedRoute = applicationRoute(new URL(selected, options.current()).href),
+      route: ApplicationRoute = serializedRoute.kind === "room" && presentationThread
+        ? { ...serializedRoute, target: { ...serializedRoute.target, thread: presentationThread } }
+        : serializedRoute;
     generation++;
     if (route.kind === "document") {
       options.document(selected);
