@@ -59,7 +59,7 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=4096
       TEST_PUBLIC_ROOT: ${{ github.workspace }}/public
       TEST_APP_REVISION: ${{ github.sha }}
-      TEST_OUTPUT_DIR: ${{ runner.temp }}/room-layout-browser
+      TEST_OUTPUT_DIR: ${{ github.workspace }}/.artifacts/room-layout-browser
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -80,6 +80,6 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: room-layout-browser-${{ github.sha }}
-          path: ${{ runner.temp }}/room-layout-browser/
+          path: ${{ github.workspace }}/.artifacts/room-layout-browser/
           if-no-files-found: warn
           retention-days: 7
