@@ -360,19 +360,27 @@ test("empty failed initial history exposes the existing older control and explic
 });
 
 test("Board hide, hidden frame growth, and pre-flush show preserve the visible unpinned reading anchor", () => {
-  const h = harness(), presentation = createChatPresentation(h.view);
+  const h = harness(),
+    presentation = createChatPresentation(h.view);
   let hidden = false;
   h.surface.connected = () => !hidden;
-  h.metrics.top = 300; h.scroll();
+  h.metrics.top = 300;
+  h.scroll();
   expect(h.view.pinned()).toBe(false);
   presentation.capture("stay", true);
   presentation.capture("stay", false); // Board state changes before CSS flush.
-  hidden = true; h.metrics.top = 0; h.metrics.height = 0; h.metrics.client = 0;
-  h.sync(room(121)); h.growth();
+  hidden = true;
+  h.metrics.top = 0;
+  h.metrics.height = 0;
+  h.metrics.client = 0;
+  h.sync(room(121));
+  h.growth();
   presentation.capture("stay", false);
   expect(presentation.rendered(false)).toBe(false);
   presentation.capture("stay", true); // Chat state changes while its DOM is still hidden.
-  hidden = false; h.metrics.height = 1400; h.metrics.client = 100;
+  hidden = false;
+  h.metrics.height = 1400;
+  h.metrics.client = 100;
   expect(presentation.rendered(true)).toBe(true);
   expect(h.metrics.top).toBe(300);
   expect(h.view.pinned()).toBe(false);
@@ -380,16 +388,22 @@ test("Board hide, hidden frame growth, and pre-flush show preserve the visible u
 });
 
 test("hidden new-message bottom intent survives passive Board renders until chat becomes visible", () => {
-  const h = harness(), presentation = createChatPresentation(h.view);
+  const h = harness(),
+    presentation = createChatPresentation(h.view);
   let hidden = false;
   h.surface.connected = () => !hidden;
   presentation.capture("stay", true);
   presentation.capture("stay", false);
-  hidden = true; h.metrics.top = 0; h.metrics.height = 0; h.metrics.client = 0;
+  hidden = true;
+  h.metrics.top = 0;
+  h.metrics.height = 0;
+  h.metrics.client = 0;
   presentation.capture(undefined, false);
   presentation.capture("stay", false);
   presentation.capture("stay", true);
-  hidden = false; h.metrics.height = 1400; h.metrics.client = 100;
+  hidden = false;
+  h.metrics.height = 1400;
+  h.metrics.client = 100;
   presentation.rendered(true);
   expect(h.metrics.top).toBe(1400);
   expect(h.view.pinned()).toBe(true);

@@ -229,27 +229,55 @@ try {
   await expect.poll(alpha).toBe(0);
   // Closing changes presentation before Back completes. Do not let a pending
   // sheet traversal contaminate this independent media-query transition.
-  const hasSheetEntry = () => page.evaluate(() => {
-    const state: unknown = history.state;
-    return state !== null && typeof state === "object" && "vbRoomSheet" in state;
-  });
+  const hasSheetEntry = () =>
+    page.evaluate(() => {
+      const state: unknown = history.state;
+      return (
+        state !== null && typeof state === "object" && "vbRoomSheet" in state
+      );
+    });
   await expect.poll(hasSheetEntry).toBe(false);
   checkpoint("mobile/full-board-to-desktop-pane");
   await page.getByRole("button", { name: "Full Board", exact: true }).click();
-  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute("data-board-full", "true");
-  await expect(page.locator("[data-room-board]")).toHaveAttribute("data-placement", "full");
-  assert.equal(await board.evaluate((node, witness) => node === witness, before), true);
+  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute(
+    "data-board-full",
+    "true",
+  );
+  await expect(page.locator("[data-room-board]")).toHaveAttribute(
+    "data-placement",
+    "full",
+  );
+  assert.equal(
+    await board.evaluate((node, witness) => node === witness, before),
+    true,
+  );
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute("data-board-full", "false");
-  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute("data-pane", "board");
-  await expect(page.locator("[data-room-board]")).toHaveAttribute("data-placement", "pane");
-  assert.equal(await board.evaluate((node, witness) => node === witness, before), true);
+  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute(
+    "data-board-full",
+    "false",
+  );
+  await expect(page.locator("[data-native-room-layout]")).toHaveAttribute(
+    "data-pane",
+    "board",
+  );
+  await expect(page.locator("[data-room-board]")).toHaveAttribute(
+    "data-placement",
+    "pane",
+  );
+  assert.equal(
+    await board.evaluate((node, witness) => node === witness, before),
+    true,
+  );
   await expect(page.locator("[data-layout-mounts]")).toHaveText("1");
-  await expect(board.getByLabel("Retained Board draft")).toHaveValue("Retained 🧪 Board draft");
+  await expect(board.getByLabel("Retained Board draft")).toHaveValue(
+    "Retained 🧪 Board draft",
+  );
   report.mobileFullBoardToDesktop = true;
   // Restore the document pane while still desktop so no new mobile sheet or
   // pending Back is created before the following drag proof.
-  await page.getByRole("button", { name: "Document pane", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Document pane", exact: true })
+    .click();
   await page.setViewportSize({ width: 390, height: 1000 });
   await expect.poll(sheet).toBe("closed");
   await expect.poll(hasSheetEntry).toBe(false);

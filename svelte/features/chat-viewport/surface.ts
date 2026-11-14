@@ -1,7 +1,10 @@
 import type { ChatSurface } from "./controller";
 /** Scroll/measurement interop only: no first-party style or DOM presentation builder. */
 export function createChatSurface(element: HTMLElement): ChatSurface {
-  const visible = () => element.isConnected && element.clientHeight > 0 && element.getClientRects().length > 0;
+  const visible = () =>
+    element.isConnected &&
+    element.clientHeight > 0 &&
+    element.getClientRects().length > 0;
   return {
     connected: visible,
     metrics: () => ({
