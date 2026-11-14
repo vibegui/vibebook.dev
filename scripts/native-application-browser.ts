@@ -535,7 +535,8 @@ try {
         );
       // Human posts intentionally render literally. Use a real agent post for
       // the existing Markdown path, never change product rendering for a test.
-      const codeMessage = PostMessageResult.parse(
+      // MCP agentPost returns ok/id; HTTP humanPost additionally returns thread.
+      const codeMessage = z.object({ ok: z.literal(true), id: z.number() }).parse(
         await agent("post", {
           room_id: roomA,
           thread: "main",

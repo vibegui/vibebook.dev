@@ -156,7 +156,11 @@ try {
   evidence.requests = state.requests;
   evidence.replacementRequests = replacementRequests;
   evidence.sameProxy = state.sameProxy;
-  evidence.adversarial = await auditAppDocumentAdversarial({ page: activePage, hostModuleURL: new URL("/app-document-host.js", server.url).href, output });
+  evidence.adversarial = await auditAppDocumentAdversarial({
+    page: activePage,
+    hostModuleURL: new URL("/app-document-host.js", server.url).href,
+    output,
+  });
   evidence.status = "passed";
 } catch (error) {
   evidence.status = "failed";
