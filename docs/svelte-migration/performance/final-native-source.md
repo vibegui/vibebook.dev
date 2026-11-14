@@ -107,3 +107,5 @@ Desktop measurements already fail six unchanged budgets (readiness, thread
 switch, first history page, initial application gzip bytes, fonts and post-GC
 heap); history pages two/three pass. Mobile remains unverified and overall
 acceptance failed. See [the partial desktop receipt](2026-11-14-native-desktop-partial.md).
+
+The runner now executes mobile (390×844) before desktop (1440×1000), recording this order in `config.devices`. Both profiles remain mandatory, each with one warmup and seven alternating measured trials per variant at the same CPU rate and workloads. This ordering only surfaces an invalid mobile sample sooner; fail-fast still preserves it and fails overall acceptance. It changes no measurement, readiness, comparison budget, or requirement for a complete cohort. Later desktop samples share the runner's already-disclosed warm OS/cache environment, so report execution order when comparing runs.

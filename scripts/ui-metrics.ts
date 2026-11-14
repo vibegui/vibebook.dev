@@ -43,8 +43,8 @@ import { metricShell } from "./ui-metrics-shell";
 type Variant = "vanilla" | "svelte";
 const variants: Variant[] = ["vanilla", "svelte"];
 const devices = [
-  { name: "desktop", width: 1440, height: 1000 },
   { name: "mobile", width: 390, height: 844 },
+  { name: "desktop", width: 1440, height: 1000 },
 ] as const;
 type Device = (typeof devices)[number];
 function integer(name: string, fallback: number, min: number, max: number) {
