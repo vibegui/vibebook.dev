@@ -1563,10 +1563,10 @@ async function firePump() {
     const r = await fetch(`/api/books/${S.id}/fire`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, file_id: f.cardMsg ? undefined : open || f.fid || undefined, card_msg: f.cardMsg || undefined, thread: f.thread, history: f.chunks.slice(-10) }) }).then((x) => x.json());
     if (!r.ok) { fireBar(`⚠ ${r.error || t("falhou")}`); }
     else if (r.mode === "card") { // a native card in the chat, replaced on every piece
-      f.chunks.push(text); f.cardMsg = r.card_msg; f.n++;
+      f.chunks.push(text); f.cardMsg = r.card_msg; f.fid = ""; f.n++;
       fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
     } else {
-      f.chunks.push(text); f.fid = r.file.id; f.name = r.file.name; f.n++;
+      f.chunks.push(text); f.fid = r.file.id; f.name = r.file.name; f.cardMsg = 0; f.n++; // "faz um html" leaves the card for a page (#2404)
       if (!r.opened && !(sideView && sideView.room === S.id && sideView.name === r.file.name)) openSide(r.file.id, r.file.name);
       fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
     }
@@ -3793,6 +3793,9 @@ function renderBook() {
       try { rec.start(); } catch { rec = null; box.classList.remove("dictating"); mic?.classList.remove("on"); }
     };
     const stop = () => { try { rec?.stop(); } catch {} };
+    // Enviar while dictating (Gui #2405): the message goes, dictation stops, and late results don't write the sent
+    // text back into the empty box.
+    box.addEventListener("submit", () => { if (!rec) return; rec.onresult = null; base = ""; stop(); }, true);
     // Hold-Space is for physical keyboards. On touch screens it cancelled every space of the on-screen keyboard
     // (inserted later by hand), which broke autocorrect/predictions and froze iPhones (Gui 14/11): they have 🎤 and
     // the keyboard's own dictation.
@@ -3814,7 +3817,7 @@ function renderBook() {
     // Holding it charges Modo Fire: the ring shows after 0.4 s and fills to 3 s.
     let fireT = 0, fireRaf = 0, showT = 0, fired = false;
     mic?.addEventListener("pointerdown", (e) => {
-      e.preventDefault(); mic.setPointerCapture?.(e.pointerId);
+      e.preventDefault(); try { mic.setPointerCapture?.(e.pointerId); } catch {}
       fired = false;
       if (fireLive()) { fired = true; return fireStop(); }
       const t0 = performance.now();

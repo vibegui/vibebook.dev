@@ -102,7 +102,8 @@
         "No Modo Fire, se o pedido cabe num card nativo (métricas, um painel, uma tabela, uma lista), o Haiku monta o card no chat e cada fala nova atualiza o mesmo card; página HTML só quando precisa",
         "🎤: um toque começa a ditar e outro para (sem segurar); segurar 3 segundos liga o Modo Fire",
         "Modo Fire: o 🎤 fica entre a caixa de texto e o Enviar; cada trecho falado vai depois de 0,7 s parado (antes esperava o navegador fechar a frase), com indicador de carregamento já enquanto você fala; segurar o 🎤 no celular não seleciona mais o texto; nas salas de métricas do vibebook o card usa os números de ontem",
-        "Modo Fire híbrido: o modelo rápido desenha na hora e cada trecho falado também acorda o seu Claude, que confere com dados de verdade e corrige o card (ferramenta fire_card) ou a página enquanto você fala"
+        "Modo Fire híbrido: o modelo rápido desenha na hora e cada trecho falado também acorda o seu Claude, que confere com dados de verdade e corrige o card (ferramenta fire_card) ou a página enquanto você fala",
+        "Modo Fire troca de formato no meio: \"faz um html\" sai do card e começa uma página, \"faz um card\" volta pro card; pedidos de infraestrutura e gasto usam os números de produto e de custo de IA"
       ],
       "en": [
         "The inbox now shows, besides what's waiting on you, the mentions of you and your open tasks (to do, doing, review) across every room — in three sections, with a this-room / all toggle",
@@ -118,7 +119,8 @@
         "In Fire mode, when a native card can answer (metrics, a dashboard, a table, a list), Haiku builds the card in the chat and each new piece of speech updates the same card; an HTML page only when it needs one",
         "🎤: one tap starts dictation and another stops it (no holding); holding for 3 seconds turns on Fire mode",
         "Fire mode: the 🎤 sits between the text box and Send; each spoken piece goes after 0.7 s of no change (it used to wait for the browser to close the sentence), with a loading sign while you're still talking; holding the 🎤 on a phone no longer selects text; in vibebook's metrics rooms the card uses yesterday's numbers",
-        "Hybrid Fire mode: the fast model draws right away and each spoken piece also wakes your Claude, which checks it with real data and fixes the card (fire_card tool) or the page while you talk"
+        "Hybrid Fire mode: the fast model draws right away and each spoken piece also wakes your Claude, which checks it with real data and fixes the card (fire_card tool) or the page while you talk",
+        "Fire mode switches format mid-session: \"make an html\" leaves the card for a page, \"make a card\" goes back; asking about infrastructure and spend uses the product and AI-cost numbers"
       ]
     },
     "fixes": {
@@ -128,7 +130,8 @@
         "Dois Claude Code seus na mesma pasta agora são dois agents na sala, cada um com sua leitura, e Pessoas avisa quando mais de um seu está ouvindo a mesma sala; um listen de uma CLI antiga sai sozinho quando a CLI é atualizada",
         "A ↗ da sala abre o Claude da sala no herdr pelo vibebook (servidor → sua CLI), sem pedir permissão de rede local ao navegador",
         "Digitar no campo de mensagem ficou mais leve: a caixa só muda de altura quando muda de linha, e no celular o espaço não passa mais pelo atalho de ditado (que travava o teclado do iPhone)",
-        "Botões de link nos cards apareciam como link sublinhado"
+        "Botões de link nos cards apareciam como link sublinhado",
+        "Enviar durante o ditado agora para o 🎤 e não escreve de novo o texto já enviado na caixa"
       ],
       "en": [
         "On phones, a drag from the left edge goes back (epic to room, room to home, in the installed app) instead of replying to the message",
@@ -136,7 +139,8 @@
         "Two Claude Code sessions of yours in one folder are now two agents in the room, each with its own reads, and People warns when more than one of yours listens to the same room; a listen from an old CLI exits by itself when the CLI is updated",
         "The room's ↗ opens the room's Claude in herdr through vibebook (server → your CLI), without asking the browser for local network permission",
         "Typing in the message box is lighter: the box only resizes when its line count changes, and on phones the space no longer goes through the dictation shortcut (which froze the iPhone keyboard)",
-        "Link buttons in cards showed as underlined links"
+        "Link buttons in cards showed as underlined links",
+        "Sending while dictating now stops the 🎤 and no longer writes the sent text back into the box"
       ]
     }
   },

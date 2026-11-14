@@ -3,7 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { cardOf } from "./card";
 import type { Env } from "./index";
-import { growthReport, productReport } from "./reports";
+import { aiSpend, growthReport, productReport } from "./reports";
 import { bookStub, storeFile } from "./rooms";
 import { track } from "./track";
 
@@ -23,10 +23,17 @@ const MAX_FILE = 200_000;
 let dataCache: { at: number; key: string; text: string } | null = null;
 async function roomData(env: Env, bookId: string, text: string, history: string[]) {
   if (!(env.METRICS_ROOMS ?? "").split(",").map((x) => x.trim()).includes(bookId)) return "";
-  const prod = /produto|product|erro|error|lat[eê]n|banda|bandwidth|request|requisi|cpu|deploy|worker|tr[aá]fego|traffic/i.test([text, ...history].join(" "));
-  const key = prod ? "gp" : "g";
+  const said = [text, ...history].join(" ");
+  // Infra and spend were missing (#2403: "infraestrutura e gasto" got the growth report).
+  const prod = /produto|product|infra|erro|error|lat[eê]n|banda|bandwidth|request|requisi|cpu|deploy|worker|tr[aá]fego|traffic/i.test(said);
+  const spend = /gast|custo|cost|spend|openrouter|\$|dinheiro|money|modelo|model/i.test(said);
+  const key = `${prod ? "p" : ""}${spend ? "s" : ""}`;
   if (dataCache && dataCache.key === key && Date.now() - dataCache.at < 300_000) return dataCache.text;
-  const parts = await Promise.all([growthReport(env).catch(() => ""), prod ? productReport(env).catch(() => "") : ""]);
+  const parts = await Promise.all([
+    prod || spend ? "" : growthReport(env).catch(() => ""),
+    prod ? productReport(env).catch(() => "") : "",
+    spend ? aiSpend(env).then((s) => `AI spend (USD), from vibebook's own logs: ${JSON.stringify({ ...s, days: s.days.slice(-14) })}`).catch(() => "") : "",
+  ]);
   const out = parts.filter(Boolean).join("\n\n").slice(0, 12_000);
   dataCache = { at: Date.now(), key, text: out };
   return out;
@@ -53,7 +60,7 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
   const history = Array.isArray(b.history) ? b.history.filter((x): x is string => typeof x === "string").slice(-12).map((x) => x.slice(0, 500)) : [];
   const t0 = Date.now();
   const thread = typeof b.thread === "string" ? b.thread : "main";
-  const cardMsg = Number(b.card_msg) || 0;
+  let cardMsg = Number(b.card_msg) || 0;
   const model = () => createOpenRouter({ apiKey: env.OPENROUTER_API_KEY })(env.MODEL_FAST, { reasoning: { enabled: false, effort: "none" } });
   const data = await roomData(env, bookId, text, history);
   const said = `${data ? `REAL DATA you may use (vibebook's own report, yesterday vs the 7 days before):\n${data}\n\n` : ""}${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`;
@@ -76,6 +83,42 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
     await track(env, "fire", { user: email, dims: { book: bookId, ms: Date.now() - t0, chars: text.length, mode: "card", cost: Number((usage as { raw?: { cost?: number } }).raw?.cost) || 0, created: !cardMsg } });
     return { ok: true as const, mode: "card" as const, card_msg: r.id, ms: Date.now() - t0 };
   };
+  const fileMode = async (): Promise<FireOut> => {
+    let name = "", type = "text/html", current = "";
+    const fid = typeof b.file_id === "string" ? b.file_id : "";
+    if (fid) {
+      const obj = await env.FILES.get(`${bookId}/${fid}`);
+      if (!obj) return { ok: false, error: "file not found in this room" };
+      type = obj.httpMetadata?.contentType ?? "";
+      if (!EDITABLE.includes(type)) return { ok: false, error: `can't edit ${type} live (html, markdown, text)` };
+      name = obj.customMetadata?.name ?? "arquivo.html";
+      current = await obj.text();
+      if (current.length > MAX_FILE) return { ok: false, error: "file too big to edit live" };
+    } else {
+      name = `ao-vivo-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.html`;
+    }
+    const kind = type === "text/html" ? "a self-contained HTML page (inline CSS and JS only, no external requests except Google Fonts)" : type === "text/markdown" ? "a Markdown document" : "a plain text file";
+    const { text: out, usage } = await generateText({
+      model: model(),
+      temperature: 0.2,
+      abortSignal: AbortSignal.timeout(45_000),
+      system: `You edit one file live while a person talks. They are dictating requests in "live mode": each new piece of speech is an instruction (or a correction of the previous one) for this file, which is ${kind}. Apply it right away and return the WHOLE new file, nothing else: no explanation, no code fences. Keep everything they didn't ask to change. If the speech is not an instruction for the file (small talk, a pause filler), return the file unchanged. Write the content in the language they speak.`,
+      prompt: `${current ? `CURRENT FILE (${name}):\n${current}` : `There is no file yet: start ${kind} from this request.`}\n\n${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`,
+    });
+    const body = out.trim().replace(/^```[\w-]*\n/, "").replace(/\n```$/, "").trim();
+    if (!body) return { ok: false, error: "the model returned nothing" };
+    const meta = await storeFile(env, bookId, email, type, new TextEncoder().encode(body).buffer as ArrayBuffer, name);
+    const opened = !fid ? (((await bookStub(env, bookId).agentOpenFile(bookId, email, meta.id)) as { opened_in_tabs?: number }).opened_in_tabs ?? 0) > 0 : false;
+    const ms = Date.now() - t0;
+    await bookStub(env, bookId).firePiece(bookId, email, thread, text, { file: { id: meta.id, name: meta.name } });
+    await track(env, "fire", { user: email, dims: { book: bookId, ms, chars: text.length, size: body.length, cost: Number((usage as { raw?: { cost?: number } }).raw?.cost) || 0, created: !fid } });
+    return { ok: true, mode: "file", file: { id: meta.id, name: meta.name, type, size: meta.size, ts: meta.ts }, opened, ms };
+  };
+  // Switching format mid-session (Gui #2404: once in a card it never left): "faz um html / uma página" in a card
+  // session starts a page; "faz um card" in a page session starts a card. The client follows the mode it gets back.
+  const wantsPage = /\b(html|p[aá]gina|page|site)\b/i.test(text), wantsCard = /\b(card|cart[aã]o|json)\b/i.test(text);
+  if (cardMsg && wantsPage) { b.file_id = undefined; cardMsg = 0; return fileMode(); }
+  if (!cardMsg && b.file_id && wantsCard) { try { return await cardMode(); } catch { /* fall through to the page */ } }
   // A live card: every piece of speech replaces it.
   if (cardMsg) {
     const row = await bookStub(env, bookId).messageCard(bookId, cardMsg, email);
@@ -94,33 +137,5 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
       try { return await cardMode(); } catch { /* the model's card didn't validate: make a page instead */ }
     }
   }
-  let name = "", type = "text/html", current = "";
-  const fid = typeof b.file_id === "string" ? b.file_id : "";
-  if (fid) {
-    const obj = await env.FILES.get(`${bookId}/${fid}`);
-    if (!obj) return { ok: false, error: "file not found in this room" };
-    type = obj.httpMetadata?.contentType ?? "";
-    if (!EDITABLE.includes(type)) return { ok: false, error: `can't edit ${type} live (html, markdown, text)` };
-    name = obj.customMetadata?.name ?? "arquivo.html";
-    current = await obj.text();
-    if (current.length > MAX_FILE) return { ok: false, error: "file too big to edit live" };
-  } else {
-    name = `ao-vivo-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.html`;
-  }
-  const kind = type === "text/html" ? "a self-contained HTML page (inline CSS and JS only, no external requests except Google Fonts)" : type === "text/markdown" ? "a Markdown document" : "a plain text file";
-  const { text: out, usage } = await generateText({
-    model: model(),
-    temperature: 0.2,
-    abortSignal: AbortSignal.timeout(45_000),
-    system: `You edit one file live while a person talks. They are dictating requests in "live mode": each new piece of speech is an instruction (or a correction of the previous one) for this file, which is ${kind}. Apply it right away and return the WHOLE new file, nothing else: no explanation, no code fences. Keep everything they didn't ask to change. If the speech is not an instruction for the file (small talk, a pause filler), return the file unchanged. Write the content in the language they speak.`,
-    prompt: `${current ? `CURRENT FILE (${name}):\n${current}` : `There is no file yet: start ${kind} from this request.`}\n\n${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`,
-  });
-  const body = out.trim().replace(/^```[\w-]*\n/, "").replace(/\n```$/, "").trim();
-  if (!body) return { ok: false, error: "the model returned nothing" };
-  const meta = await storeFile(env, bookId, email, type, new TextEncoder().encode(body).buffer as ArrayBuffer, name);
-  const opened = !fid ? (((await bookStub(env, bookId).agentOpenFile(bookId, email, meta.id)) as { opened_in_tabs?: number }).opened_in_tabs ?? 0) > 0 : false;
-  const ms = Date.now() - t0;
-  await bookStub(env, bookId).firePiece(bookId, email, thread, text, { file: { id: meta.id, name: meta.name } });
-  await track(env, "fire", { user: email, dims: { book: bookId, ms, chars: text.length, size: body.length, cost: Number((usage as { raw?: { cost?: number } }).raw?.cost) || 0, created: !fid } });
-  return { ok: true, mode: "file", file: { id: meta.id, name: meta.name, type, size: meta.size, ts: meta.ts }, opened, ms };
+  return fileMode();
 }
