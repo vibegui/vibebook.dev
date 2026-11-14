@@ -32,24 +32,42 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
   const root = resolve(import.meta.dir, ".."),
     destination = resolve(output, "css-range");
   await mkdir(destination, { recursive: true });
-  const manifestPath=process.env.FONT_CSS_RANGE_MANIFEST;
-  const candidatePath=process.env.FONT_CSS_RANGE_CANDIDATE;
-  assert(Boolean(manifestPath)===Boolean(candidatePath),"Provide both private candidate and manifest paths");
-  if(manifestPath&&candidatePath)assert(manifestPath.endsWith(".json")&&candidatePath.endsWith(".woff2"));
-  const raw: unknown = JSON.parse(await readFile(manifestPath ? resolve(manifestPath) : resolve(root, "scripts/fixtures/font-forensics/css-range-proof.json"),"utf8"));
+  const manifestPath = process.env.FONT_CSS_RANGE_MANIFEST;
+  const candidatePath = process.env.FONT_CSS_RANGE_CANDIDATE;
+  assert(
+    Boolean(manifestPath) === Boolean(candidatePath),
+    "Provide both private candidate and manifest paths",
+  );
+  if (manifestPath && candidatePath)
+    assert(manifestPath.endsWith(".json") && candidatePath.endsWith(".woff2"));
+  const raw: unknown = JSON.parse(
+    await readFile(
+      manifestPath
+        ? resolve(manifestPath)
+        : resolve(root, "scripts/fixtures/font-forensics/css-range-proof.json"),
+      "utf8",
+    ),
+  );
   const manifest = Manifest.parse(raw);
   const original = await readFile(
     resolve(root, "public/fonts/studio/InterVariable-693b77d4f3.woff2"),
   );
-  const holes = await readFile(candidatePath ? resolve(candidatePath) : resolve(
-      root,
-      "scripts/fixtures/font-forensics/holes-only-inter-4d21ed4102.woff2",
-    ));
+  const holes = await readFile(
+    candidatePath
+      ? resolve(candidatePath)
+      : resolve(
+          root,
+          "scripts/fixtures/font-forensics/holes-only-inter-4d21ed4102.woff2",
+        ),
+  );
   assert.equal(
     createHash("sha256").update(original).digest("hex"),
     manifest.sourceSHA256,
   );
-  assert.equal(manifest.sourceSHA256,"693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3");
+  assert.equal(
+    manifest.sourceSHA256,
+    "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+  );
   assert.equal(
     createHash("sha256").update(holes).digest("hex"),
     manifest.candidateSHA256,
@@ -102,7 +120,14 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
                   face(name, mode, "original", manifest.mappedComplementCSS),
               )
               .join("")
-          : face("Candidate", mode, "holes", mode === "universe" ? manifest.controlPrimaryCSS ?? manifest.primaryCSS : manifest.primaryCSS) +
+          : face(
+              "Candidate",
+              mode,
+              "holes",
+              mode === "universe"
+                ? (manifest.controlPrimaryCSS ?? manifest.primaryCSS)
+                : manifest.primaryCSS,
+            ) +
             face(
               "Candidate",
               mode,
@@ -132,12 +157,15 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
     unmappedInPrimary: manifest.unmappedInPrimary ?? false,
     rangeLabels: {
       mapped: "Original mapped codepoints minus primary",
-      universe: "Whole Unicode minus primary; diagnostic control only",
+      universe:
+        "Whole Unicode minus mapped core; narrow-primary adverse control",
       unmapped: "Robot U+1F916 and U+10FFFF have no original cmap mapping",
     },
     primaryCSS: manifest.primaryCSS,
     mappedComplementCSS: manifest.mappedComplementCSS,
     universeControlCSS: manifest.complementCSS,
+    universePrimaryControlCSS:
+      manifest.controlPrimaryCSS ?? manifest.primaryCSS,
     observations,
     demand,
     requests,
@@ -268,8 +296,8 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
           text,
         })),
         { kind: "unmapped", text: "A🤖\u{10FFFF}V" },
-          { kind: "unmapped-robot", text: "A🤖V" },
-          { kind: "unmapped-noncharacter", text: "A\u{10FFFF}V" },
+        { kind: "unmapped-robot", text: "A🤖V" },
+        { kind: "unmapped-noncharacter", text: "A\u{10FFFF}V" },
       ];
       for (const profile of profiles)
         for (const sample of samples) {
@@ -321,7 +349,7 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
             referenceGeometry.scrollWidth <= referenceGeometry.width,
             "Original text must be fully captured",
           );
-          const referenceFonts=await fonts("OriginalA");
+          const referenceFonts = await fonts("OriginalA");
           for (const alias of aliases.slice(1)) {
             const bytes = await page
               .locator(`#${alias}`)
@@ -356,18 +384,37 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
             else {
               assert(
                 usedFonts.some(
-                    (font) =>
-                      font.isCustomFont &&
-                      font.familyName === "Inter Variable" &&
-                      font.postScriptName === "InterVariable" &&
-                      font.glyphCount >= 2,
-                  ),
+                  (font) =>
+                    font.isCustomFont &&
+                    font.familyName === "Inter Variable" &&
+                    font.postScriptName === "InterVariable" &&
+                    font.glyphCount >= 2,
+                ),
                 "Unmapped samples require custom Inter A/V",
               );
-              if(sample.kind !== "unmapped-noncharacter")assert(usedFonts.some(font=>!font.isCustomFont&&font.glyphCount>0),"Robot controls require positively observed system fallback");
+              if (sample.kind !== "unmapped-noncharacter")
+                assert(
+                  usedFonts.some(
+                    (font) => !font.isCustomFont && font.glyphCount > 0,
+                  ),
+                  "Robot controls require positively observed system fallback",
+                );
             }
-            const fontSignature=(value:typeof usedFonts)=>JSON.stringify(value.map(font=>[font.familyName,font.postScriptName,font.isCustomFont,font.glyphCount]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
-            const fontUsageEqual=fontSignature(usedFonts)===fontSignature(referenceFonts);
+            const fontSignature = (value: typeof usedFonts) =>
+              JSON.stringify(
+                value
+                  .map((font) => [
+                    font.familyName,
+                    font.postScriptName,
+                    font.isCustomFont,
+                    font.glyphCount,
+                  ])
+                  .sort((a, b) =>
+                    JSON.stringify(a).localeCompare(JSON.stringify(b)),
+                  ),
+              );
+            const fontUsageEqual =
+              fontSignature(usedFonts) === fontSignature(referenceFonts);
             const geometryEqual =
               geometry.width === referenceGeometry.width &&
               geometry.height === referenceGeometry.height &&
@@ -436,13 +483,15 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
               assert(
                 pixels.dimensionsEqual &&
                   pixels.pixelsChanged === 0 &&
-                  geometryEqual && fontUsageEqual,
+                  geometryEqual &&
+                  fontUsageEqual,
                 "Actual range A/A raster control changed",
               );
             if (
               pixels.pixelsChanged !== 0 ||
               !pixels.dimensionsEqual ||
-              !geometryEqual || !fontUsageEqual
+              !geometryEqual ||
+              !fontUsageEqual
             ) {
               const name = `${alias}-${sample.kind}-${profile.size}-${profile.weight}-${profile.opsz}`;
               await writeFile(resolve(destination, `${name}.png`), bytes);
@@ -461,7 +510,10 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
     report.verdict = observations.some(
       (row) =>
         row.alias !== "OriginalB" &&
-        (!row.dimensionsEqual || row.pixelsChanged !== 0 || !row.geometryEqual || !row.fontUsageEqual),
+        (!row.dimensionsEqual ||
+          row.pixelsChanged !== 0 ||
+          !row.geometryEqual ||
+          !row.fontUsageEqual),
     )
       ? "range-or-candidate-differences-rejected"
       : "zero-observed-differences-bounded-normal-only";

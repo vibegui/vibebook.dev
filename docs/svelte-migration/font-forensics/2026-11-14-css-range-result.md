@@ -4,11 +4,11 @@
 
 BugMachine completed the proof at `c3e057c72029f00500fafcb7f5d7f3a00dbed68e`, Chromium `158.0.8127.18`. The preserved [raw CSS-range report](2026-11-14-css-range-result.json) has SHA256 `e1afc29b97c465e749218f11b800e5d845a6e27ae72bfb178960f56d3ed03ea0`. Status is complete, verdict **range-or-candidate-differences-rejected**, page errors empty. Completion is not fidelity acceptance.
 
-| Alias | Exact observations | Failed observations |
-|---|---:|---:|
-| OriginalB A/A | 54 | 0 |
-| RangeOriginal, two original faces | 36 | 18 |
-| RangeHoles, primary holes + original complement | 36 | 18 |
+| Alias                                           | Exact observations | Failed observations |
+| ----------------------------------------------- | -----------------: | ------------------: |
+| OriginalB A/A                                   |                 54 |                   0 |
+| RangeOriginal, two original faces               |                 36 |                  18 |
+| RangeHoles, primary holes + original complement |                 36 |                  18 |
 
 Both partitioned aliases have identical measured pixel differences and geometry across all 54 observations. Their failures are the same two strings in all nine normal profiles:
 
@@ -19,12 +19,12 @@ Selected Latin/PT text, Greek/Cyrillic mixtures and the Cyrillic combining-mark 
 
 ## Actual request costs
 
-| Mask / stage | Requested bodies | Resource Timing transfer bytes |
-|---|---|---:|
-| Mapped complement / selected | 251,404-byte primary | 251,704 |
-| Mapped complement / unsupported | same primary only | 251,704 |
-| Mapped complement / mapped mixed | primary + 352,240-byte original | 604,244 |
-| Whole-Unicode complement / unsupported | primary + unnecessary original | 604,244 |
+| Mask / stage                           | Requested bodies                | Resource Timing transfer bytes |
+| -------------------------------------- | ------------------------------- | -----------------------------: |
+| Mapped complement / selected           | 251,404-byte primary            |                        251,704 |
+| Mapped complement / unsupported        | same primary only               |                        251,704 |
+| Mapped complement / mapped mixed       | primary + 352,240-byte original |                        604,244 |
+| Whole-Unicode complement / unsupported | primary + unnecessary original  |                        604,244 |
 
 These are controlled font requests, not integrated application timings or total normal/italic/Mono budget acceptance.
 
