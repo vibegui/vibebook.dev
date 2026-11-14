@@ -256,7 +256,10 @@ test("actual startAuth falls back past malformed metadata, then keeps PKCE/fixed
       "https://vibebook.test/api/mcp-oauth/callback",
     );
     expect(target.searchParams.get("code_challenge_method")).toBe("S256");
-    expect(target.searchParams.get("state")).toEqual(stored?.values[0]);
+    const storedState = stored?.values[0];
+    if (typeof storedState !== "string")
+      throw Error("Missing stored OAuth state");
+    expect(target.searchParams.get("state")).toBe(storedState);
     expect(target.searchParams.get("state")?.startsWith("svelte.")).toBe(true);
     expect(target.searchParams.get("scope")).toBe("read write");
     expect(
