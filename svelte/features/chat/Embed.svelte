@@ -22,7 +22,8 @@
     height = $state(320),
     clipped = $state(false);
   let active = true;
-  const consent = createAppConsent(() => active), question = consent.question;
+  const consent = createAppConsent(() => active),
+    question = consent.question;
   const ask = consent.ask;
   onMount(() => {
     const detach = frame
@@ -79,23 +80,34 @@
       {file.name}
     </p>{/if}
   {#if $question}{#key $question}<Snapshot value={$question}>
-      {#snippet children(intent)}<div
-      role="group"
-      aria-label={vb.t("Confirmar")}
-      class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-3"
-    >
-      <p class="tw:m-0">
-        {vb.t("Este app quer {what}, como você:", { what: intent.what })}
-      </p>
-      <q class="tw:block tw:break-words tw:text-xs tw:text-muted-foreground"
-        >{intent.detail}</q
-      >
-      <div class="tw:flex tw:flex-wrap tw:gap-2">
-        <Button size="sm" onclick={(event) => { if (event.currentTarget.isConnected) consent.choose(intent, true); }}
-          >{vb.t("Permitir")}</Button
-        ><Button size="sm" variant="outline" onclick={(event) => { if (event.currentTarget.isConnected) consent.choose(intent, false); }}
-          >{vb.t("Cancelar")}</Button
-        >
-      </div>
-    </div>{/snippet}</Snapshot>{/key}{/if}
+        {#snippet children(intent)}<div
+            role="group"
+            aria-label={vb.t("Confirmar")}
+            class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-3"
+          >
+            <p class="tw:m-0">
+              {vb.t("Este app quer {what}, como você:", { what: intent.what })}
+            </p>
+            <q
+              class="tw:block tw:break-words tw:text-xs tw:text-muted-foreground"
+              >{intent.detail}</q
+            >
+            <div class="tw:flex tw:flex-wrap tw:gap-2">
+              <Button
+                size="sm"
+                onclick={(event) => {
+                  if (event.currentTarget.isConnected)
+                    consent.choose(intent, true);
+                }}>{vb.t("Permitir")}</Button
+              ><Button
+                size="sm"
+                variant="outline"
+                onclick={(event) => {
+                  if (event.currentTarget.isConnected)
+                    consent.choose(intent, false);
+                }}>{vb.t("Cancelar")}</Button
+              >
+            </div>
+          </div>{/snippet}</Snapshot
+      >{/key}{/if}
 </div>

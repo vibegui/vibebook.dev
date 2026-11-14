@@ -2297,8 +2297,14 @@ describe("native Svelte chat", () => {
     oldAllow.click();
     oldAllow.click();
     await expect(firstQuestion).resolves.toBe(true);
-    for (let frame = 0; frame < 10 && target.querySelector("q")?.textContent !== "unseen B"; frame++) {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    for (
+      let frame = 0;
+      frame < 10 && target.querySelector("q")?.textContent !== "unseen B";
+      frame++
+    ) {
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
       flushSync();
       await tick();
     }
