@@ -310,10 +310,10 @@
       max={$view.documentMaximum}
       step="1"
       value={$view.documentWidth}
-      disabled={!$view.active}
+      disabled={!$view.active || props.overlayOpen}
       aria-label={props.labels.documentWidth}
       data-room-width
-      class={!$view.mobile && rightVisible
+      class={!props.overlayOpen && !$view.mobile && rightVisible
         ? "tw:z-30 tw:col-start-3 tw:row-start-1 tw:row-end-6 tw:m-0 tw:h-full tw:w-3 tw:cursor-col-resize tw:touch-none tw:appearance-none tw:rounded-none tw:border-0 tw:bg-border tw:p-0 tw:outline-none tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
         : "tw:hidden"}
     />
