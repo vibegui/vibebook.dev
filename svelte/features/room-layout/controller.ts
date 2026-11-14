@@ -16,6 +16,34 @@ export type {
   RoomLayoutCells,
 } from "./types";
 
+/** A Viewer completion must cross the sheet gate at execution time, not just
+ * when the original gesture was queued. Each owner/intent executes at most once. */
+export function createRoomLayoutIntents(options: {
+  current(): boolean;
+  deferSheet(callback: () => void): boolean;
+}) {
+  type Gate = { deferNavigation(callback: () => void): boolean };
+  let active = true, revision = 0, binding: { gate: Gate } | null = null;
+  return {
+    run(callback: () => void) {
+      if (!active || !options.current()) return;
+      const ticket = ++revision;
+      let completed = false;
+      const valid = () => active && options.current() && ticket === revision;
+      const owned = () => { if (valid() && !completed) { completed = true; callback(); } };
+      const afterViewer = () => { if (!valid() || completed) return; if (!options.deferSheet(owned)) owned(); };
+      if (!binding?.gate.deferNavigation(afterViewer)) afterViewer();
+    },
+    setViewerGate(gate: Gate) {
+      if (!active) return () => {};
+      revision++; const lease = { gate }; binding = lease;
+      return () => { if (binding === lease) { binding = null; revision++; } };
+    },
+    invalidate() { revision++; },
+    dispose() { active = false; revision++; binding = null; },
+  };
+}
+
 export function createRoomLayout(
   options: RoomLayoutOptions,
 ): RoomLayoutController {
@@ -24,7 +52,6 @@ export function createRoomLayout(
   let active = true,
     geometry: RoomGeometry | null = null,
     mountRevision = 0;
-  let viewer: { deferNavigation(callback: () => void): boolean } | null = null;
   let value: RoomLayoutState = {
     pane: "doc",
     sheet: null,
@@ -67,15 +94,8 @@ export function createRoomLayout(
       if (active) publish({ closingUnconfirmed });
     },
   });
-  const intent = (callback: () => void) => {
-    if (!current()) return;
-    const owned = () => {
-      if (current()) callback();
-    };
-    if (viewer?.deferNavigation(owned) || history.deferNavigation(owned))
-      return;
-    owned();
-  };
+  const intents = createRoomLayoutIntents({ current, deferSheet: history.deferNavigation });
+  const intent = intents.run;
   const pane = (next: RoomLayoutState["pane"]) => {
     const changed = value.pane !== next;
     publish({ pane: next, documentVisible: true });
@@ -158,9 +178,12 @@ export function createRoomLayout(
       });
     },
     takeSheetEntry() {
-      return current() ? history.take() : false;
+      if (!current()) return false;
+      intents.invalidate();
+      return history.take();
     },
     beforeNavigation() {
+      intents.invalidate();
       history.beforeNavigation();
       geometry?.cancelGestures();
     },
@@ -170,11 +193,7 @@ export function createRoomLayout(
       if (current()) history.retry();
     },
     setViewerGate(gate) {
-      if (!active) return () => {};
-      viewer = gate;
-      return () => {
-        if (viewer === gate) viewer = null;
-      };
+      return intents.setViewerGate(gate);
     },
     bindHandle(node, sheet, opening) {
       if (!active) return () => {};
@@ -248,7 +267,7 @@ export function createRoomLayout(
     dispose() {
       if (!active) return;
       active = false;
-      viewer = null;
+      intents.dispose();
       history.dispose();
       stopMount();
       handles.clear();
