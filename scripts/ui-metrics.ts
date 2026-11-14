@@ -80,12 +80,18 @@ assert(
   new Set(profiles.map((profile) => profile.name)).size === profiles.length,
   "Profiles must be unique",
 );
-for (const profile of profiles)
-  { assert(profile.messages >= 1000 && profile.epics >= 30 && profile.epics * profile.tasksPerEpic >= 200, "Final comparison requires the plan's minimum common workload");
-    assert(
+for (const profile of profiles) {
+  assert(
+    profile.messages >= 1000 &&
+      profile.epics >= 30 &&
+      profile.epics * profile.tasksPerEpic >= 200,
+    "Final comparison requires the plan's minimum common workload",
+  );
+  assert(
     config.historyPages <= Math.ceil((profile.messages * 0.6 - 60) / 100),
     "History pages exceed the synthetic main-thread history",
-  ); }
+  );
+}
 const publicRoot = await realpath(
     resolve(process.env.METRICS_PUBLIC_ROOT ?? "public"),
   ),
@@ -121,7 +127,10 @@ async function asset(key: string, path: string, htmlVariant?: Variant) {
         hash(original).slice(0, 20);
     versions[htmlVariant] = version;
     if (!source.includes('name="vb-v"') && !source.includes("name='vb-v'")) {
-      assert(htmlVariant !== "svelte", "Native benchmark must serve the actual versioned production shell, never inject a substitute version");
+      assert(
+        htmlVariant !== "svelte",
+        "Native benchmark must serve the actual versioned production shell, never inject a substitute version",
+      );
       body = Buffer.from(
         source.replace(
           /<head\b[^>]*>/i,
@@ -532,7 +541,9 @@ async function run(
     (socket) => {
       runFixture.personalSockets++;
       socket.onMessage(() => {});
-      socket.onClose(() => { runFixture.personalSockets--; });
+      socket.onClose(() => {
+        runFixture.personalSockets--;
+      });
     },
   );
   await context.routeWebSocket(
@@ -780,17 +791,17 @@ async function run(
     );
   }
   const chatSelector = variant === "svelte" ? "[data-room-chat]" : "#msgs";
-  const composerSelector = variant === "svelte" ? "[data-native-composer] textarea" : "#composer textarea";
-  const messageRowSelector = variant === "svelte" ? "[data-chat-message]" : ".msg[id^=m]";
+  const composerSelector =
+    variant === "svelte"
+      ? "[data-native-composer] textarea"
+      : "#composer textarea";
+  const messageRowSelector =
+    variant === "svelte" ? "[data-chat-message]" : ".msg[id^=m]";
   const bodySelector = `${chatSelector} ${variant === "svelte" ? "[data-message-body]" : ".txt"}`;
   async function layout() {
     return page.locator(chatSelector).evaluate((element, selector) => {
       const rect = element.getBoundingClientRect(),
-        rows = Array.from(
-          element.querySelectorAll<HTMLElement>(
-            selector,
-          ),
-        ),
+        rows = Array.from(element.querySelectorAll<HTMLElement>(selector)),
         visible = rows.filter((row) => {
           const r = row.getBoundingClientRect();
           return r.bottom > rect.top && r.top < rect.bottom;
@@ -807,9 +818,17 @@ async function run(
   }
   async function sidebar() {
     if (device.width > 900) return;
-    const root = page.locator(variant === "svelte" ? "[data-native-room-layout]" : ".book");
-    if (await root.getAttribute("data-sheet") !== "side") {
-      await page.locator(variant === "svelte" ? '[data-native-room-header] button[aria-label="Switch conversation"]' : "#threadTitle").click();
+    const root = page.locator(
+      variant === "svelte" ? "[data-native-room-layout]" : ".book",
+    );
+    if ((await root.getAttribute("data-sheet")) !== "side") {
+      await page
+        .locator(
+          variant === "svelte"
+            ? '[data-native-room-header] button[aria-label="Switch conversation"]'
+            : "#threadTitle",
+        )
+        .click();
     }
     await expect(root).toHaveAttribute("data-sheet", "side");
   }
@@ -817,12 +836,21 @@ async function run(
     await expect.poll(() => new URL(page.url()).pathname).toBe(`/b/${room.id}`);
     await expect(page.locator(composerSelector)).toBeVisible();
     await expect(page.locator(composerSelector)).toBeEnabled();
-    if (variant === "svelte") await expect(page.locator("[data-native-app-shell] [data-native-room-layout]")).toBeVisible();
-    const latest = room.all.filter(message => message.thread === thread).at(-1);
+    if (variant === "svelte")
+      await expect(
+        page.locator("[data-native-app-shell] [data-native-room-layout]"),
+      ).toBeVisible();
+    const latest = room.all
+      .filter((message) => message.thread === thread)
+      .at(-1);
     assert(latest, `Fixture has no message for ${thread}`);
     await expect(page.locator(`#m${latest.id}`)).toBeVisible();
-    await expect(page.locator(`#m${latest.id}`)).toContainText(latest.text.slice(0, 80));
-    await expect.poll(() => new URL(page.url()).searchParams.get("t") ?? "main").toBe(thread);
+    await expect(page.locator(`#m${latest.id}`)).toContainText(
+      latest.text.slice(0, 80),
+    );
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get("t") ?? "main")
+      .toBe(thread);
   }
   async function chooseRoom(room: FixtureRoom) {
     await page.locator(`a[href^="/b/${room.id}"]:visible`).first().click();
@@ -830,15 +858,37 @@ async function run(
   }
   async function chooseThread(room: FixtureRoom, thread: string) {
     await sidebar();
-    const side = page.locator(variant === "svelte" ? "[data-native-room-sidebar]" : "#side");
-    if (variant === "svelte" && thread === "main") await side.getByRole("button").filter({ hasText: room.root.book.title }).first().click();
-    else await side.locator(variant === "svelte" ? `[data-epic-thread="${thread}"]` : `[data-thread="${thread}"]`).first().click();
+    const side = page.locator(
+      variant === "svelte" ? "[data-native-room-sidebar]" : "#side",
+    );
+    if (variant === "svelte" && thread === "main")
+      await side
+        .getByRole("button")
+        .filter({ hasText: room.root.book.title })
+        .first()
+        .click();
+    else
+      await side
+        .locator(
+          variant === "svelte"
+            ? `[data-epic-thread="${thread}"]`
+            : `[data-thread="${thread}"]`,
+        )
+        .first()
+        .click();
     await roomReady(room, thread);
   }
   async function postGC() {
     await cdp.send("HeapProfiler.collectGarbage");
     const dom: unknown = await cdp.send("Memory.getDOMCounters");
-    return { counters: await counters(), dom, activeBookSockets: Object.fromEntries([...runFixture.sockets].map(([id, sockets]) => [id, sockets.size])), activePersonalSockets: runFixture.personalSockets };
+    return {
+      counters: await counters(),
+      dom,
+      activeBookSockets: Object.fromEntries(
+        [...runFixture.sockets].map(([id, sockets]) => [id, sockets.size]),
+      ),
+      activePersonalSockets: runFixture.personalSockets,
+    };
   }
   try {
     await checkpoint("entry");
@@ -874,17 +924,73 @@ async function run(
         size: getComputedStyle(element).fontSize,
       }));
     const dom = await cdp.send("DOM.getDocument"),
-      bodyNode = await cdp.send("DOM.querySelector", { nodeId: dom.root.nodeId, selector: bodySelector });
-    const platformFonts = bodyNode.nodeId ? await cdp.send("CSS.getPlatformFontsForNode", { nodeId: bodyNode.nodeId }) : null;
+      bodyNode = await cdp.send("DOM.querySelector", {
+        nodeId: dom.root.nodeId,
+        selector: bodySelector,
+      });
+    const platformFonts = bodyNode.nodeId
+      ? await cdp.send("CSS.getPlatformFontsForNode", {
+          nodeId: bodyNode.nodeId,
+        })
+      : null;
     sample.platformFonts = platformFonts;
-    sample.loadedFontFaces = await page.evaluate(() => [...document.fonts].map(face => ({ family: face.family, weight: face.weight, style: face.style, status: face.status })));
-    const entryAssets = [...network.values()].filter(resource => resource.phase === "entry" && resource.assetKey).map(resource => assets.get(resource.assetKey!)!).filter(Boolean);
-    sample.metrics["entry.applicationGzipReferenceBytes"] = entryAssets.filter(value => /(?:javascript|css|html)/.test(value.type)).reduce((sum, value) => sum + value.gzipBytes, 0);
-    sample.metrics["entry.localFontGzipReferenceBytes"] = entryAssets.filter(value => /\.(?:woff2?|ttf|otf)$/.test(value.sourcePath)).reduce((sum, value) => sum + value.gzipBytes, 0);
-    const fontDependencies = [...network.values()].filter(resource => resource.phase === "entry" && (resource.type === "Font" || /fonts\.googleapis\.com|fonts\.gstatic\.com|\.(?:woff2?|ttf|otf)(?:\?|$)/.test(resource.url)));
-    const fontUnknown = fontDependencies.length === 0 || fontDependencies.some(resource => !resource.completed || !!resource.failed || resource.transferBytes === null || resource.status === undefined || resource.status >= 400) || !platformFonts?.fonts.some(font => font.isCustomFont && font.glyphCount > 0) || blocked.some(url => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(url));
-    sample.metrics["entry.fontTransferBytes"] = fontUnknown ? null : fontDependencies.reduce((sum, resource) => sum + resource.transferBytes!, 0);
-    sample.fontTransfer = { status: fontUnknown ? "unverified" : "observed-requested-fonts", scope: "Actual requested font dependencies, including public font CSS. Variant families intentionally differ; not a matched-font experiment or total Unicode font coverage.", requests: fontDependencies, blocked: blocked.filter(url => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(url)) };
+    sample.loadedFontFaces = await page.evaluate(() =>
+      [...document.fonts].map((face) => ({
+        family: face.family,
+        weight: face.weight,
+        style: face.style,
+        status: face.status,
+      })),
+    );
+    const entryAssets = [...network.values()]
+      .filter((resource) => resource.phase === "entry" && resource.assetKey)
+      .map((resource) => assets.get(resource.assetKey!)!)
+      .filter(Boolean);
+    sample.metrics["entry.applicationGzipReferenceBytes"] = entryAssets
+      .filter((value) => /(?:javascript|css|html)/.test(value.type))
+      .reduce((sum, value) => sum + value.gzipBytes, 0);
+    sample.metrics["entry.localFontGzipReferenceBytes"] = entryAssets
+      .filter((value) => /\.(?:woff2?|ttf|otf)$/.test(value.sourcePath))
+      .reduce((sum, value) => sum + value.gzipBytes, 0);
+    const fontDependencies = [...network.values()].filter(
+      (resource) =>
+        resource.phase === "entry" &&
+        (resource.type === "Font" ||
+          /fonts\.googleapis\.com|fonts\.gstatic\.com|\.(?:woff2?|ttf|otf)(?:\?|$)/.test(
+            resource.url,
+          )),
+    );
+    const fontUnknown =
+      fontDependencies.length === 0 ||
+      fontDependencies.some(
+        (resource) =>
+          !resource.completed ||
+          !!resource.failed ||
+          resource.transferBytes === null ||
+          resource.status === undefined ||
+          resource.status >= 400,
+      ) ||
+      !platformFonts?.fonts.some(
+        (font) => font.isCustomFont && font.glyphCount > 0,
+      ) ||
+      blocked.some((url) =>
+        /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(url),
+      );
+    sample.metrics["entry.fontTransferBytes"] = fontUnknown
+      ? null
+      : fontDependencies.reduce(
+          (sum, resource) => sum + resource.transferBytes!,
+          0,
+        );
+    sample.fontTransfer = {
+      status: fontUnknown ? "unverified" : "observed-requested-fonts",
+      scope:
+        "Actual requested font dependencies, including public font CSS. Variant families intentionally differ; not a matched-font experiment or total Unicode font coverage.",
+      requests: fontDependencies,
+      blocked: blocked.filter((url) =>
+        /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(url),
+      ),
+    };
     await checkpoint("history");
     const beforeHistory = await counters(),
       historyStart = await layout();
@@ -1037,21 +1143,22 @@ async function run(
     await checkpoint("roomSwitch");
     const beforeState = runFixture.deliveredEvents.state || 0;
     await arm("roomSwitch", "state", "click", rooms[1].root.book.title);
-    await page
-      .locator(
-        `a[href^="/b/${rooms[1].id}"]:visible`,
-      )
-      .first()
-      .click();
+    await page.locator(`a[href^="/b/${rooms[1].id}"]:visible`).first().click();
     await delivered("state", beforeState);
     await expect
       .poll(() => new URL(page.url()).pathname)
       .toBe(`/b/${rooms[1].id}`);
-    await expect(page.locator(chatSelector)).toContainText("Synthetic B message");
+    await expect(page.locator(chatSelector)).toContainText(
+      "Synthetic B message",
+    );
     await result("roomSwitch", true);
     await checkpoint("inboxDeferred");
     await arm("inboxDeferred", undefined, "click");
-    await page.locator(variant === "svelte" ? "[data-native-inbox-toggle]" : "#inboxBtn").click();
+    await page
+      .locator(
+        variant === "svelte" ? "[data-native-inbox-toggle]" : "#inboxBtn",
+      )
+      .click();
     const inbox =
       variant === "vanilla"
         ? page.locator("dialog#inbox[open]")
@@ -1066,21 +1173,53 @@ async function run(
     await checkpoint("homeNavigation");
     await sidebar();
     await arm("homeNavigation", undefined, "click");
-    await page.locator(variant === "svelte" ? '[data-native-room-sidebar] a[href^="/app"]' : '#side a[href="/app"]').first().click();
+    await page
+      .locator(
+        variant === "svelte"
+          ? '[data-native-room-sidebar] a[href^="/app"]'
+          : '#side a[href="/app"]',
+      )
+      .first()
+      .click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/app");
-    await expect(page.locator(variant === "svelte" ? '[data-vb-native="home"]' : ".home")).toBeVisible();
-    await expect(page.locator(`a[href^="/b/${first.id}"]:visible`).first()).toBeVisible();
+    await expect(
+      page.locator(variant === "svelte" ? '[data-vb-native="home"]' : ".home"),
+    ).toBeVisible();
+    await expect(
+      page.locator(`a[href^="/b/${first.id}"]:visible`).first(),
+    ).toBeVisible();
     await result("homeNavigation", true);
     await chooseRoom(first);
     await checkpoint("navigationLifecycle");
-    const lifecycle = { scope: "controlled room/thread transport; actual editor/provider lifecycle is a separate real-Worker cohort", baseline: await postGC(), cycles: [] as { cycle: number; ms: number; snapshot: Awaited<ReturnType<typeof postGC>> }[] };
+    const lifecycle = {
+      scope:
+        "controlled room/thread transport; actual editor/provider lifecycle is a separate real-Worker cohort",
+      baseline: await postGC(),
+      cycles: [] as {
+        cycle: number;
+        ms: number;
+        snapshot: Awaited<ReturnType<typeof postGC>>;
+      }[],
+    };
     for (let cycle = 1; cycle <= config.lifecycleCycles; cycle++) {
-      const start = performance.now(), room = rooms[cycle % 2];
+      const start = performance.now(),
+        room = rooms[cycle % 2];
       await chooseRoom(room);
       await chooseThread(room, room.firstActiveEpic);
       await chooseThread(room, "main");
-      await expect.poll(() => [...runFixture.sockets.values()].reduce((count, set) => count + set.size, 0)).toBe(1);
-      lifecycle.cycles.push({ cycle, ms: performance.now() - start, snapshot: await postGC() });
+      await expect
+        .poll(() =>
+          [...runFixture.sockets.values()].reduce(
+            (count, set) => count + set.size,
+            0,
+          ),
+        )
+        .toBe(1);
+      lifecycle.cycles.push({
+        cycle,
+        ms: performance.now() - start,
+        snapshot: await postGC(),
+      });
       sample.navigationLifecycle = lifecycle;
     }
     await page.waitForLoadState("networkidle");
@@ -1154,20 +1293,23 @@ async function run(
         }))
         .catch(() => null);
       sample.layoutAtFailure = await page
-        .evaluate(({ chatSelector, selector }) => {
-          const element = document.querySelector(chatSelector);
-          if (!element) return null;
-          const rows = element.querySelectorAll<HTMLElement>(
-            selector.replace(/^#msgs /, ""),
-          );
-          return {
-            scrollTop: element.scrollTop,
-            scrollHeight: element.scrollHeight,
-            clientHeight: element.clientHeight,
-            renderedMessages: rows.length,
-            firstDOM: rows[0]?.id || null,
-          };
-        }, { chatSelector, selector: messageRowSelector })
+        .evaluate(
+          ({ chatSelector, selector }) => {
+            const element = document.querySelector(chatSelector);
+            if (!element) return null;
+            const rows = element.querySelectorAll<HTMLElement>(
+              selector.replace(/^#msgs /, ""),
+            );
+            return {
+              scrollTop: element.scrollTop,
+              scrollHeight: element.scrollHeight,
+              clientHeight: element.clientHeight,
+              renderedMessages: rows.length,
+              firstDOM: rows[0]?.id || null,
+            };
+          },
+          { chatSelector, selector: messageRowSelector },
+        )
         .catch(() => null);
     }
     if (!cancelled) process.exitCode = 1;
@@ -1201,57 +1343,65 @@ try {
   });
   results.chromium = browser.version();
   assert(!cancelled, "Benchmark cancelled during browser startup");
-  trials: for (const shape of profiles) for (const device of devices) {
-    for (let index = 0; index < config.warmups; index++)
-      for (const variant of variants)
-        if (!(await run(variant, device, shape, index + 1, true)) && config.failFast) {
-          results.stoppedAfterInvalidSample = true;
-          break trials;
-        }
-    for (let repetition = 1; repetition <= config.repetitions; repetition++)
-      for (const variant of repetition % 2 ? variants : [...variants].reverse())
-        if (
-          !(await run(variant, device, shape, repetition, false)) &&
-          config.failFast
-        ) {
-          results.stoppedAfterInvalidSample = true;
-          break trials;
-        }
-  }
+  trials: for (const shape of profiles)
+    for (const device of devices) {
+      for (let index = 0; index < config.warmups; index++)
+        for (const variant of variants)
+          if (
+            !(await run(variant, device, shape, index + 1, true)) &&
+            config.failFast
+          ) {
+            results.stoppedAfterInvalidSample = true;
+            break trials;
+          }
+      for (let repetition = 1; repetition <= config.repetitions; repetition++)
+        for (const variant of repetition % 2
+          ? variants
+          : [...variants].reverse())
+          if (
+            !(await run(variant, device, shape, repetition, false)) &&
+            config.failFast
+          ) {
+            results.stoppedAfterInvalidSample = true;
+            break trials;
+          }
+    }
   const summaries = profiles.flatMap((shape) =>
-    devices.flatMap(device => variants.map((variant) => {
-      const rows = samples.filter(
-          (sample) =>
-            sample.profile === shape.name &&
-            sample.device === device.name &&
-            sample.variant === variant &&
-            !sample.warmup,
-        ),
-        valid = rows.filter((sample) => sample.status === "passed"),
-        keys = [
-          ...new Set(valid.flatMap((sample) => Object.keys(sample.metrics))),
-        ];
-      return {
-        profile: shape.name,
-        device: device.name,
-        variant,
-        samples: rows.length,
-        passed: valid.length,
-        failed: rows.length - valid.length,
-        metrics: Object.fromEntries(
-          keys.map((key) => [
-            key,
-            summarize(
-              valid.flatMap((sample) =>
-                typeof sample.metrics[key] === "number"
-                  ? [sample.metrics[key]]
-                  : [],
+    devices.flatMap((device) =>
+      variants.map((variant) => {
+        const rows = samples.filter(
+            (sample) =>
+              sample.profile === shape.name &&
+              sample.device === device.name &&
+              sample.variant === variant &&
+              !sample.warmup,
+          ),
+          valid = rows.filter((sample) => sample.status === "passed"),
+          keys = [
+            ...new Set(valid.flatMap((sample) => Object.keys(sample.metrics))),
+          ];
+        return {
+          profile: shape.name,
+          device: device.name,
+          variant,
+          samples: rows.length,
+          passed: valid.length,
+          failed: rows.length - valid.length,
+          metrics: Object.fromEntries(
+            keys.map((key) => [
+              key,
+              summarize(
+                valid.flatMap((sample) =>
+                  typeof sample.metrics[key] === "number"
+                    ? [sample.metrics[key]]
+                    : [],
+                ),
               ),
-            ),
-          ]),
-        ),
-      };
-    })),
+            ]),
+          ),
+        };
+      }),
+    ),
   );
   const changed: string[] = [];
   for (const value of assets.values()) {
@@ -1269,11 +1419,19 @@ try {
   results.summaries = summaries;
   const budgets = assessBudgets(summaries, config.historyPages);
   results.budgets = budgets;
-  results.performanceAcceptance = budgets.some(row => row.status === "failed") ? "failed" : "unverified-pending-real-editor-lifecycle-and-full-scope-review";
+  results.performanceAcceptance = budgets.some((row) => row.status === "failed")
+    ? "failed"
+    : "unverified-pending-real-editor-lifecycle-and-full-scope-review";
   results.assets = assetEvidence();
   results.environmentEnd = environment();
   results.status =
-    samples.length === profiles.length * devices.length * variants.length * (config.warmups + config.repetitions) && samples.every((sample) => sample.status === "passed") && !changed.length
+    samples.length ===
+      profiles.length *
+        devices.length *
+        variants.length *
+        (config.warmups + config.repetitions) &&
+    samples.every((sample) => sample.status === "passed") &&
+    !changed.length
       ? "passed"
       : "incomplete-or-failed";
   if (changed.length) process.exitCode = 1;
@@ -1355,7 +1513,10 @@ try {
     "",
     "| Workload / device | Metric | Vanilla median | Native median | Limit | Result |",
     "|---|---|---:|---:|---:|---|",
-    ...budgets.map(row => `| ${row.profile} / ${row.device} | ${row.metric} | ${row.vanilla ?? "unverified"} | ${row.native ?? "unverified"} | ${row.limit ?? "unverified"} | ${row.status} |`),
+    ...budgets.map(
+      (row) =>
+        `| ${row.profile} / ${row.device} | ${row.metric} | ${row.vanilla ?? "unverified"} | ${row.native ?? "unverified"} | ${row.limit ?? "unverified"} | ${row.status} |`,
+    ),
     "",
     `Performance acceptance: ${results.performanceAcceptance}. Twenty actual editor/provider lifecycle cycles require the separate real-Worker cohort. Previous hybrid budget failures are historical evidence, not overwritten or cleared by generating this report.`,
     "",
