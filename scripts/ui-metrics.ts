@@ -893,6 +893,9 @@ async function run(
       .toBe(thread);
   }
   async function chooseRoom(room: FixtureRoom) {
+    // A phone thread pick closes the switcher sheet. Open it again before
+    // selecting a room; Home's room tiles are already visible without a sheet.
+    if (new URL(page.url()).pathname.startsWith("/b/")) await sidebar();
     await page.locator(`a[href^="/b/${room.id}"]:visible`).first().click();
     await roomReady(room);
   }
@@ -1181,6 +1184,7 @@ async function run(
     );
     await result("threadSwitch", true);
     await checkpoint("roomSwitch");
+    await sidebar();
     const beforeState = runFixture.deliveredEvents.state || 0;
     await arm("roomSwitch", "state", "click", rooms[1].root.book.title);
     await page.locator(`a[href^="/b/${rooms[1].id}"]:visible`).first().click();

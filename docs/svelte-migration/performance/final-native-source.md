@@ -97,3 +97,13 @@ serves that exact read-only endpoint using the existing `LoginsResult` schema,
 with an empty synthetic login history and disabled external providers for both
 variants. Unknown endpoints still invalidate samples. The failed warmup and its
 observations remain recorded; no measured cohort or budget acceptance completed.
+
+Run 43563593700 completed both desktop warmups and seven alternating measured
+runs per variant. The first 390px vanilla warmup failed at room switch because
+the preceding thread choice had closed the phone sidebar sheet. Both direct
+room switching and lifecycle room selection now reopen that actual sheet before
+clicking a visible room link; no forced clicks or route substitution are used.
+Desktop measurements already fail six unchanged budgets (readiness, thread
+switch, first history page, initial application gzip bytes, fonts and post-GC
+heap); history pages two/three pass. Mobile remains unverified and overall
+acceptance failed. See [the partial desktop receipt](2026-11-14-native-desktop-partial.md).
