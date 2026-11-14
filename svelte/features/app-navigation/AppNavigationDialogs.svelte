@@ -259,7 +259,7 @@
               }}
               onkeydown={(event) => {
                 if (
-                  current() && event.key === "Enter" &&
+                  event.key === "Enter" &&
                   !event.shiftKey &&
                   !event.isComposing &&
                   !$creator.inline &&

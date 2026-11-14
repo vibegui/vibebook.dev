@@ -36,8 +36,7 @@
     draft = $derived(controller.personal.draft),
     nav = $derived(controller.state),
     mutations = $derived(controller.rooms.state),
-    search = $derived(controller.search.state),
-    creator = $derived(controller.creator.state);
+    search = $derived(controller.search.state);
   const text = (
     key: Parameters<typeof homeText>[1],
     vars?: Record<string, string | number>,
