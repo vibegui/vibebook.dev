@@ -42,6 +42,13 @@ import {
 import { assessBudgets } from "./ui-metrics-budgets";
 import { metricShell } from "./ui-metrics-shell";
 import { metricDocumentContent } from "./ui-metrics-document-model";
+import {
+  capturePrivateHeap,
+  diagnosticFailure,
+  diagnosticScript,
+  type DiagnosticScript,
+  summarizeCPUProfile,
+} from "./ui-metrics-diagnostics";
 type Variant = "vanilla" | "svelte";
 const variants: Variant[] = ["vanilla", "svelte"];
 const devices = [
@@ -503,12 +510,25 @@ process.once("SIGTERM", finishSignal);
 function assetEvidence() {
   return [...assets.values()].map(({ body, gzip, ...metadata }) => metadata);
 }
+const diagnosticsEnabled = process.env.METRICS_DIAGNOSTICS === "1";
+const diagnosticTrials: Sample[] = [];
+async function createTrialContext(device: Device) {
+  assert(browser && !cancelled, "Benchmark browser is unavailable");
+  return browser.newContext({
+    viewport: { width: device.width, height: device.height },
+    locale: "en-US",
+    colorScheme: "light",
+    reducedMotion: "reduce",
+    serviceWorkers: "block",
+  });
+}
 async function run(
   variant: Variant,
   device: Device,
   shape: Workload,
   repetition: number,
   warmup: boolean,
+  diagnosticContext?: BrowserContext,
 ) {
   const rooms = [
     createMetricRoom(shape, "A", config.seed),
@@ -548,15 +568,12 @@ async function run(
       }),
     },
   };
-  samples.push(sample);
-  assert(browser && !cancelled, "Benchmark browser is unavailable");
-  const context = await browser.newContext({
-    viewport: { width: device.width, height: device.height },
-    locale: "en-US",
-    colorScheme: "light",
-    reducedMotion: "reduce",
-    serviceWorkers: "block",
-  });
+  if (diagnosticContext) {
+    sample.diagnosticOnly = true;
+    sample.excludedFromSummaries = true;
+    diagnosticTrials.push(sample);
+  } else samples.push(sample);
+  const context = diagnosticContext ?? (await createTrialContext(device));
   context.setDefaultTimeout(config.stepTimeoutMs);
   context.setDefaultNavigationTimeout(120000);
   await context.addCookies([{ name: "vb_lang", value: "en", url: base }]);
@@ -677,6 +694,53 @@ async function run(
     network = new Map<string, Resource>(),
     errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  let profilerActive = false;
+  const cpu: Record<string, ReturnType<typeof summarizeCPUProfile>> = {};
+  const scripts = new Map<string, DiagnosticScript | null>();
+  const parsedScript = (value: unknown) => {
+    if (!record(value) || typeof value.scriptId !== "string") return;
+    scripts.set(
+      value.scriptId,
+      scripts.has(value.scriptId) ? null : diagnosticScript(value),
+    );
+  };
+  if (diagnosticContext) {
+    cdp.on("Debugger.scriptParsed", parsedScript);
+    await cdp.send("Debugger.enable");
+  }
+  async function startCPU() {
+    if (!diagnosticContext) return;
+    await cdp.send("Profiler.enable");
+    await cdp.send("Profiler.setSamplingInterval", { interval: 1000 });
+    await cdp.send("Profiler.start");
+    profilerActive = true;
+  }
+  async function stopCPU(name: string) {
+    if (!diagnosticContext) return;
+    const stopped: unknown = await cdp.send("Profiler.stop");
+    profilerActive = false;
+    assert(record(stopped), "Missing CPU profile");
+    cpu[name] = summarizeCPUProfile(
+      stopped.profile,
+      [...network.values()].flatMap((resource) => {
+        const asset = resource.assetKey
+          ? assets.get(resource.assetKey)
+          : undefined;
+        return asset && /(?:javascript|html)/.test(asset.type)
+          ? [
+              {
+                url: resource.url,
+                assetKey: asset.key,
+                sourceSHA256: asset.sourceSHA256,
+                servedSHA256: asset.servedSHA256,
+              },
+            ]
+          : [];
+      }),
+      scripts,
+    );
+    sample.cpuProfiles = cpu;
+  }
   await cdp.send("Performance.enable");
   await cdp.send("DOM.enable");
   await cdp.send("CSS.enable");
@@ -1003,6 +1067,7 @@ async function run(
   try {
     await checkpoint("entry");
     const first = rooms[0];
+    if (diagnosticContext) await startCPU();
     const response = await page.goto(
       `${base}/b/${first.id}${variant === "svelte" ? "?ui=svelte" : ""}`,
       { waitUntil: "domcontentloaded" },
@@ -1046,6 +1111,9 @@ async function run(
     sample.metrics["entry.readyWithFontsAndTwoFramesMs"] = await page.evaluate(
       () => performance.now(),
     );
+    if (diagnosticContext) await stopCPU("entry");
+    if (diagnosticContext)
+      sample.initialHeap = await capturePrivateHeap(cdp, output);
     await page.waitForLoadState("networkidle");
     sample.entryLayout = await layout();
     const entryCounters = await counters();
@@ -1266,6 +1334,7 @@ async function run(
     await checkpoint("threadSwitch");
     await sidebar();
     const thread = first.firstActiveEpic;
+    if (diagnosticContext) await startCPU();
     await arm("threadSwitch", undefined, "click");
     await page
       .locator(
@@ -1279,6 +1348,7 @@ async function run(
       `Synthetic A message ${first.all.filter((message) => message.thread === thread).at(-1)!.id}`,
     );
     await result("threadSwitch", true);
+    if (diagnosticContext) await stopCPU("threadSwitch");
     await checkpoint("roomSwitch");
     await sidebar();
     const beforeState = runFixture.deliveredEvents.state || 0;
@@ -1444,8 +1514,9 @@ async function run(
   } catch (error) {
     sample.status = "failed";
     sample.failedPhase = phase;
-    sample.error =
-      error instanceof Error
+    sample.error = diagnosticContext
+      ? diagnosticFailure(error)
+      : error instanceof Error
         ? error.message.slice(0, 8000)
         : "Benchmark failed";
     console.error(
@@ -1467,8 +1538,28 @@ async function run(
         .catch(() => null);
       sample.layoutAtFailure = await layout().catch(() => null);
     }
-    if (!cancelled) process.exitCode = 1;
+    if (!diagnosticContext && !cancelled) process.exitCode = 1;
   } finally {
+    if (diagnosticContext) {
+      cdp.off("Debugger.scriptParsed", parsedScript);
+      if (profilerActive)
+        await cdp.send("Profiler.stop").catch(() => {
+          sample.status = "failed";
+          sample.error = "diagnostic-cleanup";
+        });
+      await cdp.send("Profiler.disable").catch(() => {
+        sample.status = "failed";
+        sample.error = "diagnostic-cleanup";
+      });
+      await cdp.send("Debugger.disable").catch(() => {
+        sample.status = "failed";
+        sample.error = "diagnostic-cleanup";
+      });
+      await cdp.detach().catch(() => {
+        sample.status = "failed";
+        sample.error = "diagnostic-cleanup";
+      });
+    }
     sample.resources = [...network.values()];
     sample.blockedExternalRequests = blocked;
     sample.pageErrors = errors;
@@ -1691,6 +1782,79 @@ try {
       "Migration performance budgets failed or remain unverified; see report.md",
     );
     process.exitCode = 1;
+  }
+  if (diagnosticsEnabled) {
+    const measuredBefore = JSON.stringify({
+      samples,
+      summaries,
+      budgets,
+      status: results.status,
+      acceptance: results.performanceAcceptance,
+    });
+    const diagnosticReport = {
+      scope:
+        "ONE extra discarded trial per configured profile/variant/device after original report and budget calculation; CPU/GC instrumentation changes these trials, never hardware/leak/budget acceptance",
+      trials: diagnosticTrials,
+      measuredCohortPreserved: false,
+    };
+    results.diagnostics = diagnosticReport;
+    for (const shape of profiles)
+      for (const device of devices)
+        for (const variant of variants) {
+          if (cancelled) break;
+          let diagnosticContext: BrowserContext | null = null;
+          const before = diagnosticTrials.length;
+          try {
+            diagnosticContext = await createTrialContext(device);
+            await run(variant, device, shape, 1, false, diagnosticContext);
+          } catch (error) {
+            if (diagnosticTrials.length > before) {
+              diagnosticTrials[before].status = "unverified";
+              diagnosticTrials[before].error = diagnosticFailure(error);
+            } else
+              diagnosticTrials.push({
+                variant,
+                device: device.name,
+                profile: shape.name,
+                repetition: 1,
+                warmup: false,
+                status: "unverified",
+                metrics: {},
+                resources: [],
+                diagnosticOnly: true,
+                excludedFromSummaries: true,
+                error: diagnosticFailure(error),
+              });
+          } finally {
+            await diagnosticContext?.close().catch(() => {
+              const trial = diagnosticTrials[before];
+              if (trial) {
+                trial.status = "unverified";
+                trial.error = "diagnostic-cleanup";
+              }
+            });
+            fixture = null;
+          }
+        }
+    diagnosticReport.measuredCohortPreserved =
+      measuredBefore ===
+      JSON.stringify({
+        samples,
+        summaries,
+        budgets,
+        status: results.status,
+        acceptance: results.performanceAcceptance,
+      });
+    if (!diagnosticReport.measuredCohortPreserved) process.exitCode = 1;
+    try {
+      await writeFile(
+        `${output}/diagnostics.json`,
+        JSON.stringify(results.diagnostics, null, 2) + "\n",
+      );
+    } catch {
+      results.diagnosticArtifactError = "write";
+      if (!cancelled) process.exitCode = 1;
+    }
   }
 } catch (error) {
   results.status = cancelled ? "cancelled" : "aborted";

@@ -38,6 +38,8 @@
     "scripts/ui-metrics-shell.ts",
     "scripts/native-application-lifecycle.ts",
     "scripts/ui-metrics-model.test.ts",
+    "scripts/ui-metrics-diagnostics.ts",
+    "scripts/ui-metrics-diagnostics.test.ts",
     "scripts/ui-panels.test.ts",
     "scripts/ui-panel-mount.ts",
     "scripts/UiPanelView.svelte",
