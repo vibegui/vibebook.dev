@@ -22,13 +22,13 @@ behavior. Existing relay/unregister tests remain intact.
 
 ## Unresolved data boundaries worth separate small changes
 
-| Source at checkpoint | Remaining assumption / next verification |
-| --- | --- |
-| `src/route-home.ts:24` | Stored `books.epics` JSON is assigned directly to `Epic[]`; `null`/object/nonobject elements can reach the later `map`/lookup. Validate the existing stored listing shape before use; retain valid room/epic selection and model semantics. |
-| `src/analytics.ts:63` | Stored event dimensions JSON is assigned to `Record<string, unknown>` without object validation. JSON `null` reaches direct `dims.ua`/`dims.model` access. Keep valid opaque fields, normalize malformed container shapes while retaining the event. |
-| `src/connect.ts:215,221–222` | Grant metadata fields `gid`/`client` are asserted before filtering/serialization. Inspect the pinned OAuth library metadata type and narrow existing fields; do not change grant lifecycle/business rules. |
-| `src/agent.ts:1178–1181` | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
-| `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption. |
+| Source at checkpoint                                           | Remaining assumption / next verification                                                                                                                                                                                                                                                       |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/route-home.ts:24`                                         | Stored `books.epics` JSON is assigned directly to `Epic[]`; `null`/object/nonobject elements can reach the later `map`/lookup. Validate the existing stored listing shape before use; retain valid room/epic selection and model semantics.                                                    |
+| `src/analytics.ts:63`                                          | Stored event dimensions JSON is assigned to `Record<string, unknown>` without object validation. JSON `null` reaches direct `dims.ua`/`dims.model` access. Keep valid opaque fields, normalize malformed container shapes while retaining the event.                                           |
+| `src/connect.ts:215,221–222`                                   | Grant metadata fields `gid`/`client` are asserted before filtering/serialization. Inspect the pinned OAuth library metadata type and narrow existing fields; do not change grant lifecycle/business rules.                                                                                     |
+| `src/agent.ts:1178–1181`                                       | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
+| `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption.                                                                        |
 
 ## Localized API interop still to inspect, not JSON schema failures
 
@@ -55,3 +55,8 @@ contains VM-side configuration JSON, not a Worker-side cast to a trusted DTO.
 
 Only the unnecessary Awareness assertion is changed in this checkpoint. The
 other entries are explicit remaining work, not accepted runtime proofs.
+
+Author verification: the test/docs formatter passed. The actual pinned dependency
+suite `bun test scripts/docroom-socket.test.ts` passed four tests / 24 assertions
+with Bun 1.4.4 in 2.89 seconds. No full compiler, Node fixture runtime, real Worker,
+hibernation or browser check ran for this follow-up; those remain separate gates.

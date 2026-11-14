@@ -99,7 +99,8 @@ test("actual dependency startup skips closed sockets and retains exact actual se
   }
 });
 test("DocRoom startup clears the public pinned Awareness interval without destroying protocol ownership", async () => {
-  const live = socket(), f = fixture([live]);
+  const live = socket(),
+    f = fixture([live]);
   const awareness = f.doc.awareness;
   // The vendor's declaration is public but any-typed. Keep the observed handle
   // unknown in first-party test code and assert exact identity at the native API.
@@ -107,7 +108,9 @@ test("DocRoom startup clears the public pinned Awareness interval without destro
   const clear = spyOn(globalThis, "clearInterval"),
     destroy = spyOn(awareness, "destroy");
   let notifications = 0;
-  const observe = () => { notifications++; };
+  const observe = () => {
+    notifications++;
+  };
   awareness.on("update", observe);
   try {
     expect(interval).toBeDefined();
