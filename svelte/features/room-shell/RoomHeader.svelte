@@ -44,15 +44,26 @@
   data-native-room-header
   class="tw:flex tw:min-w-0 tw:flex-wrap tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:text-foreground"
 >
-  {#key header.thread}<Snapshot value={header.thread}>{#snippet children(expectedThread)}<Button
-    variant="ghost"
-    size="sm"
-    class="tw:min-[901px]:hidden"
-    aria-label={t(expectedThread === "main" ? "Seus vibebooks" : "Voltar pra sala principal")}
-    onclick={(event) => {
-      if (live(event)) back(expectedThread);
-    }}>← {t(expectedThread === "main" ? "Seus vibebooks" : "Voltar pra sala principal")}</Button
-  >{/snippet}</Snapshot>{/key}
+  {#key header.thread}<Snapshot value={header.thread}
+      >{#snippet children(expectedThread)}<Button
+          variant="ghost"
+          size="sm"
+          class="tw:min-[901px]:hidden"
+          aria-label={t(
+            expectedThread === "main"
+              ? "Seus vibebooks"
+              : "Voltar pra sala principal",
+          )}
+          onclick={(event) => {
+            if (live(event)) back(expectedThread);
+          }}
+          >← {t(
+            expectedThread === "main"
+              ? "Seus vibebooks"
+              : "Voltar pra sala principal",
+          )}</Button
+        >{/snippet}</Snapshot
+    >{/key}
   <div class="tw:min-w-0 tw:flex-1"><ThreadHeader {...header} /></div>
   <Button
     data-native-board-toggle

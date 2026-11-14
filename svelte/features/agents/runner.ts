@@ -19,10 +19,19 @@ export async function localNetworkPermission(): Promise<PermissionState | null> 
   try {
     const query: unknown = Reflect.get(navigator.permissions, "query");
     if (typeof query !== "function") return null;
-    const result: unknown = await Reflect.apply(query, navigator.permissions, [{name: "local-network-access"}]);
-    if (typeof result !== "object" || result === null || !("state" in result)) return null;
-    return result.state === "granted" || result.state === "denied" || result.state === "prompt" ? result.state : null;
-  } catch {return null;}
+    const result: unknown = await Reflect.apply(query, navigator.permissions, [
+      { name: "local-network-access" },
+    ]);
+    if (typeof result !== "object" || result === null || !("state" in result))
+      return null;
+    return result.state === "granted" ||
+      result.state === "denied" ||
+      result.state === "prompt"
+      ? result.state
+      : null;
+  } catch {
+    return null;
+  }
 }
 export type RunnerWhere = z.infer<typeof Where>;
 export type RunnerState = {
@@ -45,7 +54,11 @@ const blank = (): RunnerState => ({
 });
 /** Only the existing fixed loopback runner is contacted. No browser credential is forwarded. */
 export function createLocalRunner(
-  options: { fetcher?: FetchLike; clock?: AgentClock; permission?: () => Promise<PermissionState | null> } = {},
+  options: {
+    fetcher?: FetchLike;
+    clock?: AgentClock;
+    permission?: () => Promise<PermissionState | null>;
+  } = {},
 ) {
   const fetcher = options.fetcher ?? fetch,
     clock = options.clock ?? agentClock,
@@ -149,24 +162,31 @@ export function createLocalRunner(
       }));
       const own = ++focusTicket;
       try {
-        const {result, permission} = await focusLease.run(
-          async (signal) => {
-            const result = await json(`/focus?room=${encodeURIComponent(roomId)}`, Focus, signal);
-            if (!active || own !== focusTicket) return {result, permission: null};
-            let permission: PermissionState | null = null;
-            if (!result) {
-              try {permission = await (options.permission ?? localNetworkPermission)();} catch {}
-            }
-            return {result, permission};
-          },
-          10_000,
-        );
+        const { result, permission } = await focusLease.run(async (signal) => {
+          const result = await json(
+            `/focus?room=${encodeURIComponent(roomId)}`,
+            Focus,
+            signal,
+          );
+          if (!active || own !== focusTicket)
+            return { result, permission: null };
+          let permission: PermissionState | null = null;
+          if (!result) {
+            try {
+              permission = await (
+                options.permission ?? localNetworkPermission
+              )();
+            } catch {}
+          }
+          return { result, permission };
+        }, 10_000);
         if (active && own === focusTicket)
           state.update((value) => ({
             ...value,
             focusing: false,
             focusError: !result || !!result.error,
-            focusBlocked: !result && (permission === "denied" || permission === "prompt"),
+            focusBlocked:
+              !result && (permission === "denied" || permission === "prompt"),
           }));
       } catch {
         if (active && own === focusTicket)

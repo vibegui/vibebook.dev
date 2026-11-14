@@ -83,7 +83,10 @@
     return attachRoomEdgeBack(cells.root, {
       current,
       mobile: () => get(layout.state).mobile,
-      standalone: () => !!win && (win.matchMedia("(display-mode: standalone)").matches || ("standalone" in win.navigator && win.navigator.standalone === true)),
+      standalone: () =>
+        !!win &&
+        (win.matchMedia("(display-mode: standalone)").matches ||
+          ("standalone" in win.navigator && win.navigator.standalone === true)),
       target: () => get(owner.state)?.header.thread ?? "",
       back,
     });
@@ -219,7 +222,12 @@
   };
 </script>
 
-<RoomLayout controller={layout} {labels} onChatSurface={owner.attachChat} onCells={edgeBack}>
+<RoomLayout
+  controller={layout}
+  {labels}
+  onChatSurface={owner.attachChat}
+  onCells={edgeBack}
+>
   {#snippet sidebar()}{#if $view}<Sidebar
         {...$view.sidebar}
         oninbox={() => {

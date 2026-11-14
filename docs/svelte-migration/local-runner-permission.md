@@ -21,3 +21,7 @@ policy to port. Four focused source cases cover diagnostic states, unchanged
 loopback request properties, skipped queries on successful/explicit-error replies,
 late cancellation and the actual receiver/result adapter. Real Local Network
 Access behavior, browser support and loopback/CLI focus remain runtime gates.
+
+Author verification: the combined edge/runner pure suite passed eight tests / 44
+assertions with Bun 1.4.4 in 1.244 seconds; owned formatting/config checks passed.
+No compiler, actual permission/hardware, CLI focus or browser run occurred here.

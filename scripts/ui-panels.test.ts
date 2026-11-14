@@ -2612,39 +2612,70 @@ describe("native Svelte chat", () => {
 
 test("phone edge observes installed Back without consuming browser gestures or replying", async () => {
   const { swipeMessage } = await import("../svelte/features/chat/swipe");
-  const { attachRoomEdgeBack } = await import("../svelte/features/room-shell/edgeBack");
+  const { attachRoomEdgeBack } =
+    await import("../svelte/features/room-shell/edgeBack");
   const width = Object.getOwnPropertyDescriptor(window, "innerWidth");
-  Object.defineProperty(window, "innerWidth", {value: 390, configurable: true});
-  const root = window.document.createElement("div"), row = window.document.createElement("div");
-  root.append(row); window.document.body.append(root);
-  let installed = false, backs = 0, replies = 0;
-  const stop = attachRoomEdgeBack(root, {mobile: () => true, standalone: () => installed, current: () => true, target: () => "main", back: () => {backs++;}});
-  const swipe = swipeMessage(row, {reply: () => {replies++;}, copy: () => {}});
-  function touch(type: string, points: {clientX: number; clientY: number}[], changed = points) {
-    const event = new window.Event(type, {bubbles: true, cancelable: true});
-    Object.defineProperty(event, "touches", {value: points});
-    Object.defineProperty(event, "changedTouches", {value: changed});
+  Object.defineProperty(window, "innerWidth", {
+    value: 390,
+    configurable: true,
+  });
+  const root = window.document.createElement("div"),
+    row = window.document.createElement("div");
+  root.append(row);
+  window.document.body.append(root);
+  let installed = false,
+    backs = 0,
+    replies = 0;
+  const stop = attachRoomEdgeBack(root, {
+    mobile: () => true,
+    standalone: () => installed,
+    current: () => true,
+    target: () => "main",
+    back: () => {
+      backs++;
+    },
+  });
+  const swipe = swipeMessage(row, {
+    reply: () => {
+      replies++;
+    },
+    copy: () => {},
+  });
+  function touch(
+    type: string,
+    points: { clientX: number; clientY: number }[],
+    changed = points,
+  ) {
+    const event = new window.Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: points });
+    Object.defineProperty(event, "changedTouches", { value: changed });
     row.dispatchEvent(event);
     return event.defaultPrevented;
   }
   try {
     for (const mode of [false, true]) {
       installed = mode;
-      touch("touchstart", [{clientX: 10, clientY: 0}]);
-      expect(touch("touchmove", [{clientX: 90, clientY: 1}])).toBe(false);
-      touch("touchend", [], [{clientX: 90, clientY: 1}]);
+      touch("touchstart", [{ clientX: 10, clientY: 0 }]);
+      expect(touch("touchmove", [{ clientX: 90, clientY: 1 }])).toBe(false);
+      touch("touchend", [], [{ clientX: 90, clientY: 1 }]);
     }
     expect(backs).toBe(1);
     expect(replies).toBe(0);
-    touch("touchstart", [{clientX: 40, clientY: 0}]);
-    touch("touchmove", [{clientX: 120, clientY: 1}]);
-    touch("touchend", [], [{clientX: 120, clientY: 1}]);
+    touch("touchstart", [{ clientX: 40, clientY: 0 }]);
+    touch("touchmove", [{ clientX: 120, clientY: 1 }]);
+    touch("touchend", [], [{ clientX: 120, clientY: 1 }]);
     expect(replies).toBe(1);
     stop();
-    touch("touchstart", [{clientX: 10, clientY: 0}]);
-    touch("touchend", [], [{clientX: 90, clientY: 1}]);
+    touch("touchstart", [{ clientX: 10, clientY: 0 }]);
+    touch("touchend", [], [{ clientX: 90, clientY: 1 }]);
     expect(backs).toBe(1);
-  } finally {stop(); swipe.destroy(); if (width) Object.defineProperty(window, "innerWidth", width); else Reflect.deleteProperty(window, "innerWidth"); root.remove();}
+  } finally {
+    stop();
+    swipe.destroy();
+    if (width) Object.defineProperty(window, "innerWidth", width);
+    else Reflect.deleteProperty(window, "innerWidth");
+    root.remove();
+  }
 });
 
 test("native document task slots dispose across suggestion scope and detached controls cannot write", async () => {

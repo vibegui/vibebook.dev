@@ -19,3 +19,7 @@ actual DOM source case composes the real swipe action and passive room listener,
 checks no edge default-prevention/reply, nonedge reply, and disposal. That case is
 unrun until the normal component/browser gates. Real iOS installed/Safari gestures
 and Back/Forward integration require device/runtime verification.
+
+Author verification: the combined edge/runner pure suite passed eight tests / 44
+assertions with Bun 1.4.4 in 1.244 seconds; 12 owned paths formatted and both config
+format checks passed. No compiler, DOM test or real browser/device ran here.

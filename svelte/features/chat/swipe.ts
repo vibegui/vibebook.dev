@@ -4,7 +4,8 @@ export function swipeMessage(
   node: HTMLElement,
   callbacks: { reply: () => void; copy: () => void; enabled?: boolean },
 ) {
-  const phone = node.ownerDocument.defaultView?.matchMedia("(max-width: 900px)");
+  const phone =
+    node.ownerDocument.defaultView?.matchMedia("(max-width: 900px)");
   let active = true,
     start: { x: number; y: number; dx: number; locked: boolean } | null = null;
   const classes = [
