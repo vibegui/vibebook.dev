@@ -1175,9 +1175,10 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
         if ((model || repo) && due(`mr:${agentId}:${model}:${repo}`, 600_000)) ctx.waitUntil(env.DB.prepare(`UPDATE agents SET model = coalesce(?, model), repo = coalesce(?, repo) WHERE id = ?`).bind(model || null, repo || null, agentId).run());
         // This session touched this room: it shows under its person in the room's Pessoas for the next hour.
         if (typeof args.room_id === "string" && due(`room:${agentId}:${args.room_id}`)) ctx.waitUntil(env.DB.prepare(`UPDATE agent_reads SET seen_at = ? WHERE agent = ? AND book_id = ?`).bind(Date.now(), agentId, args.room_id).run());
-        ok = !(out && typeof out === "object" && (out as { ok?: boolean }).ok === false);
+        const output = recordValue(out) ? out : null;
+        ok = output?.ok !== false;
         // get_file hands back MCP content parts (an image) instead of JSON.
-        const parts = out && typeof out === "object" ? (out as { __content?: unknown[] }).__content : undefined;
+        const parts = Array.isArray(output?.__content) ? output.__content : undefined;
         result = parts ? { content: parts } : { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: !ok };
       } catch (e) {
         ok = false;
