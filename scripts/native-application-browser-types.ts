@@ -12,7 +12,9 @@ export type NativeApplicationAuditFixture = {
   roomId: string;
   ownerEmail: string;
   output: string;
-  createProfile(profile: NativeApplicationProfile): Promise<{ context: BrowserContext; page: Page }>;
+  createProfile(
+    profile: NativeApplicationProfile,
+  ): Promise<{ context: BrowserContext; page: Page }>;
   openPane(page: Page, pane: Exclude<DocumentPane, "view">): Promise<void>;
   openSidebar(page: Page): Promise<void>;
   step(name: string, run: () => Promise<void>): Promise<void>;
