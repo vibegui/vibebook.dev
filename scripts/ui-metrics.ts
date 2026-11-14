@@ -1229,11 +1229,23 @@ async function run(
       .click();
     await expect.poll(() => new URL(page.url()).pathname).toBe("/app");
     await expect(
-      page.locator(variant === "svelte" ? '[data-vb-native="home"]' : ".home"),
+      page.locator(
+        variant === "svelte"
+          ? '[data-vb-native="home"]'
+          : device.width > 900
+            ? ".home"
+            : ".phome",
+      ),
     ).toBeVisible();
     await expect(
       page.locator(`a[href^="/b/${first.id}"]:visible`).first(),
     ).toBeVisible();
+    // Vanilla phoneHome() renders .phome, not desktop home's .home.
+    // Require its real visible menu control as well as the room link above.
+    if (variant === "vanilla" && device.width <= 900) {
+      await expect(page.locator(".phome #pMenu")).toBeVisible();
+      await expect(page.locator(".phome #pMenu")).toBeEnabled();
+    }
     await result("homeNavigation", true);
     await chooseRoom(first);
     await checkpoint("navigationLifecycle");
