@@ -399,6 +399,9 @@ const EN: Readonly<Record<string, string>> = {
   "As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.":
     "Notifications are blocked for vibebook.dev in this browser. Click the lock next to the address → Notifications → Allow, and reload the page.",
   "Te mencionaram": "You were mentioned",
+  "Suas tarefas": "Your tasks",
+  revisar: "review",
+  "Não foi possível carregar a caixa de entrada.": "Could not load your inbox.",
   "respondendo…": "replying…",
   anexo: "attachment",
   "Abrir documento": "Open document",
