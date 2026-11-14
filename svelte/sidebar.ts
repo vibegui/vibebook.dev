@@ -33,7 +33,9 @@ export type SidebarProps = {
   onrenameroom?: () => void;
   onopenside?: () => void;
   onagents?: () => void;
-  oninbox?: () => void;
+  oninbox?: (trigger?: HTMLElement) => void;
+  inboxOpen?: boolean;
+  onthreadintent?: () => boolean;
   /** Pending F50 shell geometry adapter, disposed with its native handle. */
   mountSheetHandle?: (node: HTMLElement) => () => void;
   /** Direct RoomLayout owns the mobile grab handle; legacy shells retain theirs. */

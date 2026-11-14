@@ -33,6 +33,8 @@
     mutations,
     onopen,
     onarchchange,
+    selectionDisabled = false,
+    onBeforeOpen,
     vb,
   }: {
     room: Room;
@@ -41,6 +43,8 @@
     mutations: RoomMutations;
     onopen: (id: string) => void;
     onarchchange: (archived: boolean) => void;
+    selectionDisabled?: boolean;
+    onBeforeOpen?: () => boolean;
     vb: {
       t: (text: string, vars?: Record<string, string | number>) => string;
       name: (email: string) => string;
@@ -309,7 +313,8 @@
                 ondrop={(event) => drop(event, epic.id)}
                 class={cn(
                   "tw:flex tw:items-center tw:gap-1 tw:rounded-control tw:border tw:border-transparent tw:border-l-4",
-                  thread === epic.id &&
+                  !selectionDisabled &&
+                    thread === epic.id &&
                     "tw:border-l-primary tw:bg-sidebar-accent tw:text-sidebar-accent-foreground",
                   dropTarget === epic.id &&
                     (dropAfter ? "tw:border-b-primary" : "tw:border-t-primary"),
@@ -333,8 +338,11 @@
                   variant="ghost"
                   class="tw:h-auto tw:min-h-9 tw:min-w-0 tw:flex-1 tw:justify-start tw:gap-2 tw:whitespace-normal tw:px-1 tw:py-2 tw:text-left"
                   data-epic-thread={epic.id}
-                  aria-current={thread === epic.id ? "page" : undefined}
+                  aria-current={!selectionDisabled && thread === epic.id
+                    ? "page"
+                    : undefined}
                   onclick={() => {
+                    if (onBeforeOpen && !onBeforeOpen()) return;
                     if (thread === epic.id && row.hasChildren)
                       toggleNavigationBranch(session, epic.id);
                     else onopen(epic.id);
@@ -378,7 +386,7 @@
                       )}>{epic.prod.stage === "verified" ? "✓✓" : "🚀"}</span
                     >{/if}
                   {#if epic.tasks.length}<span
-                      class={thread === epic.id
+                      class={!selectionDisabled && thread === epic.id
                         ? "tw:shrink-0 tw:text-xs tw:text-sidebar-accent-foreground"
                         : "tw:shrink-0 tw:text-xs tw:text-muted-foreground"}
                       >{epic.tasks.filter((task) => task.done).length}/{epic

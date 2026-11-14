@@ -18,6 +18,16 @@ export const applicationLocale = (
   language: ApplicationLanguage,
 ): ApplicationLocale => (language === "en" ? "en-US" : "pt-BR");
 const EN: Readonly<Record<string, string>> = {
+  "O que é seu": "What’s yours",
+  "Seu Claude": "Your Claude",
+  "Tarefas suas e o que espera seu OK. Clique pra abrir.":
+    "Your tasks and what waits on your OK. Click to open.",
+  "Esperando seu OK": "Waiting on your OK",
+  "Nenhuma tarefa aberta sua.": "No open tasks of yours.",
+  "Nada esperando você. ✓": "Nothing waiting on you. ✓",
+  "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
+  Resolvido: "Resolved",
+  "esperando você": "waiting on you",
   "O que precisa de você aqui": "What needs you here",
   "só você vê": "only you see this",
   Dispensar: "Dismiss",

@@ -22,4 +22,5 @@ export type HomeBridge = {
   onsettings: (section: HomeSettings) => void;
   onroomsettings: (roomId: string, trigger?: HTMLElement) => void;
   onsearch: () => void;
+  oninbox?: (trigger?: HTMLElement) => void;
 };

@@ -174,6 +174,33 @@ try {
     "Retained 🧪 Board draft",
   );
   await expect(page.locator("[data-layout-mounts]")).toHaveText("1");
+  checkpoint("desktop/inbox-overlay-retains-board-and-owned-document-width");
+  const retainedWidth = await width();
+  await page.getByRole("button", { name: "Inbox view", exact: true }).click();
+  const inboxDocument = page.locator("[data-layout-inbox-document]");
+  await expect(inboxDocument).toBeVisible();
+  await expect
+    .poll(() =>
+      inboxDocument.evaluate((node) => node.getBoundingClientRect().width),
+    )
+    .toBeCloseTo(retainedWidth, 1);
+  assert.equal(
+    await board.evaluate((node, witness) => node === witness, before),
+    true,
+  );
+  await expect(board).toBeHidden();
+  await expect(page.locator("[data-layout-mounts]")).toHaveText("1");
+  await page.getByRole("button", { name: "Inbox view", exact: true }).click();
+  await expect(page.locator("[data-layout-inbox]")).toHaveCount(0);
+  await expect(board).toBeVisible();
+  assert.equal(
+    await board.evaluate((node, witness) => node === witness, before),
+    true,
+  );
+  await expect(board.getByLabel("Retained Board draft")).toHaveValue(
+    "Retained 🧪 Board draft",
+  );
+  await expect(page.getByRole("alert")).toHaveCount(0);
   // Programmatic placement changes must preserve an actively edited Board;
   // trusted pointer clicks intentionally move focus to their clicked control.
   const retainedDraft = board.getByLabel("Retained Board draft");

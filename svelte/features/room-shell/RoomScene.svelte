@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, tick, untrack } from "svelte";
-  import { get } from "svelte/store";
+  import { get, readable } from "svelte/store";
   import { provideRichFileIndex } from "../rich-text/fileContext";
+  import type { InboxSnapshot } from "../application/inbox";
   import type { ApplicationRoomPresentation } from "../application/shellTypes";
   import type { ApplicationRoomScope } from "../application/types";
   import type { RoomResources } from "../application/roomResources";
@@ -93,6 +94,53 @@
       back,
     });
   }
+  const inbox = untrack(() => presentation.inbox),
+    inboxState = untrack(
+      () =>
+        inbox?.state ??
+        readable<InboxSnapshot>({
+          binding: null,
+          all: false,
+          data: { waits: [], mentions: [], tasks: [] },
+          phase: "idle",
+          error: null,
+        }),
+    );
+  const roomInboxModule = untrack(() =>
+      createDeferredModule(
+        () =>
+          import("../application/RoomInbox.svelte").then(
+            (module) => module.default,
+          ),
+        { current },
+      ),
+    ),
+    roomInboxView = roomInboxModule.state;
+  const RoomInbox = $derived($roomInboxView.component);
+  const inboxOpen = $derived(
+    !!inbox &&
+      !!$inboxState.binding?.roomScope &&
+      $inboxState.binding.roomId === captured.roomId &&
+      inbox.owns($inboxState.binding),
+  );
+  const stopInbox = inbox?.state.subscribe((value) => {
+    const shown =
+      !!value.binding?.roomScope &&
+      value.binding.roomId === captured.roomId &&
+      inbox.owns(value.binding);
+    owner.setInboxVisible(shown);
+    if (shown && layout.read().sheet === "side") layout.closeSheet();
+  });
+  function leaveInbox() {
+    const revision = get(services.state).navigationGeneration,
+      binding = inbox ? get(inbox.state).binding : null;
+    if (inbox && binding?.roomScope && binding.roomId === captured.roomId)
+      inbox.close(binding);
+    return current() && get(services.state).navigationGeneration === revision;
+  }
+  $effect(() => {
+    if (inboxOpen) void roomInboxModule.ensure();
+  });
   const boardModule = untrack(() =>
       createDeferredModule(
         () => import("../../Board.svelte").then((module) => module.default),
@@ -188,6 +236,8 @@
   });
   onDestroy(() => {
     active = false;
+    stopInbox?.();
+    roomInboxModule.dispose();
     boardModule.dispose();
     filesModule.dispose();
     decisionsModule.dispose();
@@ -229,11 +279,35 @@
   {labels}
   onChatSurface={owner.attachChat}
   onCells={edgeBack}
+  overlayOpen={inboxOpen}
 >
+  {#snippet overlay()}{#if inbox && $inboxState.binding && inboxOpen}{#key $inboxState.binding}<Snapshot
+          value={$inboxState.binding}
+          >{#snippet children(binding)}{#if RoomInbox}<RoomInbox
+                owner={inbox}
+                {binding}
+                {services}
+                documentWidth={layout.bindDocumentWidth}
+                sidebarCollapsed={$geometry.sidebarCollapsed}
+              />{:else}<div data-native-room-inbox-loading class="tw:p-6">
+                <DeferredViewStatus
+                  phase={$roomInboxView.phase}
+                  lang={services.language}
+                  current={() => current() && inbox.owns(binding)}
+                  label={services.t("Caixa de entrada")}
+                  retry={() => {
+                    if (current() && inbox.owns(binding))
+                      void roomInboxModule.retry();
+                  }}
+                />
+              </div>{/if}{/snippet}</Snapshot
+        >{/key}{/if}{/snippet}
   {#snippet sidebar()}{#if $view}<Sidebar
         {...$view.sidebar}
-        oninbox={() => {
-          if (current()) presentation.openInbox();
+        {inboxOpen}
+        onthreadintent={leaveInbox}
+        oninbox={(trigger) => {
+          if (current()) presentation.openInbox(trigger);
         }}
         hideSheetHandle
       />{/if}{/snippet}

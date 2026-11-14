@@ -57,6 +57,8 @@ export type RoomLayoutController = {
   mount(cells: RoomLayoutCells): () => void;
   bindHandle(node: HTMLElement, sheet: RoomSheet, opening: boolean): () => void;
   bindWidthInput(node: HTMLInputElement): () => void;
+  /** Additional owned document surface, using the same preferred width. */
+  bindDocumentWidth(node: HTMLElement): () => void;
   setViewerGate(gate: {
     deferNavigation(callback: () => void): boolean;
   }): () => void;
@@ -73,6 +75,8 @@ export type RoomLayoutProps = {
   documentToolbar: Snippet;
   document: Snippet;
   board: Snippet;
+  overlay?: Snippet;
+  overlayOpen?: boolean;
   /** Exact scroller attachment; cleanup must detach only this same node. */
   onChatSurface?: (node: HTMLElement) => void | (() => void);
   onCells?: (cells: RoomLayoutCells) => void | (() => void);

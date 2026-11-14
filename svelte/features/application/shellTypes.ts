@@ -3,7 +3,9 @@ import type { ApplicationLanguage } from "./copy";
 export type ApplicationTheme = "auto" | "light" | "dark";
 export type ApplicationRoomPresentation = {
   services: BrowserApplicationServices;
-  openInbox(): void;
+  openInbox(trigger?: HTMLElement): void;
+  /** The AppShell's sole global Inbox owner; absent only in isolated fixtures. */
+  inbox?: import("./inbox").ApplicationInbox;
 };
 /** Browser presentation effects; account/transport ownership remains in services. */
 export type ApplicationShellEffects = {

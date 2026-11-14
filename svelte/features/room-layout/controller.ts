@@ -96,7 +96,8 @@ export function createRoomLayout(
       HTMLElement,
       { sheet: RoomSheet; opening: boolean; stop: (() => void) | null }
     >(),
-    inputs = new Map<HTMLInputElement, { stop: (() => void) | null }>();
+    inputs = new Map<HTMLInputElement, { stop: (() => void) | null }>(),
+    widths = new Map<HTMLElement, { stop: (() => void) | null }>();
   const current = () =>
     active && options.scopeKey === scopeKey && options.current();
   const publish = (patch: Partial<RoomLayoutState>) => {
@@ -129,6 +130,10 @@ export function createRoomLayout(
     if (changed && current()) options.onPane?.(next);
   };
   const stopMount = () => {
+    for (const entry of widths.values()) {
+      entry.stop?.();
+      entry.stop = null;
+    }
     mountRevision++;
     for (const entry of handles.values()) {
       entry.stop?.();
@@ -249,6 +254,18 @@ export function createRoomLayout(
         }
       };
     },
+    bindDocumentWidth(node) {
+      if (!current()) return () => {};
+      widths.get(node)?.stop?.();
+      const entry = { stop: geometry?.bindDocumentWidth(node) ?? null };
+      widths.set(node, entry);
+      return () => {
+        if (widths.get(node) === entry) {
+          entry.stop?.();
+          widths.delete(node);
+        }
+      };
+    },
     mount(cells) {
       if (!current()) return () => {};
       stopMount();
@@ -285,6 +302,8 @@ export function createRoomLayout(
         entry.stop = geometry.bindHandle(node, entry.sheet, entry.opening);
       for (const [node, entry] of inputs)
         entry.stop = geometry.bindWidthInput(node);
+      for (const [node, entry] of widths)
+        entry.stop = geometry.bindDocumentWidth(node);
       geometry.sync(value);
       return () => {
         if (mountRevision === ticket) stopMount();
@@ -298,6 +317,7 @@ export function createRoomLayout(
       stopMount();
       handles.clear();
       inputs.clear();
+      widths.clear();
       publish({
         active: false,
         sheet: null,

@@ -32,6 +32,13 @@
     room = untrack(() => services.rootRoom.state);
   const inbox = untrack(() => createApplicationInbox(services)),
     inboxView = inbox.state;
+  const openInbox = (trigger?: HTMLElement) =>
+    inbox.open(
+      trigger ??
+        (document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : undefined),
+    );
   let active = true,
     theme = $state<ApplicationTheme>(untrack(() => effects.theme()));
   const current = () => active && services.active();
@@ -81,7 +88,8 @@
       if ($application.route.kind === "home") void homeModule.ensure();
       if ($application.route.kind === "archived") void archivedModule.ensure();
       if ($accountView.open) void accountModule.ensure();
-      if ($inboxView.binding) void inboxModule.ensure();
+      if ($inboxView.binding && !$inboxView.binding.roomScope)
+        void inboxModule.ensure();
     }
   });
   const ago = (ts: number) => {
@@ -139,6 +147,9 @@
     },
     onroomsettings: (id, trigger) => {
       if (current()) services.navigation.openSettings(id, trigger);
+    },
+    oninbox: (trigger) => {
+      if (current()) openInbox(trigger);
     },
     onsearch: () => {
       if (current()) services.navigation.openSearch();
@@ -242,7 +253,7 @@
           data-native-room-root
           class="tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden"
         >
-          {@render roomSnippet({ services, openInbox: inbox.open })}
+          {@render roomSnippet({ services, openInbox, inbox })}
         </div>{/if}
     </div>
     {#if AccountSettings}
@@ -298,7 +309,7 @@
               /></Dialog
             >{/snippet}</Snapshot
         >{/key}{/if}
-    {#if $inboxView.binding}{#key $inboxView.binding}<Snapshot
+    {#if $inboxView.binding && !$inboxView.binding.roomScope}{#key $inboxView.binding}<Snapshot
           value={$inboxView.binding}
         >
           {#snippet children(binding)}

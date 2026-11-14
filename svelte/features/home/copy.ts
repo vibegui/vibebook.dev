@@ -1,4 +1,5 @@
 const pt = {
+  inbox: "Caixa de entrada",
   home: "Seus vibebooks",
   greeting: "Oi, {name}",
   rooms: "{n} vibebooks",
@@ -106,6 +107,7 @@ const pt = {
   update: "Nova versão do vibebook · toque pra atualizar",
 } as const;
 const en: Record<keyof typeof pt, string> = {
+  inbox: "Inbox",
   home: "Your vibebooks",
   greeting: "Hi, {name}",
   rooms: "{n} vibebooks",

@@ -44,6 +44,8 @@
     onopenside = () => {},
     onagents = () => {},
     oninbox,
+    inboxOpen = false,
+    onthreadintent,
     mountSheetHandle,
     hideSheetHandle = false,
   }: SidebarProps = $props();
@@ -78,7 +80,7 @@
     if (!external) owner.dispose();
   });
   function open(id: string) {
-    if (active) onopen(id);
+    if (active && (onthreadintent?.() ?? true)) onopen(id);
   }
   function sheetHandle(node: HTMLElement) {
     return { destroy: mountSheetHandle?.(node) };
@@ -106,20 +108,22 @@
       >←</a
     >
     {#if oninbox}<IconButton
+        variant={inboxOpen ? "secondary" : "ghost"}
+        aria-current={inboxOpen ? "page" : undefined}
         icon="inbox"
         label={vb.t("Caixa de entrada")}
         onclick={(event) => {
-          if (event.currentTarget.isConnected) oninbox?.();
+          if (event.currentTarget.isConnected) oninbox?.(event.currentTarget);
         }}
       />{/if}
     {#each [{ id: "main", title: room.book.title, tasks: [], owner: undefined }, ...room.epics.filter((epic) => !epic.archived || epic.id === thread)] as epic (epic.id)}
       <Button
-        variant={thread === epic.id ? "secondary" : "ghost"}
+        variant={!inboxOpen && thread === epic.id ? "secondary" : "ghost"}
         class={cn(
           "tw:h-auto tw:flex-col tw:gap-1 tw:border-l-4 tw:border-l-transparent tw:p-1",
-          thread === epic.id && "tw:border-l-primary",
+          !inboxOpen && thread === epic.id && "tw:border-l-primary",
         )}
-        aria-current={thread === epic.id ? "page" : undefined}
+        aria-current={!inboxOpen && thread === epic.id ? "page" : undefined}
         title={epic.title}
         onclick={(event) => {
           if (event.currentTarget.isConnected) open(epic.id);
@@ -188,7 +192,7 @@
     </div>
     <div class="tw:flex tw:items-center tw:gap-1">
       <Button
-        variant={thread === "main" ? "secondary" : "ghost"}
+        variant={!inboxOpen && thread === "main" ? "secondary" : "ghost"}
         class="tw:min-w-0 tw:flex-1 tw:justify-start tw:gap-2"
         onclick={(event) => {
           if (event.currentTarget.isConnected) open("main");
@@ -202,7 +206,7 @@
           label={(n) => vb.t("{n} coisas esperando você", { n })}
           taskLabel={vb.t("Tarefa sua pendente")}
         /><span
-          class={thread === "main"
+          class={!inboxOpen && thread === "main"
             ? "tw:text-xs tw:text-secondary-foreground"
             : "tw:text-xs tw:text-muted-foreground"}
           >{messageCount(room, "main")}</span
@@ -228,15 +232,18 @@
         />
       </div>{/if}
     {#if oninbox}<Button
-        variant="ghost"
+        variant={inboxOpen ? "secondary" : "ghost"}
+        aria-current={inboxOpen ? "page" : undefined}
         class="tw:justify-start"
         onclick={(event) => {
-          if (event.currentTarget.isConnected) oninbox?.();
+          if (event.currentTarget.isConnected) oninbox?.(event.currentTarget);
         }}>{vb.t("Caixa de entrada")}</Button
       >{/if}
     <EpicTree
       {room}
       {thread}
+      selectionDisabled={inboxOpen}
+      onBeforeOpen={onthreadintent}
       session={navigation}
       mutations={owner}
       {onarchchange}

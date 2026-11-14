@@ -115,6 +115,7 @@
     "scripts/native-documents.test.ts",
     "scripts/native-apps.test.ts",
     "scripts/room-layout.test.ts",
+    "scripts/room-inbox.test.ts",
     "scripts/room-layout-dom.test.ts",
     "scripts/room-layout-browser.ts",
     "scripts/browser-static-gallery.ts",

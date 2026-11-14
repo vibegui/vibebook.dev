@@ -9,6 +9,8 @@ import { createPersonalSession } from "../svelte/features/home/personal";
 import { createRoomsSession } from "../svelte/features/rooms/session";
 import { createNewRoomSession } from "../svelte/features/home/session";
 import { createAccountSession } from "../svelte/features/account/session";
+import { createApplicationInbox } from "../svelte/features/application/inbox";
+import type { HomeApi } from "../svelte/features/home/api";
 import type { AccountApi } from "../svelte/features/account/api";
 import type { RoomTarget } from "../svelte/features/home/model";
 import type { InboxMention, InboxTask } from "../svelte/types";
@@ -444,8 +446,8 @@ test("global Inbox direct callbacks reject old connected account controls and cl
   await flush();
   expect(document.querySelector('[role="dialog"]')).toBe(null);
 });
-async function actualRoomShell() {
-  const h = shellFixture(),
+async function actualRoomShell(overrides: Partial<HomeApi> = {}) {
+  const h = shellFixture(overrides),
     resources = createRoomResources();
   h.services.start();
   await settle();
@@ -476,13 +478,14 @@ async function actualRoomShell() {
     cancel: h.timer.clock.cancel,
     enqueue: queueMicrotask,
   };
+  const inbox = createApplicationInbox(h.services, h.timer.clock);
   const target = document.createElement("div");
   document.body.append(target);
   const component = flushSync(() =>
     mount(RoomShellHarness, {
       target,
       props: {
-        presentation: { services: h.services, openInbox() {} },
+        presentation: { services: h.services, openInbox: inbox.open, inbox },
         resources,
         browser,
         layoutBrowser,
@@ -493,6 +496,7 @@ async function actualRoomShell() {
     flushSync(() => {
       void unmount(component);
     });
+    inbox.dispose();
     h.services.dispose();
     resources.dispose();
   });
@@ -535,7 +539,7 @@ async function actualRoomShell() {
     const event: RoomEvent = { t: "state", ...state };
     h.connectionCallbacks.at(-1)!.onEvent(event);
   };
-  return { ...h, resources, target, canonical, publish };
+  return { ...h, inbox, resources, target, canonical, publish };
 }
 test("real RoomShell uses genuine loading/terminal states and directly renders current canonical native features", async () => {
   const h = await actualRoomShell();
@@ -1136,4 +1140,97 @@ test("old connected Settings controls cannot mutate a replacement room opening",
   await flush();
   await waitForView(document, "#native-room-icon");
   expect(document.querySelector("#native-room-icon")).not.toBe(oldIcon);
+});
+
+// Actual native RoomShell with typed synthetic HTTP/transport ports; no Worker claim.
+test("room Inbox is nonmodal and retains existing Composer, document and Board nodes and draft", async () => {
+  const h = await actualRoomShell({
+    inbox: async () => ({ waits: [], mentions: [], tasks: [] }),
+  });
+  h.publish(h.canonical);
+  await flush();
+  h.services.actions.selectPane("board");
+  await flush();
+  await waitForView(h.target, "[data-board-scope]");
+  const board = h.target.querySelector("[data-board-scope]"),
+    documentNode = h.target.querySelector("[data-native-document]"),
+    composer = h.target.querySelector("[data-native-composer]");
+  const input = h.target.querySelector<HTMLTextAreaElement>(
+    "[data-native-composer] textarea",
+  )!;
+  expect(!!input).toBe(true);
+  input.value = "Retained room draft";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  await flush();
+  h.inbox.open();
+  await flush();
+  await waitForView(h.target, "[data-native-room-inbox-close]");
+  expect(document.querySelector('[role="dialog"]') === null).toBe(true);
+  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
+  expect(
+    h.target.querySelector("[data-native-document]") === documentNode,
+  ).toBe(true);
+  expect(h.target.querySelector("[data-native-composer]") === composer).toBe(
+    true,
+  );
+  expect(composer?.closest("[inert]") !== null).toBe(true);
+  h.target
+    .querySelector<HTMLButtonElement>("[data-native-room-inbox-close]")!
+    .click();
+  await flush();
+  expect(h.target.querySelector("[data-native-room-inbox]") === null).toBe(
+    true,
+  );
+  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
+  expect(input.value).toBe("Retained room draft");
+});
+test("room Inbox rejects connected old-opening and removed-room task controls before DOM flush", async () => {
+  const task: InboxTask = {
+    book_id: "aaaaaa",
+    room: "Room",
+    epic_id: "e",
+    epic: "Canonical epic",
+    task_id: "t1",
+    title: "Owned Inbox task",
+    status: "todo",
+    due: null,
+  };
+  const h = await actualRoomShell({
+    inbox: async () => ({ waits: [], mentions: [], tasks: [task] }),
+  });
+  h.publish(h.canonical);
+  await flush();
+  h.inbox.open();
+  await flush();
+  await waitForView(h.target, "[data-native-room-inbox] button");
+  const find = () =>
+    [
+      ...h.target.querySelectorAll<HTMLButtonElement>(
+        "[data-native-room-inbox] button",
+      ),
+    ].find((node) => node.textContent?.trim() === task.title);
+  for (let i = 0; i < 20 && !find(); i++) await flush();
+  const old = find()!;
+  expect(!!old).toBe(true);
+  const binding = get(h.inbox.state).binding!;
+  h.inbox.close(binding);
+  h.inbox.open();
+  expect(old.isConnected).toBe(true);
+  const before = h.href();
+  old.click();
+  expect(h.href()).toBe(before);
+  await flush();
+  for (let i = 0; i < 20 && !find(); i++) await flush();
+  const fresh = find()!;
+  expect(!!fresh).toBe(true);
+  expect(fresh !== old).toBe(true);
+  h.connectionCallbacks.at(-1)!.onRemoved?.();
+  expect(fresh.isConnected).toBe(true);
+  fresh.click();
+  expect(h.href()).toBe(before);
+  expect(get(h.inbox.state).binding === null).toBe(true);
+  await flush();
+  expect(h.target.querySelector("[data-native-room-inbox]") === null).toBe(
+    true,
+  );
 });

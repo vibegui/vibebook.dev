@@ -11,7 +11,8 @@
   import AlertDialog from "../lib/ui/AlertDialog.svelte";
   const capacityProbe =
     new URL(location.href).searchParams.get("capacity") === "1";
-  let setupAttention = $state(capacityProbe);
+  let setupAttention = $state(capacityProbe),
+    inboxOpen = $state(false);
   let active = true,
     rail = $state(false),
     tallHeader = $state(false),
@@ -76,6 +77,9 @@
     url.hash = "layout-picked";
     history[replace ? "replaceState" : "pushState"](null, "", url);
   }
+  function overlayWidth(node: HTMLElement) {
+    return { destroy: owner.bindDocumentWidth(node) };
+  }
 </script>
 
 <main
@@ -102,6 +106,9 @@
       ><Button size="sm" onclick={() => owner.setPane("board", { open: true })}
         >Board pane</Button
       ><Button size="sm" onclick={() => owner.toggleBoard()}>Full Board</Button>
+      <Button size="sm" onclick={() => (inboxOpen = !inboxOpen)}
+        >Inbox view</Button
+      >
       <Button size="sm" onclick={() => owner.toggleSidebar()}
         >Sidebar rail</Button
       ><Button
@@ -152,7 +159,25 @@
       : "tw:grid tw:min-h-0 tw:grid-cols-[0_minmax(0,1fr)]"}
   >
     <div class="tw:overflow-hidden tw:bg-muted">Application rail fixture</div>
-    <RoomLayout controller={owner} {labels}>
+    <RoomLayout controller={owner} {labels} overlayOpen={inboxOpen}>
+      {#snippet overlay()}<section
+          data-layout-inbox
+          class="tw:grid tw:h-full tw:min-h-0 tw:grid-cols-[minmax(0,1fr)_auto] tw:bg-background"
+        >
+          <div class="tw:p-4">Inbox messages</div>
+          <aside
+            data-layout-inbox-document
+            use:overlayWidth
+            class={[
+              "tw:min-h-0 tw:overflow-auto tw:bg-card tw:p-4",
+              $view.sidebarCollapsed
+                ? "tw:min-[901px]:animate-room-document-width-rail"
+                : "tw:min-[901px]:animate-room-document-width",
+            ]}
+          >
+            Inbox document
+          </aside>
+        </section>{/snippet}
       {#snippet sidebar()}<nav
           aria-label="Fixture threads"
           class="tw:space-y-3 tw:p-4"

@@ -68,6 +68,7 @@ export function createRoomGeometry(options: {
     board = createRoomPlayback(cells.board, () => "vb-room-sheet", issue);
   const docWidth = createRoomPlayback(cells.document, widthName, issue),
     boardWidth = createRoomPlayback(cells.board, widthName, issue);
+  const extraWidths = new Map<HTMLElement, RoomPlayback>();
   const all: RoomPlayback[] = [
     viewport,
     scrim,
@@ -273,6 +274,11 @@ export function createRoomGeometry(options: {
       boardWidth.suspend();
     }
     if (value.mobile && win.scrollY) win.scrollTo(0, 0);
+    for (const [node, player] of extraWidths) {
+      if (value.mobile || !node.isConnected) player.suspend();
+      else
+        player.set(documentProgress(width, rootWidth, value.sidebarCollapsed));
+    }
   }
   function sync(value: RoomLayoutState) {
     if (!current()) return;
@@ -386,6 +392,19 @@ export function createRoomGeometry(options: {
   measure();
   return {
     sync,
+    bindDocumentWidth(node: HTMLElement) {
+      if (!current() || !node.isConnected) return () => {};
+      extraWidths.get(node)?.dispose();
+      const player = createRoomPlayback(node, widthName, issue);
+      extraWidths.set(node, player);
+      measure();
+      return () => {
+        if (extraWidths.get(node) === player) {
+          extraWidths.delete(node);
+          player.dispose();
+        }
+      };
+    },
     cancelGestures() {
       releaseDrag();
       releaseResize();
@@ -533,6 +552,8 @@ export function createRoomGeometry(options: {
       observer.disconnect();
       for (const stop of [...stops]) stop();
       for (const owner of all) owner.dispose();
+      for (const owner of extraWidths.values()) owner.dispose();
+      extraWidths.clear();
       win.visualViewport?.removeEventListener("resize", viewportChanged);
       win.visualViewport?.removeEventListener("scroll", viewportChanged);
       win.removeEventListener("resize", viewportChanged);

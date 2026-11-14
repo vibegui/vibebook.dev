@@ -4,6 +4,7 @@
   import Button from "../../lib/ui/Button.svelte";
   import NotificationBell from "../notifications/NotificationBell.svelte";
   import InstallCard from "../pwa/InstallCard.svelte";
+  import Badge from "../../lib/ui/Badge.svelte";
   import Avatar from "../../lib/ui/Avatar.svelte";
   import Card from "../../lib/ui/Card.svelte";
   import Heading from "../../lib/ui/Heading.svelte";
@@ -39,6 +40,7 @@
     onsettings,
     onroomsettings,
     onsearch,
+    oninbox,
   }: HomeBridge = $props();
   const account = $derived(personal.state),
     draft = $derived(personal.draft);
@@ -122,6 +124,20 @@
           >vibebook</a
         >
         <div class="tw:flex tw:flex-wrap tw:gap-2">
+          {#if oninbox}<Button
+              data-native-inbox-toggle
+              variant="outline"
+              aria-label={text("inbox")}
+              aria-haspopup="dialog"
+              onclick={(event) => {
+                if (event.currentTarget.isConnected)
+                  oninbox?.(event.currentTarget);
+              }}
+              >{text("inbox")}{#if $account.me?.waits.length}<Badge
+                  variant="warning"
+                  aria-hidden="true">{$account.me.waits.length}</Badge
+                >{/if}</Button
+            >{/if}
           <NotificationBell owner={pwa} {lang} /><Button
             variant="outline"
             onclick={(event) => {

@@ -85,7 +85,7 @@
     aria-label={t("Caixa de entrada")}
     title={t("Caixa de entrada: o que espera por você")}
     onclick={(event) => {
-      if (live(event)) presentation.openInbox();
+      if (live(event)) presentation.openInbox(event.currentTarget);
     }}
     ><Icon name="inbox" />{#if waits.length}<Badge
         variant={waits.some((wait) => /^[ab]\d/.test(wait.ref))

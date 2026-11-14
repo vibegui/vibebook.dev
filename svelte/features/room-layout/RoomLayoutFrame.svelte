@@ -163,9 +163,12 @@
     </aside>
     <div
       bind:this={header}
-      inert={$view.mobile && $view.sheet === "side"}
+      inert={props.overlayOpen || ($view.mobile && $view.sheet === "side")}
       data-room-header
-      class="tw:relative tw:z-30 tw:col-start-2 tw:row-start-1 tw:min-w-0 tw:bg-background tw:px-4 tw:pt-[max(0.75rem,env(safe-area-inset-top))] tw:pb-3"
+      class={[
+        "tw:relative tw:z-30 tw:col-start-2 tw:row-start-1 tw:min-w-0 tw:bg-background tw:px-4 tw:pt-[max(0.75rem,env(safe-area-inset-top))] tw:pb-3",
+        props.overlayOpen && "tw:hidden",
+      ]}
     >
       {@render props.header()}
     </div>
@@ -174,7 +177,7 @@
       use:handle={{ sheet: "doc", opening: true }}
       inert={$view.mobile && $view.sheet === "side"}
       data-room-peek
-      class={$view.mobile && !$view.boardFull
+      class={!props.overlayOpen && $view.mobile && !$view.boardFull
         ? "tw:relative tw:z-30 tw:col-start-2 tw:row-start-2 tw:min-w-0 tw:touch-none tw:border-b tw:border-border tw:bg-background"
         : "tw:hidden"}
     >
@@ -182,9 +185,12 @@
     </div>
     <div
       bind:this={attention}
-      inert={$view.mobile && !!$view.sheet}
+      inert={props.overlayOpen || ($view.mobile && !!$view.sheet)}
       data-room-attention
-      class="tw:col-start-2 tw:row-start-3 tw:min-w-0"
+      class={[
+        "tw:col-start-2 tw:row-start-3 tw:min-w-0",
+        props.overlayOpen && "tw:hidden",
+      ]}
     >
       {@render props.attention?.()}
     </div>
@@ -192,7 +198,7 @@
       bind:this={chat}
       inert={$view.mobile && !!$view.sheet}
       data-room-chat
-      class={$view.boardFull
+      class={props.overlayOpen || $view.boardFull
         ? "tw:hidden"
         : "tw:col-start-2 tw:row-start-4 tw:min-h-0 tw:min-w-0 tw:overflow-y-auto tw:overscroll-contain tw:px-4"}
     >
@@ -202,7 +208,7 @@
       bind:this={composer}
       inert={$view.mobile && !!$view.sheet}
       data-room-composer
-      class={$view.boardFull
+      class={props.overlayOpen || $view.boardFull
         ? "tw:hidden"
         : "tw:col-start-2 tw:row-start-5 tw:min-w-0 tw:pb-[env(safe-area-inset-bottom)]"}
     >
@@ -211,7 +217,7 @@
     <div
       bind:this={documentToolbar}
       data-room-document-toolbar
-      class={!$view.mobile && rightVisible
+      class={!props.overlayOpen && !$view.mobile && rightVisible
         ? "tw:col-start-3 tw:row-start-1 tw:w-0 tw:min-w-full tw:border-l tw:border-border tw:bg-background"
         : "tw:hidden"}
     >
@@ -219,13 +225,15 @@
     </div>
     <section
       bind:this={documentCell}
-      inert={!docLive}
+      inert={props.overlayOpen || !docLive}
       data-room-document
       class={[
         "tw:relative tw:min-h-0 tw:min-w-0 tw:flex-col tw:overflow-hidden tw:bg-background",
         rightVisible && $view.pane !== "board" ? "tw:flex" : "tw:hidden",
         paneClass,
-        $view.mobile && !docPresented ? "tw:invisible" : "tw:visible",
+        props.overlayOpen || ($view.mobile && !docPresented)
+          ? "tw:invisible"
+          : "tw:visible",
       ]}
     >
       <div
@@ -250,8 +258,9 @@
     </section>
     <div
       bind:this={board}
-      inert={$view.mobile &&
-        ($view.sheet === "side" || (!$view.boardFull && !docLive))}
+      inert={props.overlayOpen ||
+        ($view.mobile &&
+          ($view.sheet === "side" || (!$view.boardFull && !docLive)))}
       data-room-board
       data-placement={$view.boardFull ? "full" : "pane"}
       class={[
@@ -261,7 +270,7 @@
           : $view.pane === "board" && rightVisible
             ? ["tw:flex", paneClass]
             : "tw:hidden",
-        $view.mobile && !$view.boardFull && !docPresented
+        props.overlayOpen || ($view.mobile && !$view.boardFull && !docPresented)
           ? "tw:invisible"
           : "tw:visible",
       ]}
@@ -286,6 +295,13 @@
         ></span></button
       >
     </div>
+    {#if props.overlayOpen}<div
+        data-room-inbox-surface
+        inert={$view.mobile && $view.sheet === "side"}
+        class="tw:z-30 tw:col-start-2 tw:col-end-4 tw:row-start-1 tw:row-end-6 tw:min-h-0 tw:min-w-0 tw:overflow-hidden tw:bg-background"
+      >
+        {@render props.overlay?.()}
+      </div>{/if}
     <input
       use:widthInput
       type="range"
