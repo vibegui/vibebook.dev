@@ -21,6 +21,7 @@ export type ChatBridge = {
   typingNote?: (id: number) => string | undefined;
 };
 export type ChatEmbedControls = {
+  revoked?(): void;
   ready: () => void;
   cancel?: () => void;
   deny?: () => void;

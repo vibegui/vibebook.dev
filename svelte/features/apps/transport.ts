@@ -3,6 +3,7 @@ import {
   type JSONRPCMessage,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { createAppDocumentHost } from "../../../browser/app-document/host";
 /** SDK envelope parsing leaves opaque tool argument values untouched; no invented payload budget. */
 export function decodeAppEnvelope(value: unknown): JSONRPCMessage | null {
   const parsed = JSONRPCMessageSchema.safeParse(value);
@@ -39,7 +40,8 @@ export function acceptsFrameMessage(
     current(),
   );
 }
-/** SDK protocol on a deliberate host transport: null origin AND exact live WindowProxy are both required. */
+/** Context prefilters above are not document authorization. The document host
+ * attests each proposal and carries private replies on its initial port. */
 const record = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value);
 const legacyRequests = new Set([
@@ -58,15 +60,17 @@ export class OpaqueAppTransport implements Transport {
   private started = false;
   private closed = false;
   private legacyId = 0;
+  private documentHost: ReturnType<typeof createAppDocumentHost>;
   constructor(
     private frame: HTMLIFrameElement,
     private current: () => boolean,
     private legacy?: (value: { height: number } | { text: string }) => void,
-  ) {}
-  private listener = (event: MessageEvent) => {
-    if (this.closed || !acceptsFrameMessage(this.frame, event, this.current))
-      return;
-    const value: unknown = event.data;
+    revoked?: () => void,
+  ) {
+    this.documentHost = createAppDocumentHost({ frame, current, receive: value => this.receive(value), revoked: () => { if (!this.closed) revoked?.(); } });
+  }
+  private receive = (value: unknown) => {
+    if (this.closed || !this.current() || !this.documentHost.active()) return;
     if (
       value &&
       typeof value === "object" &&
@@ -111,17 +115,21 @@ export class OpaqueAppTransport implements Transport {
     if (this.closed) throw Error("App transport disposed");
     if (this.started) return;
     this.started = true;
-    window.addEventListener("message", this.listener);
+    this.documentHost.start();
   }
   async send(message: JSONRPCMessage) {
     if (this.closed || !this.current() || !this.frame.isConnected)
       throw Error("App is no longer active");
-    this.frame.contentWindow?.postMessage(message, "*");
+    await this.documentHost.post(message);
   }
+  attest() { return this.documentHost.attest(); }
+  active() { return !this.closed && this.documentHost.active(); }
+  loadHtml(html: string) { this.documentHost.loadHtml(html); }
+  loadFile(url: string) { this.documentHost.loadFile(url); }
   async close() {
     if (this.closed) return;
     this.closed = true;
-    window.removeEventListener("message", this.listener);
+    this.documentHost.dispose();
     this.onclose?.();
   }
 }

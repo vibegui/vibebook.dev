@@ -26,6 +26,7 @@ export type NativeAppBridgeOptions = {
   resize?: (height: number) => void;
   embed?: boolean;
   t(text: string, vars?: Record<string, string | number>): string;
+  revoked?(): void;
 };
 /** The installed SDK owns negotiation, request schemas and protocol lifecycle. Host policy owns capabilities and scope. */
 export function createNativeAppBridge(options: NativeAppBridgeOptions) {
@@ -33,19 +34,21 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
     initialized = false,
     inflight = 0,
     pendingAsks = 0;
-  const current = () =>
+  const ownerCurrent = () =>
     active && options.current() && options.frame.isConnected;
+  const current = () => ownerCurrent() && transport.active();
+  const attest = async () => ownerCurrent() && (await transport.attest()) && current();
   const ask: AppAsk = async (what, detail) => {
     if (!current() || pendingAsks >= 16) return false;
     pendingAsks++;
     try {
-      return (await options.ask(what, detail)) && current();
+      return (await options.ask(what, detail)) && (await attest());
     } finally {
       pendingAsks--;
     }
   };
   const message = async (text: string) => {
-    if (!current()) return toolError("App is no longer active");
+    if (!(await attest())) return toolError("App is no longer active");
     if (inflight >= 16)
       return toolError("This app already has too many pending requests");
     inflight++;
@@ -68,16 +71,16 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
     },
     { hostContext: options.context() },
   );
-  const transport = new OpaqueAppTransport(options.frame, current, (value) => {
+  const transport = new OpaqueAppTransport(options.frame, ownerCurrent, (value) => {
     if ("height" in value) {
       if (Number.isFinite(value.height)) options.resize?.(value.height);
     } else void message(value.text).catch(() => {});
-  });
+  }, options.revoked);
   bridge.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: current() ? options.tools : [],
   }));
   bridge.oncalltool = async (params) => {
-    if (!current()) return toolError("App is no longer active");
+    if (!(await attest())) return toolError("App is no longer active");
     if (inflight >= 16)
       return toolError("This app already has too many pending requests");
     inflight++;
@@ -107,7 +110,7 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
     return {};
   };
   bridge.onupdatemodelcontext = async (params) => {
-    if (!current()) return {};
+    if (!(await attest())) return {};
     const text =
       params.content
         ?.filter((block) => block.type === "text")
@@ -152,12 +155,17 @@ export function createNativeAppBridge(options: NativeAppBridgeOptions) {
   const ready = bridge.connect(transport);
   return {
     ready,
+    attest,
+    active: current,
+    loadHtml: (html: string) => transport.loadHtml(html),
+    loadFile: (url: string) => transport.loadFile(url),
     update() {
       if (current()) bridge.setHostContext(options.context());
     },
     dispose() {
       if (!active) return;
       active = false;
+      void transport.close();
       void bridge.close().catch(() => {});
     },
   };

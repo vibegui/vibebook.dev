@@ -8,6 +8,7 @@
   import type { NativeAppBridge } from "./bridge";
   import { createAppConsent, type AppQuestion } from "./consent";
   import { createAppRequests } from "./requests";
+  import { appDocumentAction } from "./documentAction";
   import {
     createRoomAppTools,
     roomRead,
@@ -54,7 +55,8 @@
       get(props.owner.state).connections || [],
       selected,
     ) === initialKey;
-  const consent = createAppConsent(current),
+  const documentCurrent = () => current() && !!bridge?.active();
+  const consent = createAppConsent(documentCurrent),
     question = consent.question;
   const ask = consent.ask;
   function choose(intent: AppQuestion, answer: boolean) {
@@ -85,9 +87,9 @@
       room: { id: props.room.id, title: props.room.book.title },
     };
   }
-  const callRemote = async (cid: string, name: string, args: unknown) => {
+  const callRemote = async (cid: string, name: string, args: unknown, documentRequest = true) => {
     if (!current()) throw Error("App is no longer active");
-    const value = await requests
+    const operation = () => requests
       .run((signal) => props.api.call(cid, name, args, signal))
       .catch((error: unknown) => {
         if (error instanceof AppsFailure && error.accessDenied)
@@ -98,9 +100,10 @@
         }
         throw error;
       });
-    if (!current()) throw Error("App is no longer active");
+    const result = documentRequest ? await appDocumentAction(current, () => bridge, operation) : {ok:true as const,value:await operation()};
+    if (!result.ok || !current() || (documentRequest && !documentCurrent())) throw Error("App is no longer active");
     if (!protocol) throw Error("App bridge unavailable");
-    return protocol.remoteToolResult(value.result);
+    return protocol.remoteToolResult(result.value.result);
   };
   const membershipError = (error: unknown): never => {
     if (error instanceof AppsFailure && error.accessDenied)
@@ -108,12 +111,12 @@
     throw error;
   };
   const tools = createRoomAppTools({
-    room: () => (current() ? room() : null),
-    current,
-    request: (command) =>
-      current()
-        ? props.request(command)
-        : Promise.resolve({ ok: false, error: "disconnected" }),
+    room: () => (documentCurrent() ? room() : null),
+    current: documentCurrent,
+    request: async (command) => {
+      const result = await appDocumentAction(current, () => bridge, () => props.request(command));
+      return result.ok ? result.value : {ok:false,error:"disconnected"};
+    },
     name: (email) => props.name(email),
     ask,
     connections: async () => {
@@ -156,12 +159,19 @@
         ? Promise.resolve(
             toolOutput(roomRead(room() || props.room, {}, props.name)),
           )
-        : callRemote(selected.connection, selected.tool, {}).catch((error) =>
+        : callRemote(selected.connection, selected.tool, {}, false).catch((error) =>
             toolError(error instanceof Error ? error.message : "Tool failed"),
           );
       bridge = protocol.createNativeAppBridge({
         frame,
         current,
+        revoked: () => {
+          if (!current()) return;
+          requests.dispose();
+          consent.cancel();
+          loading = false;
+          error = props.lang === "en" ? "This app was closed. Reopen it to continue." : "O app foi fechado. Abra de novo para continuar.";
+        },
         context: () => ({ ...context(), toolInfo: { tool } }),
         tools: isRoom ? roomTools : [],
         call: isRoom
@@ -177,8 +187,7 @@
         contextText: isRoom
           ? undefined
           : async (text) => {
-              if (!current()) return;
-              await requests
+              await appDocumentAction(current, () => bridge, () => requests
                 .run((signal) =>
                   props.api.context(
                     selected.connection,
@@ -187,15 +196,15 @@
                     signal,
                   ),
                 )
-                .catch(membershipError);
+                .catch(membershipError));
             },
         t: (text, vars) => props.t(text, vars),
       });
       await bridge.ready;
       if (!current()) return;
       if (isRoom && app)
-        frame.src = `/api/books/${encodeURIComponent(props.room.id)}/files/${encodeURIComponent(app.file.id)}`;
-      else if (ui) frame.srcdoc = ui.html;
+        bridge.loadFile(`/api/books/${encodeURIComponent(props.room.id)}/files/${encodeURIComponent(app.file.id)}`);
+      else if (ui) bridge.loadHtml(ui.html);
       loading = false;
     } catch (failure) {
       if (failure instanceof AppsFailure && failure.accessDenied)

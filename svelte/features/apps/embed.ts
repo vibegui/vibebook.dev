@@ -9,6 +9,7 @@ import {
 } from "./authority";
 import { createAppsApi, createAppMetrics, type AppsApi } from "./api";
 import { createAppRequests } from "./requests";
+import { appDocumentAction } from "./documentAction";
 import { createRoomAppTools, roomTools } from "./tools";
 export function mountNativeChatApp(options: {
   frame: HTMLIFrameElement;
@@ -63,6 +64,7 @@ export function mountNativeChatApp(options: {
       )
     );
   };
+  const documentCurrent = () => current() && !!bridge?.active();
   const unlisten = authority.listen(() => {
     requests.dispose();
     bridge?.dispose();
@@ -76,8 +78,11 @@ export function mountNativeChatApp(options: {
     if (!current()) return;
     const tools = createRoomAppTools({
       room: options.room,
-      current,
-      request: options.request,
+      current: documentCurrent,
+      request: async command => {
+        const result = await appDocumentAction(current, () => bridge, () => options.request(command));
+        return result.ok ? result.value : {ok:false,error:"disconnected"};
+      },
       name: options.name,
       ask: options.controls.ask,
       connections: async () => {
@@ -87,12 +92,11 @@ export function mountNativeChatApp(options: {
         return current() ? result.connections : [];
       },
       call: async (cid, tool, args) => {
-        if (!current()) throw Error("App is no longer active");
-        const result = await requests
+        const result = await appDocumentAction(current, () => bridge, () => requests
           .run((signal) => api.call(cid, tool, args, signal))
-          .catch(membershipError);
-        if (!current()) throw Error("App is no longer active");
-        return protocol.remoteToolResult(result.result);
+          .catch(membershipError));
+        if (!result.ok || !documentCurrent()) throw Error("App is no longer active");
+        return protocol.remoteToolResult(result.value.result);
       },
       metric: (kind, roomOnly) =>
         requests
@@ -103,6 +107,13 @@ export function mountNativeChatApp(options: {
     bridge = protocol.createNativeAppBridge({
       frame,
       current,
+      revoked: () => {
+        if (!current()) return;
+        requests.dispose();
+        options.controls.cancel?.();
+        options.controls.revoked?.();
+        options.controls.fail?.();
+      },
       tools: roomTools,
       call: tools,
       message: (text) =>
@@ -136,7 +147,10 @@ export function mountNativeChatApp(options: {
       },
     });
     await bridge.ready;
-    if (current()) options.controls.ready();
+    if (current()) {
+      bridge.loadFile(`/api/books/${encodeURIComponent(roomId)}/files/${encodeURIComponent(options.file.id)}`);
+      options.controls.ready();
+    }
   }
   void start().catch(() => {
     if (current()) options.controls.fail?.();

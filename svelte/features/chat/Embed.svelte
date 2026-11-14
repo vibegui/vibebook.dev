@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import type { Attachment } from "../../../shared/room";
   import type { ChatActions, ChatBridge } from "../../chatTypes";
   import { createAppConsent } from "../apps/consent";
@@ -18,48 +18,67 @@
     actions: ChatActions;
     vb: ChatBridge;
   } = $props();
-  let frame = $state<HTMLIFrameElement | null>(null),
-    height = $state(320),
+  let height = $state(320),
     clipped = $state(false);
   let active = true,
+    epoch = 0,
+    frameGeneration = $state(0),
     bridgeDenied = $state(false),
-    bridgeFailed = $state(false),
+    bridgeRevoked = $state(false),
+    bridgeFailed = $state(untrack(() => !actions.mountEmbed)),
     bridgeReady = $state(untrack(() => !actions.mountEmbed));
-  const consent = createAppConsent(() => active && !bridgeDenied),
+  const consent = createAppConsent(() => active && !bridgeDenied && !bridgeFailed && !bridgeRevoked),
     question = consent.question;
   const ask = consent.ask;
-  onMount(() => {
-    const detach = frame
-      ? actions.mountEmbed?.(frame, file, {
-          ask,
+  function attachFrame(node: HTMLIFrameElement) {
+    const ticket = ++epoch;
+    const current = () => active && epoch === ticket && node.isConnected;
+    const detach = actions.mountEmbed?.(node, file, {
+          ask: (what, detail) => current() ? ask(what, detail) : Promise.resolve(false),
           ready: () => {
-            if (active && !bridgeDenied) bridgeReady = true;
+            if (current() && !bridgeDenied && !bridgeFailed && !bridgeRevoked) bridgeReady = true;
           },
-          cancel: consent.cancel,
+          cancel: () => { if (current()) consent.cancel(); },
           deny: () => {
+            if (!current()) return;
             bridgeDenied = true;
             consent.cancel();
           },
           fail: () => {
+            if (!current()) return;
             bridgeFailed = true;
             consent.cancel();
           },
+          revoked: () => { if (current()) bridgeRevoked = true; },
           thread: messageThread,
           resize: (requested) => {
-            if (!active || !Number.isFinite(requested)) return;
+            if (!current() || bridgeDenied || bridgeFailed || bridgeRevoked || !Number.isFinite(requested)) return;
             const cap = Math.min(420, Math.round(window.innerHeight * 0.55));
             const next = Math.max(Math.ceil(requested) + 2, 40);
             height = Math.min(next, cap);
             clipped = next > cap;
           },
-        })
-      : undefined;
-    return () => {
-      active = false;
+        });
+    return { destroy() {
+      if (epoch === ticket) { epoch++; consent.cancel(); }
       detach?.();
-      consent.dispose();
-    };
+    } };
+  }
+  onDestroy(() => {
+    active = false;
+    epoch++;
+    consent.dispose();
   });
+  function retry(event: MouseEvent, generation: number) {
+    if (!active || generation !== frameGeneration || !bridgeFailed || bridgeDenied || !actions.mountEmbed || !event.currentTarget || !(event.currentTarget instanceof HTMLElement) || !event.currentTarget.isConnected) return;
+    consent.cancel();
+    bridgeFailed = false;
+    bridgeRevoked = false;
+    bridgeReady = false;
+    height = 320;
+    clipped = false;
+    frameGeneration++;
+  }
   function open(event: MouseEvent) {
     if (
       event.button !== 0 ||
@@ -76,15 +95,16 @@
 </script>
 
 <div data-chat-embed class="tw:w-full tw:space-y-2">
-  {#if !bridgeDenied}<iframe
-      bind:this={frame}
-      src={bridgeReady ? url : undefined}
+  {#if !bridgeDenied}{#key frameGeneration}<iframe
+      use:attachFrame
       sandbox="allow-scripts"
       loading="lazy"
+      hidden={bridgeFailed}
+      aria-busy={!bridgeReady}
       title={file.name}
       {height}
       class="tw:w-full tw:rounded-control tw:border tw:border-border"
-    ></iframe>{:else}<p
+    ></iframe>{/key}{:else}<p
       role="alert"
       class="tw:m-0 tw:text-sm tw:text-muted-foreground"
     >
@@ -94,10 +114,10 @@
       role="alert"
       class="tw:m-0 tw:text-sm tw:text-muted-foreground"
     >
-      {vb.t(
+      {bridgeRevoked ? (vb.locale?.startsWith("en") ? "This app document closed. Reopen the app to continue." : "O documento deste app foi fechado. Abra o app de novo para continuar.") : vb.t(
         "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.",
       )}
-    </p>{/if}
+    </p>{#if actions.mountEmbed && !bridgeDenied}{#key frameGeneration}<Snapshot value={frameGeneration}>{#snippet children(generation)}<Button variant="outline" onclick={(event) => retry(event, generation)}>{vb.locale?.startsWith("en") ? "Reopen app" : "Abrir app de novo"}</Button>{/snippet}</Snapshot>{/key}{/if}{/if}
   <a
     href={url}
     onclick={open}
