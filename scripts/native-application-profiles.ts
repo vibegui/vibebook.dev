@@ -506,7 +506,13 @@ export async function auditNativeApplicationProfiles(
               page.locator("[data-native-composer] textarea"),
             ).toBeVisible();
             await expect(
-              page.locator(fixture.codeMessageId === undefined ? "[data-chat-message] pre" : `#m${fixture.codeMessageId} pre`).first(),
+              page
+                .locator(
+                  fixture.codeMessageId === undefined
+                    ? "[data-chat-message] pre"
+                    : `#m${fixture.codeMessageId} pre`,
+                )
+                .first(),
             ).toBeAttached();
             assert.equal(
               await page.locator("html").getAttribute("lang"),

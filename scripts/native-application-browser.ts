@@ -225,15 +225,12 @@ async function identity(
     { name: "dev_as", value: email, url: base },
     { name: "vb_lang", value: profile.lang, url: base },
   ]);
-  await context.addInitScript(
-    (theme) => {
-      // Context init scripts also run in opaque App frames. Theme is an
-      // application-document fixture, not a write into untrusted child realms.
-      if (window !== window.top) return;
-      localStorage.setItem("vb.theme", theme);
-    },
-    profile.theme,
-  );
+  await context.addInitScript((theme) => {
+    // Context init scripts also run in opaque App frames. Theme is an
+    // application-document fixture, not a write into untrusted child realms.
+    if (window !== window.top) return;
+    localStorage.setItem("vb.theme", theme);
+  }, profile.theme);
   const response = await context.request.get(`${base}/api/me?ui=svelte`);
   assert(response.ok(), "Local DEV identity must be enabled");
   const me = MeResult.parse(await response.json());
@@ -525,12 +522,16 @@ try {
         );
       // Human posts intentionally render literally. Use a real agent post for
       // the existing Markdown path, never change product rendering for a test.
-      const codeMessage = PostMessageResult.parse(await agent("post", {
-        room_id:roomA, thread:"main", model:"native-browser-fixture",
-        text:"```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
-      }));
+      const codeMessage = PostMessageResult.parse(
+        await agent("post", {
+          room_id: roomA,
+          thread: "main",
+          model: "native-browser-fixture",
+          text: "```ts\nconst nativeRootFixture = 'real Book message';\n```\nCanonical code block for the actual CommitMono role.",
+        }),
+      );
       assert(codeMessage.ok);
-      codeMessageId=codeMessage.id;
+      codeMessageId = codeMessage.id;
       await post(owner.context, roomA, `Real epic message ${token}`, epic);
       const file = AttachmentSchema.parse(
         await roomApi(owner.context, roomA).uploadFile({

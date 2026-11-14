@@ -5479,7 +5479,7 @@ async function vbCall(name, a = {}, ask, current = () => true) {
 const hosts = new WeakMap();
 const appDocuments = new Set();
 let appDocumentModule;
-const loadAppDocumentHost = () => appDocumentModule ||= import("/app-document-host.8db2d1819ddb65992a27.js").catch((error) => { appDocumentModule = null; throw error; });
+const loadAppDocumentHost = () => appDocumentModule ||= import("/app-document-host.4262f70823450d09be43.js").catch((error) => { appDocumentModule = null; throw error; });
 function appDocumentScope(frame) {
   const room = S?.id, account = S?.me, at = thread, socket = ws;
   return () => frame.isConnected && S?.id === room && S?.me === account && thread === at && ws === socket && ws?.readyState === 1;

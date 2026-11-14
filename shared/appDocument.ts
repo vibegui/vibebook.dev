@@ -10,11 +10,14 @@ export const AppDocumentClaim = z.strictObject({
 /** Preserve the original doctype/quirks mode and URL; insert before any app code. */
 export function withAppDocumentBootstrap(html: string, nonce: string): string {
   AppDocumentClaim.parse({ nonce });
-  const tree = parse(html, { sourceCodeLocationInfo: true });
+  // HTML response decoding consumes a leading BOM before tokenization. Account
+  // for it explicitly because parse5 receives a JavaScript string, not bytes.
+  const bom = html.startsWith("\ufeff") ? 1 : 0;
+  const tree = parse(html.slice(bom), { sourceCodeLocationInfo: true });
   const doctype = tree.childNodes.find(
     (node) => node.nodeName === "#documentType",
   );
-  const offset = doctype?.sourceCodeLocation?.endOffset ?? 0;
+  const offset = bom + (doctype?.sourceCodeLocation?.endOffset ?? 0);
   const script = appDocumentBootstrap.replace(
     APP_DOCUMENT_NONCE_PLACEHOLDER,
     nonce,
