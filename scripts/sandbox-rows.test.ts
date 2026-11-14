@@ -1,6 +1,7 @@
 import { afterEach, expect, mock, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { Env } from "../src/index";
 import { SandboxesResult } from "../shared/schemas";
 import {
@@ -10,7 +11,7 @@ import {
   sandboxTarget,
   sandboxSetup,
 } from "../src/sandboxRows";
-import { sandboxCost } from "../svelte/features/room-sidebar/model";
+import { sandboxCost } from "../shared/sandboxCost";
 mock.module("cloudflare:workers", () => ({
   DurableObject: class {},
   WorkerEntrypoint: class {},
@@ -326,7 +327,7 @@ test("incomplete provider snapshots retain previous metrics and never claim a kn
 
 test("default vanilla estimate predicate and native sidebar honor uncertainty without hiding exact zero", async () => {
   const html = await readFile(
-    new URL("../public/app.html", import.meta.url),
+    resolve(import.meta.dirname, "../public/app.html"),
     "utf8",
   );
   const declaration = html.match(/^const sbxCostUnknown = .*;$/m)?.[0];

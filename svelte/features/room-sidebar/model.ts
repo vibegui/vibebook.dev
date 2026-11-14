@@ -3,6 +3,7 @@ import { prettyModel } from "../chat/model";
 import type { AgentsResult } from "../../../shared/schemas";
 export type Presence = Pick<AgentsResult, "agents" | "sandboxes">;
 export { suggestionIdentity } from "../../../shared/suggestions";
+export { sandboxCost } from "../../../shared/sandboxCost";
 export const epicIdentity = (value: Epic) => JSON.stringify(value);
 export function suggestionAt(room: Room, thread: string) {
   if (!/^pre:\d+$/.test(thread)) return undefined;
@@ -83,19 +84,4 @@ export function contextPercent(tokens: number, window: number) {
   return Number.isFinite(tokens) && Number.isFinite(window) && window > 0
     ? Math.max(0, Math.min(100, Math.round((tokens / window) * 100)))
     : 0;
-}
-export function sandboxCost(
-  sandbox: Presence["sandboxes"][number],
-  now: number,
-) {
-  if (sandbox.cost_unknown || sandbox.created_at === null) return null;
-  const running =
-    sandbox.state === "running"
-      ? Math.max(0, now - (sandbox.checked_at ?? now)) / 1000
-      : 0;
-  const cost =
-    (((sandbox.run_s ?? 0) + running) / 3600) * (sandbox.rate ?? 0) +
-    (Math.max(0, now - (sandbox.created_at ?? now)) / 3600000) *
-      (sandbox.disk_rate ?? 0);
-  return Number.isFinite(cost) ? cost : null;
 }
