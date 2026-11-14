@@ -413,28 +413,41 @@ test("hidden new-message bottom intent survives passive Board renders until chat
 });
 
 test("real selection append cannot replace a row of an unpinned hidden Board reading window", () => {
-  const h = harness(), presentation = createChatPresentation(h.view);
+  const h = harness(),
+    presentation = createChatPresentation(h.view);
   let hidden = false;
   h.surface.connected = () => !hidden;
-  h.metrics.top = 300; h.scroll();
-  const before = h.view.selection().list.map(item => item.id), anchorId = 100;
+  h.metrics.top = 300;
+  h.scroll();
+  const before = h.view.selection().list.map((item) => item.id),
+    anchorId = 100;
   const beforeY = before.indexOf(anchorId) * 10 - h.metrics.top;
   presentation.capture("stay", true);
   // A manual scroll since the preceding projection must be captured at the
   // pre-hide state publication, while the actual DOM geometry is still visible.
-  h.metrics.top = 320; h.scroll();
+  h.metrics.top = 320;
+  h.scroll();
   presentation.capture("stay", false);
-  hidden = true; h.metrics.top = 0; h.metrics.height = 0; h.metrics.client = 0;
-  h.sync(room(121)); presentation.capture("stay", false);
-  expect(h.view.selection().list.map(item => item.id)).toEqual(before);
+  hidden = true;
+  h.metrics.top = 0;
+  h.metrics.height = 0;
+  h.metrics.client = 0;
+  h.sync(room(121));
+  presentation.capture("stay", false);
+  expect(h.view.selection().list.map((item) => item.id)).toEqual(before);
   expect(h.view.selection().list).toHaveLength(60);
   presentation.capture("stay", true);
-  hidden = false; h.metrics.height = 1000; h.metrics.client = 100;
+  hidden = false;
+  h.metrics.height = 1000;
+  h.metrics.client = 100;
   presentation.rendered(true);
   expect(h.metrics.top).toBe(320);
-  const afterY = h.view.selection().list.findIndex(item => item.id === anchorId) * 10 - h.metrics.top;
+  const afterY =
+    h.view.selection().list.findIndex((item) => item.id === anchorId) * 10 -
+    h.metrics.top;
   expect(afterY).toBe(beforeY - 20);
-  h.metrics.top = h.metrics.height - h.metrics.client; h.scroll();
+  h.metrics.top = h.metrics.height - h.metrics.client;
+  h.scroll();
   expect(h.view.selection().list.at(-1)?.id).toBe(121);
   expect(h.view.selection().list).toHaveLength(60);
   expect(h.view.pinned()).toBe(true);
@@ -443,17 +456,20 @@ test("real selection append cannot replace a row of an unpinned hidden Board rea
 
 test("unpinned incoming bursts keep sixty rows; explicit latest and deep links include new targets", () => {
   const h = harness();
-  h.metrics.top = 300; h.scroll();
-  const retained = h.view.selection().list.map(item => item.id);
+  h.metrics.top = 300;
+  h.scroll();
+  const retained = h.view.selection().list.map((item) => item.id);
   h.sync(room(600));
-  expect(h.view.selection().list.map(item => item.id)).toEqual(retained);
+  expect(h.view.selection().list.map((item) => item.id)).toEqual(retained);
   expect(h.view.selection().list).toHaveLength(60);
   h.view.followLatest();
   expect(h.view.selection().list).toHaveLength(60);
   expect(h.view.selection().list.at(-1)?.id).toBe(600);
   expect(h.view.pinned()).toBe(true);
-  h.metrics.top = 200; h.scroll();
-  h.sync(room(601)); h.draw(true);
+  h.metrics.top = 200;
+  h.scroll();
+  h.sync(room(601));
+  h.draw(true);
   h.view.go(601);
   expect(h.revealed.at(-1)).toBe(601);
   expect(h.view.selection().list.at(-1)?.id).toBe(601);
@@ -465,7 +481,8 @@ test("unpinned incoming bursts keep sixty rows; explicit latest and deep links i
 test("older expands before the retained end, and new tail rows do not masquerade as older history", () => {
   const h = harness();
   h.sync({ ...room(), complete: true });
-  h.metrics.top = 300; h.scroll();
+  h.metrics.top = 300;
+  h.scroll();
   h.sync({ ...room(200), complete: true });
   h.view.loadOlder();
   const selected = h.view.selection();

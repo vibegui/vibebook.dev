@@ -52,13 +52,15 @@ export function createChatViewport(options: {
   const owns = (ticket: number) => current() && ticket === scope;
   const messages = () =>
     room?.messages.filter((message) => message.thread === thread) ?? [];
-  const visibleMessages = () => room ? visibleChatMessages(room, thread) : [];
+  const visibleMessages = () => (room ? visibleChatMessages(room, thread) : []);
   const endOf = (all: Message[]) => {
     if (windowEnd === null) return all.length;
-    const index = all.findIndex(message => message.id === windowEnd);
+    const index = all.findIndex((message) => message.id === windowEnd);
     return index < 0 ? all.length : index + 1;
   };
-  const freezeWindow = () => { windowEnd ??= visibleMessages().at(-1)?.id ?? null; };
+  const freezeWindow = () => {
+    windowEnd ??= visibleMessages().at(-1)?.id ?? null;
+  };
   const complete = () =>
     !!room &&
     (!!room.complete || !!room.full?.includes(thread) || done.has(thread));
@@ -224,7 +226,8 @@ export function createChatViewport(options: {
         room.id !== next.id ||
         room.me !== next.me ||
         connectionGeneration !== generation;
-      const changedMessages = room?.messages !== next.messages || room?.origins !== next.origins;
+      const changedMessages =
+        room?.messages !== next.messages || room?.origins !== next.origins;
       const changed = newConnection || selected !== thread;
       if (changed || fresh) {
         scope++;
@@ -243,7 +246,12 @@ export function createChatViewport(options: {
       }
       room = next;
       thread = selected;
-      if (windowEnd !== null && changedMessages && !visibleMessages().some(message => message.id === windowEnd)) windowEnd = null;
+      if (
+        windowEnd !== null &&
+        changedMessages &&
+        !visibleMessages().some((message) => message.id === windowEnd)
+      )
+        windowEnd = null;
       connectionGeneration = generation;
       live = authoritative;
       return changed;
@@ -255,7 +263,9 @@ export function createChatViewport(options: {
     } {
       if (!current() || !room || thread.startsWith("pre:"))
         return { list: [], previous: undefined, more: false };
-      const all = visibleMessages(), end = endOf(all), start = Math.max(0, end - count),
+      const all = visibleMessages(),
+        end = endOf(all),
+        start = Math.max(0, end - count),
         list = all.slice(start, end);
       return {
         list,
@@ -334,9 +344,16 @@ export function createChatViewport(options: {
           const value = next.metrics();
           const wasPinned = pinned;
           if (value.height - value.top - value.client < 80) pinned = true;
-          else if (value.top < lastTop - 2) { pinned = false; freezeWindow(); }
+          else if (value.top < lastTop - 2) {
+            pinned = false;
+            freezeWindow();
+          }
           lastTop = value.top;
-          if (pinned && !wasPinned && windowEnd !== null) { windowEnd = null; options.render(); return; }
+          if (pinned && !wasPinned && windowEnd !== null) {
+            windowEnd = null;
+            options.render();
+            return;
+          }
           if (value.top < 150 && !pinned) this.loadOlder();
         },
         () => {
@@ -377,7 +394,12 @@ export function createChatViewport(options: {
     pinned: () => pinned,
     /** Explicit own-send/latest/force-bottom intent. Incoming peer messages do
      * not advance an unpinned window or grow its count. */
-    followLatest() { if (current()) { windowEnd = null; pinned = true; } },
+    followLatest() {
+      if (current()) {
+        windowEnd = null;
+        pinned = true;
+      }
+    },
     defer: later,
     cancelSearch() {
       pending = null;
