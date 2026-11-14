@@ -9,6 +9,25 @@ import * as z from "zod/mini";
 type DOMPixelDifference =
   | { dimensionsEqual: false; pixelsChanged: null }
   | { dimensionsEqual: true; pixelsChanged: number };
+type CanvasObservation = {
+  kind: string;
+  text: string;
+  weight: number;
+  canvasOpticalSize: string;
+  alias: string;
+  pixelsChanged: number;
+  maxChannelDifference: number;
+  bounds: { minX: number; minY: number; maxX: number; maxY: number } | null;
+  originalAdvance: number;
+  candidateAdvance: number;
+  artifacts: string[];
+};
+type DOMObservation = DOMPixelDifference & {
+  weight: number;
+  opticalSize: number;
+  alias: string;
+  artifact: string;
+};
 
 const root = resolve(import.meta.dir, "..");
 const fixture = resolve(import.meta.dir, "fixtures/font-forensics");
@@ -280,7 +299,7 @@ try {
   );
   report.missingGlyphControl = { text: "A", fonts: missing };
   report.fontProof = fontProof;
-  const observations = [];
+  const observations: CanvasObservation[] = [];
   const saved = new Map<string, number>();
   for (const weight of [400, 900]) {
     for (const sample of samples) {
@@ -380,7 +399,7 @@ try {
   }
   report.observations = observations;
   // Screenshot each alias with identical DOM geometry. Decode pixels in this same browser (no PNG decoder dependency).
-  const dom = [];
+  const dom: DOMObservation[] = [];
   for (const weight of [400, 900])
     for (const opticalSize of [14, 32]) {
       await page.evaluate(

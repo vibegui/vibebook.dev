@@ -237,6 +237,27 @@ test("module identities retain package version/source scope but strip physical r
   }
 });
 
+test("module project identity survives aliases above and at the root with missing descendants", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "chunk-ancestor-alias-"));
+  try {
+    const parent = join(dir, "physical-parent"),
+      project = join(parent, "project"),
+      ancestor = join(dir, "ancestor-alias");
+    await mkdir(project, { recursive: true });
+    await symlink(project, join(parent, "root-alias"), "dir");
+    await symlink(parent, ancestor, "dir");
+    const label = diagnosticModuleLabel(join(ancestor, "root-alias"));
+    expect(
+      label(join(ancestor, "project", "svelte", "Missing.svelte")).id,
+    ).toBe("project:svelte/Missing.svelte");
+    const external = label(join(ancestor, "unrelated", "secret.ts"));
+    expect(external.id).toMatch(/^external:[a-f0-9]{20}$/);
+    expect(external.id).not.toContain("secret");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("vanilla delayed Inbox bundle is not falsely attributed to initial inline Home code", () => {
   const build = {
     ...fixture(),

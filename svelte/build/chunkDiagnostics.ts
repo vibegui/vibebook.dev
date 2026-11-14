@@ -5,6 +5,7 @@ import { dirname, relative, resolve, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 import type { Plugin } from "vite";
 import { ChunkDiagnostic } from "./chunkDiagnosticModel";
+import { projectFilesystemPath } from "./filesystemPaths";
 const digest = (b: string | Uint8Array) =>
   createHash("sha256").update(b).digest("hex");
 /** Never persist absolute paths, raw query contents, source code or environment values. */
@@ -65,9 +66,21 @@ export function diagnosticModuleLabel(root: string) {
         : `external:${digest(path).slice(0, 20)}${suffix}`;
     } else {
       const prefix = roots.find((p) => path.startsWith(p + "/"));
+      // A third spelling can resolve aliases above the project differently
+      // from both configured and real roots (for example /var vs /private/var).
+      // Project the physical root while retaining the source-relative suffix,
+      // including modules that do not exist yet. Unreadable externals stay opaque.
+      let projected: string | undefined;
+      if (!prefix) {
+        try {
+          projected = projectFilesystemPath(path, roots[1]);
+        } catch {}
+      }
       id = prefix
         ? `project:${path.slice(prefix.length + 1)}${suffix}`
-        : `external:${digest(path).slice(0, 20)}${suffix}`;
+        : projected
+          ? `project:${relative(roots[1], projected).replaceAll("\\", "/")}${suffix}`
+          : `external:${digest(path).slice(0, 20)}${suffix}`;
     }
     const label = { id, packageName, packageVersion };
     cache.set(raw, label);
