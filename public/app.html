@@ -722,6 +722,7 @@
   .plusMenu svg { color: var(--mute); flex: none; }
   .mentionPop .avatar { width: 24px; height: 24px; font-size: 10px; }
   .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
+  #askText[data-content-size], .composer textarea[data-content-size] { field-sizing: content; }
 
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
@@ -2872,11 +2873,22 @@ function wireHome(me) {
   });
 }
 
+// Prefer browser-managed sizing after the first edit; preserve initial rows and
+// the exact legacy auto-height fallback where field-sizing is unsupported.
+const CONTENT_TEXTAREA_SIZING = typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content");
+function resizeTextarea(ta) {
+  if (CONTENT_TEXTAREA_SIZING) {
+    if (!ta.hasAttribute("data-content-size")) ta.setAttribute("data-content-size", "");
+    return;
+  }
+  ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`;
+}
+
 // Home composer: suggest the room/epic, then post there on one click and open it.
 function wireAsk() {
   const form = document.getElementById("ask"), ta = document.getElementById("askText"), out = document.getElementById("askOut"), btn = document.getElementById("askBtn");
   if (!form) return;
-  ta.oninput = () => { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; };
+  ta.oninput = () => { resizeTextarea(ta); };
   ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } };
   const where = (p) => `<b>${esc(p.book_title)}</b>${p.epic_title ? ` → <b>${esc(p.epic_title)}</b>` : ""}`;
   // Destination first (picked, alternative or a new room); it's posted as typed, for the people and Claudes there.
@@ -3697,7 +3709,7 @@ function renderBook() {
     pickAt = 0; renderPop();
   };
   input.oninput = () => {
-    input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
+    resizeTextarea(input);
     updatePop();
   };
   input.onblur = () => setTimeout(closePop, 100);

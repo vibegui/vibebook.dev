@@ -144,6 +144,7 @@
     "scripts/app-document-browser.ts",
     "scripts/app-document.test.ts",
     "scripts/vanilla-app-document.test.ts",
+    "scripts/vanilla-textarea-input.test.ts",
     "scripts/app-document-adversarial-browser.ts",
     "scripts/font-forensics-browser.ts",
     "scripts/font-css-range-browser.ts",
