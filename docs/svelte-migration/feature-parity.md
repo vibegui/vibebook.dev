@@ -57,7 +57,7 @@ Later published changes reported by the peer (`cba3556`, `601f3a4`, `691a534`) a
 | F37 | Reminder create/edit/upload, enable/disable/delete, validation and schedule errors | `Reminders.svelte`, `renderReminders`, upload parsing | `Reminders.svelte` + `features/reminders` | Pending |
 | F38 | Decisions view/delete and updates | `renderDecisions`, room commands | `features/decisions` | Pending |
 | F39 | People/online/roles, invite, access requests, removal and leave behavior | `renderSide`, member handlers, owner menu | `features/people` + `features/room-sidebar` | Pending |
-| F40 | Inbox here/all, resolve waits, task/agent states and navigation to exact message | `Inbox.svelte`, `openInbox`, `syncInbox` | `features/application/inbox.ts` + `Inbox.svelte` | Pending |
+| F40 | Inbox here/all, canonical waits/mentions/tasks, resolve waits and exact message/epic navigation | `Inbox.svelte`, `openInbox`, `syncInbox` | `features/application/inbox.ts` + typed `HomeApi.inbox` + `Inbox.svelte`; room sidebar/header triggers share one owner | Source implemented against cbaf3df; focused owner/DOM cases authored, execution and real browser pending |
 | F41 | Local runner status, per-room Claude activation, focus and connection guidance | `herdrPing`, `whereOf`, `toggleClaude`, `connectCard` | `features/agents` | Pending |
 | F42 | Agent queue, connected agents, busy/current work, acknowledgements and context | `renderAgentsPane`, `myQueue`, `agentRows`, `ctxBar`, `renderWorking` | `features/agents` | Pending |
 | F43 | Account-level agent permissions/revoke and setup | `renderAgents`, `fillLogins`, account UI | `features/agents` + `features/account` | Pending |

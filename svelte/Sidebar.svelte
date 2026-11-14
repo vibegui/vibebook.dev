@@ -42,6 +42,7 @@
     onrenameroom = () => {},
     onopenside = () => {},
     onagents = () => {},
+    oninbox,
     mountSheetHandle,
     hideSheetHandle = false,
   }: SidebarProps = $props();
@@ -103,6 +104,7 @@
       class="tw:rounded-control tw:p-2 tw:text-center tw:text-foreground tw:no-underline tw:hover:bg-muted"
       >←</a
     >
+    {#if oninbox}<IconButton icon="inbox" label={vb.t("Caixa de entrada")} onclick={(event)=>{if(event.currentTarget.isConnected)oninbox?.();}} />{/if}
     {#each [{ id: "main", title: room.book.title, tasks: [], owner: undefined }, ...room.epics.filter((epic) => !epic.archived || epic.id === thread)] as epic (epic.id)}
       <Button
         variant={thread === epic.id ? "secondary" : "ghost"}
@@ -215,6 +217,7 @@
           {onrenameroom}
         />
       </div>{/if}
+    {#if oninbox}<Button variant="ghost" class="tw:justify-start" onclick={(event)=>{if(event.currentTarget.isConnected)oninbox?.();}}>{vb.t("Caixa de entrada")}</Button>{/if}
     <EpicTree
       {room}
       {thread}

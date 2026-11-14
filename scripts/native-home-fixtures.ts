@@ -47,6 +47,7 @@ export const suggestion: RouteResult = {
 export function homeApi(overrides: Partial<HomeApi> = {}): HomeApi {
   return {
     me: async () => me(),
+    inbox: async () => ({waits:[],mentions:[],tasks:[]}),
     agents: async () => ({ agents: [], last_used: null }),
     archived: async () => ({ books: [] }),
     search: async () => ({ rooms: 1, epics: [], messages: [] }),

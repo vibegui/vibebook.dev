@@ -9,6 +9,7 @@
   import Tabs from "./lib/ui/Tabs.svelte";
   import EmptyState from "./lib/components/EmptyState.svelte";
   import ErrorState from "./lib/components/ErrorState.svelte";
+  import Heading from "./lib/ui/Heading.svelte";
 
   let {
     waits,
@@ -22,6 +23,12 @@
     ontab,
     onopen,
     onnav,
+    onmention,
+    ontask,
+    loading=false,
+    readError=false,
+    current=()=>true,
+    onretry,
     onresolve,
     onclose,
   }: {
@@ -36,6 +43,12 @@
     ontab?: (all: boolean) => void;
     onopen: (wait: Wait, event: MouseEvent) => void;
     onnav?: (bookId: string, thread: string, msgId: number) => void;
+    onmention?: (mention:InboxMention) => void;
+    ontask?: (task:InboxTask) => void;
+    loading?:boolean;
+    readError?:boolean;
+    current?:()=>boolean;
+    onretry?:()=>void|Promise<void>;
     onresolve: (wait: Wait) => void | Promise<void>;
     onclose: () => void;
   } = $props();
@@ -90,11 +103,14 @@
     thread: string,
     msgId: number,
   ) {
+    if(!current()){event.preventDefault();return;}
+    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
     if (!onnav) return; // no handler: let the anchor's href navigate
     event.preventDefault();
     onnav(bookId, thread, msgId);
   }
   async function resolve(wait: Wait) {
+    if(!current())return;
     pending = key(wait);
     error = "";
     try {
@@ -112,11 +128,13 @@
   title={vb.t("Caixa de entrada")}
   closeLabel={vb.t("Fechar")}
   onOpenChange={(value) => {
-    if (!value) onclose();
+    if (!value && current()) onclose();
   }}
 >
   {#snippet children()}
     {#if error}<ErrorState title={error} compact />{/if}
+    {#if loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
+    {#if readError}<ErrorState title={vb.t("Não foi possível carregar a caixa de entrada.")} compact onretry={() => {if(current())void onretry?.();}} retryLabel={vb.t("Tentar de novo")} />{/if}
     {#if roomId}
       <Tabs
         {items}
@@ -137,17 +155,17 @@
     >
       {#if waitList.length}
         <section>
-          <h3
+          <Heading level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Esperando você")} ({waitList.length})
-          </h3>
+          </Heading>
           <ul class="tw:m-0 tw:list-none tw:divide-y tw:divide-border tw:p-0">
             {#each waitList as wait (key(wait))}
               <li class="tw:flex tw:items-start tw:gap-2 tw:py-1">
                 <a
                   href={waitHref(wait)}
-                  onclick={(event) => onopen(wait, event)}
+                  onclick={(event) => {if(!current()){event.preventDefault();return;}onopen(wait, event);}}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >
                   {#if kind(wait) === "task"}<span
@@ -198,18 +216,21 @@
 
       {#if mentionList.length}
         <section>
-          <h3
+          <Heading level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Te mencionaram")} ({mentionList.length})
-          </h3>
+          </Heading>
           <ul class="tw:m-0 tw:list-none tw:divide-y tw:divide-border tw:p-0">
             {#each mentionList as m (`${m.book_id}:${m.msg_id}`)}
               <li class="tw:flex tw:items-start tw:gap-2 tw:py-1">
                 <a
                   href={navHref(m.book_id, m.thread, m.msg_id)}
-                  onclick={(event) =>
-                    clickNav(event, m.book_id, m.thread, m.msg_id)}
+                  onclick={(event) => {
+                    if(!current()){event.preventDefault();return;}
+                    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+                    if(onmention){event.preventDefault();onmention(m);}else clickNav(event,m.book_id,m.thread,m.msg_id);
+                  }}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >
                   <Avatar
@@ -241,18 +262,21 @@
 
       {#if taskList.length}
         <section>
-          <h3
+          <Heading level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Suas tarefas")} ({taskList.length})
-          </h3>
+          </Heading>
           <ul class="tw:m-0 tw:list-none tw:divide-y tw:divide-border tw:p-0">
             {#each taskList as task (`${task.book_id}:${task.task_id}`)}
               <li class="tw:flex tw:items-start tw:gap-2 tw:py-1">
                 <a
                   href={navHref(task.book_id, task.epic_id, 0)}
-                  onclick={(event) =>
-                    clickNav(event, task.book_id, task.epic_id, 0)}
+                  onclick={(event) => {
+                    if(!current()){event.preventDefault();return;}
+                    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+                    if(ontask){event.preventDefault();ontask(task);}else clickNav(event,task.book_id,task.epic_id,0);
+                  }}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >
                   <span
@@ -278,7 +302,7 @@
         </section>
       {/if}
     </div>
-  {:else}<EmptyState
+  {:else if !loading && !readError}<EmptyState
       title={showAll
         ? vb.t("Nada esperando você. ✓")
         : vb.t("Nada esperando você nesta sala. ✓")}

@@ -4,9 +4,10 @@ Current-main reconciliation: `cbaf3dfe6a696a887da6640ef45c070a9ac0b5ed`
 includes `8a2d05e`'s cross-room Inbox (waits, held-back mentions and open tasks),
 `GET /api/inbox` and a sidebar trigger above the epic list. The default vanilla
 source and compiled Inbox are preserved. Native Inbox presentation incorporates
-the new sections, but its typed owner/RPC fetch, schema-derived DTO aliases,
-sidebar trigger, loading/error/retry and navigation/ownership verification are
-still pending. Native legacy host/chunks remain deleted; preview assets must be
+the new sections; native source now wires its inferred RPC fetch, schema-derived
+DTO aliases, shared-owner sidebar trigger and bounded loading/error/retry. Exact
+row/account/opening navigation and late-read source cases are authored but their
+execution and real-browser acceptance remain pending. Native legacy host/chunks remain deleted; preview assets must be
 regenerated from the current native source. Both changelog entries are retained.
 
 Further main reconciliation: `b6090b3cdc1a21b12feea7b3910254dd70cc4ae7`

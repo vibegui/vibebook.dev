@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import type { BrowserApplicationServices } from "./browser";
-import type { Wait } from "../../types";
+import type { Wait, InboxMention, InboxTask } from "../../types";
+import type { InboxResult } from "../../../shared/schemas";
 import { HomeFailure } from "../home/api";
 import { messageIdentity } from "../home/model";
 import { AUTH_REQUEST_TIMEOUT, type AuthClock } from "../auth/owner";
@@ -9,6 +10,7 @@ export type InboxBinding = {
   account: string;
   revision: number;
   generation: number;
+  roomId: string | null;
 };
 /** Global Inbox presentation owns no canonical waits. Every callback belongs to
  * one account/opening, including the interval before outgoing DOM is flushed. */
@@ -19,16 +21,19 @@ export function createApplicationInbox(
   >,
   clock?: AuthClock,
 ) {
-  const state = writable<{ binding: InboxBinding | null; all: boolean }>({
+  const empty = (): InboxResult => ({waits:[],mentions:[],tasks:[]});
+  const state = writable<{ binding: InboxBinding | null; all: boolean; data:InboxResult; phase:"idle"|"loading"|"ready"|"error"; error:string|null }>({
     binding: null,
     all: false,
+    data:empty(),phase:"idle",error:null,
   });
   let active = true,
     generation = 0,
-    pending = false;
+    pending = false, readRevision=0;
   const writer = createAgentLease(
     clock ? { ...clock, now: () => Date.now() } : undefined,
   );
+  const reader = createAgentLease(clock ? {...clock,now:()=>Date.now()} : undefined);
   const owns = (binding: InboxBinding) => {
     const account = get(services.personal.state);
     return (
@@ -42,9 +47,11 @@ export function createApplicationInbox(
   function close(expected?: InboxBinding) {
     if (expected && get(state).binding !== expected) return;
     generation++;
+    readRevision++;
     writer.cancel();
+    reader.cancel();
     pending = false;
-    state.update((value) => ({ ...value, binding: null }));
+    state.update((value) => ({ ...value, binding: null, data:empty(),phase:"idle",error:null }));
   }
   const stopPersonal = services.personal.state.subscribe((value) => {
     const binding = get(state).binding;
@@ -75,24 +82,48 @@ export function createApplicationInbox(
           value.thread === wait.thread &&
           value.author === wait.author,
       );
+  async function refresh(binding:InboxBinding) {
+    if(!owns(binding))return;
+    const ticket=++readRevision;
+    state.update(value=>({...value,phase:"loading",error:null}));
+    if(!owns(binding))return;
+    try {
+      const data = await reader.run(signal=>services.personal.api.inbox(signal),AUTH_REQUEST_TIMEOUT);
+      if(owns(binding)&&ticket===readRevision)state.update(value=>({...value,data,phase:"ready",error:null}));
+    } catch(error) {
+      if(!owns(binding)||ticket!==readRevision)return;
+      if(error instanceof HomeFailure && error.status===401)services.actions.sessionLost();
+      else state.update(value=>({...value,phase:"error",error:error instanceof Error && error.message==="timeout"?"timeout":"read"}));
+    }
+  }
+  function navigate(binding:InboxBinding,roomId:string,thread:string,messageId?:number) {
+    if(!owns(binding))return;
+    close(binding);services.actions.navigate({roomId,thread,messageId});
+  }
   return {
     state,
     owns,
+    refresh,
     open() {
       if (!active || !services.active()) return;
       const data = get(services.personal.state);
       if (!data.me) return;
       close();
+      const route=get(services.state).route;
+      const binding:InboxBinding={account:data.me.email,revision:data.identityRevision,generation:++generation,roomId:route.kind==="room"?route.target.roomId:null};
       state.update((value) => ({
         ...value,
-        binding: {
-          account: data.me!.email,
-          revision: data.identityRevision,
-          generation: ++generation,
-        },
+        binding,data:{waits:data.me!.waits,mentions:[],tasks:[]},phase:"idle",error:null,
       }));
+      if(owns(binding))void refresh(binding);
     },
     close,
+    openMention(binding:InboxBinding,mention:InboxMention) {
+      if(owns(binding)&&get(state).data.mentions.includes(mention))navigate(binding,mention.book_id,mention.thread,mention.msg_id);
+    },
+    openTask(binding:InboxBinding,task:InboxTask) {
+      if(owns(binding)&&get(state).data.tasks.includes(task))navigate(binding,task.book_id,task.epic_id);
+    },
     tab(binding: InboxBinding, all: boolean) {
       if (owns(binding)) state.update((value) => ({ ...value, all }));
     },
@@ -125,6 +156,7 @@ export function createApplicationInbox(
         if (!owns(binding)) return;
         services.personal.invalidate();
         void services.personal.refresh();
+        void refresh(binding);
       } catch (error) {
         if (!owns(binding)) return;
         if (error instanceof HomeFailure && error.status === 401)
@@ -137,11 +169,13 @@ export function createApplicationInbox(
     dispose() {
       if (!active) return;
       active = false;
+      readRevision++;
       stopPersonal();
       stopRoute();
       writer.cancel();
+      reader.cancel();
       pending = false;
-      state.update((value) => ({ ...value, binding: null }));
+      state.update((value) => ({ ...value, binding: null, data:empty(),phase:"idle",error:null }));
     },
   };
 }

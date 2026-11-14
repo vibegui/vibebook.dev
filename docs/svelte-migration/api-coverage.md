@@ -6,6 +6,7 @@ Every route the Worker answers, generated from `src/*.ts` at the start of M2 (ma
 |---|---|---|---|---|---|
 | GET | `/.well-known/jwks.json` | `src/index.ts:371` | external auth protocol (public keys for X-Vibebook-Identity), not app RPC | 0 | n/a (documented) |
 | GET | `/api/archived` | `src/api.ts` | JSON RPC | 1 | tested (slice 3) |
+| GET | `/api/inbox` | `src/api.ts` | JSON RPC | current vanilla Inbox | typed native adapter through inferred `api.inbox.$get`, runtime `InboxResult`; owner/DOM source cases authored, gates pending |
 | GET | `/api/avatar/:email` | `src/index.ts:549` | binary GET (asset) | 2 | n/a (documented) |
 | POST | `/api/books` | `src/api.ts` | JSON RPC | 37 | tested (slice 5) |
 | GET | `/api/books/:id/access` | `src/api.ts` | JSON RPC | 37 | tested (slice 4) |

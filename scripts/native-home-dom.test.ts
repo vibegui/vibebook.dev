@@ -96,6 +96,7 @@ plugin({
 const { mount, unmount, flushSync, tick } = await import("svelte");
 const { default: Home } =
   await import("../svelte/features/home/HomePanel.svelte");
+const { default: Inbox } = await import("../svelte/Inbox.svelte");
 const { default: AppNavigation } =
   await import("../svelte/features/app-navigation/AppNavigation.svelte");
 const { default: NavigationDialogs } =
@@ -270,6 +271,28 @@ test("connected old creator controls cannot edit or submit a replacement opening
   await flush();
   expect(creates).toBe(1);
   expect(h.href()).toContain("/b/bbbbbb");
+});
+test("Inbox shows all three canonical sections, keeps retry explicit and rejects stale connected navigation", async()=>{
+  let current=true,retries=0;
+  const mentions=[{book_id:"aaaaaa",room:"Room",msg_id:7,thread:"main",author:"friend@test",author_name:"Friend",text:"Held mention",ts:1}];
+  const tasks=[{book_id:"aaaaaa",room:"Room",epic_id:"e",epic:"Epic",task_id:"t1",title:"Open task",status:"doing",due:null}];
+  const opened:unknown[]=[];
+  const target=document.createElement("div");document.body.append(target);
+  const component=flushSync(()=>mount(Inbox,{target,props:{
+    waits:[{book_id:"aaaaaa",room:"Room",ref:"m1",thread:"main",topic:null,author:"friend@test",author_name:"Friend",text:"Waiting question",ts:1}],
+    mentions,tasks,roomId:null,vb:{t:(text)=>text,ago:()=>"now"},readError:true,current:()=>current,
+    onretry:()=>{retries++;},onmention:value=>opened.push(value),ontask:value=>opened.push(value),onopen:()=>{},onresolve:()=>{},onclose:()=>{},
+  }}));
+  cleanups.push(()=>flushSync(()=>{void unmount(component);}));await flush();
+  expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Esperando você");
+  expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Te mencionaram");
+  expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Suas tarefas");
+  const retry=[...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(button=>button.textContent?.trim()==="Tentar de novo");expect(retry).toBeDefined();retry!.click();expect(retries).toBe(1);
+  const links=[...document.querySelectorAll<HTMLAnchorElement>('[role="dialog"] a')];
+  const mention=links.find(link=>link.textContent?.includes("Held mention"))!,task=links.find(link=>link.textContent?.includes("Open task"))!;
+  expect(mention.href).toContain("#m7");expect(task.href).toContain("t=e");
+  current=false;mention.click();task.click();retry!.click();expect(opened).toEqual([]);expect(retries).toBe(1);
+  current=true;mention.click();task.click();expect(opened).toEqual([mentions[0],tasks[0]]);
 });
 test("global Inbox direct callbacks reject old connected account controls and close on identity replacement", async () => {
   let resolves = 0;

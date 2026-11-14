@@ -204,6 +204,7 @@
 <RoomLayout controller={layout} {labels} onChatSurface={owner.attachChat}>
   {#snippet sidebar()}{#if $view}<Sidebar
         {...$view.sidebar}
+        oninbox={() => {if(current())presentation.openInbox();}}
         hideSheetHandle
       />{/if}{/snippet}
   {#snippet header()}{#if $view}<RoomHeader

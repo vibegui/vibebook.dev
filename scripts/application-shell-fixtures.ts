@@ -91,7 +91,7 @@ export function shellFixture(
       shellVersion: "development",
       clock: { ...timer.clock, now: () => 1 },
     },
-    homeApi: homeApi({ me: async () => canonical, ...overrides }),
+    homeApi: homeApi({ me: async () => canonical, inbox:async()=>({waits:canonical.waits,mentions:[],tasks:[]}), ...overrides }),
     agentsApi,
     device,
     pwa: options.pwa ?? createPwaService,

@@ -303,8 +303,16 @@
         >
           {#snippet children(binding)}
             {#if Inbox}<Inbox
-                waits={$personal.me?.waits ?? []}
-                roomId={$room.roomId}
+                waits={$inboxView.data.waits}
+                mentions={$inboxView.data.mentions}
+                tasks={$inboxView.data.tasks}
+                loading={$inboxView.phase === "loading"}
+                readError={$inboxView.error !== null}
+                current={() => inbox.owns(binding)}
+                onretry={() => inbox.refresh(binding)}
+                onmention={(mention) => inbox.openMention(binding,mention)}
+                ontask={(task) => inbox.openTask(binding,task)}
+                roomId={binding.roomId}
                 all={$inboxView.all}
                 vb={{ t: services.t, ago }}
                 {displayName}
