@@ -2,6 +2,9 @@ import { expect, test } from "bun:test";
 import { createMetricRoom, workloads, summarize } from "./ui-metrics-model";
 import { isRoomEvent } from "../shared/validation";
 import { assessBudgets, type MetricSummary } from "./ui-metrics-budgets";
+import { metricShell } from "./ui-metrics-shell";
+import { MeResult } from "../shared/schemas";
+import { me } from "./native-home-fixtures";
 test("deterministic public long-room shapes use real initial window and paging semantics", () => {
   const first = createMetricRoom(workloads.long, "A", 421),
     again = createMetricRoom(workloads.long, "A", 421),
@@ -127,4 +130,23 @@ test("incomplete or mixed device cohorts cannot satisfy seven-run median accepta
       .filter((row) => row.metric === "threadSwitch.ms")
       .every((row) => row.status === "unverified"),
   ).toBe(true);
+});
+
+test("controlled shell metadata matches its original-response ETag/Me domain without replacing built assets", () => {
+  const built = "abcdef0123456789abcd", source = `<!doctype html><html><head><link rel="stylesheet" href="/svelte-preview/ui.css?v=${built}"></head><body><main>public fixture</main><script type="module" src="/svelte-preview/app.js?v=${built}"></script></body></html>`;
+  for (const variant of ["vanilla", "svelte"] as const) {
+    const etag = `"original-${variant}-etag"`, served = metricShell(source, etag, variant), metadata = `<meta name="vb-v" content="${served.version}" />`;
+    expect(served.version).toBe(`original-${variant}-etag`);
+    expect(MeResult.parse(me({ v: served.version })).v).toBe(served.version);
+    expect(served.body.replace(metadata, "")).toBe(source);
+    expect(served.body.match(/<meta name="vb-v"/g)).toHaveLength(1);
+    expect(served.body.indexOf(metadata)).toBeLessThan(served.body.indexOf("</head>"));
+    expect(served.versionDomain).toBe("controlled-original-static-shell-etag");
+    expect(served.entryVersion).toBe(variant === "svelte" ? built : null);
+  }
+});
+
+test("shell preflight rejects duplicate Worker metadata and incoherent native version references", () => {
+  const built = "abcdef0123456789abcd", source = `<head><link href="/svelte-preview/ui.css?v=${built}"></head><script src="/svelte-preview/app.js?v=${built}"></script>`;
+  for (const invalid of [source.replace("<head>", '<head><meta name="vb-v" content="old">'), source.replace("<head>", "<head><head>"), source.replace("</head>", ""), source.replace("ui.css", "wrong.css"), source.replace("app.js", "wrong.js"), source.replace(`ui.css?v=${built}`, "ui.css?v=00000000000000000000"), source + `<script src="/svelte-preview/app.js?v=${built}"></script>`, source.replace("/svelte-preview/app.js", "https://foreign.invalid/svelte-preview/app.js"), source.replace(`app.js?v=${built}`, `app.js?v=${built}&v=${built}`)]) expect(() => metricShell(invalid, '"original-etag"', "svelte")).toThrow();
 });

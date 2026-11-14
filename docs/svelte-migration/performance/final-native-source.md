@@ -6,6 +6,16 @@ clear their failed budgets, or establish migration acceptance. No new results
 are claimed by committing this source. The dedicated manual workflow publishes
 new raw artifacts before any conclusions are recorded.
 
+The first remote attempt, run `43556709008`, failed before browser startup: the
+harness incorrectly required `vb-v` in the static native HTML. The production
+Worker adds that metadata from the original asset ETag; the builder intentionally
+leaves it absent. The corrected controlled server follows that augmentation
+contract using its declared SHA-256 original-shell ETag and matching fixture
+`Me.v`. It retains the actual script/style query digest and original/served body
+hashes independently, and does not claim its ETag equals Cloudflare's. Preflight
+failures now retain a safe source-hash JSON artifact. No timings from the failed
+attempt are reused or treated as zero.
+
 `bun run measure:ui` serves the current built vanilla and native public assets.
 It uses the same deterministic, schema-validated 5,000-message, 50-epic,
 600-task fixture for both variants, Book-like initial windows and 100-message

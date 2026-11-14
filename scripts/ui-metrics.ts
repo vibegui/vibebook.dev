@@ -38,6 +38,7 @@ import {
   type Workload,
 } from "./ui-metrics-model";
 import { assessBudgets } from "./ui-metrics-budgets";
+import { metricShell } from "./ui-metrics-shell";
 type Variant = "vanilla" | "svelte";
 const variants: Variant[] = ["vanilla", "svelte"];
 const devices = [
@@ -110,6 +111,9 @@ type Asset = {
   gzip: Buffer;
   type: string;
   injectedVersion?: boolean;
+  shellETag?: string;
+  shellVersionDomain?: string;
+  builtEntryVersion?: string | null;
 };
 const assets = new Map<string, Asset>();
 async function asset(key: string, path: string, htmlVariant?: Variant) {
@@ -118,27 +122,14 @@ async function asset(key: string, path: string, htmlVariant?: Variant) {
   const file = await realpath(resolve(publicRoot, path));
   assert(file.startsWith(publicRoot + sep), "Asset escaped public root");
   const original = await readFile(file);
-  let body = original,
+  let body = original, shellETag: string | undefined, shellVersionDomain: string | undefined, builtEntryVersion: string | null | undefined,
     injectedVersion = false;
   if (htmlVariant) {
-    const source = original.toString(),
-      version =
-        source.match(/<meta\s+name=["']vb-v["']\s+content=["']([^"']+)/)?.[1] ??
-        hash(original).slice(0, 20);
-    versions[htmlVariant] = version;
-    if (!source.includes('name="vb-v"') && !source.includes("name='vb-v'")) {
-      assert(
-        htmlVariant !== "svelte",
-        "Native benchmark must serve the actual versioned production shell, never inject a substitute version",
-      );
-      body = Buffer.from(
-        source.replace(
-          /<head\b[^>]*>/i,
-          (match) => `${match}\n<meta name="vb-v" content="${version}">`,
-        ),
-      );
-      injectedVersion = true;
-    }
+    shellETag = `"${hash(original)}"`;
+    const served = metricShell(original.toString(), shellETag, htmlVariant);
+    versions[htmlVariant] = served.version;
+    shellVersionDomain = served.versionDomain; builtEntryVersion = served.entryVersion;
+    body = Buffer.from(served.body); injectedVersion = true;
   }
   const gzip = gzipSync(body),
     value = {
@@ -152,13 +143,20 @@ async function asset(key: string, path: string, htmlVariant?: Variant) {
       gzip,
       type: Bun.file(file).type || "application/octet-stream",
       injectedVersion,
+      shellETag, shellVersionDomain, builtEntryVersion,
     };
   assets.set(key, value);
   return value;
 }
 const versions: Record<Variant, string> = { vanilla: "", svelte: "" };
-await asset("@shell/vanilla", "app.html", "vanilla");
-await asset("@shell/svelte", "app-svelte.html", "svelte");
+try {
+  await asset("@shell/vanilla", "app.html", "vanilla");
+  await asset("@shell/svelte", "app-svelte.html", "svelte");
+} catch (error) {
+  const sources = await Promise.all(["app.html", "app-svelte.html"].map(async path => { try { const bytes = await readFile(resolve(publicRoot, path)); return { path, sha256: hash(bytes), bytes: bytes.length }; } catch { return { path, unavailable: true }; } }));
+  await writeFile(`${output}/preflight-failure.json`, JSON.stringify({ status: "failed", phase: "shell-preflight", sources, scope: "No browser was started and no timing sample exists", error: error instanceof Error ? { name: error.name, message: error.message } : { name: "UnknownError" } }, null, 2));
+  throw error;
+}
 type FixtureRoom = ReturnType<typeof createMetricRoom>;
 type RunFixture = {
   rooms: FixtureRoom[];
@@ -272,6 +270,7 @@ const server = Bun.serve({
             "cache-control": "no-store",
             vary: "Accept-Encoding",
             "x-metrics-asset": value.key,
+            ...(value.shellETag ? { etag: value.shellETag } : {}),
             ...(compressed ? { "content-encoding": "gzip" } : {}),
             ...(path.startsWith("/b/") || path === "/app"
               ? { "x-vibebook-ui": variant }
@@ -419,6 +418,7 @@ const results: { [key: string]: unknown } = {
   gaps: [
     "No real Worker/D1/R2/AI/provider/CRDT persistence or production network costs. HTTP/WS fixtures are deliberately simulated.",
     "Fresh contexts and cache disabled; browser process, OS files, DNS/TLS and local static server are warm. Browser launch is excluded.",
+    "Controlled shells emulate the Worker's head metadata augmentation with the SHA-256 ETag of original public shell bytes and the same fixture Me.v. This declared synthetic ETag domain is not Cloudflare's production ETag. Actual bundle query versions and original/served hashes remain recorded separately.",
     "Public font network is allowed by default. Failed, blocked or missing font transfers remain unknown/unverified; requested local font bytes never establish matched production font totals.",
     "Desktop and 390px Chromium viewports use 4x CPU throttling and reduced motion. A narrow viewport is not a touch hardware/iOS/Safari/IME/GPU acceptance claim.",
     "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
