@@ -96,3 +96,10 @@ test("partial room metadata retains the signed-in user's own canonical mention n
   expect(get(h.owner.state)?.chat?.vb.knownNames?.[h.room.me]).toBe("Me");
   h.dispose();
 });
+
+test("document resize pixels do not rebuild Chat or feature props", async () => {
+  const h = await roomScopeFixture(), before = get(h.owner.state);
+  h.resizeDocument(400); h.resizeDocument(410); h.resizeDocument(420);
+  expect(get(h.owner.state)).toBe(before);
+  h.dispose();
+});

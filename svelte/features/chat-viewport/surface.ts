@@ -1,26 +1,27 @@
 import type { ChatSurface } from "./controller";
 /** Scroll/measurement interop only: no first-party style or DOM presentation builder. */
 export function createChatSurface(element: HTMLElement): ChatSurface {
+  const visible = () => element.isConnected && element.clientHeight > 0 && element.getClientRects().length > 0;
   return {
-    connected: () => element.isConnected,
+    connected: visible,
     metrics: () => ({
       top: element.scrollTop,
       height: element.scrollHeight,
       client: element.clientHeight,
     }),
     top(value) {
-      if (element.isConnected) element.scrollTop = value;
+      if (visible()) element.scrollTop = value;
     },
     message(id) {
       const target = element.querySelector<HTMLElement>(`#m${id}`);
       return target
         ? {
             reveal() {
-              if (target.isConnected && element.contains(target))
+              if (visible() && target.isConnected && element.contains(target))
                 target.scrollIntoView({ block: "center", behavior: "smooth" });
             },
             highlight() {
-              if (target.isConnected && element.contains(target))
+              if (visible() && target.isConnected && element.contains(target))
                 target.dispatchEvent(new CustomEvent("vb:message-highlight"));
             },
           }
