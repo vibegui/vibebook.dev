@@ -36,7 +36,6 @@ async function collect(directory: string) {
 }
 for (const directory of sources) await collect(join(projectRoot, directory));
 files.push(
-  join(projectRoot, "public/app-svelte.css"),
   join(projectRoot, "public/app-svelte.html"),
 );
 
@@ -244,7 +243,6 @@ const inventory = {
         "--",
         ...sources,
         "public/app-svelte.html",
-        "public/app-svelte.css",
       ],
       { cwd: projectRoot, encoding: "utf8" },
     ).trim().length > 0,

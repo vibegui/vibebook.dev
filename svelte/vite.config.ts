@@ -96,7 +96,7 @@ export default defineConfig(({ mode, command }) => ({
       entry:
         mode === "vanilla"
           ? "../vanilla/inbox/main.ts"
-          : { ui: "main.ts", app: "bootstrap.ts" },
+          : { app: "bootstrap.ts" },
       formats: ["es"],
       cssFileName: "ui",
       fileName: (_format, name) =>
