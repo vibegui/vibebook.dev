@@ -8,6 +8,7 @@ import type { RoomTarget } from "../home/model";
 import { orderedRooms } from "../home/model";
 import { createNewRoomSession } from "../home/session";
 import { createSearchSession } from "./search";
+import { authClock, type AuthClock } from "../auth/owner";
 export type AppNavigationCallbacks = {
   navigate: (target: RoomTarget) => void;
   home: () => void;
@@ -19,6 +20,7 @@ export function createAppNavigationSession(
   personal: PersonalSession,
   rooms: RoomsSession,
   callbacks: AppNavigationCallbacks,
+  clock: AuthClock = authClock,
 ) {
   const state = writable({
     roomId: null as string | null,
@@ -30,8 +32,8 @@ export function createAppNavigationSession(
     renameError: "",
     renameSubmitted: false,
   });
-  const creator = createNewRoomSession(personal, callbacks.navigate),
-    search = createSearchSession(personal, callbacks.navigate);
+  const creator = createNewRoomSession(personal, callbacks.navigate, clock),
+    search = createSearchSession(personal, callbacks.navigate, clock);
   let trigger: HTMLElement | null = null,
     active = true,
     path = "";

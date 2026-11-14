@@ -11,7 +11,7 @@ import type { AgentsApi } from "../agents/api";
 import type { PwaService } from "../pwa/service";
 import { createAppNavigationSession } from "../app-navigation/controller";
 import { applicationRoute, createApplicationRouter, roomIdFromPath } from "../app-navigation/router";
-import { createRootRoomSession } from "../root-room/session";
+import { createRootRoomSession, type RootRoomSnapshot } from "../root-room/session";
 import { createAppsAuthority } from "../apps/authority";
 import { createApplicationPersonalChannel } from "./personal-channel";
 import type { createPersonalConnection } from "../home/connection";
@@ -52,6 +52,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       const mine = browser.shellVersion;
       const changed = !!version && !!mine && mine !== "development" && version !== "development" && mine !== version;
       personal.updateAvailable(changed);
+      if (!active) return;
       state.update(value => ({ ...value, availableVersion: changed ? version : null }));
     },
     onUnauthorized: denySession,
@@ -76,13 +77,15 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       flushTarget();
     },
     onTransition(transition) {
-      if (!active) return;
       const snapshot = transition.snapshot, room = snapshot.room;
-      if (!room) return;
+      if (!room || !ownsSnapshot(snapshot)) return;
       pwa.account(room.me);
+      if (!ownsSnapshot(snapshot)) return;
       if (transition.event.t === "state" || transition.event.t === "meta") personal.roomMeta(room.id, { title: room.book.title, folder: room.book.folder, summary: room.book.summary });
+      if (!ownsSnapshot(snapshot)) return;
       if (transition.event.t === "state" && room.messages.length) personal.seen(room.id, room.messages.at(-1)!.id);
       if (transition.event.t === "msg") personal.seen(room.id, transition.event.m.id);
+      if (!ownsSnapshot(snapshot)) return;
       const current = currentLease();
       current?.adapter.onTransition(transition);
       if (root.read() !== snapshot || !active) return;
@@ -101,7 +104,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     navigate: value => navigate(value), home: () => navigate("/app"), archived: () => navigate("/archived"),
     settings: (section) => openAccount(section),
     rename: (id, title) => root.read().room?.id === id && currentRoomId() === id ? root.request({ t: "title", title }) : Promise.resolve({ ok: false, error: "offline" }),
-  });
+  }, browser.clock);
   const router = createApplicationRouter({
     current: browser.href, history: browser.history, document: browser.navigateDocument,
     beforeChange() {
@@ -141,6 +144,10 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
   });
   let stopPop = () => {}, stopVisibility = () => {};
   function currentRoomId() { return roomIdFromPath(new URL(browser.href()).pathname); }
+  function ownsSnapshot(snapshot: RootRoomSnapshot) {
+    const current = root.read();
+    return active && !sessionDenied && current.generation === snapshot.generation && current.connection === snapshot.connection && current.room?.id === snapshot.room?.id && current.room?.me === snapshot.room?.me;
+  }
   function roomScope(): ApplicationRoomScope | null {
     const value = root.read(), room = value.room;
     return active && !sessionDenied && room && value.connection && room.id === currentRoomId() && room.members.includes(room.me)
@@ -239,6 +246,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     if (active) browser.navigateDocument(uiNavigationUrl(`/login?next=${encodeURIComponent(new URL(browser.href()).pathname + new URL(browser.href()).search + new URL(browser.href()).hash)}`, browser.href(), "svelte"));
   }
   return {
+    active: () => active && started && !sessionDenied,
     state: readonly(state), personal, rooms, navigation, account, pwa, agents, personalChannel: channel,
     rootRoom: { state: readonly(root.state), read: root.read, cache: root.cache, send: root.send, request: root.request, resync: root.resync },
     router: { go: navigate, pop: () => { if (active && !sessionDenied) router.pop(); }, generation: router.generation },

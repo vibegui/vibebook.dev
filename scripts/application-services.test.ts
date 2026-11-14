@@ -21,6 +21,7 @@ function fixture(initial = "http://vb.test/app") {
   const timer = manualClock();
   let href = initial, currentMe = me(), pop = () => {}, visible = () => {}, now = 0, meFailure: Error | null = null;
   let onDocumentNavigation = () => {};
+  let duringIdentityReset = () => {};
   let popStops = 0, visibleStops = 0, identityResets = 0, pwaDisposals = 0, posts = 0;
   const queued: (() => void)[] = [], accounts: string[] = [], history: string[] = [], documentNavigations: string[] = [];
   const connections: { callbacks: RoomConnectionOptions; connection: RootConnection; disposed: number; commands: unknown[] }[] = [];
@@ -51,7 +52,7 @@ function fixture(initial = "http://vb.test/app") {
     homeApi: homeApi({ me: async () => { if (meFailure) throw meFailure; return currentMe; } }), agentsApi,
     runnerFetch: async (input, init) => { expect(String(input).startsWith("http://127.0.0.1:47321/")).toBe(true); expect(init?.credentials).toBe("omit"); return new Response("null", { headers: { "content-type": "application/json" } }); },
     accountApi: { logins: async () => ({ logins: [], providers: { google: false, github: false } }), name: async name => ({ ok: true, name }), avatar: async () => ({ ok: true, avatar: 1 }), addFriend: async () => ({ ok: true }), removeFriend: async () => ({ ok: true }) },
-    onIdentityReset: () => { identityResets++; },
+    onIdentityReset: () => { identityResets++; duringIdentityReset(); },
     roomConnection(callbacks) {
       const entry: { callbacks: RoomConnectionOptions; disposed: number; commands: unknown[] } = { callbacks, disposed: 0, commands: [] };
       const connection: RootConnection = { start() {}, dispose() { entry.disposed++; }, resync() {}, send(command) { entry.commands.push(command); return true; }, request(command): Promise<CommandOutcome> { entry.commands.push(command); return Promise.resolve({ ok: true }); } };
@@ -68,6 +69,7 @@ function fixture(initial = "http://vb.test/app") {
     stops: () => ({ pop: popStops, visibility: visibleStops }),
     canonical(next: ReturnType<typeof me>) { currentMe = next; },
     failMe(error: Error) { meFailure = error; }, beforeDocumentNavigation(callback: () => void) { onDocumentNavigation = callback; },
+    duringIdentityReset(callback: () => void) { duringIdentityReset = callback; },
     pop(url: string) { href = url; pop(); }, visible: () => visible(),
     advance(ms: number) { now += ms; timer.advance(ms); },
     flushQueued() { for (const callback of queued.splice(0)) callback(); },
@@ -82,12 +84,15 @@ function adapter() {
 
 test("application starts one account/channel and disposes every document listener once", async () => {
   const h = fixture();
+  expect(h.services.active()).toBe(false);
   expect(h.channels).toHaveLength(0);
   h.services.start(); h.services.start(); await settle();
+  expect(h.services.active()).toBe(true);
   expect(h.channels).toHaveLength(1);
   expect(h.services.pwa).toBe(h.services.pwa);
   expect(get(h.services.state).availableVersion).toBeNull();
   h.services.dispose(); h.services.dispose();
+  expect(h.services.active()).toBe(false);
   h.channels[0]!.options.onConnected?.(); h.visible(); h.pop("http://vb.test/b/aaaaaa");
   expect(h.connections).toHaveLength(0);
   expect(h.channels[0]!.disposed).toBe(1);
@@ -187,6 +192,21 @@ test("application logout uses one existing PWA cleanup queue and fences an obser
   h.cleanup.resolve({ local: true, settled: true, confirmed: true }); await leaving;
   expect(h.posts()).toBe(0);
   expect(h.documentNavigations).toEqual(["reload"]);
+  h.services.dispose();
+});
+
+test("navigation requested by the synchronous identity reset runs after private teardown and supersedes old URL recovery", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa#fabcdef"); h.services.start(); await settle();
+  h.connections[0]!.callbacks.onEvent(event(canonical()));
+  h.duringIdentityReset(() => h.services.actions.navigate({ roomId: "bbbbbb", messageId: 9 }));
+  h.canonical(me({ email: "b@test" }));
+  await h.services.personal.refresh(); await settle();
+  expect(h.services.rootRoom.read().roomId).toBe("bbbbbb");
+  h.flushQueued();
+  expect(h.services.rootRoom.read().roomId).toBe("bbbbbb");
+  h.connections.at(-1)!.callbacks.onEvent(event(canonical("bbbbbb", "b@test")));
+  const shell = adapter(); h.services.attachRoom(h.services.roomScope()!, shell.owner);
+  expect(shell.targets.map(value => value.target.messageId)).toEqual([9]);
   h.services.dispose();
 });
 
