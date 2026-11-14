@@ -161,6 +161,7 @@
     "scripts/app-document-file-browser.ts",
     "scripts/ui-chunk-attribution.ts",
     "scripts/ui-chunk-diagnostics.test.ts",
-    "scripts/navigation-presentation.test.ts"
+    "scripts/navigation-presentation.test.ts",
+    "scripts/inventory-calls.test.ts"
   ]
 }
