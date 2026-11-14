@@ -34,3 +34,11 @@ Author verification: the focused test/docs formatter and package/tooling-config
 format check passed. The actual-handler suite passed two tests / 20 assertions
 with Bun 1.4.4 in 1.477 seconds. No compiler, real-browser sizing/typing measurement
 or remote job ran for this checkpoint. Browser performance remains unmeasured.
+
+Root follow-up at `e2b7bb8`: BugMachine independently passed the same two tests
+and 20 assertions. A Chromium 158.0.8127.18 smoke check using the actual default
+CSS and unchanged sizing helper passed Home and room growth/shrink at 390px and
+1440px. Long multiline input reaches the existing 200px/160px caps with overflow;
+short input returns to each existing minimum. Original observations and scope are
+in [textarea-input-browser.json](textarea-input-browser.json). This synthetic DOM
+check does not verify a real room, IME/Safari, loaded typography or typing latency.

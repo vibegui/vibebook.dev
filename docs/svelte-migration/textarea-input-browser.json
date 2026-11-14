@@ -1,0 +1,64 @@
+{
+  "status": "passed",
+  "source": "e2b7bb8478ab285cfc53d9064e273f51202803f7",
+  "browser": "158.0.8127.18",
+  "scope": "Synthetic DOM with actual default app CSS and unmodified sizing helper; no real room, server, typography loading or latency acceptance",
+  "rows": [
+    {
+      "width": 390,
+      "id": "askText",
+      "initial": 120,
+      "maximum": 200,
+      "minimum": 120,
+      "supported": true,
+      "grown": {
+        "height": 200,
+        "scroll": 1008,
+        "fieldSizing": "content"
+      },
+      "shrunk": 120
+    },
+    {
+      "width": 390,
+      "id": "roomText",
+      "initial": 44,
+      "maximum": 160,
+      "minimum": 44,
+      "supported": true,
+      "grown": {
+        "height": 160,
+        "scroll": 1008,
+        "fieldSizing": "content"
+      },
+      "shrunk": 44
+    },
+    {
+      "width": 1440,
+      "id": "askText",
+      "initial": 67.59375,
+      "maximum": 200,
+      "minimum": 52,
+      "supported": true,
+      "grown": {
+        "height": 200,
+        "scroll": 1008,
+        "fieldSizing": "content"
+      },
+      "shrunk": 52
+    },
+    {
+      "width": 1440,
+      "id": "roomText",
+      "initial": 44,
+      "maximum": 160,
+      "minimum": 44,
+      "supported": true,
+      "grown": {
+        "height": 160,
+        "scroll": 1008,
+        "fieldSizing": "content"
+      },
+      "shrunk": 44
+    }
+  ]
+}
