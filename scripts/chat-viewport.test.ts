@@ -440,3 +440,45 @@ test("real selection append cannot replace a row of an unpinned hidden Board rea
   expect(h.view.pinned()).toBe(true);
   h.view.dispose();
 });
+
+test("unpinned incoming bursts keep sixty rows; explicit latest and deep links include new targets", () => {
+  const h = harness();
+  h.metrics.top = 300; h.scroll();
+  const retained = h.view.selection().list.map(item => item.id);
+  h.sync(room(600));
+  expect(h.view.selection().list.map(item => item.id)).toEqual(retained);
+  expect(h.view.selection().list).toHaveLength(60);
+  h.view.followLatest();
+  expect(h.view.selection().list).toHaveLength(60);
+  expect(h.view.selection().list.at(-1)?.id).toBe(600);
+  expect(h.view.pinned()).toBe(true);
+  h.metrics.top = 200; h.scroll();
+  h.sync(room(601)); h.draw(true);
+  h.view.go(601);
+  expect(h.revealed.at(-1)).toBe(601);
+  expect(h.view.selection().list.at(-1)?.id).toBe(601);
+  expect(h.view.selection().list).toHaveLength(60);
+  expect(h.commands).toEqual([]);
+  h.view.dispose();
+});
+
+test("older expands before the retained end, and new tail rows do not masquerade as older history", () => {
+  const h = harness();
+  h.sync({ ...room(), complete: true });
+  h.metrics.top = 300; h.scroll();
+  h.sync({ ...room(200), complete: true });
+  h.view.loadOlder();
+  const selected = h.view.selection();
+  expect(selected.list).toHaveLength(120);
+  expect(selected.list[0]?.id).toBe(1);
+  expect(selected.list.at(-1)?.id).toBe(120);
+  expect(selected.more).toBe(false);
+  h.view.loadOlder();
+  expect(h.view.selection().list).toEqual(selected.list);
+  expect(h.commands).toEqual([]);
+  h.sync({ ...room(200), id: "bbbbbb" }, false, "main", 2);
+  expect(h.view.selection().list).toHaveLength(60);
+  expect(h.view.selection().list.at(-1)?.id).toBe(200);
+  expect(h.view.pinned()).toBe(true);
+  h.view.dispose();
+});

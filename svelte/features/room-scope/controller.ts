@@ -637,6 +637,7 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
           owned = () => forThread(thread),
           waits = me()?.waits ?? [],
           display = get(layout.state);
+        if (nextKeep !== "stay" && nextKeep !== true) viewport.followLatest();
         chatPresentation.capture(nextKeep, !display.boardFull);
         const revision = ++chatRevision;
         const bridge: ChatBridge = {
