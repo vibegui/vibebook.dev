@@ -27,6 +27,7 @@
     ontheme,
     onlanguage,
     onreload = () => location.reload(),
+    inRoom = false,
   }: {
     controller: AppNavigationSession;
     lang: HomeLanguage;
@@ -34,6 +35,7 @@
     ontheme: () => void;
     onlanguage: (lang: HomeLanguage) => void;
     onreload?: () => void;
+    inRoom?: boolean;
   } = $props();
   const personal = $derived(controller.personal.state),
     draft = $derived(controller.personal.draft),
@@ -176,7 +178,11 @@
 
 <div
   data-vb-native="room-navigation"
-  class="tw:flex tw:h-full tw:min-h-0 tw:w-full tw:flex-col tw:items-center tw:gap-2 tw:bg-background tw:p-0 tw:font-sans tw:text-foreground"
+  data-native-app-navigation
+  class={[
+    "tw:col-start-1 tw:row-start-1 tw:min-h-0 tw:min-w-0 tw:w-full tw:items-center tw:gap-2 tw:bg-background tw:p-2 tw:font-sans tw:text-foreground tw:min-[901px]:sticky tw:min-[901px]:top-0 tw:min-[901px]:flex tw:min-[901px]:h-dvh tw:min-[901px]:flex-col tw:min-[901px]:border-r tw:min-[901px]:border-border",
+    inRoom ? "tw:hidden" : "tw:flex tw:flex-row",
+  ]}
 >
   <IconButton
     bind:ref={homeButton}
@@ -187,7 +193,7 @@
     }}
   />
   <div
-    class="tw:flex tw:min-h-0 tw:flex-1 tw:flex-col tw:gap-2 tw:overflow-y-auto"
+    class="tw:flex tw:min-h-0 tw:min-w-0 tw:flex-1 tw:flex-row tw:gap-2 tw:overflow-x-auto tw:min-[901px]:flex-col tw:min-[901px]:overflow-x-hidden tw:min-[901px]:overflow-y-auto"
     role="list"
     aria-label={text("home")}
   >

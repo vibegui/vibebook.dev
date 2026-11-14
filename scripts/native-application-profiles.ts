@@ -89,6 +89,11 @@ export type NativeApplicationProfileEvidence = NativeApplicationProfile & {
   scope: "Actual native Root with real Worker state; synthetic test-room content only";
   reference: { archivedSha: string; authenticatedSha: string };
   accountVerified: boolean;
+  applicationLayout?: {
+    home: Awaited<ReturnType<typeof applicationGeometry>>;
+    room: Awaited<ReturnType<typeof applicationGeometry>>;
+    shortViewport?: Awaited<ReturnType<typeof applicationGeometry>>;
+  };
   palettes: { surface: string; evidence: PaletteEvidence }[];
   axe: AxeEvidence[];
   keyboard: string[];
@@ -429,6 +434,43 @@ async function keyboardOverlays(
   );
 }
 
+async function applicationGeometry(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+  return page.evaluate(() => {
+    const read = (selector: string) => {
+      const node = document.querySelector<HTMLElement>(selector);
+      if (!node) return null;
+      const rect = node.getBoundingClientRect(),
+        css = getComputedStyle(node);
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        clientHeight: node.clientHeight,
+        display: css.display,
+        gridTemplateRows: css.gridTemplateRows,
+      };
+    };
+    return {
+      width: innerWidth,
+      height: innerHeight,
+      navigation: read("[data-native-app-navigation]"),
+      route: read("[data-native-application-route]"),
+      room: read("[data-native-room-layout]"),
+      chat: read("[data-room-chat]"),
+      composer: read("[data-room-composer]"),
+    };
+  });
+}
+
 /** Eight fresh real-owner contexts. Integrity HTTP reads are explicit audit
  * traffic, not renderer font-transfer/performance receipts. */
 export async function auditNativeApplicationProfiles(
@@ -475,6 +517,23 @@ export async function auditNativeApplicationProfiles(
               timeout: 120_000,
             });
             await expect(page.locator('[data-vb-native="home"]')).toBeVisible();
+            await expect(
+              page.locator("[data-native-app-navigation]"),
+            ).toBeVisible();
+            const homeGeometry = await applicationGeometry(page);
+            if (profile.width === 390) {
+              assert(
+                homeGeometry.navigation &&
+                  homeGeometry.navigation.height > 0 &&
+                  homeGeometry.navigation.height <= 80,
+                "Mobile Home keeps reachable navigation controls in a compact horizontal header",
+              );
+            } else
+              assert.equal(
+                homeGeometry.navigation?.width,
+                68,
+                "Desktop global navigation occupies its rail column",
+              );
             evidence.paneFonts.push({
               surface: "Home",
               evidence: await typography(
@@ -514,6 +573,55 @@ export async function auditNativeApplicationProfiles(
                 )
                 .first(),
             ).toBeAttached();
+            const roomGeometry = await applicationGeometry(page);
+            evidence.applicationLayout = {
+              home: homeGeometry,
+              room: roomGeometry,
+            };
+            assert(
+              roomGeometry.chat && roomGeometry.chat.clientHeight > 0,
+              "Initial actual Root Chat must have usable height",
+            );
+            assert(
+              roomGeometry.room &&
+                roomGeometry.composer &&
+                roomGeometry.composer.bottom <= roomGeometry.room.bottom + 1,
+              "Composer must remain inside the allocated room viewport",
+            );
+            if (profile.width === 390) {
+              assert.equal(
+                roomGeometry.navigation?.display,
+                "none",
+                "Phone room uses Sidebar/Home navigation instead of a vertical top rail",
+              );
+              assert.equal(
+                roomGeometry.room.top,
+                0,
+                "Phone room begins at the viewport top",
+              );
+              const originalViewport = page.viewportSize();
+              if (originalViewport) {
+                try {
+                  await page.setViewportSize({ width: 390, height: 420 });
+                  evidence.applicationLayout.shortViewport =
+                    await applicationGeometry(page);
+                } finally {
+                  await page.setViewportSize(originalViewport);
+                }
+              }
+            } else {
+              assert.equal(roomGeometry.navigation?.width, 68);
+              assert(
+                roomGeometry.navigation &&
+                  roomGeometry.room.left >= roomGeometry.navigation.right - 1,
+                "Desktop room must sit beside the rail",
+              );
+              assert.equal(
+                roomGeometry.room.top,
+                roomGeometry.navigation.top,
+                "Desktop rail must not consume a top row",
+              );
+            }
             assert.equal(
               await page.locator("html").getAttribute("lang"),
               lang === "en" ? "en" : "pt-BR",

@@ -189,14 +189,15 @@
   data-native-app-shell
   class={[
     $application.route.kind === "room"
-      ? "tw:grid tw:h-dvh tw:min-h-0 tw:grid-cols-[minmax(0,1fr)] tw:grid-rows-[auto_minmax(0,1fr)] tw:overflow-hidden"
-      : "tw:min-h-dvh",
+      ? "tw:grid tw:h-dvh tw:min-h-0 tw:grid-cols-[minmax(0,1fr)] tw:grid-rows-[minmax(0,1fr)] tw:overflow-hidden tw:min-[901px]:grid-cols-[68px_minmax(0,1fr)]"
+      : "tw:grid tw:min-h-dvh tw:grid-cols-[minmax(0,1fr)] tw:grid-rows-[auto_1fr] tw:min-[901px]:grid-cols-[68px_minmax(0,1fr)] tw:min-[901px]:grid-rows-[auto]",
     "tw:bg-background tw:font-sans tw:text-sm tw:leading-6 tw:text-foreground",
   ]}
 >
   {#if !$application.sessionDenied}
     {#if $personal.me}<AppNavigation
         controller={services.navigation}
+        inRoom={$application.route.kind === "room"}
         lang={services.language}
         {theme}
         ontheme={nextTheme}
@@ -205,38 +206,45 @@
           if (current()) services.actions.reload();
         }}
       />{/if}
-    {#if $application.route.kind === "home"}{#if Home}<Home
-          {...home}
-        />{:else}<DeferredRouteStatus
-          phase={$homeModuleView.phase}
-          lang={services.language}
-          label={services.language === "en"
-            ? "Your vibebooks"
-            : "Seus vibebooks"}
-          retry={() => {
-            void homeModule.retry();
-          }}
-          {current}
-        />{/if}
-    {:else if $application.route.kind === "archived"}{#if Archived}<Archived
-          {...home}
-        />{:else}<DeferredRouteStatus
-          phase={$archivedModuleView.phase}
-          lang={services.language}
-          label={services.language === "en"
-            ? "Archived rooms"
-            : "Salas arquivadas"}
-          retry={() => {
-            void archivedModule.retry();
-          }}
-          {current}
-        />{/if}
-    {:else if $application.route.kind === "room"}<div
-        data-native-room-root
-        class="tw:col-start-1 tw:row-start-2 tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden"
-      >
-        {@render roomSnippet({ services, openInbox: inbox.open })}
-      </div>{/if}
+    <div
+      data-native-application-route
+      class={$application.route.kind === "room"
+        ? "tw:col-start-1 tw:row-start-1 tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden tw:min-[901px]:col-start-2"
+        : "tw:col-start-1 tw:row-start-2 tw:min-w-0 tw:min-[901px]:col-start-2 tw:min-[901px]:row-start-1"}
+    >
+      {#if $application.route.kind === "home"}{#if Home}<Home
+            {...home}
+          />{:else}<DeferredRouteStatus
+            phase={$homeModuleView.phase}
+            lang={services.language}
+            label={services.language === "en"
+              ? "Your vibebooks"
+              : "Seus vibebooks"}
+            retry={() => {
+              void homeModule.retry();
+            }}
+            {current}
+          />{/if}
+      {:else if $application.route.kind === "archived"}{#if Archived}<Archived
+            {...home}
+          />{:else}<DeferredRouteStatus
+            phase={$archivedModuleView.phase}
+            lang={services.language}
+            label={services.language === "en"
+              ? "Archived rooms"
+              : "Salas arquivadas"}
+            retry={() => {
+              void archivedModule.retry();
+            }}
+            {current}
+          />{/if}
+      {:else if $application.route.kind === "room"}<div
+          data-native-room-root
+          class="tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden"
+        >
+          {@render roomSnippet({ services, openInbox: inbox.open })}
+        </div>{/if}
+    </div>
     {#if AccountSettings}
       <AccountSettings
         owner={services.account}

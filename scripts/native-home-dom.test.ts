@@ -143,6 +143,9 @@ test("direct application shell renders native Home/Archive and the required room
   expect(target.querySelector("[data-native-app-shell]") !== null).toBe(true);
   expect(h.services.active()).toBe(true);
   expect(h.languages).toEqual(["document:en"]);
+  await waitForView(target, "[data-native-app-navigation]");
+  const navigation = target.querySelector("[data-native-app-navigation]");
+  expect(navigation).not.toBeNull();
   h.services.actions.archived();
   await flush();
   await waitForView(target, '[data-vb-native="archived"]');
@@ -152,6 +155,16 @@ test("direct application shell renders native Home/Archive and the required room
   h.services.actions.navigate({ roomId: "aaaaaa" });
   await flush();
   expect(target.querySelector("[data-test-room-snippet]") !== null).toBe(true);
+  expect(target.querySelector("[data-native-app-navigation]")).toBe(navigation);
+  expect(
+    target.querySelector(
+      "[data-native-application-route] [data-test-room-snippet]",
+    ),
+  ).not.toBeNull();
+  h.services.actions.home();
+  await flush();
+  await waitForView(target, '[data-vb-native="home"]');
+  expect(target.querySelector("[data-native-app-navigation]")).toBe(navigation);
   flushSync(() => {
     void unmount(component);
   });
