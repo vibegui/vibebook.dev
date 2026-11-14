@@ -1894,6 +1894,9 @@ export class Book extends DurableObject<Env> {
   }
 
   webSocketClose(ws: WebSocket) {
+    // Complete the peer's close handshake before broadcasting presence changes.
+    // Safe when the runtime has already acknowledged it (as in Person).
+    try { ws.close(); } catch {}
     try {
       this.broadcast({ t: "online", online: this.online().filter((e) => this.sockets(ws).some((s) => this.ctx.getTags(s)[0] === e)) }, ws);
     } catch (e) {

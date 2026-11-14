@@ -23,6 +23,9 @@ export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
   // A socket closing threw a bare "close" 3× on 10/11 (hibernatable WebSocket, no stack): name the DO in the log so the
   // next one says where it came from, and don't let it surface as a Worker exception.
   async webSocketClose(ws: WebSocket) {
+    // The provider unregisters sessions; explicitly acknowledge the peer close.
+    // Cleanup still runs if the runtime has already completed the handshake.
+    try { ws.close(); } catch {}
     try { await super.webSocketClose(ws); } catch (e) { console.error("docroom webSocketClose", String(e)); }
   }
   async webSocketError(ws: WebSocket) {
