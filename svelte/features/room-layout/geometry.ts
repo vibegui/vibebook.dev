@@ -12,8 +12,9 @@ export function createRoomGeometry(options: {
   settled(sheet: RoomSheet, open: boolean): void;
   mobile(value: boolean): void;
 }) {
-  const { cells, browser } = options, win = cells.root.ownerDocument.defaultView;
-  if (!win) throw Error("Missing room layout window");
+  const { cells, browser } = options, candidateWindow = cells.root.ownerDocument.defaultView;
+  if (!candidateWindow) throw Error("Missing room layout window");
+  const win: Window = candidateWindow;
   const media = win.matchMedia("(max-width: 900px)"), reduced = win.matchMedia("(prefers-reduced-motion: reduce)");
   let active = true, rootWidth = cells.root.clientWidth, preferred = 380, shown: RoomSheet | null = null, lastSheet: RoomSheet | null = null, motion: number | null = null, motionRevision = 0, syncRevision = 0;
   const positions: Record<RoomSheet, number> = { doc: 0, side: 0 };
