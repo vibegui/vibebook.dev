@@ -42,8 +42,10 @@ Eight source fixtures cover older/invalid messages and isolated payloads, exact
 wire identities, aliases and canonical file recovery, minimal quote/search refs,
 MCP tool extensions, actual messages/older behavior, actual closeAsk and internal
 access-request rejection before effects. They use SQL/DO doubles, not real
-Worker persistence. Formatter, pure tests, backend/API/worker and UI/tooling types,
-builds and browser validation are **unrun** at this checkpoint.
+Worker persistence. The allocated formatter passed five owned paths and focused
+Bun tests passed eight cases with 137 assertions in 4.32 seconds. Backend/API/
+worker and UI/tooling types, builds and real Worker/browser validation remain
+**unrun** for this cohort.
 
 Remaining Book runtime audit work includes scalar SQL assertions for task status,
 room/book metadata, names, totals/counts, acks/receipts and other typed SQL result
