@@ -1,0 +1,20 @@
+{
+  "revision": "8f50d87d28a365515fb11f8890227d456a1c5b9e",
+  "metadataRun": "43580265241",
+  "benchmarkRun": "43580287468",
+  "scope": "Matched observed entry resources only. Benchmark failed native mobile history; not accepted performance timings.",
+  "inputs": {
+    "nativeMetadata": {
+      "bytes": 778816,
+      "sha256": "db5dd824378721f6da6b32e0a5773ddae2316ffa8a3c53bd3d5389cfe1504859"
+    },
+    "vanillaMetadata": {
+      "bytes": 91120,
+      "sha256": "c6df59ea6b4464a298cc426a4527cb13083ef203a363990e1d678349c89ac2fc"
+    },
+    "metrics": {
+      "bytes": 174188,
+      "sha256": "bc2ebdb1136104799c9e3753870da3acba07b5184d5684375f7a38e78415c439"
+    }
+  }
+}

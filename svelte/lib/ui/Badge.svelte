@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import type { HTMLAttributes } from "svelte/elements";
-  import { tv, type VariantProps } from "tailwind-variants";
+  import { tv, type VariantProps } from "tailwind-variants/lite";
   import { cn } from "./utils";
   const variants = tv(
     {

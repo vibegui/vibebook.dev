@@ -1,0 +1,4517 @@
+{
+  "revision": "8f50d87d28a365515fb11f8890227d456a1c5b9e",
+  "variant": "svelte",
+  "selection": "observed-entry-requests-hash-and-revision-matched",
+  "observations": [
+    {
+      "device": "mobile",
+      "profile": "long",
+      "repetition": 1,
+      "warmup": true,
+      "status": "failed",
+      "entryAssets": [
+        "/svelte-preview/ui.css",
+        "/svelte-preview/app.js",
+        "/svelte-preview/mount-BLHvX3Tj.js",
+        "/svelte-preview/Button-DeJmD0tV.js",
+        "/svelte-preview/shared-CrgjeW9e.js",
+        "/svelte-preview/schemas-Dr5xbymo.js",
+        "/svelte-preview/index-client-BVaLNOXq.js",
+        "/svelte-preview/api-CamTUJt3.js",
+        "/svelte-preview/transport-DTVVqj6m.js",
+        "/svelte-preview/session-DGyFOHMr.js",
+        "/svelte-preview/owner-Dk3pdsZz.js",
+        "/svelte-preview/roomCopy-LBEIpSGV.js",
+        "/svelte-preview/Dialog-DCWvhByb.js",
+        "/svelte-preview/dialogController-8jjTQS1B.js",
+        "/svelte-preview/IconButton-DbFIBe3o.js",
+        "/svelte-preview/Snapshot--zmfcZaJ.js",
+        "/svelte-preview/Input-C9VJDW9J.js",
+        "/svelte-preview/Textarea-C6Na4rA_.js",
+        "/svelte-preview/Label-aHnaptNp.js",
+        "/svelte-preview/RoomTile-drm3cin5.js",
+        "/svelte-preview/privacy-DXCRlVGH.js",
+        "/svelte-preview/model-DB-4wSKi.js",
+        "/svelte-preview/copy-tvfhUyOC.js",
+        "/svelte-preview/model-Dxl2uqUd.js",
+        "/svelte-preview/api-DucaUHLF.js",
+        "/svelte-preview/model-D2eQTgrV.js",
+        "/svelte-preview/consent-CbRQptRm.js",
+        "/svelte-preview/model-CwJhNEjZ.js",
+        "/svelte-preview/tools-Dn0ZyARo.js",
+        "/svelte-preview/SetupInstructions-BVzRSF_q.js",
+        "/svelte-preview/Field-DzXwa0EJ.js",
+        "/svelte-preview/AlertDialog-cYQO86vH.js",
+        "/svelte-preview/Avatar-Ck4REEkL.js",
+        "/svelte-preview/Badge-rxZa0gsK.js",
+        "/svelte-preview/Heading-BlJwiW6R.js",
+        "/svelte-preview/Select-Bh6ZEKSb.js",
+        "/svelte-preview/ErrorState-C5PkFcm7.js",
+        "/svelte-preview/Icon-CtW4lMwN.js",
+        "/svelte-preview/Card-D4JIZDZT.js",
+        "/svelte-preview/Checkbox-lwHOXLGv.js",
+        "/svelte-preview/RadioGroup-B-lEsvbe.js",
+        "/svelte-preview/NotificationBell-DAY0w1GJ.js",
+        "/svelte-preview/uiVariant-CXGP5j2D.js",
+        "/svelte-preview/registration-nbQWni7Y.js",
+        "/svelte-preview/api-DKmEofkD.js",
+        "/svelte-preview/room--oeUdBsf.js",
+        "/svelte-preview/create-id-Dryj20cv.js",
+        "/svelte-preview/dist-CW5RjG30.js"
+      ]
+    }
+  ],
+  "staticBootstrapAssets": [
+    "app.js"
+  ],
+  "loadedBeyondBootstrapStatic": [
+    "AlertDialog-cYQO86vH.js",
+    "Avatar-Ck4REEkL.js",
+    "Badge-rxZa0gsK.js",
+    "Button-DeJmD0tV.js",
+    "Card-D4JIZDZT.js",
+    "Checkbox-lwHOXLGv.js",
+    "Dialog-DCWvhByb.js",
+    "ErrorState-C5PkFcm7.js",
+    "Field-DzXwa0EJ.js",
+    "Heading-BlJwiW6R.js",
+    "Icon-CtW4lMwN.js",
+    "IconButton-DbFIBe3o.js",
+    "Input-C9VJDW9J.js",
+    "Label-aHnaptNp.js",
+    "NotificationBell-DAY0w1GJ.js",
+    "RadioGroup-B-lEsvbe.js",
+    "RoomTile-drm3cin5.js",
+    "Select-Bh6ZEKSb.js",
+    "SetupInstructions-BVzRSF_q.js",
+    "Snapshot--zmfcZaJ.js",
+    "Textarea-C6Na4rA_.js",
+    "api-CamTUJt3.js",
+    "api-DKmEofkD.js",
+    "api-DucaUHLF.js",
+    "consent-CbRQptRm.js",
+    "copy-tvfhUyOC.js",
+    "create-id-Dryj20cv.js",
+    "dialogController-8jjTQS1B.js",
+    "dist-CW5RjG30.js",
+    "index-client-BVaLNOXq.js",
+    "model-CwJhNEjZ.js",
+    "model-D2eQTgrV.js",
+    "model-DB-4wSKi.js",
+    "model-Dxl2uqUd.js",
+    "mount-BLHvX3Tj.js",
+    "owner-Dk3pdsZz.js",
+    "privacy-DXCRlVGH.js",
+    "registration-nbQWni7Y.js",
+    "room--oeUdBsf.js",
+    "roomCopy-LBEIpSGV.js",
+    "schemas-Dr5xbymo.js",
+    "session-DGyFOHMr.js",
+    "shared-CrgjeW9e.js",
+    "tools-Dn0ZyARo.js",
+    "transport-DTVVqj6m.js",
+    "uiVariant-CXGP5j2D.js",
+    "ui.css"
+  ],
+  "selectedAssets": [
+    {
+      "fileName": "app.js",
+      "sha256": "d30209c60c0bf499d0a2c134041f7cf1f3de69c626427a71f573ce5ecfbdf7cf",
+      "rawBytes": 677,
+      "gzipBytes": 322,
+      "kind": "js",
+      "isEntry": true,
+      "isDynamicEntry": false,
+      "facade": "project:svelte/bootstrap.ts",
+      "imports": [],
+      "dynamicImports": [
+        "main-BzxdPRkl.js",
+        "mount-BLHvX3Tj.js",
+        "mount-CXEFR7qb.js"
+      ]
+    },
+    {
+      "fileName": "AlertDialog-cYQO86vH.js",
+      "sha256": "2e9dbb4bf9b25a36dc5f8ff7bd80ff9d34ff33a5c6eb9e9b60fbd7f122c4892f",
+      "rawBytes": 11416,
+      "gzipBytes": 3092,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "create-id-Dryj20cv.js",
+        "dialogController-8jjTQS1B.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Avatar-Ck4REEkL.js",
+      "sha256": "dbac87730ad06333cdfe8e4fb1affd1a6b28c3f5e0ddb5d8428492b811f538e7",
+      "rawBytes": 1168,
+      "gzipBytes": 713,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Badge-rxZa0gsK.js",
+      "sha256": "948db830e43ad78d1022c59838939310624737e949329342216597e42168727d",
+      "rawBytes": 1183,
+      "gzipBytes": 633,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Button-DeJmD0tV.js",
+      "sha256": "63c8c18d5bb7370e999192381fafbd411e26feb917a5e571f703bf2751fd8d90",
+      "rawBytes": 142264,
+      "gzipBytes": 42616,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Card-D4JIZDZT.js",
+      "sha256": "39a88005c2e42ea6910105e0c59c70e4a18d0b36e071b7a33604384ba91ef282",
+      "rawBytes": 1234,
+      "gzipBytes": 620,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Checkbox-lwHOXLGv.js",
+      "sha256": "96a97558b91da9e8f163bbb7fb178e0a23d348d810237f36cd87b6dd70ae6ae1",
+      "rawBytes": 1900,
+      "gzipBytes": 930,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Icon-CtW4lMwN.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Dialog-DCWvhByb.js",
+      "sha256": "ccb33e567b771262ca4b4682ffaaa433f450e19681baf6a7f3fcb6e238dabc0f",
+      "rawBytes": 10844,
+      "gzipBytes": 3025,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Icon-CtW4lMwN.js",
+        "create-id-Dryj20cv.js",
+        "dialogController-8jjTQS1B.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "ErrorState-C5PkFcm7.js",
+      "sha256": "83a784d1fb8c90292b2b9af81ab030c6153cc2a8386e6ee44fe974569741d81f",
+      "rawBytes": 16020,
+      "gzipBytes": 4700,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Icon-CtW4lMwN.js",
+        "create-id-Dryj20cv.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Field-DzXwa0EJ.js",
+      "sha256": "ba5dce86f0b9a443d747604b2b747563b48c5a475b9647c5834c1b27d5871578",
+      "rawBytes": 30654,
+      "gzipBytes": 9213,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Label-aHnaptNp.js",
+        "index-client-BVaLNOXq.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Heading-BlJwiW6R.js",
+      "sha256": "0962ff76d4303ba730e65cc120ab653b01f24500cb01767592fb5123a46f15c7",
+      "rawBytes": 761,
+      "gzipBytes": 483,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Icon-CtW4lMwN.js",
+      "sha256": "49125c0b770637b263b1c4664fd123e9d86790d62f1f7398177e09074ead57b5",
+      "rawBytes": 2943,
+      "gzipBytes": 1460,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "IconButton-DbFIBe3o.js",
+      "sha256": "a2c116c27089fc704f35f509753629f27a8cf0ce1c62a42246fd84bac5019f84",
+      "rawBytes": 886,
+      "gzipBytes": 478,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Icon-CtW4lMwN.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Input-C9VJDW9J.js",
+      "sha256": "fa2dd5bd9a157f67e069653daf2b17a72b4576c2b0bbe147714dd310ee28e204",
+      "rawBytes": 1059,
+      "gzipBytes": 600,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Label-aHnaptNp.js",
+      "sha256": "fe2a486b28c08e07f8252a15f5af113d1c1c04aaa078622031d038843b2fea42",
+      "rawBytes": 610,
+      "gzipBytes": 411,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "NotificationBell-DAY0w1GJ.js",
+      "sha256": "23c579a73fd9ed4d5ba67673f9c81dcc02cae195514b8cc913322c64dd6f4483",
+      "rawBytes": 10654,
+      "gzipBytes": 3678,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Dialog-DCWvhByb.js",
+        "Icon-CtW4lMwN.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "RadioGroup-B-lEsvbe.js",
+      "sha256": "32cb87332655ba63e15e3a07ee4aca538f26c8a31fd505bc6bb201d3f0e7e61f",
+      "rawBytes": 1848,
+      "gzipBytes": 948,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "RoomTile-drm3cin5.js",
+      "sha256": "cb17f4fb22ed20c853e4b34dfa91878ee67b550f98fe94b9fb5d8a4b3ea301d0",
+      "rawBytes": 6695,
+      "gzipBytes": 2495,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Badge-rxZa0gsK.js",
+        "Button-DeJmD0tV.js",
+        "IconButton-DbFIBe3o.js",
+        "session-DGyFOHMr.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Select-Bh6ZEKSb.js",
+      "sha256": "b7d8f561f0441179885dfdb31ad90e19f4b127a35247c4318fd5625ca3a2b712",
+      "rawBytes": 1308,
+      "gzipBytes": 739,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "SetupInstructions-BVzRSF_q.js",
+      "sha256": "dd30d75ae7055117905bf3c950ec7cb772a0315135cce7c66cedfcab6bf35371",
+      "rawBytes": 9029,
+      "gzipBytes": 3668,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Heading-BlJwiW6R.js",
+        "privacy-DXCRlVGH.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Snapshot--zmfcZaJ.js",
+      "sha256": "c023bb46ff1f9ec99db6978871cee3c282db2627391ac23db01091721e85c2e2",
+      "rawBytes": 319,
+      "gzipBytes": 239,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "Textarea-C6Na4rA_.js",
+      "sha256": "fe0f525a3f8fc2b3d479a89f1c302a83292ca2d55850479edb4c2176c76e4977",
+      "rawBytes": 1076,
+      "gzipBytes": 611,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "api-CamTUJt3.js",
+      "sha256": "29d111b44d0b8921c13f2a6508a1f1a691d91d312466e50b1c04e9f33d43b108",
+      "rawBytes": 12807,
+      "gzipBytes": 4612,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-DKmEofkD.js",
+        "schemas-Dr5xbymo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "api-DKmEofkD.js",
+      "sha256": "b484aa806dc34b3e3df02e181dfff5dca36b98fb3615f01253f8f9668a31de75",
+      "rawBytes": 73765,
+      "gzipBytes": 17694,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "api-DucaUHLF.js",
+      "sha256": "13da835460460f0bbe05554799126a9fec5928caaac9911e680e19746e4d49af",
+      "rawBytes": 1973,
+      "gzipBytes": 835,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-CamTUJt3.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "consent-CbRQptRm.js",
+      "sha256": "44dfeb07706315831e9da2b22fbef3eef8d978bbbb5506bd9199e633cd5c3eb1",
+      "rawBytes": 4364,
+      "gzipBytes": 1703,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-CamTUJt3.js",
+        "index-client-BVaLNOXq.js",
+        "owner-Dk3pdsZz.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "copy-tvfhUyOC.js",
+      "sha256": "23471dc1272b37dae152a985f348623f0ec881a05d9423bec816c55931c3c93a",
+      "rawBytes": 119850,
+      "gzipBytes": 48159,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "Icon-CtW4lMwN.js",
+        "dist-CW5RjG30.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "create-id-Dryj20cv.js",
+      "sha256": "cbe4ce5ee57d10c43059268e8ebad92dbb87092cbc57482414eb77f990526a05",
+      "rawBytes": 19021,
+      "gzipBytes": 6382,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "dialogController-8jjTQS1B.js",
+      "sha256": "678ba7366f382241cfd0f2ff1ee1f16e44f04463b084d74075a3764c24575764",
+      "rawBytes": 45447,
+      "gzipBytes": 11889,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "create-id-Dryj20cv.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "dist-CW5RjG30.js",
+      "sha256": "4ccafe3caf1a9c628826119d47ec3d7f8f66c699c2d6caa0377acfe312938b31",
+      "rawBytes": 193130,
+      "gzipBytes": 45978,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "index-client-BVaLNOXq.js",
+      "sha256": "293aada92e053c0f7f9188e091793d725254fd4caad9c2a0053b394c1ba8027d",
+      "rawBytes": 31,
+      "gzipBytes": 51,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "model-CwJhNEjZ.js",
+      "sha256": "fe2a17b2ad08aaf15026c722132ad458051cc3a56d658bf11e3866b4b41e3059",
+      "rawBytes": 1675,
+      "gzipBytes": 790,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "model-D2eQTgrV.js",
+      "sha256": "9a7984db5fbf6abe413a0d86000cc7610ddb4a51fed01efbf64a952541163efb",
+      "rawBytes": 1822,
+      "gzipBytes": 885,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "model-DB-4wSKi.js",
+      "sha256": "b03d7af2f904707fc9f3891af99f288bd405b07bd4315d46842680038a4f4bf0",
+      "rawBytes": 1830,
+      "gzipBytes": 920,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "model-Dxl2uqUd.js",
+      "sha256": "38c25b0c701529110faf35b69d451a19580cf09ceed3aa409ba2fe1cdeee3253",
+      "rawBytes": 2855,
+      "gzipBytes": 1281,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-DKmEofkD.js",
+        "schemas-Dr5xbymo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "mount-BLHvX3Tj.js",
+      "sha256": "531790c83c59f5ce49d47eea2b3f49480642683b81d3636f1d88b1c77df6bcfc",
+      "rawBytes": 550940,
+      "gzipBytes": 147174,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": true,
+      "facade": "project:svelte/features/application/mount.ts",
+      "imports": [
+        "AlertDialog-cYQO86vH.js",
+        "Avatar-Ck4REEkL.js",
+        "Badge-rxZa0gsK.js",
+        "Button-DeJmD0tV.js",
+        "Card-D4JIZDZT.js",
+        "Checkbox-lwHOXLGv.js",
+        "Dialog-DCWvhByb.js",
+        "ErrorState-C5PkFcm7.js",
+        "Field-DzXwa0EJ.js",
+        "Heading-BlJwiW6R.js",
+        "Icon-CtW4lMwN.js",
+        "IconButton-DbFIBe3o.js",
+        "Input-C9VJDW9J.js",
+        "Label-aHnaptNp.js",
+        "NotificationBell-DAY0w1GJ.js",
+        "RadioGroup-B-lEsvbe.js",
+        "RoomTile-drm3cin5.js",
+        "Select-Bh6ZEKSb.js",
+        "SetupInstructions-BVzRSF_q.js",
+        "Snapshot--zmfcZaJ.js",
+        "Textarea-C6Na4rA_.js",
+        "api-CamTUJt3.js",
+        "api-DucaUHLF.js",
+        "consent-CbRQptRm.js",
+        "copy-tvfhUyOC.js",
+        "dialogController-8jjTQS1B.js",
+        "index-client-BVaLNOXq.js",
+        "model-CwJhNEjZ.js",
+        "model-D2eQTgrV.js",
+        "model-DB-4wSKi.js",
+        "model-Dxl2uqUd.js",
+        "owner-Dk3pdsZz.js",
+        "privacy-DXCRlVGH.js",
+        "registration-nbQWni7Y.js",
+        "roomCopy-LBEIpSGV.js",
+        "schemas-Dr5xbymo.js",
+        "session-DGyFOHMr.js",
+        "shared-CrgjeW9e.js",
+        "tools-Dn0ZyARo.js",
+        "transport-DTVVqj6m.js",
+        "uiVariant-CXGP5j2D.js"
+      ],
+      "dynamicImports": [
+        "AccountSettings-D5XoMCO7.js",
+        "AgentsPane-Ux5TbG09.js",
+        "AppsPanel-C2sJxCRj.js",
+        "ArchivedPanel-vHpJmWTZ.js",
+        "Board-BRcmauib.js",
+        "Decisions-iTN_fNhg.js",
+        "FileViewer-D4kVanug.js",
+        "Files-CM7EB2A2.js",
+        "HomePanel-Cbmk2W5u.js",
+        "Inbox-BoGuhRN2.js",
+        "Reminders-DLu_jK9o.js",
+        "bridge-DVnz4dIo.js",
+        "editor-BhkBY3D5.js"
+      ]
+    },
+    {
+      "fileName": "owner-Dk3pdsZz.js",
+      "sha256": "f2f82199a8c8fade7e8dd2895136cf89ca75114f4eb219e58cd1157111885351",
+      "rawBytes": 764,
+      "gzipBytes": 437,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "privacy-DXCRlVGH.js",
+      "sha256": "e129f5851cbcd06e69f619938eb4e4da68b46e6577e2b0d57920cccc871b42cc",
+      "rawBytes": 731,
+      "gzipBytes": 406,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "registration-nbQWni7Y.js",
+      "sha256": "c300ec2d27914dedaa911810d941fa50f460254172552698a6b580b588cf4868",
+      "rawBytes": 5283,
+      "gzipBytes": 1927,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-CamTUJt3.js",
+        "index-client-BVaLNOXq.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "room--oeUdBsf.js",
+      "sha256": "5975e6e804f91f74d532bc315822a606727da623ebd2864b62952aebfdebcb11",
+      "rawBytes": 2266,
+      "gzipBytes": 935,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "schemas-Dr5xbymo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "roomCopy-LBEIpSGV.js",
+      "sha256": "d63840d40b919e27c9c3638437b967a8591d0378079aff33d3b21973203bbf7e",
+      "rawBytes": 39432,
+      "gzipBytes": 13425,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "Button-DeJmD0tV.js",
+        "SetupInstructions-BVzRSF_q.js",
+        "api-CamTUJt3.js",
+        "index-client-BVaLNOXq.js",
+        "schemas-Dr5xbymo.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "schemas-Dr5xbymo.js",
+      "sha256": "80ee20cca68c64ef19ba97261bd598a5f42c2bf3ff38f0d9334c905bb54b1d99",
+      "rawBytes": 4251,
+      "gzipBytes": 1308,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-DKmEofkD.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "session-DGyFOHMr.js",
+      "sha256": "a92a3c8dbd189795b93b990ab5ffbfcbbec58b8541ce9a5951dae2e23f280203",
+      "rawBytes": 17216,
+      "gzipBytes": 6151,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "index-client-BVaLNOXq.js",
+        "model-CwJhNEjZ.js",
+        "owner-Dk3pdsZz.js",
+        "shared-CrgjeW9e.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "shared-CrgjeW9e.js",
+      "sha256": "0a308be44c17f3894556f0c182c2006f14068c3cc98e7bf4d21387269564cb86",
+      "rawBytes": 37496,
+      "gzipBytes": 11791,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "tools-Dn0ZyARo.js",
+      "sha256": "5c80c876404103611c2b25a343a989558a34f3e7674c059e4a5286c5ebac4e82",
+      "rawBytes": 7982,
+      "gzipBytes": 2533,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "privacy-DXCRlVGH.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "transport-DTVVqj6m.js",
+      "sha256": "e0ea96c21a6598f81ec0c8c7b20b99d1d2dd98039bcfb31a84e36296471171ae",
+      "rawBytes": 6705,
+      "gzipBytes": 2317,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [
+        "api-CamTUJt3.js",
+        "api-DKmEofkD.js",
+        "room--oeUdBsf.js",
+        "schemas-Dr5xbymo.js"
+      ],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "uiVariant-CXGP5j2D.js",
+      "sha256": "0c2266788b0d9c49fe65cce5b0d1adc58046832845f1a5adf51dc47aa0cfac29",
+      "rawBytes": 333,
+      "gzipBytes": 249,
+      "kind": "js",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    },
+    {
+      "fileName": "ui.css",
+      "sha256": "9da04f91a424416b34315e689a479b389d65cc4892baca1d08c4073f7d052dad",
+      "rawBytes": 61005,
+      "gzipBytes": 11395,
+      "kind": "css",
+      "isEntry": false,
+      "isDynamicEntry": false,
+      "facade": null,
+      "imports": [],
+      "dynamicImports": []
+    }
+  ],
+  "packages": [
+    {
+      "package": "first-party-or-virtual",
+      "renderedLength": 1076448,
+      "moduleCount": 214
+    },
+    {
+      "package": "parse5@8.1.1",
+      "renderedLength": 217136,
+      "moduleCount": 14
+    },
+    {
+      "package": "svelte@5.57.3",
+      "renderedLength": 176020,
+      "moduleCount": 105
+    },
+    {
+      "package": "zod@4.6.7",
+      "renderedLength": 106838,
+      "moduleCount": 11
+    },
+    {
+      "package": "bits-ui@2.21.0",
+      "renderedLength": 95318,
+      "moduleCount": 50
+    },
+    {
+      "package": "tailwind-variants@4.0.2",
+      "renderedLength": 92072,
+      "moduleCount": 5
+    },
+    {
+      "package": "tailwind-merge@3.7.0",
+      "renderedLength": 58884,
+      "moduleCount": 1
+    },
+    {
+      "package": "marked@12.0.2",
+      "renderedLength": 56621,
+      "moduleCount": 1
+    },
+    {
+      "package": "entities@7.0.1",
+      "renderedLength": 44774,
+      "moduleCount": 5
+    },
+    {
+      "package": "entities@9.0.0",
+      "renderedLength": 31247,
+      "moduleCount": 4
+    },
+    {
+      "package": "svelte-toolbelt@0.10.7",
+      "renderedLength": 15803,
+      "moduleCount": 17
+    },
+    {
+      "package": "tabbable@6.5.1",
+      "renderedLength": 12242,
+      "moduleCount": 1
+    },
+    {
+      "package": "runed@0.35.1",
+      "renderedLength": 9605,
+      "moduleCount": 70
+    },
+    {
+      "package": "hono@4.13.14",
+      "renderedLength": 8444,
+      "moduleCount": 3
+    },
+    {
+      "package": "inline-style-parser@0.2.7",
+      "renderedLength": 3243,
+      "moduleCount": 1
+    },
+    {
+      "package": "style-to-object@1.0.14",
+      "renderedLength": 579,
+      "moduleCount": 1
+    },
+    {
+      "package": "clsx@2.1.1",
+      "renderedLength": 513,
+      "moduleCount": 1
+    }
+  ],
+  "largestModules": [
+    {
+      "id": "npm:parse5@8.1.1/dist/parser/index.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 80162,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/parser/index.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:parse5@8.1.1/dist/tokenizer/index.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 70089,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/tokenizer/index.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:tailwind-merge@3.7.0/dist/bundle-mjs.mjs#instance-4dbb6161a731",
+      "packageName": "tailwind-merge",
+      "packageVersion": "3.7.0",
+      "renderedLength": 58884,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/Dialog.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/utils.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-merge@3.7.0/dist/bundle-mjs.mjs#instance-4dbb6161a731",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:marked@12.0.2/lib/marked.esm.js#instance-d5d8c0ab0ab8",
+      "packageName": "marked",
+      "packageVersion": "12.0.2",
+      "renderedLength": 56621,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:marked@12.0.2/lib/marked.esm.js#instance-d5d8c0ab0ab8",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/core/schemas.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 49361,
+      "chunks": [
+        "api-DKmEofkD.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/application/copy.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 45367,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/copy.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:tailwind-variants@4.0.2/dist/chunk-RIONEO55.js#instance-d5af9533f72d",
+      "packageName": "tailwind-variants",
+      "packageVersion": "4.0.2",
+      "renderedLength": 44628,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/Dialog.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/button.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/index.js#instance-d5af9533f72d",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/chunk-RIONEO55.js#instance-d5af9533f72d",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:tailwind-variants@4.0.2/dist/chunk-SZ5PJ5HZ.js#instance-d5af9533f72d",
+      "packageName": "tailwind-variants",
+      "packageVersion": "4.0.2",
+      "renderedLength": 37591,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/Dialog.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/button.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/index.js#instance-d5af9533f72d",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/chunk-SZ5PJ5HZ.js#instance-d5af9533f72d",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/app-navigation/AppNavigation.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 36828,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/app-navigation/AppNavigation.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/composer/NativeComposer.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 32602,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Composer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/NativeComposer.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:entities@7.0.1/dist/esm/generated/decode-data-html.js#instance-16d8238da062",
+      "packageName": "entities",
+      "packageVersion": "7.0.1",
+      "renderedLength": 32319,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/room-scope/controller.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 31502,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/navigation/EpicTree.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 23969,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/navigation/EpicTree.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-shell/RoomScene.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 22891,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/people/PeoplePanel.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 21635,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/People.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/people/PeoplePanel.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/documents/DocumentPanel.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 21320,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/documents/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 19846,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/roomResources.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:parse5@8.1.1/dist/parser/open-element-stack.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 18042,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/parser/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/parser/open-element-stack.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/Message.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 17957,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/composer/drafts.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 17567,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/roomResources.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/drafts.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/pins/PinnedItems.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 16911,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/pins/PinnedItems.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/reactivity/batch.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 16634,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/reactivity/batch.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/TaskList.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 16528,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Tasks.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/TaskList.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/application/AppShell.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 16435,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/application/services.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 15746,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:parse5@8.1.1/dist/common/html.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 15577,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/common/html.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/core/util.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 15435,
+      "chunks": [
+        "api-DKmEofkD.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/Sidebar.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 15042,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:entities@9.0.0/dist/generated/decode-data-html.js#instance-6d93c33adb8a",
+      "packageName": "entities",
+      "packageVersion": "9.0.0",
+      "renderedLength": 14811,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/tokenizer/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:entities@9.0.0/dist/decode.js#instance-6d93c33adb8a",
+          "via": "static"
+        },
+        {
+          "id": "npm:entities@9.0.0/dist/generated/decode-data-html.js#instance-6d93c33adb8a",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-layout/RoomLayoutFrame.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 14386,
+      "chunks": [
+        "Field-DzXwa0EJ.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-layout/RoomLayout.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-layout/RoomLayoutFrame.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-layout/geometry.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 13524,
+      "chunks": [
+        "Field-DzXwa0EJ.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-layout/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-layout/geometry.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/agents/room.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 13470,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/service.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/room.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/agents/AgentBanners.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 13413,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/AgentBanners.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat-interactive/CardView.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 13235,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/InteractiveBody.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/CardView.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:entities@9.0.0/dist/decode.js#instance-6d93c33adb8a",
+      "packageName": "entities",
+      "packageVersion": "9.0.0",
+      "renderedLength": 12465,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/tokenizer/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:entities@9.0.0/dist/decode.js#instance-6d93c33adb8a",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:tabbable@6.5.1/dist/index.esm.js#instance-cb0684e61ec9",
+      "packageName": "tabbable",
+      "packageVersion": "6.5.1",
+      "renderedLength": 12242,
+      "chunks": [
+        "dialogController-8jjTQS1B.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/rich-text/RichNodes.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 12201,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/RichNodes.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/runtime.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 12193,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/runtime.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/dialog/dialog.svelte.js#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 11829,
+      "chunks": [
+        "dialogController-8jjTQS1B.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/rich-text/project.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 11041,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:shared/schemas.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 11012,
+      "chunks": [
+        "api-CamTUJt3.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/app-navigation/AppNavigation.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:shared/schemas.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/core/api.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 10831,
+      "chunks": [
+        "api-DKmEofkD.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/dom/blocks/each.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 10808,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/index.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/dom/blocks/each.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:entities@7.0.1/dist/esm/decode.js#instance-16d8238da062",
+      "packageName": "entities",
+      "packageVersion": "7.0.1",
+      "renderedLength": 10431,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/dom/elements/attributes.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 10257,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/index.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/dom/elements/attributes.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/file-viewer/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 10196,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/file-viewer/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/Chat.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 10083,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-sidebar/ThreadHeader.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9894,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-sidebar/ThreadHeader.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat-viewport/controller.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9666,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-viewport/controller.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/apps/tools.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9437,
+      "chunks": [
+        "tools-Dn0ZyARo.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/apps/embed.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/apps/tools.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat/MessageFooter.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9360,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat/MessageFooter.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/notifications/NotificationBell.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9338,
+      "chunks": [
+        "NotificationBell-DAY0w1GJ.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomHeader.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/notifications/NotificationBell.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/sandboxes/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9083,
+      "chunks": [
+        "roomCopy-LBEIpSGV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/service.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/room.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/sandboxes/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat/Embed.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 9068,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat/Attachments.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat/Embed.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/core/checks.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 8868,
+      "chunks": [
+        "api-DKmEofkD.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/home/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 8817,
+      "chunks": [
+        "session-DGyFOHMr.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/app-navigation/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/home/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat-interactive/PollView.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 8651,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/InteractiveBody.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/PollView.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/reactivity/effects.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 8610,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/context.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/reactivity/effects.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/dom/blocks/boundary.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 8590,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/index.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/dom/blocks/boundary.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/pwa/service.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7992,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/pwa/service.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/home/copy.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7947,
+      "chunks": [
+        "session-DGyFOHMr.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/app-navigation/AppNavigation.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/home/copy.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/documents/DocumentToolbar.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7888,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentToolbar.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/utilities/dismissible-layer/use-dismissable-layer.svelte.js#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 7667,
+      "chunks": [
+        "dialogController-8jjTQS1B.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/composer/PollCreateDialog.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7356,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Composer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/NativeComposer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/PollCreateDialog.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/home/personal.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7311,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/home/personal.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/home/RoomTile.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7210,
+      "chunks": [
+        "RoomTile-drm3cin5.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/app-navigation/AppNavigation.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/home/RoomTile.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/account/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7078,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/account/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat-interactive/PermissionAsk.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7063,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/InteractiveBody.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/PermissionAsk.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/lib/ui/AlertDialog.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 7040,
+      "chunks": [
+        "AlertDialog-cYQO86vH.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-sidebar/ThreadHeader.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/AlertDialog.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/chat-interactive/ChoicesView.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6913,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/InteractiveBody.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/ChoicesView.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/errors.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 6902,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/errors.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/sandboxes/terminalSession.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6801,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/services.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/service.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/room.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/sandboxes/terminalSession.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/documents/DocumentPreview.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6779,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-layout/controller.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6731,
+      "chunks": [
+        "Field-DzXwa0EJ.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-layout/controller.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/proxy.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 6715,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/index.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/proxy.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/lib/ui/Dialog.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6534,
+      "chunks": [
+        "Dialog-DCWvhByb.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/Dialog.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/agents/roomCopy.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6505,
+      "chunks": [
+        "roomCopy-LBEIpSGV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/AgentBanners.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/roomCopy.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:shared/card.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6491,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat-interactive/model.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:shared/card.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/apps/session.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6466,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-scope/controller.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/apps/session.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/composer/OrphanDrafts.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6374,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Composer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/NativeComposer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/OrphanDrafts.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/internal/body-scroll-lock.svelte.js#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 6356,
+      "chunks": [
+        "dialogController-8jjTQS1B.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/sandboxes/copy.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 6125,
+      "chunks": [
+        "roomCopy-LBEIpSGV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Sidebar.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-sidebar/SandboxPresenceRows.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/sandboxes/copy.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/alert-dialog/components/alert-dialog-content.svelte#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 6109,
+      "chunks": [
+        "AlertDialog-cYQO86vH.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/room-sidebar/ThreadCards.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5927,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Message.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-sidebar/ThreadCards.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:tailwind-variants@4.0.2/dist/chunk-YJM4VCTO.js#instance-d5af9533f72d",
+      "packageName": "tailwind-variants",
+      "packageVersion": "4.0.2",
+      "renderedLength": 5915,
+      "chunks": [
+        "Button-DeJmD0tV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/AppShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/Dialog.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/lib/ui/button.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/index.js#instance-d5af9533f72d",
+          "via": "static"
+        },
+        {
+          "id": "npm:tailwind-variants@4.0.2/dist/chunk-YJM4VCTO.js#instance-d5af9533f72d",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/tabs/tabs.svelte.js#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 5845,
+      "chunks": [
+        "ErrorState-C5PkFcm7.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/chat/model.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5825,
+      "chunks": [
+        "roomCopy-LBEIpSGV.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Chat.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/chat/model.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:svelte@5.57.3/src/internal/client/reactivity/deriveds.js#instance-6af7739d4ed3",
+      "packageName": "svelte",
+      "packageVersion": "5.57.3",
+      "renderedLength": 5824,
+      "chunks": [
+        "shared-CrgjeW9e.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/index-client.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/index.js#instance-6af7739d4ed3",
+          "via": "static"
+        },
+        {
+          "id": "npm:svelte@5.57.3/src/internal/client/reactivity/deriveds.js#instance-6af7739d4ed3",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/dialog/components/dialog-content.svelte#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 5699,
+      "chunks": [
+        "Dialog-DCWvhByb.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/agents/SetupInstructions.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5675,
+      "chunks": [
+        "SetupInstructions-BVzRSF_q.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/AgentBanners.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/agents/SetupInstructions.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:parse5@8.1.1/dist/common/foreign-content.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 5658,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/common/foreign-content.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/mini/schemas.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 5641,
+      "chunks": [
+        "schemas-Dr5xbymo.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "project:svelte/features/composer/speech.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5584,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/Composer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/NativeComposer.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/speech.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/account/device.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5511,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/browser.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/account/device.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/composer/model.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5472,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/application/roomResources.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/drafts.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/composer/model.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:zod@4.6.7/v4/core/parse.js#instance-108585730c22",
+      "packageName": "zod",
+      "packageVersion": "4.6.7",
+      "renderedLength": 5391,
+      "chunks": [
+        "api-DKmEofkD.js"
+      ],
+      "sourceImportWitness": null
+    },
+    {
+      "id": "npm:parse5@8.1.1/dist/tree-adapters/default.js#instance-8709cf0970b6",
+      "packageName": "parse5",
+      "packageVersion": "8.1.1",
+      "renderedLength": 5375,
+      "chunks": [
+        "dist-CW5RjG30.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/session.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/project.ts",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/markdownTree.ts",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/index.js#instance-8709cf0970b6",
+          "via": "static"
+        },
+        {
+          "id": "npm:parse5@8.1.1/dist/tree-adapters/default.js#instance-8709cf0970b6",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/rich-text/allowlist.ts",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5361,
+      "chunks": [
+        "copy-tvfhUyOC.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPanel.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/documents/DocumentPreview.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/RichNodes.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/rich-text/allowlist.ts",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "project:svelte/features/room-sidebar/SuggestionPreview.svelte",
+      "packageName": null,
+      "packageVersion": null,
+      "renderedLength": 5329,
+      "chunks": [
+        "mount-BLHvX3Tj.js"
+      ],
+      "sourceImportWitness": [
+        {
+          "id": "project:svelte/bootstrap.ts",
+          "via": "entry"
+        },
+        {
+          "id": "project:svelte/features/application/mount.ts",
+          "via": "dynamic"
+        },
+        {
+          "id": "project:svelte/features/application/NativeApplication.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomShell.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-shell/RoomScene.svelte",
+          "via": "static"
+        },
+        {
+          "id": "project:svelte/features/room-sidebar/SuggestionPreview.svelte",
+          "via": "static"
+        }
+      ]
+    },
+    {
+      "id": "npm:bits-ui@2.21.0/dist/bits/utilities/focus-scope/focus-scope.svelte.js#instance-8ca344e901e8",
+      "packageName": "bits-ui",
+      "packageVersion": "2.21.0",
+      "renderedLength": 5323,
+      "chunks": [
+        "dialogController-8jjTQS1B.js"
+      ],
+      "sourceImportWitness": null
+    }
+  ],
+  "gaps": [
+    "renderedLength is bundler contribution metadata, not module gzip/network-byte attribution",
+    "Import witnesses describe source edges among selected modules, not which symbol caused retention",
+    "Static-only mode does not establish which dynamic chunks execute at startup",
+    "CSS is measured as an emitted asset; individual CSS rule/source attribution is not supplied",
+    "Vanilla inline HTML/JS/CSS is outside this Vite graph; zero observed Vite entry files is not zero application code",
+    "No performance budget, authority, schema or runtime behavior is changed"
+  ]
+}

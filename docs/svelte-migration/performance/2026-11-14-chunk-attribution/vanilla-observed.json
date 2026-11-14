@@ -1,0 +1,30 @@
+{
+  "revision": "8f50d87d28a365515fb11f8890227d456a1c5b9e",
+  "variant": "vanilla",
+  "selection": "observed-entry-requests-hash-and-revision-matched",
+  "observations": [
+    {
+      "device": "mobile",
+      "profile": "long",
+      "repetition": 1,
+      "warmup": true,
+      "status": "passed",
+      "entryAssets": []
+    }
+  ],
+  "staticBootstrapAssets": [
+    "ui.js"
+  ],
+  "loadedBeyondBootstrapStatic": [],
+  "selectedAssets": [],
+  "packages": [],
+  "largestModules": [],
+  "gaps": [
+    "renderedLength is bundler contribution metadata, not module gzip/network-byte attribution",
+    "Import witnesses describe source edges among selected modules, not which symbol caused retention",
+    "Static-only mode does not establish which dynamic chunks execute at startup",
+    "CSS is measured as an emitted asset; individual CSS rule/source attribution is not supplied",
+    "Vanilla inline HTML/JS/CSS is outside this Vite graph; zero observed Vite entry files is not zero application code",
+    "No performance budget, authority, schema or runtime behavior is changed"
+  ]
+}
