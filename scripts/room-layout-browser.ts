@@ -452,6 +452,42 @@ try {
   );
   assert.equal(report.reducedMotion, true);
   await page.screenshot({ path: `${output}/room-layout.png` });
+  checkpoint("mobile/default-chat-capacity");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${base}/app?ui=svelte&gallery=1&probe=room-layout&capacity=1`, { waitUntil: "domcontentloaded" });
+  const capacityRoot = page.locator("[data-native-room-layout]");
+  await expect(capacityRoot).toBeVisible();
+  await expect(page.locator("[data-native-agent-setup]")).toBeVisible();
+  await expect(capacityRoot).not.toHaveAttribute("data-sheet", /.+/);
+  await expect(capacityRoot).toHaveAttribute("data-board-full", "false");
+  const capacity = () => capacityRoot.evaluate(root => {
+    const geometry = (element: Element | null) => {
+      if (!(element instanceof HTMLElement)) return null;
+      const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
+      return { top: rect.top, height: rect.height, clientHeight: element.clientHeight, scrollHeight: element.scrollHeight, display: style.display, visibility: style.visibility, overflowY: style.overflowY, gridTemplateRows: style.gridTemplateRows };
+    };
+    return { root: geometry(root), viewport: geometry(root.firstElementChild), attention: geometry(root.querySelector("[data-room-attention]")), setup: geometry(root.querySelector("[data-native-agent-setup]")), document: geometry(root.querySelector("[data-room-document]")), chat: geometry(root.querySelector("[data-room-chat]")), composer: geometry(root.querySelector("[data-room-composer]")) };
+  });
+  const initialCapacity = await capacity();
+  const capacityEvidence: Record<string, unknown> = { scope: "Actual production Layout with actual SetupInstructions in neutral snippets; no integrated Root/Worker acceptance", initial: initialCapacity };
+  report.mobileCapacity = capacityEvidence;
+  // Real snippet dismissal isolates attention size without changing geometry or DOM styles.
+  await page.getByRole("button", { name: "Setup notice", exact: true }).click();
+  await expect(page.locator("[data-native-agent-setup]")).toHaveCount(0);
+  capacityEvidence.withoutSetup = await capacity();
+  await page.getByRole("button", { name: "Setup notice", exact: true }).click();
+  await expect(page.locator("[data-native-agent-setup]")).toBeVisible();
+  // Use the real desktop visibility action, then return to the identical phone viewport.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.getByRole("slider", { name: "Document width" })).toBeVisible();
+  await page.getByRole("button", { name: "Toggle document capacity", exact: true }).click();
+  await expect(page.locator("[data-room-document]")).toBeHidden();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator("[data-room-document]")).toBeHidden();
+  capacityEvidence.withoutDocument = await capacity();
+  // Keep the original default-state requirement even if one diagnostic control makes Chat usable.
+  assert(initialCapacity.chat && initialCapacity.chat.clientHeight > 0, "Initial mobile Chat must have positive usable height with real setup content and default closed sheets");
+
   report.status = "passed";
 } catch (error) {
   report.status = interrupted ? "interrupted" : "failed";

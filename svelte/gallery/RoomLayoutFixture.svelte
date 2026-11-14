@@ -7,7 +7,10 @@
   import Heading from "../lib/ui/Heading.svelte";
   import Textarea from "../lib/ui/Textarea.svelte";
   import RoomLayoutFixtureBoard from "./RoomLayoutFixtureBoard.svelte";
+  import SetupInstructions from "../features/agents/SetupInstructions.svelte";
   import AlertDialog from "../lib/ui/AlertDialog.svelte";
+  const capacityProbe = new URL(location.href).searchParams.get("capacity") === "1";
+  let setupAttention = $state(capacityProbe);
   let active = true,
     rail = $state(false),
     tallHeader = $state(false),
@@ -82,7 +85,8 @@
   <div
     class="tw:flex tw:flex-wrap tw:gap-1 tw:border-b tw:border-border tw:p-1"
   >
-    <Button size="sm" onclick={() => owner.openSheet("doc")}
+    {#if capacityProbe}<Button size="sm" onclick={() => setupAttention = !setupAttention}>Setup notice</Button><Button size="sm" onclick={() => owner.toggleDocument()}>Toggle document capacity</Button>
+    {:else}<Button size="sm" onclick={() => owner.openSheet("doc")}
       >Open document</Button
     ><Button size="sm" onclick={() => owner.openSheet("side")}
       >Open sidebar</Button
@@ -171,9 +175,7 @@
             >Drag</span
           >
         </div>{/snippet}
-      {#snippet attention()}<p class="tw:px-4 tw:py-1">
-          Fixed attention row outside the message scroller
-        </p>{/snippet}
+      {#snippet attention()}{#if capacityProbe}{#if setupAttention}<div class="tw:px-4"><div class="tw:relative tw:rounded-surface tw:border tw:border-border tw:p-3 tw:pr-12"><SetupInstructions origin={location.origin} roomId="aabbccdd0011" lang="en" /></div></div>{/if}{:else}<p class="tw:px-4 tw:py-1">Fixed attention row outside the message scroller</p>{/if}{/snippet}
       {#snippet chat()}<p>
           Neutral geometry fixture; no room, provider or backend data.
         </p>
