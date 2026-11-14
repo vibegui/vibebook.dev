@@ -44,6 +44,14 @@ replacement-app authority cohorts were not reached. No uncaught page errors
 were recorded, and owned process cleanup reports zero remaining groups.
 This is disposable local Worker evidence, not production or real-provider proof.
 
+The next [run 43560795530](https://github.com/vibegui/vibebook.dev/actions/runs/43560795530),
+at head `9a10d09`, again passed the seven core phases. Its added socket diagnostics
+observed two Book connections for the same room during lifecycle cycle 1, versus
+the required one; personal and Yjs counts were each one. This establishes the
+observed count mismatch, but does not yet distinguish failed application disposal
+from a delayed transport close handshake. No timeout or lifecycle assertion is
+relaxed. The root cause and a passing 20-cycle rerun remain required.
+
 ## Performance and deployment
 
 The archived [controlled report](performance/2026-11-13/README.md) failed budgets

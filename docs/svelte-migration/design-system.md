@@ -1,5 +1,27 @@
 # Native design system migration
 
+Current native-root checkpoint: the production preview composes
+`NativeApplication`/`AppShell`/`RoomShell` and typed feature owners directly.
+`svelte/legacy/host.js`, its declaration, the production mount registry and the
+temporary Inbox mount are removed. All first-party native presentation is
+covered by the full style audit and the sole authored Tailwind entry. The
+approved pinned xterm structural exception remains explicit. Vanilla keeps its
+own independently built styles and remains the default.
+
+Both platforms passed the style, component and UI typing gates in
+[run 43560795533](https://github.com/vibegui/vibebook.dev/actions/runs/43560795533).
+That run failed a separate Worker-test typing case; it is not an all-green
+acceptance receipt. The eight real application theme/accessibility profiles
+have not yet been reached by the integrated runner because its lifecycle gate
+fails first. Earlier gallery results do not replace that coverage.
+
+The sections below retain the earlier incremental migration receipts. References
+there to the host, legacy CSS, mount adapters or remaining source ports describe
+those historical checkpoints, not the current application graph. See
+[completion.md](completion.md) for the current acceptance status.
+
+## Earlier component and gallery receipts
+
 The owned component layer is `svelte/lib/ui/`, with reusable compositions in `svelte/lib/components/`. Its source follows the shadcn-svelte model: application-owned typed Svelte components, Tailwind classes and headless Bits UI interaction behavior. Primitives do not import application stores, authentication or backend services.
 
 The current catalog includes Button/IconButton, Heading, Icon, Input/Textarea, Label, Checkbox, Switch, RadioGroup, Select, Badge, Avatar, Separator, Skeleton, Progress, Tooltip, Tabs, Dialog/Sheet, AlertDialog, Card, Field, EmptyState, ErrorState and LoadingState. Native Inbox and task controls compose this same layer. The interactive gallery is at `/app?ui=svelte&gallery=1`.
