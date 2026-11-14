@@ -85,7 +85,8 @@
         "No card de um HTML, Abrir abre ao lado do chat; a tela cheia virou o ícone pequeno à direita",
         "O roteador aprende com você: quando você diz pro seu Claude \"não era contigo\" (ou que ele perdeu uma mensagem), vira um caso de teste que toda mudança no roteador precisa passar",
         "No Modo Fire, se o pedido cabe num card nativo (métricas, um painel, uma tabela, uma lista), o Haiku monta o card no chat e cada fala nova atualiza o mesmo card; página HTML só quando precisa",
-        "🎤: um toque começa a ditar e outro para (sem segurar); segurar 3 segundos liga o Modo Fire"
+        "🎤: um toque começa a ditar e outro para (sem segurar); segurar 3 segundos liga o Modo Fire",
+        "Modo Fire: o 🎤 fica entre a caixa de texto e o Enviar; cada trecho falado vai depois de 0,7 s parado (antes esperava o navegador fechar a frase), com indicador de carregamento já enquanto você fala; segurar o 🎤 no celular não seleciona mais o texto; nas salas de métricas do vibebook o card usa os números de ontem"
       ],
       "en": [
         "The inbox now shows, besides what's waiting on you, the mentions of you and your open tasks (to do, doing, review) across every room — in three sections, with a this-room / all toggle",
@@ -99,7 +100,8 @@
         "On an HTML card, Open opens it beside the chat; full screen is now the small icon on the right",
         "The router learns from you: when you tell your Claude \"that wasn't for you\" (or that it missed a message), it becomes a test case every change to the router must pass",
         "In Fire mode, when a native card can answer (metrics, a dashboard, a table, a list), Haiku builds the card in the chat and each new piece of speech updates the same card; an HTML page only when it needs one",
-        "🎤: one tap starts dictation and another stops it (no holding); holding for 3 seconds turns on Fire mode"
+        "🎤: one tap starts dictation and another stops it (no holding); holding for 3 seconds turns on Fire mode",
+        "Fire mode: the 🎤 sits between the text box and Send; each spoken piece goes after 0.7 s of no change (it used to wait for the browser to close the sentence), with a loading sign while you're still talking; holding the 🎤 on a phone no longer selects text; in vibebook's metrics rooms the card uses yesterday's numbers"
       ]
     },
     "fixes": {

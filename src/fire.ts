@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { cardOf } from "./card";
 import type { Env } from "./index";
+import { growthReport, productReport } from "./reports";
 import { bookStub, storeFile } from "./rooms";
 import { track } from "./track";
 
@@ -15,6 +16,21 @@ import { track } from "./track";
  */
 const EDITABLE = ["text/html", "text/markdown", "text/plain"];
 const MAX_FILE = 200_000;
+
+// vibebook's own report rooms (METRICS_ROOMS): the fast model gets yesterday's numbers, so a card about visits or
+// errors has real data instead of "—" (Gui #2378: the card "didn't update" because Haiku had nothing to put in it).
+// Cached per isolate for 5 min: a session sends a piece every few seconds.
+let dataCache: { at: number; key: string; text: string } | null = null;
+async function roomData(env: Env, bookId: string, text: string, history: string[]) {
+  if (!(env.METRICS_ROOMS ?? "").split(",").map((x) => x.trim()).includes(bookId)) return "";
+  const prod = /produto|product|erro|error|lat[eê]n|banda|bandwidth|request|requisi|cpu|deploy|worker|tr[aá]fego|traffic/i.test([text, ...history].join(" "));
+  const key = prod ? "gp" : "g";
+  if (dataCache && dataCache.key === key && Date.now() - dataCache.at < 300_000) return dataCache.text;
+  const parts = await Promise.all([growthReport(env).catch(() => ""), prod ? productReport(env).catch(() => "") : ""]);
+  const out = parts.filter(Boolean).join("\n\n").slice(0, 12_000);
+  dataCache = { at: Date.now(), key, text: out };
+  return out;
+}
 
 export type FireIn = { text?: unknown; file_id?: unknown; history?: unknown; card_msg?: unknown; thread?: unknown };
 export type FireOut =
@@ -39,7 +55,8 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
   const thread = typeof b.thread === "string" ? b.thread : "main";
   const cardMsg = Number(b.card_msg) || 0;
   const model = () => createOpenRouter({ apiKey: env.OPENROUTER_API_KEY })(env.MODEL_FAST, { reasoning: { enabled: false, effort: "none" } });
-  const said = `${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`;
+  const data = await roomData(env, bookId, text, history);
+  const said = `${data ? `REAL DATA you may use (vibebook's own report, yesterday vs the 7 days before):\n${data}\n\n` : ""}${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`;
   const cardMode = async (current?: string) => {
     const { output, usage } = await generateText({
       model: model(), temperature: 0.2, abortSignal: AbortSignal.timeout(45_000),
