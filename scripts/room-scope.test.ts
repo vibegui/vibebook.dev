@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { get } from "svelte/store";
 import { roomScopeFixture } from "./room-scope-fixtures";
+import { settle } from "./native-home-fixtures";
 
 test("reply waits for pending sheet navigation and then uses the intended thread draft", async () => {
   const h = await roomScopeFixture(),

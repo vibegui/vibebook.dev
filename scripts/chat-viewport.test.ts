@@ -405,7 +405,9 @@ test("hidden new-message bottom intent survives passive Board renders until chat
   h.metrics.height = 1400;
   h.metrics.client = 100;
   presentation.rendered(true);
-  expect(h.metrics.top).toBe(1400);
+  // DOM scrollTop clamps at scrollHeight - clientHeight, although the owner
+  // requests scrollHeight to stay pinned through late content growth.
+  expect(h.metrics.top).toBe(h.metrics.height - h.metrics.client);
   expect(h.view.pinned()).toBe(true);
   h.view.dispose();
 });
