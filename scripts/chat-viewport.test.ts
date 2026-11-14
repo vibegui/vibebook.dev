@@ -411,3 +411,32 @@ test("hidden new-message bottom intent survives passive Board renders until chat
   expect(h.view.pinned()).toBe(true);
   h.view.dispose();
 });
+
+test("real selection append cannot replace a row of an unpinned hidden Board reading window", () => {
+  const h = harness(), presentation = createChatPresentation(h.view);
+  let hidden = false;
+  h.surface.connected = () => !hidden;
+  h.metrics.top = 300; h.scroll();
+  const before = h.view.selection().list.map(item => item.id), anchorId = 100;
+  const beforeY = before.indexOf(anchorId) * 10 - h.metrics.top;
+  presentation.capture("stay", true);
+  // A manual scroll since the preceding projection must be captured at the
+  // pre-hide state publication, while the actual DOM geometry is still visible.
+  h.metrics.top = 320; h.scroll();
+  presentation.capture("stay", false);
+  hidden = true; h.metrics.top = 0; h.metrics.height = 0; h.metrics.client = 0;
+  h.sync(room(121)); presentation.capture("stay", false);
+  expect(h.view.selection().list.map(item => item.id)).toEqual(before);
+  expect(h.view.selection().list).toHaveLength(60);
+  presentation.capture("stay", true);
+  hidden = false; h.metrics.height = 1000; h.metrics.client = 100;
+  presentation.rendered(true);
+  expect(h.metrics.top).toBe(320);
+  const afterY = h.view.selection().list.findIndex(item => item.id === anchorId) * 10 - h.metrics.top;
+  expect(afterY).toBe(beforeY - 20);
+  h.metrics.top = h.metrics.height - h.metrics.client; h.scroll();
+  expect(h.view.selection().list.at(-1)?.id).toBe(121);
+  expect(h.view.selection().list).toHaveLength(60);
+  expect(h.view.pinned()).toBe(true);
+  h.view.dispose();
+});
