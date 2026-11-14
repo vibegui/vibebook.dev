@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import InteractiveBody from "./features/chat-interactive/InteractiveBody.svelte";
+  import DeferredInteractiveBody from "./features/chat-interactive/DeferredInteractiveBody.svelte";
   import RichContent from "./features/rich-text/RichContent.svelte";
   import type { RichMode } from "./features/rich-text/types";
   import type { Room } from "../shared/room";
@@ -209,7 +209,7 @@
           {actions}
           {vb}
         />
-        {#if m.card || m.choices || m.poll}<InteractiveBody
+        {#if m.card || m.choices || m.poll}<DeferredInteractiveBody
             message={m}
             {room}
             {actions}

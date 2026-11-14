@@ -53,7 +53,7 @@ import {
   visibleMessage,
   permissionAsk,
 } from "../chat/privacy";
-import { canAnswer, choicesOf } from "../chat-interactive/model";
+import { canAnswer, choicesOf } from "../chat-interactive/eligibility";
 import { threadWorkers } from "../chat/model";
 import { agentQueue, agentPresence } from "../agents/model";
 import type { RoomAgentSession } from "../agents/room";

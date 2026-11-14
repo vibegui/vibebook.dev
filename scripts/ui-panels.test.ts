@@ -156,6 +156,30 @@ afterEach(() => {
   window.document.body.innerHTML = "";
   window.localStorage.clear();
 });
+async function expectInteractiveReady(target: HTMLElement) {
+  for (let frame = 0; frame < 20; frame++) {
+    if (
+      target.querySelector('[data-native-interactive-state="ready"]') &&
+      !target.querySelector(
+        '[data-native-interactive-state]:not([data-native-interactive-state="ready"])',
+      )
+    )
+      return;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve()),
+    );
+    flushSync();
+    await tick();
+  }
+  expect(
+    target.querySelectorAll(
+      '[data-native-interactive-state]:not([data-native-interactive-state="ready"])',
+    ),
+  ).toHaveLength(0);
+  expect(
+    target.querySelector('[data-native-interactive-state="ready"]') !== null,
+  ).toBe(true);
+}
 // Poll actual DOM state and report identity as a boolean, avoiding huge DOM graphs.
 async function expectFocusedAfterUpdates(expected: Element | null) {
   expect(expected instanceof HTMLElement).toBe(true);
@@ -1441,6 +1465,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     const card = target.querySelector("[data-native-card]")!;
     expect(card.textContent).toContain("historical alias");
     expect(card.querySelector("td")?.textContent).toBe("1");
@@ -1502,7 +1527,7 @@ describe("native Svelte chat", () => {
       "Surrounding message",
     );
   }, 30_000);
-  test("native choices populate editable composer drafts with Other and never submit", () => {
+  test("native choices populate editable composer drafts with Other and never submit", async () => {
     const q = {
       ...message(41, "Question"),
       author: fixture().me,
@@ -1523,6 +1548,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     let radios = target.querySelectorAll<HTMLInputElement>(
       '[data-native-choices] input[type="radio"]',
     );
@@ -1561,7 +1587,7 @@ describe("native Svelte chat", () => {
       true,
     );
   }, 30_000);
-  test("native multi choices keep option order and Other clears draft without submitting", () => {
+  test("native multi choices keep option order and Other clears draft without submitting", async () => {
     const q = {
         ...message(42, "Question"),
         author: fixture().me,
@@ -1580,6 +1606,7 @@ describe("native Svelte chat", () => {
         },
       },
     );
+    await expectInteractiveReady(target);
     const checks = target.querySelectorAll<HTMLInputElement>(
       '[data-native-choices] input[type="checkbox"]',
     );
@@ -1611,6 +1638,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     target
       .querySelector<HTMLButtonElement>(
         '[data-native-permission-value="Aprovar"]',
@@ -1678,6 +1706,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     const stale = target.querySelector<HTMLButtonElement>(
       '[data-native-vote="0"]',
     )!;
@@ -1725,6 +1754,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     target
       .querySelector<HTMLButtonElement>(
         '[data-native-permission-value="Aprovar"]',
@@ -1770,6 +1800,7 @@ describe("native Svelte chat", () => {
         },
       ],
     });
+    await expectInteractiveReady(target);
     expect(target.querySelectorAll("[data-native-card-table]")).toHaveLength(3);
     expect(
       target.querySelectorAll("[data-native-card-table] td").length,
@@ -1808,6 +1839,7 @@ describe("native Svelte chat", () => {
         openFile: () => {},
       },
     });
+    await expectInteractiveReady(target);
     const vote = target.querySelector<HTMLButtonElement>(
       '[data-native-vote="0"]',
     )!;

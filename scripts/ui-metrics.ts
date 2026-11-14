@@ -946,6 +946,13 @@ async function run(
     await expect
       .poll(() => new URL(page.url()).searchParams.get("t") ?? "main")
       .toBe(thread);
+    // A visible interactive message is required content, never a ready skeleton.
+    if (variant === "svelte")
+      await expect(
+        page.locator(
+          '[data-native-interactive-state]:not([data-native-interactive-state="ready"])',
+        ),
+      ).toHaveCount(0);
   }
   async function chooseRoom(room: FixtureRoom) {
     // A phone thread pick closes the switcher sheet. Open it again before
