@@ -50,7 +50,8 @@ const evidence: Record<string, unknown> = {
 };
 try {
   browser = await chromium.launch({ headless: true });
-  page = await browser.newPage();
+  const context = await browser.newContext();
+  page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.name));
   const activePage = page;
   await activePage.goto(server.url.href);

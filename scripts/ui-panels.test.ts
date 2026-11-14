@@ -2040,6 +2040,7 @@ describe("native Svelte chat", () => {
         openFile: (selected) => opened.push(selected.id),
         mountEmbed: (...args) => {
           mountedEmbeds.push(args);
+          return () => {};
         },
       },
     });

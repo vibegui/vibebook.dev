@@ -58,7 +58,15 @@ const restoredSources: {
 }[] = [];
 const digest = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const transportProbes: { target: string; path: string; origin: string; upgrade: boolean; status?: number; error?: string; elapsedMs?: number }[] = [];
+const transportProbes: {
+  target: string;
+  path: string;
+  origin: string;
+  upgrade: boolean;
+  status?: number;
+  error?: string;
+  elapsedMs?: number;
+}[] = [];
 result.transportProbes = transportProbes;
 const changes = new Map<string, { before: string; after: string }>();
 const created: string[] = [];
@@ -257,12 +265,30 @@ function rawRequest(
 ): Promise<number> {
   return new Promise((done, reject) => {
     const started = Date.now();
-    const probe = { target, path: new URL(path, base).pathname, origin: headers.origin === base ? "vite" : headers.origin === worker ? "worker" : headers.origin ? "foreign" : "absent", upgrade };
+    const probe = {
+      target,
+      path: new URL(path, base).pathname,
+      origin:
+        headers.origin === base
+          ? "vite"
+          : headers.origin === worker
+            ? "worker"
+            : headers.origin
+              ? "foreign"
+              : "absent",
+      upgrade,
+    };
     const observed: (typeof transportProbes)[number] = probe;
     if (transportProbes.length < 256) transportProbes.push(observed);
     console.info(`[transport] ${JSON.stringify(probe)}`);
     let settled = false;
-    const finish = (status: number) => { if (settled) return; settled = true; observed.status = status; observed.elapsedMs = Date.now() - started; done(status); };
+    const finish = (status: number) => {
+      if (settled) return;
+      settled = true;
+      observed.status = status;
+      observed.elapsedMs = Date.now() - started;
+      done(status);
+    };
     const req = httpRequest({
       hostname: "127.0.0.1",
       port: target === "worker" ? 8787 : 5173,
@@ -291,9 +317,13 @@ function rawRequest(
       socket.destroy();
       finish(101);
     });
-    req.on("error", error => {
-      if (settled) return; settled = true;
-      observed.error = "code" in error && typeof error.code === "string" ? error.code : error.name;
+    req.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      observed.error =
+        "code" in error && typeof error.code === "string"
+          ? error.code
+          : error.name;
       observed.elapsedMs = Date.now() - started;
       reject(error);
     });
@@ -460,11 +490,23 @@ try {
     for (const origin of [base, "https://foreign.invalid"]) {
       const expected = origin === base ? 101 : 403;
       try {
-        assert.equal(await rawRequest(path, { origin, cookie }, true), expected, `WS ${path} ${origin === base ? "same" : "foreign"} origin`);
+        assert.equal(
+          await rawRequest(path, { origin, cookie }, true),
+          expected,
+          `WS ${path} ${origin === base ? "same" : "foreign"} origin`,
+        );
       } catch (error) {
         // Diagnose the fixed loopback Worker directly; never replace the failing Vite assertion.
-        try { await rawRequest(path, { origin: origin === base ? worker : origin, cookie }, true, "worker"); }
-        catch { /* The bounded counterpart outcome is retained in transportProbes. */ }
+        try {
+          await rawRequest(
+            path,
+            { origin: origin === base ? worker : origin, cookie },
+            true,
+            "worker",
+          );
+        } catch {
+          /* The bounded counterpart outcome is retained in transportProbes. */
+        }
         throw error;
       }
     }

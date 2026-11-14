@@ -405,7 +405,7 @@ export async function auditNativeAppNavigation(
           const frame = frames[0];
           return {
             count: frames.length,
-            hidden: frame?.hidden ?? false,
+            hidden: Boolean(frame?.hidden),
             hasSrc: frame?.hasAttribute("src") ?? false,
             hasSrcdoc: frame?.hasAttribute("srcdoc") ?? false,
             alerts: document.querySelectorAll(

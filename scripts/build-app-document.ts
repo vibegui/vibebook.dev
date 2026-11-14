@@ -19,8 +19,12 @@ export function bootstrapModule(javascript: string): string {
 
 /** Avoid spurious Worker/Vite reloads when the watcher starts with current artifacts. */
 async function writeChanged(path: string, source: string) {
-  try { if (await readFile(path, "utf8") === source) return; }
-  catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error; }
+  try {
+    if ((await readFile(path, "utf8")) === source) return;
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT"))
+      throw error;
+  }
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, source);
 }
