@@ -248,7 +248,7 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
   return {
     active: () => active && started && !sessionDenied,
     state: readonly(state), personal, rooms, navigation, account, pwa, agents, personalChannel: channel,
-    rootRoom: { state: readonly(root.state), read: root.read, cache: root.cache, send: root.send, request: root.request, resync: root.resync },
+    rootRoom: { state: readonly(root.state), read: root.read, cache: { delete: (id: string) => root.cache.delete(id) }, send: root.send, request: root.request, resync: root.resync },
     router: { go: navigate, pop: () => { if (active && !sessionDenied) router.pop(); }, generation: router.generation },
     roomScope, ownsRoom: owns, syncAgents, refreshRoomAgents,
     appsAuthority() {

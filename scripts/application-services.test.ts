@@ -85,6 +85,13 @@ function adapter() {
 test("application starts one account/channel and disposes every document listener once", async () => {
   const h = fixture();
   expect(h.services.active()).toBe(false);
+  expect(Object.keys(h.services.rootRoom.cache)).toEqual(["delete"]);
+  if (false) {
+    // @ts-expect-error RoomShell may evict, never inspect or reinsert private snapshots.
+    h.services.rootRoom.cache.set("aaaaaa", canonical());
+    // @ts-expect-error Account/cache reset remains the application owner's lifecycle.
+    h.services.rootRoom.cache.clear();
+  }
   expect(h.channels).toHaveLength(0);
   h.services.start(); h.services.start(); await settle();
   expect(h.services.active()).toBe(true);
