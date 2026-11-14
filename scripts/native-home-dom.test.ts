@@ -901,8 +901,10 @@ test("account switch while navigation code loads drops private intent and cannot
   const { h, controller, trigger, code } = await pendingNavigation();
   controller.openSearch(trigger); await flush(); const old = loadingCancel();
   h.canonical(me({ email: "replacement@example.test" }));
-  h.services.personal.acceptIdentity("replacement@example.test"); await h.services.personal.refresh();
-  controller.openSearch(); expect(old.isConnected).toBe(true); old.click();
+  h.services.personal.acceptIdentity("replacement@example.test");
+  expect(old.isConnected).toBe(true); old.click();
+  expect(get(controller.search.state).open).toBe(false);
+  await h.services.personal.refresh(); controller.openSearch();
   expect(get(controller.search.state).open).toBe(true);
   code.resolve(NavigationDialogs); await flush(); await waitForView(document, '[role="combobox"]');
   expect(get(h.services.personal.state).me?.email).toBe("replacement@example.test");
