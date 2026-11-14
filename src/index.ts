@@ -69,6 +69,8 @@ export type Env = {
   MODEL_CLASSIFY: string;
   /** Jev decision model for @vibe's grading (src/jev.ts); "off" disables it. */
   MODEL_JUDGE?: string;
+  /** Local CI provider-protocol fixture only: DEV_EMAIL + exact 127.0.0.1 HTTP endpoint. */
+  DECISION_API?: string;
   DEV_EMAIL?: string;
   MCP_AUTH_TOKEN?: string;
 };

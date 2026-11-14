@@ -1,5 +1,6 @@
 import type { Env } from "./index";
 import * as z from "zod/mini";
+import { decisionProvider } from "./decision-provider";
 
 /**
  * Jev, TypeSafe's decision model (same setup as decoindex/circulei): typed questions in, typed answers out
@@ -23,17 +24,18 @@ const DecisionResponse = z.object({
 export type Answer = z.infer<typeof AnswerSchema>;
 
 export async function decide(
-  env: Pick<Env, "MODEL_JUDGE" | "OPENROUTER_API_KEY">,
+  env: Pick<Env, "MODEL_JUDGE" | "OPENROUTER_API_KEY" | "DEV_EMAIL" | "DECISION_API">,
   state: Record<string, string>,
   questions: Record<string, Question>,
   timeout = 8_000,
 ) {
   if (!Object.keys(questions).length || env.MODEL_JUDGE === "off") return null;
   try {
-    const res = await fetch("https://openrouter.ai/api/alpha/decisions", {
+    const provider=decisionProvider(env);
+    const res = await fetch(provider.url, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        ...(provider.kind === "production" ? { authorization: `Bearer ${env.OPENROUTER_API_KEY}` } : {}),
         "content-type": "application/json",
         "x-title": "vibebook",
       },

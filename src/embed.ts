@@ -2,6 +2,8 @@ import type { Env } from "./index";
 import { decide } from "./jev";
 import { findSecret } from "./secrets";
 import { track } from "./track";
+import { EMBED_MAX, EMBED_QUESTIONS as QUESTIONS } from "./embed-review-contract";
+export { EMBED_MAX } from "./embed-review-contract";
 
 /**
  * HTML an agent posts inline in a message (a chart, a card, a button). It is stored like an uploaded HTML file
@@ -9,13 +11,6 @@ import { track } from "./track";
  * Before it reaches the room it passes the secret filter and Jev, who answers yes/no questions about deception
  * (Jev doesn't rewrite HTML; a "yes" blocks the post and the reason goes back to the agent).
  */
-export const EMBED_MAX = 200_000;
-
-const QUESTIONS = {
-  credentials: "Este HTML pede ou coleta senha, código de login, token, dados de cartão/pagamento ou documentos pessoais de quem vê?",
-  impersonation: "Este HTML se passa por outra coisa (tela de login, banco, Google, o próprio vibebook pedindo algo, um aviso do sistema) para enganar quem vê?",
-  manipulation: "Este HTML tenta levar quem vê a mandar uma mensagem, aprovar algo ou clicar sem entender o que está fazendo (texto escondido, botão enganoso, urgência falsa)?",
-} as const;
 const REASON: Record<keyof typeof QUESTIONS, string> = {
   credentials: "pede ou coleta credenciais/dados pessoais",
   impersonation: "parece se passar por outra coisa (login, banco, aviso do sistema)",

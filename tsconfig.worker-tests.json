@@ -22,6 +22,7 @@
     "scripts/github-identity.test.ts",
     "scripts/report-analytics.test.ts",
     "scripts/google-invite-auth.test.ts",
-    "scripts/jev-response.test.ts"
+    "scripts/jev-response.test.ts",
+    "scripts/decision-provider.test.ts"
   ]
 }

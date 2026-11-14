@@ -18,4 +18,12 @@ Only safe JSON, checkpoint logs and scoped synthetic test-room screenshots are u
 
 This checkpoint is source only: formatting, strict tooling and actual runner execution remain pending. DEV identities do not prove real email/session-provider issuance; external MCP apps, model-backed operations, production deployment, crash durability, Safari/iOS, hardware touch, IME and assistive technology remain separate gates. Font asset integrity requests are audit traffic, not startup-font performance measurements.
 
+The replacement-App probe also requires the dedicated controlled external-model
+protocol fixture described in `svelte-migration/decision-provider-fixture.md`.
+It performs a real HTTP HTML-review DENY upload before the known positive app
+upload, while ordinary secret/size/rate checks, review, R2/Book and SDK paths
+remain active. The provider's judgments are deliberately simulated, not a claim
+of model safety intelligence or M8 real-provider acceptance. The CI runner owns
+the local server and records only fixed counters; unknown requests fail closed.
+
 After all seven dependent core phases pass, lifecycle, profile and replacement-App authority audits collect independently. A lifecycle failure retains its exact failed check and close-call snapshot, then fresh profile/App contexts can still produce evidence. Each audit remains strict, any failed audit makes the overall run fail, and interruption stops further work. Failed core setup or functional phases still stop the dependent cohort immediately.

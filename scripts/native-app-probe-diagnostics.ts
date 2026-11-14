@@ -1,7 +1,7 @@
 // Artifacts may contain only fixed phases/codes and public source locations.
 // Never serialize provider errors, request/response bodies, headers or URLs.
 import { ErrorBody } from "../shared/schemas";
-export type ProbePhase = "listen" | "profile" | "identity" | "room-create" | "app-upload" | "marker-post" | "room-open" | "app-open" | "initial-read" | "replacement-navigation" | "replacement-read";
+export type ProbePhase = "listen" | "profile" | "identity" | "room-create" | "review-deny-upload" | "app-upload" | "marker-post" | "room-open" | "app-open" | "initial-read" | "replacement-navigation" | "replacement-read";
 export function probeHTTP(phase: ProbePhase, status: number, body?: unknown) {
   const parsed=ErrorBody.safeParse(body), error=parsed.success?parsed.data.error:null;
   const code = status>=200&&status<300 ? "ok"

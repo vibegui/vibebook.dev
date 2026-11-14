@@ -7,6 +7,7 @@ import { mkdir, writeFile, unlink, readFile, open } from "node:fs/promises";
 import { resolve } from "node:path";
 import { MeResult } from "../shared/schemas";
 import { record } from "../shared/validation";
+import { startReviewModelFixture, REVIEW_FIXTURE_MODEL } from "./native-review-model-fixture";
 
 async function runtimeDiagnostic() {
   const packages: Record<string, string | null> = {};
@@ -173,12 +174,14 @@ async function pause() {
     if (abort.signal.aborted) done();
   });
 }
+let reviewModel: Awaited<ReturnType<typeof startReviewModelFixture>> | null = null;
 try {
   await mkdir(reportDirectory, { recursive: true });
   await mkdir(privateDirectory, { recursive: true });
+  reviewModel = await startReviewModelFixture(base);
   await writeFile(
     devVars,
-    `DEV_EMAIL=${devEmail}\nSESSION_SECRET=${randomBytes(32).toString("hex")}\nMODEL_ROUTE=off\nMODEL_CLASSIFY=off\nMODEL_FAST=off\nMODEL_JUDGE=off\n`,
+    `DEV_EMAIL=${devEmail}\nSESSION_SECRET=${randomBytes(32).toString("hex")}\nMODEL_ROUTE=off\nMODEL_CLASSIFY=off\nMODEL_FAST=off\nMODEL_JUDGE=${REVIEW_FIXTURE_MODEL}\nDECISION_API=${reviewModel.url}\n`,
     { flag: "wx", mode: 0o600 },
   );
   ownedVars = true;
@@ -258,6 +261,7 @@ try {
   }, 5000);
   await Promise.allSettled(active.map((child) => child.exited));
   clearTimeout(timer);
+  if (reviewModel) await reviewModel.close().catch(() => { cleanupErrors.push("review-model-fixture-close"); });
   if (ownedVars) await unlink(devVars);
   process.off("SIGINT", stop);
   process.off("SIGTERM", stop);
@@ -280,6 +284,7 @@ try {
         failure,
         cleanupErrors,
         remainingOwnedGroups: children.size,
+        reviewModelFixture: reviewModel?.evidence ?? null,
         runtime,
         scope:
           "Disposable loopback local Worker; private raw Worker log and storage are intentionally excluded from artifact upload",

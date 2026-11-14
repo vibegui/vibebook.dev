@@ -39,48 +39,14 @@ export type NativeAppNavigationEvidence = {
   failurePhase?: ProbePhase;
   failureSourceFrames?: string[];
   http: ReturnType<typeof probeHTTP>[];
+  reviewDenyControl: boolean;
   pageErrors: { name: string; locations: string[] }[];
   scope: string;
   gaps: string[];
 };
 
-/** Neither document knows the read marker. Only a tools/call response for the
- * exact readonly request id can put canonical message text in #result. */
-export function appProbeDocument(
-  stage: "initial" | "replacement",
-  hostOrigin: string,
-  destination?: string,
-) {
-  return `<!doctype html><meta charset="utf-8"><title>Controlled ${stage} room app</title>
-<p id="stage">${stage}</p><output id="result" data-outcome="pending" data-initialize="pending"></output>
-${destination ? '<button id="navigate">Navigate same frame</button>' : ""}
-<script>
-const output = document.getElementById('result'), readId = ${stage === "initial" ? 101 : 201};
-let sent = false;
-function send(method, params, id) { parent.postMessage({jsonrpc:'2.0',method,params,...(id === undefined ? {} : {id})}, '*'); }
-function read() { if(sent) return; sent=true; send('tools/call',{name:'vibebook_read',arguments:{limit:1}},readId); }
-addEventListener('message',event=>{
-  if(event.source!==parent || event.origin!==${JSON.stringify(hostOrigin)} || !event.data || event.data.jsonrpc!=='2.0') return;
-  const value=event.data;
-  if(value.id===1) {
-    output.dataset.initialize=value.error?'refused':'answered';
-    if(!value.error) send('ui/notifications/initialized',{});
-    read();
-  }
-  if(value.id!==readId) return;
-  if(value.error || value.result?.isError) { output.dataset.errorCode=typeof value.error?.code==='number'?String(value.error.code):'tool-error';output.dataset.outcome='refused';return; }
-  const messages=value.result?.structuredContent?.messages;
-  if(Array.isArray(messages) && typeof messages[0]?.text==='string') {output.textContent=messages[0].text;output.dataset.outcome='read';}
-  else output.dataset.outcome='unexpected';
-});
-${destination ? `document.getElementById('navigate').onclick=()=>{location.href=${JSON.stringify(destination)}};` : ""}
-send('ui/initialize',{appInfo:{name:'controlled-navigation-probe',version:'1'},appCapabilities:{},protocolVersion:'2026-01-26'},1);
-// The replacement also probes the inherited session if renegotiation is silent;
-// handshake silence alone never proves denial of the actual read capability.
-${stage === "replacement" ? "setTimeout(read,2000);" : ""}
-setTimeout(()=>{if(output.dataset.outcome==='pending')output.dataset.outcome='timeout';},15000);
-</script>`;
-}
+import { appProbeDocument, REVIEW_DENY_DOCUMENT } from "./native-app-probe-documents";
+export { appProbeDocument } from "./native-app-probe-documents";
 
 /** Return an explicit diagnostic verdict. A caller must never classify
  * read-inherited or inconclusive as a passing security acceptance receipt. */
@@ -94,6 +60,7 @@ export async function auditNativeAppNavigation(
     status: "running",
     phase: "listen",
     http: [],
+    reviewDenyControl: false,
     verdict: "pending",
     markerSha256: createHash("sha256").update(marker).digest("hex"),
     initialUserOpen: false,
@@ -105,6 +72,7 @@ export async function auditNativeAppNavigation(
       "Actual NativeApplication room-App self-navigation with real Worker/Book/R2 and installed SDK host; synthetic canonical message only",
     gaps: [
       "Opening the initial room App is the trusted user capability grant; vibebook_read has no separate confirmation prompt",
+      "HTML judgments use a controlled external-model ALLOW/DENY protocol fixture; actual model intelligence/quality remains unverified",
       "No app writes, real provider credentials or production room data are used; fixture Room/R2/message setup uses supported HTTP",
       "No remote MCP/provider, BFCache restoration, browser-process isolation or pre-load race acceptance",
       "Handshake/read silence, missing navigation and unexpected replies are inconclusive, never denial",
@@ -200,12 +168,22 @@ export async function auditNativeAppNavigation(
               : Buffer.from(await request.arrayBuffer()),
           });
           // Classify an error body only in memory; never retain or print it.
-          evidence.http.push(probeHTTP("app-upload", response.status(), response.ok() ? undefined : await response.json().catch(() => null)));
+          evidence.http.push(probeHTTP(evidence.phase, response.status(), response.ok() ? undefined : await response.json().catch(() => null)));
           return new Response(new Uint8Array(await response.body()), {
             status: response.status(),
             headers: response.headers(),
           });
         });
+        evidence.phase = "review-deny-upload";
+        let denied = false;
+        try {
+          await api.uploadFile({ name: "apps/review-deny.html", type: "text/html", body: REVIEW_DENY_DOCUMENT });
+        } catch {
+          const actual = evidence.http.at(-1);
+          denied = actual?.phase === "review-deny-upload" && actual.status === 400 && actual.code === "html-review-refused";
+        }
+        assert(denied, "Actual HTML review must reject the known external-model DENY control before the positive probe");
+        evidence.reviewDenyControl = true;
         evidence.phase = "app-upload";
         const file = await api.uploadFile({
           name: "apps/capability-probe.html",
