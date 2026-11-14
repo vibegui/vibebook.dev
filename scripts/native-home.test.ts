@@ -238,6 +238,7 @@ test("new-room close/remount cannot consume account draft or navigate after old 
       homeApi({ startRoom: () => created.promise }),
       { clock: timer.clock },
     );
+  await personal.refresh();
   const navigated: unknown[] = [];
   const creator = createNewRoomSession(
     personal,
