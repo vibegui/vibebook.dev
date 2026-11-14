@@ -1,5 +1,10 @@
 import { uiNavigationUrl } from "../../../shared/uiVariant";
-import { targetHref, messageIdentity, copyRoomTarget, type RoomTarget } from "../home/model";
+import {
+  targetHref,
+  messageIdentity,
+  copyRoomTarget,
+  type RoomTarget,
+} from "../home/model";
 import { appRouteTarget } from "../apps/model";
 export type ApplicationRoute =
   | { kind: "home" }
@@ -55,7 +60,9 @@ export function createApplicationRouter(options: {
   ) {
     if (!active) return;
     const intent = typeof value === "string" ? value : copyRoomTarget(value);
-    if (options.deferNavigation?.(() => go(intent, replace, presentationThread)))
+    if (
+      options.deferNavigation?.(() => go(intent, replace, presentationThread))
+    )
       return;
     const target = typeof intent === "string" ? intent : targetHref(intent),
       url = new URL(target, options.current());
@@ -91,12 +98,18 @@ export function createApplicationRouter(options: {
     canonicalizeLegacyThread(roomId: string, thread: string) {
       if (!active) return false;
       const url = new URL(options.current());
-      if (roomIdFromPath(url.pathname) !== roomId || url.searchParams.has("t")) return false;
-      const epic = /^#e([\w-]+)$/.exec(url.hash)?.[1], doc = /^#doc:([\w-]+)$/.exec(url.hash)?.[1];
+      if (roomIdFromPath(url.pathname) !== roomId || url.searchParams.has("t"))
+        return false;
+      const epic = /^#e([\w-]+)$/.exec(url.hash)?.[1],
+        doc = /^#doc:([\w-]+)$/.exec(url.hash)?.[1];
       if ((epic ?? doc) !== thread) return false;
       if (thread !== "main") url.searchParams.set("t", thread);
       url.hash = doc ? "#doc" : "";
-      options.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      options.history.replaceState(
+        null,
+        "",
+        url.pathname + url.search + url.hash,
+      );
       return true;
     },
     pop() {

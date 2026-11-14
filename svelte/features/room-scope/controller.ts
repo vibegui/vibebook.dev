@@ -41,7 +41,12 @@ import {
   type AppsApi,
 } from "../apps/api";
 import { createAppRequests } from "../apps/requests";
-import { roomApps, appRouteHash, type AppTarget, type AppRouteTarget } from "../apps/model";
+import {
+  roomApps,
+  appRouteHash,
+  type AppTarget,
+  type AppRouteTarget,
+} from "../apps/model";
 import { mountNativeChatApp } from "../apps/embed";
 import {
   visibleChatMessages,
@@ -425,8 +430,16 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
     if (current()) apps.open(target);
   }
   function openAppRoute(target: AppRouteTarget) {
-    if (!current() || !appRouteHash(target) || defer(() => openAppRoute(target))) return;
-    if (target.tool !== undefined) { openApp({ connection: target.connection, tool: target.tool }); return; }
+    if (
+      !current() ||
+      !appRouteHash(target) ||
+      defer(() => openAppRoute(target))
+    )
+      return;
+    if (target.tool !== undefined) {
+      openApp({ connection: target.connection, tool: target.tool });
+      return;
+    }
     // A CID-only OAuth continuation returns to the refreshed catalog. It must
     // never guess a tool, start sign-in again, or accept an old frame question.
     appsStarted = true;

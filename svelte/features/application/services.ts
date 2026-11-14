@@ -372,9 +372,17 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       room.epics.some((epic) => epic.id === requested)
         ? requested
         : "main";
-    if (requested === thread && router.canonicalizeLegacyThread(scope.roomId, thread)) {
+    if (
+      requested === thread &&
+      router.canonicalizeLegacyThread(scope.roomId, thread)
+    ) {
       publishRoute();
-      if (!owns(scope) || currentLease() !== current || scope.navigationGeneration !== router.generation()) return;
+      if (
+        !owns(scope) ||
+        currentLease() !== current ||
+        scope.navigationGeneration !== router.generation()
+      )
+        return;
     }
     root.selectThread(thread);
     if (
@@ -437,7 +445,11 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
   ) {
     if (!active || !started || sessionDenied) return;
     if (resettingIdentity) {
-      queuedNavigation = { value: typeof value === "string" ? value : copyRoomTarget(value), replace, presentationThread };
+      queuedNavigation = {
+        value: typeof value === "string" ? value : copyRoomTarget(value),
+        replace,
+        presentationThread,
+      };
       return;
     }
     router.go(value, replace, presentationThread);
