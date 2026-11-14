@@ -24,7 +24,13 @@ export type ApplicationLifecycleEvidence = {
   cycles: number;
   status: string;
   snapshots: ApplicationLifecycleSnapshot[];
-  socketChecks: { cycle: number; stage: string; expected: ApplicationSockets; observed: ApplicationSockets; elapsedMs: number }[];
+  socketChecks: {
+    cycle: number;
+    stage: string;
+    expected: ApplicationSockets;
+    observed: ApplicationSockets;
+    elapsedMs: number;
+  }[];
   coverage: {
     sockets: string;
     editor: string;
@@ -85,9 +91,19 @@ export async function auditNativeApplicationLifecycle(
   try {
     options.onEvidence?.(evidence);
     await cdp.send("Performance.enable");
-    const socketCheck = (cycle: number, stage: string, expected: ApplicationSockets) => {
+    const socketCheck = (
+      cycle: number,
+      stage: string,
+      expected: ApplicationSockets,
+    ) => {
       const started = Date.now();
-      const check = { cycle, stage, expected, observed: { ...options.activeSockets() }, elapsedMs: 0 };
+      const check = {
+        cycle,
+        stage,
+        expected,
+        observed: { ...options.activeSockets() },
+        elapsedMs: 0,
+      };
       evidence.socketChecks.push(check);
       return () => {
         check.observed = { ...options.activeSockets() };
@@ -137,13 +153,23 @@ export async function auditNativeApplicationLifecycle(
       async () => {
         await options.openRoom(options.roomId, options.epicId);
         await options.openEditor();
-        const warmupEditor = socketCheck(0,"synchronized-editor",{book:1,personal:1,yjs:1});
+        const warmupEditor = socketCheck(0, "synchronized-editor", {
+          book: 1,
+          personal: 1,
+          yjs: 1,
+        });
         await expect.poll(() => warmupEditor().yjs).toBe(1);
         await options.closeEditor();
         await options.openRoom(options.secondRoomId);
         await options.openRoom(options.roomId);
         await expect
-          .poll(socketCheck(0,"closed-editor-main",{book:1,personal:1,yjs:0}))
+          .poll(
+            socketCheck(0, "closed-editor-main", {
+              book: 1,
+              personal: 1,
+              yjs: 0,
+            }),
+          )
           .toEqual({ book: 1, personal: 1, yjs: 0 });
         await expect(
           page.locator("[data-document-editor] .cm-editor"),
@@ -162,12 +188,24 @@ export async function auditNativeApplicationLifecycle(
             page.locator("[data-document-editor] .cm-content"),
           ).toBeVisible();
           await expect
-            .poll(socketCheck(cycle,"synchronized-editor",{book:1,personal:1,yjs:1}))
+            .poll(
+              socketCheck(cycle, "synchronized-editor", {
+                book: 1,
+                personal: 1,
+                yjs: 1,
+              }),
+            )
             .toEqual({ book: 1, personal: 1, yjs: 1 });
           await options.closeEditor();
           await options.openRoom(options.roomId);
           await expect
-            .poll(socketCheck(cycle,"closed-editor-main",{book:1,personal:1,yjs:0}))
+            .poll(
+              socketCheck(cycle, "closed-editor-main", {
+                book: 1,
+                personal: 1,
+                yjs: 0,
+              }),
+            )
             .toEqual({ book: 1, personal: 1, yjs: 0 });
           await expect(
             page.locator("[data-document-editor] .cm-editor"),
