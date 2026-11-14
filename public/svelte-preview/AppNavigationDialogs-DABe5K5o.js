@@ -1,0 +1,679 @@
+import { A as e, B as t, G as n, K as r, L as i, N as a, O as o, P as s, S as c, V as l, W as u, c as d, j as f, k as p, l as m, q as h, t as g, v as _, x as v, z as y } from "./Button-Cx7HMFHY.js";
+import { $ as b, A as x, An as S, Et as C, F as w, G as T, Tt as E, Yt as D, j as O, lt as k, q as A, qt as j, tt as M, u as N, z as P } from "./shared-qe__81Sz.js";
+import { t as F } from "./Dialog-BkHABdQA.js";
+import { t as ee } from "./Snapshot-B5lNG0lv.js";
+import { t as te } from "./Input-D0A_t4bj.js";
+import { t as ne } from "./Textarea-CVhsww9W.js";
+import { t as re } from "./Label-CqFm2dk3.js";
+import { V as ie } from "./schemas-cfL4JcHa.js";
+import { a as ae, d as oe, m as se, r as ce } from "./model-B78l00ZB.js";
+import { n as le, t as I } from "./copy-B66YGk9H.js";
+// svelte/features/rooms/images.ts
+async function ue(e) {
+	let t = URL.createObjectURL(e);
+	try {
+		let e = await new Promise((e, n) => {
+			let r = new Image();
+			r.onload = () => e(r), r.onerror = () => n(Error("image unavailable")), r.src = t;
+		}), n = document.createElement("canvas");
+		n.width = n.height = 128;
+		let r = n.getContext("2d");
+		if (!r) throw Error("image unavailable");
+		let i = Math.min(128 / e.naturalWidth, 128 / e.naturalHeight), a = e.naturalWidth * i, o = e.naturalHeight * i;
+		return r.drawImage(e, (128 - a) / 2, (128 - o) / 2, a, o), await new Promise((e, t) => n.toBlob((n) => n ? e(n) : t(Error("image unavailable")), "image/png"));
+	} finally {
+		URL.revokeObjectURL(t);
+	}
+}
+// svelte/features/app-navigation/AppNavigationDialogs.svelte
+var de = l("<a role=\"option\" tabindex=\"-1\"><b class=\"tw:block tw:break-words tw:text-sm tw:font-medium\"> </b><small class=\"tw:break-words tw:text-muted-foreground\"> </small></a>"), fe = l("<p> </p>"), pe = l("<p role=\"status\"> </p>"), me = l("<p role=\"status\"> </p> <!>", 1), he = l("<p role=\"alert\" class=\"tw:break-words tw:text-destructive\"> </p> <!>", 1), ge = l("<!> <div id=\"native-room-results\" role=\"listbox\" class=\"tw:space-y-1\"></div> <!><!><!><!>", 1), L = l("<p role=\"alert\" class=\"tw:break-words tw:text-destructive\"> </p>"), _e = l("<form class=\"tw:space-y-3\"><!><!> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!></div> <!></form>"), ve = l("<fieldset class=\"tw:m-0 tw:space-y-2 tw:border-0 tw:p-0\"><legend> </legend> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div></fieldset> <div class=\"tw:space-y-2\"><!><input id=\"native-room-icon\" type=\"file\" accept=\"image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico\" class=\"tw:block tw:w-full tw:rounded-control tw:border tw:border-input tw:p-2 tw:text-sm\"/><!></div> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!><!><!></div> <!><!>", 1), ye = l("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!></div> <!>", 1);
+function be(n, l) {
+	C(l, !0);
+	let be = () => m(N(Ce), "$bindings", U), R = () => m(N(Te), "$personal", U), z = () => m(N(De), "$nav", U), B = () => m(N(ke), "$search", U), V = () => m(N(Ae), "$creator", U), xe = () => m(N(Ee), "$draft", U), H = () => m(N(Oe), "$mutations", U), [U, Se] = d(), Ce = k(() => l.presentation.bindings), we = k(() => Object.values(be()).filter((e) => e !== null).sort((e, t) => e.revision - t.revision)), W = (e) => l.presentation.owns(e), G = (e) => l.presentation.returnFocus(e, l.fallback()), Te = k(() => l.controller.personal.state), Ee = k(() => l.controller.personal.draft), De = k(() => l.controller.state), Oe = k(() => l.controller.rooms.state), ke = k(() => l.controller.search.state), Ae = k(() => l.controller.creator.state), K = (e, t) => le(l.lang, e, t), je = k(() => be().settings), q = k(() => R().me?.books.find((e) => e.id === z().settingsId)), J = k(() => R().me?.books.find((e) => e.id === z().archiveId)), Y = k(() => R().me?.books.find((e) => e.id === z().renameId)), Me = k(() => [
+		...oe(R().me?.books ?? [], B().query).map((e) => ({
+			key: "room:" + e.id,
+			target: { roomId: e.id },
+			title: e.title ?? "vibebook",
+			detail: e.folder ?? ""
+		})),
+		...(B().result?.epics ?? []).map((e) => ({
+			key: "epic:" + e.room_id + ":" + e.id,
+			target: ce(e),
+			title: e.title,
+			detail: e.room + (e.archived ? " · " + K("archive") : "")
+		})),
+		...(B().result?.messages ?? []).map((e) => ({
+			key: "msg:" + e.room_id + ":" + e.id,
+			target: ae(e),
+			title: e.snippet || e.files.map((e) => e.name).join(", "),
+			detail: e.room + (e.topic ? " › " + e.topic : "")
+		}))
+	]), Ne = M(null), Pe = M(null), Fe = M(null), Ie = M(null), X = !1, Z = 0, Q = M(!1), $ = M("");
+	O(() => {
+		N(je), Z++, b(Q, !1), b($, "");
+	}), s(() => {
+		X = !0;
+	}), a(() => {
+		X = !1, Z++;
+	});
+	async function Le(e, t) {
+		let n = e.currentTarget, r = n.files?.[0], i = z().settingsId;
+		if (!W(t) || !X || !n.isConnected || !r || !i) return;
+		let a = ++Z, o = R().identityRevision;
+		b(Q, !0), b($, "");
+		try {
+			let e = await ue(r);
+			W(t) && X && a === Z && o === R().identityRevision && n.isConnected && z().settingsId === i && await l.controller.rooms.icon(i, e);
+		} catch (e) {
+			W(t) && X && a === Z && o === R().identityRevision && b($, e instanceof Error ? e.message : "network", !0);
+		} finally {
+			W(t) && X && a === Z && o === R().identityRevision && b(Q, !1);
+		}
+	}
+	var Re = t(), ze = P(Re);
+	o(ze, 17, () => N(we), (e) => e.revision, (n, a) => {
+		ee(n, {
+			get value() {
+				return N(a);
+			},
+			children: (n, a = S) => {
+				var s = t(), d = P(s), m = (e) => {
+					{
+						let t = k(() => K("search")), n = k(() => K("close"));
+						F(e, {
+							get open() {
+								return B().open;
+							},
+							get title() {
+								return N(t);
+							},
+							get closeLabel() {
+								return N(n);
+							},
+							onOpenChange: (e) => {
+								!e && W(a()) && l.controller.search.close();
+							},
+							initialFocus: () => N(Ne),
+							returnFocus: () => G(a()),
+							children: (e, t) => {
+								var n = ge(), s = P(n);
+								{
+									let e = k(() => K("search")), t = k(() => N(Me)[B().selected] ? `native-result-${B().selected}` : void 0), n = k(() => K("searchPlaceholder"));
+									te(s, {
+										role: "combobox",
+										get "aria-label"() {
+											return N(e);
+										},
+										"aria-autocomplete": "list",
+										"aria-expanded": "true",
+										"aria-controls": "native-room-results",
+										get "aria-activedescendant"() {
+											return N(t);
+										},
+										get placeholder() {
+											return N(n);
+										},
+										get value() {
+											return B().query;
+										},
+										oninput: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.search.edit(e.currentTarget.value);
+										},
+										onkeydown: (e) => {
+											W(a()) && e.currentTarget.isConnected && (e.key === "ArrowDown" || e.key === "ArrowUp" ? (e.preventDefault(), l.controller.search.move(e.key === "ArrowDown" ? 1 : -1)) : e.key === "Enter" && !e.isComposing && (e.preventDefault(), l.controller.search.activate()));
+										},
+										get ref() {
+											return N(Ne);
+										},
+										set ref(e) {
+											b(Ne, e, !0);
+										}
+									});
+								}
+								var d = A(s, 2);
+								o(d, 23, () => N(Me), (e) => e.key, (e, t, n) => {
+									var o = de(), s = w(o), u = T(s, !0), d = A(s), f = T(d, !0);
+									D(o), x((e) => {
+										_(o, "href", e), _(o, "id", `native-result-${N(n)}`), _(o, "aria-selected", B().selected === N(n)), v(o, 1, c(B().selected === N(n) ? "tw:block tw:w-full tw:rounded-control tw:bg-accent tw:p-3 tw:text-left tw:text-foreground tw:no-underline" : "tw:block tw:w-full tw:rounded-control tw:bg-transparent tw:p-3 tw:text-left tw:text-foreground tw:no-underline tw:hover:bg-accent")), i(u, N(t).title), i(f, N(t).detail);
+									}, [() => se(N(t).target)]), r("click", o, (e) => {
+										!W(a()) || !e.currentTarget.isConnected ? e.preventDefault() : e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), W(a()) && e.currentTarget.isConnected && l.controller.search.activateTarget(N(t).target));
+									}), y(e, o);
+								}), D(d);
+								var p = A(d, 2), m = (e) => {
+									var t = fe(), n = T(t, !0);
+									x((e) => i(n, e), [() => K(B().query.trim().length >= 2 ? "noConversations" : "noMatches")]), y(e, t);
+								};
+								f(p, (e) => {
+									!N(Me).length && !B().loading && e(m);
+								});
+								var h = A(p), S = (e) => {
+									var t = pe(), n = T(t, !0);
+									x((e) => i(n, e), [() => K("searching")]), y(e, t);
+								};
+								f(h, (e) => {
+									B().loading && e(S);
+								});
+								var C = A(h), E = (e) => {
+									var t = me(), n = P(t), r = T(n, !0), o = A(n, 2);
+									g(o, {
+										variant: "outline",
+										onclick: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.search.edit(B().query);
+										},
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("retry")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									}), x((e) => i(r, e), [() => K("partial")]), y(e, t);
+								};
+								f(C, (e) => {
+									B().result?.failed && e(E);
+								});
+								var O = A(C), M = (e) => {
+									var t = he(), n = P(t), r = T(n, !0), o = A(n, 2);
+									g(o, {
+										variant: "outline",
+										onclick: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.search.edit(B().query);
+										},
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("retry")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									}), x((e) => i(r, e), [() => I(l.lang, B().error)]), y(e, t);
+								};
+								f(O, (e) => {
+									B().error && e(M);
+								}), x((e) => _(d, "aria-label", e), [() => K("search")]), y(e, n);
+							},
+							$$slots: { default: !0 }
+						});
+					}
+				}, C = (n) => {
+					var r = t(), o = P(r), s = (n) => {
+						var r = t(), o = P(r);
+						e(o, () => V().binding, (e) => {
+							ee(e, {
+								get value() {
+									return V().binding;
+								},
+								children: (e, t = S) => {
+									{
+										let n = k(() => V().open && !V().inline), r = k(() => K("new")), o = k(() => K("createHelp")), s = k(() => K("close"));
+										F(e, {
+											get open() {
+												return N(n);
+											},
+											get title() {
+												return N(r);
+											},
+											get description() {
+												return N(o);
+											},
+											get closeLabel() {
+												return N(s);
+											},
+											onOpenChange: (e) => {
+												!e && W(a()) && !V().inline && l.controller.creator.owns(t()) && l.controller.creator.close(t());
+											},
+											initialFocus: () => N(Pe),
+											returnFocus: () => G(a()),
+											children: (e, n) => {
+												var r = _e(), o = w(r);
+												re(o, {
+													for: "native-new-room",
+													children: (e, t) => {
+														j();
+														var n = u();
+														x((e) => i(n, e), [() => K("createLabel")]), y(e, n);
+													},
+													$$slots: { default: !0 }
+												});
+												var s = A(o);
+												{
+													let e = k(() => K("createPlaceholder"));
+													ne(s, {
+														id: "native-new-room",
+														rows: 4,
+														get placeholder() {
+															return N(e);
+														},
+														get value() {
+															return xe().create;
+														},
+														get disabled() {
+															return V().busy;
+														},
+														oninput: (e) => {
+															W(a()) && e.currentTarget.isConnected && !V().inline && l.controller.creator.owns(t()) && l.controller.creator.edit(e.currentTarget.value, t());
+														},
+														onkeydown: (e) => {
+															e.key === "Enter" && !e.shiftKey && !e.isComposing && !V().inline && W(a()) && e.currentTarget.isConnected && l.controller.creator.owns(t()) && (e.preventDefault(), l.controller.creator.submit(t()));
+														},
+														get ref() {
+															return N(Pe);
+														},
+														set ref(e) {
+															b(Pe, e, !0);
+														}
+													});
+												}
+												var c = A(s, 2), d = w(c);
+												g(d, {
+													variant: "outline",
+													onclick: (e) => {
+														W(a()) && e.currentTarget.isConnected && l.controller.creator.owns(t()) && l.controller.creator.close(t());
+													},
+													children: (e, t) => {
+														j();
+														var n = u();
+														x((e) => i(n, e), [() => K("cancel")]), y(e, n);
+													},
+													$$slots: { default: !0 }
+												});
+												var p = A(d);
+												g(p, {
+													type: "submit",
+													get loading() {
+														return V().busy;
+													},
+													children: (e, t) => {
+														j();
+														var n = u();
+														x((e) => i(n, e), [() => K(V().busy ? "creating" : "create")]), y(e, n);
+													},
+													$$slots: { default: !0 }
+												}), D(c);
+												var m = A(c, 2), v = (e) => {
+													var t = L(), n = T(t, !0);
+													x((e) => i(n, e), [() => I(l.lang, V().error)]), y(e, t);
+												};
+												f(m, (e) => {
+													V().error && e(v);
+												}), D(r), x(() => _(r, "aria-busy", V().busy)), h("submit", r, (e) => {
+													e.preventDefault(), W(a()) && e.currentTarget.isConnected && !V().inline && l.controller.creator.owns(t()) && l.controller.creator.submit(t());
+												}), y(e, r);
+											},
+											$$slots: { default: !0 }
+										});
+									}
+								},
+								$$slots: { default: !0 }
+							});
+						}), y(n, r);
+					};
+					f(o, (e) => {
+						V().binding && e(s);
+					}), y(n, r);
+				}, E = (e) => {
+					{
+						let n = k(() => !!N(q)), s = k(() => K("roomSettings", { title: N(q)?.title ?? "" })), c = k(() => K("close"));
+						F(e, {
+							get open() {
+								return N(n);
+							},
+							get title() {
+								return N(s);
+							},
+							get closeLabel() {
+								return N(c);
+							},
+							onOpenChange: (e) => {
+								!e && W(a()) && l.controller.closeSettings();
+							},
+							returnFocus: () => G(a()),
+							children: (e, n) => {
+								var s = t(), c = P(s), d = (e) => {
+									let n = k(() => N(q));
+									var s = ve(), c = P(s), d = w(c), m = T(d, !0), h = A(d, 2);
+									o(h, 21, () => [null, ...ie], p, (e, t) => {
+										{
+											let r = k(() => N(n).tint === N(t) ? "secondary" : "outline"), o = k(() => N(n).tint === N(t)), s = k(() => !!H().pending[`tint:${N(n).id}`]);
+											g(e, {
+												size: "sm",
+												get variant() {
+													return N(r);
+												},
+												get "aria-pressed"() {
+													return N(o);
+												},
+												get disabled() {
+													return N(s);
+												},
+												onclick: (e) => {
+													W(a()) && e.currentTarget.isConnected && l.controller.rooms.tint(N(n).id, N(t));
+												},
+												children: (e, n) => {
+													j();
+													var r = u();
+													x((e) => i(r, e), [() => K(N(t) ?? "none")]), y(e, r);
+												},
+												$$slots: { default: !0 }
+											});
+										}
+									}), D(h), D(c);
+									var _ = A(c, 2), v = w(_);
+									re(v, {
+										for: "native-room-icon",
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("icon")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									});
+									var b = A(v), S = A(b), C = (e) => {
+										{
+											let t = k(() => !!H().pending[`icon:${N(n).id}`]);
+											g(e, {
+												variant: "outline",
+												get disabled() {
+													return N(t);
+												},
+												onclick: (e) => {
+													W(a()) && e.currentTarget.isConnected && l.controller.rooms.icon(N(n).id, null);
+												},
+												children: (e, t) => {
+													j();
+													var n = u();
+													x((e) => i(n, e), [() => K("removeIcon")]), y(e, n);
+												},
+												$$slots: { default: !0 }
+											});
+										}
+									};
+									f(S, (e) => {
+										N(n).icon && e(C);
+									}), D(_);
+									var E = A(_, 2), O = w(E);
+									{
+										let e = k(() => !!H().pending.order);
+										g(O, {
+											variant: "outline",
+											get disabled() {
+												return N(e);
+											},
+											onclick: (e) => {
+												W(a()) && e.currentTarget.isConnected && l.controller.move(N(n).id, -1);
+											},
+											children: (e, t) => {
+												j();
+												var n = u();
+												x((e) => i(n, e), [() => K("moveUp")]), y(e, n);
+											},
+											$$slots: { default: !0 }
+										});
+									}
+									var M = A(O);
+									{
+										let e = k(() => !!H().pending.order);
+										g(M, {
+											variant: "outline",
+											get disabled() {
+												return N(e);
+											},
+											onclick: (e) => {
+												W(a()) && e.currentTarget.isConnected && l.controller.move(N(n).id, 1);
+											},
+											children: (e, t) => {
+												j();
+												var n = u();
+												x((e) => i(n, e), [() => K("moveDown")]), y(e, n);
+											},
+											$$slots: { default: !0 }
+										});
+									}
+									var F = A(M), ee = (e) => {
+										g(e, {
+											variant: "outline",
+											onclick: (e) => {
+												W(a()) && e.currentTarget.isConnected && l.controller.askRename(N(n).id);
+											},
+											children: (e, t) => {
+												j();
+												var n = u();
+												x((e) => i(n, e), [() => K("rename")]), y(e, n);
+											},
+											$$slots: { default: !0 }
+										});
+									};
+									f(F, (e) => {
+										z().roomId === N(n).id && l.controller.callbacks.rename && e(ee);
+									});
+									var te = A(F);
+									g(te, {
+										variant: "destructive",
+										onclick: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.askArchive(N(n).id);
+										},
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("archiveAction")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									}), D(E);
+									var ne = A(E, 2);
+									o(ne, 17, () => [
+										`tint:${N(n).id}`,
+										`icon:${N(n).id}`,
+										"order"
+									], p, (e, n) => {
+										var r = t(), a = P(r), o = (e) => {
+											var t = L(), r = T(t, !0);
+											x((e) => i(r, e), [() => I(l.lang, H().issues[N(n)])]), y(e, t);
+										};
+										f(a, (e) => {
+											H().issues[N(n)] && e(o);
+										}), y(e, r);
+									});
+									var ae = A(ne), oe = (e) => {
+										var t = L(), n = T(t, !0);
+										x((e) => i(n, e), [() => I(l.lang, N($))]), y(e, t);
+									};
+									f(ae, (e) => {
+										N($) && e(oe);
+									}), x((e) => {
+										i(m, e), b.disabled = N(Q) || !!H().pending[`icon:${N(n).id}`];
+									}, [() => K("tint")]), r("change", b, (e) => Le(e, a())), y(e, s);
+								};
+								f(c, (e) => {
+									N(q) && e(d);
+								}), y(e, s);
+							},
+							$$slots: { default: !0 }
+						});
+					}
+				}, O = (e) => {
+					{
+						let n = k(() => !!N(J)), r = k(() => K("archiveTitle", { title: N(J)?.title ?? "" })), o = k(() => K("archiveHelp")), s = k(() => K("close"));
+						F(e, {
+							get open() {
+								return N(n);
+							},
+							get title() {
+								return N(r);
+							},
+							get description() {
+								return N(o);
+							},
+							get closeLabel() {
+								return N(s);
+							},
+							onOpenChange: (e) => {
+								!e && W(a()) && l.controller.closeSettings();
+							},
+							initialFocus: () => N(Fe),
+							returnFocus: () => G(a()),
+							children: (e, n) => {
+								var r = t(), o = P(r), s = (e) => {
+									var t = ye(), n = P(t), r = w(n);
+									g(r, {
+										variant: "outline",
+										onclick: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.closeSettings();
+										},
+										get ref() {
+											return N(Fe);
+										},
+										set ref(e) {
+											b(Fe, e, !0);
+										},
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("cancel")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									});
+									var o = A(r);
+									{
+										let e = k(() => !!H().pending[`archive:${N(J).id}`]);
+										g(o, {
+											variant: "destructive",
+											get loading() {
+												return N(e);
+											},
+											onclick: (e) => {
+												W(a()) && e.currentTarget.isConnected && l.controller.confirmArchive();
+											},
+											children: (e, t) => {
+												j();
+												var n = u();
+												x((e) => i(n, e), [() => K("archiveAction")]), y(e, n);
+											},
+											$$slots: { default: !0 }
+										});
+									}
+									D(n);
+									var s = A(n, 2), c = (e) => {
+										var t = L(), n = T(t, !0);
+										x((e) => i(n, e), [() => I(l.lang, H().issues[`archive:${N(J).id}`])]), y(e, t);
+									};
+									f(s, (e) => {
+										H().issues[`archive:${N(J).id}`] && e(c);
+									}), y(e, t);
+								};
+								f(o, (e) => {
+									N(J) && e(s);
+								}), y(e, r);
+							},
+							$$slots: { default: !0 }
+						});
+					}
+				}, M = (e) => {
+					{
+						let n = k(() => !!N(Y)), r = k(() => K("rename")), o = k(() => K("close"));
+						F(e, {
+							get open() {
+								return N(n);
+							},
+							get title() {
+								return N(r);
+							},
+							get closeLabel() {
+								return N(o);
+							},
+							onOpenChange: (e) => {
+								!e && W(a()) && l.controller.closeSettings();
+							},
+							initialFocus: () => N(Ie),
+							returnFocus: () => G(a()),
+							children: (e, n) => {
+								var r = t(), o = P(r), s = (e) => {
+									var t = _e(), n = w(t);
+									re(n, {
+										for: "native-room-name",
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("name")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									});
+									var r = A(n);
+									{
+										let e = k(() => z().renameBusy || !!H().pending[`rename:${N(Y).id}`]);
+										te(r, {
+											id: "native-room-name",
+											required: !0,
+											maxlength: 120,
+											get value() {
+												return z().renameDraft;
+											},
+											oninput: (e) => {
+												W(a()) && e.currentTarget.isConnected && l.controller.editRename(e.currentTarget.value);
+											},
+											get disabled() {
+												return N(e);
+											},
+											get ref() {
+												return N(Ie);
+											},
+											set ref(e) {
+												b(Ie, e, !0);
+											}
+										});
+									}
+									var o = A(r, 2), s = w(o);
+									g(s, {
+										variant: "outline",
+										onclick: (e) => {
+											W(a()) && e.currentTarget.isConnected && l.controller.closeSettings();
+										},
+										children: (e, t) => {
+											j();
+											var n = u();
+											x((e) => i(n, e), [() => K("cancel")]), y(e, n);
+										},
+										$$slots: { default: !0 }
+									});
+									var c = A(s);
+									{
+										let e = k(() => z().renameBusy || !!H().pending[`rename:${N(Y).id}`]);
+										g(c, {
+											type: "submit",
+											get loading() {
+												return N(e);
+											},
+											children: (e, t) => {
+												j();
+												var n = u();
+												x((e) => i(n, e), [() => K("save")]), y(e, n);
+											},
+											$$slots: { default: !0 }
+										});
+									}
+									D(o);
+									var d = A(o, 2), p = (e) => {
+										var t = L(), n = T(t, !0);
+										x((e) => i(n, e), [() => I(l.lang, H().issues[`rename:${N(Y).id}`])]), y(e, t);
+									};
+									f(d, (e) => {
+										H().issues[`rename:${N(Y).id}`] && e(p);
+									}), D(t), h("submit", t, (e) => {
+										e.preventDefault(), W(a()) && e.currentTarget.isConnected && l.controller.rename();
+									}), y(e, t);
+								};
+								f(o, (e) => {
+									N(Y) && e(s);
+								}), y(e, r);
+							},
+							$$slots: { default: !0 }
+						});
+					}
+				};
+				f(d, (e) => {
+					a().kind === "search" ? e(m) : a().kind === "create" ? e(C, 1) : a().kind === "settings" ? e(E, 2) : a().kind === "archive" ? e(O, 3) : a().kind === "rename" && e(M, 4);
+				}), y(n, s);
+			},
+			$$slots: { default: !0 }
+		});
+	}), y(n, Re), E(), Se();
+}
+n(["click", "change"]);
+export { be as default };

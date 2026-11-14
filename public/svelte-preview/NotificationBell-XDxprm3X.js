@@ -1,0 +1,264 @@
+import { G as e, K as t, L as n, N as r, V as i, W as a, _ as o, c as s, j as c, l, t as u, y as d, z as f } from "./Button-Cx7HMFHY.js";
+import { $ as p, A as m, Et as h, F as g, G as _, Tt as v, Yt as y, lt as b, q as x, qt as S, tt as C, u as w, z as T } from "./shared-qe__81Sz.js";
+import { t as E } from "./Dialog-BkHABdQA.js";
+import { t as D } from "./Icon-Ch3wLUmI.js";
+// svelte/features/pwa/copy.ts
+var O = {
+	settings: "Notifications",
+	close: "Close",
+	enable: "Enable browser notifications",
+	mute: "Mute notifications and sound",
+	retry: "Retry setup",
+	test: "Send a test notification",
+	sent: "Push services accepted {n} test notifications for your account. Delivery to this device is not confirmed.",
+	permission: "Browser permission",
+	denied: "Notifications are blocked. Allow them in this site's browser settings, then retry.",
+	unsupported: "This browser does not offer notification permission here.",
+	ios: "On iPhone or iPad, open this site in Safari, share it, choose Add to Home Screen, then open the installed app to enable notifications.",
+	install: "Install vibebook on your phone",
+	how: "How to install",
+	installNow: "Install app",
+	android: "Open the browser menu and choose Install app or Add to Home Screen. Open its icon and enable notifications.",
+	benefits: "Receive alerts when someone mentions you or your agent asks for permission; open the app from your home screen.",
+	waiting: "Waiting for confirmation. An in-flight subscription change has not been rolled back. Retry waits for it to settle.",
+	failed: "Notification setup failed. Check browser permission and your connection, then retry.",
+	unavailable: "Push notifications are not configured on this server.",
+	storage: "This browser could not save the preference. It applies only to this tab.",
+	help: "Notification and installation settings",
+	on: "Notifications on: click to mute",
+	off: "Notifications muted: click to turn on",
+	working: "Updating notifications…",
+	steps: "Installation steps"
+}, k = {
+	settings: "Notificações",
+	close: "Fechar",
+	enable: "Ativar notificações no navegador",
+	mute: "Silenciar notificações e som",
+	retry: "Tentar configurar de novo",
+	test: "Enviar uma notificação de teste",
+	sent: "Os serviços de push aceitaram {n} notificações de teste da sua conta. A entrega neste aparelho não está confirmada.",
+	permission: "Permissão do navegador",
+	denied: "Notificações bloqueadas. Permita nas configurações deste site no navegador e tente de novo.",
+	unsupported: "Este navegador não oferece permissão para notificações aqui.",
+	ios: "No iPhone ou iPad, abra este site no Safari, toque em Compartilhar, escolha Adicionar à Tela de Início e abra o app instalado para ativar notificações.",
+	install: "Instale o vibebook no celular",
+	how: "Como instalar",
+	installNow: "Instalar o app",
+	android: "Abra o menu do navegador e escolha Instalar app ou Adicionar à tela inicial. Abra pelo ícone e ative as notificações.",
+	benefits: "Receba avisos quando alguém te marcar ou seu agent pedir permissão; abra o app pela tela inicial.",
+	waiting: "Aguardando confirmação. Uma mudança de assinatura em andamento não foi desfeita. Tentar de novo espera ela terminar.",
+	failed: "Não consegui configurar notificações. Confira a permissão e a conexão e tente de novo.",
+	unavailable: "As notificações push não estão configuradas neste servidor.",
+	storage: "O navegador não salvou a preferência. Ela vale só nesta aba.",
+	help: "Configurações de notificações e instalação",
+	on: "Notificações ligadas: clique para silenciar",
+	off: "Notificações silenciadas: clique para ligar",
+	working: "Atualizando notificações…",
+	steps: "Passos para instalar"
+}, A = (e, t, n) => (e.startsWith("en") ? O[t] : k[t]).replace("{n}", String(n ?? 0)), j = (e) => e.startsWith("en") ? "Notification cleanup on this device was not confirmed. Signing out will continue. Check this site's notification permission in browser settings if needed." : "A limpeza das notificações neste aparelho não foi confirmada. Você continuará saindo. Se precisar, confira a permissão de notificações deste site nas configurações do navegador.", M = (e) => e.startsWith("en") ? "Sign-out was not confirmed. The app will reload to check your session before updating notification settings." : "A saída não foi confirmada. O app vai recarregar para conferir sua sessão antes de atualizar as configurações de notificações.", ee = (e, t) => (e.startsWith("en") ? {
+	default: "Not requested",
+	granted: "Allowed",
+	denied: "Blocked",
+	unsupported: "Unavailable"
+} : {
+	default: "Não solicitada",
+	granted: "Permitida",
+	denied: "Bloqueada",
+	unsupported: "Indisponível"
+})[t], N = i("<p class=\"tw:m-0 tw:leading-6\"> </p>"), te = i("<p class=\"tw:m-0\"> </p>"), P = i("<p role=\"status\" class=\"tw:m-0\"> </p>"), F = i("<p role=\"alert\" class=\"tw:m-0 tw:text-destructive\"> </p>"), ne = i("<p role=\"alert\" class=\"tw:m-0\"> </p>"), re = i("<p role=\"status\" class=\"tw:m-0 tw:text-muted-foreground\"> </p>"), I = i("<p class=\"tw:m-0\"> </p> <!> <label class=\"tw:flex tw:items-center tw:gap-2\"><input type=\"checkbox\"/> </label> <!> <!> <!> <!> <div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!></div> <!> <details class=\"tw:space-y-2\"><summary class=\"tw:cursor-pointer tw:rounded-control tw:focus-visible:outline-2 tw:focus-visible:outline-ring\"> </summary> <p class=\"tw:m-0 tw:leading-6\"> </p></details>", 1), L = i("<span data-vb-native=\"\" data-native-notifications=\"\" class=\"tw:inline-flex tw:items-center tw:gap-1 tw:font-sans tw:text-sm tw:text-foreground\"><!> <!></span> <!>", 1);
+function R(e, i) {
+	h(i, !0);
+	let O = () => l(w(R), "$view", j), k = () => l(w(z), "$push", j), [j, M] = s(), R = b(() => i.owner.state), z = b(() => i.owner.push), B = C(!1), V = !0;
+	r(() => {
+		V = !1;
+	});
+	let H = (e) => V && e.currentTarget instanceof Element && e.currentTarget.isConnected, U = (e, t) => A(i.lang, e, t), W = b(() => O().permission === "granted" ? U(O().muted ? "off" : "on") : U("enable"));
+	var G = L(), K = T(G), q = g(K);
+	u(q, {
+		variant: "ghost",
+		size: "sm",
+		get "aria-label"() {
+			return w(W);
+		},
+		get title() {
+			return w(W);
+		},
+		onclick: (e) => {
+			V && e.currentTarget.isConnected && i.owner.bell().then((e) => {
+				V && !e && p(B, !0);
+			});
+		},
+		children: (e, t) => {
+			{
+				let t = b(() => O().muted ? "bellOff" : "bell");
+				D(e, { get name() {
+					return w(t);
+				} });
+			}
+		},
+		$$slots: { default: !0 }
+	});
+	var J = x(q, 2);
+	{
+		let e = b(() => U("help")), t = b(() => U("help"));
+		u(J, {
+			variant: "ghost",
+			size: "sm",
+			get "aria-label"() {
+				return w(e);
+			},
+			get title() {
+				return w(t);
+			},
+			onclick: (e) => {
+				H(e) && (p(B, !0), i.owner.refresh());
+			},
+			children: (e, t) => {
+				S();
+				var n = a("⋯");
+				f(e, n);
+			},
+			$$slots: { default: !0 }
+		});
+	}
+	y(K);
+	var Y = x(K, 2);
+	{
+		let e = b(() => U("settings")), r = b(() => U("close"));
+		E(Y, {
+			get title() {
+				return w(e);
+			},
+			get closeLabel() {
+				return w(r);
+			},
+			get open() {
+				return w(B);
+			},
+			set open(e) {
+				p(B, e, !0);
+			},
+			children: (e, r) => {
+				var s = I(), l = T(s), p = _(l), h = x(l, 2), v = (e) => {
+					var t = N(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("ios")]), f(e, t);
+				}, C = (e) => {
+					var t = N(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("denied")]), f(e, t);
+				}, E = (e) => {
+					var t = te(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("unsupported")]), f(e, t);
+				}, D = (e) => {
+					u(e, {
+						onclick: (e) => {
+							V && e.currentTarget.isConnected && i.owner.bell();
+						},
+						children: (e, t) => {
+							S();
+							var r = a();
+							m((e) => n(r, e), [() => U("enable")]), f(e, r);
+						},
+						$$slots: { default: !0 }
+					});
+				};
+				c(h, (e) => {
+					O().iosWeb ? e(v) : O().permission === "denied" ? e(C, 1) : O().permission === "unsupported" ? e(E, 2) : O().permission === "default" && e(D, 3);
+				});
+				var A = x(h, 2), j = g(A);
+				o(j);
+				var M = x(j, 1, !0);
+				y(A);
+				var L = x(A, 2), R = (e) => {
+					var t = P(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("working")]), f(e, t);
+				};
+				c(L, (e) => {
+					k().status === "working" && e(R);
+				});
+				var z = x(L, 2), B = (e) => {
+					var t = P(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("unavailable")]), f(e, t);
+				};
+				c(z, (e) => {
+					k().status === "unavailable" && e(B);
+				});
+				var W = x(z, 2), G = (e) => {
+					var t = F(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("waiting")]), f(e, t);
+				}, K = (e) => {
+					var t = F(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("failed")]), f(e, t);
+				};
+				c(W, (e) => {
+					k().status === "unconfirmed" ? e(G) : (k().error || O().error && O().error !== "storage") && e(K, 1);
+				});
+				var q = x(W, 2), J = (e) => {
+					var t = ne(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("storage")]), f(e, t);
+				};
+				c(q, (e) => {
+					O().error === "storage" && e(J);
+				});
+				var Y = x(q, 2), X = g(Y);
+				u(X, {
+					variant: "outline",
+					onclick: (e) => {
+						H(e) && i.owner.retry();
+					},
+					children: (e, t) => {
+						S();
+						var r = a();
+						m((e) => n(r, e), [() => U("retry")]), f(e, r);
+					},
+					$$slots: { default: !0 }
+				});
+				var ie = x(X);
+				{
+					let e = b(() => O().permission !== "granted" || O().muted || k().status !== "on");
+					u(ie, {
+						variant: "outline",
+						get loading() {
+							return O().testing;
+						},
+						get disabled() {
+							return w(e);
+						},
+						onclick: (e) => {
+							H(e) && i.owner.test();
+						},
+						children: (e, t) => {
+							S();
+							var r = a();
+							m((e) => n(r, e), [() => U("test")]), f(e, r);
+						},
+						$$slots: { default: !0 }
+					});
+				}
+				y(Y);
+				var Z = x(Y, 2), ae = (e) => {
+					var t = re(), r = _(t, !0);
+					m((e) => n(r, e), [() => U("sent", O().sent)]), f(e, t);
+				};
+				c(Z, (e) => {
+					O().sent !== null && e(ae);
+				});
+				var Q = x(Z, 2), $ = g(Q), oe = _($, !0), se = x($, 2), ce = _(se, !0);
+				y(Q), m((e, t, r, i, a) => {
+					n(p, `${e ?? ""}: ${t ?? ""}`), d(j, O().muted), n(M, r), n(oe, i), n(ce, a);
+				}, [
+					() => U("permission"),
+					() => ee(i.lang, O().permission),
+					() => U("mute"),
+					() => U("steps"),
+					() => O().ios ? U("ios") : U("android")
+				]), t("change", j, (e) => {
+					H(e) && i.owner.mute(e.currentTarget.checked);
+				}), f(e, s);
+			},
+			$$slots: { default: !0 }
+		});
+	}
+	f(e, G), v(), M();
+}
+e(["change"]);
+export { A as i, M as n, j as r, R as t };

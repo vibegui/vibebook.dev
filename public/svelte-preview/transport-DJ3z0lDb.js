@@ -1,0 +1,336 @@
+import { M as e, j as t } from "./api-DKmEofkD.js";
+import { a as n, c as r, d as i, f as a, i as o, l as s, m as c, n as l, o as u, p as d, r as f, s as p, t as m, u as h } from "./schemas-Dr5xbymo.js";
+import { E as g, M as _, U as v, b as y, s as b } from "./schemas-cfL4JcHa.js";
+import { a as x, c as S, d as C, f as w, h as T, l as ee, m as E, n as D, o as O, p as k, r as A, s as j, t as M, u as te } from "./room--oeUdBsf.js";
+import { n as N } from "./api-D4u8Abqp.js";
+// shared/commands.ts
+var P = d(), F = s(), I = o("t", [
+	h({
+		t: u("msg"),
+		thread: d(),
+		text: i(d()),
+		files: i(l(d())),
+		reply_to: i(r(F))
+	}),
+	h({ t: u("files.get") }),
+	h({
+		t: u("doc.get"),
+		epic: i(r(d()))
+	}),
+	h({
+		t: u("doc"),
+		text: d(),
+		epic: i(r(d()))
+	}),
+	h({
+		t: u("title"),
+		title: d()
+	}),
+	h({
+		t: u("epic"),
+		title: d()
+	}),
+	h({
+		t: u("epic.owner"),
+		id: P,
+		owner: d()
+	}),
+	h({
+		t: u("task.add"),
+		epic: d(),
+		title: d()
+	}),
+	h({
+		t: u("older"),
+		thread: d(),
+		before: i(F)
+	}),
+	h({
+		t: u("pin.add"),
+		kind: m([
+			"link",
+			"file",
+			"app"
+		]),
+		ref: d(),
+		title: i(d())
+	}),
+	h({
+		t: u("pin.del"),
+		id: P
+	}),
+	h({
+		t: u("reminder.delete"),
+		id: P
+	}),
+	h({
+		t: u("ack.dismiss"),
+		id: F
+	}),
+	h({
+		t: u("reminder.enable"),
+		id: P,
+		on: f()
+	}),
+	h({
+		t: u("task.toggle"),
+		id: P
+	}),
+	h({
+		t: u("task.status"),
+		id: P,
+		status: m(E)
+	}),
+	h({
+		t: u("task.rename"),
+		id: P,
+		title: d()
+	}),
+	h({
+		t: u("task.del"),
+		id: P
+	}),
+	h({
+		t: u("task.assign"),
+		id: P,
+		owner: i(d()),
+		due: i(d())
+	}),
+	h({
+		t: u("decision.del"),
+		id: F
+	}),
+	h({
+		t: u("epic.rename"),
+		id: P,
+		title: d()
+	}),
+	h({
+		t: u("epic.del"),
+		id: P
+	}),
+	h({
+		t: u("epic.archive"),
+		id: P,
+		archived: i(f())
+	}),
+	h({
+		t: u("epic.order"),
+		ids: l(d())
+	}),
+	h({
+		t: u("poll.create"),
+		thread: d(),
+		question: d(),
+		options: l(d()),
+		multi: f()
+	}),
+	h({
+		t: u("vote"),
+		id: P,
+		opt: F
+	}),
+	h({
+		t: u("poll.close"),
+		id: P
+	}),
+	h({
+		t: u("suggestion"),
+		i: F,
+		expected: i(k),
+		accept: i(f())
+	})
+]), L = d().check(e(1), t(64)), R = c([h({
+	t: u("result"),
+	cid: L,
+	ok: u(!0)
+}), h({
+	t: u("result"),
+	cid: L,
+	ok: u(!1),
+	error: d()
+})]), z = d(), B = s(), V = l(z), H = (e, t) => h({
+	t: u(e),
+	...t
+}), U = H("doc", {
+	text: z,
+	epic: i(r(z)),
+	stale: i(u(!1)),
+	fetched: i(f()),
+	by: i(z)
+}), W = H("doc", {
+	epic: z,
+	stale: u(!0),
+	by: i(z),
+	text: i(p()),
+	fetched: i(p())
+}), G = {
+	state: n(w, { t: u("state") }),
+	msg: H("msg", { m: j }),
+	moved: H("moved", {
+		id: B,
+		thread: z
+	}),
+	delta: H("delta", {
+		id: B,
+		text: z
+	}),
+	typing: H("typing", {
+		id: B,
+		mode: z,
+		note: i(z)
+	}),
+	closed: H("closed", {
+		id: B,
+		choices: z
+	}),
+	epics: H("epics", {
+		epics: l(O),
+		roomTasks: i(l(T))
+	}),
+	epicsPatch: H("epicsPatch", {
+		changed: l(O),
+		order: V,
+		roomTasks: i(l(T))
+	}),
+	doc: c([W, U]),
+	docNotes: H("docNotes", { notes: V }),
+	meta: H("meta", {
+		title: i(z),
+		folder: i(z),
+		summary: i(z)
+	}),
+	suggestions: H("suggestions", { suggestions: l(k) }),
+	requests: H("requests", { requests: l(M) }),
+	members: H("members", {
+		members: V,
+		pending: i(V),
+		requests: i(l(M)),
+		names: i(a(z, z)),
+		avatars: i(a(z, B))
+	}),
+	files: H("files", { files: l(A) }),
+	fileAdd: H("fileAdd", { file: A }),
+	reminders: H("reminders", { reminders: l(C) }),
+	decisions: H("decisions", { decisions: l(x) }),
+	pins: H("pins", { pins: l(S) }),
+	receipts: H("receipts", { receipts: l(te) }),
+	older: H("older", {
+		messages: l(j),
+		thread: z,
+		more: f()
+	}),
+	acks: H("acks", { acks: l(D) }),
+	ackRows: H("ackRows", { acks: l(D) }),
+	poll: H("poll", { poll: ee }),
+	online: H("online", { online: V }),
+	conns: H("conns", {}),
+	error: H("error", { error: i(z) }),
+	blocked: H("blocked", {
+		text: z,
+		reason: z
+	}),
+	result: R
+};
+function K(e) {
+	if (typeof e != "object" || !e || Array.isArray(e)) return !1;
+	let t = e.t;
+	return typeof t != "string" || !Object.hasOwn(G, t) ? !1 : G[t].safeParse(e).success;
+}
+// shared/validation.ts
+var q = (e) => typeof e == "object" && !!e && !Array.isArray(e), J = K;
+function Y(e) {
+	if (!q(e)) return e;
+	let t = (e, t) => q(e) && (e[t] === 0 || e[t] === 1) ? {
+		...e,
+		[t]: e[t] === 1
+	} : e, n = (e) => Array.isArray(e) ? e.map((e) => t(e, "done")) : e, r = (e) => Array.isArray(e) ? e.map((e) => q(e) ? {
+		...e,
+		tasks: n(e.tasks)
+	} : e) : e, i = (e) => Array.isArray(e) ? e.map((e) => t(e, "enabled")) : e;
+	return e.t === "state" || e.t === "epics" ? {
+		...e,
+		epics: r(e.epics),
+		...e.roomTasks === void 0 ? {} : { roomTasks: n(e.roomTasks) },
+		...e.reminders === void 0 ? {} : { reminders: i(e.reminders) }
+	} : e.t === "epicsPatch" ? {
+		...e,
+		changed: r(e.changed),
+		...e.roomTasks === void 0 ? {} : { roomTasks: n(e.roomTasks) }
+	} : e.t === "reminders" ? {
+		...e,
+		reminders: i(e.reminders)
+	} : e;
+}
+function X(e) {
+	let t = Y(JSON.parse(e));
+	if (!J(t)) throw TypeError("Invalid room event");
+	return t;
+}
+function Z(e) {
+	return I.safeParse(e).success;
+}
+// svelte/transport.ts
+function ne(e, t, n) {
+	if (!Z(t)) throw TypeError("Invalid room command");
+	return !e || e.readyState !== 1 ? !1 : (e.send(JSON.stringify(n ? {
+		...t,
+		cid: n
+	} : t)), !0);
+}
+function re(e) {
+	if (typeof e != "string") throw TypeError("Room events must be JSON text");
+	return X(e);
+}
+async function Q(e) {
+	try {
+		return await e.json();
+	} catch (t) {
+		throw e.ok ? t : Error(`HTTP ${e.status}`);
+	}
+}
+function $(e, t) {
+	let n = y.safeParse(t);
+	return Error(n.success ? n.data.error : `HTTP ${e.status}`);
+}
+function ie(e, t = fetch) {
+	let n = N("/", t).api.books[":id"], r = encodeURIComponent(e);
+	return {
+		async postMessage(e) {
+			let t = await n.post.$post({
+				param: { id: r },
+				json: e
+			}), i = await Q(t);
+			if (t.ok || t.status === 400) {
+				let e = g.safeParse(i);
+				if (e.success) return e.data;
+				if (t.ok) throw TypeError("Invalid post response");
+			}
+			throw $(t, i);
+		},
+		async uploadFile(e) {
+			let t = await n.files.$post({
+				param: { id: r },
+				header: {
+					"content-type": e.type,
+					"x-filename": encodeURIComponent(e.name)
+				}
+			}, { init: { body: e.body } }), i = await Q(t);
+			if (!t.ok) throw $(t, i);
+			let a = v.safeParse(i);
+			if (!a.success) throw TypeError(b.safeParse(i).success ? "Invalid reminder response" : "Invalid upload response");
+			return a.data;
+		},
+		async setIcon(e) {
+			let t = await n.icon.$post({
+				param: { id: r },
+				header: { "content-type": e ? e.type : "application/json" }
+			}, { init: { body: e ? e.body : "{}" } }), i = await Q(t);
+			if (!t.ok) throw $(t, i);
+			let a = _.safeParse(i);
+			if (!a.success) throw TypeError("Invalid icon response");
+			return a.data;
+		}
+	};
+}
+export { re as n, ne as r, ie as t };

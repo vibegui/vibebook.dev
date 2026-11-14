@@ -1,5 +1,7 @@
-import { r as e, t } from "./index-client-B2aDKUZc.js";
-import { A as n, E as r, O as i, S as a, k as o, n as s } from "./api-Dv5tb54t.js";
+import { i as e, t } from "./shared-qe__81Sz.js";
+import "./index-client-RnYrC9zI.js";
+import { D as n, O as r, T as i, b as a, k as o } from "./schemas-cfL4JcHa.js";
+import { n as s } from "./api-D4u8Abqp.js";
 // svelte/features/notifications/api.ts
 async function c(e) {
 	let t = await e.json().catch(() => null);
@@ -13,17 +15,17 @@ function l(e) {
 	let t = s("/", e).api.push;
 	return {
 		async key() {
-			return i.parse(await c(await t.key.$get())).key;
+			return n.parse(await c(await t.key.$get())).key;
 		},
 		async subscribe(e) {
-			let n = o.parse(e);
-			return r.parse(await c(await t.subscribe.$post({ json: n })));
+			let n = r.parse(e);
+			return i.parse(await c(await t.subscribe.$post({ json: n })));
 		},
 		async unsubscribe(e) {
-			return r.parse(await c(await t.unsubscribe.$post({ json: { endpoint: e } })));
+			return i.parse(await c(await t.unsubscribe.$post({ json: { endpoint: e } })));
 		},
 		async test() {
-			return n.parse(await c(await t.test.$post()));
+			return o.parse(await c(await t.test.$post()));
 		}
 	};
 }

@@ -1,0 +1,42 @@
+import { L as e, S as t, V as n, W as r, a as i, i as a, j as o, t as s, x as c, z as l } from "./Button-Cx7HMFHY.js";
+import { A as u, Et as d, F as f, G as p, Tt as m, Yt as h, q as g, qt as _ } from "./shared-qe__81Sz.js";
+import { t as v } from "./Icon-Ch3wLUmI.js";
+// svelte/lib/components/ErrorState.svelte
+var y = n("<p class=\"tw:m-0 tw:leading-5 tw:text-foreground\"> </p>"), b = n("<div role=\"alert\"><!> <div class=\"tw:min-w-0 tw:flex-1 tw:space-y-1\"><p class=\"tw:m-0 tw:font-medium\"> </p> <!><!></div></div>");
+function x(n, x) {
+	d(x, !0);
+	let S = i(x, "compact", 3, !1);
+	var C = b(), w = f(C);
+	v(w, {
+		name: "warning",
+		class: "tw:mt-0.5 tw:text-destructive"
+	});
+	var T = g(w, 2), E = f(T), D = p(E, !0), O = g(E, 2), k = (t) => {
+		var n = y(), r = p(n, !0);
+		u(() => e(r, x.description)), l(t, n);
+	};
+	o(O, (e) => {
+		x.description && e(k);
+	});
+	var A = g(O), j = (t) => {
+		s(t, {
+			variant: "outline",
+			size: "sm",
+			get onclick() {
+				return x.onretry;
+			},
+			children: (t, n) => {
+				_();
+				var i = r();
+				u(() => e(i, x.retryLabel)), l(t, i);
+			},
+			$$slots: { default: !0 }
+		});
+	};
+	o(A, (e) => {
+		x.onretry && x.retryLabel && e(j);
+	}), h(T), h(C), u((t) => {
+		c(C, 1, t), e(D, x.title);
+	}, [() => t(a("tw:flex tw:items-start tw:gap-3 tw:rounded-control tw:border tw:border-destructive/20 tw:bg-destructive/10 tw:font-sans tw:text-sm tw:text-foreground", S() ? "tw:p-3" : "tw:p-5"))]), l(n, C), m();
+}
+export { x as t };

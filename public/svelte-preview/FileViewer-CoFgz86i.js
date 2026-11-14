@@ -1,0 +1,395 @@
+import { A as e, B as t, L as n, N as r, O as i, P as a, S as o, V as s, W as c, Y as l, a as u, c as d, f, j as p, k as m, l as h, n as g, q as _, t as v, v as y, x as b, z as x } from "./Button-Cx7HMFHY.js";
+import { $ as S, A as C, Et as w, F as T, G as E, Tt as D, Yt as O, h as k, j as A, lt as j, nt as ee, q as M, qt as N, tt as P, u as F, z as I } from "./shared-qe__81Sz.js";
+import { n as te, t as L } from "./copy-psMjU5k0.js";
+import { t as R } from "./Dialog-BkHABdQA.js";
+import { t as ne } from "./Select-DbV-T2ZF.js";
+import { n as z, r as re, s as B } from "./model-Dxl2uqUd.js";
+// svelte/features/file-viewer/ViewerMedia.svelte
+var V = s("<img class=\"tw:mx-auto tw:block tw:max-h-[70dvh] tw:max-w-full tw:object-contain\"/>"), H = s("<audio controls=\"\" preload=\"metadata\" class=\"tw:mx-auto tw:block tw:w-full tw:max-w-xl\"></audio>"), U = s("<iframe sandbox=\"allow-scripts\" referrerpolicy=\"no-referrer\" class=\"tw:block tw:h-[70dvh] tw:w-full tw:border-0 tw:bg-background\"></iframe>"), W = s("<iframe referrerpolicy=\"no-referrer\" class=\"tw:block tw:h-[70dvh] tw:w-full tw:border-0 tw:bg-background\"></iframe>");
+function ie(e, n) {
+	w(n, !0);
+	let r = P(void 0), i = P(void 0), o = P(void 0);
+	a(() => {
+		let e = !0, t = (t) => {
+			e && n.content.kind === "html" && F(o)?.isConnected && t.source === F(o).contentWindow && typeof t.data == "object" && t.data !== null && "vbViewer" in t.data && t.data.vbViewer === "esc" && n.onclose();
+		};
+		return window.addEventListener("message", t), () => {
+			e = !1, window.removeEventListener("message", t), F(i) && (F(i).pause(), F(i).removeAttribute("src"), F(i).load()), F(o) && (F(o).src = "about:blank"), F(r) && F(r).removeAttribute("src");
+		};
+	});
+	var s = t(), c = I(s), u = (e) => {
+		var t = V();
+		f(t, (e) => S(r, e), () => F(r)), C(() => {
+			y(t, "src", n.content.url), y(t, "alt", n.name);
+		}), _("load", t, function(...e) {
+			n.onready?.apply(this, e);
+		}), _("error", t, function(...e) {
+			n.onerror?.apply(this, e);
+		}), l(t), x(e, t);
+	}, d = (e) => {
+		var t = H();
+		f(t, (e) => S(i, e), () => F(i)), C(() => {
+			y(t, "src", n.content.url), y(t, "aria-label", n.name);
+		}), _("loadedmetadata", t, function(...e) {
+			n.onready?.apply(this, e);
+		}), _("error", t, function(...e) {
+			n.onerror?.apply(this, e);
+		}), x(e, t);
+	}, m = (e) => {
+		var t = U();
+		f(t, (e) => S(o, e), () => F(o)), C(() => {
+			y(t, "src", n.content.url), y(t, "title", n.name);
+		}), _("load", t, function(...e) {
+			n.onready?.apply(this, e);
+		}), _("error", t, function(...e) {
+			n.onerror?.apply(this, e);
+		}), l(t), x(e, t);
+	}, h = (e) => {
+		var t = W();
+		f(t, (e) => S(o, e), () => F(o)), C(() => {
+			y(t, "src", n.content.url), y(t, "title", n.name);
+		}), _("load", t, function(...e) {
+			n.onready?.apply(this, e);
+		}), _("error", t, function(...e) {
+			n.onerror?.apply(this, e);
+		}), l(t), x(e, t);
+	};
+	p(c, (e) => {
+		n.content.kind === "image" ? e(u) : n.content.kind === "audio" ? e(d, 1) : n.content.kind === "html" ? e(m, 2) : n.content.kind === "pdf" && e(h, 3);
+	}), x(e, s), D();
+}
+// svelte/features/file-viewer/FileViewer.svelte
+var ae = s("<label class=\"tw:flex tw:min-w-0 tw:flex-1 tw:items-center tw:gap-2 tw:text-sm\"> <!></label>"), G = s("<p role=\"status\" class=\"tw:m-0 tw:text-sm tw:text-muted-foreground\"> </p>"), oe = s("<div class=\"tw:flex tw:flex-wrap tw:items-center tw:gap-2\"><p role=\"alert\" class=\"tw:m-0 tw:text-sm tw:text-destructive\"> </p> <!></div>"), se = s("<p role=\"alert\" class=\"tw:m-0 tw:text-sm tw:text-destructive\"> </p>"), ce = s("<p role=\"status\" class=\"tw:m-0 tw:text-muted-foreground\"> </p>"), le = s("<a> </a>"), ue = s("<p role=\"alert\" class=\"tw:m-0 tw:text-destructive\"> </p> <!>", 1), de = s("<th scope=\"col\" class=\"tw:whitespace-pre-wrap tw:border tw:border-border tw:p-2 tw:font-semibold\"> </th>"), fe = s("<td class=\"tw:whitespace-pre-wrap tw:border tw:border-border tw:p-2\"> </td>"), pe = s("<tr></tr>"), me = s("<div class=\"tw:max-w-full tw:overflow-auto\"><table class=\"tw:w-full tw:border-collapse tw:text-left tw:text-sm\"><thead><tr></tr></thead><tbody></tbody></table></div>"), he = s("<pre class=\"tw:m-0 tw:max-w-full tw:overflow-auto tw:whitespace-pre-wrap tw:break-words tw:font-mono tw:text-sm\"> </pre>"), ge = s("<a target=\"_blank\" rel=\"noopener noreferrer\"> </a>"), _e = s("<nav class=\"tw:flex tw:flex-wrap tw:items-center tw:gap-2\"><!><span> </span><!></nav>"), ve = s("<!> <!> <!>", 1), ye = s("<div data-file-viewer=\"\" class=\"tw:flex tw:min-h-0 tw:flex-1 tw:flex-col tw:gap-4\"><div class=\"tw:flex tw:flex-wrap tw:items-center tw:gap-2\"><!> <!> <a target=\"_blank\" rel=\"noopener noreferrer\"> </a></div> <!> <!> <!> <!> <!></div>"), K = s("<div data-vb-native=\"\" role=\"alert\" class=\"tw:fixed tw:inset-x-4 tw:top-4 tw:z-50 tw:flex tw:flex-wrap tw:items-center tw:gap-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-4 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-lg\"><p class=\"tw:m-0 tw:flex-1\"> </p> <!></div>"), q = s("<!> <!>", 1);
+function J(a, s) {
+	w(s, !0);
+	let l = () => h(U, "$view", f), [f, _] = d(), V = u(s, "lang", 3, "pt"), H = u(s, "iosStandalone", 3, !1), U = k(() => s.controller.state), W = (e) => L(V(), e), J = P(0), Y = j(() => l().content?.kind === "csv" ? l().content.text ?? "" : null), X = j(() => F(Y) === null ? {
+		rows: [],
+		truncated: !1
+	} : z(F(Y))), be = j(() => Array.from({ length: F(X).rows.reduce((e, t) => Math.max(e, t.length), 0) }, (e, t) => F(X).rows[0]?.[t] ?? "")), Z = j(() => F(X).rows.slice(F(J) * 19 + 1, (F(J) + 1) * 19 + 1));
+	A(() => {
+		l().content?.operation, S(J, 0);
+	});
+	let xe = j(() => l().room?.pins?.some((e) => e.kind === "file" && e.ref === l().target?.id)), Se = j(() => {
+		let e = l().content?.operation, t = () => e !== void 0 && s.controller.current(e), n = (e) => {
+			t() && (s.controller.closeUser(), s.controller.deferNavigation(e) || e());
+		};
+		return {
+			navigate: (e, t) => n(() => s.actions.navigate(e, t)),
+			openFile: (e) => {
+				t() && s.actions.openFile(e);
+			},
+			navigateRich: (e) => n(() => s.actions.navigateRich?.(e)),
+			openFileReference: (e) => {
+				t() && s.actions.openFileReference?.(e);
+			}
+		};
+	});
+	r(() => s.controller.closeNavigation());
+	var Q = q(), $ = I(Q);
+	{
+		let r = j(() => l().name || "File"), a = j(() => W("close"));
+		R($, {
+			get open() {
+				return l().open;
+			},
+			get title() {
+				return F(r);
+			},
+			get closeLabel() {
+				return F(a);
+			},
+			fullScreen: !0,
+			returnFocus: () => s.controller.returnFocus(),
+			onOpenChange: (e) => {
+				e || s.controller.closeUser();
+			},
+			children: (r, a) => {
+				var u = t(), d = I(u), f = (r) => {
+					var a = ye(), u = T(a), d = T(u), f = (e) => {
+						var t = ae(), r = T(t), i = M(r);
+						{
+							let e = j(() => W("version")), t = j(() => l().versions.map((e, t) => ({
+								value: e.id,
+								label: `v${l().versions.length - t} · ${new Date(e.ts).toLocaleString(V() === "en" ? "en" : "pt-BR")}`
+							})));
+							ne(i, {
+								get "aria-label"() {
+									return F(e);
+								},
+								get value() {
+									return l().target.id;
+								},
+								get items() {
+									return F(t);
+								},
+								onchange: (e) => {
+									e.currentTarget.isConnected && s.controller.select(e.currentTarget.value);
+								},
+								class: "tw:min-w-0"
+							});
+						}
+						O(t), C((e) => n(r, `${e ?? ""} `), [() => W("version")]), x(e, t);
+					};
+					p(d, (e) => {
+						l().versions.length > 1 && e(f);
+					});
+					var h = M(d, 2), _ = (e) => {
+						v(e, {
+							variant: "outline",
+							get disabled() {
+								return l().pinPending;
+							},
+							onclick: (e) => {
+								e.currentTarget.isConnected && s.controller.togglePin();
+							},
+							children: (e, t) => {
+								N();
+								var r = c();
+								C((e) => n(r, e), [() => F(xe) ? W("unpin") : W("pin")]), x(e, r);
+							},
+							$$slots: { default: !0 }
+						});
+					};
+					p(h, (e) => {
+						l().file && e(_);
+					});
+					var w = M(h, 2), D = E(w, !0);
+					O(u);
+					var k = M(u, 2), A = (e) => {
+						var t = G(), r = E(t, !0);
+						C((e) => n(r, e), [() => W("history")]), x(e, t);
+					};
+					p(k, (e) => {
+						l().indexPending && e(A);
+					});
+					var P = M(k, 2), L = (e) => {
+						var t = oe(), r = T(t), i = E(r, !0), a = M(r, 2);
+						v(a, {
+							variant: "outline",
+							onclick: (e) => {
+								e.currentTarget.isConnected && s.controller.retryIndex();
+							},
+							children: (e, t) => {
+								N();
+								var r = c();
+								C((e) => n(r, e), [() => W("retryHistory")]), x(e, r);
+							},
+							$$slots: { default: !0 }
+						}), O(t), C((e) => n(i, e), [() => W("historyError")]), x(e, t);
+					};
+					p(P, (e) => {
+						l().indexError && e(L);
+					});
+					var R = M(P, 2), z = (e) => {
+						var t = se(), r = E(t, !0);
+						C((e) => n(r, e), [() => W("pinError")]), x(e, t);
+					};
+					p(R, (e) => {
+						l().pinError && e(z);
+					});
+					var U = M(R, 2), K = (e) => {
+						var t = ce(), r = E(t, !0);
+						C((e) => n(r, e), [() => W("loading")]), x(e, t);
+					};
+					p(U, (e) => {
+						l().phase === "loading" && e(K);
+					});
+					var q = M(U, 2), Y = (e) => {
+						var t = ue(), r = I(t), i = E(r, !0), a = M(r, 2), u = (e) => {
+							var t = le(), r = E(t, !0);
+							C((e, i, a) => {
+								y(t, "href", e), b(t, 1, i), n(r, a);
+							}, [
+								() => B(l().target),
+								() => o(g()),
+								() => W("access")
+							]), x(e, t);
+						}, d = j(() => ["signed-out", "forbidden"].includes(l().error)), f = (e) => {
+							v(e, {
+								variant: "outline",
+								onclick: (e) => {
+									e.currentTarget.isConnected && s.controller.retry();
+								},
+								children: (e, t) => {
+									N();
+									var r = c();
+									C((e) => n(r, e), [() => W("retry")]), x(e, r);
+								},
+								$$slots: { default: !0 }
+							});
+						}, m = j(() => !["missing", "metadata-changed"].includes(l().error));
+						p(a, (e) => {
+							F(d) ? e(u) : F(m) && e(f, 1);
+						}), C((e) => n(i, e), [() => W(l().error === "missing" ? "missing" : l().error === "metadata-changed" ? "changed" : ["signed-out", "forbidden"].includes(l().error) ? "denied" : l().error === "read-timeout" ? "timeout" : "unavailable")]), x(e, t);
+					}, Q = (r) => {
+						var a = ve(), u = I(a);
+						e(u, () => l().content.operation, (e) => {
+							var r = t(), a = I(r), c = (e) => {
+								let t = j(() => l().content.operation);
+								ie(e, {
+									get content() {
+										return l().content;
+									},
+									get name() {
+										return l().name;
+									},
+									onready: () => s.controller.ready(F(t)),
+									onerror: () => s.controller.mediaError(F(t)),
+									onclose: () => {
+										s.controller.current(F(t)) && s.controller.closeUser();
+									}
+								});
+							}, u = j(() => [
+								"image",
+								"audio",
+								"html",
+								"pdf"
+							].includes(l().content.kind)), d = (e) => {
+								{
+									let t = j(() => l().content.text ?? ""), n = j(() => W("file"));
+									te(e, {
+										get text() {
+											return F(t);
+										},
+										get room() {
+											return l().room;
+										},
+										get actions() {
+											return F(Se);
+										},
+										policy: "file-preview",
+										get fileLabel() {
+											return F(n);
+										},
+										pageUrl: location.href
+									});
+								}
+							}, f = (e) => {
+								var t = me(), r = T(t), a = T(r), o = T(a);
+								i(o, 21, () => F(be), m, (e, t, r) => {
+									var i = de(), a = E(i, !0);
+									C((e) => {
+										y(i, "aria-label", e), n(a, F(t));
+									}, [() => F(t).trim() ? void 0 : `${W("column")} ${r + 1}`]), x(e, i);
+								}), O(o), O(a);
+								var s = M(a);
+								i(s, 21, () => F(Z), m, (e, t) => {
+									var r = pe();
+									i(r, 21, () => F(t), m, (e, t) => {
+										var r = fe(), i = E(r, !0);
+										C(() => n(i, F(t))), x(e, r);
+									}), O(r), x(e, r);
+								}), O(s), O(r), O(t), x(e, t);
+							}, h = (e) => {
+								var t = he(), r = E(t, !0);
+								C(() => n(r, l().content.text)), x(e, t);
+							}, _ = (e) => {
+								var t = ge(), r = E(t, !0);
+								C((e, i, a) => {
+									y(t, "href", e), b(t, 1, i), n(r, a);
+								}, [
+									() => B(l().target),
+									() => o(g()),
+									() => W("download")
+								]), x(e, t);
+							};
+							p(a, (e) => {
+								F(u) ? e(c) : l().content.kind === "markdown" && l().room && l().phase === "ready" ? e(d, 1) : l().content.kind === "csv" && l().phase === "ready" ? e(f, 2) : l().content.kind === "text" && l().phase === "ready" ? e(h, 3) : l().content.kind === "download" && e(_, 4);
+							}), x(e, r);
+						});
+						var d = M(u, 2), f = (e) => {
+							var t = _e(), r = T(t);
+							{
+								let e = j(() => F(J) === 0);
+								v(r, {
+									variant: "outline",
+									get disabled() {
+										return F(e);
+									},
+									onclick: (e) => {
+										e.currentTarget.isConnected && S(J, Math.max(0, F(J) - 1), !0);
+									},
+									children: (e, t) => {
+										N();
+										var r = c();
+										C((e) => n(r, e), [() => W("previous")]), x(e, r);
+									},
+									$$slots: { default: !0 }
+								});
+							}
+							var i = M(r), a = E(i), o = M(i);
+							{
+								let e = j(() => (F(J) + 1) * 19 + 1 >= F(X).rows.length);
+								v(o, {
+									variant: "outline",
+									get disabled() {
+										return F(e);
+									},
+									onclick: (e) => {
+										e.currentTarget.isConnected && ee(J);
+									},
+									children: (e, t) => {
+										N();
+										var r = c();
+										C((e) => n(r, e), [() => W("next")]), x(e, r);
+									},
+									$$slots: { default: !0 }
+								});
+							}
+							O(t), C((e, r, i) => {
+								y(t, "aria-label", e), n(a, `${r ?? ""}
+              ${F(J) * 19 + 2}–${i ?? ""} /
+              ${F(X).rows.length ?? ""}`);
+							}, [
+								() => W("rows"),
+								() => W("rows"),
+								() => Math.min((F(J) + 1) * 19 + 1, F(X).rows.length)
+							]), x(e, t);
+						};
+						p(d, (e) => {
+							l().content.kind === "csv" && F(X).rows.length > 20 && e(f);
+						});
+						var h = M(d, 2), _ = (e) => {
+							var t = G(), r = E(t, !0);
+							C((e) => n(r, e), [() => W("truncated")]), x(e, t);
+						};
+						p(h, (e) => {
+							(l().content.truncated || l().content.kind === "csv" && F(X).truncated) && e(_);
+						}), x(r, a);
+					};
+					p(q, (e) => {
+						l().phase === "error" ? e(Y) : l().content && e(Q, 1);
+					}), O(a), C((e, t, r) => {
+						y(a, "data-file-id", l().target.id), b(w, 1, e), y(w, "href", t), n(D, r);
+					}, [
+						() => o(g({ variant: "outline" })),
+						() => re(l().target, location.origin, H()),
+						() => W("external")
+					]), x(r, a);
+				};
+				p(d, (e) => {
+					l().target && e(f);
+				}), x(r, u);
+			},
+			$$slots: { default: !0 }
+		});
+	}
+	var Ce = M($, 2), we = (e) => {
+		var t = K(), r = T(t), i = E(r, !0), a = M(r, 2);
+		v(a, {
+			onclick: (e) => {
+				e.currentTarget.isConnected && location.reload();
+			},
+			children: (e, t) => {
+				N();
+				var r = c();
+				C((e) => n(r, e), [() => W("reload")]), x(e, r);
+			},
+			$$slots: { default: !0 }
+		}), O(t), C((e) => n(i, e), [() => W("closing")]), x(e, t);
+	};
+	p(Ce, (e) => {
+		l().closingUnconfirmed && e(we);
+	}), x(a, Q), D(), _();
+}
+export { J as default };

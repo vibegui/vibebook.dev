@@ -1,0 +1,47 @@
+import { a as e, o as t, s as n, t as r } from "./Button-Cx7HMFHY.js";
+import { Et as i, Tt as a, lt as o, u as s } from "./shared-qe__81Sz.js";
+import { t as c } from "./Icon-Ch3wLUmI.js";
+// svelte/lib/ui/IconButton.svelte
+var l = /* @__PURE__ */ new Set([
+	"$$slots",
+	"$$events",
+	"$$legacy",
+	"label",
+	"icon",
+	"title",
+	"variant",
+	"ref"
+]);
+function u(u, d) {
+	i(d, !0);
+	let f = e(d, "variant", 3, "ghost"), p = e(d, "ref", 15, null), m = t(d, l);
+	{
+		let e = o(() => d.title ?? d.label);
+		r(u, n(() => m, {
+			get variant() {
+				return f();
+			},
+			size: "icon",
+			get "aria-label"() {
+				return d.label;
+			},
+			get title() {
+				return s(e);
+			},
+			get ref() {
+				return p();
+			},
+			set ref(e) {
+				p(e);
+			},
+			children: (e, t) => {
+				c(e, { get name() {
+					return d.icon;
+				} });
+			},
+			$$slots: { default: !0 }
+		}));
+	}
+	a();
+}
+export { u as t };

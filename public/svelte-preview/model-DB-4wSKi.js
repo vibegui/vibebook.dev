@@ -1,0 +1,45 @@
+// svelte/panels.ts
+var e = (e) => e.type.startsWith("image/") ? "img" : e.type.startsWith("audio/") ? "audio" : e.type === "text/html" ? "html" : e.type === "application/pdf" ? "pdf" : /\.md$/i.test(e.name) || e.type === "text/markdown" ? "md" : e.type === "text/plain" || e.type === "text/csv" ? "txt" : "other", t = (e) => e > 1e6 ? `${(e / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(e / 1e3))} KB`, n = [
+	["all", "Tudo"],
+	["img", "Imagens"],
+	["md", "Markdown"],
+	["txt", "Texto e CSV"],
+	["html", "HTML"],
+	["pdf", "PDF"],
+	["audio", "Áudios"],
+	["other", "Outros"]
+];
+function r(t, n, r) {
+	let i = (t.files ?? []).map((e, t) => ({
+		file: e,
+		index: t
+	})).sort((e, t) => t.file.ts - e.file.ts || e.index - t.index).map((e) => e.file), a = { all: i.length };
+	for (let t of i) {
+		let n = e(t);
+		a[n] = (a[n] ?? 0) + 1;
+	}
+	let o = a[n] ? n : "all", s = i.filter((t) => o === "all" || e(t) === o), c = (e) => e.name.includes("/") ? e.name.slice(0, e.name.lastIndexOf("/")) : "", l = r && s.some((e) => c(e) === r || c(e).startsWith(r + "/")) ? r : "", u = l ? l + "/" : "", d = /* @__PURE__ */ new Map(), f = [];
+	for (let e of s) {
+		let t = c(e);
+		if (t === l) f.push(e);
+		else if (t.startsWith(u)) {
+			let e = t.slice(u.length).split("/")[0];
+			d.set(e, (d.get(e) ?? 0) + 1);
+		}
+	}
+	let p = /* @__PURE__ */ new Map();
+	if (l) for (let e of f) p.set(e.name, (p.get(e.name) ?? 0) + 1);
+	return {
+		counts: a,
+		kind: o,
+		dir: l,
+		prefix: u,
+		list: l ? f.filter((e, t) => f.findIndex((t) => t.name === e.name) === t) : f,
+		versions: p,
+		folders: [...d].sort(([e], [t]) => e.localeCompare(t))
+	};
+}
+function i(e, t) {
+	return e.files?.find((e) => e.id === t.id && e.name === t.name && e.type === t.type && e.ts === t.ts && e.size === t.size && e.author === t.author);
+}
+export { t as i, n, r, i as t };

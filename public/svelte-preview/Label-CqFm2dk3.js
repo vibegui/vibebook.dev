@@ -1,0 +1,22 @@
+import { F as e, V as t, g as n, i as r, o as i, z as a } from "./Button-Cx7HMFHY.js";
+import { An as o, Et as s, F as c, Tt as l, Yt as u } from "./shared-qe__81Sz.js";
+// svelte/lib/ui/Label.svelte
+var d = /* @__PURE__ */ new Set([
+	"$$slots",
+	"$$events",
+	"$$legacy",
+	"children",
+	"class"
+]), f = t("<label><!></label>");
+function p(t, p) {
+	s(p, !0);
+	let m = i(p, d);
+	var h = f();
+	n(h, (e) => ({
+		class: e,
+		...m
+	}), [() => r("tw:font-sans tw:text-sm tw:font-medium tw:leading-5 tw:text-foreground", p.class)]);
+	var g = c(h);
+	e(g, () => p.children ?? o), u(h), a(t, h), l();
+}
+export { p as t };

@@ -1,0 +1,778 @@
+import { A as e, B as t, F as n, G as r, K as i, L as a, S as o, V as s, W as c, _ as l, b as u, c as d, f, j as p, l as m, o as h, s as g, t as _, v, w as y, x as b, z as x } from "./Button-Cx7HMFHY.js";
+import { $ as S, A as C, An as ee, Et as te, F as w, G as T, Tt as E, Yt as D, h as O, i as k, j as ne, lt as A, q as j, qt as re, tt as M, u as N, z as P } from "./shared-qe__81Sz.js";
+import { t as F } from "./Label-CqFm2dk3.js";
+import "./index-client-RnYrC9zI.js";
+// svelte/features/room-layout/browser.ts
+function I(e) {
+	let t = null;
+	try {
+		t = e.localStorage;
+	} catch {}
+	return {
+		href: () => e.location.href,
+		state: () => e.history.state,
+		history: e.history,
+		storage: t,
+		schedule: (t, n) => e.setTimeout(t, n),
+		cancel: (t) => e.clearTimeout(t),
+		enqueue: (t) => e.queueMicrotask(t)
+	};
+}
+// svelte/features/room-layout/history.ts
+var L = (e) => {
+	if (!e || typeof e != "object" || !("vbRoomSheet" in e)) return null;
+	let t = e.vbRoomSheet;
+	return !t || typeof t != "object" || !("token" in t) || !("sheet" in t) || typeof t.token != "string" || t.sheet !== "doc" && t.sheet !== "side" ? null : {
+		token: t.token,
+		sheet: t.sheet
+	};
+};
+function R(e) {
+	let t = e.browser, n = !0, r = null, i = null, a = null, o = null, s = 0, c = !1, l = () => {
+		let e = new URL(t.href());
+		return e.pathname + e.search + e.hash;
+	}, u = (e) => L(t.state())?.token === e.token && l() === e.returnURL, d = (e) => e && typeof e == "object" && !Array.isArray(e) ? { ...e } : {}, f = () => `sheet-${crypto.randomUUID()}`, p = (e, n) => {
+		t.history[n ? "replaceState" : "pushState"]({
+			...d(t.state()),
+			vbRoomSheet: {
+				token: e.token,
+				sheet: e.sheet
+			}
+		}, "", e.returnURL);
+	}, m = (e) => {
+		let n = t.state();
+		if (L(n)?.token !== e.token || l() !== e.returnURL) return !1;
+		let r = d(n);
+		return delete r.vbRoomSheet, t.history.replaceState(Object.keys(r).length ? r : null, "", e.returnURL), !0;
+	}, h = L(t.state()), g = h ? {
+		...h,
+		returnURL: l()
+	} : null, _ = (i) => {
+		let a = g;
+		n && !r && a && e.current() && (g = null, L(t.state())?.token === a.token && l() === a.returnURL && (r = {
+			...a,
+			token: f()
+		}, p(r, !0), i && n && e.current() && u(r) && e.changed(r.sheet)));
+	}, v = () => {
+		o !== null && t.cancel(o), o = null;
+	}, y = (t) => {
+		c = t, e.unconfirmed(t);
+	}, b = (r) => {
+		v(), i = null, y(!1);
+		let o = a, c = s;
+		a = null, r && o && t.enqueue(() => {
+			n && e.current() && s === c && o();
+		});
+	}, x = () => {
+		v(), o = t.schedule(() => {
+			o = null, n && i && y(!0);
+		}, 1500);
+	};
+	return _(!0), {
+		open(t) {
+			n && e.current() && !i && (s++, _(!1), r && u(r) ? (r = {
+				...r,
+				sheet: t
+			}, p(r, !0)) : (r = {
+				token: f(),
+				sheet: t,
+				returnURL: l()
+			}, p(r, !1)), e.changed(t));
+		},
+		take() {
+			if (!n || !e.current() || i) return !1;
+			s++;
+			let t = r && u(r) && m(r);
+			return t && (r = null), e.changed(null), !!t;
+		},
+		close() {
+			n && e.current() && !i && (s++, r && u(r) && (i = r, x(), t.history.back()), e.changed(null));
+		},
+		retry() {
+			if (n && e.current() && i && c) {
+				if (u(i)) y(!1), x(), t.history.back();
+				else {
+					let e = l() === i.returnURL;
+					b(e);
+				}
+			}
+		},
+		beforeNavigation() {
+			n && (s++, a = null, r && u(r) && m(r), g = null, r = null, b(!1), e.changed(null));
+		},
+		deferNavigation(e) {
+			return !n || !i ? !1 : (s++, a = e, !0);
+		},
+		consumePop() {
+			if (!n) return !1;
+			if (i) {
+				let t = u(i);
+				if (t && e.current()) return !0;
+				let n = e.current() && !t && l() === i.returnURL;
+				return e.changed(null), b(n), n;
+			}
+			let a = L(t.state());
+			return r && a?.token === r.token && l() === r.returnURL && e.current() ? (r = {
+				...r,
+				sheet: a.sheet
+			}, e.changed(a.sheet), !0) : r ? (e.changed(null), e.current() && l() === r.returnURL) : !1;
+		},
+		dispose() {
+			n = !1, s++, v(), r = i = a = null, g = null;
+		}
+	};
+}
+// svelte/features/room-layout/model.ts
+var z = 1e3, B = (e, t, n) => Math.max(t, Math.min(n, e));
+function ie(e, t) {
+	return e === "side" || t.documentVisible && !t.boardFull;
+}
+function V(e, t) {
+	return Math.max(260, Math.round(e) - (t ? 68 : 272) - 320);
+}
+function H(e, t, n) {
+	return B(Math.round(Number.isFinite(e) ? e : 380), 260, V(t, n));
+}
+function ae(e, t, n) {
+	let r = V(t, n);
+	return r === 260 ? 0 : (H(e, t, n) - 260) / (r - 260);
+}
+function oe(e) {
+	let t = Number(e);
+	return e !== null && e.trim() && t && Number.isFinite(t) ? Math.round(t) : 380;
+}
+function se(e, t, n, r) {
+	return !(r > 0) || Math.abs(n - t) < 6 ? e : e === 0 ? +(n - t > r / 4) : n - t < -r / 4 ? 0 : 1;
+}
+function ce(e) {
+	let t = B(e, 0, 1);
+	if (t === 0 || t === 1) return t;
+	let n = (e, t, n) => 3 * (1 - e) ** 2 * e * t + 3 * (1 - e) * e ** 2 * n + e ** 3, r = 0, i = 1;
+	for (let e = 0; e < 20; e++) {
+		let e = (r + i) / 2;
+		n(e, .32, 0) < t ? r = e : i = e;
+	}
+	return n((r + i) / 2, .72, 1);
+}
+// svelte/features/room-layout/playback.ts
+function U(e, t, n) {
+	let r = !0, i = 0, a = 0, o = null, s = 0, c = () => !r || !e.isConnected || typeof CSSAnimation > "u" ? null : e.getAnimations().find((n) => n instanceof CSSAnimation && n.animationName === t() && n.effect instanceof KeyframeEffect && n.effect.target === e) ?? null;
+	function l() {
+		i++, o !== null && cancelAnimationFrame(o), o = null;
+	}
+	function u(t) {
+		if (o = null, !r || i !== t || !e.isConnected) return;
+		let l = c();
+		l ? (l.pause(), l.currentTime = a * z) : performance.now() >= s ? n() : o = requestAnimationFrame(() => u(t));
+	}
+	return {
+		set(t) {
+			if (!r || !Number.isFinite(t)) return;
+			a = B(t, 0, 1);
+			let n = c();
+			n ? (l(), n.pause(), n.currentTime = a * z) : o === null && e.isConnected && (s = performance.now() + 3e4, u(++i));
+		},
+		suspend: l,
+		dispose() {
+			r = !1, l();
+		}
+	};
+}
+// svelte/features/room-layout/geometry.ts
+function W(e) {
+	let { cells: t, browser: n } = e, r = t.root.ownerDocument.defaultView;
+	if (!r) throw Error("Missing room layout window");
+	let i = r, a = i.matchMedia("(max-width: 900px)"), o = i.matchMedia("(prefers-reduced-motion: reduce)"), s = !0, c = t.root.clientWidth, l = 380, u = null, d = null, f = null, p = 0, m = 0, h = {
+		doc: 0,
+		side: 0
+	}, g = null, _ = () => s && e.current() && t.root.isConnected, v = () => {
+		_() && e.changed({ animationUnavailable: !0 });
+	}, y = () => e.read().sidebarCollapsed ? "vb-room-document-width-rail" : "vb-room-document-width", b = (n) => n === "side" ? t.sidebar : e.read().pane === "board" ? t.board : t.document, x = U(t.viewport, () => "vb-room-viewport", v), S = U(t.scrim, () => "vb-room-scrim", v), C = U(t.sidebar, () => "vb-room-sheet", v), ee = U(t.document, () => "vb-room-sheet", v), te = U(t.board, () => "vb-room-sheet", v), w = U(t.document, y, v), T = U(t.board, y, v), E = /* @__PURE__ */ new Map(), D = [
+		x,
+		S,
+		C,
+		ee,
+		te,
+		w,
+		T
+	], O = null, k = null, ne = /* @__PURE__ */ new Set(), A = (t) => t === "side" ? C : e.read().pane === "board" ? te : ee, j = () => {
+		p++, f !== null && i.cancelAnimationFrame(f), f = null;
+	};
+	function re(e, t) {
+		h[e] = B(t, 0, 1), A(e).set(h[e]), S.set(h[e]);
+	}
+	function M(t) {
+		u = t, e.changed({ presentedSheet: t });
+	}
+	function N(e, n) {
+		j(), M(e);
+		let r = h[e], a = i.performance.now(), s = p, c = () => {
+			if (f = null, !_() || s !== p) return;
+			let l = o.matches ? 1 : B((i.performance.now() - a) / 300, 0, 1);
+			if (re(e, r + (n - r) * ce(l)), l < 1) f = i.requestAnimationFrame(c);
+			else if (!n) {
+				M(null);
+				let n = t.root.ownerDocument.activeElement;
+				g?.isConnected && g.getClientRects().length && (n === t.root.ownerDocument.body || n && b(e).contains(n)) && !t.root.ownerDocument.querySelector("dialog[open], [data-dialog-content], [data-alert-dialog-content]") && g.focus({ preventScroll: !0 }), g = null;
+			}
+		};
+		c();
+	}
+	function P() {
+		let t = O;
+		return O = null, i.removeEventListener("pointermove", F), i.removeEventListener("pointerup", L), i.removeEventListener("pointercancel", R), t?.handle.hasPointerCapture(t.id) && t.handle.releasePointerCapture(t.id), s && e.changed({ draggingSheet: null }), t;
+	}
+	function F(e) {
+		O && e.pointerId === O.id && (!_() || !O.handle.isConnected || !a.matches ? P() : (O.last = e.clientY, !O.moving && Math.abs(O.last - O.start) < 6 || (O.moving || (O.handle.setPointerCapture(O.id), O.moving = !0), re(O.sheet, O.initialProgress + (O.last - O.start) / O.height))));
+	}
+	function I(t, n) {
+		if (!O || t.pointerId !== O.id) return;
+		let r = P();
+		if (!r || !_()) return;
+		if (!r.moving) {
+			r.initialSheet === null && N(r.sheet, 0);
+			return;
+		}
+		z.set(r.handle, i.performance.now() + 400);
+		let a = se(+!r.opening, r.start, n ? r.last : t.clientY, r.height);
+		e.settled(r.sheet, a === 1), e.read().sheet !== r.sheet && a === 0 && N(r.sheet, 0);
+	}
+	function L(e) {
+		I(e, !1);
+	}
+	function R(e) {
+		I(e, !0);
+	}
+	let z = /* @__PURE__ */ new WeakMap();
+	function W() {
+		let t = k;
+		k = null, i.removeEventListener("pointermove", le), i.removeEventListener("pointerup", ue), i.removeEventListener("pointercancel", ue), t?.input.hasPointerCapture(t.id) && t.input.releasePointerCapture(t.id), s && e.changed({ resizing: !1 });
+	}
+	function G(t) {
+		if (_() && Number.isFinite(t)) {
+			l = H(t, c, e.read().sidebarCollapsed);
+			try {
+				n.storage?.setItem("vb.docW", String(l));
+			} catch {}
+			K();
+		}
+	}
+	function le(e) {
+		if (k?.id === e.pointerId) {
+			if (!_() || !k.input.isConnected) {
+				W();
+				return;
+			}
+			G(k.width + k.x - e.clientX);
+		}
+	}
+	function ue(e) {
+		k?.id === e.pointerId && W();
+	}
+	function K() {
+		if (!_()) return;
+		c = t.root.clientWidth;
+		let n = e.read(), r = H(l, c, n.sidebarCollapsed);
+		e.changed({
+			documentWidth: r,
+			documentMaximum: V(c, n.sidebarCollapsed)
+		});
+		let a = t.root.clientHeight, o = t.root.getBoundingClientRect(), s = i.visualViewport, u = s ? Math.min(a, Math.max(0, s.offsetTop + s.height - o.top)) : a;
+		if (x.set(a > 0 ? u / a : 1), n.mobile) w.suspend(), T.suspend();
+		else if (n.documentVisible && !(n.boardFull && n.pane === "board")) {
+			let e = n.pane === "board" ? T : w;
+			(n.pane === "board" ? w : T).suspend(), e.set(ae(r, c, n.sidebarCollapsed));
+		} else w.suspend(), T.suspend();
+		n.mobile && i.scrollY && i.scrollTo(0, 0);
+		for (let [e, t] of E) n.mobile || !e.isConnected ? t.suspend() : t.set(ae(r, c, n.sidebarCollapsed));
+	}
+	function de(e) {
+		if (!_()) return;
+		u && !ie(u, e) && (j(), P(), ee.suspend(), te.suspend(), S.suspend(), h.doc = 0, d = null, M(null)), O && (O.pane !== e.pane || O.initialSheet !== e.sheet || !e.mobile) && (P(), e.mobile && u && N(u, +(e.sheet === u)));
+		let r = e.mobile && e.sheet && ie(e.sheet, e) ? e.sheet : null;
+		if (!e.mobile) j(), W(), C.suspend(), ee.suspend(), te.suspend(), S.suspend(), u && M(null), h.doc = h.side = 0, d = null;
+		else if (!O && r !== d) {
+			let e = u;
+			if (d = r, r) {
+				let n = t.root.ownerDocument.activeElement;
+				!e && n instanceof HTMLElement && (n instanceof HTMLButtonElement || n instanceof HTMLAnchorElement) && !b(r).contains(n) && (g = n), e && e !== r && (h[e] = 0, A(e).set(0)), N(r, 1);
+			} else e && N(e, 0);
+		}
+		let i = ++m;
+		n.enqueue(() => {
+			_() && i === m && (K(), u && e.mobile && !O && f === null && re(u, h[u]));
+		});
+	}
+	let fe = new ResizeObserver(K);
+	fe.observe(t.root);
+	let q = () => {
+		_() && K();
+	}, J = () => {
+		_() && (e.mobile(a.matches), de(e.read()));
+	}, pe = () => {
+		_() && o.matches && u && N(u, +(e.read().sheet === u));
+	}, Y = (n) => {
+		let r = e.read().sheet;
+		n.key === "Escape" && !n.defaultPrevented && _() && r && !t.root.ownerDocument.querySelector("dialog[open], [data-dialog-content], [data-alert-dialog-content]") && (n.preventDefault(), e.settled(r, !1));
+	};
+	i.visualViewport?.addEventListener("resize", q), i.visualViewport?.addEventListener("scroll", q), i.addEventListener("resize", q), a.addEventListener("change", J), o.addEventListener("change", pe), t.root.ownerDocument.addEventListener("keydown", Y);
+	try {
+		l = oe(n.storage?.getItem("vb.docW") ?? null);
+	} catch {}
+	return e.mobile(a.matches), K(), {
+		sync: de,
+		bindDocumentWidth(e) {
+			if (!_() || !e.isConnected) return () => {};
+			E.get(e)?.dispose();
+			let t = U(e, y, v);
+			return E.set(e, t), K(), () => {
+				E.get(e) === t && (E.delete(e), t.dispose());
+			};
+		},
+		cancelGestures() {
+			P(), W();
+		},
+		bindHandle(t, n, r) {
+			let o = !0, s = (s) => {
+				if (!o || !_() || !t.isConnected || !a.matches || O || s.button !== 0 || !s.isPrimary) return;
+				let c = e.read();
+				if ((r ? c.sheet !== null || c.boardFull : c.sheet !== n) || !r && !b(n).contains(t)) return;
+				let l = b(n).getBoundingClientRect().height;
+				l > 0 && (j(), z.delete(t), O = {
+					id: s.pointerId,
+					handle: t,
+					sheet: n,
+					opening: r,
+					initialSheet: c.sheet,
+					initialProgress: h[n],
+					pane: c.pane,
+					start: s.clientY,
+					last: s.clientY,
+					height: l,
+					moving: !1
+				}, M(n), e.changed({ draggingSheet: n }), i.addEventListener("pointermove", F), i.addEventListener("pointerup", L), i.addEventListener("pointercancel", R));
+			}, c = (e) => {
+				(z.get(t) ?? 0) >= i.performance.now() && e.detail > 0 && (z.delete(t), e.preventDefault(), e.stopPropagation());
+			};
+			t.addEventListener("pointerdown", s), t.addEventListener("click", c, !0);
+			let l = () => {
+				o && (o = !1, O?.handle === t && P(), t.removeEventListener("pointerdown", s), t.removeEventListener("click", c, !0), ne.delete(l));
+			};
+			return ne.add(l), l;
+		},
+		bindWidthInput(t) {
+			let n = !0, r = () => n && _() && t.isConnected && !a.matches && e.read().documentVisible && !(e.read().boardFull && e.read().pane === "board"), o = (n) => {
+				r() && !a.matches && !k && n.button === 0 && n.isPrimary && (n.preventDefault(), t.focus({ preventScroll: !0 }), t.setPointerCapture(n.pointerId), k = {
+					id: n.pointerId,
+					input: t,
+					x: n.clientX,
+					width: e.read().documentWidth
+				}, e.changed({ resizing: !0 }), i.addEventListener("pointermove", le), i.addEventListener("pointerup", ue), i.addEventListener("pointercancel", ue));
+			}, s = () => {
+				r() && G(t.valueAsNumber);
+			}, c = () => {
+				r() && G(380);
+			}, l = (t) => {
+				!r() || t.key !== "ArrowLeft" && t.key !== "ArrowRight" || (t.preventDefault(), G(e.read().documentWidth + (t.key === "ArrowLeft" ? 24 : -24)));
+			};
+			t.addEventListener("pointerdown", o), t.addEventListener("input", s), t.addEventListener("dblclick", c), t.addEventListener("keydown", l);
+			let u = () => {
+				n && (n = !1, k?.input === t && W(), t.removeEventListener("pointerdown", o), t.removeEventListener("input", s), t.removeEventListener("dblclick", c), t.removeEventListener("keydown", l), ne.delete(u));
+			};
+			return ne.add(u), u;
+		},
+		dispose() {
+			if (s) {
+				s = !1, m++, j(), P(), W(), fe.disconnect();
+				for (let e of [...ne]) e();
+				for (let e of D) e.dispose();
+				for (let e of E.values()) e.dispose();
+				E.clear(), i.visualViewport?.removeEventListener("resize", q), i.visualViewport?.removeEventListener("scroll", q), i.removeEventListener("resize", q), a.removeEventListener("change", J), o.removeEventListener("change", pe), t.root.ownerDocument.removeEventListener("keydown", Y);
+			}
+		}
+	};
+}
+// svelte/features/room-layout/controller.ts
+function G(e) {
+	let t = !0, n = 0, r = null;
+	return {
+		run(i) {
+			if (!t || !e.current()) return;
+			let a = ++n, o = !1, s = () => t && e.current() && a === n, c = () => {
+				s() && !o && (o = !0, i());
+			}, l = () => {
+				s() && !o && (e.deferSheet(c) || c());
+			};
+			r?.gate.deferNavigation(l) || l();
+		},
+		setViewerGate(e) {
+			if (!t) return () => {};
+			n++;
+			let i = { gate: e };
+			return r = i, () => {
+				r === i && (r = null, n++);
+			};
+		},
+		invalidate() {
+			n++;
+		},
+		dispose() {
+			t = !1, n++, r = null;
+		}
+	};
+}
+function le(e) {
+	let t = e.browser ?? I(window), n = e.scopeKey, r = !0, i = null, a = 0, o = {
+		pane: "doc",
+		sheet: null,
+		boardFull: !1,
+		documentVisible: !0,
+		sidebarCollapsed: e.sidebarCollapsed ?? !1,
+		mobile: !1,
+		closingUnconfirmed: !1,
+		presentedSheet: null,
+		draggingSheet: null,
+		documentWidth: 380,
+		documentMaximum: 380,
+		resizing: !1,
+		active: !0,
+		animationUnavailable: !1
+	}, s = k(o), c = /* @__PURE__ */ new Map(), l = /* @__PURE__ */ new Map(), u = /* @__PURE__ */ new Map(), d = () => r && e.scopeKey === n && e.current(), f = (e) => {
+		o = {
+			...o,
+			...e
+		}, s.set(o);
+	}, p = R({
+		browser: t,
+		current: d,
+		changed(t) {
+			if (!r) return;
+			let n = o.sheet !== null && t === null;
+			f({ sheet: t }), n && d() && e.onDocumentClosed(), i?.sync(o);
+		},
+		unconfirmed: (e) => {
+			r && f({ closingUnconfirmed: e });
+		}
+	}), m = G({
+		current: d,
+		deferSheet: p.deferNavigation
+	}), h = m.run, g = (t) => {
+		let n = o.pane !== t;
+		f({
+			pane: t,
+			documentVisible: !0
+		}), i?.sync(o), n && d() && e.onPane?.(t);
+	}, _ = () => {
+		for (let e of u.values()) e.stop?.(), e.stop = null;
+		a++;
+		for (let e of c.values()) e.stop?.(), e.stop = null;
+		for (let e of l.values()) e.stop?.(), e.stop = null;
+		i?.dispose(), i = null;
+	};
+	return {
+		state: s,
+		read: () => o,
+		setPane(e, t = {}) {
+			h(() => {
+				let n = t.toggle && o.mobile && o.sheet === "doc" && o.pane === e;
+				(e === "board" || o.mobile && t.open) && f({ boardFull: !1 }), g(e), o.mobile && t.open && (n ? p.close() : p.open("doc"));
+			});
+		},
+		toggleBoard() {
+			h(() => {
+				let e = !o.boardFull;
+				f({
+					boardFull: e,
+					documentVisible: !e
+				}), e && p.close(), i?.sync(o);
+			});
+		},
+		toggleDocument() {
+			h(() => {
+				o.mobile ? o.sheet === "doc" ? p.close() : (f({
+					documentVisible: !0,
+					boardFull: !1
+				}), p.open("doc")) : (f({ documentVisible: !o.documentVisible }), i?.sync(o));
+			});
+		},
+		toggleSidebar() {
+			h(() => {
+				f({ sidebarCollapsed: !o.sidebarCollapsed }), i?.sync(o);
+			});
+		},
+		openSheet(e) {
+			h(() => {
+				o.mobile && o.sheet !== e && (e === "doc" && f({
+					documentVisible: !0,
+					boardFull: !1
+				}), p.open(e));
+			});
+		},
+		closeSheet(e = !1) {
+			h(() => {
+				e ? p.take() : p.close();
+			});
+		},
+		takeSheetEntry() {
+			return d() ? (m.invalidate(), p.take()) : !1;
+		},
+		beforeNavigation() {
+			m.invalidate(), p.beforeNavigation(), i?.cancelGestures();
+		},
+		consumePop: p.consumePop,
+		deferNavigation: p.deferNavigation,
+		retryHistory() {
+			d() && p.retry();
+		},
+		setViewerGate(e) {
+			return m.setViewerGate(e);
+		},
+		bindHandle(e, t, n) {
+			if (!r) return () => {};
+			c.get(e)?.stop?.();
+			let a = {
+				sheet: t,
+				opening: n,
+				stop: i?.bindHandle(e, t, n) ?? null
+			};
+			return c.set(e, a), () => {
+				c.get(e) === a && (a.stop?.(), c.delete(e));
+			};
+		},
+		bindWidthInput(e) {
+			if (!r) return () => {};
+			l.get(e)?.stop?.();
+			let t = { stop: i?.bindWidthInput(e) ?? null };
+			return l.set(e, t), () => {
+				l.get(e) === t && (t.stop?.(), l.delete(e));
+			};
+		},
+		bindDocumentWidth(e) {
+			if (!d()) return () => {};
+			u.get(e)?.stop?.();
+			let t = { stop: i?.bindDocumentWidth(e) ?? null };
+			return u.set(e, t), () => {
+				u.get(e) === t && (t.stop?.(), u.delete(e));
+			};
+		},
+		mount(e) {
+			if (!d()) return () => {};
+			_();
+			let n = a;
+			i = W({
+				cells: e,
+				current: d,
+				browser: t,
+				read: () => o,
+				changed: (e) => {
+					r && a === n && f(e);
+				},
+				settled: (e, t) => {
+					d() && h(() => {
+						t ? p.open(e) : p.close();
+					});
+				},
+				mobile(e) {
+					if (!d() || o.mobile === e) return;
+					let t = o.mobile;
+					f({ mobile: e }), !e && t && (p.beforeNavigation(), o.boardFull && (f({ boardFull: !1 }), g("board")));
+				}
+			});
+			for (let [e, t] of c) t.stop = i.bindHandle(e, t.sheet, t.opening);
+			for (let [e, t] of l) t.stop = i.bindWidthInput(e);
+			for (let [e, t] of u) t.stop = i.bindDocumentWidth(e);
+			return i.sync(o), () => {
+				a === n && _();
+			};
+		},
+		dispose() {
+			r && (r = !1, m.dispose(), p.dispose(), _(), c.clear(), l.clear(), u.clear(), f({
+				active: !1,
+				sheet: null,
+				presentedSheet: null,
+				draggingSheet: null,
+				closingUnconfirmed: !1,
+				resizing: !1
+			}));
+		}
+	};
+}
+// svelte/features/room-layout/RoomLayoutFrame.svelte
+var ue = /* @__PURE__ */ new Set([
+	"$$slots",
+	"$$events",
+	"$$legacy"
+]), K = s("<div data-room-inbox-surface=\"\" class=\"tw:z-30 tw:col-start-2 tw:col-end-4 tw:row-start-1 tw:row-end-6 tw:min-h-0 tw:min-w-0 tw:overflow-hidden tw:bg-background\"><!></div>"), de = s("<div role=\"status\" class=\"tw:absolute tw:inset-x-4 tw:bottom-4 tw:z-50 tw:rounded-control tw:border tw:border-border tw:bg-popover tw:p-3 tw:text-popover-foreground\"><p> </p> <!></div>"), fe = s("<p role=\"alert\" class=\"tw:absolute tw:inset-x-4 tw:bottom-4 tw:z-50 tw:rounded-control tw:bg-destructive tw:p-3 tw:text-destructive-foreground\"> </p>"), q = s("<div data-vb-native=\"\" data-native-room-layout=\"\" class=\"tw:relative tw:h-full tw:min-h-0 tw:w-full tw:min-w-0 tw:overflow-hidden tw:bg-background tw:font-sans tw:text-sm tw:text-foreground\"><div><aside data-room-sidebar=\"\"><div class=\"tw:min-h-0 tw:flex-1 tw:overflow-y-auto tw:overscroll-contain\"><!></div> <button type=\"button\"><span class=\"tw:h-1 tw:w-10 tw:rounded-full tw:bg-border\"></span></button></aside> <div data-room-header=\"\"><!></div> <div data-room-peek=\"\"><!></div> <div data-room-attention=\"\"><!></div> <div data-room-chat=\"\"><!></div> <div data-room-composer=\"\"><!></div> <div data-room-document-toolbar=\"\"><!></div> <section data-room-document=\"\"><div class=\"tw:flex tw:min-h-0 tw:flex-1 tw:flex-col tw:overflow-auto tw:overscroll-contain\"><!></div> <button type=\"button\"><span class=\"tw:h-1 tw:w-10 tw:rounded-full tw:bg-border\"></span></button></section> <div data-room-board=\"\"><div class=\"tw:flex tw:min-h-0 tw:flex-1 tw:flex-col tw:overflow-auto tw:overscroll-contain tw:p-4\"><!></div> <button type=\"button\"><span class=\"tw:h-1 tw:w-10 tw:rounded-full tw:bg-border\"></span></button></div> <!> <input type=\"range\" min=\"260\" step=\"1\" data-room-width=\"\"/> <button type=\"button\" tabindex=\"-1\" data-room-scrim=\"\"></button></div> <!> <!></div>");
+function J(e, t) {
+	te(t, !0);
+	let r = () => m(P, "$view", s), [s, g] = d();
+	h(t, ue);
+	let k = O(() => t.controller), P = k.state, F = M(void 0), I = M(void 0), L = M(void 0), R = M(void 0), z = M(void 0), B = M(void 0), ie = M(void 0), V = M(void 0), H = M(void 0), ae = M(void 0), oe = M(void 0), se = M(void 0), ce = A(() => r().sidebarCollapsed ? "tw:animate-room-document-width-rail" : "tw:animate-room-document-width"), U = A(() => r().presentedSheet === "doc" || r().draggingSheet === "doc"), W = A(() => r().presentedSheet === "side" || r().draggingSheet === "side"), G = A(() => !r().mobile || r().sheet === "doc" || r().draggingSheet === "doc"), le = A(() => !r().mobile || r().sheet === "side" || r().draggingSheet === "side"), J = A(() => r().documentVisible && !(r().boardFull && r().pane === "board")), pe = A(() => r().mobile ? "tw:col-start-2 tw:row-start-3 tw:row-end-6 tw:z-20 tw:h-room-document-sheet tw:w-full tw:self-start tw:animate-room-sheet tw:rounded-b-surface tw:shadow-lg tw:has-[form:focus-within]:h-full tw:has-[[contenteditable=true]:focus]:h-full tw:has-[form:focus-within]:rounded-none" : ["tw:col-start-3 tw:row-start-2 tw:row-end-6 tw:h-full tw:border-l tw:border-border", N(ce)]);
+	function Y(e, t) {
+		return { destroy: k.bindHandle(e, t.sheet, t.opening) };
+	}
+	function me(e) {
+		return { destroy: k.bindWidthInput(e) };
+	}
+	function he(e) {
+		e.currentTarget instanceof HTMLButtonElement && e.currentTarget.isConnected && !e.currentTarget.disabled && k.closeSheet();
+	}
+	ne(() => {
+		if (!N(F) || !N(I) || !N(L) || !N(R) || !N(z) || !N(B) || !N(ie) || !N(V) || !N(H) || !N(ae) || !N(oe) || !N(se)) return;
+		let e = {
+			root: N(F),
+			viewport: N(I),
+			sidebar: N(L),
+			header: N(R),
+			peek: N(z),
+			attention: N(B),
+			chat: N(ie),
+			composer: N(V),
+			documentToolbar: N(H),
+			document: N(ae),
+			board: N(oe),
+			scrim: N(se)
+		}, n = k.mount(e), r = O(() => t.onChatSurface?.(e.chat)), i = O(() => t.onCells?.(e));
+		return () => {
+			n(), typeof r == "function" && r(), typeof i == "function" && i();
+		};
+	});
+	var X = q(), ge = w(X), _e = w(ge), ve = w(_e), ye = w(ve);
+	n(ye, () => t.sidebar), D(ve);
+	var be = j(ve, 2);
+	y(be, (e, t) => Y?.(e, t), () => ({
+		sheet: "side",
+		opening: !1
+	})), D(_e), f(_e, (e) => S(L, e), () => N(L));
+	var xe = j(_e, 2), Se = w(xe);
+	n(Se, () => t.header), D(xe), f(xe, (e) => S(R, e), () => N(R));
+	var Z = j(xe, 2), Ce = w(Z);
+	n(Ce, () => t.peek), D(Z), f(Z, (e) => S(z, e), () => N(z)), y(Z, (e, t) => Y?.(e, t), () => ({
+		sheet: "doc",
+		opening: !0
+	}));
+	var we = j(Z, 2), Te = w(we);
+	n(Te, () => t.attention ?? ee), D(we), f(we, (e) => S(B, e), () => N(B));
+	var Ee = j(we, 2), De = w(Ee);
+	n(De, () => t.chat), D(Ee), f(Ee, (e) => S(ie, e), () => N(ie));
+	var Oe = j(Ee, 2), ke = w(Oe);
+	n(ke, () => t.composer), D(Oe), f(Oe, (e) => S(V, e), () => N(V));
+	var Ae = j(Oe, 2), je = w(Ae);
+	n(je, () => t.documentToolbar), D(Ae), f(Ae, (e) => S(H, e), () => N(H));
+	var Me = j(Ae, 2), Ne = w(Me), Pe = w(Ne);
+	n(Pe, () => t.document), D(Ne);
+	var Fe = j(Ne, 2);
+	y(Fe, (e, t) => Y?.(e, t), () => ({
+		sheet: "doc",
+		opening: !1
+	})), D(Me), f(Me, (e) => S(ae, e), () => N(ae));
+	var Q = j(Me, 2), Ie = w(Q), Le = w(Ie);
+	n(Le, () => t.board), D(Ie);
+	var Re = j(Ie, 2);
+	y(Re, (e, t) => Y?.(e, t), () => ({
+		sheet: "doc",
+		opening: !1
+	})), D(Q), f(Q, (e) => S(oe, e), () => N(oe));
+	var ze = j(Q, 2), Be = (e) => {
+		var i = K(), a = w(i);
+		n(a, () => t.overlay ?? ee), D(i), C(() => i.inert = r().mobile && r().sheet === "side"), x(e, i);
+	};
+	p(ze, (e) => {
+		t.overlayOpen && e(Be);
+	});
+	var $ = j(ze, 2);
+	l($), y($, (e) => me?.(e));
+	var Ve = j($, 2);
+	f(Ve, (e) => S(se, e), () => N(se)), D(ge), f(ge, (e) => S(I, e), () => N(I));
+	var He = j(ge, 2), Ue = (e) => {
+		var n = de(), r = w(n), i = T(r, !0), o = j(r, 2);
+		_(o, {
+			variant: "outline",
+			onclick: () => k.retryHistory(),
+			children: (e, n) => {
+				re();
+				var r = c();
+				C(() => a(r, t.labels.historyRetry)), x(e, r);
+			},
+			$$slots: { default: !0 }
+		}), D(n), C(() => a(i, t.labels.historyUnconfirmed)), x(e, n);
+	};
+	p(He, (e) => {
+		r().closingUnconfirmed && e(Ue);
+	});
+	var We = j(He, 2), Ge = (e) => {
+		var n = fe(), r = T(n, !0);
+		C(() => a(r, t.labels.animationUnavailable)), x(e, n);
+	};
+	p(We, (e) => {
+		r().animationUnavailable && e(Ge);
+	}), D(X), f(X, (e) => S(F, e), () => N(F)), C(() => {
+		v(X, "data-pane", r().pane), v(X, "data-sheet", r().sheet ?? void 0), v(X, "data-board-full", r().boardFull), b(ge, 1, o([
+			"tw:relative tw:grid tw:w-full tw:min-w-0 tw:animate-room-viewport tw:grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] tw:overflow-hidden tw:[container-type:size]",
+			r().mobile ? "tw:grid-cols-[0_minmax(0,1fr)_0] tw:[&_input]:text-base tw:[&_textarea]:text-base tw:[&_select]:text-base" : "tw:grid-cols-[auto_minmax(0,1fr)_auto]",
+			r().resizing && "tw:cursor-col-resize tw:select-none"
+		])), _e.inert = !N(le), b(_e, 1, o(["tw:flex tw:min-h-0 tw:min-w-0 tw:flex-col tw:bg-background", r().mobile ? ["tw:absolute tw:inset-x-0 tw:top-[12%] tw:z-50 tw:h-[88%] tw:w-full tw:animate-room-sheet tw:rounded-surface tw:shadow-lg", N(W) ? "tw:visible" : "tw:invisible"] : ["tw:col-start-1 tw:row-start-1 tw:row-end-6 tw:border-r tw:border-border", r().sidebarCollapsed ? "tw:w-room-sidebar-rail" : "tw:w-room-sidebar"]])), v(be, "aria-label", t.labels.closeSidebar), be.disabled = !r().active || r().sheet !== "side", b(be, 1, o(r().mobile ? "tw:flex tw:shrink-0 tw:touch-none tw:items-center tw:justify-center tw:border-0 tw:bg-background tw:px-4 tw:pt-2 tw:pb-[max(0.75rem,env(safe-area-inset-bottom))]" : "tw:hidden")), xe.inert = t.overlayOpen || r().mobile && r().sheet === "side", b(xe, 1, o(["tw:relative tw:z-30 tw:col-start-2 tw:row-start-1 tw:min-w-0 tw:bg-background tw:px-4 tw:pt-[max(0.75rem,env(safe-area-inset-top))] tw:pb-3", t.overlayOpen && "tw:hidden"])), Z.inert = t.overlayOpen || r().mobile && r().sheet === "side", b(Z, 1, o(!t.overlayOpen && r().mobile && !r().boardFull ? "tw:relative tw:z-30 tw:col-start-2 tw:row-start-2 tw:min-w-0 tw:touch-none tw:border-b tw:border-border tw:bg-background" : "tw:hidden")), we.inert = t.overlayOpen || r().mobile && !!r().sheet, b(we, 1, o(["tw:col-start-2 tw:row-start-3 tw:min-w-0", t.overlayOpen && "tw:hidden"])), Ee.inert = t.overlayOpen || r().mobile && !!r().sheet, b(Ee, 1, o(t.overlayOpen || r().boardFull ? "tw:hidden" : "tw:col-start-2 tw:row-start-4 tw:min-h-0 tw:min-w-0 tw:overflow-y-auto tw:overscroll-contain tw:px-4")), Oe.inert = t.overlayOpen || r().mobile && !!r().sheet, b(Oe, 1, o(t.overlayOpen || r().boardFull ? "tw:hidden" : "tw:col-start-2 tw:row-start-5 tw:min-w-0 tw:pb-[env(safe-area-inset-bottom)]")), Ae.inert = t.overlayOpen, b(Ae, 1, o(!t.overlayOpen && !r().mobile && N(J) ? "tw:col-start-3 tw:row-start-1 tw:w-0 tw:min-w-full tw:border-l tw:border-border tw:bg-background" : "tw:hidden")), Me.inert = t.overlayOpen || !N(G), b(Me, 1, o([
+			"tw:relative tw:min-h-0 tw:min-w-0 tw:flex-col tw:overflow-hidden tw:bg-background",
+			N(J) && r().pane !== "board" ? "tw:flex" : "tw:hidden",
+			N(pe),
+			t.overlayOpen || r().mobile && !N(U) ? "tw:invisible" : "tw:visible"
+		])), v(Fe, "aria-label", t.labels.closeDocument), Fe.disabled = !r().active || r().sheet !== "doc" || r().pane === "board", b(Fe, 1, o(r().mobile ? "tw:flex tw:h-6 tw:shrink-0 tw:touch-none tw:items-center tw:justify-center tw:border-0 tw:bg-background" : "tw:hidden")), Q.inert = t.overlayOpen || r().mobile && (r().sheet === "side" || !r().boardFull && !N(G)), v(Q, "data-placement", r().boardFull ? "full" : "pane"), b(Q, 1, o([
+			"tw:relative tw:min-h-0 tw:min-w-0 tw:flex-col tw:overflow-hidden tw:bg-background",
+			r().boardFull ? "tw:col-start-2 tw:row-start-4 tw:row-end-6 tw:flex tw:h-full tw:w-full" : r().pane === "board" && N(J) ? ["tw:flex", N(pe)] : "tw:hidden",
+			t.overlayOpen || r().mobile && !r().boardFull && !N(U) ? "tw:invisible" : "tw:visible"
+		])), v(Re, "aria-label", t.labels.closeDocument), Re.disabled = !r().active || r().sheet !== "doc" || r().pane !== "board", b(Re, 1, o(r().mobile && !r().boardFull ? "tw:flex tw:h-6 tw:shrink-0 tw:touch-none tw:items-center tw:justify-center tw:border-0 tw:bg-background" : "tw:hidden")), v($, "max", r().documentMaximum), u($, r().documentWidth), $.disabled = !r().active || t.overlayOpen, v($, "aria-label", t.labels.documentWidth), b($, 1, o(!t.overlayOpen && !r().mobile && N(J) ? "tw:z-30 tw:col-start-3 tw:row-start-1 tw:row-end-6 tw:m-0 tw:h-full tw:w-3 tw:cursor-col-resize tw:touch-none tw:appearance-none tw:rounded-none tw:border-0 tw:bg-border tw:p-0 tw:outline-none tw:focus-visible:ring-2 tw:focus-visible:ring-ring" : "tw:hidden")), v(Ve, "aria-label", t.labels.closeSheet), Ve.disabled = !r().active || !r().sheet, b(Ve, 1, o(r().mobile ? [
+			"tw:col-start-2 tw:row-start-3 tw:row-end-6 tw:animate-room-scrim tw:border-0 tw:bg-scrim tw:p-0",
+			r().presentedSheet === "side" ? "tw:absolute tw:inset-0 tw:z-40" : "tw:z-10",
+			r().presentedSheet || r().draggingSheet ? "tw:visible" : "tw:invisible",
+			r().sheet ? "tw:pointer-events-auto" : "tw:pointer-events-none"
+		] : "tw:hidden"));
+	}), i("click", be, he), i("click", Fe, he), i("click", Re, he), i("click", Ve, he), x(e, X), E(), g();
+}
+r(["click"]);
+// svelte/features/room-layout/RoomLayout.svelte
+var pe = /* @__PURE__ */ new Set([
+	"$$slots",
+	"$$events",
+	"$$legacy"
+]);
+function Y(n, r) {
+	te(r, !0);
+	let i = h(r, pe);
+	var a = t(), o = P(a);
+	e(o, () => r.controller, (e) => {
+		J(e, g(() => i));
+	}), x(n, a), E();
+}
+// svelte/lib/components/Field.svelte
+var me = s("<p> </p>"), he = s("<div class=\"tw:grid tw:grid-cols-1 tw:gap-1.5 tw:font-sans tw:text-sm tw:text-foreground\"><!> <!> <!></div>");
+function X(e, t) {
+	let r = A(() => t.error || t.hint ? `${t.id}-description` : void 0);
+	var i = he(), s = w(i);
+	F(s, {
+		get for() {
+			return t.id;
+		},
+		children: (e, n) => {
+			re();
+			var r = c();
+			C(() => a(r, t.label)), x(e, r);
+		},
+		$$slots: { default: !0 }
+	});
+	var l = j(s, 2);
+	n(l, () => t.children, () => ({
+		id: t.id,
+		"aria-describedby": N(r),
+		"aria-invalid": !!t.error
+	}));
+	var u = j(l, 2), d = (e) => {
+		var n = me(), i = T(n, !0);
+		C(() => {
+			v(n, "id", N(r)), v(n, "role", t.error ? "alert" : void 0), b(n, 1, o(t.error ? "tw:m-0 tw:text-xs tw:font-medium tw:leading-4 tw:text-foreground" : "tw:m-0 tw:text-xs tw:leading-4 tw:text-muted-foreground")), a(i, t.error || t.hint);
+		}), x(e, n);
+	};
+	p(u, (e) => {
+		(t.error || t.hint) && e(d);
+	}), D(i), x(e, i);
+}
+export { I as i, Y as n, le as r, X as t };

@@ -1,0 +1,18 @@
+{
+  "sourceRevision": "c8be5e3789c00c36e08638eaa0e2c38d43e83778",
+  "node": "22.23.5",
+  "bun": "1.4.4",
+  "archiveSHA256": "d7e8d4ee05578ded13ac368ebafb9cdf590ca02c9ec916f530c48797218b5286",
+  "previewFiles": 79,
+  "sha256": {
+    "public/app-svelte.html": "4f0279503e4ba8022e868ab162559e32d764ec2062cbf6ad6a6e75f5dc1bde23",
+    "public/svelte-preview/app.js": "b92f6c17022d0971bd38f3526443977ca88786ef896569e6f281598340ec4710",
+    "public/svelte-preview/ui.css": "0c77adf933880354309872ec327f497169737993bbc32d01ea508b805af88ed6",
+    "public/sw.js": "80559c131cecdc0371262a69cbb70a1c0b8823a578a072459036fa65b9d867b7"
+  },
+  "defaultAssetsUnchangedByRefresh": {
+    "public/app.html": "d024591c5ecea0af9364ff3fd53e9ee5fc45b30eddf352ab7a11ff1a22a3e157",
+    "public/svelte/ui.js": "863eaed36b1b8419013a7a07d72aac26a00a90e69ab99fa0a0682803499d22b8"
+  },
+  "verification": "dc89810 full repository run passed every gate except Worker fixture typing; 11068b5 fixes passed Worker/UI/tooling, actual Sandbox and sidebar suites; c8be5e3 tooling, 15 diagnostic/model tests and build passed. Fresh CI/browser/performance and production acceptance remain required."
+}

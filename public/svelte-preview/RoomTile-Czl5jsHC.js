@@ -1,0 +1,164 @@
+import { B as e, G as t, K as n, L as r, S as i, V as a, W as o, a as s, j as c, q as l, v as u, x as d, z as f } from "./Button-Cx7HMFHY.js";
+import { A as p, Et as m, F as h, G as g, Tt as _, Yt as v, lt as y, q as b, qt as x, u as S, z as C } from "./shared-qe__81Sz.js";
+import { t as w } from "./Badge-LnHYpvr5.js";
+import { t as T } from "./IconButton-C3NNuUw1.js";
+import { g as E, l as D, m as O, p as k, u as A } from "./model-B78l00ZB.js";
+import { n as j } from "./copy-B66YGk9H.js";
+// svelte/features/waits/model.ts
+function M(e) {
+	let t = e.filter((e) => !e.ref.startsWith("t"));
+	return {
+		asks: t.length,
+		tasks: e.length > t.length,
+		claude: t.some((e) => /^[ab]\d/.test(e.ref))
+	};
+}
+// svelte/features/waits/WaitBadge.svelte
+var N = a("<span data-wait-kind=\"tasks\" role=\"img\"></span>");
+function P(t, n) {
+	m(n, !0);
+	let a = s(n, "class", 3, ""), l = y(() => M(n.waits));
+	var h = e(), g = C(h), v = (e) => {
+		{
+			let t = y(() => S(l).claude ? "destructive" : "warning"), i = y(() => n.label(S(l).asks)), s = y(() => n.label(S(l).asks));
+			w(e, {
+				"data-wait-kind": "asks",
+				get variant() {
+					return S(t);
+				},
+				get "aria-label"() {
+					return S(i);
+				},
+				get title() {
+					return S(s);
+				},
+				get class() {
+					return a();
+				},
+				children: (e, t) => {
+					x();
+					var n = o();
+					p(() => r(n, S(l).asks)), f(e, n);
+				},
+				$$slots: { default: !0 }
+			});
+		}
+	}, b = (e) => {
+		var t = N();
+		p(() => {
+			u(t, "aria-label", n.taskLabel), u(t, "title", n.taskLabel), d(t, 1, i(["tw:inline-block tw:size-2 tw:shrink-0 tw:rounded-full tw:bg-warning", a()]));
+		}), f(e, t);
+	};
+	c(g, (e) => {
+		S(l).asks ? e(v) : S(l).tasks && e(b, 1);
+	}), f(t, h), _();
+}
+// svelte/features/home/RoomTile.svelte
+var F = a("<img alt=\"\" loading=\"lazy\" class=\"tw:size-full tw:object-cover\"/>"), I = a("<span role=\"img\">●</span>"), L = a("<span role=\"img\" class=\"tw:absolute tw:bottom-0 tw:left-1 tw:text-primary tw:motion-safe:animate-spin\">✻</span>"), ee = a("<span role=\"img\" class=\"tw:absolute tw:bottom-0 tw:right-1 tw:text-warning\">☁</span>"), te = a("<b class=\"tw:break-words tw:pr-8 tw:text-base tw:font-semibold\"> </b> <p class=\"tw:m-0 tw:line-clamp-3 tw:break-words tw:text-sm tw:text-muted-foreground\"> </p>", 1), ne = a("<article><a><span><!> <!> <!> <!></span> <!> <!></a> <!></article>");
+function R(e, t) {
+	m(t, !0);
+	let a = s(t, "seen", 3, 0), x = s(t, "waits", 19, () => []), w = s(t, "compact", 3, !1), N = s(t, "selected", 3, !1), R = y(() => E(t.room, a())), z = y(() => M(x())), B = y(() => t.room.title ?? "vibebook"), V = (e, n) => j(t.lang, e, n), H = y(() => [
+		S(B),
+		S(R) ? V(S(R) === "human" ? "newHuman" : "newAgent") : "",
+		(t.room.busy_until ?? 0) > t.now ? V("busy") : "",
+		t.room.sandboxes_running ? V("cloud") : "",
+		S(z).asks ? V("waiting", { n: S(z).asks }) : S(z).tasks ? V("taskPending") : ""
+	].filter(Boolean).join(" · "));
+	var U = ne(), W = h(U), G = h(W), K = h(G), q = (e) => {
+		var n = F();
+		p((e) => u(n, "src", e), [() => D(t.room)]), f(e, n);
+	}, J = y(() => D(t.room)), Y = (e) => {
+		var t = o();
+		p((e) => r(t, e), [() => A(S(B))]), f(e, t);
+	};
+	c(K, (e) => {
+		S(J) ? e(q) : e(Y, -1);
+	});
+	var X = b(K, 2), re = (e) => {
+		var t = I();
+		p((e) => {
+			u(t, "aria-label", e), d(t, 1, i(S(R) === "human" ? "tw:absolute tw:right-1 tw:top-0 tw:text-primary" : "tw:absolute tw:right-1 tw:top-0 tw:text-warning"));
+		}, [() => V(S(R) === "human" ? "newHuman" : "newAgent")]), f(e, t);
+	};
+	c(X, (e) => {
+		S(R) && e(re);
+	});
+	var Z = b(X, 2), ie = (e) => {
+		var t = L();
+		p((e) => u(t, "aria-label", e), [() => V("busy")]), f(e, t);
+	};
+	c(Z, (e) => {
+		(t.room.busy_until ?? 0) > t.now && e(ie);
+	});
+	var ae = b(Z, 2), oe = (e) => {
+		var t = ee();
+		p((e) => u(t, "aria-label", e), [() => V("cloud")]), f(e, t);
+	};
+	c(ae, (e) => {
+		t.room.sandboxes_running && e(oe);
+	}), v(G);
+	var Q = b(G, 2), $ = (e) => {
+		var n = te(), i = C(n), a = g(i, !0), o = b(i, 2), s = g(o, !0);
+		p((e) => {
+			r(a, S(B)), r(s, e);
+		}, [() => t.room.summary || V("summary")]), f(e, n);
+	};
+	c(Q, (e) => {
+		w() || e($);
+	});
+	var se = b(Q, 2);
+	{
+		let e = y(() => V("taskPending")), t = y(() => w() ? "tw:absolute tw:-bottom-1 tw:-right-1" : "");
+		P(se, {
+			get waits() {
+				return x();
+			},
+			label: (e) => V("waiting", { n: e }),
+			get taskLabel() {
+				return S(e);
+			},
+			get class() {
+				return S(t);
+			}
+		});
+	}
+	v(W);
+	var ce = b(W, 2), le = (e) => {
+		{
+			let n = y(() => V("roomSettings", { title: S(B) }));
+			T(e, {
+				icon: "chevronDown",
+				get label() {
+					return S(n);
+				},
+				class: "tw:absolute tw:right-2 tw:top-2",
+				onclick: (e) => {
+					e.currentTarget.isConnected && t.onsettings?.(t.room.id, e.currentTarget);
+				}
+			});
+		}
+	};
+	c(ce, (e) => {
+		t.onsettings && !w() && e(le);
+	}), v(U), p((e, n) => {
+		u(U, "data-room-id", t.room.id), d(U, 1, i(w() ? "tw:relative tw:flex tw:items-center tw:justify-center" : "tw:relative tw:min-w-0 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-4 tw:shadow-xs")), u(U, "draggable", !!t.ondragstart), u(W, "href", e), u(W, "aria-label", S(H)), u(W, "aria-current", N() ? "page" : void 0), d(W, 1, i(w() ? "tw:aria-[current=page]:ring-2 tw:aria-[current=page]:ring-primary tw:aria-[current=page]:ring-offset-2 tw:aria-[current=page]:ring-offset-background tw:relative tw:flex tw:size-12 tw:shrink-0 tw:items-center tw:justify-center tw:rounded-control tw:outline-none tw:focus-visible:ring-2 tw:focus-visible:ring-ring" : "tw:flex tw:min-w-0 tw:flex-col tw:gap-3 tw:rounded-control tw:text-foreground tw:no-underline tw:outline-none tw:focus-visible:ring-2 tw:focus-visible:ring-ring")), d(G, 1, n);
+	}, [() => O({ roomId: t.room.id }), () => i([
+		w() ? "tw:size-11" : "tw:h-28 tw:w-full",
+		"tw:relative tw:inline-grid tw:place-items-center tw:overflow-hidden tw:rounded-control tw:text-xl tw:font-semibold",
+		k(t.room)
+	])]), l("dragstart", U, (e) => {
+		e.currentTarget.isConnected && t.ondragstart?.(e);
+	}), l("dragover", U, (e) => {
+		e.currentTarget.isConnected && t.ondragover?.(e);
+	}), l("dragleave", U, (e) => {
+		e.currentTarget.isConnected && t.ondragleave?.(e);
+	}), l("drop", U, (e) => {
+		e.currentTarget.isConnected && t.ondrop?.(e);
+	}), n("contextmenu", U, (e) => {
+		e.currentTarget.isConnected && t.onsettings && (e.preventDefault(), t.onsettings(t.room.id, e.currentTarget.querySelector("a") ?? e.currentTarget));
+	}), n("click", W, (e) => {
+		!e.currentTarget.isConnected || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0 || (e.preventDefault(), t.onnavigate({ roomId: t.room.id }));
+	}), f(e, U), _();
+}
+t(["contextmenu", "click"]);
+export { P as n, R as t };

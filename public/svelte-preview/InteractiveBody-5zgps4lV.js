@@ -1,0 +1,1239 @@
+import { A as e, B as t, L as n, N as r, O as i, S as a, V as o, W as s, a as c, j as l, k as u, t as d, v as f, x as p, z as m } from "./Button-Cx7HMFHY.js";
+import { $ as h, A as g, An as _, Et as v, F as y, G as b, Tt as x, Y as S, Yt as C, ct as w, h as T, j as E, lt as D, q as O, qt as k, tt as A, u as j, wn as M, z as N } from "./shared-qe__81Sz.js";
+import { d as P, f as F, i as I, l as L, n as R, o as z, p as B, t as V, u as H } from "./schemas-Dr5xbymo.js";
+import { t as ee } from "./Card-CRyy0OGL.js";
+import { t as U } from "./Icon-Ch3wLUmI.js";
+import { t as W } from "./Dialog-BkHABdQA.js";
+import { t as te } from "./Progress-Bphyn8tw.js";
+import { t as G } from "./Checkbox-BfJTROWF.js";
+import { t as K } from "./RadioGroup-DUkqzIm1.js";
+import { n as q } from "./privacy-DXCRlVGH.js";
+import { t as ne } from "./AlertDialog-DYYQX3NU.js";
+import { n as J, r as Y, t as X } from "./eligibility-Dtv96E97.js";
+import { t as re } from "./Avatar-8pZy6e0J.js";
+// shared/card.ts
+var Z = P(B()), ie = R(B()), Q = (e, t) => H({
+	type: z(e),
+	props: t,
+	children: ie
+}), ae = I("type", [
+	Q("Card", H({
+		title: Z,
+		subtitle: Z
+	})),
+	Q("Section", H({ title: Z })),
+	Q("Text", H({
+		content: B(),
+		style: V([
+			"plain",
+			"bold",
+			"muted",
+			"code"
+		])
+	})),
+	Q("Fields", H({})),
+	Q("Field", H({
+		label: B(),
+		value: B()
+	})),
+	Q("Table", H({
+		headers: R(B()),
+		rows: R(R(B()))
+	})),
+	Q("Chart", H({
+		title: Z,
+		kind: V(["line", "bar"]),
+		data: R(H({
+			label: B(),
+			value: L()
+		}))
+	})),
+	Q("Divider", H({})),
+	Q("Image", H({
+		url: B(),
+		alt: Z
+	})),
+	Q("Actions", H({})),
+	Q("Button", H({
+		label: B(),
+		value: Z,
+		style: P(V(["primary", "danger"]))
+	})),
+	Q("LinkButton", H({
+		label: B(),
+		url: B()
+	}))
+]), oe = H({
+	root: B(),
+	elements: F(B(), ae)
+}), se = (e) => (t, n) => {
+	if (t == null) return;
+	if (typeof t != "string" && typeof t != "number") throw Error(`${n} must be text`);
+	let r = String(t);
+	if (r.length > e) throw Error(`${n} is longer than ${e} characters`);
+	return r;
+}, $ = se(200), ce = se(2e3), le = (e, t) => {
+	let n = $(e, t);
+	if (!n || !/^https?:\/\/[^\s"'<>]+$/i.test(n)) throw Error(`${t} must be an http(s) URL`);
+	return n;
+}, ue = {
+	Card: {
+		props: (e) => ({
+			title: $(e.title, "Card.title"),
+			subtitle: $(e.subtitle, "Card.subtitle")
+		}),
+		kids: "any"
+	},
+	Section: {
+		props: (e) => ({ title: $(e.title, "Section.title") }),
+		kids: "any"
+	},
+	Text: { props: (e) => {
+		let t = ce(e.content ?? e.text, "Text.content");
+		if (!t) throw Error("Text needs content");
+		return {
+			content: t,
+			style: [
+				"plain",
+				"bold",
+				"muted",
+				"code"
+			].includes(String(e.style)) ? String(e.style) : "plain"
+		};
+	} },
+	Fields: {
+		props: () => ({}),
+		kids: ["Field"]
+	},
+	Field: { props: (e) => ({
+		label: $(e.label, "Field.label") ?? "",
+		value: ce(e.value, "Field.value") ?? ""
+	}) },
+	Table: { props: (e) => {
+		let t = (Array.isArray(e.headers) ? e.headers : Array.isArray(e.columns) ? e.columns : []).slice(0, 10).map((e, t) => $(typeof e == "object" && e ? e.label : e, `Table.headers[${t}]`) ?? "");
+		if (!Array.isArray(e.rows)) throw Error("Table needs rows (a list of lists)");
+		if (e.rows.length > 50) throw Error("Table has more than 50 rows");
+		return {
+			headers: t,
+			rows: e.rows.map((e, t) => {
+				if (!Array.isArray(e)) throw Error(`Table.rows[${t}] must be a list`);
+				return e.slice(0, 10).map((e, n) => $(e, `Table.rows[${t}][${n}]`) ?? "");
+			})
+		};
+	} },
+	Chart: { props: (e) => {
+		let t = Array.isArray(e.data) ? e.data : [];
+		if (!t.length || t.length > 30) throw Error("Chart needs 1-30 points in data: [{label, value}]");
+		return {
+			title: $(e.title, "Chart.title"),
+			kind: e.kind === "line" || e.chartType === "line" ? "line" : "bar",
+			data: t.map((e, t) => {
+				let n = Number(e?.value);
+				if (!Number.isFinite(n)) throw Error(`Chart.data[${t}].value must be a number`);
+				return {
+					label: $(e?.label, `Chart.data[${t}].label`) ?? "",
+					value: n
+				};
+			})
+		};
+	} },
+	Divider: { props: () => ({}) },
+	Image: { props: (e, t) => {
+		let n = ($(e.url ?? e.src, "Image.url") ?? "").match(/^(?:https?:\/\/[^/]+)?\/api\/books\/([a-z0-9]+)\/files\/([a-z0-9]+)$/);
+		if (!n || n[1] !== t) throw Error("Image.url must be a file of this room (/api/books/<room>/files/<id>, e.g. from upload_file)");
+		return {
+			url: `/api/books/${n[1]}/files/${n[2]}`,
+			alt: $(e.alt, "Image.alt")
+		};
+	} },
+	Actions: {
+		props: () => ({}),
+		kids: ["Button", "LinkButton"]
+	},
+	Button: { props: (e) => {
+		let t = $(e.label, "Button.label");
+		if (!t) throw Error("Button needs a label");
+		return {
+			label: t,
+			value: $(e.value, "Button.value"),
+			style: e.style === "primary" || e.style === "danger" ? e.style : void 0
+		};
+	} },
+	LinkButton: { props: (e) => ({
+		label: $(e.label, "LinkButton.label") ?? "Abrir",
+		url: /^#(m\d{1,9}|e[a-z0-9]{4,16}|doc(:[a-z0-9]{4,16})?|app:(room|[a-f0-9]{12})\/[\w.-]{1,100})$/.test(String(e.url ?? "")) ? String(e.url) : le(e.url, "LinkButton.url (http(s), or #m<message id>, #e<epic id>, #doc, #doc:<epic id>)")
+	}) }
+}, de = Object.keys(ue);
+function fe(e, t) {
+	let n = typeof e == "string" ? JSON.parse(e) : e;
+	if (!n || typeof n != "object") throw Error("card must be an object: { root, elements }");
+	let { root: r, elements: i } = n;
+	if (typeof r != "string" || !i || typeof i != "object") throw Error("card must be { root: <id>, elements: { <id>: { type, props, children } } }");
+	let a = i;
+	if (Object.keys(a).length > 150) throw Error("card has more than 150 elements");
+	let o = {}, s = (e, n, r) => {
+		if (n > 8) throw Error("card is nested more than 8 levels");
+		if (o[e]) throw Error(`element ${e} is used twice`);
+		let i = a[e];
+		if (!i) throw Error(`element ${e} is missing from elements`);
+		let c = String(i.type), l = ue[c];
+		if (!l) throw Error(`unknown component ${c}; use one of ${de.join(", ")}`);
+		if (r && r !== "any" && !r.includes(c)) throw Error(`${c} can't be inside this parent (allowed: ${r.join(", ")})`);
+		let u = Object.fromEntries(Object.entries(l.props(i.props ?? {}, t)).filter(([, e]) => e !== void 0)), d = Array.isArray(i.children) ? i.children.map(String) : [];
+		if (d.length && !l.kids) throw Error(`${c} takes no children`);
+		o[e] = {
+			type: c,
+			props: u,
+			children: d
+		};
+		for (let e of d) s(e, n + 1, l.kids);
+	};
+	if (s(r, 0), o[r].type !== "Card") throw Error("the root element must be a Card");
+	return oe.parse({
+		root: r,
+		elements: o
+	});
+}
+// svelte/features/chat-interactive/model.ts
+function pe(e, t) {
+	if (!e || e.length > 1e6) return null;
+	try {
+		return fe(e, t);
+	} catch {
+		return null;
+	}
+}
+function me(e, t) {
+	let n = e.options.map((t, n) => e.votes[n]?.length || 0), r = n.reduce((e, t) => e + t, 0), i = Math.max(...n, 0);
+	return {
+		voters: new Set(e.votes.flat()).size,
+		rows: e.options.map((a, o) => ({
+			label: a,
+			index: o,
+			count: n[o],
+			percent: r ? Math.round(100 * n[o] / r) : 0,
+			mine: !!e.votes[o]?.includes(t),
+			winner: e.closed && n[o] > 0 && n[o] === i,
+			voters: (e.votes[o] || []).slice(0, 4)
+		}))
+	};
+}
+var he = (e, t) => e.members.includes(e.me) && !t.closed && (t.author === e.me || t.author === "ai");
+function ge(e) {
+	let t = Math.max(...e.map((e) => Math.abs(e.value)), 1), n = e.map((e) => e.value / t), r = Math.min(...n, 0), i = 1 - r || 1;
+	return {
+		bars: e.map((e) => Math.round(Math.abs(e.value) / t * 100)),
+		points: n.map((t, n) => `${(e.length > 1 ? n * 300 / (e.length - 1) : 0).toFixed(1)},${(90 - (t - r) / i * 90).toFixed(1)}`).join(" ")
+	};
+}
+var _e = (e) => JSON.stringify([
+	e.id,
+	e.author,
+	e.question,
+	e.options,
+	e.multi
+]), ve = 2e3;
+function ye(e) {
+	let t = ve, n = /* @__PURE__ */ new Set();
+	for (let [r, i] of Object.entries(e.elements)) {
+		if (i.type !== "Table" && i.type !== "Chart") continue;
+		let e = i.type === "Table" ? i.props.rows.reduce((e, t) => e + t.length * 2 + 2, 0) + i.props.headers.length * 2 + 4 : i.props.data.length * 8 + 8;
+		e <= t && (n.add(r), t -= e);
+	}
+	return n;
+}
+// svelte/features/chat-interactive/CardChart.svelte
+var be = o("<figcaption class=\"tw:whitespace-pre-wrap tw:text-sm tw:font-medium\"> </figcaption>"), xe = o("<svg role=\"img\" viewBox=\"-4 -4 308 98\" preserveAspectRatio=\"none\" class=\"tw:h-24 tw:w-full tw:text-primary\"><polyline fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" vector-effect=\"non-scaling-stroke\"></polyline></svg> <div class=\"tw:flex tw:justify-between tw:gap-2 tw:text-xs tw:text-muted-foreground\"><span> </span><span> </span></div>", 1), Se = o("<div class=\"tw:grid tw:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] tw:items-center tw:gap-2 tw:text-xs\"><span class=\"tw:whitespace-pre-wrap tw:break-words\"> </span><!><b> </b></div>"), Ce = o("<figure class=\"tw:m-0 tw:space-y-2\"><!><!></figure>"), we = o("<!> ", 1), Te = o("<div data-native-card-chart=\"\" class=\"tw:space-y-2\"><!></div>");
+function Ee(e, r) {
+	v(r, !0);
+	let a = (e) => {
+		var a = Ce(), o = y(a), s = (e) => {
+			var t = be(), i = b(t, !0);
+			g(() => n(i, r.chart.title)), m(e, t);
+		};
+		l(o, (e) => {
+			r.chart.title && e(s);
+		});
+		var c = O(o), p = (e) => {
+			var t = xe(), i = N(t), a = b(i), o = O(i, 2), s = y(o), c = b(s, !0), l = O(s), u = b(l, !0);
+			C(o), g((e, t) => {
+				f(i, "aria-label", e), f(a, "points", j(d).points), n(c, r.chart.data[0]?.label), n(u, t);
+			}, [() => r.chart.title || r.vb.t("Gráfico"), () => r.chart.data.at(-1)?.label]), m(e, t);
+		}, h = (e) => {
+			var a = t(), o = N(a);
+			i(o, 17, () => r.chart.data, u, (e, t, r) => {
+				var i = Se(), a = y(i), o = b(a, !0), s = O(a);
+				{
+					let e = D(() => `${j(t).label}: ${j(t).value}`);
+					te(s, {
+						get value() {
+							return j(d).bars[r];
+						},
+						get label() {
+							return j(e);
+						}
+					});
+				}
+				var c = O(s), l = b(c, !0);
+				C(i), g(() => {
+					n(o, j(t).label), n(l, j(t).value);
+				}), m(e, i);
+			}), m(e, a);
+		};
+		l(c, (e) => {
+			r.chart.kind === "line" ? e(p) : e(h, -1);
+		}), C(a), m(e, a);
+	}, o = c(r, "inline", 3, !0), s = c(r, "open", 3, !1), d = D(() => ge(r.chart.data));
+	var p = Te(), h = y(p), _ = (e) => {
+		a(e);
+	}, S = (e) => {
+		{
+			let t = (e) => {
+				var t = we(), i = N(t);
+				U(i, { name: "chart" });
+				var a = O(i);
+				g((e, t) => n(a, `${e ?? ""} ·
+        ${t ?? ""}`), [() => r.chart.title || r.vb.t("Gráfico"), () => r.vb.t("Abrir em tela cheia")]), m(e, t);
+			}, i = D(() => r.chart.title || r.vb.t("Gráfico")), o = D(() => r.vb.t("Fechar"));
+			W(e, {
+				get title() {
+					return j(i);
+				},
+				get closeLabel() {
+					return j(o);
+				},
+				fullScreen: !0,
+				get open() {
+					return s();
+				},
+				get onOpenChange() {
+					return r.onOpenChange;
+				},
+				trigger: t,
+				children: (e, t) => {
+					a(e);
+				},
+				$$slots: {
+					trigger: !0,
+					default: !0
+				}
+			});
+		}
+	};
+	l(h, (e) => {
+		o() ? e(_) : e(S, -1);
+	}), C(p), m(e, p), x();
+}
+// svelte/features/chat-interactive/CardTable.svelte
+var De = o("<th class=\"tw:whitespace-pre-wrap tw:border tw:border-border tw:bg-muted tw:px-3 tw:py-2 tw:text-left tw:font-semibold\"> </th>"), Oe = o("<thead><tr></tr></thead>"), ke = o("<td class=\"tw:whitespace-pre-wrap tw:border tw:border-border tw:px-3 tw:py-2 tw:align-top\"> </td>"), Ae = o("<tr></tr>"), je = o("<div class=\"tw:max-w-full tw:overflow-x-auto\"><table class=\"tw:w-full tw:border-collapse tw:font-sans tw:text-sm tw:text-foreground\"><!><tbody></tbody></table></div>"), Me = o("<!> ", 1), Ne = o("<div data-native-card-table=\"\" class=\"tw:space-y-2\"><!> <!></div>");
+function Pe(e, t) {
+	v(t, !0);
+	let r = (e) => {
+		var r = je(), a = y(r), o = y(a), s = (e) => {
+			var r = Oe(), a = y(r);
+			i(a, 21, () => t.headers, u, (e, t) => {
+				var r = De(), i = b(r, !0);
+				g(() => n(i, j(t))), m(e, r);
+			}), C(a), C(r), m(e, r);
+		};
+		l(o, (e) => {
+			t.headers.length && e(s);
+		});
+		var c = O(o);
+		i(c, 21, () => t.rows, u, (e, t) => {
+			var r = Ae();
+			i(r, 21, () => j(t), u, (e, t) => {
+				var r = ke(), i = b(r, !0);
+				g(() => n(i, j(t))), m(e, r);
+			}), C(r), m(e, r);
+		}), C(c), C(a), C(r), m(e, r);
+	}, a = c(t, "inline", 3, !0), o = c(t, "open", 3, !1);
+	var s = Ne(), d = y(s);
+	{
+		let e = (e) => {
+			var r = Me(), i = N(r);
+			U(i, { name: "expand" });
+			var a = O(i, 1, !0);
+			g((e) => n(a, e), [() => t.vb.t("Abrir em tela cheia")]), m(e, r);
+		}, i = D(() => t.vb.t("Fechar"));
+		W(d, {
+			get title() {
+				return t.title;
+			},
+			get closeLabel() {
+				return j(i);
+			},
+			fullScreen: !0,
+			get open() {
+				return o();
+			},
+			get onOpenChange() {
+				return t.onOpenChange;
+			},
+			trigger: e,
+			children: (e, t) => {
+				r(e);
+			},
+			$$slots: {
+				trigger: !0,
+				default: !0
+			}
+		});
+	}
+	var f = O(d, 2), p = (e) => {
+		r(e);
+	};
+	l(f, (e) => {
+		a() && e(p);
+	}), C(s), m(e, s), x();
+}
+// svelte/features/chat-interactive/session.ts
+var Fe = () => ({
+	phase: "idle",
+	error: ""
+}), Ie = {
+	schedule: (e, t) => setTimeout(e, t),
+	cancel: (e) => clearTimeout(e)
+}, Le = 1e4;
+function Re(e, t, n, r = Ie, i = "card") {
+	let a, o = !0, s, c, l, u, d = Fe(), f = (e) => {
+		d = e, n(e);
+	};
+	function p(e = Fe()) {
+		u?.timer !== void 0 && r.cancel(u.timer), u = void 0, f(e);
+	}
+	function m(e) {
+		return JSON.stringify([
+			e.thread,
+			e.author,
+			e.kind,
+			i === "card" ? e.card : void 0,
+			i === "permission" ? e.choices : void 0,
+			i === "poll" ? e.poll : void 0,
+			i === "permission" ? e.text : void 0
+		]);
+	}
+	function h(e) {
+		if (!s || !c) return !0;
+		if (e.kind === "reply") return !!X(s, c) || i === "permission" && !!Y(c.choices)?.closed;
+		let t = c.poll ? s.polls?.[c.poll] : void 0;
+		return !t || t.closed || e.kind === "vote" && !!t.votes[e.option]?.includes(s.me) === e.desired;
+	}
+	function g(n) {
+		if (!o) return;
+		if (a === void 0 && (a = n.me), n.id !== e || n.me !== a) {
+			s = void 0, c = void 0, p();
+			return;
+		}
+		s = n;
+		let r = n.messages.find((e) => e.id === t) || n.origins?.find((e) => e.id === t), f = r === c ? l : r ? m(r) : void 0;
+		if (f === l ? c = r : (l = f, c = r, p()), u && u.kind !== "reply") {
+			let e = r?.poll ? n.polls?.[r.poll] : void 0;
+			e && _e(e) === u.identity || p();
+		}
+		u && h(u) && p(), r && n.members.includes(n.me) || p(), d.phase !== "idle" && r && (X(n, r) || i === "permission" && Y(r.choices)?.closed || i === "poll" && r.poll && n.polls?.[r.poll]?.closed) && p();
+	}
+	async function _(e, t, n) {
+		u = t, f({
+			phase: "pending",
+			error: ""
+		});
+		let i = () => o && u?.token === t.token;
+		try {
+			let a = await n(e);
+			if (!i()) return;
+			if (h(t)) {
+				p();
+				return;
+			}
+			if (!a.ok) {
+				a.error === "timeout" || a.error === "disconnected" || a.error === "server error" ? f({
+					phase: "unconfirmed",
+					error: a.error
+				}) : p({
+					phase: "error",
+					error: a.error
+				});
+				return;
+			}
+			t.timer = r.schedule(() => {
+				i() && (t.timer = void 0, f({
+					phase: "unconfirmed",
+					error: "unconfirmed"
+				}));
+			}, Le);
+		} catch (e) {
+			i() && f({
+				phase: "unconfirmed",
+				error: e instanceof Error ? e.message : "failed"
+			});
+		}
+	}
+	return {
+		sync: g,
+		reply(e, n) {
+			return !o || !s || !c || u || d.phase === "unconfirmed" || !J(s, c) || !e.trim() || !(i === "permission" && q(c) && !Y(c.choices)?.closed ? ["Aprovar", "Negar"] : i === "card" ? Object.values(pe(c.card, s.id)?.elements || {}).flatMap((e) => e.type === "Button" ? [e.props.value || e.props.label] : []) : []).includes(e) ? Promise.resolve() : _({
+				t: "msg",
+				thread: c.thread,
+				text: e,
+				files: [],
+				reply_to: t
+			}, {
+				token: Symbol(),
+				kind: "reply"
+			}, n);
+		},
+		vote(e, t) {
+			let n = c?.poll ? s?.polls?.[c.poll] : void 0;
+			return !o || !s || !c || u || !s.members.includes(s.me) || !n || n.closed || !Number.isInteger(e) || e < 0 || e >= n.options.length ? Promise.resolve() : _({
+				t: "vote",
+				id: n.id,
+				opt: e
+			}, {
+				token: Symbol(),
+				kind: "vote",
+				identity: _e(n),
+				option: e,
+				desired: !n.votes[e]?.includes(s.me)
+			}, t);
+		},
+		close(e) {
+			let t = c?.poll ? s?.polls?.[c.poll] : void 0;
+			return !o || !s || !c || u || !t || !he(s, t) ? Promise.resolve() : _({
+				t: "poll.close",
+				id: t.id
+			}, {
+				token: Symbol(),
+				kind: "close",
+				identity: _e(t)
+			}, e);
+		},
+		dispose() {
+			o = !1, u?.timer !== void 0 && r.cancel(u.timer), u = void 0, s = void 0, c = void 0, l = void 0;
+		}
+	};
+}
+// svelte/features/chat-interactive/CardView.svelte
+var ze = o("<h5 class=\"tw:m-0 tw:whitespace-pre-wrap tw:font-sans tw:text-sm tw:font-semibold tw:tracking-normal tw:[font-variation-settings:normal]\"> </h5>"), Be = o("<section class=\"tw:space-y-2\"><!><!></section>"), Ve = o("<p> </p>"), He = o("<dl class=\"tw:m-0 tw:grid tw:grid-cols-1 tw:gap-3 tw:sm:grid-cols-2\"></dl>"), Ue = o("<div class=\"tw:min-w-0\"><dt class=\"tw:whitespace-pre-wrap tw:text-xs tw:text-muted-foreground\"> </dt> <dd class=\"tw:m-0 tw:whitespace-pre-wrap tw:break-words tw:font-medium\"> </dd></div>"), We = o("<hr class=\"tw:my-3 tw:border-border\"/>"), Ge = o("<img loading=\"lazy\" class=\"tw:block tw:max-w-full tw:rounded-control tw:object-contain\"/>"), Ke = o("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div>"), qe = o("<span><!> </span>"), Je = o(" <!>", 1), Ye = o("<a target=\"_blank\" rel=\"noopener noreferrer\" class=\"tw:inline-flex tw:items-center tw:gap-1 tw:rounded-button tw:px-3 tw:py-1.5 tw:text-sm tw:text-link tw:hover:underline tw:focus-visible:outline-2 tw:focus-visible:outline-ring\"> <!></a>"), Xe = o("<p class=\"tw:m-0 tw:text-xs tw:text-muted-foreground\"> </p>"), Ze = o("<div data-native-card=\"\" data-vb-native=\"\" class=\"tw:space-y-2 tw:font-sans tw:text-sm tw:text-foreground\"><!> <!></div>");
+function Qe(e, o) {
+	v(o, !0);
+	let c = (e, r = _, v) => {
+		let x = w(() => M(v?.(), () => o.card.root, !0));
+		var S = t(), T = N(S), E = (e) => {
+			{
+				let n = D(() => r().props.title ? r().props.subtitle : void 0);
+				ee(e, {
+					get title() {
+						return r().props.title;
+					},
+					get description() {
+						return j(n);
+					},
+					class: "tw:shadow-none tw:[&_h2]:whitespace-pre-wrap tw:[&_p]:whitespace-pre-wrap",
+					children: (e, n) => {
+						var a = t(), s = N(a);
+						i(s, 17, () => r().children, u, (e, t, n, r) => {
+							c(e, () => o.card.elements[j(t)], () => j(t));
+						}), m(e, a);
+					},
+					$$slots: { default: !0 }
+				});
+			}
+		}, A = (e) => {
+			var t = Be(), a = y(t), s = (e) => {
+				var t = ze(), i = b(t, !0);
+				g(() => n(i, r().props.title)), m(e, t);
+			};
+			l(a, (e) => {
+				r().props.title && e(s);
+			});
+			var d = O(a);
+			i(d, 17, () => r().children, u, (e, t, n, r) => {
+				c(e, () => o.card.elements[j(t)]);
+			}), C(t), m(e, t);
+		}, P = (e) => {
+			var t = Ve(), i = b(t, !0);
+			g(() => {
+				p(t, 1, a(["tw:m-0 tw:whitespace-pre-wrap tw:break-words tw:font-sans tw:leading-6", r().props.style === "bold" ? "tw:font-semibold" : r().props.style === "muted" ? "tw:text-muted-foreground" : r().props.style === "code" ? "tw:rounded-control tw:bg-muted tw:p-2 tw:font-mono tw:text-xs" : ""])), n(i, r().props.content);
+			}), m(e, t);
+		}, F = (e) => {
+			var t = He();
+			i(t, 21, () => r().children, u, (e, t, n, r) => {
+				c(e, () => o.card.elements[j(t)]);
+			}), C(t), m(e, t);
+		}, R = (e) => {
+			var t = Ue(), i = y(t), a = b(i, !0), o = O(i, 2), s = b(o, !0);
+			C(t), g(() => {
+				n(a, r().props.label), n(s, r().props.value);
+			}), m(e, t);
+		}, z = (e) => {
+			{
+				let t = D(() => j(L).has(j(x))), n = D(() => j(I) === j(x));
+				Pe(e, {
+					get headers() {
+						return r().props.headers;
+					},
+					get rows() {
+						return r().props.rows;
+					},
+					get title() {
+						return j(V);
+					},
+					get vb() {
+						return o.vb;
+					},
+					get inline() {
+						return j(t);
+					},
+					get open() {
+						return j(n);
+					},
+					onOpenChange: (e) => h(I, e ? j(x) : null, !0)
+				});
+			}
+		}, B = (e) => {
+			{
+				let t = D(() => j(L).has(j(x))), n = D(() => j(I) === j(x));
+				Ee(e, {
+					get chart() {
+						return r().props;
+					},
+					get vb() {
+						return o.vb;
+					},
+					get inline() {
+						return j(t);
+					},
+					get open() {
+						return j(n);
+					},
+					onOpenChange: (e) => h(I, e ? j(x) : null, !0)
+				});
+			}
+		}, q = (e) => {
+			var t = We();
+			m(e, t);
+		}, ne = (e) => {
+			var t = Ge();
+			g(() => {
+				f(t, "src", r().props.url), f(t, "alt", r().props.alt || "");
+			}), m(e, t);
+		}, J = (e) => {
+			var t = Ke();
+			i(t, 21, () => r().children, u, (e, t, n, r) => {
+				c(e, () => o.card.elements[j(t)]);
+			}), C(t), m(e, t);
+		}, Y = (e) => {
+			let i = D(() => r().props.value || r().props.label);
+			var o = t(), c = N(o), u = (e) => {
+				{
+					let t = D(() => r().props.style === "danger" ? "destructive" : r().props.style === "primary" ? "primary" : "outline");
+					d(e, {
+						get "data-native-card-answer"() {
+							return j(i);
+						},
+						class: "tw:h-auto tw:min-h-8 tw:whitespace-pre-wrap tw:text-left",
+						size: "sm",
+						get variant() {
+							return j(t);
+						},
+						get disabled() {
+							return j(te);
+						},
+						onclick: (e) => G(j(i), e),
+						children: (e, t) => {
+							k();
+							var i = s();
+							g(() => n(i, r().props.label)), m(e, i);
+						},
+						$$slots: { default: !0 }
+					});
+				}
+			}, h = (e) => {
+				var t = qe(), o = y(t), s = (e) => {
+					U(e, { name: "check" });
+				};
+				l(o, (e) => {
+					j(H)?.text === j(i) && e(s);
+				});
+				var c = O(o, 1, !0);
+				C(t), g(() => {
+					f(t, "data-native-card-picked", j(H)?.text === j(i) ? j(i) : void 0), p(t, 1, a(j(H)?.text === j(i) ? "tw:inline-flex tw:items-center tw:gap-1 tw:whitespace-pre-wrap tw:rounded-button tw:border tw:border-primary tw:bg-primary/10 tw:px-3 tw:py-1.5 tw:text-sm" : "tw:inline-flex tw:items-center tw:whitespace-pre-wrap tw:rounded-button tw:border tw:border-border tw:px-3 tw:py-1.5 tw:text-sm tw:text-muted-foreground")), n(c, r().props.label);
+				}), m(e, t);
+			};
+			l(c, (e) => {
+				j(W) ? e(u) : e(h, -1);
+			}), m(e, o);
+		}, X = (e) => {
+			var i = t(), a = N(i), o = (e) => {
+				d(e, {
+					class: "tw:h-auto tw:min-h-8 tw:whitespace-pre-wrap tw:text-left",
+					size: "sm",
+					variant: "link",
+					onclick: (e) => K(r().props.url, e),
+					children: (e, t) => {
+						k();
+						var i = Je(), a = N(i, !0), o = O(a);
+						U(o, { name: "arrowRight" }), g(() => n(a, r().props.label)), m(e, i);
+					},
+					$$slots: { default: !0 }
+				});
+			}, s = D(() => r().props.url.startsWith("#")), c = (e) => {
+				var t = Ye(), i = y(t, !0), a = O(i);
+				U(a, { name: "external" }), C(t), g(() => {
+					f(t, "href", r().props.url), n(i, r().props.label);
+				}), m(e, t);
+			};
+			l(a, (e) => {
+				j(s) ? e(o) : e(c, -1);
+			}), m(e, i);
+		};
+		l(T, (e) => {
+			r().type === "Card" ? e(E) : r().type === "Section" ? e(A, 1) : r().type === "Text" ? e(P, 2) : r().type === "Fields" ? e(F, 3) : r().type === "Field" ? e(R, 4) : r().type === "Table" ? e(z, 5) : r().type === "Chart" ? e(B, 6) : r().type === "Divider" ? e(q, 7) : r().type === "Image" ? e(ne, 8) : r().type === "Actions" ? e(J, 9) : r().type === "Button" ? e(Y, 10) : r().type === "LinkButton" && e(X, 11);
+		}), m(e, S);
+	}, P = !0, F = A(S(Fe())), I = A(null), L = D(() => ye(o.card)), R = T(() => o.card);
+	E(() => {
+		let e = o.card;
+		e !== R && T(() => {
+			R = e, h(I, null);
+		});
+	});
+	let z = T(() => Re(o.room.id, o.message.id, (e) => h(F, e, !0)));
+	E(() => {
+		let e = o.room;
+		T(() => z.sync(e));
+	}), r(() => {
+		P = !1, z.dispose();
+	});
+	let B = D(() => o.card.elements[o.card.root]), V = D(() => j(B).type === "Card" && j(B).props.title || o.vb.t("Tabela")), H = D(() => X(o.room, o.message)), W = D(() => J(o.room, o.message)), te = D(() => j(F).phase === "pending" || j(F).phase === "unconfirmed");
+	function G(e, t) {
+		P && t.currentTarget instanceof HTMLElement && t.currentTarget.isConnected && j(W) && z.reply(e, o.actions.request);
+	}
+	function K(e, t) {
+		if (!P || !(t.currentTarget instanceof HTMLElement) || !t.currentTarget.isConnected) return;
+		let n = /^#m(\d+)$/.exec(e);
+		if (n) {
+			let e = Number(n[1]);
+			Number.isSafeInteger(e) && o.actions.navigate(e);
+		} else if (e.startsWith("#app:")) {
+			let [t, n] = e.slice(5).split("/");
+			o.actions.openApp?.({
+				connection: t,
+				tool: n
+			});
+		} else e.startsWith("#e") ? o.actions.navigateRich?.({
+			kind: "thread",
+			id: e.slice(2)
+		}) : e.startsWith("#doc") && o.actions.navigateRich?.({
+			kind: "document",
+			id: e.split(":")[1]
+		});
+	}
+	var q = Ze(), ne = y(q);
+	c(ne, () => o.card.elements[o.card.root]);
+	var Y = O(ne, 2), re = (e) => {
+		var t = Xe(), r = b(t, !0);
+		g((e) => {
+			f(t, "role", j(F).phase === "error" ? "alert" : "status"), n(r, e);
+		}, [() => j(F).phase === "pending" ? o.vb.t("Enviando…") : j(F).phase === "unconfirmed" ? o.vb.t("Ainda sem confirmação. Confira a sala antes de enviar novamente.") : j(F).error]), m(e, t);
+	};
+	l(Y, (e) => {
+		j(F).phase !== "idle" && e(re);
+	}), C(q), m(e, q), x();
+}
+// svelte/features/chat-interactive/ChoicesView.svelte
+var $e = o("<span> </span>"), et = o("<span class=\"tw:rounded-control tw:border tw:border-primary tw:bg-primary/10 tw:px-3 tw:py-2\"> </span>"), tt = o("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!></div>"), nt = o("<label class=\"tw:flex tw:items-center tw:gap-2 tw:rounded-control tw:border tw:border-border tw:p-2\"><!><span> </span></label>"), rt = o("<div role=\"group\" class=\"tw:grid tw:gap-2\"></div>"), it = o("<!><small class=\"tw:block tw:text-muted-foreground\"> </small>", 1), at = o("<span class=\"tw:rounded-control tw:border tw:border-border tw:px-3 tw:py-2 tw:text-muted-foreground\"> </span>"), ot = o("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div> <small class=\"tw:block tw:text-muted-foreground\"> </small>", 1), st = o("<div data-native-choices=\"\" data-vb-native=\"\" class=\"tw:space-y-2 tw:font-sans tw:text-sm tw:text-foreground\"><!></div>");
+function ct(e, t) {
+	v(t, !0);
+	let o = !0, s = A(S([])), c = A(""), d = T(() => t.message.choices);
+	E(() => {
+		let e = t.message.choices;
+		e !== d && T(() => {
+			d = e, h(s, [], !0), h(c, "");
+		});
+	}), r(() => {
+		o = !1;
+	});
+	let _ = D(() => X(t.room, t.message)), w = D(() => J(t.room, t.message) && !t.choices.closed), k = D(() => new Set(j(_)?.text.split(" · ") || []));
+	function M(e, n = !0) {
+		let r = t.room.messages.find((e) => e.id === t.message.id) || t.room.origins?.find((e) => e.id === t.message.id);
+		if (!o || !r || r.choices !== t.message.choices || !J(t.room, r) || t.choices.closed) return;
+		t.choices.multi ? h(s, n ? [...j(s).filter((t) => t !== e), e].sort((e, t) => e - t) : j(s).filter((t) => t !== e), !0) : h(s, [e], !0);
+		let i = e === -1 && n ? "" : j(s).filter((e) => e >= 0).map((e) => t.choices.options[e]).join(" · ");
+		t.actions.draftReply({
+			messageId: t.message.id,
+			thread: t.message.thread,
+			text: i
+		});
+	}
+	var P = st(), F = y(P), I = (e) => {
+		var r = tt(), o = y(r);
+		i(o, 17, () => t.choices.options, u, (e, t) => {
+			var r = $e(), i = b(r);
+			g((e, a) => {
+				p(r, 1, e), n(i, `${a ?? ""}${j(t) ?? ""}`);
+			}, [() => a(j(k).has(j(t)) ? "tw:rounded-control tw:border tw:border-primary tw:bg-primary/10 tw:px-3 tw:py-2" : "tw:rounded-control tw:border tw:border-border tw:px-3 tw:py-2"), () => j(k).has(j(t)) ? "✓ " : ""]), m(e, r);
+		});
+		var s = O(o), c = (e) => {
+			var r = et(), i = b(r);
+			g((e) => n(i, `✓ ${e ?? ""}`), [() => t.vb.t("Outro")]), m(e, r);
+		}, d = D(() => !t.choices.options.some((e) => j(k).has(e)));
+		l(s, (e) => {
+			j(d) && e(c);
+		}), C(r), m(e, r);
+	}, L = (e) => {
+		var r = it(), a = N(r), o = (e) => {
+			var r = rt();
+			i(r, 21, () => [...t.choices.options, t.vb.t("Outro") + "…"], u, (e, r, i) => {
+				let a = D(() => i === t.choices.options.length ? -1 : i);
+				var o = nt(), c = y(o);
+				{
+					let e = D(() => j(s).includes(j(a)));
+					G(c, {
+						get checked() {
+							return j(e);
+						},
+						onchange: (e) => {
+							e.currentTarget instanceof HTMLInputElement && e.currentTarget.isConnected && M(j(a), e.currentTarget.checked);
+						}
+					});
+				}
+				var l = O(c), u = b(l, !0);
+				C(o), g(() => n(u, j(r))), m(e, o);
+			}), C(r), g((e) => f(r, "aria-label", e), [() => t.vb.t("Escolha uma opção")]), m(e, r);
+		}, d = (e) => {
+			{
+				let n = D(() => t.vb.t("Escolha uma opção")), r = D(() => [...t.choices.options.map((e, t) => ({
+					label: e,
+					value: String(t)
+				})), {
+					label: t.vb.t("Outro") + "…",
+					value: "-1"
+				}]);
+				K(e, {
+					get label() {
+						return j(n);
+					},
+					get items() {
+						return j(r);
+					},
+					onValueChange: (e, t) => {
+						t.currentTarget instanceof HTMLInputElement && t.currentTarget.isConnected && M(Number(e));
+					},
+					get value() {
+						return j(c);
+					},
+					set value(e) {
+						h(c, e, !0);
+					}
+				});
+			}
+		};
+		l(a, (e) => {
+			t.choices.multi ? e(o) : e(d, -1);
+		});
+		var p = O(a), _ = b(p, !0);
+		g((e) => n(_, e), [() => t.vb.t("escolha e envie pela caixa de mensagem")]), m(e, r);
+	}, R = (e) => {
+		var r = ot(), a = N(r);
+		i(a, 21, () => t.choices.options, u, (e, t) => {
+			var r = at(), i = b(r, !0);
+			g(() => n(i, j(t))), m(e, r);
+		}), C(a);
+		var o = O(a, 2), s = b(o, !0);
+		g((e) => n(s, e), [() => t.choices.closed ? t.vb.t("foi pro terminal") : t.vb.t("esperando {who}", { who: t.vb.name(t.message.author) })]), m(e, r);
+	};
+	l(F, (e) => {
+		j(_) ? e(I) : j(w) ? e(L, 1) : e(R, -1);
+	}), C(P), m(e, P), x();
+}
+// svelte/features/chat-interactive/PermissionAsk.svelte
+var lt = o("<p role=\"status\" class=\"tw:m-0 tw:rounded-control tw:border tw:border-border tw:bg-muted tw:p-3\"> </p>"), ut = o("<p class=\"tw:m-0 tw:text-muted-foreground\"> </p>"), dt = o("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"><!><!></div>"), ft = o("<span class=\"tw:rounded-control tw:border tw:border-border tw:px-3 tw:py-2\"> </span>"), pt = o("<div class=\"tw:flex tw:flex-wrap tw:gap-2\"></div> <small class=\"tw:text-muted-foreground\"> </small>", 1), mt = o("<p class=\"tw:m-0 tw:text-xs tw:text-muted-foreground\"> </p>"), ht = o("<div data-native-permission=\"\" data-vb-native=\"\" class=\"tw:space-y-2 tw:font-sans tw:text-sm tw:text-foreground\"><!> <!></div> <!>", 1);
+function gt(e, t) {
+	v(t, !0);
+	let a = !0, o = A(S(Fe())), c = A(null), p = A(null), _ = A(void 0), w = D(() => JSON.stringify([
+		t.message.thread,
+		t.message.author,
+		t.message.kind,
+		t.message.text,
+		t.message.choices
+	])), M = T(() => Re(t.room.id, t.message.id, (e) => h(o, e, !0), void 0, "permission")), P = D(() => X(t.room, t.message)), F = D(() => !!j(P) && /^\s*aprov/i.test(j(P).text)), I = D(() => J(t.room, t.message) && !t.choices.closed);
+	E(() => {
+		let e = t.room;
+		T(() => M.sync(e));
+	}), E(() => {
+		(!j(I) || j(o).phase === "unconfirmed" || j(_) !== void 0 && j(_) !== j(w)) && h(c, null);
+	}), r(() => {
+		a = !1, M.dispose();
+	});
+	function L(e, t) {
+		a && j(I) && t.currentTarget instanceof HTMLElement && t.currentTarget.isConnected && (h(p, t.currentTarget, !0), h(_, j(w), !0), h(c, e, !0));
+	}
+	function R() {
+		a && j(I) && j(c) && j(_) === j(w) && M.reply(j(c), t.actions.request);
+	}
+	var z = ht(), B = N(z), V = y(B), H = (e) => {
+		var r = lt(), i = b(r);
+		g((e, t) => n(i, `${e ?? ""} · ${t ?? ""}`), [() => j(F) ? "✓ " + t.vb.t("Aprovado por {who}", { who: t.vb.name(j(P).author) }) : "✕ " + t.vb.t("Negado por {who}", { who: t.vb.name(j(P).author) }), () => t.vb.hhmm(j(P).ts)]), m(e, r);
+	}, ee = (e) => {
+		var r = ut(), i = b(r, !0);
+		g((e) => n(i, e), [() => t.vb.t("foi pro terminal")]), m(e, r);
+	}, U = (e) => {
+		var r = dt(), i = y(r);
+		{
+			let e = D(() => j(o).phase === "pending" || j(o).phase === "unconfirmed");
+			d(i, {
+				"data-native-permission-value": "Aprovar",
+				get disabled() {
+					return j(e);
+				},
+				onclick: (e) => L("Aprovar", e),
+				children: (e, r) => {
+					k();
+					var i = s();
+					g((e) => n(i, e), [() => t.vb.t("Aprovar")]), m(e, i);
+				},
+				$$slots: { default: !0 }
+			});
+		}
+		var a = O(i);
+		{
+			let e = D(() => j(o).phase === "pending" || j(o).phase === "unconfirmed");
+			d(a, {
+				"data-native-permission-value": "Negar",
+				variant: "outline",
+				get disabled() {
+					return j(e);
+				},
+				onclick: (e) => L("Negar", e),
+				children: (e, r) => {
+					k();
+					var i = s();
+					g((e) => n(i, e), [() => t.vb.t("Negar")]), m(e, i);
+				},
+				$$slots: { default: !0 }
+			});
+		}
+		C(r), m(e, r);
+	}, W = (e) => {
+		var r = pt(), a = N(r);
+		i(a, 21, () => t.choices.options, u, (e, t) => {
+			var r = ft(), i = b(r, !0);
+			g(() => n(i, j(t))), m(e, r);
+		}), C(a);
+		var o = O(a, 2), s = b(o, !0);
+		g((e) => n(s, e), [() => t.vb.t("esperando {who}", { who: t.vb.name(t.message.author) })]), m(e, r);
+	};
+	l(V, (e) => {
+		j(P) ? e(H) : t.choices.closed ? e(ee, 1) : j(I) ? e(U, 2) : e(W, -1);
+	});
+	var te = O(V, 2), G = (e) => {
+		var r = mt(), i = b(r, !0);
+		g((e) => {
+			f(r, "role", j(o).phase === "error" ? "alert" : "status"), n(i, e);
+		}, [() => j(o).phase === "pending" ? t.vb.t("Enviando…") : j(o).phase === "unconfirmed" ? t.vb.t("Ainda sem confirmação. Confira a sala antes de enviar novamente.") : j(o).error]), m(e, r);
+	};
+	l(te, (e) => {
+		j(o).phase !== "idle" && e(G);
+	}), C(B);
+	var K = O(B, 2);
+	{
+		let e = D(() => j(c) !== null && j(I) && j(_) === j(w)), n = D(() => j(c) === "Aprovar" ? t.vb.t("Aprovar este pedido?") : t.vb.t("Negar este pedido?")), r = D(() => t.vb.t("Confirmar")), i = D(() => t.vb.t("Cancelar")), a = D(() => j(o).phase === "pending"), s = D(() => j(o).phase === "error" ? j(o).error : "");
+		ne(K, {
+			get open() {
+				return j(e);
+			},
+			get title() {
+				return j(n);
+			},
+			get confirmLabel() {
+				return j(r);
+			},
+			get cancelLabel() {
+				return j(i);
+			},
+			get busy() {
+				return j(a);
+			},
+			get error() {
+				return j(s);
+			},
+			onconfirm: R,
+			onOpenChange: (e) => {
+				e || h(c, null);
+			},
+			returnFocus: () => j(p)
+		});
+	}
+	m(e, z), x();
+}
+// svelte/features/chat-interactive/PollView.svelte
+var _t = o("<span><!></span>"), vt = o("<!><span class=\"tw:min-w-0 tw:flex-1 tw:break-words\"> </span><span class=\"tw:flex tw:-space-x-2\"></span><span class=\"tw:shrink-0 tw:text-xs\"> </span>", 1), yt = o("<div class=\"tw:space-y-1\"><!><!></div>"), bt = o("· <!>", 1), xt = o("<p class=\"tw:m-0 tw:text-xs tw:text-muted-foreground\"> </p>"), St = o("<section data-vb-native=\"\" class=\"tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-4 tw:font-sans tw:text-sm tw:text-card-foreground\"><h4 class=\"tw:m-0 tw:flex tw:items-start tw:gap-2 tw:font-sans tw:text-sm tw:font-semibold tw:tracking-normal tw:[font-variation-settings:normal]\"><!> </h4> <!> <p class=\"tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-1 tw:text-xs tw:text-muted-foreground\"> <!></p> <!></section> <!>", 1);
+function Ct(e, t) {
+	v(t, !0);
+	let a = !0, o = A(S(Fe())), c = A(!1), p = A(null), _ = A(void 0), w = D(() => JSON.stringify([
+		t.message.id,
+		t.message.thread,
+		t.message.poll,
+		_e(t.poll)
+	])), M = T(() => Re(t.room.id, t.message.id, (e) => h(o, e, !0), void 0, "poll")), P = D(() => me(t.poll, t.room.me)), F = D(() => he(t.room, t.poll)), I = D(() => !t.poll.closed && t.room.members.includes(t.room.me));
+	E(() => {
+		let e = t.room;
+		T(() => M.sync(e));
+	}), E(() => {
+		(!j(F) || j(o).phase === "unconfirmed" || j(_) !== void 0 && j(_) !== j(w)) && h(c, !1);
+	}), r(() => {
+		a = !1, M.dispose();
+	});
+	function L(e, n) {
+		a && n.currentTarget instanceof HTMLElement && n.currentTarget.isConnected && j(I) && M.vote(e, t.actions.request);
+	}
+	function R() {
+		a && j(F) && j(c) && j(_) === j(w) && M.close(t.actions.request);
+	}
+	var z = St(), B = N(z), V = y(B), H = y(V);
+	U(H, { name: "chart" });
+	var ee = O(H, 1, !0);
+	C(V);
+	var W = O(V, 2);
+	i(W, 17, () => j(P).rows, u, (e, r) => {
+		var a = yt(), s = y(a);
+		{
+			let e = D(() => j(r).mine ? "secondary" : "outline"), a = D(() => !j(I) || j(o).phase === "pending" || j(o).phase === "unconfirmed");
+			d(s, {
+				class: "tw:h-auto tw:w-full tw:justify-start tw:whitespace-normal tw:text-left",
+				get "data-native-vote"() {
+					return j(r).index;
+				},
+				get variant() {
+					return j(e);
+				},
+				get disabled() {
+					return j(a);
+				},
+				get "aria-pressed"() {
+					return j(r).mine;
+				},
+				onclick: (e) => L(j(r).index, e),
+				children: (e, a) => {
+					var o = vt(), s = N(o), c = (e) => {
+						U(e, { name: "trophy" });
+					}, d = (e) => {
+						U(e, { name: "check" });
+					};
+					l(s, (e) => {
+						j(r).winner ? e(c) : j(r).mine && e(d, 1);
+					});
+					var p = O(s), h = b(p, !0), _ = O(p);
+					i(_, 21, () => j(r).voters, u, (e, n) => {
+						var r = _t(), i = y(r);
+						{
+							let e = D(() => t.vb.name(j(n))), r = D(() => t.vb.avatarUrl?.(j(n)));
+							re(i, {
+								get name() {
+									return j(e);
+								},
+								get src() {
+									return j(r);
+								},
+								class: "tw:size-6 tw:text-[10px]"
+							});
+						}
+						C(r), g((e) => f(r, "title", e), [() => t.vb.name(j(n))]), m(e, r);
+					}), C(_);
+					var v = O(_), x = b(v, !0);
+					g(() => {
+						n(h, j(r).label), n(x, j(r).count ? `${j(r).percent}%` : "");
+					}), m(e, o);
+				},
+				$$slots: { default: !0 }
+			});
+		}
+		var c = O(s);
+		{
+			let e = D(() => `${j(r).label}: ${j(r).count} (${j(r).percent}%)`);
+			te(c, {
+				get value() {
+					return j(r).percent;
+				},
+				get label() {
+					return j(e);
+				}
+			});
+		}
+		C(a), m(e, a);
+	});
+	var G = O(W, 2), K = y(G), q = O(K), J = (e) => {
+		var r = s();
+		g((e) => n(r, `· ${e ?? ""}`), [() => t.vb.t("encerrada")]), m(e, r);
+	}, Y = (e) => {
+		var r = bt(), i = O(N(r));
+		{
+			let e = D(() => j(o).phase === "pending" || j(o).phase === "unconfirmed");
+			d(i, {
+				size: "sm",
+				variant: "link",
+				"data-native-poll-close": !0,
+				get disabled() {
+					return j(e);
+				},
+				onclick: (e) => {
+					a && j(F) && e.currentTarget.isConnected && (h(p, e.currentTarget, !0), h(_, j(w), !0), h(c, !0));
+				},
+				children: (e, r) => {
+					k();
+					var i = s();
+					g((e) => n(i, e), [() => t.vb.t("encerrar")]), m(e, i);
+				},
+				$$slots: { default: !0 }
+			});
+		}
+		m(e, r);
+	};
+	l(q, (e) => {
+		t.poll.closed ? e(J) : j(F) && e(Y, 1);
+	}), C(G);
+	var X = O(G, 2), Z = (e) => {
+		var r = xt(), i = b(r, !0);
+		g((e) => {
+			f(r, "role", j(o).phase === "error" ? "alert" : "status"), n(i, e);
+		}, [() => j(o).phase === "pending" ? t.vb.t("Enviando…") : j(o).phase === "unconfirmed" ? t.vb.t("Ainda sem confirmação. Confira a sala antes de enviar novamente.") : j(o).error]), m(e, r);
+	};
+	l(X, (e) => {
+		j(o).phase !== "idle" && e(Z);
+	}), C(B);
+	var ie = O(B, 2);
+	{
+		let e = D(() => j(c) && j(F) && j(_) === j(w)), n = D(() => t.vb.t("Encerrar a votação?")), r = D(() => t.vb.t("Confirmar")), i = D(() => t.vb.t("Cancelar")), a = D(() => j(o).phase === "pending"), s = D(() => j(o).phase === "error" ? j(o).error : "");
+		ne(ie, {
+			get open() {
+				return j(e);
+			},
+			get title() {
+				return j(n);
+			},
+			get confirmLabel() {
+				return j(r);
+			},
+			get cancelLabel() {
+				return j(i);
+			},
+			get busy() {
+				return j(a);
+			},
+			get error() {
+				return j(s);
+			},
+			onconfirm: R,
+			onOpenChange: (e) => {
+				e || h(c, !1);
+			},
+			returnFocus: () => j(p)
+		});
+	}
+	g((e, r) => {
+		f(B, "data-native-poll", t.poll.id), n(ee, t.poll.question), n(K, `${e ?? ""} · ${r ?? ""}`);
+	}, [() => j(P).voters === 1 ? t.vb.t("1 pessoa votou") : t.vb.t("{n} pessoas votaram", { n: j(P).voters }), () => t.poll.multi ? t.vb.t("pode escolher várias") : t.vb.t("escolha uma")]), m(e, z), x();
+}
+// svelte/features/chat-interactive/InteractiveBody.svelte
+var wt = o("<pre data-native-card-fallback=\"\" class=\"tw:max-w-full tw:overflow-auto tw:whitespace-pre-wrap tw:break-words tw:font-mono tw:text-xs\"> </pre>"), Tt = o("<!> <!> <!>", 1);
+function Et(r, i) {
+	v(i, !0);
+	let a = D(() => i.message.card), o = D(() => i.message.choices), s = D(() => i.room.id), c = D(() => pe(j(a), j(s))), u = D(() => Y(j(o))), d = D(() => i.message.poll ? i.room.polls?.[i.message.poll] : void 0);
+	var f = t(), p = N(f);
+	e(p, () => `${i.room.id}:${i.room.me}:${i.message.id}:${i.message.thread}`, (e) => {
+		var r = Tt(), o = N(r), s = (e) => {
+			var t = wt(), r = b(t, !0);
+			g(() => n(r, j(a))), m(e, t);
+		}, f = (e) => {
+			Qe(e, {
+				get card() {
+					return j(c);
+				},
+				get message() {
+					return i.message;
+				},
+				get room() {
+					return i.room;
+				},
+				get actions() {
+					return i.actions;
+				},
+				get vb() {
+					return i.vb;
+				}
+			});
+		};
+		l(o, (e) => {
+			j(a) && j(a).length > 1e6 ? e(s) : j(c) && e(f, 1);
+		});
+		var p = O(o, 2), h = (e) => {
+			var n = t(), r = N(n), a = (e) => {
+				gt(e, {
+					get choices() {
+						return j(u);
+					},
+					get message() {
+						return i.message;
+					},
+					get room() {
+						return i.room;
+					},
+					get actions() {
+						return i.actions;
+					},
+					get vb() {
+						return i.vb;
+					}
+				});
+			}, o = D(() => q(i.message)), s = (e) => {
+				ct(e, {
+					get choices() {
+						return j(u);
+					},
+					get message() {
+						return i.message;
+					},
+					get room() {
+						return i.room;
+					},
+					get actions() {
+						return i.actions;
+					},
+					get vb() {
+						return i.vb;
+					}
+				});
+			};
+			l(r, (e) => {
+				j(o) ? e(a) : e(s, -1);
+			}), m(e, n);
+		};
+		l(p, (e) => {
+			j(u) && e(h);
+		});
+		var _ = O(p, 2), v = (e) => {
+			Ct(e, {
+				get poll() {
+					return j(d);
+				},
+				get message() {
+					return i.message;
+				},
+				get room() {
+					return i.room;
+				},
+				get actions() {
+					return i.actions;
+				},
+				get vb() {
+					return i.vb;
+				}
+			});
+		};
+		l(_, (e) => {
+			j(d) && e(v);
+		}), m(e, r);
+	}), m(r, f), x();
+}
+export { Et as default };
