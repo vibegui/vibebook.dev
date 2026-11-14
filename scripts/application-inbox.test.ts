@@ -216,3 +216,9 @@ test("canonical task navigation preserves its exact epic and closes only the cur
   const binding=get(h.inbox.state).binding!,row=get(h.inbox.state).data.tasks[0];
   h.inbox.openTask(binding,row);const url=new URL(h.href());expect(url.pathname).toBe("/b/aaaaaa");expect(url.searchParams.get("t")).toBe("e");expect(get(h.inbox.state).binding).toBeNull();h.dispose();
 });
+test("reentrant loading publication cannot start a replaced read or allocate its deadline",async()=>{
+  let reads=0;const h=await fixture(undefined,async()=>{reads++;return{waits:[],mentions:[mention],tasks:[]};});
+  let replaced=false;
+  const stop=h.inbox.state.subscribe(value=>{if(value.binding&&value.phase==="loading"&&!replaced){replaced=true;void h.inbox.refresh(value.binding);}});
+  h.inbox.open();await settle();expect(reads).toBe(1);expect(get(h.inbox.state).phase).toBe("ready");stop();h.dispose();
+});

@@ -11,6 +11,7 @@ export type InboxBinding = {
   revision: number;
   generation: number;
   roomId: string | null;
+  navigationRevision: number;
 };
 /** Global Inbox presentation owns no canonical waits. Every callback belongs to
  * one account/opening, including the interval before outgoing DOM is flushed. */
@@ -36,10 +37,13 @@ export function createApplicationInbox(
   const reader = createAgentLease(clock ? {...clock,now:()=>Date.now()} : undefined);
   const owns = (binding: InboxBinding) => {
     const account = get(services.personal.state);
+    const route=get(services.state);
     return (
       active &&
       services.active() &&
       get(state).binding === binding &&
+      route.navigationGeneration === binding.navigationRevision &&
+      (route.route.kind === "room" ? route.route.target.roomId : null) === binding.roomId &&
       account.identityRevision === binding.revision &&
       account.me?.email === binding.account
     );
@@ -86,7 +90,7 @@ export function createApplicationInbox(
     if(!owns(binding))return;
     const ticket=++readRevision;
     state.update(value=>({...value,phase:"loading",error:null}));
-    if(!owns(binding))return;
+    if(!owns(binding)||ticket!==readRevision)return;
     try {
       const data = await reader.run(signal=>services.personal.api.inbox(signal),AUTH_REQUEST_TIMEOUT);
       if(owns(binding)&&ticket===readRevision)state.update(value=>({...value,data,phase:"ready",error:null}));
@@ -110,7 +114,7 @@ export function createApplicationInbox(
       if (!data.me) return;
       close();
       const route=get(services.state).route;
-      const binding:InboxBinding={account:data.me.email,revision:data.identityRevision,generation:++generation,roomId:route.kind==="room"?route.target.roomId:null};
+      const binding:InboxBinding={account:data.me.email,revision:data.identityRevision,generation:++generation,roomId:route.kind==="room"?route.target.roomId:null,navigationRevision:get(services.state).navigationGeneration};
       state.update((value) => ({
         ...value,
         binding,data:{waits:data.me!.waits,mentions:[],tasks:[]},phase:"idle",error:null,
