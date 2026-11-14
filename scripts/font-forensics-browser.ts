@@ -6,6 +6,10 @@ import { resolve } from "node:path";
 import { chromium, type Browser } from "@playwright/test";
 import * as z from "zod/mini";
 
+type DOMPixelDifference =
+  | { dimensionsEqual: false; pixelsChanged: null }
+  | { dimensionsEqual: true; pixelsChanged: number };
+
 const root = resolve(import.meta.dir, "..");
 const fixture = resolve(import.meta.dir, "fixtures/font-forensics");
 const output = resolve(
@@ -345,8 +349,8 @@ try {
             .screenshot({ animations: "disabled" }),
         });
       for (const shot of shots.slice(1)) {
-        const difference = await page.evaluate(
-          async ({ a, b }) => {
+        const difference: DOMPixelDifference = await page.evaluate(
+          async ({ a, b }): Promise<DOMPixelDifference> => {
             async function decode(v: string) {
               const image = await createImageBitmap(
                 new Blob([Uint8Array.from(atob(v), (c) => c.charCodeAt(0))], {
