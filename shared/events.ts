@@ -50,6 +50,8 @@ export const RoomEventSchemas = {
   state: z.extend(RoomSnapshotSchema, { t: z.literal("state") }),
   msg: event("msg", { m: MessageSchema }),
   moved: event("moved", { id: num, thread: str }),
+  // A message's card replaced (Modo Fire updates its live card): the app redraws that message.
+  msgCard: event("msgCard", { id: num, card: str }),
   delta: event("delta", { id: num, text: str }),
   typing: event("typing", { id: num, mode: str, note: z.optional(str) }),
   closed: event("closed", { id: num, choices: str }),

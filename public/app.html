@@ -1527,9 +1527,12 @@ async function firePump() {
   const open = sideView && sideView.room === S.id ? (fileVersions(sideView.name)[0]?.id || sideView.fid) : "";
   fireBar(`${t("aplicando")}: ${text}`);
   try {
-    const r = await fetch(`/api/books/${S.id}/fire`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, file_id: open || f.fid || undefined, history: f.chunks.slice(-10) }) }).then((x) => x.json());
+    const r = await fetch(`/api/books/${S.id}/fire`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, file_id: f.cardMsg ? undefined : open || f.fid || undefined, card_msg: f.cardMsg || undefined, thread: f.thread, history: f.chunks.slice(-10) }) }).then((x) => x.json());
     if (!r.ok) { fireBar(`⚠ ${r.error || t("falhou")}`); }
-    else {
+    else if (r.mode === "card") { // a native card in the chat, replaced on every piece
+      f.chunks.push(text); f.cardMsg = r.card_msg; f.n++;
+      fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
+    } else {
       f.chunks.push(text); f.fid = r.file.id; f.name = r.file.name; f.n++;
       if (!r.opened && !(sideView && sideView.room === S.id && sideView.name === r.file.name)) openSide(r.file.id, r.file.name);
       fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
@@ -1550,7 +1553,8 @@ function fireStop() {
 function fireEnd(f) {
   if (fireS === f) fireS = null;
   fireBar();
-  if (!f.chunks.length || !f.fid) return;
+  if (!f.chunks.length || !(f.fid || f.cardMsg)) return;
+  if (f.cardMsg) return send({ t: "msg", text: t("🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.", { n: f.chunks.length }) + "\n\n" + f.chunks.map((c) => `- ${c}`).join("\n"), thread: f.thread || "main", reply_to: f.cardMsg });
   const text = t("🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku em {name}. Confere e melhora o que ele fez.", { n: f.chunks.length, name: f.name }) + "\n\n" + f.chunks.map((c) => `- ${c}`).join("\n");
   send({ t: "msg", text, thread: f.thread || "main", files: [f.fid] });
 }
@@ -1953,6 +1957,7 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to this card. Review and improve what it did.",
   "Modo Fire": "Fire mode",
   "<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).": "<b>Live:</b> what you say goes, at every pause, straight to a fast model (Haiku).",
   "<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.": "<b>It applies it right away</b> to the file open beside the chat (or starts a new page), and the panel updates with every version.",
@@ -3425,6 +3430,7 @@ function onEvent(ev, id) {
       return;
     }
     case "closed": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.choices = ev.choices; const el = document.getElementById(`m${m.id}`)?.querySelector(".choice"); if (el) el.outerHTML = choiceHtml(m); } break; }
+    case "msgCard": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.card = ev.card; const el = document.getElementById(`m${ev.id}`); if (el && m.thread === thread) renderChat(true); } return; }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
     case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
       if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); const vc = q?.card && document.querySelector(`#m${q.id} .vcard`); if (vc) vc.outerHTML = cardHtml(q); } notifyMsg(ev.m); return;

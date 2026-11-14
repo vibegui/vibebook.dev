@@ -1473,6 +1473,30 @@ export class Book extends DurableObject<Env> {
   }
 
   /** A person posting from the home router (not over WS): same rules as the chat. */
+  /** The card of a message, as JSON, if it's this person's own card message (Modo Fire's live card). */
+  messageCard(bookId: string, id: number, email: string) {
+    this.bind(bookId);
+    const row = this.sql.exec<{ author: string; card: string | null }>(`SELECT author, card FROM messages WHERE id = ?`, id).toArray()[0];
+    return row && row.author === email && row.card ? row.card : null;
+  }
+  /** Modo Fire's native card (src/fire.ts): posted as the person's own quiet message the first time (no listener
+   * wakes on each piece of speech), then replaced in place on every new piece. Only that person's own card message. */
+  async fireCard(bookId: string, email: string, thread: string, text: string, card: Card, msgId?: number) {
+    this.bind(bookId);
+    const secret = findSecret(`${text}\n${cardText(card)}`);
+    if (secret) return { ok: false as const, error: `blocked: looks like a secret (${secret})` };
+    if (msgId) {
+      const row = this.sql.exec<{ author: string; card: string | null }>(`SELECT author, card FROM messages WHERE id = ?`, msgId).toArray()[0];
+      if (!row || row.author !== email || !row.card) return { ok: false as const, error: "not your live card" };
+      const json = JSON.stringify(card);
+      this.sql.exec(`UPDATE messages SET card = ? WHERE id = ?`, json, msgId);
+      this.broadcast({ t: "msgCard", id: msgId, card: json });
+      return { ok: true as const, id: msgId };
+    }
+    if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
+    const m = this.addMessage(thread, email, text.slice(0, 500), { card, quiet: true });
+    return { ok: true as const, id: m.id };
+  }
   async humanPost(bookId: string, email: string, raw: string, thread = "main"): Promise<PostMessageResponse> {
     this.bind(bookId);
     const text = raw.trim().slice(0, 4000);
