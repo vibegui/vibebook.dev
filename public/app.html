@@ -1855,6 +1855,7 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "aberto ao lado": "open beside",
   "Abrindo seu Claude no herdr…": "Opening your Claude in herdr…",
   "Não deu agora. Tente de novo.": "Didn't work now. Try again.",
   "{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.": "{n} of your Claudes are listening to this room: each may pick up the same request. Close the extra ones.",
@@ -3830,6 +3831,7 @@ function renderBook() {
   const setPane = (pane) => {
     $app.querySelector(".doc").dataset.pane = pane;
     $app.querySelector(".book").dataset.pane = pane; // the phone's toolbar marks the open tab
+    syncSideCards(); // another tab over the file beside: its chat previews come back
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
     if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
@@ -4996,7 +4998,17 @@ function openSide(fid, name) {
   if (ROOM_PHONE.matches) openSheet("doc");
   renderSideView();
 }
+// The file open beside the chat isn't shown twice: its cards in the chat drop the preview and keep one compact row
+// (Gui 14/11, #2338); closing the panel brings the previews back. A stylesheet rule, so no message is redrawn.
+function syncSideCards() {
+  let css = document.getElementById("sideCss");
+  if (!css) { css = document.createElement("style"); css.id = "sideCss"; document.head.appendChild(css); }
+  const on = sideView && sideView.room === S?.id && document.querySelector('.doc[data-pane="view"]');
+  const sel = on ? `.htmlCard[data-hname="${CSS.escape(sideView.name)}"]` : "";
+  css.textContent = on ? `${sel} .embedWrap, ${sel} .hcOpen[data-side] { display: none; } ${sel} .hcHead::after { content: "${t("aberto ao lado")}"; flex: none; font-size: 12px; color: var(--accent); }` : "";
+}
 function renderSideView() {
+  syncSideCards();
   const el = document.getElementById("viewPane"); if (!el) return;
   if (!sideView || sideView.room !== S.id) { el.innerHTML = ""; return; }
   const vs = fileVersions(sideView.name);
@@ -5086,7 +5098,7 @@ document.addEventListener("click", (e) => {
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 // An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
 // the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
-const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+const htmlCard = (f) => `<div class="embedBox htmlCard" data-hname="${esc(f.name)}"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
   ? htmlCard(f)
   : f.type.startsWith("audio/")
