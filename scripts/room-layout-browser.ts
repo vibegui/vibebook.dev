@@ -285,9 +285,10 @@ try {
   const samples: unknown[] = [];
   report.samples = samples;
   checkpoint("mobile/continuous-pending-drag");
-  const openHandle = page.locator("[data-layout-open-drag]"),
-    handle = await openHandle.boundingBox();
-  assert(handle);
+  const openHandle = page.locator("[data-layout-open-drag]");
+  await expect(openHandle).toBeVisible();
+  const handle = await openHandle.boundingBox();
+  assert(handle, "Mobile document opening handle has no geometry");
   const height = await documentCell.evaluate(
     (node) => node.getBoundingClientRect().height,
   );
