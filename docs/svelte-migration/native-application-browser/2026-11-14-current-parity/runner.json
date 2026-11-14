@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "phases": [
+    {
+      "name": "real Worker readiness and ensureSchema",
+      "status": "passed",
+      "ms": 1711
+    },
+    {
+      "name": "integrated NativeApplication browser",
+      "status": "passed",
+      "ms": 116363
+    }
+  ],
+  "failure": null,
+  "cleanupErrors": [],
+  "remainingOwnedGroups": 0,
+  "reviewModelFixture": {
+    "scope": "Simulated external model judgments; actual checkEmbed/HTTP/Book/R2/SDK remain real; no real-provider intelligence acceptance",
+    "allowed": 2,
+    "denied": 2,
+    "invalid": 42,
+    "authorizationRejected": 0
+  },
+  "runtime": {
+    "packages": {
+      "wrangler": "4.152.0",
+      "miniflare": "5.20261019.2-beta",
+      "workerd": "1.20261019.1"
+    },
+    "requestedDate": "2026-10-01",
+    "workerLogHeadBytes": 65536,
+    "workerLogHeadTruncated": true,
+    "compatibilityWarnings": []
+  },
+  "scope": "Disposable loopback local Worker; private raw Worker log and storage are intentionally excluded from artifact upload"
+}

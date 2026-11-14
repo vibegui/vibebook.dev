@@ -5,20 +5,32 @@ includes `8a2d05e`'s cross-room Inbox (waits, held-back mentions and open tasks)
 `GET /api/inbox` and a sidebar trigger above the epic list. The default vanilla
 source and compiled Inbox are preserved. Native Inbox presentation incorporates
 the new sections; native source now wires its inferred RPC fetch, schema-derived
-DTO aliases, shared-owner sidebar trigger and bounded loading/error/retry. Exact
-row/account/opening navigation and late-read source cases are authored but their
-execution and real-browser acceptance remain pending. Native legacy host/chunks remain deleted; preview assets must be
+DTO aliases, shared-owner sidebar trigger and bounded loading/error/retry. The
+owner tests pass, and the current DOM suite passes all 110 cases at `d8b99e5`.
+The integrated browser cohort associated with `c3e057c` passes; retained results
+are under `native-application-browser/2026-11-14-current-parity/`. Native legacy host/chunks remain deleted; preview assets must be
 regenerated from the current native source. Both changelog entries are retained.
 
 Further main reconciliation: `b6090b3cdc1a21b12feea7b3910254dd70cc4ae7`
 adds a personal end-of-thread attention card (waits and open tasks, per-item
 acknowledge/hide, dismiss until new content), clearer selected-epic styling and
-the currently opened archived epic in its normal tree location. Native parity
-for these additions remains pending. `56aa3b5` reduces room origins to the
+the currently opened archived epic in its normal tree location. Native source
+and DOM tests cover these additions; the retained real browser endcard probe
+verifies canonical task dismissal, status-change resurfacing and completion.
+`56aa3b5` reduces room origins to the
 person's still-open Claude queue and omits repeated epic IDs from nested tasks;
 the backend changes are preserved together with existing runtime stored-data
 validation. Final source, protocol and actual browser checks must confirm the
 combined payload remains compatible with both frontends.
+
+Latest reconciliation: `12d68b7f30aaf5f25625e0319be8fddb9f0fd164` is merged
+at `bb53b6e`. This preserves the published router/CLI work, the in-room Inbox
+that replaces chat and document while Home keeps its dialog (`89b946e`,
+`f36dae9`), left-edge mobile Back (`12d68b7`) and Local Network Access guidance
+(`4ba0793`). Native parity for these latest Inbox/gesture/guidance changes is in
+progress and is outside the retained earlier browser cohort. The existing
+performance report still fails the original budgets; no acceptance is implied
+by passing functional checks.
 
 | Reference                                          | Change                                                                                                                                                                                          | Migration action                                                                                                                                                                  | Status                                                                                                                                      |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -26,6 +26,7 @@ jobs:
       METRICS_WARMUPS: "1"
       METRICS_PROFILES: long
       METRICS_FONTS: network-public-fonts
+      VIBEBOOK_CHUNK_DIAGNOSTICS: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,11 +45,22 @@ jobs:
         run: bun test scripts/ui-metrics-model.test.ts
       - name: Run serial desktop/mobile controlled comparison
         run: bun run measure:ui
+      - name: Attribute measured startup assets to this build
+        if: ${{ always() && hashFiles('.artifacts/frontend-performance/metrics.json') != '' }}
+        run: bun scripts/ui-chunk-attribution.ts .artifacts/chunk-diagnostics/svelte.json .artifacts/frontend-performance/metrics.json .artifacts/frontend-performance/chunk-attribution.json
       - name: Retain every raw sample, failure and generated comparison
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-performance-${{ github.sha }}
           path: ${{ github.workspace }}/.artifacts/frontend-performance/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Retain matching build module metadata
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: frontend-module-metadata-${{ github.sha }}
+          path: ${{ github.workspace }}/.artifacts/chunk-diagnostics/
           if-no-files-found: warn
           retention-days: 14
