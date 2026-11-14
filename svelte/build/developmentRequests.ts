@@ -33,15 +33,15 @@ export function workerRequestUrl(request: string, worker: string): URL {
 /** A dev file server must expose browser inputs, never the whole repository. */
 export function createDevelopmentRequestPolicy(root: string) {
   const boundary = createClientBoundaryPolicy({ projectRoot: root });
-  const frontend = ["svelte", "shared", "collab", "public"].map((path) =>
-    resolve(root, path),
+  const frontend = ["svelte", "shared", "collab", "browser", "public"].map(
+    (path) => resolve(root, path),
   );
   const dependencies = resolve(root, "node_modules");
   const canonical = canonicalFilesystemPath;
   const physicalRoot = canonical(root);
   const projectRoots = [...new Set([resolve(root), physicalRoot])];
   const lexical = projectRoots.map((base) => ({
-    roots: ["svelte", "shared", "collab", "public"].map((path) =>
+    roots: ["svelte", "shared", "collab", "browser", "public"].map((path) =>
       resolve(base, path),
     ),
     deps: resolve(base, "node_modules"),

@@ -128,6 +128,11 @@
     "scripts/native-application-browser.ts",
     "scripts/native-application-ci.ts",
     "scripts/native-application-lifecycle.ts",
-    "scripts/app-hmr-ci.ts"
+    "scripts/app-hmr-ci.ts",
+    "scripts/build-app-document.ts",
+    "scripts/app-document-build.test.ts",
+    "browser/app-document/*.ts",
+    "scripts/app-document-browser.ts",
+    "scripts/app-document.test.ts"
   ]
 }

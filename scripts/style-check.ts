@@ -30,6 +30,7 @@ async function collect(path: string) {
 }
 if (native) {
   for (const directory of [
+    "browser",
     "svelte/lib/ui",
     "svelte/lib/components",
     "svelte/gallery",
@@ -86,6 +87,7 @@ if (native) {
 } else {
   await collect("svelte");
   await collect("collab");
+  await collect("browser");
   files.push("public/app-svelte.html");
 }
 for (const file of files.sort()) {

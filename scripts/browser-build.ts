@@ -27,13 +27,13 @@ export function bunClientBoundary(root: string): BunPlugin {
 }
 
 export async function buildBrowser(
-  config: Pick<BuildConfig, "entrypoints">,
+  config: Pick<BuildConfig, "entrypoints" | "format">,
   root = projectRoot,
 ) {
   const result = await Bun.build({
-    ...config,
     target: "browser",
-    format: "esm",
+    format: config.format ?? "esm",
+    entrypoints: config.entrypoints,
     minify: true,
     throw: false,
     plugins: [bunClientBoundary(root)],

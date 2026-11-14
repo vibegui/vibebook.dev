@@ -44,9 +44,14 @@ export default defineConfig(({ mode, command }) => ({
         }
       : {}),
     fs: {
-      allow: ["svelte", "shared", "collab", "public", "node_modules"].map(
-        (path) => realpathSync(join(projectRoot, path)),
-      ),
+      allow: [
+        "svelte",
+        "shared",
+        "collab",
+        "browser",
+        "public",
+        "node_modules",
+      ].map((path) => realpathSync(join(projectRoot, path))),
       deny: [
         "**/.env",
         "**/.env.*",
