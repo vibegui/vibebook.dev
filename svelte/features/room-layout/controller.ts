@@ -23,24 +23,47 @@ export function createRoomLayoutIntents(options: {
   deferSheet(callback: () => void): boolean;
 }) {
   type Gate = { deferNavigation(callback: () => void): boolean };
-  let active = true, revision = 0, binding: { gate: Gate } | null = null;
+  let active = true,
+    revision = 0,
+    binding: { gate: Gate } | null = null;
   return {
     run(callback: () => void) {
       if (!active || !options.current()) return;
       const ticket = ++revision;
       let completed = false;
       const valid = () => active && options.current() && ticket === revision;
-      const owned = () => { if (valid() && !completed) { completed = true; callback(); } };
-      const afterViewer = () => { if (!valid() || completed) return; if (!options.deferSheet(owned)) owned(); };
+      const owned = () => {
+        if (valid() && !completed) {
+          completed = true;
+          callback();
+        }
+      };
+      const afterViewer = () => {
+        if (!valid() || completed) return;
+        if (!options.deferSheet(owned)) owned();
+      };
       if (!binding?.gate.deferNavigation(afterViewer)) afterViewer();
     },
     setViewerGate(gate: Gate) {
       if (!active) return () => {};
-      revision++; const lease = { gate }; binding = lease;
-      return () => { if (binding === lease) { binding = null; revision++; } };
+      revision++;
+      const lease = { gate };
+      binding = lease;
+      return () => {
+        if (binding === lease) {
+          binding = null;
+          revision++;
+        }
+      };
     },
-    invalidate() { revision++; },
-    dispose() { active = false; revision++; binding = null; },
+    invalidate() {
+      revision++;
+    },
+    dispose() {
+      active = false;
+      revision++;
+      binding = null;
+    },
   };
 }
 
@@ -94,7 +117,10 @@ export function createRoomLayout(
       if (active) publish({ closingUnconfirmed });
     },
   });
-  const intents = createRoomLayoutIntents({ current, deferSheet: history.deferNavigation });
+  const intents = createRoomLayoutIntents({
+    current,
+    deferSheet: history.deferNavigation,
+  });
   const intent = intents.run;
   const pane = (next: RoomLayoutState["pane"]) => {
     const changed = value.pane !== next;

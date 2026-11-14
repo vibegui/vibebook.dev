@@ -11,7 +11,10 @@ import {
   hasSheetSurface,
 } from "../svelte/features/room-layout/model";
 import { createRoomSheetHistory } from "../svelte/features/room-layout/history";
-import { createRoomLayout, createRoomLayoutIntents } from "../svelte/features/room-layout/controller";
+import {
+  createRoomLayout,
+  createRoomLayoutIntents,
+} from "../svelte/features/room-layout/controller";
 import type {
   RoomLayoutBrowser,
   RoomSheet,
@@ -269,19 +272,65 @@ test("foreign route/history state is not rewritten or consumed by old sheet clea
   f.owner.dispose();
 });
 test("Viewer-held intent rechecks a later sheet Back before execution", () => {
-  const f=fixture(), held:(()=>void)[]=[];let executed=0;
-  const intents=createRoomLayoutIntents({current:()=>true,deferSheet:f.owner.deferNavigation});
-  intents.setViewerGate({deferNavigation:run=>{held.push(run);return true;}});
-  f.owner.open("doc");intents.run(()=>executed++);f.owner.close();
-  held[0]!();f.flush();expect(executed).toBe(0);f.expire();expect(f.read().warning).toBe(true);expect(executed).toBe(0);
-  expect(f.back()).toBe(true);f.flush();expect(executed).toBe(1);held[0]!();expect(executed).toBe(1);
-  intents.dispose();f.owner.dispose();
+  const f = fixture(),
+    held: (() => void)[] = [];
+  let executed = 0;
+  const intents = createRoomLayoutIntents({
+    current: () => true,
+    deferSheet: f.owner.deferNavigation,
+  });
+  intents.setViewerGate({
+    deferNavigation: (run) => {
+      held.push(run);
+      return true;
+    },
+  });
+  f.owner.open("doc");
+  intents.run(() => executed++);
+  f.owner.close();
+  held[0]!();
+  f.flush();
+  expect(executed).toBe(0);
+  f.expire();
+  expect(f.read().warning).toBe(true);
+  expect(executed).toBe(0);
+  expect(f.back()).toBe(true);
+  f.flush();
+  expect(executed).toBe(1);
+  held[0]!();
+  expect(executed).toBe(1);
+  intents.dispose();
+  f.owner.dispose();
 });
-test("latest Viewer intent and disposal fence late repeated callbacks",()=>{
-  const held:(()=>void)[]=[];let result="none";
-  const intents=createRoomLayoutIntents({current:()=>true,deferSheet:()=>false});intents.setViewerGate({deferNavigation:run=>{held.push(run);return true;}});
-  intents.run(()=>{result="old";});intents.run(()=>{result="latest";});held[0]!();expect(result).toBe("none");held[1]!();expect(result).toBe("latest");
-  intents.run(()=>{result="disposed";});intents.dispose();held[2]!();expect(result).toBe("latest");
+test("latest Viewer intent and disposal fence late repeated callbacks", () => {
+  const held: (() => void)[] = [];
+  let result = "none";
+  const intents = createRoomLayoutIntents({
+    current: () => true,
+    deferSheet: () => false,
+  });
+  intents.setViewerGate({
+    deferNavigation: (run) => {
+      held.push(run);
+      return true;
+    },
+  });
+  intents.run(() => {
+    result = "old";
+  });
+  intents.run(() => {
+    result = "latest";
+  });
+  held[0]!();
+  expect(result).toBe("none");
+  held[1]!();
+  expect(result).toBe("latest");
+  intents.run(() => {
+    result = "disposed";
+  });
+  intents.dispose();
+  held[2]!();
+  expect(result).toBe("latest");
 });
 test("viewer-first deferral and exact gate cleanup cannot apply into a replaced scope", () => {
   const f = fixture();
