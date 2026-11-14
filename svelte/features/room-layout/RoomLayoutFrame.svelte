@@ -175,7 +175,7 @@
     <div
       bind:this={peek}
       use:handle={{ sheet: "doc", opening: true }}
-      inert={$view.mobile && $view.sheet === "side"}
+      inert={props.overlayOpen || ($view.mobile && $view.sheet === "side")}
       data-room-peek
       class={!props.overlayOpen && $view.mobile && !$view.boardFull
         ? "tw:relative tw:z-30 tw:col-start-2 tw:row-start-2 tw:min-w-0 tw:touch-none tw:border-b tw:border-border tw:bg-background"
@@ -196,7 +196,7 @@
     </div>
     <div
       bind:this={chat}
-      inert={$view.mobile && !!$view.sheet}
+      inert={props.overlayOpen || ($view.mobile && !!$view.sheet)}
       data-room-chat
       class={props.overlayOpen || $view.boardFull
         ? "tw:hidden"
@@ -206,7 +206,7 @@
     </div>
     <div
       bind:this={composer}
-      inert={$view.mobile && !!$view.sheet}
+      inert={props.overlayOpen || ($view.mobile && !!$view.sheet)}
       data-room-composer
       class={props.overlayOpen || $view.boardFull
         ? "tw:hidden"
@@ -216,6 +216,7 @@
     </div>
     <div
       bind:this={documentToolbar}
+      inert={props.overlayOpen}
       data-room-document-toolbar
       class={!props.overlayOpen && !$view.mobile && rightVisible
         ? "tw:col-start-3 tw:row-start-1 tw:w-0 tw:min-w-full tw:border-l tw:border-border tw:bg-background"

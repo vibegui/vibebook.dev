@@ -10,6 +10,7 @@
   import type { ApplicationInbox, InboxBinding } from "./inbox";
   import type { BrowserApplicationServices } from "./browser";
   import type { Wait } from "../../types";
+  import { personAvatar } from "../home/model";
   import {
     roomInboxModel,
     inboxTopic,
@@ -30,7 +31,8 @@
   } = $props();
   const opening = untrack(() => binding),
     inbox = untrack(() => owner.state),
-    root = untrack(() => services.rootRoom.state);
+    root = untrack(() => services.rootRoom.state),
+    personal = untrack(() => services.personal.state);
   const t = services.t;
   const model = $derived(
     roomInboxModel($inbox.data, opening.roomId ?? "", $inbox.all),
@@ -44,6 +46,11 @@
         ? "@vibe"
         : message.authorName ||
           $root.room?.names?.[message.author] ||
+          ($personal.me?.email === message.author
+            ? $personal.me.name
+            : $personal.me?.friends.find(
+                (friend) => friend.email === message.author,
+              )?.name) ||
           message.author.split("@")[0]!;
   const day = (ts: number) =>
     new Intl.DateTimeFormat(services.locale, {
@@ -60,7 +67,7 @@
     const version = $root.room?.avatars?.[email];
     return version
       ? `/api/avatar/${encodeURIComponent(email)}?v=${version}`
-      : undefined;
+      : personAvatar($personal.me, email);
   };
   const topic = (message: RoomInboxMessage) =>
     inboxTopic(message, $root.room) ?? t("sala principal");
