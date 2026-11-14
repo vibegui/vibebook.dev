@@ -1,0 +1,1831 @@
+{
+  "scope": "Integrated Root only; no gallery or provider acceptance implied",
+  "results": [
+    {
+      "lang": "en",
+      "theme": "light",
+      "width": 1440,
+      "key": "root-en-light-1440",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "light",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "rgb(10, 10, 9)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "en",
+      "theme": "light",
+      "width": 390,
+      "key": "root-en-light-390",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "light",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "rgb(10, 10, 9)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "en",
+      "theme": "dark",
+      "width": 1440,
+      "key": "root-en-dark-1440",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "dark",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "oklch(0.96 0 0)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "en",
+      "theme": "dark",
+      "width": 390,
+      "key": "root-en-dark-390",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "dark",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "oklch(0.96 0 0)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "pt",
+      "theme": "light",
+      "width": 1440,
+      "key": "root-pt-light-1440",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "light",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "rgb(10, 10, 9)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "pt",
+      "theme": "light",
+      "width": 390,
+      "key": "root-pt-light-390",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "light",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "rgb(10, 10, 9)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(255, 255, 255)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "rgb(10, 10, 9)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "pt",
+      "theme": "dark",
+      "width": 1440,
+      "key": "root-pt-dark-1440",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "dark",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "oklch(0.96 0 0)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    },
+    {
+      "lang": "pt",
+      "theme": "dark",
+      "width": 390,
+      "key": "root-pt-dark-390",
+      "scope": "Actual native Root with real Worker state; synthetic test-room content only",
+      "reference": {
+        "archivedSha": "eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb",
+        "authenticatedSha": "be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37"
+      },
+      "accountVerified": true,
+      "palettes": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "theme": "dark",
+            "devicePixelRatio": 1,
+            "tokens": 134,
+            "colorTokens": 92,
+            "roles": 4,
+            "mismatches": []
+          }
+        }
+      ],
+      "axe": [
+        {
+          "surface": "Home",
+          "violations": [
+            {
+              "id": "link-in-text-block",
+              "impact": "serious",
+              "targets": [
+                [
+                  ".tw\\:text-link"
+                ]
+              ],
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "keyboard": [],
+      "paneFonts": [
+        {
+          "surface": "Home",
+          "evidence": {
+            "body": {
+              "tag": "MAIN",
+              "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+              "weight": "400",
+              "size": "14px",
+              "lineHeight": "24px",
+              "tracking": "normal",
+              "variation": "normal",
+              "color": "oklch(0.96 0 0)"
+            },
+            "headings": [
+              {
+                "tag": "H1",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "24px",
+                "lineHeight": "32px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "H2",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "18px",
+                "lineHeight": "28px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "controls": [
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "TEXTAREA",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "400",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.14 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              },
+              {
+                "tag": "BUTTON",
+                "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+                "weight": "500",
+                "size": "14px",
+                "lineHeight": "20px",
+                "tracking": "normal",
+                "variation": "normal",
+                "color": "oklch(0.96 0 0)"
+              }
+            ],
+            "faces": [
+              {
+                "family": "Inter var",
+                "status": "loaded",
+                "style": "normal",
+                "weight": "100 900"
+              },
+              {
+                "family": "Inter var",
+                "status": "unloaded",
+                "style": "italic",
+                "weight": "100 900"
+              },
+              {
+                "family": "CommitMono",
+                "status": "unloaded",
+                "style": "normal",
+                "weight": "100 900"
+              }
+            ],
+            "interAvailable": true,
+            "monoAvailable": false
+          }
+        }
+      ],
+      "failure": "AssertionError: Actual native application accessibility: Home"
+    }
+  ],
+  "failures": [
+    "root-en-light-1440: AssertionError: Actual native application accessibility: Home",
+    "root-en-light-390: AssertionError: Actual native application accessibility: Home",
+    "root-en-dark-1440: AssertionError: Actual native application accessibility: Home",
+    "root-en-dark-390: AssertionError: Actual native application accessibility: Home",
+    "root-pt-light-1440: AssertionError: Actual native application accessibility: Home",
+    "root-pt-light-390: AssertionError: Actual native application accessibility: Home",
+    "root-pt-dark-1440: AssertionError: Actual native application accessibility: Home",
+    "root-pt-dark-390: AssertionError: Actual native application accessibility: Home"
+  ]
+}

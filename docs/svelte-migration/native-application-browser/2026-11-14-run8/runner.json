@@ -1,0 +1,33 @@
+{
+  "status": "failed",
+  "phases": [
+    {
+      "name": "real Worker readiness and ensureSchema",
+      "status": "passed",
+      "ms": 2433
+    },
+    {
+      "name": "integrated NativeApplication browser",
+      "status": "failed",
+      "ms": 34272
+    }
+  ],
+  "failure": {
+    "name": "AssertionError",
+    "phase": "integrated NativeApplication browser"
+  },
+  "cleanupErrors": [],
+  "remainingOwnedGroups": 0,
+  "runtime": {
+    "packages": {
+      "wrangler": "4.152.0",
+      "miniflare": "5.20261019.2-beta",
+      "workerd": "1.20261019.1"
+    },
+    "requestedDate": "2026-10-01",
+    "workerLogHeadBytes": 39488,
+    "workerLogHeadTruncated": false,
+    "compatibilityWarnings": []
+  },
+  "scope": "Disposable loopback local Worker; private raw Worker log and storage are intentionally excluded from artifact upload"
+}
