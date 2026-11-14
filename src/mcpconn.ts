@@ -223,7 +223,7 @@ export async function retireTokens(env: Env) {
 
 // ---- The app's HTML with its CSP. ----
 const DOMAIN = /^(https?|wss?):\/\/(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{1,5})?$/i;
-const domains = (v: unknown) => (Array.isArray(v) ? v.map(String).filter((d) => DOMAIN.test(d)).slice(0, 20) : []);
+const domains = (v: unknown) => (Array.isArray(v) ? v.filter((d): d is string => typeof d === "string" && DOMAIN.test(d)).slice(0, 20) : []);
 export function cspFor(meta: unknown) {
   const csp = record(meta) && record(meta.ui) && record(meta.ui.csp) ? meta.ui.csp : {};
   const res = domains(csp.resourceDomains).join(" "), conn = domains(csp.connectDomains), frames = domains(csp.frameDomains).join(" "), base = domains(csp.baseUriDomains).join(" ");

@@ -329,3 +329,20 @@ test("signed-out native HTML connection navigation keeps401 before any OAuth han
   expect(database).toBe(0);
   expect(reached).toBe(0);
 });
+
+test("malformed nested CSP entries neither widen the policy nor invoke coercion", () => {
+  const policy = cspFor({
+    ui: {
+      csp: {
+        resourceDomains: [
+          { toString: null },
+          ["https://nested.example"],
+          "https://safe.example",
+        ],
+      },
+    },
+  });
+  expect(policy).toContain("font-src data: https://safe.example");
+  expect(policy).not.toContain("nested.example");
+  expect(policy).not.toContain("[object Object]");
+});

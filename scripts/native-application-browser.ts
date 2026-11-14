@@ -835,7 +835,10 @@ try {
   await step(
     "native live Document ↔ vanilla live Document through actual Yjs/DocRoom",
     async () => {
-      const documentEvidence: { checkpoint: string; completed: string[] } = { checkpoint: "create-vanilla-peer", completed: [] };
+      const documentEvidence: { checkpoint: string; completed: string[] } = {
+        checkpoint: "create-vanilla-peer",
+        completed: [],
+      };
       report.document = documentEvidence;
       const documentCheckpoint = (name: string) => {
         documentEvidence.completed.push(documentEvidence.checkpoint);
@@ -1009,9 +1012,18 @@ try {
     phase: phases.at(-1)?.name ?? "setup",
     // Only repository-owned source locations, never exception text, URLs,
     // document content or authorization material from the first stack line.
-    sourceLocations: error instanceof Error ? [...new Set(
-      [...(error.stack ?? "").matchAll(/\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g)].map(match => match[1]),
-    )] : [],
+    sourceLocations:
+      error instanceof Error
+        ? [
+            ...new Set(
+              [
+                ...(error.stack ?? "").matchAll(
+                  /\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g,
+                ),
+              ].map((match) => match[1]),
+            ),
+          ]
+        : [],
   };
   process.exitCode = interrupted ? 130 : 1;
 } finally {
