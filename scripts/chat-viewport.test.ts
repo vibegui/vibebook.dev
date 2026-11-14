@@ -499,3 +499,20 @@ test("older expands before the retained end, and new tail rows do not masquerade
   expect(h.view.pinned()).toBe(true);
   h.view.dispose();
 });
+
+test("force-bottom completion releases an end refrozen by intervening scroll before the render flush", () => {
+  const h = harness();
+  h.metrics.top = 300;
+  h.scroll();
+  h.sync(room(121));
+  h.view.followLatest();
+  h.metrics.top = 200;
+  h.scroll();
+  expect(h.view.pinned()).toBe(false);
+  h.view.afterRender(undefined, h.view.capture());
+  expect(h.view.pinned()).toBe(true);
+  h.sync(room(122));
+  expect(h.view.selection().list.at(-1)?.id).toBe(122);
+  expect(h.view.selection().list).toHaveLength(60);
+  h.view.dispose();
+});

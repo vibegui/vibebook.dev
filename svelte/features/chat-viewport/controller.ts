@@ -385,6 +385,7 @@ export function createChatViewport(options: {
           before.top + ownedSurface.metrics().height - before.height,
         );
       else {
+        windowEnd = null;
         pinned = true;
         bottom();
       }
