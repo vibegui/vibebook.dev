@@ -583,7 +583,7 @@ try {
               .querySelector("[data-native-board-toggle]")
               ?.getAttribute("aria-pressed"),
             mountedRows: rows.length,
-            rowIds: rows.map(row=>row.id),
+            rowIds: rows.map((row) => row.id),
             firstId: rows[0]?.id,
             lastId: rows.at(-1)?.id,
             anchor: row
@@ -612,10 +612,18 @@ try {
           )
           .toBeGreaterThan(200);
         const before = await anchor(a);
-        const windowIds = () => scroller.evaluate(node=>[...node.querySelectorAll<HTMLElement>('[id^="m"]')].filter(row=>/^m\d+$/.test(row.id)).map(row=>row.id));
+        const windowIds = () =>
+          scroller.evaluate((node) =>
+            [...node.querySelectorAll<HTMLElement>('[id^="m"]')]
+              .filter((row) => /^m\d+$/.test(row.id))
+              .map((row) => row.id),
+          );
         const windowBefore = await windowIds();
         reading.windowBefore = windowBefore;
-        assert(windowBefore.length > 0 && windowBefore.length <= 60,"Reading fixture must use the bounded initial message window");
+        assert(
+          windowBefore.length > 0 && windowBefore.length <= 60,
+          "Reading fixture must use the bounded initial message window",
+        );
         reading.before = before;
         assert(before.top > 150);
         await checkpoint("hide-with-full-board");
@@ -640,8 +648,19 @@ try {
         await checkpoint("hidden-canonical-update-keeps-reading-window");
         // Give the actual application its DOM flush before checking that the
         // new canonical tail remains deferred while this reader is unpinned.
-        await a.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
-        assert.deepEqual(await windowIds(),windowBefore,"Canonical append must not roll the unpinned DOM window");
+        await a.evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => resolve()),
+              ),
+            ),
+        );
+        assert.deepEqual(
+          await windowIds(),
+          windowBefore,
+          "Canonical append must not roll the unpinned DOM window",
+        );
         await expect(a.locator(`[data-room-chat] #m${id}`)).toHaveCount(0);
         await checkpoint("restore-chat-visibility");
         await a.locator("[data-native-board-toggle]").click();
@@ -688,44 +707,95 @@ try {
           Math.abs(after.y - before.y) < 2,
           "Visible message anchor must survive the real hidden update",
         );
-        const windowAfterRestore=await windowIds();
-        reading.windowAfterRestore=windowAfterRestore;
-        assert.deepEqual(windowAfterRestore,windowBefore,"Restoring chat must retain every mounted reading row");
+        const windowAfterRestore = await windowIds();
+        reading.windowAfterRestore = windowAfterRestore;
+        assert.deepEqual(
+          windowAfterRestore,
+          windowBefore,
+          "Restoring chat must retain every mounted reading row",
+        );
         await expect(a.locator(`[data-room-chat] #m${id}`)).toHaveCount(0);
         Object.assign(reading, { before, after, peerMessage: id });
         await checkpoint("real-wheel-repin-shows-deferred-canonical-tail");
         await scroller.hover();
-        await a.mouse.wheel(0,40_000);
+        await a.mouse.wheel(0, 40_000);
         await expect(a.locator(`[data-room-chat] #m${id}`)).toBeVisible();
-        await expect.poll(()=>scroller.evaluate(node=>node.scrollHeight-node.scrollTop-node.clientHeight)).toBeLessThan(2);
-        const repinnedWindow=await windowIds();
-        assert(repinnedWindow.length<=60,"Repin retains a bounded message window");
-        assert.equal(repinnedWindow.at(-1),"m"+id,"Real repin must reveal the actual canonical peer tail");
-        Object.assign(reading,{repinnedWindow});
+        await expect
+          .poll(() =>
+            scroller.evaluate(
+              (node) => node.scrollHeight - node.scrollTop - node.clientHeight,
+            ),
+          )
+          .toBeLessThan(2);
+        const repinnedWindow = await windowIds();
+        assert(
+          repinnedWindow.length <= 60,
+          "Repin retains a bounded message window",
+        );
+        assert.equal(
+          repinnedWindow.at(-1),
+          "m" + id,
+          "Real repin must reveal the actual canonical peer tail",
+        );
+        Object.assign(reading, { repinnedWindow });
         await checkpoint("real-wheel-unpin-before-own-ui-send");
         await scroller.hover();
-        await a.mouse.wheel(0,-800);
-        await expect.poll(()=>scroller.evaluate(node=>node.scrollHeight-node.scrollTop-node.clientHeight)).toBeGreaterThan(200);
-        assert(await scroller.evaluate(node=>node.scrollTop)>150,"Own-send reading fixture must not trigger older-history loading");
-        const ownSendBefore=await anchor(a),ownText="Own native send while unpinned "+token;
-        Object.assign(reading,{ownSendBefore});
+        await a.mouse.wheel(0, -800);
+        await expect
+          .poll(() =>
+            scroller.evaluate(
+              (node) => node.scrollHeight - node.scrollTop - node.clientHeight,
+            ),
+          )
+          .toBeGreaterThan(200);
+        assert(
+          (await scroller.evaluate((node) => node.scrollTop)) > 150,
+          "Own-send reading fixture must not trigger older-history loading",
+        );
+        const ownSendBefore = await anchor(a),
+          ownText = "Own native send while unpinned " + token;
+        Object.assign(reading, { ownSendBefore });
         await checkpoint("own-ui-send-while-unpinned");
-        const composer=a.locator("[data-native-composer] #input");
+        const composer = a.locator("[data-native-composer] #input");
         await composer.fill(ownText);
         await a.locator("[data-composer-send]").click();
-        await expect.poll(()=>aWire.store.get()?.messages.find(message=>message.text===ownText)?.id).toBeGreaterThan(0);
-        const ownId=aWire.store.get()?.messages.find(message=>message.text===ownText)?.id;
-        assert(ownId,"Real own-send canonical message must be observed");
-        Object.assign(reading,{ownMessage:ownId});
+        await expect
+          .poll(
+            () =>
+              aWire.store
+                .get()
+                ?.messages.find((message) => message.text === ownText)?.id,
+          )
+          .toBeGreaterThan(0);
+        const ownId = aWire.store
+          .get()
+          ?.messages.find((message) => message.text === ownText)?.id;
+        assert(ownId, "Real own-send canonical message must be observed");
+        Object.assign(reading, { ownMessage: ownId });
         await checkpoint("own-canonical-message-forces-latest-bottom");
-        await expect(a.locator("[data-room-chat] #m"+ownId)).toBeVisible();
-        await expect(b.locator("[data-room-chat] #m"+ownId)).toContainText(ownText);
+        await expect(a.locator("[data-room-chat] #m" + ownId)).toBeVisible();
+        await expect(b.locator("[data-room-chat] #m" + ownId)).toContainText(
+          ownText,
+        );
         await expect(composer).toHaveValue("");
-        await expect.poll(()=>scroller.evaluate(node=>node.scrollHeight-node.scrollTop-node.clientHeight)).toBeLessThan(2);
-        const ownSendWindow=await windowIds();
-        assert(ownSendWindow.length<=60,"Own send must retain a bounded latest window");
-        assert.equal(ownSendWindow.at(-1),"m"+ownId,"Own send must reveal its actual canonical latest message");
-        Object.assign(reading,{ownSendWindow});
+        await expect
+          .poll(() =>
+            scroller.evaluate(
+              (node) => node.scrollHeight - node.scrollTop - node.clientHeight,
+            ),
+          )
+          .toBeLessThan(2);
+        const ownSendWindow = await windowIds();
+        assert(
+          ownSendWindow.length <= 60,
+          "Own send must retain a bounded latest window",
+        );
+        assert.equal(
+          ownSendWindow.at(-1),
+          "m" + ownId,
+          "Own send must reveal its actual canonical latest message",
+        );
+        Object.assign(reading, { ownSendWindow });
         await checkpoint("passed");
       } finally {
         try {
