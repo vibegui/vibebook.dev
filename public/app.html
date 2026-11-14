@@ -711,6 +711,15 @@
   .mentionPop[hidden] { display: none; }
   .composer .emojiBtn { font-size: 19px; line-height: 1; filter: grayscale(.4); } .composer .emojiBtn:hover, .composer .emojiBtn[aria-expanded="true"] { filter: none; }
   .composer .micBtn { color: var(--mute); touch-action: none; } .composer .micBtn.on { color: #fff; background: #d64545; border-radius: 50%; }
+  /* Modo Fire: holding 🎤 for 3s charges it (a ring fills), then it burns while live speech goes to the fast model. */
+  .composer .micBtn.charging { position: relative; border-radius: 50%; background: conic-gradient(#ff7a1a var(--fireP, 0%), transparent 0); transition: none; }
+  .composer .micBtn.fire { color: #fff; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #ffd23f, #ff7a1a 45%, #e5381f 80%); box-shadow: 0 0 0 3px color-mix(in srgb, #ff7a1a 35%, transparent), 0 0 18px #ff7a1a; animation: fireFlick 1.1s ease-in-out infinite alternate; }
+  @keyframes fireFlick { from { box-shadow: 0 0 0 3px color-mix(in srgb, #ff7a1a 30%, transparent), 0 0 12px #ff7a1a; } to { box-shadow: 0 0 0 5px color-mix(in srgb, #e5381f 30%, transparent), 0 0 24px #ffb03a; } }
+  @media (prefers-reduced-motion: reduce) { .composer .micBtn.fire { animation: none; } }
+  .fireBar[hidden] { display: none; }
+  .fireBar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin-bottom: 6px; border-radius: 10px; background: color-mix(in srgb, #ff7a1a 14%, var(--panel)); border: 1px solid color-mix(in srgb, #ff7a1a 40%, transparent); font-size: 13px; }
+  .fireBar .fbTx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .fireBar .fbTx i { color: var(--mute); }
+  dialog.fireDlg { width: min(460px, calc(100% - 32px)); } dialog.fireDlg .fIco { font-size: 34px; } dialog.fireDlg ul { margin: 6px 0 16px; padding-left: 18px; line-height: 1.5; color: var(--mute); } dialog.fireDlg ul b { color: var(--ink); }
   .composer.dictating textarea, .composer.dictating input { box-shadow: 0 0 0 2px #d64545; }
   .emojiPop { width: min(340px, calc(100% - 48px)); }
   .emojiPop input { width: 100%; margin-bottom: 6px; }
@@ -1456,6 +1465,93 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; // dictation in the composer, when the browser has it
+// Modo Fire (Gui 14/11): live transcription; each pause goes at once to POST /api/books/:id/fire, where the fast model
+// applies it to the file open beside the chat (new version, the panel follows); one request at a time, speech that
+// arrives meanwhile joins the next one. Stopping posts the whole transcript with the file as your message, so your
+// own Claude reviews what the fast model did.
+let fireS = null; // { rec, on, chunks, pending, busy, fid, name, n, thread }
+const fireLive = () => !!fireS?.on;
+function fireArm() {
+  let seen = false; try { seen = localStorage.getItem("vb.fireSeen") === "1"; } catch {}
+  if (seen) return fireOn();
+  const d = document.createElement("dialog"); d.className = "fireDlg";
+  d.innerHTML = `<div class="fIco">🔥</div><h3>${t("Modo Fire")}</h3><ul>
+    <li>${t("<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).")}</li>
+    <li>${t("<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.")}</li>
+    <li>${t("<b>Ao parar</b> (toque no 🎤), a transcrição vai pro chat como mensagem sua, com o arquivo, e o seu Claude confere e melhora.")}</li>
+    <li>${t("O modelo rápido só mexe nesse arquivo. Custa centavos por minuto falado.")}</li></ul>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button type="button" class="ghost" data-x>${t("Cancelar")}</button><button type="button" class="primary" data-go>${t("Ligar o fogo")}</button></div>`;
+  document.body.appendChild(d); d.showModal();
+  d.querySelector("[data-x]").onclick = () => { d.close(); d.remove(); };
+  d.querySelector("[data-go]").onclick = () => { try { localStorage.setItem("vb.fireSeen", "1"); } catch {} d.close(); d.remove(); fireOn(); };
+}
+function fireBar(status) {
+  const b = document.getElementById("fireBar"); if (!b) return;
+  b.hidden = !fireLive();
+  if (fireLive()) b.innerHTML = `<span>🔥</span><span class="fbTx">${status ? esc(status) : `<i>${t("ao vivo: fale, a cada pausa eu aplico")}</i>`}</span><button type="button" class="ghost" data-firestop>${t("Parar")}</button>`;
+  b.querySelector("[data-firestop]")?.addEventListener("click", fireStop);
+}
+function fireOn() {
+  if (!SR || !S) return;
+  fireS = { on: true, chunks: [], pending: "", busy: false, fid: "", name: "", n: 0, thread };
+  document.getElementById("micBtn")?.classList.add("fire");
+  const listen = () => {
+    if (!fireS?.on) return;
+    const rec = new SR(); rec.lang = LOCALE; rec.continuous = true; rec.interimResults = true; fireS.rec = rec;
+    let done = 0;
+    rec.onresult = (ev) => {
+      let interim = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal && i >= done) { done = i + 1; fireSay(ev.results[i][0].transcript.trim()); }
+        else if (!ev.results[i].isFinal) interim += ev.results[i][0].transcript;
+      }
+      if (interim.trim() && !fireS.busy) fireBar(`… ${interim.trim()}`);
+    };
+    rec.onerror = (ev) => { if (ev.error === "not-allowed") { toast(t("O navegador não deixou usar o microfone.")); fireStop(); } };
+    rec.onend = () => setTimeout(listen, 150); // browsers end a session after a silence: keep listening while on
+    try { rec.start(); } catch {}
+  };
+  listen(); fireBar();
+}
+function fireSay(text) {
+  if (!text || !fireS) return;
+  fireS.pending = `${fireS.pending} ${text}`.trim();
+  firePump();
+}
+async function firePump() {
+  const f = fireS; if (!f || f.busy || !f.pending) return;
+  f.busy = true;
+  const text = f.pending; f.pending = "";
+  const open = sideView && sideView.room === S.id ? (fileVersions(sideView.name)[0]?.id || sideView.fid) : "";
+  fireBar(`${t("aplicando")}: ${text}`);
+  try {
+    const r = await fetch(`/api/books/${S.id}/fire`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, file_id: open || f.fid || undefined, history: f.chunks.slice(-10) }) }).then((x) => x.json());
+    if (!r.ok) { fireBar(`⚠ ${r.error || t("falhou")}`); }
+    else {
+      f.chunks.push(text); f.fid = r.file.id; f.name = r.file.name; f.n++;
+      if (!r.opened && !(sideView && sideView.room === S.id && sideView.name === r.file.name)) openSide(r.file.id, r.file.name);
+      fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
+    }
+  } catch { fireBar(`⚠ ${t("sem conexão")}`); }
+  f.busy = false;
+  if (f.pending) firePump();
+  else if (!f.on) fireEnd(f);
+}
+function fireStop() {
+  const f = fireS; if (!f) return;
+  f.on = false; try { f.rec?.stop(); } catch {}
+  document.getElementById("micBtn")?.classList.remove("fire");
+  fireBar();
+  if (!f.busy) fireEnd(f);
+}
+// The slow pass: the transcript and the file as your message, which wakes your own Claude to review and fix.
+function fireEnd(f) {
+  if (fireS === f) fireS = null;
+  fireBar();
+  if (!f.chunks.length || !f.fid) return;
+  const text = t("🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku em {name}. Confere e melhora o que ele fez.", { n: f.chunks.length, name: f.name }) + "\n\n" + f.chunks.map((c) => `- ${c}`).join("\n");
+  send({ t: "msg", text, thread: f.thread || "main", files: [f.fid] });
+}
 const EN = {
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -1855,6 +1951,17 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "Modo Fire": "Fire mode",
+  "<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).": "<b>Live:</b> what you say goes, at every pause, straight to a fast model (Haiku).",
+  "<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.": "<b>It applies it right away</b> to the file open beside the chat (or starts a new page), and the panel updates with every version.",
+  "<b>Ao parar</b> (toque no 🎤), a transcrição vai pro chat como mensagem sua, com o arquivo, e o seu Claude confere e melhora.": "<b>When you stop</b> (tap 🎤), the transcript goes to the chat as your message, with the file, and your Claude reviews and improves it.",
+  "O modelo rápido só mexe nesse arquivo. Custa centavos por minuto falado.": "The fast model only touches that file. It costs cents per minute of speech.",
+  "Ligar o fogo": "Light it up",
+  "ao vivo: fale, a cada pausa eu aplico": "live: talk, I apply it at every pause",
+  "Parar": "Stop",
+  "aplicando": "applying",
+  "v{n} aplicada: {text}": "v{n} applied: {text}",
+  "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku em {name}. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to {name}. Review and improve what it did.",
   "aberto ao lado": "open beside",
   "Abrindo seu Claude no herdr…": "Opening your Claude in herdr…",
   "Não deu agora. Tente de novo.": "Didn't work now. Try again.",
@@ -3529,6 +3636,7 @@ function renderBook() {
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
         <div class="replyBar" id="replyBar" hidden></div>
+        <div class="fireBar" id="fireBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
           <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Segure pra ditar (ou segure o espaço)")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}
@@ -3653,8 +3761,19 @@ function renderBook() {
       if (held) { held = false; stop(); return; }
       if (pending) typeSpace();
     });
-    mic?.addEventListener("pointerdown", (e) => { e.preventDefault(); mic.setPointerCapture?.(e.pointerId); start(); });
-    for (const ev of ["pointerup", "pointercancel"]) mic?.addEventListener(ev, stop);
+    // Hold 🎤: dictation while held; held 3 s, it charges into Modo Fire (live speech applied by the fast model).
+    let fireT = 0, fireRaf = 0;
+    mic?.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); mic.setPointerCapture?.(e.pointerId);
+      if (fireLive()) return fireStop();
+      start();
+      const t0 = performance.now();
+      mic.classList.add("charging");
+      const tick = () => { mic.style.setProperty("--fireP", `${Math.min(100, (performance.now() - t0) / 30)}%`); fireRaf = requestAnimationFrame(tick); };
+      tick();
+      fireT = setTimeout(() => { cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); stop(); fireArm(); }, 3000);
+    });
+    for (const ev of ["pointerup", "pointercancel"]) mic?.addEventListener(ev, () => { clearTimeout(fireT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); if (!fireLive()) stop(); });
   }
   // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
   // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.

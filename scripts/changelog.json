@@ -40,6 +40,21 @@
           "pt": "Um HTML aberto ao lado do chat",
           "en": "An HTML file open beside the chat"
         }
+      },
+      {
+        "title": {
+          "pt": "Modo Fire: fale e veja a página mudar ao vivo",
+          "en": "Fire mode: talk and watch the page change live"
+        },
+        "text": {
+          "pt": "Segure o 🎤 por 3 segundos: ele pega fogo. A cada pausa, o que você falou vai direto pra um modelo rápido, que aplica na página aberta ao lado do chat (ou começa uma nova) em poucos segundos. Ao parar, a transcrição vai pro chat com o arquivo e o seu Claude confere e melhora.",
+          "en": "Hold 🎤 for 3 seconds: it catches fire. At every pause, what you said goes straight to a fast model that applies it to the page open beside the chat (or starts a new one) in a few seconds. When you stop, the transcript goes to the chat with the file and your Claude reviews and improves it."
+        },
+        "image": "changelog/2026-11-14-fire.webp",
+        "alt": {
+          "pt": "Roteiro de viagem feito ao vivo, aberto ao lado do chat, com a barra do Modo Fire",
+          "en": "A travel plan made live, open beside the chat, with the Fire mode bar"
+        }
       }
     ],
     "improvements": {
