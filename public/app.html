@@ -1959,6 +1959,8 @@ const EN = {
   "Remover a conexão {name}? Os apps dela saem da sala.": "Remove the connection {name}? Its apps leave the room.",
   "Esse app não está nas conexões que você pode usar nesta sala.": "That app isn't in the connections you can use in this room.",
   "Recarregar": "Reload",
+  "Reabrir": "Reopen",
+  "Este app mudou de página. Reabra para autorizar novamente.": "This app changed pages. Reopen it to authorize again.",
   "próximo {when}": "next {when}",
   "de {who}": "by {who}",
   "Apagar lembrete": "Delete reminder",
@@ -5398,16 +5400,27 @@ const textOf = (content) => (Array.isArray(content) ? content.filter((b) => b?.t
 const toolOut = (v) => ({ content: [{ type: "text", text: typeof v === "string" ? v : JSON.stringify(v) }], ...(v && typeof v === "object" ? { structuredContent: v } : {}) });
 // "This app wants to … as you": one question at a time, in the app's own box (above the panel app, under an embed).
 let appAskQ = Promise.resolve();
-function appAsk(box, what, detail) {
+function appAsk(box, what, detail, signal) {
   const run = () => new Promise((res) => {
-    if (!box?.isConnected) return res(false);
+    if (signal?.aborted || !box?.isConnected) return res(false);
     box.hidden = false;
     box.innerHTML = `<span>${t("Este app quer {what}, como você:", { what: esc(what) })}</span><q></q><div><button type="button" class="primary">${t("Permitir")}</button><button type="button" class="ghost">${t("Cancelar")}</button></div>`;
     box.querySelector("q").textContent = String(detail).slice(0, 600);
+    const allow = box.querySelector(".primary"), cancel = box.querySelector(".ghost");
     let answered = false;
-    const done = (v, button) => { if (answered || !button.isConnected || !box.contains(button)) return; answered = true; box.hidden = true; box.innerHTML = ""; res(v); };
-    box.querySelector(".primary").onclick = (event) => done(true, event.currentTarget);
-    box.querySelector(".ghost").onclick = (event) => done(false, event.currentTarget);
+    const ownsButtons = () => box.querySelector(".primary") === allow && box.querySelector(".ghost") === cancel;
+    const finish = (value) => {
+      if (answered) return;
+      answered = true; signal?.removeEventListener("abort", onAbort);
+      if (ownsButtons()) { box.hidden = true; box.innerHTML = ""; }
+      res(value);
+    };
+    const onAbort = () => finish(false);
+    const done = (value, button) => { if (!button.isConnected || !ownsButtons() || signal?.aborted) return; finish(value); };
+    allow.onclick = (event) => done(true, event.currentTarget);
+    cancel.onclick = (event) => done(false, event.currentTarget);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) onAbort();
   });
   return (appAskQ = appAskQ.then(run, run));
 }
@@ -5490,13 +5503,30 @@ function pruneAppDocuments() {
 // Removal is synchronous for authority (current), observer cleanup only releases resources.
 new MutationObserver(pruneAppDocuments).observe($app, { childList: true, subtree: true });
 function makeHost(frame, o, createAppDocumentHost, current) { // o: { ask (a box), call?(name, args) for a remote app, first?, tool?, base?, toolName?, embed? }
+  const consent = new AbortController();
+  let expiredNotice = null;
   const documentHost = createAppDocumentHost({ frame, current, receive: (value) => {
     if (!value || typeof value !== "object") return;
     if (value.vbEmbed === 1) return void receive(typeof value.h === "number" ? { method: "ui/notifications/size-changed", params: { height: value.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(value.send || "") }] } });
     if (value.jsonrpc === "2.0" && typeof value.method === "string") void receive(value);
-  }, revoked: () => { frame.dataset.appDocumentExpired = "true"; } });
+  }, revoked: () => {
+    consent.abort();
+    if (!current() || expiredNotice) return;
+    frame.dataset.appDocumentExpired = "true"; frame.hidden = true;
+    const notice = document.createElement("div"), reopen = document.createElement("button");
+    notice.className = "empty"; notice.setAttribute("role", "status");
+    notice.append(document.createTextNode(t("Este app mudou de página. Reabra para autorizar novamente.")));
+    reopen.type = "button"; reopen.className = "ghost"; reopen.textContent = t("Reabrir");
+    notice.append(reopen); frame.after(notice); expiredNotice = notice;
+    reopen.onclick = () => {
+      if (!reopen.isConnected || !current()) return;
+      const next = frame.cloneNode(false);
+      for (const attribute of ["src", "srcdoc", "name", "hidden", "data-app-document-expired"]) next.removeAttribute(attribute);
+      owner.dispose(); frame.replaceWith(next); o.reopen(next);
+    };
+  } });
   const post = (m) => documentHost.post({ jsonrpc: "2.0", ...m });
-  const ask = async (what, detail) => current() && await appAsk(o.ask(), what, detail) && current() && await documentHost.attest() && current();
+  const ask = async (what, detail) => current() && await appAsk(o.ask(), what, detail, consent.signal) && current() && await documentHost.attest() && current();
   const call = async (name, args) => {
     if (!current() || !await documentHost.attest() || !current()) throw Error("App document authorization expired");
     return o.call ? o.call(name, args || {}) : vbCall(name, args || {}, ask, current);
@@ -5533,7 +5563,7 @@ function makeHost(frame, o, createAppDocumentHost, current) { // o: { ask (a box
         case "ui/message": { const text = textOf(m.params?.content).trim().slice(0, 4000); return ok(text ? await vbCall("vibebook_post", { text, thread: o.thread ?? thread }, ask, current) : {}); }
         case "ui/update-model-context": {
           const text = textOf(m.params?.content) || (m.params?.structuredContent ? JSON.stringify(m.params.structuredContent) : "");
-          if (text && o.base && current() && await documentHost.attest()) api(`${o.base}/context`, { tool: o.toolName, text: text.slice(0, 4000) }).catch(() => {});
+          if (text && o.base && current() && await documentHost.attest() && current()) api(`${o.base}/context`, { tool: o.toolName, text: text.slice(0, 4000) }).catch(() => {});
           return ok({});
         }
         case "ui/request-display-mode": return ok({ mode: o.embed ? "inline" : "fullscreen" });
@@ -5544,7 +5574,7 @@ function makeHost(frame, o, createAppDocumentHost, current) { // o: { ask (a box
       }
     } catch (x) { if (m.id !== undefined && current()) await post({ id: m.id, error: { code: -32000, message: String(x.message || x) } }).catch(() => {}); }
   };
-  const owner = { ...documentHost, current, dispose() { documentHost.dispose(); appDocuments.delete(owner); } };
+  const owner = { ...documentHost, current, dispose() { consent.abort(); expiredNotice?.remove(); documentHost.dispose(); appDocuments.delete(owner); } };
   appDocuments.add(owner);
   return owner;
 }
@@ -5556,7 +5586,7 @@ async function embedHost(frame) {
   try {
     const { createAppDocumentHost } = await loadAppDocumentHost();
     if (!current()) return;
-    const host = makeHost(frame, { embed: true, thread: at, ask: () => box.querySelector(".appAsk") || box.appendChild(Object.assign(document.createElement("div"), { className: "appAsk", hidden: true })) }, createAppDocumentHost, current);
+    const host = makeHost(frame, { embed: true, thread: at, reopen: embedHost, ask: () => box.querySelector(".appAsk") || box.appendChild(Object.assign(document.createElement("div"), { className: "appAsk", hidden: true })) }, createAppDocumentHost, current);
     hosts.set(frame, host); host.start(); host.loadFile(frame.dataset.appFile);
   } catch { if (current()) frame.dataset.appDocumentExpired = "true"; }
 }
@@ -5567,7 +5597,7 @@ async function mountApp(frame, c, a) {
     const { createAppDocumentHost } = await loadAppDocumentHost();
     if (!current()) return;
     if (room) {
-      const host = makeHost(frame, { ask, tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }, createAppDocumentHost, current);
+      const host = makeHost(frame, { ask, reopen: (next) => mountApp(next, c, a), tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }, createAppDocumentHost, current);
       hosts.set(frame, host); host.start(); host.loadFile(`/api/books/${S.id}/files/${a.file.id}`);
       return;
     }
@@ -5579,7 +5609,7 @@ async function mountApp(frame, c, a) {
     };
     // This initial call remains the person's explicit Open action, as before.
     const first = call(a.tool, {}).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
-    const host = makeHost(frame, { ask, call, first, tool: ui.tool, base, toolName: a.tool }, createAppDocumentHost, current);
+    const host = makeHost(frame, { ask, call, first, reopen: (next) => mountApp(next, c, a), tool: ui.tool, base, toolName: a.tool }, createAppDocumentHost, current);
     hosts.set(frame, host); host.start(); host.loadHtml(ui.html);
   } catch (error) {
     if (!current()) return;

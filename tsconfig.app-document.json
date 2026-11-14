@@ -4,6 +4,7 @@
     "browser/app-document/*.ts",
     "scripts/build-app-document.ts",
     "scripts/app-document-build.test.ts",
-    "scripts/app-document-browser.ts"
+    "scripts/app-document-browser.ts",
+    "scripts/vanilla-app-document.test.ts"
   ]
 }
