@@ -1,4 +1,4 @@
-import { a as e, c as t, d as n, f as r, i, l as a, o, r as s, s as c, t as l, u } from "./main-CYHfRrke.js";
+import { a as e, c as t, d as n, f as r, i, l as a, o, r as s, s as c, t as l, u } from "./main-DOXdu-K3.js";
 import { p as d } from "./Field-BhEsD9uL.js";
 // svelte/navigation.ts
 function ee(e, t, n) {
@@ -357,6 +357,8 @@ var m = p === "en" ? "en-US" : "pt-BR", oe = {
 	"Este navegador não tem notificações": "This browser doesn't support notifications",
 	"As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.": "Notifications are blocked for vibebook.dev in this browser. Click the lock next to the address → Notifications → Allow, and reload the page.",
 	"Te mencionaram": "You were mentioned",
+	"Suas tarefas": "Your tasks",
+	revisar: "review",
 	"respondendo…": "replying…",
 	anexo: "attachment",
 	"Abrir documento": "Open document",

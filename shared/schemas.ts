@@ -427,6 +427,35 @@ export const MeResult = z.extend(MeData, {
 });
 export type MeResult = z.infer<typeof MeResult>;
 
+// Inbox (GET /api/inbox): everything across the person's rooms that needs them — waits (reuses MeWait), the @mentions
+// held back for the digest, and their open tasks (todo/doing/review). D1 for waits + mentions; a DO fan-out for tasks.
+export const InboxMention = z.object({
+  book_id: z.string(),
+  room: z.string(),
+  msg_id: z.number(),
+  thread: z.string(),
+  author: z.string(),
+  author_name: str,
+  text: z.string(),
+  ts: z.number(),
+});
+export const InboxTask = z.object({
+  book_id: z.string(),
+  room: z.string(),
+  epic_id: z.string(),
+  epic: str,
+  task_id: z.string(),
+  title: z.string(),
+  status: z.string(),
+  due: str,
+});
+export const InboxResult = z.object({
+  waits: z.array(MeWait),
+  mentions: z.array(InboxMention),
+  tasks: z.array(InboxTask),
+});
+export type InboxResult = z.infer<typeof InboxResult>;
+
 // Slice 11: the two image uploads (raw bytes; the app resizes first). Their type is the request's content-type.
 export const ImageHeaders = z.object({
   "content-type": z.optional(z.string()),

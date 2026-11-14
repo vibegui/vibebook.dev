@@ -57,6 +57,7 @@ import {
   EmailBody,
   LoginsResult,
   type SearchResult,
+  type InboxResult,
   type ErrorBody,
   type OkResult,
   PostMessageBody,
@@ -111,6 +112,8 @@ export interface ApiServices {
   sqlAll(query: string, ...binds: Bind[]): Promise<unknown[]>;
   /** Search the person's rooms (rate-limited per person: false = over the limit). */
   search(q: string): Promise<SearchResult | false>;
+  /** The cross-room Inbox: waits, held-back mentions, and the person's open tasks. */
+  inbox(): Promise<InboxResult>;
   loginProviders: { google: boolean; github: boolean };
   isEmail(s: string): boolean;
   befriend(email: string): Promise<void>;
@@ -332,6 +335,7 @@ export const accountApi = api
     if (!out) return c.json({ error: "rate limited" } satisfies ErrorBody, 429);
     return c.json(out satisfies SearchResult, 200);
   })
+  .get("/api/inbox", async (c) => c.json((await c.get("svc").inbox()) satisfies InboxResult, 200))
   .get("/api/me/logins", async (c) => {
     const svc = c.get("svc");
     const rows = await svc.sqlAll(`SELECT COALESCE(json_extract(dims, '$.method'), 'email') AS method, MAX(ts) AS last, COUNT(*) AS n FROM events WHERE user = ? AND name = 'login' GROUP BY 1`, c.get("email"));

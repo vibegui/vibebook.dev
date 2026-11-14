@@ -609,6 +609,19 @@ export class Book extends DurableObject<Env> {
     if (out.length) this.set(key, String(Date.now()));
     return out;
   }
+  /** The person's open tasks in this room (todo/doing/review), from open epics and the main thread — for the cross-room
+   * Inbox (fanned out by rooms.ts, like search). */
+  inboxTasks(bookId: string, email: string) {
+    this.bind(bookId);
+    const open = (t: { status: string }) => t.status !== "done";
+    const fromEpics = this.epics()
+      .filter((e) => !e.archived)
+      .flatMap((e) => e.tasks.filter((t) => t.owner === email && open(t)).map((t) => ({ epic_id: e.id, epic: e.title as string | null, task_id: t.id, title: t.title, status: t.status, due: t.due })));
+    const fromRoom = this.roomTasks()
+      .filter((t) => t.owner === email && open(t))
+      .map((t) => ({ epic_id: "main", epic: null, task_id: t.id, title: t.title, status: t.status, due: t.due }));
+    return [...fromEpics, ...fromRoom];
+  }
   /** The members' open apps refetch what they see outside this room (rail, waits): src/person.ts. */
   // msg: only a new message or rename (touch): a tab with this room open already has it and skips the /api/me refetch.
   pokeMembers(msg = false) {

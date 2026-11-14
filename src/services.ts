@@ -9,7 +9,7 @@ import { uiShellPath, uiVariant, type UiVariant } from "../shared/uiVariant";
 import { MeBook, MeData, MeFriend, MeResult, MeWait } from "../shared/schemas";
 import { routeMessage } from "./route-home";
 import { startRoom } from "./start-room";
-import { befriend, bookStub, createBook, FILE_TYPES, inviteMember, isMember, maxBytes, searchRooms, sizeError, setRoomIcon, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
+import { befriend, bookStub, createBook, FILE_TYPES, inbox, inviteMember, isMember, maxBytes, searchRooms, sizeError, setRoomIcon, storeFile, TYPES_ERROR, waitsFor } from "./rooms";
 import { track } from "./track";
 import { pushTo } from "./webpush";
 import { checkFreestyleKey, sandboxOps, saveKey } from "./sandbox";
@@ -111,6 +111,7 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
       ctx.waitUntil(track(env, "search", { user: email, dims: { via: "app", hits: out.messages.length + out.epics.length, rooms: out.rooms } }));
       return out;
     },
+    inbox: () => inbox(env, email),
     loginProviders: { google: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET), github: !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) },
     isEmail: (s) => EMAIL_RE.test(s),
     befriend: async (who) => { await befriend(env.DB, email, who); },

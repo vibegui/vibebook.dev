@@ -271,6 +271,8 @@ const EN = {
   "Este navegador não tem notificações": "This browser doesn't support notifications",
   "As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.": "Notifications are blocked for vibebook.dev in this browser. Click the lock next to the address → Notifications → Allow, and reload the page.",
   "Te mencionaram": "You were mentioned",
+  "Suas tarefas": "Your tasks",
+  "revisar": "review",
   "respondendo…": "replying…",
   "anexo": "attachment",
   "Abrir documento": "Open document",
