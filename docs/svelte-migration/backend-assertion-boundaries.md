@@ -20,7 +20,7 @@ retained Awareness identity/local state/listeners and inherited live-socket setu
 This does not establish real Durable Object hibernation billing or deployment
 behavior. Existing relay/unregister tests remain intact.
 
-## Unresolved data boundaries worth separate small changes
+## Data-boundary reconciliation and remaining small changes
 
 Later reconciliation: `b940b5c` replaces the stored route-home epic and analytics
 container assertions with bounded validation and actual consumer fixtures. The
@@ -37,13 +37,30 @@ the Worker-typed fixture's Node/Worker URL overload mismatch is fixed at
 pass. The source peer accepts the bounded metadata/listing change. Final combined
 integration checks remain required.
 
-| Source at checkpoint                                           | Remaining assumption / next verification                                                                                                                                                                                                                                                       |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/route-home.ts:24`                                         | Addressed at `b940b5c`: schema-derived stored epic validation and actual routing consumer fixtures. |
-| `src/analytics.ts:63`                                          | Addressed at `b940b5c`: object-only dimensions retain opaque valid fields and normalize malformed containers without dropping events. |
-| `src/connect.ts:215,221–222`                                   | Addressed in the OAuth metadata follow-up above; strict backend/Worker-test checks pass, final combined integration remains required. |
-| `src/agent.ts:1178–1181`                                       | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
-| `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption.                                                                        |
+Subsequent source reconciliation: `6640c00` (integrated as `e03a664`) replaces
+the sandbox SQL row assertions with operation-specific validation. VM control
+identities are separate from nullable display metadata; setup requires the
+original folder/room, and optional deletion cleanup uses only validated original
+identifiers. Provider dates and complete finite metric snapshots are checked
+before updating cached measurements. Native and default vanilla estimates honor
+the additive `cost_unknown` flag. Actual SQLite/provider-mock consumer and
+room-presence route fixtures are authored; their combined gate results must be
+read from the final integration run, not inferred from this source review.
+
+At `73c7c84` / `dc89810`, the agent MCP wrapper uses the existing `recordValue`
+guard before reading opaque tool result fields and selects the content branch
+only at an actual `Array.isArray(parts)` guard. This removes the two container
+assertions without claiming that arbitrary array items satisfy the complete MCP
+ContentBlock schema. The existing `get_file` branch authors its text/image parts;
+other output retains the established JSON/structured-result path.
+
+| Source at checkpoint                                           | Remaining assumption / next verification                                                                                                                                                                                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/route-home.ts:24`                                         | Addressed at `b940b5c`: schema-derived stored epic validation and actual routing consumer fixtures.                                                                                                                                                                             |
+| `src/analytics.ts:63`                                          | Addressed at `b940b5c`: object-only dimensions retain opaque valid fields and normalize malformed containers without dropping events.                                                                                                                                           |
+| `src/connect.ts:215,221–222`                                   | Addressed in the OAuth metadata follow-up above; strict backend/Worker-test checks pass, final combined integration remains required.                                                                                                                                           |
+| `src/agent.ts:1178–1181`                                       | Container assertions addressed at `73c7c84` / `dc89810` as described above. Full MCP content-item schema validation is not established by that guard. The static authored tool schema cast at `:474` remains a distinct internal construction boundary.                         |
+| `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | Sandbox row/room-presence boundaries addressed by the bounded `6640c00` change. The separate `claude_on` membership-row assertion in `src/api.ts` remains: its scalar shape still needs validation; this change does not establish every D1 generic or authorization predicate. |
 
 ## Localized API interop still to inspect, not JSON schema failures
 
@@ -68,8 +85,9 @@ invite verification, agent limits and MCP connection handling already flows into
 reopen those completed boundaries. The shell command string in `sandbox.ts`
 contains VM-side configuration JSON, not a Worker-side cast to a trusted DTO.
 
-Only the unnecessary Awareness assertion is changed in this checkpoint. The
-other entries are explicit remaining work, not accepted runtime proofs.
+Only the unnecessary Awareness assertion was changed in the original checkpoint.
+Later dispositions above identify bounded follow-ups. Unresolved entries remain
+work, not accepted runtime proofs or blanket M1/M2 acceptance.
 
 Author verification: the test/docs formatter passed. The actual pinned dependency
 suite `bun test scripts/docroom-socket.test.ts` passed four tests / 24 assertions
