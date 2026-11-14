@@ -37,7 +37,8 @@ jobs:
       - name: Build the complete opt-in preview
         id: preview
         run: bun run build:ui
-      - run: bun run check
+      - name: Run every repository gate
+        run: bun scripts/check-ci.ts
       - name: Verify checked-in preview artifacts
         run: git diff --exit-code -- public/app-svelte.html public/svelte-preview/ public/sw.js
       - name: Retain preview assets for browser verification
