@@ -1,8 +1,9 @@
 import "server-only";
 import { matchesSuggestion } from "../shared/suggestions";
+import { storedNotes, storedHashes, storedFlags, storedProd, storedEpicFiles, storedSuggestions, storedFileRows, storedPollRows } from "./bookStored";
 import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../shared/composition";
 import { reorderEpics } from "./epic-order";
-import { TASK_STATUSES } from "../shared/room";
+import { TASK_STATUSES, AttachmentSchema } from "../shared/room";
 import type { PostMessageResponse } from "../shared/rpc";
 import type { RoomEvent, Room, BookMeta, Attachment, Message, Poll, Suggestion } from "../shared/room";
 import { parseCommandEnvelope } from "../shared/validation";
@@ -131,7 +132,7 @@ export class Book extends DurableObject<Env> {
   /** @vibe's notes on the room doc (grade()): what a sharp scope still misses. */
   docNotes(): string[] {
     const r = this.sql.exec<{ flags: string }>(`SELECT flags FROM grades WHERE id = ?`, DOC_GRADE).toArray()[0];
-    return r ? (JSON.parse(r.flags) as string[]) : [];
+    return r ? storedNotes(r.flags, (kind) => console.warn("book stored projection", kind)) : [];
   }
   /** The room's own tasks (epic_id "main"): the "## Tarefas" checklist of the room doc, synced like an epic's. */
   roomTasks() {
@@ -150,12 +151,12 @@ export class Book extends DurableObject<Env> {
     const raw = this.get("epics_sent");
     this.set("epics_sent", JSON.stringify(now));
     if (!raw) return this.broadcast({ t: "epics", epics, roomTasks });
-    const prev = JSON.parse(raw) as Record<string, string>;
+    const prev = storedHashes(raw, (kind) => console.warn("book stored projection", kind));
     this.broadcast({ t: "epicsPatch", changed: epics.filter((e) => prev[e.id] !== now[e.id]), order: epics.map((e) => e.id), roomTasks });
   }
   epics() {
     // @vibe's grading (grade()): per epic, id → short notes on the epic itself and its tasks.
-    const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades WHERE id != ?`, DOC_GRADE).toArray().map((r) => [r.id, JSON.parse(r.flags) as Record<string, string[]>]));
+    const flags = Object.fromEntries(this.sql.exec<{ id: string; flags: string }>(`SELECT id, flags FROM grades WHERE id != ?`, DOC_GRADE).toArray().map((r) => [r.id, storedFlags(r.flags, (kind) => console.warn("book stored projection", kind))]));
     const tasks = this.sql
       .exec<{ id: string; epic_id: string; title: string; done: number; owner: string | null; due: string | null; status: string | null }>(
         `SELECT id, epic_id, title, done, owner, due, status FROM tasks ORDER BY ts`,
@@ -167,8 +168,7 @@ export class Book extends DurableObject<Env> {
     // written in the parent's thread), so the app can gather a tree's files without loading every thread.
     const files = new Map<string, { id: string; name: string; type: string; n: number }[]>();
     for (const m of this.sql.exec<{ thread: string; files: string }>(`SELECT thread, files FROM messages WHERE files IS NOT NULL AND files != '[]' AND thread != 'main' ORDER BY id DESC`).toArray()) {
-      let fs: { id: string; name: string; type: string }[] = [];
-      try { fs = JSON.parse(m.files); } catch { continue; }
+      const fs = storedEpicFiles(m.files, (kind) => console.warn("book stored projection", kind));
       const list = files.get(m.thread) ?? [];
       files.set(m.thread, list);
       for (const x of fs) { const o = list.find((y) => y.name === x.name); if (o) o.n++; else if (list.length < 8) list.push({ id: x.id, name: x.name, type: x.type, n: 1 }); }
@@ -180,7 +180,7 @@ export class Book extends DurableObject<Env> {
       .map((e) => {
         const f = flags[e.id] ?? {};
         // Deploy stage after "Claude fez": { stage: "deployed" | "verified", at, note } set by agents (update_epic prod).
-        return { ...e, parent: parent.get(e.id) ?? null, files: files.get(e.id) ?? [], prod: e.prod ? (JSON.parse(e.prod) as { stage: string; at: number; note?: string }) : null, archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
+        return { ...e, parent: parent.get(e.id) ?? null, files: files.get(e.id) ?? [], prod: storedProd(e.prod, (kind) => console.warn("book stored projection", kind)), archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
       });
   }
   // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a
@@ -447,26 +447,12 @@ export class Book extends DurableObject<Env> {
     if (next) await this.wakeAt(next);
   }
   files(limit = -1): FileMeta[] {
-    return this.sql.exec(`SELECT * FROM files ORDER BY ts DESC LIMIT ?`, limit).toArray() as unknown as FileMeta[];
+    return storedFileRows(this.sql.exec(`SELECT * FROM files ORDER BY ts DESC LIMIT ?`, limit).toArray(), (kind) => console.warn("book stored projection", kind));
   }
   polls(ids?: string[]): Record<string, Poll> {
     const rows = this.sql.exec(`SELECT * FROM polls`).toArray();
     const votes = this.sql.exec<{ poll_id: string; email: string; opt: number }>(`SELECT * FROM votes`).toArray();
-    const out: Record<string, Poll> = {};
-    for (const r of rows) {
-      if (ids && !ids.includes(r.id as string)) continue;
-      const options = JSON.parse(r.options as string) as string[];
-      out[r.id as string] = {
-        id: r.id as string,
-        question: r.question as string,
-        options,
-        multi: !!r.multi,
-        closed: !!r.closed,
-        author: r.author as string,
-        votes: options.map((_, i) => votes.filter((v) => v.poll_id === r.id && v.opt === i).map((v) => v.email)),
-      };
-    }
-    return out;
+    return storedPollRows(rows, votes, ids, (kind) => console.warn("book stored projection", kind));
   }
   // Suggestions that an epic already covers ("Primeira limpeza" vs "2. Primeira limpeza") are dropped.
   suggestions(): Suggestion[] {
@@ -475,7 +461,7 @@ export class Book extends DurableObject<Env> {
     const words = (t: string) => new Set(epicKey(t).split(/[^a-z0-9]+/).filter((w) => w.length > 3));
     const epicWords = this.epics().map((e) => words(e.title));
     const covered = (t: string) => { const w = words(t); return epicWords.some((e) => [...w].filter((x) => e.has(x)).length >= Math.max(1, Math.ceil(Math.min(w.size, e.size) / 2))); };
-    return (JSON.parse(this.get("suggestions") ?? "[]") as Suggestion[]).filter((x) => x.title?.trim() && !have.has(epicKey(x.title)) && !covered(x.title));
+    return storedSuggestions(this.get("suggestions"), (kind) => console.warn("book stored projection", kind)).filter((x) => x.title.trim() && !have.has(epicKey(x.title)) && !covered(x.title));
   }
   /** The one gate for epic suggestions (@vibe's classify and agents' suggest_epic): one Jev call asks, for each,
    * whether an epic of this room, open or archived, already does it (by goal, not by name), and drops those.
@@ -1649,7 +1635,9 @@ export class Book extends DurableObject<Env> {
   async fetch(req: Request) {
     const url = new URL(req.url);
     if (url.pathname === "/file") {
-      const f = (await req.json()) as FileMeta;
+      const parsed = AttachmentSchema.safeParse(await req.json().catch(() => null));
+      if (!parsed.success) return Response.json({ error: "invalid file metadata" }, { status: 400 });
+      const f = parsed.data;
       if (!this.get("book_id")) this.set("book_id", url.searchParams.get("book") ?? "");
       this.sql.exec(`INSERT INTO files (id, name, type, size, author, ts) VALUES (?, ?, ?, ?, ?, ?)`, f.id, f.name, f.type, f.size, f.author, f.ts);
       // Just the new file: the whole list went to every tab on each upload (~100 KB each, Nov 2026).
