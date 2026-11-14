@@ -8,10 +8,12 @@ export const PersonEventSchemas = {
     msg: z.optional(z.literal(1)),
   }),
   agents: z.object({ t: z.literal("agents"), book: z.string() }),
+  focus: z.object({ t: z.literal("focus"), book: z.string() }),
 };
 export const PersonEventSchema = z.discriminatedUnion("t", [
   PersonEventSchemas.me,
   PersonEventSchemas.agents,
+  PersonEventSchemas.focus,
 ]);
 export type PersonEvent = z.infer<typeof PersonEventSchema>;
 /** Accept raw WebSocket event.data only. Binary/non-JSON/unknown notices are ignored. */

@@ -350,3 +350,26 @@ test("access-requested HTTP validates before binding, owner lookup or notice pos
   }
   expect(effects).toBe(0);
 });
+
+test("SQLite answers_ask survives history normalization without admitting malformed flags", () => {
+  const values = storedMessageRows(
+    [1, 0, null, true, false, undefined, "1", 2].map((answers_ask, index) => ({
+      ...row,
+      id: index + 1,
+      answers_ask,
+    })),
+    "abcdef",
+  );
+  expect(values.map((value) => value.id)).toEqual([1, 2, 3, 4, 5, 6]);
+  expect(values.map((value) => value.answers_ask)).toEqual([
+    true,
+    false,
+    undefined,
+    true,
+    false,
+    undefined,
+  ]);
+  expect(values.every((value) => MessageSchema.safeParse(value).success)).toBe(
+    true,
+  );
+});

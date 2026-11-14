@@ -5,10 +5,37 @@
 import * as z from "zod/mini";
 const optionalText = z.optional(z.string());
 const children = z.array(z.string());
-const element = <T extends string, P extends z.ZodMiniObject>(
+const element = <T extends string, P extends z.ZodMiniType>(
   type: T,
   props: P,
 ) => z.object({ type: z.literal(type), props, children });
+const ChartPropsSchema = z.union([
+  z.object({
+    title: optionalText,
+    kind: z.enum(["line", "bar"]),
+    data: z
+      .array(z.object({ label: z.string(), value: z.number() }))
+      .check(z.minLength(1), z.maxLength(30)),
+  }),
+  z
+    .object({
+      title: optionalText,
+      kind: z.enum(["line", "bar"]),
+      labels: z.array(z.string()).check(z.minLength(1), z.maxLength(30)),
+      series: z
+        .array(z.object({ name: z.string(), values: z.array(z.number()) }))
+        .check(z.minLength(1), z.maxLength(4)),
+    })
+    .check(
+      z.refine(
+        (value) =>
+          value.series.every(
+            (series) => series.values.length === value.labels.length,
+          ),
+        "Every series needs one value per label",
+      ),
+    ),
+]);
 /** Normalized wire DTO. cardOf performs the existing coercions, aliases and graph/catalog limits first. */
 export const CardElementSchema = z.discriminatedUnion("type", [
   element("Card", z.object({ title: optionalText, subtitle: optionalText })),
@@ -21,7 +48,16 @@ export const CardElementSchema = z.discriminatedUnion("type", [
     }),
   ),
   element("Fields", z.object({})),
-  element("Field", z.object({ label: z.string(), value: z.string() })),
+  element(
+    "Field",
+    z.object({
+      label: z.string(),
+      value: z.string(),
+      delta: optionalText,
+      good: z.optional(z.literal("down")),
+      trend: optionalText,
+    }),
+  ),
   element(
     "Table",
     z.object({
@@ -29,14 +65,7 @@ export const CardElementSchema = z.discriminatedUnion("type", [
       rows: z.array(z.array(z.string())),
     }),
   ),
-  element(
-    "Chart",
-    z.object({
-      title: optionalText,
-      kind: z.enum(["line", "bar"]),
-      data: z.array(z.object({ label: z.string(), value: z.number() })),
-    }),
-  ),
+  element("Chart", ChartPropsSchema),
   element("Divider", z.object({})),
   element("Image", z.object({ url: z.string(), alt: optionalText })),
   element("Actions", z.object({})),
@@ -48,7 +77,14 @@ export const CardElementSchema = z.discriminatedUnion("type", [
       style: z.optional(z.enum(["primary", "danger"])),
     }),
   ),
-  element("LinkButton", z.object({ label: z.string(), url: z.string() })),
+  element(
+    "LinkButton",
+    z.object({
+      label: z.string(),
+      url: z.string(),
+      style: z.optional(z.literal("primary")),
+    }),
+  ),
 ]);
 export const CardSchema = z.object({
   root: z.string(),
@@ -117,6 +153,9 @@ const CATALOG: Record<
     props: (p) => ({
       label: short(p.label, "Field.label") ?? "",
       value: long(p.value, "Field.value") ?? "",
+      delta: short(p.delta, "Field.delta"),
+      good: p.good === "down" ? "down" : undefined,
+      trend: short(p.trend, "Field.trend"),
     }),
   },
   Table: {
@@ -151,6 +190,38 @@ const CATALOG: Record<
   },
   Chart: {
     props: (p) => {
+      const kind = p.kind === "line" || p.chartType === "line" ? "line" : "bar";
+      if (Array.isArray(p.series)) {
+        const labels = Array.isArray(p.labels)
+          ? p.labels.map((label, i) => short(label, `Chart.labels[${i}]`) ?? "")
+          : [];
+        if (!labels.length || labels.length > 30)
+          throw Error("Chart with series needs 1-30 labels");
+        if (!p.series.length || p.series.length > 4)
+          throw Error("Chart needs 1-4 series");
+        const series = p.series.map((item, i) => {
+          if (!item || typeof item !== "object" || Array.isArray(item))
+            throw Error(`Chart.series[${i}] must be an object`);
+          const values =
+            "values" in item && Array.isArray(item.values) ? item.values : [];
+          if (values.length !== labels.length)
+            throw Error(`Chart.series[${i}].values needs one number per label`);
+          return {
+            name:
+              short(
+                "name" in item ? item.name : undefined,
+                `Chart.series[${i}].name`,
+              ) ?? "",
+            values: values.map((value, j) => {
+              const number = Number(value);
+              if (!Number.isFinite(number))
+                throw Error(`Chart.series[${i}].values[${j}] must be a number`);
+              return number;
+            }),
+          };
+        });
+        return { title: short(p.title, "Chart.title"), kind, labels, series };
+      }
       const data = Array.isArray(p.data) ? p.data : [];
       if (!data.length || data.length > 30)
         throw new Error("Chart needs 1-30 points in data: [{label, value}]");
@@ -209,6 +280,7 @@ const CATALOG: Record<
   LinkButton: {
     props: (p) => ({
       label: short(p.label, "LinkButton.label") ?? "Abrir",
+      style: p.style === "primary" ? "primary" : undefined,
       url: /^#(m\d{1,9}|e[a-z0-9]{4,16}|doc(:[a-z0-9]{4,16})?|app:(room|[a-f0-9]{12})\/[\w.-]{1,100})$/.test(
         String(p.url ?? ""),
       )

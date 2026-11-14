@@ -141,7 +141,20 @@ export function storedMessageRows(
       issue("message-row");
       return [];
     }
-    const base = BaseMessage.safeParse({ ...row, text: row.text ?? "" });
+    // SQLite's scalar subquery returns 1 or NULL; the browser contract is boolean.
+    const answersAsk =
+      row.answers_ask === 1
+        ? true
+        : row.answers_ask === 0
+          ? false
+          : row.answers_ask === null
+            ? undefined
+            : row.answers_ask;
+    const base = BaseMessage.safeParse({
+      ...row,
+      text: row.text ?? "",
+      answers_ask: answersAsk,
+    });
     if (
       !base.success ||
       !Number.isSafeInteger(base.data.id) ||

@@ -647,3 +647,36 @@ export const AiSpend = z.object({
   note: z.string(),
 });
 export type AiSpend = z.infer<typeof AiSpend>;
+
+/** One live speech segment; normalized output is always checked before delivery. */
+export const FireBody = z.object({
+  text: z.string(),
+  file_id: z.optional(z.string()),
+  history: z.optional(z.array(z.string())),
+  card_msg: z.optional(z.int().check(z.minimum(0))),
+  thread: z.optional(z.string()),
+});
+export type FireBody = z.infer<typeof FireBody>;
+export const FireResult = z.union([
+  z.object({ ok: z.literal(false), error: z.string() }),
+  z.object({
+    ok: z.literal(true),
+    mode: z.literal("card"),
+    card_msg: z.int().check(z.minimum(1)),
+    ms: z.number().check(z.minimum(0)),
+  }),
+  z.object({
+    ok: z.literal(true),
+    mode: z.literal("file"),
+    file: z.pick(AttachmentSchema, {
+      id: true,
+      name: true,
+      type: true,
+      size: true,
+      ts: true,
+    }),
+    opened: z.boolean(),
+    ms: z.number().check(z.minimum(0)),
+  }),
+]);
+export type FireResult = z.infer<typeof FireResult>;
