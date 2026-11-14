@@ -142,3 +142,15 @@ test("departing before the import microtask prevents starting an unrequested old
   expect(calls).toBe(0);
   expect(clock.timers.size).toBe(0);
 });
+
+test("reentrant disposal on loading publication cannot allocate a late timer or import", async () => {
+  let calls = 0;
+  const clock = clockFixture();
+  const module = createDeferredModule(async () => { calls++; return "old view"; }, { current: () => true, clock: clock.clock });
+  const stop = module.state.subscribe(value => { if (value.phase === "loading") module.dispose(); });
+  await module.ensure();
+  await flush();
+  expect(calls).toBe(0);
+  expect(clock.timers.size).toBe(0);
+  stop();
+});

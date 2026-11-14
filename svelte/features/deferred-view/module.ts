@@ -36,6 +36,9 @@ export function createDeferredModule<T>(
     const ticket = ++generation;
     const owns = () => active && generation === ticket;
     state.set({ phase: "loading", component: null });
+    // Store subscribers may synchronously dispose this owner during publication.
+    // Do not allocate a fresh timer/import after that invalidation.
+    if (!owns() || !current()) return pending;
     timer = clock.schedule(() => {
       if (!owns()) return;
       timer = null;
