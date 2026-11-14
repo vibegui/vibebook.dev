@@ -91,7 +91,7 @@
               ({text("newFolder")}){/if}{/if}</small
         >
       </div>
-      {#if presence.on && $runner.available && $runner.rooms.includes(owner.roomId)}<Button
+      {#if presence.on}<Button
           variant="outline"
           size="sm"
           disabled={$runner.focusing}

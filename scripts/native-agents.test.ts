@@ -28,6 +28,7 @@ import {
   terminalDimensions,
   terminalControl,
 } from "../svelte/features/sandboxes/terminalProtocol";
+import { agentQueue } from "../svelte/features/agents/model";
 import { sandboxStateText } from "../svelte/features/sandboxes/copy";
 import { sandboxLog } from "../svelte/features/sandboxes/log";
 import { createRoomAgentSession } from "../svelte/features/agents/room";
@@ -96,6 +97,7 @@ function apiFixture() {
     grants: async () => ({ agents: [], last_used: null }),
     revoke: async () => ({ ok: true, removed: 0 }),
     room: async () => ({ claude_on: false, agents: [], sandboxes: [] }),
+    focus: async () => ({ ok: true }),
     toggle: async (_id, on) => ({ ok: true, claude_on: on }),
     sandboxes: async () => ({
       connected: true,
@@ -800,4 +802,27 @@ test("shared global denial also gates a newly created cached-room actor before e
   expect(get(owner.state).data).toBeNull();
   expect(roomReads).toBe(0);
   service.dispose();
+});
+
+test("queue excludes server-marked approval replies even when the parent question is outside the loaded history", () => {
+  const room = fixtureRoom();
+  room.messages = [
+    {
+      id: 1,
+      thread: "main",
+      author: room.me,
+      ts: 100,
+      text: "Aprovar",
+      reply_to: 999,
+      answers_ask: true,
+    },
+    {
+      id: 2,
+      thread: "main",
+      author: room.me,
+      ts: 101,
+      text: "Please investigate",
+    },
+  ];
+  expect(agentQueue(room, 200).map((item) => item.message.id)).toEqual([2]);
 });

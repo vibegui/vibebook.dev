@@ -79,3 +79,34 @@ test("already-aborted queued questions never display and abort only clears owned
     await close();
   }
 });
+
+test("late document connection reads cannot replace another room or account's app cache", async () => {
+  const html = await readFile(
+    new URL("../public/app.html", import.meta.url),
+    "utf8",
+  );
+  const start = html.indexOf("async function docConns()"),
+    end = html.indexOf("function docApps(", start);
+  if (start < 0 || end < start)
+    throw Error("Actual document connection reader missing");
+  for (const changed of ["room", "account", "socket"] as const) {
+    let finish!: (value: unknown) => void;
+    const result = new Promise<unknown>((yes) => {
+      finish = yes;
+    });
+    const source = new Function(
+      "api",
+      `let S = {id: "A", me: "personA"}, ws = {}, conns = null, connsBook = null; ${html.slice(start, end)}; return { read: docConns, switch() {${changed === "room" ? 'S = {id: "B", me: "personA"};' : changed === "account" ? 'S = {id: "A", me: "personB"};' : "ws = {};"} conns = [{id: "new-owner"}]; connsBook = S.id;}, cached() {return conns;} };`,
+    );
+    const owner: {
+      read(): Promise<unknown>;
+      switch(): void;
+      cached(): unknown;
+    } = source(() => result);
+    const pending = owner.read();
+    owner.switch();
+    finish({ connections: [{ id: "old-owner" }] });
+    expect(await pending).toEqual([]);
+    expect(owner.cached()).toEqual([{ id: "new-owner" }]);
+  }
+});

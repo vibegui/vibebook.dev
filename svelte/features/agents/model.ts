@@ -46,6 +46,7 @@ export function agentQueue(room: Room, now: number) {
       return (
         message.author === room.me &&
         !message.kind &&
+        !message.answers_ask &&
         !!message.text &&
         message.ts > now - 48 * 3600e3 &&
         !(parent && permissionAsk(parent))

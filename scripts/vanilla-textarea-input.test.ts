@@ -5,6 +5,8 @@ const html = readFileSync(
   "utf8",
 );
 type Input = {
+  value: string;
+  clientHeight: number;
   style: { height: string };
   scrollHeight: number;
   hasAttribute(name: string): boolean;
@@ -26,6 +28,8 @@ function fixture(
   const writes: string[] = [],
     attributes = new Map<string, string>();
   const input: Input = {
+    value: "@hello",
+    clientHeight: 48,
     style: {
       get height() {
         return writes.at(-1) ?? "";
@@ -56,8 +60,16 @@ function fixture(
     "input",
     "resizeTextarea",
     "updatePop",
+    "pop",
+    "closePop",
     `${html.slice(roomStart, roomEnd)};return input.oninput;`,
-  )(input, resize, () => mentions++);
+  )(
+    input,
+    resize,
+    () => mentions++,
+    { hidden: true },
+    () => {},
+  );
   const homeStart = html.indexOf(
       "  ta.oninput =",
       html.indexOf("function wireAsk()"),
@@ -103,13 +115,13 @@ test("actual default room/Home input handlers avoid synchronous height measureme
     "#askText[data-content-size], .composer textarea[data-content-size] { field-sizing: content; }",
   );
 });
-test("actual fallback preserves auto-reset/read/px-write for unsupported or absent CSS detection", () => {
+test("actual fallback expands overflowing fields without resetting height on every key", () => {
   for (const css of [undefined, {}, { supports: () => false }]) {
     const f = fixture(css);
     f.roomInput();
     f.homeInput();
-    expect(f.reads()).toBe(2);
-    expect(f.writes).toEqual(["auto", "123px", "auto", "123px"]);
+    expect(f.reads()).toBe(4);
+    expect(f.writes).toEqual(["123px", "123px"]);
     expect(f.attributes.size).toBe(0);
     expect(f.mentions()).toBe(1);
   }

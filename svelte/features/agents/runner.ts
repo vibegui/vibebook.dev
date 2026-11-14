@@ -10,7 +10,6 @@ const Where = z.object({
   home: z.optional(z.nullable(z.string())),
   how: z.optional(z.nullable(z.string())),
 });
-const Focus = z.object({ error: z.optional(z.string()) });
 /** The emerging permission name is not in every installed DOM declaration.
  * Query the actual browser method with its original receiver, then narrow its
  * result; no permission request, network probe or assertion is substituted. */
@@ -52,12 +51,13 @@ const blank = (): RunnerState => ({
   focusError: false,
   focusBlocked: false,
 });
-/** Only the existing fixed loopback runner is contacted. No browser credential is forwarded. */
+/** Focus travels through the authenticated server/CLI relay. Optional local folder hints are read only after an existing permission grant; they never prompt. */
 export function createLocalRunner(
   options: {
     fetcher?: FetchLike;
     clock?: AgentClock;
     permission?: () => Promise<PermissionState | null>;
+    relayFocus?: (roomId: string, signal: AbortSignal) => Promise<{ ok: true }>;
   } = {},
 ) {
   const fetcher = options.fetcher ?? fetch,
@@ -105,20 +105,28 @@ export function createLocalRunner(
       probeLease.cancel();
       state.update((value) => ({ ...value, probing: true }));
       const job = probeLease
-        .run(
-          (signal) =>
-            Promise.all([
-              needWhere
-                ? json(
-                    `/where?room=${encodeURIComponent(roomId)}&title=${encodeURIComponent(title)}`,
-                    Where,
-                    signal,
-                  )
-                : Promise.resolve(get(state).where),
-              needPing ? json("/ping", Ping, signal) : Promise.resolve(null),
-            ]),
-          10_000,
-        )
+        .run(async (signal) => {
+          const permission = await (
+            options.permission ?? localNetworkPermission
+          )();
+          if (
+            permission !== "granted" ||
+            !active ||
+            own !== ticket ||
+            signal.aborted
+          )
+            return [null, null] as const;
+          return Promise.all([
+            needWhere
+              ? json(
+                  `/where?room=${encodeURIComponent(roomId)}&title=${encodeURIComponent(title)}`,
+                  Where,
+                  signal,
+                )
+              : Promise.resolve(get(state).where),
+            needPing ? json("/ping", Ping, signal) : Promise.resolve(null),
+          ]);
+        }, 10_000)
         .then(
           ([where, ping]) => {
             if (!active || own !== ticket) return;
@@ -165,31 +173,18 @@ export function createLocalRunner(
       // a new lease or contact the old room after that invalidation.
       if (!active || own !== focusTicket) return;
       try {
-        const { result, permission } = await focusLease.run(async (signal) => {
-          const result = await json(
-            `/focus?room=${encodeURIComponent(roomId)}`,
-            Focus,
-            signal,
-          );
-          if (!active || own !== focusTicket)
-            return { result, permission: null };
-          let permission: PermissionState | null = null;
-          if (!result) {
-            try {
-              permission = await (
-                options.permission ?? localNetworkPermission
-              )();
-            } catch {}
-          }
-          return { result, permission };
+        await focusLease.run(async (signal) => {
+          if (!active || own !== focusTicket || !options.relayFocus)
+            throw Error("Focus relay unavailable");
+          const result = await options.relayFocus(roomId, signal);
+          if (result.ok !== true) throw Error("Invalid focus response");
         }, 10_000);
         if (active && own === focusTicket)
           state.update((value) => ({
             ...value,
             focusing: false,
-            focusError: !result || !!result.error,
-            focusBlocked:
-              !result && (permission === "denied" || permission === "prompt"),
+            focusError: false,
+            focusBlocked: false,
           }));
       } catch {
         if (active && own === focusTicket)

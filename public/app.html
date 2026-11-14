@@ -3035,14 +3035,17 @@ function wireHome(me) {
 }
 
 // Prefer browser-managed sizing after the first edit; preserve initial rows and
-// the exact legacy auto-height fallback where field-sizing is unsupported.
+// the line-count fallback where field-sizing is unsupported.
 const CONTENT_TEXTAREA_SIZING = typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content");
+const textareaLengths = new WeakMap();
 function resizeTextarea(ta) {
   if (CONTENT_TEXTAREA_SIZING) {
     if (!ta.hasAttribute("data-content-size")) ta.setAttribute("data-content-size", "");
     return;
   }
-  ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`;
+  const len = ta.value.length, shrank = len < (textareaLengths.get(ta) || 0); textareaLengths.set(ta, len);
+  if (shrank) { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; }
+  else if (ta.scrollHeight > ta.clientHeight) ta.style.height = `${ta.scrollHeight}px`;
 }
 
 // Home composer: suggest the room/epic, then post there on one click and open it.
@@ -3905,11 +3908,8 @@ function renderBook() {
   // Grow/shrink the box only when its line count changes. Setting height to "auto" and reading scrollHeight on every
   // key laid out the whole room twice per keystroke: 264 ms per key in an 80-message room (Gui 14/11: "depois de 30
   // chars fica ultra lagado, no celular trava").
-  let lastLen = 0;
   input.oninput = () => {
-    const len = input.value.length, shrank = len < lastLen; lastLen = len;
-    if (shrank) { input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`; }
-    else if (input.scrollHeight > input.clientHeight) input.style.height = `${input.scrollHeight}px`;
+    resizeTextarea(input);
     if (input.value.includes("@")) updatePop(); else if (!pop.hidden) closePop();
   };
   input.onblur = () => setTimeout(closePop, 100);
@@ -6395,7 +6395,9 @@ const DOC_APP_RE = /^\[\[app:([\w-]+)\/([\w.-]+)(?:\|([pmg]))?\]\]$/i;
 let docAppsWait = false; // a room app not loaded yet: redraw the doc when the file list arrives
 async function docConns() {
   if (Array.isArray(conns) && connsBook === S.id) return conns;
-  try { const r = await api(`/api/books/${S.id}/connections`); conns = r.connections; connsBook = S.id; } catch { conns = conns || []; }
+  const room = S.id, account = S.me, socket = ws;
+  const current = () => S?.id === room && S?.me === account && ws === socket;
+  try { const r = await api(`/api/books/${room}/connections`); if (!current()) return []; conns = r.connections; connsBook = room; } catch { if (!current()) return []; conns = connsBook === room ? (conns || []) : []; }
   return conns;
 }
 function docApps(pv, ep) {

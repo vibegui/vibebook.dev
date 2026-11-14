@@ -65,3 +65,25 @@ Add new vanilla commits affecting behavior/data contracts here before integratin
 | Native F26 snapshot safety follow-up | Suggestions are index-addressed; an unseen removal can shift another suggestion into the clicked index | New native accept/skip includes optional expected canonical snapshot; server refuses mismatch before mutation, while old vanilla index-only commands remain unchanged | Pure/DOM source fixtures authored; integrated Worker/DOM/browser gates remain pending |
 
 | `a32becf` (merged in `b247805`) | Agent MCP room messages/reply quotes are fenced as untrusted content; CLI warning markers and version 1.6.8 | Preserve the maintainer's security update in the consolidated migration; no frontend variant or room wire contract change | Integrated; full Linux/macOS repository and layout-browser checks pass in run 43549278094 |
+
+## Current main integration: `f07d6a2` (2026-11-14)
+
+`914d399` merges main through `f07d6a2`. The previous all-gate source result at
+`00e1cf1` and the retained `c3e057c` browser cohort predate these changes.
+They do not verify this new baseline. Vanilla keeps the published features;
+Svelte stays opt-in and the migration remains open.
+
+| Main change | Required native parity | Current status |
+| --- | --- | --- |
+| `46bfc16`, `28bb8b1` | Focus through authenticated server → person channel → CLI hub; show all sessions; exclude approval replies even when their parent is outside loaded history | Native focus relay and queue filter implemented; targeted owner/API regressions pass. Combined source/browser verification pending. Optional local folder probes require an existing permission grant. |
+| `66cda14`, `f07d6a2` | Avoid per-key textarea height resets; touch keyboard spaces remain ordinary input; Send stops dictation and ignores late results | Vanilla reconciliation retains browser field-sizing and upstream line-count fallback. Actual-handler tests pass. Native voice reconciliation in progress. |
+| `27736b2`, `7cc7c88`, `4b513bd` | Agent-triggered own-tab file open, follow current versions, compact chat preview while open beside chat, distinct fullscreen control | Native port in progress; final HTTP/MCP/WebSocket/browser evidence required. |
+| `3564c85` | Inline document apps, separate per-instance consent, P/M/G marker rewrite and Put in doc | Native port in progress. Vanilla keeps nonce-bound initial-document hosts, frame names before insertion and stale connection-read fencing. Consent/cache regressions pass. |
+| `25ce861`, `b4c4932`, `62f8a3f`, `b8e188d`, `019623f`, `44f355f`, `f07d6a2` | Tap dictation / 3s hold Fire, bounded flush and late-result ownership, typed Fire route, live card/file replacement, hybrid review, format switching | Typed backend/shared and native composer ports in progress. Real provider and final browser verification remain required. |
+| `06ba3f9`, `3f2f3d8` | Up to four chart series with legend/axis/hover, Field delta/good/trend, primary LinkButton, release banner cards | Shared card normalization/native rendering reconciliation in progress. |
+| `5d02830`, `7ff78f4` | Keep routing server-owned and feedback/benchmark APIs intact | Upstream backend integrated. Deterministic router checks are now in the mandatory repository check chain on every PR. The live model benchmark needs provider access and is not represented by deterministic checks. |
+
+The final immutable current inventory, API matrix, feature-owner ledger, generated
+preview, source gates, integrated browser cohort and measured performance cohort
+must be refreshed after these ports are integrated. No acceptance checkbox is
+closed by this integration note.

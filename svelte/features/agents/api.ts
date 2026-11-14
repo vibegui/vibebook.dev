@@ -77,6 +77,13 @@ export function createAgentsApi(fetcher?: FetchLike) {
       room.agents
         .$get({ param: roomParam(id) }, { init: { signal, cache: "no-store" } })
         .then((response) => read(response, AgentsResult)),
+    focus: (id: string, signal?: AbortSignal) =>
+      room.focus
+        .$post(
+          { param: roomParam(id) },
+          { init: { signal, cache: "no-store" } },
+        )
+        .then((response) => read(response, OkResult)),
     toggle: (id: string, on: boolean, signal?: AbortSignal) =>
       room.claude
         .$post(

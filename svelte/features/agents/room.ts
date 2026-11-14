@@ -61,7 +61,26 @@ export function createRoomAgentSession(
   const clock = options.clock ?? agentClock,
     reader = createAgentLease(clock),
     toggleLease = createAgentLease(clock),
-    runner = createLocalRunner({ clock, fetcher: options.runnerFetch });
+    runner = createLocalRunner({
+      clock,
+      fetcher: options.runnerFetch,
+      relayFocus: async (id, signal) => {
+        if (id !== roomId || !mutable()) throw new AgentsFailure("offline");
+        try {
+          return await api.focus(id, signal);
+        } catch (error) {
+          if (
+            current() &&
+            error instanceof AgentsFailure &&
+            [401, 403].includes(error.status)
+          ) {
+            deny(agentsUnauthenticated(error));
+            if (agentsUnauthenticated(error)) options.onUnauthorized?.();
+          }
+          throw error;
+        }
+      },
+    });
   const stored = (key: string, value: string) => {
     try {
       return options.storage?.getItem(key) === value;

@@ -45,6 +45,7 @@ export function shellFixture(
     grants: async () => ({ agents: [], last_used: null }),
     revoke: async () => ({ ok: true, removed: 0 }),
     room: async () => ({ claude_on: false, agents: [], sandboxes: [] }),
+    focus: async () => ({ ok: true }),
     toggle: async (_id, on) => ({ ok: true, claude_on: on }),
     sandboxes: async () => ({ connected: true, claude: true, sandboxes: [] }),
     create: async () => ({
