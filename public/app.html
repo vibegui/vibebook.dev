@@ -3633,7 +3633,10 @@ function renderBook() {
       try { rec.start(); } catch { rec = null; box.classList.remove("dictating"); mic?.classList.remove("on"); }
     };
     const stop = () => { try { rec?.stop(); } catch {} };
-    input.addEventListener("keydown", (e) => {
+    // Hold-Space is for physical keyboards. On touch screens it cancelled every space of the on-screen keyboard
+    // (inserted later by hand), which broke autocorrect/predictions and froze iPhones (Gui 14/11): they have 🎤 and
+    // the keyboard's own dictation.
+    if (!matchMedia("(pointer: coarse)").matches) input.addEventListener("keydown", (e) => {
       // Fast typing: the next key can come before Space is released; the space goes in first, and no dictation.
       if (e.key !== " ") { if (pending) typeSpace(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
@@ -3643,7 +3646,7 @@ function renderBook() {
       holdT = setTimeout(() => { pending = false; held = true; start(); }, 350);
     });
     input.addEventListener("keyup", (e) => {
-      if (e.key !== " ") return;
+      if (e.key !== " " || matchMedia("(pointer: coarse)").matches) return;
       if (held) { held = false; stop(); return; }
       if (pending) typeSpace();
     });
@@ -3697,9 +3700,15 @@ function renderBook() {
     picks = people.filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q)).slice(0, 8);
     pickAt = 0; renderPop();
   };
+  // Grow/shrink the box only when its line count changes. Setting height to "auto" and reading scrollHeight on every
+  // key laid out the whole room twice per keystroke: 264 ms per key in an 80-message room (Gui 14/11: "depois de 30
+  // chars fica ultra lagado, no celular trava").
+  let lastLen = 0;
   input.oninput = () => {
-    input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`;
-    updatePop();
+    const len = input.value.length, shrank = len < lastLen; lastLen = len;
+    if (shrank) { input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`; }
+    else if (input.scrollHeight > input.clientHeight) input.style.height = `${input.scrollHeight}px`;
+    if (input.value.includes("@")) updatePop(); else if (!pop.hidden) closePop();
   };
   input.onblur = () => setTimeout(closePop, 100);
   input.onkeydown = (e) => {
