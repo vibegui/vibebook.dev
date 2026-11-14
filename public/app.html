@@ -1078,10 +1078,25 @@
      columns, the sidebar stays; picking any thread leaves it. */
   .book.inboxOpen > .chat, .book.inboxOpen > .doc { display: none; }
   .book.inboxOpen .thread.sel:not(.sideInbox) { background: transparent; box-shadow: none; font-weight: inherit; }
-  .inbox.inView { grid-column: 2 / -1; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 20px max(20px, calc((100% - 760px) / 2)) 0; background: var(--bg); }
-  .inbox.inView header h2 { font-size: 22px; }
-  .inbox.inView .ibBody { padding-bottom: 32px; }
-  @media (max-width: 900px) { .inbox.inView { grid-column: 1 / -1; padding: 14px 14px 0; } }
+  .inbox.inView { grid-column: 2 / -1; min-width: 0; min-height: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) var(--doc-w, 380px); background: var(--bg); }
+  .ibChat { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  .ibChat .chathead { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+  .ibChat .chathead h2 { margin: 0; font-size: 18px; flex: 1; display: flex; align-items: center; gap: 8px; } .ibChat .chathead h2 svg { color: var(--mute); }
+  .ibMsgs { flex: 1; overflow: auto; padding: 16px 24px 32px; display: flex; flex-direction: column; gap: 4px; }
+  .ibMsgs .msg { cursor: pointer; } .ibMsgs .msg .who b { font-weight: 600; } .ibMsgs .msg .who small { color: var(--mute); margin-left: 6px; }
+  .ibMsgs .msg .ibWhere { display: inline-block; font-size: 12px; color: var(--mute); border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin: 2px 0 4px; }
+  .ibMsgs .msg .ibText { white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .ibMsgs .msg.ask { background: var(--wait-bg); } .ibMsgs .msg .ibKind { font-size: 12px; font-weight: 600; color: var(--wait-ink); }
+  .ibMsgs .msg .mact { opacity: 1; pointer-events: auto; }
+  .ibMsgs .ibDay { text-align: center; color: var(--mute); font-size: 12px; margin: 10px 0 4px; }
+  .ibDoc { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 20px 22px 32px; }
+  .ibDoc h1 { font-family: var(--serif, Georgia, serif); font-size: 26px; margin: 0 0 6px; } .ibDoc > p { color: var(--mute); margin: 0 0 18px; }
+  .ibDoc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); margin: 18px 0 6px; }
+  .ibDoc h4 { font-size: 14px; margin: 12px 0 4px; } .ibDoc h4 a { color: inherit; text-decoration: none; } .ibDoc h4 small { color: var(--mute); font-weight: 400; }
+  .ibDoc ul { list-style: none; margin: 0; padding: 0; } .ibDoc li { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+  .ibDoc li button.ibTask { flex: 1; text-align: left; background: none; border: 0; padding: 0; font: inherit; color: var(--ink); cursor: pointer; } .ibDoc li button.ibTask:hover { text-decoration: underline; }
+  .ibDoc .st { font-size: 11px; border-radius: 999px; padding: 0 7px; background: var(--hover, var(--line)); color: var(--mute); flex: none; } .ibDoc .st.review { background: var(--wait-bg); color: var(--wait-ink); } .ibDoc .st.doing { color: var(--accent); }
+  @media (max-width: 900px) { .inbox.inView { grid-column: 1 / -1; grid-template-columns: 1fr; overflow: auto; } .ibDoc { border-left: 0; border-top: 1px solid var(--line); } .ibChat .chathead, .ibMsgs { padding-left: 14px; padding-right: 14px; } }
   .inbox header, .inbox .ibTabs { flex: none; }
   .inbox header { display: flex; align-items: center; gap: 10px; } .inbox header h2 { margin: 0; font-size: 18px; flex: 1; }
   .inbox .ibTabs { display: flex; gap: 6px; }
@@ -1839,6 +1854,15 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "O que é seu": "What's yours",
+  "Seu Claude": "Your Claude",
+  "Tarefas suas e o que espera seu OK. Clique pra abrir.": "Your tasks and what waits on your OK. Click to open.",
+  "Esperando seu OK": "Waiting on your OK",
+  "Nenhuma tarefa aberta sua.": "No open tasks of yours.",
+  "Nada esperando você. ✓": "Nothing waiting on you. ✓",
+  "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
+  "Resolvido": "Resolved",
+  "esperando você": "waiting on you",
   "O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.": "The browser blocked access to this computer: click the lock next to the address, allow \"Local network\" (or \"Apps on this device\") and reload.",
   "O que precisa de você aqui": "What needs you here",
   "só você vê": "only you see this",
@@ -3057,6 +3081,56 @@ const loadUI = () => (uiLoad ??= import("/svelte/ui.js"));
 // once with what we have, then the fetch fills the other two sections.
 let inboxExtra = { mentions: [], tasks: [] };
 const inboxBook = () => (S ? document.querySelector(".book:not(.skel)") : null);
+// The inbox as a thread (Gui 14/11: "o inbox devia parecer um épico, mesmo modelo mental"): in the middle, what was
+// said to you, as messages (asks, your Claude's ⏸/❓, @mentions, @vibe's nudges), oldest first like a chat; on the right,
+// a doc with what is yours to do (tasks waiting on your OK, your open tasks by room › epic).
+function inboxView(d, goTo, redraw) {
+  const mine = (x) => inboxAll || x.book_id === S?.id;
+  const asks = myWaits.filter((w) => !w.ref.startsWith("t") && mine(w));
+  const oks = myWaits.filter((w) => w.ref.startsWith("t") && mine(w));
+  const seen = new Set(asks.map((w) => /^[mab]\d+$/.test(w.ref) ? `${w.book_id}/${w.ref.slice(1)}` : ""));
+  const items = [
+    ...asks.map((w) => ({ kind: w.ref.startsWith("m") ? "ask" : "claude", w, book: w.book_id, room: w.room, thread: w.thread, topic: w.topic, msg: /^[mab]\d+$/.test(w.ref) ? Number(w.ref.slice(1)) : 0, author: w.author, text: w.text, ts: w.ts })),
+    ...inboxExtra.mentions.filter((m) => mine(m) && !seen.has(`${m.book_id}/${m.msg_id}`)).map((m) => ({ kind: "mention", book: m.book_id, room: m.room, thread: m.thread, msg: m.msg_id, author: m.author, authorName: m.author_name, text: m.text, ts: m.ts })),
+  ].sort((a, b) => a.ts - b.ts);
+  const okIds = new Set(oks.map((w) => w.ref.slice(1)));
+  const tasks = inboxExtra.tasks.filter((x) => mine(x) && !okIds.has(x.task_id)); // the ones waiting on your OK sit above
+  const topicOf = (x) => x.topic || (x.thread === "main" ? t("sala principal") : (x.book === S?.id && S.epics.find((e) => e.id === x.thread)?.title) || t("épico"));
+  const day = (ts) => new Date(ts).toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short" });
+  let lastDay = "";
+  const kindLbl = { ask: t("esperando você"), claude: t("seu Claude espera você"), mention: "" };
+  const msgs = items.map((x, i) => {
+    const dl = day(x.ts), sep = dl !== lastDay ? `<div class="ibDay">${esc(dl)}</div>` : ""; lastDay = dl;
+    const claude = x.kind === "claude";
+    const who = claude ? t("Seu Claude") : x.author === "ai" ? "@vibe" : x.authorName || name(x.author);
+    const where = `${inboxAll ? `${esc(x.room)} › ` : ""}${esc(topicOf(x))}`;
+    return `${sep}<div class="msg ${x.kind === "mention" ? "" : "ask"}" data-ib="${i}" role="button" tabindex="0">${claude ? agentAvatar(x.author, "Claude") : avatar(x.author)}<div class="mbody">
+      <div class="who"><b>${esc(who)}</b><small>${esc(ago(x.ts))}</small></div>
+      ${kindLbl[x.kind] ? `<div class="ibKind">${kindLbl[x.kind]}</div>` : ""}<span class="ibWhere">${where}</span>
+      <div class="ibText">${esc(x.text)}</div></div>
+      ${x.w?.ref.startsWith("m") ? `<div class="mact"><button type="button" class="rbtn" data-ibdone="${i}" title="${t("Já resolvi (respondi em outro lugar, ou não é comigo)")}">${icon("check", 14)} ${t("Resolvido")}</button></div>` : ""}</div>`;
+  }).join("");
+  const byEpic = new Map();
+  for (const x of tasks) { const k = `${x.book_id}/${x.epic_id}`; if (!byEpic.has(k)) byEpic.set(k, { x, list: [] }); byEpic.get(k).list.push(x); }
+  const stLbl = { todo: t("a fazer"), doing: t("fazendo"), review: t("revisar") };
+  d.innerHTML = `<div class="ibChat"><div class="chathead"><h2>${icon("inbox")} ${t("Caixa de entrada")}</h2><div class="ibTabs"><button type="button" data-iball="" class="${inboxAll ? "" : "on"}">${t("Esta sala")}</button><button type="button" data-iball="1" class="${inboxAll ? "on" : ""}">${t("Todas")}</button></div></div>
+    <div class="ibMsgs">${msgs || `<div class="empty">${inboxAll ? t("Nada esperando você. ✓") : t("Nada esperando você nesta sala. ✓")}</div>`}</div></div>
+    <aside class="ibDoc"><h1>${t("O que é seu")}</h1><p>${t("Tarefas suas e o que espera seu OK. Clique pra abrir.")}</p>
+    ${oks.length ? `<h3>${t("Esperando seu OK")}</h3><ul>${oks.map((w) => `<li><span class="st review">${t("revisar")}</span><button type="button" class="ibTask" data-ibgo="${esc(w.book_id)}|${esc(w.thread)}">${esc(w.text)}</button></li>`).join("")}</ul>` : ""}
+    <h3>${t("Suas tarefas")}</h3>${byEpic.size ? [...byEpic.values()].map(({ x, list }) => `<h4><a href="#" data-ibgo="${esc(x.book_id)}|${esc(x.epic_id)}">${esc(x.epic || t("sala principal"))}</a>${inboxAll ? ` <small>· ${esc(x.room)}</small>` : ""}</h4><ul>${list.map((k) => `<li><span class="st ${esc(k.status)}">${stLbl[k.status] || esc(k.status)}</span><button type="button" class="ibTask" data-ibgo="${esc(k.book_id)}|${esc(k.epic_id)}">${esc(k.title)}</button>${k.due ? `<small class="muted">${esc(k.due)}</small>` : ""}</li>`).join("")}</ul>`).join("") : `<p class="muted">${t("Nenhuma tarefa aberta sua.")}</p>`}</aside>`;
+  d.querySelectorAll("[data-iball]").forEach((b) => (b.onclick = () => { inboxAll = !!b.dataset.iball; redraw(); }));
+  d.querySelectorAll("[data-ib]").forEach((el) => {
+    const x = items[Number(el.dataset.ib)];
+    const go = (e) => { if (e.target.closest("[data-ibdone]")) return; goTo(x.book, x.thread, x.msg); };
+    el.onclick = go; el.onkeydown = (e) => e.key === "Enter" && go(e);
+  });
+  d.querySelectorAll("[data-ibdone]").forEach((b) => (b.onclick = () => {
+    const w = items[Number(b.dataset.ibdone)].w;
+    myWaits = myWaits.filter((y) => y !== w); renderSwitcher(); renderWaits(); if (S) renderSide(); redraw();
+    api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+  }));
+  d.querySelectorAll("[data-ibgo]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); const [bk, th] = b.dataset.ibgo.split("|"); goTo(bk, th, 0); }));
+}
 function closeInbox() {
   const d = document.getElementById("inbox"); if (!d) return;
   if (d.tagName === "DIALOG") { if (d.open) d.close(); return; }
@@ -3081,6 +3155,7 @@ function openInbox() {
       else location.href = `/b/${encodeURIComponent(bid)}${th && th !== "main" ? `?t=${encodeURIComponent(th)}` : ""}${mid ? `#m${mid}` : ""}`;
     };
     const draw = () => {
+      if (d.classList.contains("inView")) return inboxView(d, goTo, draw);
       d._unmount?.(); d.replaceChildren();
       d._unmount = mountInbox(d, {
         waits: myWaits, mentions: inboxExtra.mentions, tasks: inboxExtra.tasks,
