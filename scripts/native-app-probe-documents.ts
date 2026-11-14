@@ -36,5 +36,5 @@ setTimeout(()=>{if(output.dataset.outcome==='pending')output.dataset.outcome='ti
 </script>`;
 }
 
-
-export const REVIEW_DENY_DOCUMENT = '<!doctype html><meta charset="utf-8"><title>Controlled review denial</title><p>Known synthetic external-provider DENY control.</p>';
+export const REVIEW_DENY_DOCUMENT =
+  '<!doctype html><meta charset="utf-8"><title>Controlled review denial</title><p>Known synthetic external-provider DENY control.</p>';

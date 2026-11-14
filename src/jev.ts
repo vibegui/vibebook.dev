@@ -24,18 +24,26 @@ const DecisionResponse = z.object({
 export type Answer = z.infer<typeof AnswerSchema>;
 
 export async function decide(
-  env: Pick<Env, "MODEL_JUDGE" | "OPENROUTER_API_KEY" | "DEV_EMAIL" | "DECISION_API">,
+  env: Pick<
+    Env,
+    "MODEL_JUDGE" | "OPENROUTER_API_KEY" | "DEV_EMAIL" | "DECISION_API"
+  >,
   state: Record<string, string>,
   questions: Record<string, Question>,
   timeout = 8_000,
 ) {
   if (!Object.keys(questions).length || env.MODEL_JUDGE === "off") return null;
   try {
-    const provider=decisionProvider(env);
+    const provider = decisionProvider(env);
     const res = await fetch(provider.url, {
       method: "POST",
+      ...(provider.kind === "local-fixture"
+        ? { redirect: "manual" as const }
+        : {}),
       headers: {
-        ...(provider.kind === "production" ? { authorization: `Bearer ${env.OPENROUTER_API_KEY}` } : {}),
+        ...(provider.kind === "production"
+          ? { authorization: `Bearer ${env.OPENROUTER_API_KEY}` }
+          : {}),
         "content-type": "application/json",
         "x-title": "vibebook",
       },

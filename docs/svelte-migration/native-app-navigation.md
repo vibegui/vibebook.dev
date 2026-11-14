@@ -25,5 +25,7 @@ and allowlisted error classifications (including HTML review unavailable), not
 request/response bodies or provider messages. Captured source locations come
 from the classification call site, never an untrusted exception stack, and
 exception names are allowlisted. Remote evidence must corroborate the actual
-HTTP refusal before any product/security fix is inferred. Formatter, diagnostic
-unit tests, tooling and browser rerun remain unrun at this source checkpoint.
+HTTP refusal before any product/security fix is inferred. The two diagnostic
+privacy fixtures now pass as part of the provider seam's six cases/70 assertions;
+scoped formatting also passed. Tooling and actual Worker/browser rerun remain
+pending; unit classifications are not a fabricated Worker8 HTTP receipt.

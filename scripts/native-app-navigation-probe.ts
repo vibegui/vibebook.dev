@@ -12,7 +12,11 @@ import {
 import { createRoomApi } from "../svelte/transport";
 import { localBrowserError } from "./native-browser-fixtures";
 import type { NativeApplicationAuditFixture } from "./native-application-browser-types";
-import { probeHTTP, probeFailure, type ProbePhase } from "./native-app-probe-diagnostics";
+import {
+  probeHTTP,
+  probeFailure,
+  type ProbePhase,
+} from "./native-app-probe-diagnostics";
 
 const expect = baseExpect.configure({ timeout: 30_000 });
 export type NativeAppNavigationFixture = Pick<
@@ -45,7 +49,10 @@ export type NativeAppNavigationEvidence = {
   gaps: string[];
 };
 
-import { appProbeDocument, REVIEW_DENY_DOCUMENT } from "./native-app-probe-documents";
+import {
+  appProbeDocument,
+  REVIEW_DENY_DOCUMENT,
+} from "./native-app-probe-documents";
 export { appProbeDocument } from "./native-app-probe-documents";
 
 /** Return an explicit diagnostic verdict. A caller must never classify
@@ -168,7 +175,15 @@ export async function auditNativeAppNavigation(
               : Buffer.from(await request.arrayBuffer()),
           });
           // Classify an error body only in memory; never retain or print it.
-          evidence.http.push(probeHTTP(evidence.phase, response.status(), response.ok() ? undefined : await response.json().catch(() => null)));
+          evidence.http.push(
+            probeHTTP(
+              evidence.phase,
+              response.status(),
+              response.ok()
+                ? undefined
+                : await response.json().catch(() => null),
+            ),
+          );
           return new Response(new Uint8Array(await response.body()), {
             status: response.status(),
             headers: response.headers(),
@@ -177,12 +192,22 @@ export async function auditNativeAppNavigation(
         evidence.phase = "review-deny-upload";
         let denied = false;
         try {
-          await api.uploadFile({ name: "apps/review-deny.html", type: "text/html", body: REVIEW_DENY_DOCUMENT });
+          await api.uploadFile({
+            name: "apps/review-deny.html",
+            type: "text/html",
+            body: REVIEW_DENY_DOCUMENT,
+          });
         } catch {
           const actual = evidence.http.at(-1);
-          denied = actual?.phase === "review-deny-upload" && actual.status === 400 && actual.code === "html-review-refused";
+          denied =
+            actual?.phase === "review-deny-upload" &&
+            actual.status === 400 &&
+            actual.code === "html-review-refused";
         }
-        assert(denied, "Actual HTML review must reject the known external-model DENY control before the positive probe");
+        assert(
+          denied,
+          "Actual HTML review must reject the known external-model DENY control before the positive probe",
+        );
         evidence.reviewDenyControl = true;
         evidence.phase = "app-upload";
         const file = await api.uploadFile({

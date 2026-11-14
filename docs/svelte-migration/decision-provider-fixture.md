@@ -13,6 +13,9 @@ falls back to an external provider. An absent override keeps the production
 OpenRouter URL and headers unchanged. Local fixture requests omit Authorization
 even if an API key accidentally exists in the environment. `MODEL_JUDGE=off`
 still makes no provider call. No client request flag selects this endpoint.
+Local fixture redirects are manual and non-success responses fail closed, so a
+redirect cannot escape the validated endpoint; production redirect behavior is
+unchanged.
 
 The dedicated CI runner owns one loopback HTTP model server and its cleanup.
 Only the exact current three embed questions, model name, bounded HTML and
@@ -36,5 +39,9 @@ header parity, local credential omission, MODEL_JUDGE off, strict request/known-
 document validation and real loopback protocol driving the actual `storeFile`
 method with explicit storage doubles. DENY must perform no put/index operation;
 ALLOW retains normal storage. These unit doubles do not claim real DO/R2 proof.
-Formatter, pure tests, backend/API/worker/tooling types and actual CI browser
-execution are **unrun** at the source checkpoint.
+The allocated scoped formatter passed sixteen paths plus three redirect-fix
+followups. Four provider fixtures and two diagnostic privacy fixtures passed
+70 assertions in 2.87 seconds, including real loopback HTTP DENY/no-put, ALLOW
+normal storage and a redirect that reached no second target. These are author
+unit receipts. Backend/API/worker/tooling types and actual CI Worker/browser
+execution remain **unrun** for this provider seam.
