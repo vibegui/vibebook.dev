@@ -8,14 +8,19 @@ The sole migration PR is [#1](https://github.com/vibegui/vibebook.dev/pull/1).
 PR #2 is closed, with its work preserved in #1. No final deployed revision or
 maintainer acceptance is recorded yet.
 
-The first complete passing actual-Worker cohort is source head `e7b9263`,
-[run 43589003975](https://github.com/vibegui/vibebook.dev/actions/runs/43589003975).
-Its [unchanged reports and receipt](native-application-browser/2026-11-14-passing-cohort/README.md)
-prove all seven core phases, twenty editor/socket cycles, all eight application
-profiles and both native/default-vanilla App initial-read/replacement-denial
-controls. The [controlled HTTP document suite](app-document-browser/2026-11-14-file-post/README.md)
-also passes at that head. This clears the observed target-routing and profile
-failures at this revision, not final migration or deployed acceptance.
+The latest retained passing actual-Worker cohort is associated with source head
+`c3e057c`, tested as PR merge `1ca5434499cb6b182043b7f077531cfe237e72fd` in
+[run 43595260339](https://github.com/vibegui/vibebook.dev/actions/runs/43595260339).
+Its [unchanged reports and exact provenance](native-application-browser/2026-11-14-current-parity/README.md)
+cover the seven core phases, twenty editor/socket cycles, eight English/Portuguese
+light/dark desktop/mobile profiles without axe violations, the new canonical
+endcard task lifecycle, and native/default App initial-read/replacement-denial.
+The standalone App transport suite also passes in
+[run 43595260356](https://github.com/vibegui/vibebook.dev/actions/runs/43595260356).
+The earlier [controlled HTTP document proof](app-document-browser/2026-11-14-file-post/README.md)
+retains actual same-frame POST routing and denial evidence. These functional
+results do not establish production, real-provider intelligence or performance
+acceptance.
 
 Latest complete performance evidence is source head `b292537`: all 32 desktop
 and mobile trials execute successfully, but twelve of sixteen budget comparisons
@@ -23,38 +28,35 @@ fail. [The original results and receipt](performance/2026-11-14-full-native/READ
 retain the unchanged limits. Execution success is not performance acceptance;
 the runner now makes failed or unverified budgets fail its CI exit code.
 
-At that head, [source HMR passes](https://github.com/vibegui/vibebook.dev/actions/runs/43585067909)
-and the production room-layout browser passes. The integrated Worker cohort
-again completes its seven core phases and twenty socket/editor cycles. Overall
-acceptance remains open: mobile sheet history and selected dark panel counts
-fail profile checks, and the initial App read is inconclusive. The controlled
-HTTP proof observes a valid POST opening a separate page while the intended
-opaque iframe stays blank. Pre-insertion target naming, independently owned
-concurrent navigation dialogs, sheet-history adoption and semantic count-color
-fixes require final-head browser confirmation. Repository failures in font
-diagnostic inference and Mac module-path classification also have source fixes
-awaiting the combined checks. Preview assets require regeneration afterward.
+[Source HMR passes at `b292537`](https://github.com/vibegui/vibebook.dev/actions/runs/43585067909);
+final-head revalidation remains required. At `d8b99e5`, all repository gates pass
+on Linux and macOS in
+[run 43597320317](https://github.com/vibegui/vibebook.dev/actions/runs/43597320317).
+Its remaining CI failure is stale checked-in preview artifacts. BugMachine also
+independently passes Svelte with zero errors/warnings, tooling and all 110 UI/DOM
+tests. Preview assets must be rebuilt from the final source and checked again.
 
-The newer clean source checkpoint `ba8e529` passes the complete frozen-install
-Linux/macOS repository matrix, committed preview asset consistency and neutral
-production RoomLayout Chromium job in
-[run 43562169505](https://github.com/vibegui/vibebook.dev/actions/runs/43562169505).
-Its integrated lifecycle and controlled performance jobs still failed; source
-CI does not establish browser, performance or deployment acceptance.
+Main through `12d68b7` is merged at `bb53b6e`, preserving default vanilla,
+router and CLI changes. Its newer in-place room Inbox, mobile edge Back and
+Local Network Access guidance are being reconciled natively and are outside
+the retained earlier browser cohort. Original Studio fonts remain active: the
+inactive CSS-range candidate failed its fidelity matrix. No font or performance
+amendment is assumed. A bounded default textarea sizing change has focused
+handler and synthetic browser checks, without an end-user latency claim.
 
 | Gate | Current evidence | Remaining proof |
 | --- | --- | --- |
 | M0 inventory/parity | `inventory.json`, `feature-parity.md`, `change-ledger.md`, frozen Studio references | Complete current feature/state/route verification references and reconcile final main |
-| M1 strict architecture | Separate strict projects, schema contracts, client-boundary negative fixtures; all-green source checkpoint `ba8e529` | Final-head full checks and remaining boundary/interop assertion audit |
+| M1 strict architecture | Separate strict projects, schema contracts, client-boundary negative fixtures; repository gates pass Linux/macOS at `d8b99e5` | Final-head full checks and remaining boundary/interop assertion audit |
 | M2 inferred RPC | `api-coverage.md`, generated Hono declarations and negative type fixtures | Final coverage audit and runtime failure cases for every migrated operation |
 | M3 Tailwind | Sole authored entry `svelte/styles/tailwind.css`, full style audit; approved scoped xterm exception | Final-head source and emitted graph checks |
-| M4 Studio theme | Frozen public/authenticated references, original self-hosted Inter/CommitMono assets and semantic token projection | Actual application profile comparisons, interactive states and final visual acceptance |
-| M5 atomic/accessibility | Owned atomic components and interaction tests; real application profile harness | Eight profile runs, keyboard/axe results, 768px visual evidence and manual screen-reader checks |
+| M4 Studio theme | Frozen public/authenticated references, original self-hosted Inter/CommitMono assets, semantic token projection and eight passing real application profiles | Final-head interactive states, full token comparison and final visual acceptance |
+| M5 atomic/accessibility | Owned atomic components and interaction tests; eight passing real application profiles with keyboard/focus and zero axe violations | Final-head regression, 768px visual evidence and manual screen-reader checks |
 | M6 native application | Native root and feature owners; host/production registry removed; seven real Worker phases and 20 socket/editor lifecycle cycles pass | Full parity matrix, final-head retention analysis, remaining provider/error/permission workflows and persistence acceptance |
 | M7 development/regression/performance | Frozen-install Linux/macOS CI, actual source HMR, real Worker browser workflow, complete 32-trial desktop/mobile performance evidence | Final generated artifacts, final-head HMR/browser cohort and passing measured budgets |
 | M8 publish/coexistence | Independent vanilla build/default routing retained | Successful deployment, authenticated production side-by-side collaboration, rollback and maintainer acceptance |
 
-## Actual native application browser evidence
+## Historical native application browser failures
 
 [Run 43558762566](https://github.com/vibegui/vibebook.dev/actions/runs/43558762566)
 tests PR head `3357e09` through GitHub's merge revision
@@ -116,8 +118,12 @@ seven measured runs per variant/device and original budgets remain unchanged;
 there is no performance acceptance or approved amendment.
 
 Cloudflare preview builds have failed without exposing the provider error in
-GitHub output. Provider logs and successful deployment are still required;
-an asset artifact is not an online release.
+GitHub output. The current vanilla main was reported deployed by Gui; this is
+not proof of the final migration preview deployment. BugMachine's existing
+Wrangler login has access to a different account from the project's configured
+account, so it does not resolve the missing provider logs. Provider diagnostics
+and successful final deployment remain required; an asset artifact is not an
+online release.
 
 ## Final sign-off
 
