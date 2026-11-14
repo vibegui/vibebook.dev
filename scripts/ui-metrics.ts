@@ -1208,8 +1208,10 @@ async function run(
     await page
       .locator(
         variant === "svelte"
-          ? '[data-native-room-sidebar] a[href^="/app"]'
-          : '#side a[href="/app"]',
+          ? '[data-native-room-sidebar] a[href^="/app"]:visible'
+          : device.width > 900
+            ? '#switcher a[href="/app"]:visible'
+            : '#side a[href="/app"]:visible',
       )
       .first()
       .click();

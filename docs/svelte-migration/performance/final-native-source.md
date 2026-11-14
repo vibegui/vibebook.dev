@@ -82,3 +82,10 @@ script/style raw text and inert template contents do not count as active
 metadata or bundle references. Actual duplicate metadata and incoherent bundle
 references still fail. This correction changes no trials, readiness checks or
 budgets; neither failed preflight supplies performance measurements.
+
+Run 43560860743 passed preflight and reached Home navigation in the first
+desktop vanilla warmup, then failed because the harness selected the desktop-hidden
+mobile room-strip Home link. Desktop vanilla now uses its actual global switcher
+Home link; mobile uses the already-open sidebar and both variants require visible
+links. Earlier warmup observations remain in that failed run's raw artifact;
+no measured seven-run cohort completed and no performance acceptance follows.
