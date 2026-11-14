@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.9";
+const VERSION = "1.6.10";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -80,14 +80,18 @@ function roomHere(root: string): string | undefined {
   }
   return undefined;
 }
-/** One agent per person + folder: reopening a window in the same repo is the same agent, with the same cursor. */
+/** One agent per person + folder + Claude Code session. Folder alone made three Claudes in ~/Projects/vibebook one
+ * agent (Gui, 14/11): one cursor, each listen stopping the other's, and the room showing one Claude with whichever
+ * model wrote last. Inside Claude Code the session id (stable across --resume) splits them; outside it (the herdr
+ * runner, a plain terminal) it's the folder's id, as before. */
 function agentId(root: string) {
   const all = readJson<Record<string, string>>(AGENTS, {});
   if (!all[root]) {
     all[root] = `s_${randomBytes(16).toString("hex")}`;
     writePrivate(AGENTS, all);
   }
-  return all[root];
+  const sid = process.env.CLAUDE_CODE_SESSION_ID;
+  return sid ? `s_${createHash("sha256").update(`${all[root]}:${sid}`).digest("hex").slice(0, 32)}` : all[root];
 }
 
 // ---- auth ----
@@ -972,7 +976,14 @@ async function main() {
       // output, and before this we listened forever as an orphan (33 of them on one machine, Nov 2026), keeping the
       // agent "ouvindo" in the room. Parent gone: leave. Stopped by a signal: say which, so the Claude knows why.
       const parent = process.ppid;
-      setInterval(() => { if (process.ppid !== parent) process.exit(0); }, 20_000).unref();
+      // A listen started by an older CLI kept running for days after the update that would have stopped it (5 orphans
+      // from 9-10/11, 14/11): when the CLI file changes under us, leave and say so; the Claude starts the new one.
+      const self = process.argv[1], born = (() => { try { return statSync(self).mtimeMs; } catch { return 0; } })();
+      setInterval(() => {
+        if (process.ppid !== parent) process.exit(0);
+        let now = born; try { now = statSync(self).mtimeMs; } catch {}
+        if (born && now !== born) { try { process.stdout.write("vibebook listen: a CLI foi atualizada; rode listen de novo\n"); } catch {} process.exit(0); }
+      }, 20_000).unref();
       for (const [sig, n] of [["SIGHUP", 1], ["SIGINT", 2], ["SIGTERM", 15]] as const)
         process.on(sig, () => { try { process.stdout.write(`vibebook listen: parado por ${sig} (rode de novo)\n`); } catch {} process.exit(128 + n); });
       // One listener per agent and room: a new one stops the previous one by its pid (SIGUSR2), so nobody needs

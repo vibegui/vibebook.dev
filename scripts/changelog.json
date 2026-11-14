@@ -50,11 +50,15 @@
     "fixes": {
       "pt": [
         "A ↗ da sala volta a abrir a aba do Claude da sala no herdr, não a aba que estava aberta no workspace; quando o navegador bloqueia o acesso ao computador, o aviso diz como liberar",
-        "No celular, arrastar da borda esquerda volta (do épico pra sala, da sala pra home, no app instalado) em vez de responder a mensagem"
+        "No celular, arrastar da borda esquerda volta (do épico pra sala, da sala pra home, no app instalado) em vez de responder a mensagem",
+        "A fila do seu Claude não mostra mais suas respostas \"Aprovar\"/\"Negar\" aos pedidos dele como se fossem pedidos",
+        "Dois Claude Code seus na mesma pasta agora são dois agents na sala, cada um com sua leitura, e Pessoas avisa quando mais de um seu está ouvindo a mesma sala; um listen de uma CLI antiga sai sozinho quando a CLI é atualizada"
       ],
       "en": [
         "The room's ↗ opens the room Claude's tab in herdr again, not whatever tab was open in that workspace; when the browser blocks access to this computer, the notice says how to allow it",
-        "On phones, a drag from the left edge goes back (epic to room, room to home, in the installed app) instead of replying to the message"
+        "On phones, a drag from the left edge goes back (epic to room, room to home, in the installed app) instead of replying to the message",
+        "Your Claude's queue no longer lists your \"Aprovar\"/\"Negar\" answers to its asks as requests",
+        "Two Claude Code sessions of yours in one folder are now two agents in the room, each with its own reads, and People warns when more than one of yours listens to the same room; a listen from an old CLI exits by itself when the CLI is updated"
       ]
     }
   },

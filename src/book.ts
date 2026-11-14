@@ -278,19 +278,25 @@ export class Book extends DurableObject<Env> {
       .exec(
         // Archived epics are left out (the open one aside): in the product room 126 of 133 epics were archived and
         // their 5 messages each were most of a 655 KB room open (Nov 2026). Opening one fetches it (fillOf / older).
-        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m
+        // answers_ask: a reply to your Claude's ⏸/❓ (Aprovar/Negar…), which the Fila leaves out even when the question
+        // itself isn't loaded.
+        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn,
+           (SELECT 1 FROM messages q WHERE q.id = m.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')) AS answers_ask FROM messages m
            WHERE m.thread = ? OR m.thread = 'main' OR m.thread IN (SELECT id FROM epics WHERE COALESCE(archived, 0) <= 0))
          WHERE rn <= (CASE WHEN thread = ? THEN 60 ELSE 5 END)
          ORDER BY id`,
         open, open,
       )
       .toArray()
-      .map(({ rn: _rn, ...r }) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+      .map(({ rn: _rn, answers_ask, ...r }) => ({ ...r, ...(answers_ask ? { answers_ask: true } : {}), files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
     const have = new Set(rows.map((m) => m.id));
     const origins = this.sql
       .exec(
         `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL AND (COALESCE(archived, 0) <= 0 OR id = ?))
-           OR (author = ? AND kind IS NULL AND ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = messages.id AND a.email = ? AND a.status IN ('done', 'idle', 'dismissed')))
+           OR (author = ? AND kind IS NULL AND ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = messages.id AND a.email = ? AND a.status IN ('done', 'idle', 'dismissed'))
+               -- your answer to your Claude's ⏸/❓ (Aprovar/Negar) is not a request: the hook already took it. The app
+               -- only skipped it when the question was loaded too, so "Aprovar" rows filled the Fila (Gui, 14/11).
+               AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = messages.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')))
            OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
         // Your own messages only while a Claude of yours hasn't closed them: the same rule as the app's myQueue (Fila do
         // seu Claude). Every own message of 48h was most of origins' 162 KB in a 561 KB room open (14/11).

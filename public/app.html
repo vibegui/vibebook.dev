@@ -72,6 +72,7 @@
   .avatar.claude.gemini { background: linear-gradient(135deg, #4f8cff, #9b6bff); }
   .avatar.claude.cursor { background: light-dark(#2b2b2b, #d9d9d9); color: light-dark(#fff, #111); }
   .avatar.claude.copilot { background: #6e40c9; }
+  .agentWarn { margin: 2px 0 4px 34px; padding: 6px 9px; border-radius: 8px; background: var(--wait-bg); color: var(--wait-ink); font-size: 12.5px; line-height: 1.35; }
   .agentRow .aglyph:is(.codex, .gemini, .cursor, .copilot):not(.on) { background: var(--hover); box-shadow: inset 0 0 0 1px var(--line); } /* Claude's warm tile only for Claude */
   .agentRow .aglyph.gemini { color: #6f7dff; } .agentRow .aglyph.gemini.on { background: linear-gradient(135deg, #4f8cff, #9b6bff); color: #fff; }
   .agentRow .aglyph.cursor { color: light-dark(#2b2b2b, #d9d9d9); } .agentRow .aglyph.cursor.on { background: light-dark(#2b2b2b, #d9d9d9); color: light-dark(#fff, #111); }
@@ -1854,6 +1855,7 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.": "{n} of your Claudes are listening to this room: each may pick up the same request. Close the extra ones.",
   "O que é seu": "What's yours",
   "Seu Claude": "Your Claude",
   "Tarefas suas e o que espera seu OK. Clique pra abrir.": "Your tasks and what waits on your OK. Click to open.",
@@ -4161,7 +4163,7 @@ function myQueue() {
   for (const k of S.acks || []) if (k.email === S.me) (byMsg.get(k.msg_id) ?? byMsg.set(k.msg_id, []).get(k.msg_id)).push(k);
   const msgs = S.messages ? allMsgs() : [];
   return msgs
-    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !msgs.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
+    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !m.answers_ask && !msgs.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
     .map((m) => { const a = byMsg.get(m.id) || []; return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
@@ -4342,8 +4344,12 @@ const ctxBar = (c) => {
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
-  // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
-  return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo)).slice(0, 3)
+  // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first. Listening
+  // ones never fold: three Claudes of Gui's in one folder read as one row for days (14/11).
+  const mine = roomAgents.list.filter((a) => a.email === email);
+  const live = mine.filter((a) => a.listening && !a.all_rooms).length;
+  const warn = email === S.me && live > 1 ? `<div class="agentWarn">⚠ ${t("{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.", { n: live })}</div>` : "";
+  return warn + mine.sort((x, y) => y.listening - x.listening).filter((a) => a.listening || (!seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo))).slice(0, live > 3 ? live : 3)
     .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${agentKind(a.who)[0]} ${a.listening ? "on" : ""}">${agentKind(a.who)[1]}</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from or on any message in its thread
