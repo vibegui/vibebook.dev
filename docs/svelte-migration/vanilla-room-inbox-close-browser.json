@@ -1,0 +1,23 @@
+{
+  "status": "passed",
+  "sourceRevision": "b6bfcfb",
+  "sourceHtmlSHA256": "6c7114ccfe6d3f5fac9873a42e13a92b78074e82eee665c890cd8d78e0e463a2",
+  "browser": "158.0.8127.18",
+  "scope": "Synthetic empty Inbox with actual vanilla CSS and unmodified inboxView/closeInbox functions; no real Worker/API or production acceptance",
+  "rows": [
+    {
+      "width": 390,
+      "emptyInboxCloseVisible": true,
+      "sectionRemoved": true,
+      "chatRestored": true,
+      "draftPreserved": true
+    },
+    {
+      "width": 1440,
+      "emptyInboxCloseVisible": true,
+      "sectionRemoved": true,
+      "chatRestored": true,
+      "draftPreserved": true
+    }
+  ]
+}

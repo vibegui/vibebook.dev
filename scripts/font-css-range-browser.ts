@@ -369,36 +369,41 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
               "Candidate text must be fully captured",
             );
             const usedFonts = await fonts(alias);
-            if (!sample.kind.startsWith("unmapped"))
-              assert(
-                usedFonts.length > 0 &&
-                  usedFonts.every(
+            // OriginalB proves the control loaded the expected glyphs. Unexpected
+            // candidate fallback is retained below and rejects the candidate via
+            // fontUsageEqual, rather than aborting before its evidence is saved.
+            if (alias === "OriginalB") {
+              if (!sample.kind.startsWith("unmapped"))
+                assert(
+                  usedFonts.length > 0 &&
+                    usedFonts.every(
+                      (font) =>
+                        font.isCustomFont &&
+                        font.familyName === "Inter Variable" &&
+                        font.postScriptName === "InterVariable" &&
+                        font.glyphCount > 0,
+                    ),
+                  "Mapped range samples must not silently substitute system fonts",
+                );
+              else {
+                assert(
+                  usedFonts.some(
                     (font) =>
                       font.isCustomFont &&
                       font.familyName === "Inter Variable" &&
                       font.postScriptName === "InterVariable" &&
-                      font.glyphCount > 0,
+                      font.glyphCount >= 2,
                   ),
-                "Mapped range samples must not silently substitute system fonts",
-              );
-            else {
-              assert(
-                usedFonts.some(
-                  (font) =>
-                    font.isCustomFont &&
-                    font.familyName === "Inter Variable" &&
-                    font.postScriptName === "InterVariable" &&
-                    font.glyphCount >= 2,
-                ),
-                "Unmapped samples require custom Inter A/V",
-              );
-              if (sample.kind !== "unmapped-noncharacter")
-                assert(
-                  usedFonts.some(
-                    (font) => !font.isCustomFont && font.glyphCount > 0,
-                  ),
-                  "Robot controls require positively observed system fallback",
+                  "Unmapped samples require custom Inter A/V",
                 );
+                if (sample.kind !== "unmapped-noncharacter")
+                  assert(
+                    usedFonts.some(
+                      (font) => !font.isCustomFont && font.glyphCount > 0,
+                    ),
+                    "Robot controls require positively observed system fallback",
+                  );
+              }
             }
             const fontSignature = (value: typeof usedFonts) =>
               JSON.stringify(
