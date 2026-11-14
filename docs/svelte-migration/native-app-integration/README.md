@@ -10,14 +10,24 @@ code. Remaining source ports require a fresh build and their own verification.
 repository check passed at `5e557cd` in
 [GitHub CI](https://github.com/vibegui/vibebook.dev/actions/runs/43520656881).
 At `112e264`, the expanded Linux/macOS matrix passes on Linux but fails one
-negative file-serving case on macOS. The failure is under investigation; this
-revision is not merge-ready. Neither a Linux pass nor the earlier targeted alias
-fixtures establish macOS acceptance.
+negative file-serving case on macOS. The ancestor-alias fix at `653fb23` then
+passes the complete repository check on both systems in
+[CI run 43528056645](https://github.com/vibegui/vibebook.dev/actions/runs/43528056645).
 
 The production Vite build at `112e264` passed (1,054 modules, 2m 2s). Its generated
 public assets are byte-identical to the committed preview assets. The path-policy
 change therefore needs no claim of a fresh feature-browser run. Browser evidence
 and its actual source/artifact revisions are recorded in [browser/README.md](browser/README.md).
+
+Consent follow-up `63b94b8` / formatted `687588e` fixes a separate stale-control
+bug: a rendered Allow button could consume the next queued question before DOM
+replacement. A keyed Snapshot captures the original immutable question, and the
+queue checks that exact identity. The focused compiled-Svelte regression passes
+**1 test / 17 assertions**, including a second question explicitly cancelled and
+an old button clicked before and after DOM cleanup. The production rebuild passes
+**1,056 modules / 2m 12s**, with preview query `96a70cd6bd0211a9eee5`. Only preview
+assets change. Fresh full CI remains required for this follow-up; earlier browser
+and performance evidence is not relabeled as a rerun of these assets.
 
 Both Cloudflare preview build checks are failing. GitHub exposes dashboard links
 without the build error; the cause remains unknown pending dashboard logs. No
