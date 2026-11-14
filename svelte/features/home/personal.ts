@@ -204,6 +204,19 @@ export function createPersonalSession(
     agentsTimer = null;
     return readAgents();
   }
+  function dispose() {
+    active = false;
+    epoch++;
+    request++;
+    controller?.abort();
+    clear(deadline);
+    clear(refreshTimer);
+    clear(clockTimer);
+    clear(agentsTimer);
+    agentsRequest++;
+    agentsPromise = undefined;
+    agentsOwner.dispose();
+  }
   return {
     state,
     draft,
@@ -298,19 +311,17 @@ export function createPersonalSession(
         void refresh();
       }
     },
-    dispose() {
-      active = false;
-      epoch++;
-      request++;
-      controller?.abort();
-      clear(deadline);
-      clear(refreshTimer);
-      clear(clockTimer);
-      clear(agentsTimer);
-      agentsRequest++;
-      agentsPromise = undefined;
-      agentsOwner.dispose();
+    /** A known global session refusal is terminal for this document's owner.
+     * Clear canonical private data/drafts as well as fencing pending reads. */
+    revoke() {
+      if (!active) return;
+      dispose();
+      identity = null;
+      draft.set({ ask: "", create: "", unknown: null });
+      state.update(value => ({ ...value, me: null, agents: null, seen: {}, loading: false, error: "unauthorized", identityRevision: value.identityRevision + 1 }));
+      options.onIdentityChange?.();
     },
+    dispose,
   };
 }
 export type PersonalSession = ReturnType<typeof createPersonalSession>;

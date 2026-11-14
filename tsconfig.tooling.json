@@ -86,6 +86,8 @@
     "scripts/chat-viewport.test.ts",
     "scripts/application-personal-channel.test.ts",
     "scripts/application-copy.test.ts",
+    "scripts/application-services.test.ts",
+    "svelte/features/application/browser.ts",
     "scripts/native-documents.test.ts",
     "scripts/native-apps.test.ts",
     "scripts/native-room-sidebar.test.ts",

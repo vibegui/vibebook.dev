@@ -3,6 +3,7 @@ import { get, writable } from "svelte/store";
 import type { Room } from "../../../shared/room";
 import type { AgentsResult } from "../../../shared/schemas";
 import type { RequestRoomCommand } from "../../roomConnection";
+import type { FetchLike } from "../../transport";
 import type { Wait } from "../home/model";
 import { AgentsFailure, agentsUnauthenticated, type AgentsApi } from "./api";
 import { createAgentLease, agentClock, type AgentClock } from "./lease";
@@ -50,6 +51,7 @@ export function createRoomAgentSession(
     origin: string;
     clock?: AgentClock;
     storage?: Pick<Storage, "getItem" | "setItem"> | null;
+    runnerFetch?: FetchLike;
     allowMutation?: () => boolean;
     onData?: (data: AgentsResult | null) => void;
     onChanged?: () => void;
@@ -59,7 +61,7 @@ export function createRoomAgentSession(
   const clock = options.clock ?? agentClock,
     reader = createAgentLease(clock),
     toggleLease = createAgentLease(clock),
-    runner = createLocalRunner({ clock });
+    runner = createLocalRunner({ clock, fetcher: options.runnerFetch });
   const stored = (key: string, value: string) => {
     try {
       return options.storage?.getItem(key) === value;

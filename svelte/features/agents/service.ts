@@ -2,6 +2,7 @@ import type { Room } from "../../../shared/room";
 import type { RequestRoomCommand } from "../../roomConnection";
 import type { Wait } from "../home/model";
 import type { AgentsResult } from "../../../shared/schemas";
+import type { FetchLike } from "../../transport";
 import { createAgentsApi, type AgentsApi } from "./api";
 import { createAgentAccountSession } from "./account";
 import { createRoomAgentSession, type RoomAgentSession } from "./room";
@@ -13,6 +14,7 @@ export function createAgentsService(options: {
   api?: AgentsApi;
   clock?: AgentClock;
   storage?: Pick<Storage, "getItem" | "setItem"> | null;
+  runnerFetch?: FetchLike;
   onData?: (roomId: string, data: AgentsResult | null) => void;
   onChanged?: () => void;
   onUnauthorized?: () => void;
@@ -70,6 +72,7 @@ export function createAgentsService(options: {
       origin: options.origin,
       clock,
       storage: options.storage,
+      runnerFetch: options.runnerFetch,
       allowMutation: () => rooms.size <= 32,
       onUnauthorized: deny,
       onData: (data) => {
