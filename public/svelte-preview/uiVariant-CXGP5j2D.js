@@ -1,6 +1,0 @@
-// shared/uiVariant.ts
-function e(e, t, n) {
-	let r = new URL(t), i = new URL(e, r);
-	return i.origin !== r.origin || !/^\/(?:app|archived|login|b\/[a-z0-9]+)\/?$/.test(i.pathname) ? String(e) : (n === "svelte" ? i.searchParams.set("ui", "svelte") : i.searchParams.delete("ui"), i.pathname + i.search + i.hash);
-}
-export { e as t };
