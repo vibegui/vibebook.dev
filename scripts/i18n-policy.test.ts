@@ -64,5 +64,10 @@ test("extracted typed copy retains host call coverage and original leftover line
   expect(result.translations).toEqual({ Apagar: "Delete" });
   expect(result.keys).toEqual(["Apagar"]);
   expect(result.leftovers).toEqual([{ line: 2, text: "Apagar sala" }]);
-  expect(() => inspectLegacyTranslations('t("Apagar");', 'const EN = { "Apagar": execute() };')).toThrow("static string");
+  expect(() =>
+    inspectLegacyTranslations(
+      't("Apagar");',
+      'const EN = { "Apagar": execute() };',
+    ),
+  ).toThrow("static string");
 });

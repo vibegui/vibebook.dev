@@ -2,46 +2,65 @@
 export type ApplicationLanguage = "pt" | "en";
 export type ApplicationLocale = "pt-BR" | "en-US";
 export type CopyVars = Readonly<Record<string, string | number>>;
-export function resolveApplicationLanguage(cookie: string, navigatorLanguage: string): ApplicationLanguage {
+export function resolveApplicationLanguage(
+  cookie: string,
+  navigatorLanguage: string,
+): ApplicationLanguage {
   const selected = cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1];
   if (selected === "pt" || selected === "en") return selected;
-  return /^pt/i.test(navigatorLanguage) ? "pt" : /^en/i.test(navigatorLanguage) ? "en" : "pt";
+  return /^pt/i.test(navigatorLanguage)
+    ? "pt"
+    : /^en/i.test(navigatorLanguage)
+      ? "en"
+      : "pt";
 }
-export const applicationLocale = (language: ApplicationLanguage): ApplicationLocale => language === "en" ? "en-US" : "pt-BR";
+export const applicationLocale = (
+  language: ApplicationLanguage,
+): ApplicationLocale => (language === "en" ? "en-US" : "pt-BR");
 const EN: Readonly<Record<string, string>> = {
-  "reseta": "resets",
-  "sandbox": "sandbox",
-  "Apagar": "Delete",
+  reseta: "resets",
+  sandbox: "sandbox",
+  Apagar: "Delete",
   "Conferi a sala": "I checked the room",
   "Verificar acesso novamente": "Check access again",
-  "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.": "The app could not start. Open the file to try again.",
-  "Ainda sem confirmação. Confira os itens fixados antes de tentar novamente.": "Still unconfirmed. Check the pinned items before trying again.",
+  "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.":
+    "The app could not start. Open the file to try again.",
+  "Ainda sem confirmação. Confira os itens fixados antes de tentar novamente.":
+    "Still unconfirmed. Check the pinned items before trying again.",
   "Permissão do app": "App permission",
   "Quem pode usar": "Who can use it",
   "Não deu para salvar.": "Could not save.",
   "Mudança não confirmada.": "Change unconfirmed.",
-  "Mudança não confirmada. Ela pode ter sido salva. Confira antes de tentar de novo.": "Change unconfirmed. It may have been saved. Check before trying again.",
+  "Mudança não confirmada. Ela pode ter sido salva. Confira antes de tentar de novo.":
+    "Change unconfirmed. It may have been saved. Check before trying again.",
   "Revisar e tentar de novo": "Review and try again",
   "Você não tem acesso a esta sala.": "You do not have access to this room.",
   "Rascunhos de conversas removidas": "Drafts from deleted threads",
   "Revisar rascunho": "Review draft",
   "Rascunho original": "Original draft",
   "Descartar rascunho": "Discard draft",
-  "Não foi possível copiar. Selecione o texto abaixo e copie manualmente.": "Could not copy. Select the text below and copy it manually.",
-  "A conversa original não está disponível. Copie ou descarte este rascunho local. Nada será enviado ou movido. Descartar não desfaz um upload ou uma mensagem já enviada.": "The original thread is unavailable. Copy or discard this local draft. Nothing will be sent or moved. Discarding cannot undo an upload or message already sent.",
-  "Gráfico": "Chart",
+  "Não foi possível copiar. Selecione o texto abaixo e copie manualmente.":
+    "Could not copy. Select the text below and copy it manually.",
+  "A conversa original não está disponível. Copie ou descarte este rascunho local. Nada será enviado ou movido. Descartar não desfaz um upload ou uma mensagem já enviada.":
+    "The original thread is unavailable. Copy or discard this local draft. Nothing will be sent or moved. Discarding cannot undo an upload or message already sent.",
+  Gráfico: "Chart",
   "Escolha uma opção": "Choose an option",
-  "Ainda sem confirmação. Confira a sala antes de enviar novamente.": "Still unconfirmed. Check the room before sending again.",
+  "Ainda sem confirmação. Confira a sala antes de enviar novamente.":
+    "Still unconfirmed. Check the room before sending again.",
   "Ouvindo… Escape para parar.": "Listening… Escape to stop.",
-  "O ditado foi interrompido. Seu rascunho foi mantido.": "Dictation stopped. Your draft was kept.",
+  "O ditado foi interrompido. Seu rascunho foi mantido.":
+    "Dictation stopped. Your draft was kept.",
   "Ditar mensagem": "Dictate message",
   "Segure pra ditar (ou segure o espaço)": "Hold to dictate (or hold Space)",
-  "O navegador não deixou usar o microfone.": "The browser did not allow microphone access.",
+  "O navegador não deixou usar o microfone.":
+    "The browser did not allow microphone access.",
   "Não foi possível iniciar o ditado.": "Could not start dictation.",
-  "O upload não foi confirmado. Confira os arquivos antes de tentar novamente.": "The upload was not confirmed. Check the files before trying again.",
-  "A conta mudou; selecione o arquivo novamente.": "The account changed; select the file again.",
-  "Pronto": "Ready",
-  "Enviado": "Sent",
+  "O upload não foi confirmado. Confira os arquivos antes de tentar novamente.":
+    "The upload was not confirmed. Check the files before trying again.",
+  "A conta mudou; selecione o arquivo novamente.":
+    "The account changed; select the file again.",
+  Pronto: "Ready",
+  Enviado: "Sent",
   "Enviado. Seu novo rascunho foi mantido.": "Sent. Your new draft was kept.",
   "Votação criada": "Poll created",
   "Rascunho mantido": "Draft kept",
@@ -49,26 +68,35 @@ const EN: Readonly<Record<string, string>> = {
   "Conferi a sala; manter rascunho": "I reviewed the room; keep draft",
   "Conferi a sala; descartar rascunho": "I reviewed the room; discard draft",
   "Ver mensagem correspondente": "View matching message",
-  "Confira a votação na sala antes de tentar novamente.": "Check the poll in the room before trying again.",
+  "Confira a votação na sala antes de tentar novamente.":
+    "Check the poll in the room before trying again.",
   "A mensagem não está mais disponível.": "The message is no longer available.",
-  "A mensagem pode ter no máximo 4000 caracteres.": "A message can contain up to 4000 characters.",
-  "Anexe no máximo 10 arquivos por mensagem.": "Attach up to 10 files per message.",
-  "Espere os anexos terminarem ou remova-os.": "Wait for the attachments to finish or remove them.",
-  "A mensagem não está mais disponível. Cancele a resposta para continuar.": "The message is no longer available. Cancel the reply to continue.",
-  "Envie ou descarte um dos seus 64 rascunhos antes de abrir outro.": "Send or discard one of your 64 drafts before opening another.",
-  "O tópico não está mais disponível. Seu rascunho foi mantido.": "The thread is no longer available. Your draft was kept.",
-  "Arquivo maior que o limite: 10MB, ou 50MB para áudio.": "File exceeds the limit: 10MB, or 50MB for audio.",
+  "A mensagem pode ter no máximo 4000 caracteres.":
+    "A message can contain up to 4000 characters.",
+  "Anexe no máximo 10 arquivos por mensagem.":
+    "Attach up to 10 files per message.",
+  "Espere os anexos terminarem ou remova-os.":
+    "Wait for the attachments to finish or remove them.",
+  "A mensagem não está mais disponível. Cancele a resposta para continuar.":
+    "The message is no longer available. Cancel the reply to continue.",
+  "Envie ou descarte um dos seus 64 rascunhos antes de abrir outro.":
+    "Send or discard one of your 64 drafts before opening another.",
+  "O tópico não está mais disponível. Seu rascunho foi mantido.":
+    "The thread is no longer available. Your draft was kept.",
+  "Arquivo maior que o limite: 10MB, ou 50MB para áudio.":
+    "File exceeds the limit: 10MB, or 50MB for audio.",
   "Arquivo vazio.": "Empty file.",
   "Tentar novamente": "Try again",
-  "online": "online",
-  "offline": "offline",
+  online: "online",
+  offline: "offline",
   "visto por {n}": "seen by {n}",
   "visto por {n} de {m}": "seen by {n} of {m}",
-  "leu": "read",
-  "recebeu": "delivered",
+  leu: "read",
+  recebeu: "delivered",
   "Email inválido.": "Invalid email.",
   "Esta pessoa já está na sala.": "This person is already in the room.",
-  "Não deu pra enviar agora. Tente de novo.": "Couldn't send it now. Try again.",
+  "Não deu pra enviar agora. Tente de novo.":
+    "Couldn't send it now. Try again.",
   "Use um link http ou https válido.": "Enter a valid http or https link.",
   "Sem conexão. Seu rascunho foi mantido.":
     "Offline. Your draft has been kept.",
@@ -666,13 +694,17 @@ const EN: Readonly<Record<string, string>> = {
   "O que a sala decidir e cada aprovação aparecem aqui. Os agents registram conforme a conversa anda.":
     "What the room decides and every approval show up here. The agents log them as the conversation goes.",
   "Apagar esse registro?": "Delete this entry?",
-  "Lembretes": "Reminders",
+  Lembretes: "Reminders",
   "Texto do lembrete": "Reminder text",
-  "Um envio deste lembrete ainda está em andamento. Aguarde antes de salvar novamente.": "An upload of this reminder is still in progress. Wait before saving again.",
-  "Não recebi a confirmação do agendamento. Confira antes de tentar de novo.": "Scheduling confirmation has not arrived. Check before trying again.",
-  "Quando o lembrete roda, o @vibe publica o texto aqui para seu agent.": "When the reminder runs, @vibe posts its text here for your agent.",
+  "Um envio deste lembrete ainda está em andamento. Aguarde antes de salvar novamente.":
+    "An upload of this reminder is still in progress. Wait before saving again.",
+  "Não recebi a confirmação do agendamento. Confira antes de tentar de novo.":
+    "Scheduling confirmation has not arrived. Check before trying again.",
+  "Quando o lembrete roda, o @vibe publica o texto aqui para seu agent.":
+    "When the reminder runs, @vibe posts its text here for your agent.",
   "Aguardando confirmação…": "Waiting for confirmation…",
-  "Ainda não recebi a confirmação. Confira antes de tentar de novo.": "Confirmation has not arrived yet. Check before trying again.",
+  "Ainda não recebi a confirmação. Confira antes de tentar de novo.":
+    "Confirmation has not arrived yet. Check before trying again.",
   "(pelo agent)": "(through their agent)",
   "quer usar": "wants to use",
   "abrir um link": "open a link",
@@ -840,7 +872,12 @@ const EN: Readonly<Record<string, string>> = {
 export function createApplicationCopy(language: ApplicationLanguage) {
   return (pt: string, vars?: CopyVars): string => {
     const translated = EN[pt];
-    const text = language === "en" && translated !== undefined ? translated : pt;
-    return vars ? text.replace(/\{(\w+)\}/g, (match: string, key: string) => key in vars ? String(vars[key]) : match) : text;
+    const text =
+      language === "en" && translated !== undefined ? translated : pt;
+    return vars
+      ? text.replace(/\{(\w+)\}/g, (match: string, key: string) =>
+          key in vars ? String(vars[key]) : match,
+        )
+      : text;
   };
 }

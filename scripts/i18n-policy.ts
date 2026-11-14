@@ -78,7 +78,10 @@ export function translationKeys(source: string, filename: string): string[] {
   return [...keys];
 }
 
-export function inspectLegacyTranslations(source: string, dictionarySource?: string) {
+export function inspectLegacyTranslations(
+  source: string,
+  dictionarySource?: string,
+) {
   const file = sourceFile(source, "application.ts"),
     translations = new Map<string, string>();
   const leftovers: { line: number; text: string }[] = [];
