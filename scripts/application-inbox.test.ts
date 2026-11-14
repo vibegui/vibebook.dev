@@ -10,7 +10,7 @@ async function fixture(resolve: HomeApi["resolve"] = async () => ({ ok: true }))
   const timer = manualClock(), documents: string[] = []; let href = "https://vb.test/app?ui=svelte", canonical = me({ waits: [wait] }), reads = 0;
   const services = createApplicationServices({
     browser: { origin: "https://vb.test", href: () => href, history: { pushState(_data, _title, value) { href = new URL(String(value), href).href; }, replaceState(_data, _title, value) { href = new URL(String(value), href).href; } }, socketUrl: path => `wss://vb.test${path}`, visible: () => true, listenVisibility: () => () => {}, listenPop: () => () => {}, enqueue: queueMicrotask, navigateDocument: value => documents.push(value), reload() {}, logoutPost: async () => ({ ok: true }), logoutWarning() {}, logoutFailure() {}, shellVersion: "development", clock: { ...timer.clock, now: () => 0 } },
-    homeApi: homeApi({ me: async () => { reads++; return canonical; }, resolve }), pwa: () => ({ account() {}, beforeLogout: async () => ({ confirmed: true }), dispose() {} }),
+    homeApi: homeApi({ me: async () => { reads++; return canonical; }, resolve }), pwa: () => ({ account() {}, beforeLogout: async () => ({ local: true, settled: true, confirmed: true }), dispose() {} }),
     personalConnection: () => ({ start() {}, restart() {}, dispose() {} }), roomConnection: () => ({ start() {}, dispose() {}, resync() {}, send: () => true, request: async () => ({ ok: true }) }),
   });
   const inbox = createApplicationInbox(services, timer.clock); services.start(); await settle();

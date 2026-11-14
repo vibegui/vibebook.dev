@@ -15,7 +15,7 @@ export function shellFixture(overrides: Partial<HomeApi> = {}) {
   const stopped: string[] = [], documents: string[] = [], names: string[] = [], languages: string[] = [], connectionCallbacks: RoomConnectionOptions[] = [];
   const device = createDeviceLock({ storage: { getItem: () => null, setItem: () => {}, removeItem: () => {} }, credentials: null, random: size => new Uint8Array(size), clock: timer.clock });
   const agentsApi: AgentsApi = {
-    me: async () => canonical, grants: async () => ({ agents: [], last_used: null }), revoke: async () => ({ ok: true, removed: 0 }), room: async () => ({ claude_on: false, agents: [], sandboxes: [] }), toggle: async (_id, on) => ({ ok: true, claude_on: on }),
+    identity: async () => canonical.email, grants: async () => ({ agents: [], last_used: null }), revoke: async () => ({ ok: true, removed: 0 }), room: async () => ({ claude_on: false, agents: [], sandboxes: [] }), toggle: async (_id, on) => ({ ok: true, claude_on: on }),
     sandboxes: async () => ({ connected: true, claude: true, sandboxes: [] }), create: async () => ({ ok: true, id: "fixture", vm_id: "vm", name: "fixture" }), power: async () => ({ ok: true }), setup: async () => ({ ok: true, log: "" }), remove: async () => ({ ok: true }), terminal: async () => ({ url: "wss://api.freestyle.sh/v5/vms/vm/pty", token: "controlled-fixture" }),
     connected: async () => ({ connected: true }), saveKey: async () => ({ ok: true }), removeKey: async () => ({ ok: true }), saveToken: async () => ({ ok: true }), removeToken: async () => ({ ok: true }),
   };
