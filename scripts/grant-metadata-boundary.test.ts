@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import type { AgentGrantsResult } from "../shared/schemas";
 import { grantMetadata } from "../src/grantMetadata";
 
@@ -35,7 +36,7 @@ test("recognized fields preserve existing identifiers, labels and fallback seman
 
 test("actual grant listing binds only recognized IDs and handles prototype-named IDs without inherited last-use values", async () => {
   const text = readFileSync(
-    new URL("../src/connect.ts", import.meta.url),
+    resolve(import.meta.dirname, "../src/connect.ts"),
     "utf8",
   );
   const start = text.indexOf("export function grantOps(");
