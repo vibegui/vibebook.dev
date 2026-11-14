@@ -55,6 +55,21 @@
           "pt": "Roteiro de viagem feito ao vivo, aberto ao lado do chat, com a barra do Modo Fire",
           "en": "A travel plan made live, open beside the chat, with the Fire mode bar"
         }
+      },
+      {
+        "title": {
+          "pt": "Apps dentro do doc",
+          "en": "Apps inside the doc"
+        },
+        "text": {
+          "pt": "Em qualquer ponto do doc da sala ou de um épico, um app da sala ou um MCP app roda ao vivo no meio do texto. No app aberto na aba Apps, Pôr no doc coloca ele no fim; P, M e G no card mudam a altura. Os Claudes também põem com uma linha [[app:...]].",
+          "en": "Anywhere in a room's or an epic's doc, a room app or an MCP app runs live in the middle of the text. With the app open in the Apps tab, Put in doc adds it at the end; P, M and G on the card change its height. Claudes add one with an [[app:...]] line too."
+        },
+        "image": "changelog/2026-11-14-doc-apps.webp",
+        "alt": {
+          "pt": "Um app de contador rodando no meio do doc, com o seletor P M G",
+          "en": "A counter app running in the middle of the doc, with the P M G picker"
+        }
       }
     ],
     "improvements": {

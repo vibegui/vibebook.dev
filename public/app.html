@@ -1000,6 +1000,8 @@
   .hcName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .hcHead small { color: var(--mute); flex: none; }
   .hcOpen { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; }
   .hcOpen:hover { border-color: var(--accent); }
+  .docApp { margin: 12px 0; } .docApp iframe.embed { width: 100%; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: #fff; display: block; }
+  .daSize { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; flex: none; } .daSize button { border: 0; background: none; padding: 2px 7px; font: 600 11px/1.4 inherit; color: var(--mute); cursor: pointer; } .daSize button.on { background: var(--ink); color: var(--panel); }
   /* Abrir opens beside the chat (Gui 14/11, #2342); full screen is the small icon at the far right. */
   .hcFull { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--mute); } .hcFull:hover { color: var(--ink); background: var(--hover); }
   .htmlCard iframe.embed { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
@@ -1957,6 +1959,13 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "Tamanho": "Size",
+  "Abrir no painel Apps": "Open in the Apps panel",
+  "Não achei o app {name} nesta sala.": "Couldn't find the app {name} in this room.",
+  "Entre em {host} com a sua conta pra usar.": "Sign in to {host} with your account to use it.",
+  "Pôr este app no doc (sala ou épico aberto)": "Put this app in the doc (room or open epic)",
+  "Pôr no doc": "Put in doc",
+  "App posto no fim do doc. Em Editar, mova a linha {line} pra onde quiser.": "App added at the end of the doc. In Edit, move the line {line} wherever you want.",
   "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to this card. Review and improve what it did.",
   "Toque pra ditar (toque de novo pra parar) · segure 3 s pro Modo Fire": "Tap to dictate (tap again to stop) · hold 3 s for Fire mode",
   "Modo Fire": "Fire mode",
@@ -3475,7 +3484,7 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (docAppsWait) { docAppsWait = false; renderDoc(true); } if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
@@ -5739,11 +5748,12 @@ function renderConnApp(el) {
   const pinRef = room ? a.tool : `${c.id}/${a.tool}`;
   const bar = el.querySelector(".connBar");
   if (el.querySelector(".connFrame")?.dataset.app === key) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connDocPut" title="${t("Pôr este app no doc (sala ou épico aberto)")}">${t("Pôr no doc")}</button><button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
   wirePinToggles(el.querySelector(".connBar"));
   document.getElementById("connReload").onclick = () => { frame.dataset.app = ""; renderConnApp(el); };
+  document.getElementById("connDocPut").onclick = () => docAppPut(c.id, a.tool);
   mountApp(frame, c, a);
 }
 const textOf = (content) => (Array.isArray(content) ? content.filter((b) => b?.type === "text").map((b) => b.text).join("\n") : "");
@@ -5894,9 +5904,9 @@ addEventListener("message", (e) => {
   if (d.vbEmbed === 1) return embedHost(fr)(typeof d.h === "number" ? { method: "ui/notifications/size-changed", params: { height: d.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(d.send || "") }] } });
   if (d.jsonrpc === "2.0" && typeof d.method === "string") (hosts.get(fr) || embedHost(fr))(d);
 });
-async function mountApp(frame, c, a) {
+async function mountApp(frame, c, a, askBox) {
   const room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
-  const ask = () => document.getElementById("appAsk");
+  const ask = askBox || (() => document.getElementById("appAsk"));
   if (room) {
     hosts.set(frame, makeHost(frame, { ask, tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }));
     frame.src = `/api/books/${S.id}/files/${a.file.id}`;
@@ -6240,6 +6250,63 @@ function placeTasks(pv, ep) {
   const first = [...pv.children].find((x) => x.tagName === "P");
   first ? first.after(tk) : pv.prepend(tk);
 }
+// Apps in the doc (Gui 14/11, #2372): a line [[app:<connection>/<tool>]] (room/<name> for a room app apps/<name>.html,
+// the same refs as app_open's #app:) anywhere in a room's or an epic's doc becomes a live card running that app, with
+// its own Permitir/Cancelar box. |p |m |g sets its height; the card's P M G rewrites the line in the doc.
+const DOC_APP_H = { p: 240, m: 420, g: 680 };
+const DOC_APP_RE = /^\[\[app:([\w-]+)\/([\w.-]+)(?:\|([pmg]))?\]\]$/i;
+let docAppsWait = false; // a room app not loaded yet: redraw the doc when the file list arrives
+async function docConns() {
+  if (Array.isArray(conns) && connsBook === S.id) return conns;
+  try { const r = await api(`/api/books/${S.id}/connections`); conns = r.connections; connsBook = S.id; } catch { conns = conns || []; }
+  return conns;
+}
+function docApps(pv, ep) {
+  const marks = [...pv.querySelectorAll("p")].filter((p) => DOC_APP_RE.test(p.textContent.trim()));
+  marks.forEach((p, i) => {
+    const [, cid, tool, sz0] = DOC_APP_RE.exec(p.textContent.trim()), sz = (sz0 || "m").toLowerCase();
+    const box = document.createElement("div");
+    box.className = "embedBox htmlCard docApp";
+    box.innerHTML = `<div class="hcHead">${icon("grid", 14)}<span class="hcName">${esc(cid === "room" ? tool : tool.replace(/[_-]/g, " "))}</span><span class="daSize" role="group" aria-label="${t("Tamanho")}">${["p", "m", "g"].map((k) => `<button type="button" data-dsz="${k}" class="${k === sz ? "on" : ""}" title="${t("Tamanho")} ${k.toUpperCase()}">${k.toUpperCase()}</button>`).join("")}</span><button type="button" class="hcFull" data-dopen title="${t("Abrir no painel Apps")}" aria-label="${t("Abrir no painel Apps")}">${icon("expand", 14)}</button></div><iframe class="embed docAppFrame" sandbox="allow-scripts allow-forms" style="height:${DOC_APP_H[sz]}px" title="${esc(tool)}"></iframe><div class="appAsk" hidden></div>`;
+    p.replaceWith(box);
+    box.querySelector("[data-dopen]").onclick = () => { connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })); };
+    box.querySelectorAll("[data-dsz]").forEach((b) => (b.onclick = () => docAppSize(ep, i, b.dataset.dsz)));
+    const frame = box.querySelector("iframe"), ask = () => box.querySelector(".appAsk");
+    const fail = (msg) => { const d = document.createElement("div"); d.className = "empty"; d.textContent = msg; frame.replaceWith(d); };
+    if (cid === "room") {
+      const a = roomApps().find((x) => x.tool === tool);
+      if (a) return void mountApp(frame, { id: "room", scope: "room", title: t("Esta sala") }, a, ask);
+      if (!S.filesAll) { docAppsWait = true; send({ t: "files.get" }); return void (frame.replaceWith(Object.assign(document.createElement("div"), { className: "empty", textContent: t("Carregando…") }))); }
+      return fail(t("Não achei o app {name} nesta sala.", { name: `apps/${tool}.html` }));
+    }
+    docConns().then((cs) => {
+      const c = cs.find((x) => x.id === cid), a = c?.apps.find((x) => x.tool === tool);
+      if (!c || !a) return fail(t("Esse app não está nas conexões que você pode usar nesta sala."));
+      if (c.auth === "identity" && !c.signed_in) return fail(t("Entre em {host} com a sua conta pra usar.", { host: c.host }));
+      mountApp(frame, c, a, ask);
+    });
+  });
+}
+// P M G: rewrite the i-th app line of this doc with its new size, and save the doc like an edit.
+function docAppSize(ep, i, sz) {
+  const text = ep ? S.docs[ep] ?? "" : S.doc ?? "";
+  let n = -1;
+  const out = text.split("\n").map((l) => (DOC_APP_RE.test(l.trim()) && ++n === i ? l.trim().replace(/(?:\|[pmg])?\]\]$/i, `|${sz}]]`) : l)).join("\n");
+  if (out === text) return;
+  if (ep) S.docs[ep] = out; else S.doc = out;
+  send({ t: "doc", text: out, epic: ep || undefined });
+  renderDoc(true);
+}
+// "Pôr no doc": the open app goes at the end of the doc that's showing (move the line anywhere in Editar).
+function docAppPut(cid, tool) {
+  const ep = docEpic(), text = ep ? S.docs[ep] ?? "" : S.doc ?? "", line = `[[app:${cid}/${tool}|m]]`;
+  const out = `${text.replace(/\s*$/, "")}\n\n${line}\n`;
+  if (ep) S.docs[ep] = out; else S.doc = out;
+  send({ t: "doc", text: out, epic: ep || undefined });
+  document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" }));
+  renderDoc(true);
+  toast(t("App posto no fim do doc. Em Editar, mova a linha {line} pra onde quiser.", { line: esc(line) }));
+}
 // The doc panel follows the open epic (its own doc, a child of the room's); "Sala" in the crumb shows the room's.
 let docRoom = false, docShown = null;
 // Epic docs come one at a time: the room's state carries only the open epic's (Book.epicDocs), the rest on "doc.get".
@@ -6272,6 +6339,7 @@ function renderDoc(force) {
   if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep || (thread === "main" && S.roomTasks?.length ? "main" : null));
+  docApps(pv, ep);
   renderPeek();
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
   if (force || document.activeElement !== doc) doc.value = text;
