@@ -101,6 +101,9 @@
       !event.currentTarget.isConnected
     )
       return;
+    // Revoke old callbacks before publishing the new generation: the retired
+    // iframe stays connected until Svelte flushes its keyed DOM replacement.
+    epoch++;
     consent.cancel();
     bridgeFailed = false;
     bridgeRevoked = false;

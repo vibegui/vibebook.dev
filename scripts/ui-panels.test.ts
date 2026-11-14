@@ -2020,6 +2020,7 @@ describe("native Svelte chat", () => {
     const origin = { ...message(7, "Original <request>"), thread: "main" };
     const row = { ...message(8, "Body"), reply_to: 7, files };
     const room = { ...fixture(), messages: [row], origins: [origin] };
+    const mountedEmbeds: Parameters<NonNullable<ChatProps["actions"]["mountEmbed"]>>[] = [];
     const replied: number[] = [],
       navigated: { id: number; thread?: string }[] = [],
       opened: string[] = [],
@@ -2035,6 +2036,7 @@ describe("native Svelte chat", () => {
         reply: (id) => replied.push(id),
         navigate: (id, thread) => navigated.push({ id, thread }),
         openFile: (selected) => opened.push(selected.id),
+        mountEmbed: (...args) => { mountedEmbeds.push(args); },
       },
     });
     target.querySelector<HTMLButtonElement>("#m8 [data-native-reply]")!.click();
@@ -2069,7 +2071,15 @@ describe("native Svelte chat", () => {
       "/image",
     );
     const iframe = attachments.querySelector("iframe")!;
-    expect(iframe.getAttribute("src")).toContain("/embedded");
+    expect(mountedEmbeds).toHaveLength(1);
+    expect(mountedEmbeds[0][0]).toBe(iframe);
+    expect(mountedEmbeds[0][1]).toEqual(files[3]);
+    expect(iframe.getAttribute("src")).toBeNull();
+    expect(iframe.getAttribute("aria-busy")).toBe("true");
+    mountedEmbeds[0][2].ready();
+    flushSync();
+    expect(iframe.getAttribute("aria-busy")).toBe("false");
+    expect(iframe.getAttribute("src")).toBeNull();
     expect(iframe.getAttribute("sandbox")).toBe("allow-scripts");
     expect(iframe.hasAttribute("srcdoc")).toBe(false);
   }, 30_000);
@@ -2432,10 +2442,21 @@ describe("native Svelte chat", () => {
     ].find((button) => button.textContent?.includes("Abrir app de novo"));
     expect(reopen).toBeDefined();
     reopen!.click();
+    // The old iframe is still connected before the keyed DOM flush. Its saved
+    // callbacks must already be unable to corrupt the requested fresh grant.
+    expect(oldFrame.isConnected).toBe(true);
+    original.deny?.();
+    original.fail?.();
+    original.revoked?.();
+    original.ready();
+    original.resize(1000);
+    const oldAsk = original.ask("late old write", "Must not reopen old consent");
     reopen!.click();
+    expect(oldFrame.isConnected).toBe(true);
     flushSync();
     await tick();
     flushSync();
+    await expect(oldAsk).resolves.toBe(false);
     const fresh = target.querySelector("iframe");
     expect(fresh).not.toBe(oldFrame);
     expect(oldFrame.isConnected).toBe(false);
@@ -2451,6 +2472,7 @@ describe("native Svelte chat", () => {
     expect(fresh?.getAttribute("height")).toBe("320");
     expect(fresh?.getAttribute("aria-busy")).toBe("true");
     expect(target.textContent).not.toContain("Old document consent");
+    expect(target.textContent).not.toContain("Must not reopen old consent");
   }, 30_000);
   test("origin embeds retain their source thread in the explicit protocol integration", () => {
     const embedded = {
