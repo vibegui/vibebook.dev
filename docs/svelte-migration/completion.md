@@ -18,12 +18,12 @@ CI does not establish browser, performance or deployment acceptance.
 | Gate | Current evidence | Remaining proof |
 | --- | --- | --- |
 | M0 inventory/parity | `inventory.json`, `feature-parity.md`, `change-ledger.md`, frozen Studio references | Complete current feature/state/route verification references and reconcile final main |
-| M1 strict architecture | Separate strict projects, schema contracts, client-boundary negative fixtures; historical all-green checkpoint `b247805` | Final-head full checks and remaining unchecked external/stored JSON and interop assertion audit |
+| M1 strict architecture | Separate strict projects, schema contracts, client-boundary negative fixtures; all-green source checkpoint `ba8e529` | Final-head full checks and remaining boundary/interop assertion audit |
 | M2 inferred RPC | `api-coverage.md`, generated Hono declarations and negative type fixtures | Final coverage audit and runtime failure cases for every migrated operation |
 | M3 Tailwind | Sole authored entry `svelte/styles/tailwind.css`, full style audit; approved scoped xterm exception | Final-head source and emitted graph checks |
 | M4 Studio theme | Frozen public/authenticated references, original self-hosted Inter/CommitMono assets and semantic token projection | Actual application profile comparisons, interactive states and final visual acceptance |
 | M5 atomic/accessibility | Owned atomic components and interaction tests; real application profile harness | Eight profile runs, keyboard/axe results, 768px visual evidence and manual screen-reader checks |
-| M6 native application | Native root and feature owners; host/production registry removed; real Worker functional evidence below | Full parity matrix, 20 lifecycle cycles, remaining provider/error/permission workflows and persistence acceptance |
+| M6 native application | Native root and feature owners; host/production registry removed; seven real Worker phases and 20 socket/editor lifecycle cycles pass | Full parity matrix, final-head retention analysis, remaining provider/error/permission workflows and persistence acceptance |
 | M7 development/regression/performance | Frozen-install Linux/macOS CI, actual Worker browser workflow, controlled performance workflow | Final generated artifacts, HMR acceptance, full browser cohort and measured budgets |
 | M8 publish/coexistence | Independent vanilla build/default routing retained | Successful deployment, authenticated production side-by-side collaboration, rollback and maintainer acceptance |
 
@@ -76,10 +76,17 @@ leak-free claim or production acceptance.
 ## Performance and deployment
 
 The archived [controlled report](performance/2026-11-13/README.md) failed budgets
-and predates the native root. Current controlled runs stopped during shell
-preflight and produced no timing samples. Neither is passing final M7 evidence.
-The declared workload, seven alternating measured runs per variant/device and
-original budgets remain required.
+and predates the native root. Later native runs passed preflight, then
+[run 43563593700](https://github.com/vibegui/vibebook.dev/actions/runs/43563593700)
+completed both desktop warmups and seven alternating measured runs per variant.
+Readiness, thread switch, first history load, initial JS/CSS bytes, font transfer
+and post-GC heap all exceeded the agreed desktop budgets. The mobile cohort
+stopped on a hidden room-switch control during its first warmup; its medians
+remain unverified. Original safe samples and exact source/asset identities are
+retained in [the partial native report](performance/2026-11-14-native-desktop-partial.md).
+The mobile navigation fixture is corrected for a rerun. The declared workload,
+seven measured runs per variant/device and original budgets remain unchanged;
+there is no performance acceptance or approved amendment.
 
 Cloudflare preview builds have failed without exposing the provider error in
 GitHub output. Provider logs and successful deployment are still required;

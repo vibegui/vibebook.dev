@@ -51,3 +51,15 @@ fallbacks and reject malformed nested model output without applying decisions.
 The combined seven-file boundary cohort passes 44 tests / 489 assertions, and
 strict backend, Worker-test and tooling checks pass locally. Live providers and
 deployed acceptance remain separate requirements.
+
+The second Book cohort routes the remaining stored message/choices/card/file
+JSON and access-request HTTP body through validated projections. Optional
+extensions remain JSON-compatible. Cloudflare's recursive RPC type mapping
+cannot carry the recursive extension type directly, so the internal Book-to-agent
+hop carries the validated choices string; the agent adapter restores the public
+choices object and removes the internal field. No external MCP field, extension
+or browser wire string is replaced by a hand-maintained response cast. Compile
+fixtures require a non-`never` actual `bookStub().agentRead()` result and numeric
+`last_id`. Nine focused tests / 141 assertions and strict backend/Worker-test
+checking pass; the combined eight-file cohort passes 53 tests / 630 assertions.
+Scalar SQL assumptions and localized vendor assertions remain explicit audit work.
