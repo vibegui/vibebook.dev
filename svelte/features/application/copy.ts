@@ -871,12 +871,12 @@ const EN: Readonly<Record<string, string>> = {
 };
 export function createApplicationCopy(language: ApplicationLanguage) {
   return (pt: string, vars?: CopyVars): string => {
-    const translated = EN[pt];
+    const translated = Object.hasOwn(EN, pt) ? EN[pt] : undefined;
     const text =
       language === "en" && translated !== undefined ? translated : pt;
     return vars
       ? text.replace(/\{(\w+)\}/g, (match: string, key: string) =>
-          key in vars ? String(vars[key]) : match,
+          Object.hasOwn(vars, key) ? String(vars[key]) : match,
         )
       : text;
   };

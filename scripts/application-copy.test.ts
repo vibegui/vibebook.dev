@@ -21,6 +21,9 @@ test("application copy preserves exact translations, Portuguese fallback and int
   expect(en("An unknown key {n}", { n: 0 })).toBe("An unknown key 0");
   expect(en("lido por {who}", { who: "Ada" })).toBe("read by Ada");
   expect(en("lido por {who}")).toBe("read by {who}");
+  expect(en("toString")).toBe("toString");
+  expect(en("constructor")).toBe("constructor");
+  expect(en("{toString}", {})).toBe("{toString}");
   expect(pt("{first} / {missing} / {first}", { first: "<script>" })).toBe(
     "<script> / {missing} / <script>",
   );
