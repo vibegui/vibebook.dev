@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
+  import type { Snippet } from "svelte";
   import Dialog from "../../lib/ui/Dialog.svelte";
   import AlertDialog from "../../lib/ui/AlertDialog.svelte";
   import Button from "../../lib/ui/Button.svelte";
@@ -21,8 +22,8 @@
     onLanguage,
     onArchive,
     onLogout,
-    mountBell,
-    mountAgentSettings,
+    notifications,
+    agentSettings,
   }: {
     owner: AccountSession;
     device: DeviceLock;
@@ -32,8 +33,8 @@
     onLanguage(lang: "pt" | "en"): void;
     onArchive(): void;
     onLogout(all: boolean): void;
-    mountBell(node: HTMLElement): () => void;
-    mountAgentSettings(node: HTMLElement): () => void;
+    notifications: Snippet;
+    agentSettings: Snippet;
   } = $props();
   const view = untrack(() => owner.state),
     lock = untrack(() => device.state),
@@ -90,12 +91,6 @@
     }
     wasOpen = $view.open;
   });
-  function bell(node: HTMLElement) {
-    return { destroy: mountBell(node) };
-  }
-  function agents(node: HTMLElement) {
-    return { destroy: mountAgentSettings(node) };
-  }
   const loginRows = $derived(
     [
       {
@@ -313,7 +308,7 @@
                       )
                         onLanguage(language);
                     }}>{language.toUpperCase()}</Button
-                  >{/each}<span use:bell></span>
+                  >{/each}{@render notifications()}
               </nav>
               <div class="tw:space-y-2">
                 <label class="tw:flex tw:items-center tw:gap-2"
@@ -355,7 +350,7 @@
                       : "A autenticação do aparelho foi cancelada ou falhou. Tente de novo."}
                   </p>{/if}
               </div>
-              <div use:agents></div>
+              {@render agentSettings()}
               <section class="tw:space-y-3">
                 <Heading level={2} class="tw:text-base"
                   >{en ? "Friends" : "Amigos"}</Heading

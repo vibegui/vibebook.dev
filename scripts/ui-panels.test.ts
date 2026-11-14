@@ -107,7 +107,8 @@ plugin({
     }));
   },
 });
-const { flushSync, tick, mount, unmount } = await import("svelte");
+const { flushSync, tick, mount, unmount, createRawSnippet } = await import("svelte");
+const { default: AccountPanel } = await import("../svelte/features/account/AccountPanel.svelte");
 const { mountView, dismissDialogs } = await import("../svelte/main");
 const { default: People } = await import("../svelte/People.svelte");
 const { default: PeopleView } = await import("../svelte/View.svelte");
@@ -147,7 +148,7 @@ const fixture = (): Room => ({
     },
   ],
 });
-const active: ReturnType<typeof mountView>[] = [];
+const active: { destroy(): void }[] = [];
 const originalFetch = globalThis.fetch;
 const originalClipboardWrite = window.navigator.clipboard.writeText;
 const peopleCleanups: (() => void)[] = [];
@@ -4731,7 +4732,7 @@ describe("native account", () => {
       trigger = document.createElement("button");
     document.body.append(target, trigger);
     trigger.focus();
-    const view = mountView("account", target, {
+    const component = flushSync(() => mount(AccountPanel, { target, props: {
       owner,
       device,
       lang: "en",
@@ -4740,9 +4741,10 @@ describe("native account", () => {
       onLanguage: () => {},
       onArchive: () => {},
       onLogout: () => {},
-      mountBell: () => () => {},
-      mountAgentSettings: () => () => {},
-    });
+      notifications: createRawSnippet(() => ({ render: () => "<span></span>" })),
+      agentSettings: createRawSnippet(() => ({ render: () => "<span></span>" })),
+    } }));
+    const view = { destroy: () => flushSync(() => { void unmount(component); }) };
     active.push(view);
     cleanup.push(() => {
       owner.dispose();

@@ -3,6 +3,7 @@
   import Dialog from "../../lib/ui/Dialog.svelte";
   import Button from "../../lib/ui/Button.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   import Input from "../../lib/ui/Input.svelte";
   import Textarea from "../../lib/ui/Textarea.svelte";
   import Label from "../../lib/ui/Label.svelte";
@@ -25,12 +26,14 @@
     theme = "auto",
     ontheme,
     onlanguage,
+    onreload = () => location.reload(),
   }: {
     controller: AppNavigationSession;
     lang: HomeLanguage;
     theme?: "auto" | "light" | "dark";
     ontheme: () => void;
     onlanguage: (lang: HomeLanguage) => void;
+    onreload?: () => void;
   } = $props();
   const personal = $derived(controller.personal.state),
     draft = $derived(controller.personal.draft),
@@ -354,13 +357,15 @@
       }}>{text("retry")}</Button
     >{/if}
 </Dialog>
+{#if $creator.binding}{#key $creator.binding}<Snapshot value={$creator.binding}>
+{#snippet children(binding)}
 <Dialog
   open={$creator.open && !$creator.inline}
   title={text("new")}
   description={text("createHelp")}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open && !$creator.inline) controller.creator.close();
+    if (!open && !$creator.inline && controller.creator.owns(binding)) controller.creator.close(binding);
   }}
   initialFocus={() => createInput}
   returnFocus={focusBack}
@@ -370,8 +375,8 @@
     aria-busy={$creator.busy}
     onsubmit={(event) => {
       event.preventDefault();
-      if (!event.currentTarget.isConnected || $creator.inline) return;
-      void controller.creator.submit();
+      if (!event.currentTarget.isConnected || $creator.inline || !controller.creator.owns(binding)) return;
+      void controller.creator.submit(binding);
     }}
   >
     <Label for="native-new-room">{text("createLabel")}</Label><Textarea
@@ -382,18 +387,18 @@
       value={$draft.create}
       disabled={$creator.busy}
       oninput={(event) => {
-        if (event.currentTarget.isConnected && !$creator.inline)
-          controller.creator.edit(event.currentTarget.value);
+        if (event.currentTarget.isConnected && !$creator.inline && controller.creator.owns(binding))
+          controller.creator.edit(event.currentTarget.value, binding);
       }}
       onkeydown={(event) => {
         if (
           event.key === "Enter" &&
           !event.shiftKey &&
           !event.isComposing &&
-          !$creator.inline
+          !$creator.inline && event.currentTarget.isConnected && controller.creator.owns(binding)
         ) {
           event.preventDefault();
-          void controller.creator.submit();
+          void controller.creator.submit(binding);
         }
       }}
     />
@@ -401,7 +406,7 @@
       <Button
         variant="outline"
         onclick={(event) => {
-          if (event.currentTarget.isConnected) controller.creator.close();
+          if (event.currentTarget.isConnected && controller.creator.owns(binding)) controller.creator.close(binding);
         }}>{text("cancel")}</Button
       ><Button type="submit" loading={$creator.busy}
         >{text($creator.busy ? "creating" : "create")}</Button
@@ -415,6 +420,7 @@
       </p>{/if}
   </form>
 </Dialog>
+{/snippet}</Snapshot>{/key}{/if}
 <Dialog
   open={!!selectedRoom}
   title={text("roomSettings", { title: selectedRoom?.title ?? "" })}
@@ -600,6 +606,6 @@
     data-vb-native="update"
     class="tw:fixed tw:bottom-4 tw:left-1/2 tw:z-30 tw:max-w-[calc(100vw-2rem)] tw:-translate-x-1/2 tw:whitespace-normal tw:shadow-lg"
     onclick={(event) => {
-      if (event.currentTarget.isConnected) location.reload();
+      if (event.currentTarget.isConnected) onreload();
     }}>{text("update")}</Button
   >{/if}

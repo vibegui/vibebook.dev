@@ -98,6 +98,8 @@ const { default: Home } =
   await import("../svelte/features/home/HomePanel.svelte");
 const { default: RoomTile } =
   await import("../svelte/features/home/RoomTile.svelte");
+const { default: ApplicationShellHarness } = await import("./application-shell-harness.svelte");
+const { shellFixture } = await import("./application-shell-fixtures");
 const cleanups: (() => void)[] = [];
 afterEach(() => {
   for (const dispose of cleanups.splice(0).reverse()) dispose();
@@ -109,6 +111,78 @@ const flush = async () => {
   flushSync();
   await tick();
 };
+test("direct application shell renders native Home/Archive and the required room snippet, then releases document owners", async () => {
+  const h = shellFixture(), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  await flush();
+  expect(target.querySelector('[data-native-app-shell]') !== null).toBe(true);
+  expect(h.services.active()).toBe(true);
+  expect(h.languages).toEqual(["document:en"]);
+  h.services.actions.archived(); await flush();
+  expect(target.querySelector('[data-vb-native="archived"]') !== null).toBe(true);
+  h.services.actions.navigate({ roomId: "aaaaaa" }); await flush();
+  expect(target.querySelector('[data-test-room-snippet]') !== null).toBe(true);
+  flushSync(() => { void unmount(component); }); await flush();
+  expect(h.services.active()).toBe(false);
+  expect(h.stopped).toContain("theme"); expect(h.stopped).toContain("navigation"); expect(h.stopped).toContain("pop");
+});
+test("direct Account composition preserves native profile confirmation and supplies real notification/agent snippets", async () => {
+  const h = shellFixture(), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  h.services.actions.openAccount("profile"); await flush();
+  const name = document.querySelector<HTMLInputElement>("#account-name")!;
+  expect(name !== null).toBe(true); name.value = "Native Shell Name"; name.dispatchEvent(new Event("input", { bubbles: true }));
+  name.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  expect(h.names).toEqual(["Native Shell Name"]); expect(get(h.services.account.state).phase).toBe("confirming");
+  h.canonical(me({ name: "Native Shell Name" })); await h.services.personal.refresh(); await flush();
+  expect(get(h.services.account.state).phase).toBe("idle");
+  h.services.actions.openAccount("all"); await flush();
+  expect(document.querySelector("[data-native-notifications]") !== null).toBe(true);
+  expect(document.querySelector("[data-native-agent-setup]") !== null).toBe(true);
+});
+test("connected old creator controls cannot edit or submit a replacement opening before DOM flush", async () => {
+  let creates = 0;
+  const h = shellFixture({ startRoom: async () => { creates++; return { id: "bbbbbb", unknown: [], invited: [], cost: 0 }; } }), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  const creator = h.services.navigation.creator;
+  creator.open(); creator.edit("Preserved new draft"); await flush();
+  const oldInput = document.querySelector<HTMLTextAreaElement>("#native-new-room")!, oldForm = oldInput.closest("form")!;
+  creator.close(); creator.open();
+  expect(oldForm.isConnected).toBe(true);
+  oldInput.value = "Stale outgoing draft"; oldInput.dispatchEvent(new Event("input", { bubbles: true }));
+  oldForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  expect(get(h.services.personal.draft).create).toBe("Preserved new draft"); expect(creates).toBe(0);
+  await flush();
+  const fresh = document.querySelector<HTMLTextAreaElement>("#native-new-room")!;
+  expect(fresh.value).toBe("Preserved new draft");
+  fresh.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  expect(creates).toBe(1); expect(h.href()).toContain("/b/bbbbbb");
+});
+test("global Inbox direct callbacks reject old connected account controls and close on identity replacement", async () => {
+  let resolves = 0;
+  const wait = { book_id: "aaaaaa", room: "Room", ref: "m1", thread: "main", topic: null, author: "friend@test", author_name: "Friend", text: "Question", ts: 1 };
+  const h = shellFixture({ resolve: async () => { resolves++; return { ok: true }; } });
+  h.canonical(me({ waits: [wait] }));
+  const target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  h.services.actions.navigate({ roomId: "aaaaaa" }); await flush();
+  const open = [...target.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === "Open fixture inbox")!;
+  expect(open !== undefined).toBe(true); open.click(); await flush();
+  const link = [...document.querySelectorAll<HTMLAnchorElement>('[role="dialog"] a')].find(anchor => anchor.textContent?.includes("Question"))!;
+  expect(link !== undefined).toBe(true);
+  const resolveLabel = h.services.t("Já resolvi (respondi em outro lugar, ou não é comigo)");
+  const resolve = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(button => button.getAttribute("aria-label") === resolveLabel)!;
+  expect(resolve !== undefined).toBe(true);
+  h.canonical(me({ email: "other@test", waits: [wait] })); await h.services.personal.refresh();
+  const before = h.href();
+  link.dispatchEvent(new MouseEvent("click", { button: 0, bubbles: true, cancelable: true }));
+  resolve.click();
+  expect(h.href()).toBe(before); expect(resolves).toBe(0); await flush();
+  expect(document.querySelector('[role="dialog"]')).toBe(null);
+});
 async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {
   const timer = manualClock(),
     personal = createPersonalSession(homeApi(overrides), {

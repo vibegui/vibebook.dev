@@ -487,7 +487,7 @@ function archivedPage() {
 }
 // Native account surface. Personal AgentSettings retains its separately owned mount boundary until that port lands.
 let nativeAccount=null,nativeAccountMount=null,nativeAccountTarget=null;
-function accountProps(){return {owner:nativeAccount,device:nativeDeviceLock,lang:LANG,theme:theme(),onTheme:()=>{setTheme(THEMES[theme()].next);updateAccountView();},onLanguage:language=>{document.cookie=`vb_lang=${language}; path=/; max-age=31536000; samesite=lax`;location.reload();},onArchive:()=>{nativeAccount.close();nativeRouter.go('/archived');},onLogout:all=>{if(nativeAccount.current())void logoutWithPwa(all);},mountBell:node=>UI.mountPwa(node,'bell',nativePwa,LANG),mountAgentSettings:mountAccountAgentSettings};}
+function accountProps(){return {owner:nativeAccount,device:nativeDeviceLock,lang:LANG,theme:theme(),onTheme:()=>{setTheme(THEMES[theme()].next);updateAccountView();},onLanguage:language=>{document.cookie=`vb_lang=${language}; path=/; max-age=31536000; samesite=lax`;location.reload();},onArchive:()=>{nativeAccount.close();nativeRouter.go('/archived');},onLogout:all=>{if(nativeAccount.current())void logoutWithPwa(all);},pwa:nativePwa,agents:nativeAgents,origin:location.origin,vb:{t,ago}};}
 function updateAccountView(){if(nativeAccountMount)nativeAccountMount.update(accountProps());}
 function ensureNativeAccount(){
   if(!nativeAccount){nativeAccount=UI.createAccountSession(nativePersonal,UI.createAccountApi());nativeAccountTarget=document.createElement('div');nativeAccountTarget.dataset.nativeAccountMount='';document.body.append(nativeAccountTarget);nativeAccountMount=UI.mountView('account',nativeAccountTarget,accountProps());}
@@ -498,13 +498,6 @@ function openHomeSettings(section='all'){
   ensureNativeAccount();
   nativeAccount.open(section,document.activeElement instanceof HTMLElement?document.activeElement:undefined);
   homeSettingsCleanup=()=>{nativeAccount.close();nativeDeviceLock.cancel();};
-}
-// Account owns this slot lifetime; its contents are the native typed personal AgentSettings component.
-function mountAccountAgentSettings(node){
- const account=nativePersonal.peek()?.email;if(!account)return ()=>{};
- const owner=nativeAgents.account(account);if(!owner)return ()=>{};
- const mounted=UI.mountView('agentSettings',node,{owner,origin:location.origin,vb:{t,ago},lang:LANG});
- return ()=>mounted.destroy();
 }
 // Caixa de entrada: the same waits as the home ("Esperando você": asks to you, your tasks in review, your Claude
 // waiting on you), opened from any room, "Esta sala" or "Todas"; a click goes to the message, ✓ resolves an ask.

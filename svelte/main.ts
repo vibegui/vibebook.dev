@@ -2,7 +2,7 @@ import { flushSync, mount, unmount } from "svelte";
 import type { Component, ComponentProps } from "svelte";
 import { writable } from "svelte/store";
 import View from "./View.svelte";
-import AccountPanel from "./features/account/AccountPanel.svelte";
+import AccountSettings from "./features/account/AccountSettings.svelte";
 import DeviceLockScreen from "./features/account/DeviceLockScreen.svelte";
 export { createAccountApi } from "./features/account/api";
 export { createAccountSession } from "./features/account/session";
@@ -61,7 +61,7 @@ export { createComposerDrafts } from "./features/composer/drafts";
 export { createRoomStore } from "./roomStore";
 export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
-  account: AccountPanel,
+  account: AccountSettings,
   deviceLock: DeviceLockScreen,
   apps: AppsPanel,
   document: DocumentPanel,
