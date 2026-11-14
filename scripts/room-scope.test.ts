@@ -135,6 +135,7 @@ test("legacy document hashes select the real epic and never open a deleted epic 
   const h = await roomScopeFixture("/b/aaaaaa?ui=svelte#doc:other");
   expect(h.app.services.rootRoom.read().thread).toBe("other");
   expect(get(get(h.owner.state)!.document.owner.state).target?.epicId).toBe("other");
+  expect(new URL(h.app.href()).searchParams.get("t")).toBe("other");
   h.owner.actions.setPane("files");
   h.app.services.actions.navigate("/b/aaaaaa?ui=svelte#doc:deleted");
   expect(h.app.services.rootRoom.read().thread).toBe("main");

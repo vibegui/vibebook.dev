@@ -680,6 +680,23 @@ test("deleted legacy document target is marked unavailable instead of opening it
   h.services.dispose();
 });
 
+test("authorized legacy epic hashes canonicalize in place before Viewer can own the hash", async () => {
+  for (const hash of ["#eother", "#doc:other"]) {
+    const h = fixture("http://vb.test/b/aaaaaa?ui=svelte" + hash);
+    h.services.start(); await settle();
+    const room = canonical(); room.epics = [{ id: "other", title: "Other", tasks: [] }];
+    h.connections[0]!.callbacks.onEvent(event(room));
+    const shell = adapter(); h.services.attachRoom(h.services.roomScope()!, shell.owner);
+    const url = new URL(get(h.services.state).href);
+    expect(url.searchParams.get("t")).toBe("other");
+    expect(url.hash).toBe(hash.startsWith("#doc") ? "#doc" : "");
+    expect(shell.targets.at(-1)?.target.thread).toBe("other");
+    expect(h.connections).toHaveLength(1);
+    expect(h.history).toHaveLength(0); // One initial entry, no navigation push.
+    h.services.dispose();
+  }
+});
+
 test("an initial app continuation cannot survive room departure or negative canonical membership", async () => {
   const h = fixture("http://vb.test/b/aaaaaa?ui=svelte#app:abcdef123456");
   h.services.start(); await settle(); h.connections[0]!.callbacks.onEvent(event(canonical()));
@@ -694,4 +711,21 @@ test("an initial app continuation cannot survive room departure or negative cano
   expect(h.services.rootRoom.read().room).toBeNull();
   expect(h.services.rootRoom.read().phase).toBe("removed");
   h.services.dispose();
+});
+
+test("reentrant navigation during canonical legacy URL publication cancels the old target", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa?ui=svelte#eother");
+  h.services.start(); await settle();
+  const room = canonical(); room.epics = [{ id: "other", title: "Other", tasks: [] }];
+  h.connections[0]!.callbacks.onEvent(event(room));
+  const shell = adapter(); let replaced = false;
+  const stop = h.services.state.subscribe(value => {
+    if (!replaced && new URL(value.href).searchParams.get("t") === "other") { replaced = true; h.services.actions.home(); }
+  });
+  h.services.attachRoom(h.services.roomScope()!, shell.owner);
+  expect(replaced).toBe(true);
+  expect(h.services.rootRoom.read().room).toBeNull();
+  expect(shell.targets).toHaveLength(0);
+  expect(get(h.services.state).route.kind).toBe("home");
+  stop(); h.services.dispose();
 });

@@ -6,6 +6,7 @@ import type { RequestRoomCommand } from "../svelte/roomConnection";
 import { createFileViewer } from "../svelte/features/file-viewer/session";
 import { consumeFileViewerPop } from "../svelte/features/file-viewer/navigation";
 import { createViewerHistory } from "../svelte/features/file-viewer/history";
+import { createApplicationRouter, applicationRoute } from "../svelte/features/app-navigation/router";
 import {
   createFileReadApi,
   FILE_PREVIEW_BYTES,
@@ -512,4 +513,30 @@ test("foreign account/thread and unowned valid file pops route while malformed f
   ).toBe(true);
   expect(sheets).toBe(1);
   session.dispose();
+});
+
+test("validated legacy epic route keeps one entry and Viewer Back/Forward retains its actual thread", () => {
+  for (const hash of ["#eother", "#doc:other"]) {
+    const nav = browser("https://test.local/b/aaaaaa?ui=svelte" + hash), timer = manualClock();
+    const router = createApplicationRouter({ current: nav.href, history: nav.history, activate() {}, beforeChange() {}, sameRoom: () => true, consumePop: () => false, document() {} });
+    expect(router.canonicalizeLegacyThread("aaaaaa", "other")).toBe(true);
+    expect(nav.entries).toHaveLength(1);
+    expect(new URL(nav.href()).searchParams.get("t")).toBe("other");
+    const viewer = createFileViewer({ ...nav, clock: timer.clock, api: { probe: async () => ({ type: "text/markdown", size: 2 }), text: async () => ({ metadata: { type: "text/markdown" }, text: "ok", truncated: false }) } });
+    viewer.sync(room({ epics: [{ id: "other", title: "Other", tasks: [] }] }), async () => ({ ok: true }));
+    const scope = { roomId: "aaaaaa", account: "a", thread: "other" };
+    expect(viewer.open({ roomId: "aaaaaa", id: "aa" })).toBe(true);
+    expect(nav.entries).toHaveLength(2);
+    expect(new URL(nav.href()).hash).toBe("#faa");
+    expect(new URL(nav.href()).searchParams.get("t")).toBe("other");
+    nav.pop();
+    expect(consumeFileViewerPop(viewer, scope, () => false, nav.href())).toBe(true);
+    expect(get(viewer.state).open).toBe(false);
+    expect(applicationRoute(nav.href())).toMatchObject({ kind: "room", target: { thread: "other" } });
+    nav.forward();
+    expect(consumeFileViewerPop(viewer, scope, () => false, nav.href())).toBe(true);
+    expect(get(viewer.state).open).toBe(true);
+    expect(nav.entries).toHaveLength(2); // Forward adopts; it never pushes another viewer.
+    viewer.dispose(); router.dispose();
+  }
 });

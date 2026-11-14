@@ -17,6 +17,11 @@ A deleted document destination is reported unavailable rather than being
 silently opened as the main document. Malformed app/document fragments do not
 become app or document actions.
 
+Once validated, a legacy epic hash is replaced in the same history entry by its
+query `t` (and `#doc` when applicable). The Viewer can then own `#f` without
+losing the selected epic on Back/Forward. Invalid epics are not normalized and
+explicit query threads are preserved.
+
 Pending intents retain account, room, root connection and navigation ownership.
 Viewer and sheet navigation deferral remains in the existing owner chain.
 Copied nested app targets prevent later edits to a caller's object from changing

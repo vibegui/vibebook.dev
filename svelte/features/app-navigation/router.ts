@@ -86,6 +86,19 @@ export function createApplicationRouter(options: {
   }
   return {
     go,
+    /** Only after canonical room validation. Carry the legacy hash's thread in
+     * the query before another feature (notably Viewer) owns the hash. */
+    canonicalizeLegacyThread(roomId: string, thread: string) {
+      if (!active) return false;
+      const url = new URL(options.current());
+      if (roomIdFromPath(url.pathname) !== roomId || url.searchParams.has("t")) return false;
+      const epic = /^#e([\w-]+)$/.exec(url.hash)?.[1], doc = /^#doc:([\w-]+)$/.exec(url.hash)?.[1];
+      if ((epic ?? doc) !== thread) return false;
+      if (thread !== "main") url.searchParams.set("t", thread);
+      url.hash = doc ? "#doc" : "";
+      options.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      return true;
+    },
     pop() {
       if (!active || options.consumePop()) return;
       generation++;

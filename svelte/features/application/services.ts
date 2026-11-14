@@ -372,6 +372,10 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
       room.epics.some((epic) => epic.id === requested)
         ? requested
         : "main";
+    if (requested === thread && router.canonicalizeLegacyThread(scope.roomId, thread)) {
+      publishRoute();
+      if (!owns(scope) || currentLease() !== current || scope.navigationGeneration !== router.generation()) return;
+    }
     root.selectThread(thread);
     if (
       !owns(scope) ||
