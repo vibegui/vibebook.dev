@@ -102,9 +102,7 @@
         {#each footer.readers.slice(0, 5) as reader (`${reader.receipt.who}|${reader.receipt.email}`)}
           <span
             data-reader-read={reader.read}
-            class={reader.read
-              ? "tw:relative tw:inline-flex"
-              : "tw:relative tw:inline-flex tw:opacity-50"}
+            class="tw:relative tw:inline-flex"
           >
             <Avatar
               name={vb.name(reader.receipt.email)}
