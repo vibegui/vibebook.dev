@@ -122,14 +122,19 @@ async function asset(key: string, path: string, htmlVariant?: Variant) {
   const file = await realpath(resolve(publicRoot, path));
   assert(file.startsWith(publicRoot + sep), "Asset escaped public root");
   const original = await readFile(file);
-  let body = original, shellETag: string | undefined, shellVersionDomain: string | undefined, builtEntryVersion: string | null | undefined,
+  let body = original,
+    shellETag: string | undefined,
+    shellVersionDomain: string | undefined,
+    builtEntryVersion: string | null | undefined,
     injectedVersion = false;
   if (htmlVariant) {
     shellETag = `"${hash(original)}"`;
     const served = metricShell(original.toString(), shellETag, htmlVariant);
     versions[htmlVariant] = served.version;
-    shellVersionDomain = served.versionDomain; builtEntryVersion = served.entryVersion;
-    body = Buffer.from(served.body); injectedVersion = true;
+    shellVersionDomain = served.versionDomain;
+    builtEntryVersion = served.entryVersion;
+    body = Buffer.from(served.body);
+    injectedVersion = true;
   }
   const gzip = gzipSync(body),
     value = {
@@ -143,7 +148,9 @@ async function asset(key: string, path: string, htmlVariant?: Variant) {
       gzip,
       type: Bun.file(file).type || "application/octet-stream",
       injectedVersion,
-      shellETag, shellVersionDomain, builtEntryVersion,
+      shellETag,
+      shellVersionDomain,
+      builtEntryVersion,
     };
   assets.set(key, value);
   return value;
@@ -153,8 +160,33 @@ try {
   await asset("@shell/vanilla", "app.html", "vanilla");
   await asset("@shell/svelte", "app-svelte.html", "svelte");
 } catch (error) {
-  const sources = await Promise.all(["app.html", "app-svelte.html"].map(async path => { try { const bytes = await readFile(resolve(publicRoot, path)); return { path, sha256: hash(bytes), bytes: bytes.length }; } catch { return { path, unavailable: true }; } }));
-  await writeFile(`${output}/preflight-failure.json`, JSON.stringify({ status: "failed", phase: "shell-preflight", sources, scope: "No browser was started and no timing sample exists", error: error instanceof Error ? { name: error.name, message: error.message } : { name: "UnknownError" } }, null, 2));
+  const sources = await Promise.all(
+    ["app.html", "app-svelte.html"].map(async (path) => {
+      try {
+        const bytes = await readFile(resolve(publicRoot, path));
+        return { path, sha256: hash(bytes), bytes: bytes.length };
+      } catch {
+        return { path, unavailable: true };
+      }
+    }),
+  );
+  await writeFile(
+    `${output}/preflight-failure.json`,
+    JSON.stringify(
+      {
+        status: "failed",
+        phase: "shell-preflight",
+        sources,
+        scope: "No browser was started and no timing sample exists",
+        error:
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : { name: "UnknownError" },
+      },
+      null,
+      2,
+    ),
+  );
   throw error;
 }
 type FixtureRoom = ReturnType<typeof createMetricRoom>;
