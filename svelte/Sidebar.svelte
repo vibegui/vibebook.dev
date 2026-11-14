@@ -122,9 +122,11 @@
             value={epic.tasks.filter((task) => task.done).length}
             max={epic.tasks.length}
             label={vb.t("Tarefas")}
-          />{/if}<WaitBadge waits={vb.waitsIn(epic.id)}
-            label={n => vb.t("{n} coisas esperando você", { n })}
-            taskLabel={vb.t("Tarefa sua pendente")} /></Button
+          />{/if}<WaitBadge
+          waits={vb.waitsIn(epic.id)}
+          label={(n) => vb.t("{n} coisas esperando você", { n })}
+          taskLabel={vb.t("Tarefa sua pendente")}
+        /></Button
       >
     {/each}
     <IconButton
@@ -182,10 +184,11 @@
           title={room.book.title}
           src={roomIcon}
           tint={roomTint}
-        /><span class="tw:flex-1 tw:truncate">{room.book.title}</span
-        ><WaitBadge waits={vb.waitsIn("main")}
-          label={n => vb.t("{n} coisas esperando você", { n })}
-          taskLabel={vb.t("Tarefa sua pendente")} /><span class="tw:text-xs tw:text-muted-foreground"
+        /><span class="tw:flex-1 tw:truncate">{room.book.title}</span><WaitBadge
+          waits={vb.waitsIn("main")}
+          label={(n) => vb.t("{n} coisas esperando você", { n })}
+          taskLabel={vb.t("Tarefa sua pendente")}
+        /><span class="tw:text-xs tw:text-muted-foreground"
           >{messageCount(room, "main")}</span
         ></Button
       ><IconButton

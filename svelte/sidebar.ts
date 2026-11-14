@@ -14,7 +14,9 @@ export type SidebarBridge = {
   name: (email: string) => string;
   avatarUrl?: (email: string) => string | undefined;
   epicBusy: (epic: Epic) => string | null;
-  waitsIn: (thread: string) => readonly import("./features/waits/model").WaitReference[];
+  waitsIn: (
+    thread: string,
+  ) => readonly import("./features/waits/model").WaitReference[];
 };
 
 export type SidebarProps = {
