@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { bootstrapModule, buildAppDocument } from "./build-app-document";
@@ -56,7 +56,11 @@ test("build emits classic bootstrap string before bundling the guarded browser h
     expect(await readFile(join(root, "public/app.html"), "utf8")).toContain(
       asset,
     );
+    const paths = [join(root, "shared/generated/appDocumentBootstrap.ts"), join(root, "public", asset), join(root, "public/app.html")];
+    const identities = await Promise.all(paths.map(path => stat(path, { bigint: true })));
     expect((await buildAppDocument({ root })).asset).toBe(asset);
+    const after = await Promise.all(paths.map(path => stat(path, { bigint: true })));
+    expect(after.map(file => [file.ino, file.mtimeNs])).toEqual(identities.map(file => [file.ino, file.mtimeNs]));
     // Native resolution must still reject a backend import, including a raw bundle request.
     await mkdir(join(root, "src"));
     await writeFile(
