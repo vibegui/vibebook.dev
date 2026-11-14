@@ -102,6 +102,12 @@ export default defineConfig(({ mode, command }) => ({
       mode === "vanilla" ? "../public/svelte" : "../public/svelte-preview",
     emptyOutDir: true,
     minify: true,
+    // These native ES files are served as an app. Vite's library default
+    // preserves whitespace for downstream bundlers; compact this final output.
+    rolldownOptions:
+      mode === "vanilla"
+        ? undefined
+        : { output: { minify: { codegen: true } } },
     cssCodeSplit: false,
     copyPublicDir: false,
     lib: {
