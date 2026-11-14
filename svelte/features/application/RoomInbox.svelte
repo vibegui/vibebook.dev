@@ -33,7 +33,7 @@
     inbox = untrack(() => owner.state),
     root = untrack(() => services.rootRoom.state),
     personal = untrack(() => services.personal.state);
-  const t = services.t;
+  const t = untrack(() => services.t);
   const model = $derived(
     roomInboxModel($inbox.data, opening.roomId ?? "", $inbox.all),
   );

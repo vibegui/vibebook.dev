@@ -24,8 +24,6 @@ const EN: Readonly<Record<string, string>> = {
     "Your tasks and what waits on your OK. Click to open.",
   "Esperando seu OK": "Waiting on your OK",
   "Nenhuma tarefa aberta sua.": "No open tasks of yours.",
-  "Nada esperando você. ✓": "Nothing waiting on you. ✓",
-  "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
   Resolvido: "Resolved",
   "esperando você": "waiting on you",
   "O que precisa de você aqui": "What needs you here",
