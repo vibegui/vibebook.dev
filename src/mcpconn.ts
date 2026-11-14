@@ -8,6 +8,7 @@
 //   opaque-origin iframe (srcdoc, sandbox allow-scripts); its tools/call go through the host page to /call here.
 // - Agents: MCP tools `connections`, `app_call`, `app_open` (src/agent.ts).
 import * as z from "zod/mini";
+import { toolList, cachedTools, type Tool } from "./mcpTools";
 import type { Context, Hono } from "hono";
 import { ConnectionContext } from "../shared/schemas";
 import { record } from "../shared/validation";
@@ -27,21 +28,6 @@ export type Conn = { id: string; book_id: string; owner: string; scope: "room" |
 // A server's tools as it lists them (external input): checked when listed and again when read back from D1, so the
 // public connection answers and the app host only ever see the shape below. Extra keys in annotations/_meta are kept
 // (hosts and apps read more than we name). A tool that doesn't fit is dropped, not trusted.
-const ToolSchema = z.object({
-  name: z.string(),
-  title: z.optional(z.string()),
-  description: z.optional(z.string()),
-  inputSchema: z.optional(z.unknown()),
-  annotations: z.optional(z.looseObject({ readOnlyHint: z.optional(z.boolean()), title: z.optional(z.string()) })),
-  _meta: z.optional(
-    z.looseObject({
-      ui: z.optional(z.looseObject({ resourceUri: z.optional(z.string()), visibility: z.optional(z.array(z.string())) })),
-      "ui/resourceUri": z.optional(z.string()),
-    }),
-  ),
-});
-type Tool = z.infer<typeof ToolSchema>;
-const toolList = (v: unknown): Tool[] => (Array.isArray(v) ? v.flatMap((t) => { const r = ToolSchema.safeParse(t); return r.success ? [r.data] : []; }) : []);
 const json = (s: string | null, empty: unknown): unknown => { try { return s ? JSON.parse(s) : empty; } catch { return empty; } };
 
 const MAX_CONNS = 10; // per room
@@ -52,7 +38,7 @@ const MIME_APP = "text/html;profile=mcp-app";
 export const canUse = (c: Conn, email: string) => c.scope === "room" || c.owner === email;
 export const uiOf = (t: Tool) => { const u = t._meta?.ui?.resourceUri ?? t._meta?.["ui/resourceUri"]; return typeof u === "string" && u.startsWith("ui://") ? u : null; };
 const modelVisible = (t: Tool) => !t._meta?.ui?.visibility || t._meta.ui.visibility.includes("model");
-const toolsOf = (c: Conn): Tool[] => toolList(json(c.tools, []));
+const toolsOf = (c: Conn): Tool[] => cachedTools(c.tools);
 const ctxOf = (c: Conn): Record<string, z.infer<typeof ConnectionContext>> => {
   const all = json(c.ctx, {});
   if (!all || typeof all !== "object" || Array.isArray(all)) return {};

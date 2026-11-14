@@ -1,6 +1,8 @@
 import "server-only";
 import { matchesSuggestion } from "../shared/suggestions";
 import { storedNotes, storedHashes, storedFlags, storedProd, storedEpicFiles, storedSuggestions, storedFileRows, storedPollRows } from "./bookStored";
+import { storedMessageRows, storedChoices, storedCard, storedQuote, storedFileRefs, AccessRequested } from "./bookMessages";
+import { cachedTools } from "./mcpTools";
 import { MESSAGE_TEXT_LIMIT, MESSAGE_FILE_LIMIT, POLL_QUESTION_LIMIT, POLL_OPTION_LIMIT, POLL_MIN_OPTIONS, POLL_MAX_OPTIONS } from "../shared/composition";
 import { reorderEpics } from "./epic-order";
 import { TASK_STATUSES, AttachmentSchema } from "../shared/room";
@@ -92,7 +94,7 @@ export const ASK_OPENER = /^(⏸ Seu Claude (pede permissão|quer seguir)|❓ Se
 
 export class Book extends DurableObject<Env> {
   sql: SqlStorage;
-  receiptsT = 0; // a coalesced receipts push is pending (receipt())
+  receiptsT: ReturnType<typeof setTimeout> | 0 = 0; // a coalesced receipts push is pending (receipt())
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -261,14 +263,15 @@ export class Book extends DurableObject<Env> {
     // Something changed on the board: @vibe grades it again (debounced, on the alarm).
     this.ctx.waitUntil(this.wakeAt(Date.now() + CLASSIFY_DELAY_MS));
   }
+  messageRows(rows: readonly unknown[]): Msg[] {
+    let files: Map<string, FileMeta> | undefined;
+    return storedMessageRows(rows, this.get("book_id") ?? "", (id) => { files ??= new Map(this.files().map((file) => [file.id, file])); return files.get(id); }, (kind) => console.warn("book stored projection", kind));
+  }
   messages(thread?: string, limit = 500): Msg[] {
     const rows = thread
       ? this.sql.exec(`SELECT * FROM messages WHERE thread = ? ORDER BY id DESC LIMIT ?`, thread, limit)
       : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT ?`, limit);
-    return rows
-      .toArray()
-      .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg)
-      .reverse();
+    return this.messageRows(rows.toArray()).reverse();
   }
   /** What a room open sends: the newest 60 messages of the open thread and the newest 5 of every other one (enough for
    * the sidebar, thread cards and the ✻); the app pages the rest with "older" when a thread opens. Apart, in origins
@@ -276,7 +279,7 @@ export class Book extends DurableObject<Env> {
    * Claude) and the ones with a live ack (the ✻). counts = every thread's real total. Every thread at 60 made the
    * product room's state 646 KB, sent on each room switch (Nov 2026). */
   roomWindow(open = "main", me = "") {
-    const rows = this.sql
+    const rows = this.messageRows(this.sql
       .exec(
         // Archived epics are left out (the open one aside): in the product room 126 of 133 epics were archived and
         // their 5 messages each were most of a 655 KB room open (Nov 2026). Opening one fetches it (fillOf / older).
@@ -286,22 +289,21 @@ export class Book extends DurableObject<Env> {
          ORDER BY id`,
         open, open,
       )
-      .toArray()
-      .map(({ rn: _rn, ...r }) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
+      .toArray());
     const have = new Set(rows.map((m) => m.id));
-    const origins = this.sql
+    const origins = this.messageRows(this.sql
       .exec(
         `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL AND (COALESCE(archived, 0) <= 0 OR id = ?))
            OR (author = ? AND ts > ?) OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
         open, me, Date.now() - 48 * 3600e3,
       )
-      .toArray()
-      .filter((r) => !have.has(r.id as number))
+      .toArray().map((row) => ({ ...row, card: null })))
+      .filter((r) => !have.has(r.id))
       // Only for thread cards, the queue and the ✻: the text is cut (agents' reports of 10 KB+ made origins 287 KB of a
       // 530 KB room open, Nov 2026); the whole message comes with its own thread when that thread opens.
       .map((r) => {
-        const text = String(r.text ?? ""), cut = text.length > ORIGIN_TEXT_MAX;
-        return { ...r, text: cut ? `${text.slice(0, ORIGIN_TEXT_MAX)}…` : text, cut: cut || undefined, card: null, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null } as Msg;
+        const text = r.text, cut = text.length > ORIGIN_TEXT_MAX;
+        return { ...r, text: cut ? `${text.slice(0, ORIGIN_TEXT_MAX)}…` : text, cut: cut || undefined, card: null };
       });
     const counts: Record<string, number> = {};
     for (const r of this.sql.exec(`SELECT thread, count(*) AS n FROM messages GROUP BY thread`).toArray()) counts[r.thread as string] = r.n as number;
@@ -533,10 +535,8 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     const m = this.sql.exec<{ choices: string | null }>(`SELECT choices FROM messages WHERE id = ? AND author = ? AND kind = 'agent' AND choices IS NOT NULL`, msgId, email).toArray()[0];
     if (!m?.choices || this.answerTo(bookId, msgId, email) !== null) return { ok: false };
-    let c: Record<string, unknown> = {};
-    try {
-      c = JSON.parse(m.choices);
-    } catch {}
+    const c = storedChoices(m.choices, (kind) => console.warn("book stored projection", kind));
+    if (!c) return { ok: false };
     if (c.closed) return { ok: true };
     const choices = JSON.stringify({ ...c, closed: "terminal" });
     this.sql.exec(`UPDATE messages SET choices = ? WHERE id = ?`, choices, msgId);
@@ -549,8 +549,10 @@ export class Book extends DurableObject<Env> {
     const want = [...new Set(ids.filter((x): x is number => !!x))].slice(0, 100);
     const out = new Map<number, { id: number; from: string; text: string; files?: string[] }>();
     if (!want.length) return out;
-    for (const q of this.sql.exec(`SELECT id, author, substr(coalesce(text, ''), 1, 400) AS text, files FROM messages WHERE id IN (${want.map(() => "?").join(",")})`, ...want).toArray())
-      out.set(q.id as number, { id: q.id as number, from: who(q.author as string), text: q.text as string, files: q.files ? (JSON.parse(q.files as string) as FileMeta[]).map((f) => f.name) : undefined });
+    for (const row of this.sql.exec(`SELECT id, author, substr(coalesce(text, ''), 1, 400) AS text, files FROM messages WHERE id IN (${want.map(() => "?").join(",")})`, ...want).toArray()) {
+      const q = storedQuote(row, (kind) => console.warn("book stored projection", kind));
+      if (q) out.set(q.id, { id: q.id, from: who(q.author), text: q.text, files: q.files });
+    }
     return out;
   }
   /** The person's own messages (and reminders for them) between two ids, any thread: what their agent hasn't read yet. */
@@ -1107,35 +1109,35 @@ export class Book extends DurableObject<Env> {
     const who = (e: string) => (e === "ai" ? "@vibe" : names[e] ? `${names[e].replace(/[<>"@\p{Cc}]/gu, "").slice(0, 40)} <${e}>` : e);
     const epics = this.epics();
     const threadName = (t: string) => (t === "main" ? "main" : `epic: ${epics.find((e) => e.id === t)?.title ?? t}`);
-    const rows = since
+    const rows = this.messageRows((since
       ? this.sql.exec(`SELECT * FROM messages WHERE id > ? ORDER BY id LIMIT ?`, since, AGENT_READ_MAX).toArray()
-      : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT 40`).toArray().reverse();
+      : this.sql.exec(`SELECT * FROM messages ORDER BY id DESC LIMIT 40`).toArray().reverse()).filter((m) => m.text || m.poll || m.files));
     // A reply carries what it answers (author + the start of its text): "@guilherme" alone, replying to a question,
     // read as an empty mention to the Claude (Nov 2026).
-    const quoted = this.quotes(rows.map((m) => m.reply_to as number | null), who);
+    const quoted = this.quotes(rows.map((m) => m.reply_to), who);
     const messages = rows
       .filter((m) => m.text || m.poll || m.files)
       .map((m) => ({ m, mine: !!email && ((m.author === email && m.kind !== "agent") || (m.tag === "reminder" && m.for_who === email)) }))
       .map(({ m, mine }) => ({
-        id: m.id as number,
-        at: new Date(m.ts as number).toISOString(),
-        thread: threadName(m.thread as string),
-        from: who(m.author as string),
+        id: m.id,
+        at: new Date(m.ts).toISOString(),
+        thread: threadName(m.thread),
+        from: who(m.author),
         by_agent: m.kind === "agent",
-        mentions_you: !!email && m.author !== email && mentionsMe((m.text as string) ?? ""),
+        mentions_you: !!email && m.author !== email && mentionsMe(m.text),
         // A reminder file's prompt, posted by @vibe, is the instruction of whoever saved the file.
         from_your_human: mine,
         reminder: m.tag === "reminder" || undefined,
-        to_agent: m.author === email && m.kind !== "agent" ? toAgents((m.text as string) ?? "").join(", ") || undefined : undefined,
-        not_for_you: (m.author === email && m.kind !== "agent" && forOther((m.text as string) ?? "")) || undefined,
-        reply_to: (m.reply_to as number | null) ?? undefined,
-        reply_quote: m.reply_to ? quoted.get(m.reply_to as number) : undefined,
-        choices: m.choices ? (JSON.parse(m.choices as string) as { options: string[]; multi: boolean }) : undefined,
-        card: m.card ? JSON.parse(m.card as string) : undefined,
+        to_agent: m.author === email && m.kind !== "agent" ? toAgents(m.text).join(", ") || undefined : undefined,
+        not_for_you: (m.author === email && m.kind !== "agent" && forOther(m.text)) || undefined,
+        reply_to: m.reply_to ?? undefined,
+        reply_quote: m.reply_to ? quoted.get(m.reply_to) : undefined,
+        choices: m.choices ? storedChoices(m.choices, (kind) => console.warn("book stored projection", kind)) ?? undefined : undefined,
+        card: m.card ? storedCard(m.card, bookId, (kind) => console.warn("book stored projection", kind)) ?? undefined : undefined,
         // The replied message rides inside the text too, not only in reply_quote: a Sonnet read a bare "vc fez isso?"
         // (a reply to "Pode revisar o ledger?") and asked which "isso" (Nov 2026).
-        text: ((t: string) => (mine ? t : untrusted(who(m.author as string), t)))(withQuote(quoted.get(m.reply_to as number), (m.text as string) || (m.poll ? `[poll ${m.poll}]` : ""))),
-        files: m.files ? (JSON.parse(m.files as string) as FileMeta[]).map((f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
+        text: ((t: string) => (mine ? t : untrusted(who(m.author), t)))(withQuote(m.reply_to ? quoted.get(m.reply_to) : undefined, m.text || (m.poll ? `[poll ${m.poll}]` : ""))),
+        files: m.files?.length ? m.files.map((f) => ({ id: f.id, name: f.name, type: f.type, size: f.size, url: `/api/books/${bookId}/files/${f.id}` })) : undefined,
       }));
     const lastId = (this.sql.exec(`SELECT max(id) AS id FROM messages`).one().id as number) ?? 0;
     return {
@@ -1362,7 +1364,7 @@ export class Book extends DurableObject<Env> {
     );
     // Every listener's wait/read lands here: push only when a ✓ moves (a busy room sent the same list 1000×/day), and
     // at most one push per ~2s per room (10 agents reading one message were 10 full lists to every tab: 118 MB in a day).
-    if (!same && !this.receiptsT) this.receiptsT = setTimeout(() => { this.receiptsT = 0; this.broadcast({ t: "receipts", receipts: this.receiptsList() }); }, 2000) as unknown as number;
+    if (!same && !this.receiptsT) this.receiptsT = setTimeout(() => { this.receiptsT = 0; this.broadcast({ t: "receipts", receipts: this.receiptsList() }); }, 2000);
   }
 
   // Pinned: what's always at hand in the room (the live site, the landing, the repo, an app or file of the room),
@@ -1381,7 +1383,7 @@ export class Book extends DurableObject<Env> {
     } else if (kind === "app" && /^[a-f0-9]{12}\/[\w.-]{1,100}$/.test(ref)) { // an MCP connection's app: <connection id>/<tool>
       const [cid, tool] = ref.split("/");
       const c = await this.env.DB.prepare(`SELECT tools FROM mcp_connections WHERE id = ? AND book_id = ?`).bind(cid, this.get("book_id")).first<{ tools: string }>();
-      const t = c && (JSON.parse(c.tools || "[]") as { name: string; title?: string; _meta?: { ui?: { resourceUri?: string } } }[]).find((x) => x.name === tool);
+      const t = c && cachedTools(c.tools, (kind) => console.warn("book stored projection", kind)).find((x) => x.name === tool);
       if (!t?._meta?.ui?.resourceUri) return { ok: false, error: `no app ${tool} on connection ${cid} in this room (see connections)` };
       title ||= (t.title ?? tool).slice(0, 80);
     } else if (kind === "app") { // a room app: the file apps/<ref>.html
@@ -1610,7 +1612,7 @@ export class Book extends DurableObject<Env> {
       .toArray()
       .map((m) => {
         const text = m.text ?? "", low = text.toLowerCase(), at = Math.max(0, low.indexOf(terms[0]) - 60);
-        const files = (JSON.parse(m.files || "[]") as { id: string; name: string }[]).map((f) => ({ id: f.id, name: f.name }));
+        const files = storedFileRefs(m.files, (kind) => console.warn("book stored projection", kind));
         return { id: m.id, thread: m.thread, topic: m.thread === "main" ? null : titles.get(m.thread) ?? null, author: m.author, by_agent: m.kind === "agent", via: m.via, ts: m.ts, files,
           snippet: (at ? "…" : "") + text.slice(at, at + 200).replace(/\s+/g, " ") + (text.length > at + 200 ? "…" : "") };
       });
@@ -1646,7 +1648,9 @@ export class Book extends DurableObject<Env> {
     }
     if (url.pathname === "/access-requested") {
       // A new request: tell the room (an @mention of the owner, so it reaches them by email too) and refresh the sidebar.
-      const { who, name } = (await req.json()) as { who: string; name?: string };
+      const parsed = AccessRequested.safeParse(await req.json().catch(() => null));
+      if (!parsed.success) return Response.json({ error: "invalid access request" }, { status: 400 });
+      const { who, name } = parsed.data;
       if (!this.get("book_id")) this.set("book_id", url.searchParams.get("book") ?? "");
       const owner = (await this.env.DB.prepare(`SELECT owner FROM books WHERE id = ?`).bind(this.get("book_id") ?? "").first<{ owner: string }>())?.owner;
       const ownerName = owner ? ((await this.names())[owner] ?? owner.split("@")[0]).split(/\s+/)[0] : "";
@@ -1707,7 +1711,7 @@ export class Book extends DurableObject<Env> {
         ...this.roomWindow(url.searchParams.get("t") || "main", email),
         complete: false,
         // The newest 12 and the pinned ones; the whole list (~100 KB in the product room) when Arquivos opens ("files.get").
-        files: this.sql.exec<{id:string;name:string;type:string;size:number;author:string;ts:number}>(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(),
+        files: storedFileRows(this.sql.exec(`SELECT * FROM files WHERE id IN (SELECT id FROM files ORDER BY ts DESC LIMIT 12) OR id IN (SELECT ref FROM pins WHERE kind = 'file') ORDER BY ts DESC`).toArray(), (kind) => console.warn("book stored projection", kind)),
         filesN: this.sql.exec<{ n: number }>(`SELECT count(*) AS n FROM files`).one().n,
         reminders: this.reminders(),
         polls: this.polls(),
@@ -1810,9 +1814,8 @@ export class Book extends DurableObject<Env> {
         const before = Number(m.before) || Number.MAX_SAFE_INTEGER;
         const rows = this.sql
           .exec(`SELECT * FROM messages WHERE thread = ? AND id < ? ORDER BY id DESC LIMIT 101`, String(m.thread ?? "main"), before)
-          .toArray()
-          .map((r) => ({ ...r, files: r.files ? JSON.parse(r.files as string) : [], poll: (r.poll as string) ?? null, kind: (r.kind as string) ?? null }) as Msg);
-        return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: rows.slice(0, 100).reverse(), more: rows.length > 100 }));
+          .toArray();
+        return ws.send(JSON.stringify({ t: "older", thread: String(m.thread ?? "main"), messages: this.messageRows(rows.slice(0, 100)).reverse(), more: rows.length > 100 }));
       }
       case "pin.add": {
         const r = await this.pinAdd(email, String(m.kind ?? ""), String(m.ref ?? ""), String(m.title ?? ""));

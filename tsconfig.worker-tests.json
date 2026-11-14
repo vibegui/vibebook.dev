@@ -15,6 +15,7 @@
     "scripts/native-auth-post.test.ts",
     "scripts/mcp-connections.test.ts",
     "scripts/book-stored-boundary.test.ts",
+    "scripts/book-message-boundary.test.ts",
     "scripts/mcp-oauth-responses.test.ts",
     "scripts/document-scope-guards.test.ts",
     "scripts/docroom-socket.test.ts",
