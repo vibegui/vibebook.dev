@@ -1,5 +1,32 @@
 [
   {
+    "date": "2026-11-14",
+    "slug": "2026-11-14-inbox",
+    "title": {
+      "pt": "Caixa de entrada com mentions e suas tarefas",
+      "en": "Inbox with mentions and your tasks"
+    },
+    "intro": {
+      "pt": "A caixa de entrada agora junta tudo que precisa de você, de todas as salas, num lugar só.",
+      "en": "The inbox now gathers everything that needs you, across every room, in one place."
+    },
+    "features": [],
+    "improvements": {
+      "pt": [
+        "A caixa de entrada agora mostra, além do que espera resposta, as menções a você e suas tarefas abertas (a fazer, fazendo, revisar) de todas as salas — em três seções, com alternância entre esta sala e todas",
+        "O botão da caixa de entrada também fica na barra lateral da sala, logo acima da lista de épicos"
+      ],
+      "en": [
+        "The inbox now shows, besides what's waiting on you, the mentions of you and your open tasks (to do, doing, review) across every room — in three sections, with a this-room / all toggle",
+        "The inbox button also sits in the room sidebar, right above the epic list"
+      ]
+    },
+    "fixes": {
+      "pt": [],
+      "en": []
+    }
+  },
+  {
     "date": "2026-11-10",
     "slug": "2026-11-10-apps",
     "title": {
