@@ -38,6 +38,7 @@ export function createNavigationPresentation<T>(controller: AppNavigationSession
     const person = identity(), search = get(controller.search.state), creator = get(controller.creator.state), nav = get(controller.state);
     const open = { search: search.open, create: creator.open && !creator.inline && !!creator.binding, settings: !!nav.settingsId, archive: !!nav.archiveId, rename: !!nav.renameId };
     const next = { ...values };
+    const beforeOpenings = revision;
     let changed = false;
     for (const kind of kinds) {
       const previous = values[kind];
@@ -46,7 +47,7 @@ export function createNavigationPresentation<T>(controller: AppNavigationSession
       if (same || (!previous && (!open[kind] || !person.me))) continue;
       // Record closure before any replacement gets a newer revision: an old callback
       // must not return focus after a newer opening, even if that opening also closes.
-      if (previous) closedAt.set(previous, revision);
+      if (previous) closedAt.set(previous, beforeOpenings);
       next[kind] = person.me && open[kind] ? Object.freeze({ kind, account: person.me.email, identityRevision: person.identityRevision, revision: ++revision, roomId, scopeRoomId: nav.roomId, trigger: controller.returnFocus(null) }) : null;
       changed = true;
     }
