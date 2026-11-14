@@ -414,3 +414,56 @@ test("production geometry stays in the sole stylesheet with no authored JS prese
     ),
   ).toEqual([]);
 });
+
+test("reload adopts the inherited sheet entry once, rotates ownership and requires real Back before navigation", () => {
+  const f = fixture(); f.owner.open("doc");
+  const inherited = f.browser.state(); f.owner.dispose();
+  let sheet: RoomSheet | null = null, navigation = 0;
+  const restored = createRoomSheetHistory({ browser: f.browser, current: () => true, changed: value => { sheet = value; }, unconfirmed() {} });
+  expect(sheet).toBe("doc"); expect(f.entries).toHaveLength(2);
+  expect(f.browser.state()).not.toEqual(inherited);
+  restored.open("side"); expect(f.entries).toHaveLength(2); expect(sheet).toBe("side");
+  restored.close(); restored.deferNavigation(() => { navigation++; });
+  expect(restored.consumePop()).toBe(true); f.flush(); expect(navigation).toBe(0);
+  f.back(); expect(restored.consumePop()).toBe(true); f.flush();
+  expect(navigation).toBe(1); expect(sheet).toBeNull(); expect(f.browser.state()).toBeNull();
+  f.forward(); expect(restored.consumePop()).toBe(true); expect(sheet).toBe("side");
+  restored.dispose();
+});
+
+test("an older sheet owner cannot erase a reload adopter and unrelated state survives owned marker removal", () => {
+  const f = fixture(); f.owner.open("side");
+  const initial = f.browser.state(); if (!initial || typeof initial !== "object") throw Error("Missing sheet state");
+  f.browser.history.replaceState({ ...initial, unrelated: { preserved: true } }, "", f.browser.href());
+  const adopted = createRoomSheetHistory({ browser: f.browser, current: () => true, changed() {}, unconfirmed() {} });
+  const claimed = f.browser.state();
+  f.owner.beforeNavigation(); expect(f.browser.state()).toEqual(claimed);
+  f.owner.dispose(); expect(f.browser.state()).toEqual(claimed);
+  expect(adopted.take()).toBe(true);
+  expect(f.browser.state()).toEqual({ unrelated: { preserved: true } });
+  expect(f.read().backs).toBe(0); expect(f.entries).toHaveLength(2); adopted.dispose();
+});
+
+test("reload adoption never overwrites a newer token or URL written during current-owner validation", () => {
+  for (const replaceURL of [false, true]) {
+    const f = fixture(); f.owner.open("doc"); const original = f.browser.state(); f.owner.dispose();
+    let checked = false, changes = 0;
+    const newer = { vbRoomSheet: { token: "newer-owner", sheet: "side" }, keep: true };
+    const adopter = createRoomSheetHistory({ browser: f.browser, current: () => {
+      if (!checked) { checked = true; f.browser.history.replaceState(replaceURL ? original : newer, "", replaceURL ? "/b/ffffff?ui=svelte" : f.browser.href()); }
+      return true;
+    }, changed() { changes++; }, unconfirmed() {} });
+    expect(changes).toBe(0); expect(f.browser.state()).toEqual(replaceURL ? original : newer);
+    const before = f.browser.state(); adopter.beforeNavigation(); adopter.dispose(); expect(f.browser.state()).toEqual(before);
+  }
+});
+
+test("initially inactive reload owner only claims its unchanged captured entry on an explicit later open", () => {
+  const f = fixture(); f.owner.open("doc"); const original = f.browser.state(); f.owner.dispose();
+  let current = false; const changes: (RoomSheet | null)[] = [];
+  const adopter = createRoomSheetHistory({ browser: f.browser, current: () => current, changed: sheet => changes.push(sheet), unconfirmed() {} });
+  expect(f.browser.state()).toEqual(original); expect(changes).toEqual([]);
+  current = true; adopter.open("side");
+  expect(f.entries).toHaveLength(2); expect(changes).toEqual(["side"]);
+  expect(f.browser.state()).not.toEqual(original); adopter.dispose();
+});

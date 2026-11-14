@@ -28,7 +28,6 @@ export function createRoomSheetHistory(options: {
     pending: Entry | null = null,
     queued: (() => void) | null = null,
     timer: unknown | null = null,
-    sequence = 0,
     intent = 0,
     unconfirmed = false;
   const here = () => {
@@ -38,6 +37,33 @@ export function createRoomSheetHistory(options: {
   const same = (entry: Entry) =>
     marker(browser.state())?.token === entry.token &&
     here() === entry.returnURL;
+  const fields = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" && !Array.isArray(value) ? { ...value } : {};
+  const newToken = () => `sheet-${crypto.randomUUID()}`;
+  const write = (entry: Entry, replace: boolean) => {
+    browser.history[replace ? "replaceState" : "pushState"](
+      { ...fields(browser.state()), vbRoomSheet: { token: entry.token, sheet: entry.sheet } }, "", entry.returnURL,
+    );
+  };
+  const remove = (entry: Entry) => {
+    const state = browser.state();
+    if (marker(state)?.token !== entry.token || here() !== entry.returnURL) return false;
+    const next = fields(state); delete next.vbRoomSheet;
+    browser.history.replaceState(Object.keys(next).length ? next : null, "", entry.returnURL);
+    return true;
+  };
+  const initial = marker(browser.state());
+  let inherited = initial ? { ...initial, returnURL: here() } : null;
+  const adopt = (restore: boolean) => {
+    const captured = inherited;
+    if (!active || known || !captured || !options.current()) return;
+    inherited = null;
+    // A newly written marker or a changed URL belongs to another transition.
+    if (marker(browser.state())?.token !== captured.token || here() !== captured.returnURL) return;
+    known = { ...captured, token: newToken() };
+    write(known, true);
+    if (restore && active && options.current() && same(known)) options.changed(known.sheet);
+  };
   const clearTimer = () => {
     if (timer !== null) browser.cancel(timer);
     timer = null;
@@ -65,39 +91,26 @@ export function createRoomSheetHistory(options: {
       if (active && pending) warning(true);
     }, 1500);
   };
+  adopt(true);
   return {
     open(sheet: RoomSheet) {
       if (!active || !options.current() || pending) return;
       intent++;
+      adopt(false);
       if (known && same(known)) {
         known = { ...known, sheet };
-        browser.history.replaceState(
-          { vbRoomSheet: { token: known.token, sheet } },
-          "",
-          here(),
-        );
+        write(known, true);
       } else {
-        known = {
-          token: `sheet-${++sequence}-${Math.random().toString(36).slice(2)}`,
-          sheet,
-          returnURL: here(),
-        };
-        browser.history.pushState(
-          { vbRoomSheet: { token: known.token, sheet } },
-          "",
-          known.returnURL,
-        );
+        known = { token: newToken(), sheet, returnURL: here() };
+        write(known, false);
       }
       options.changed(sheet);
     },
     take(): boolean {
       if (!active || !options.current() || pending) return false;
       intent++;
-      const owned = known && same(known);
-      if (owned) {
-        browser.history.replaceState(null, "", here());
-        known = null;
-      }
+      const owned = known && same(known) && remove(known);
+      if (owned) known = null;
       options.changed(null);
       return !!owned;
     },
@@ -127,7 +140,8 @@ export function createRoomSheetHistory(options: {
       if (!active) return;
       intent++;
       queued = null;
-      if (known && same(known)) browser.history.replaceState(null, "", here());
+      if (known && same(known)) remove(known);
+      inherited = null;
       known = null;
       finish(false);
       options.changed(null);
@@ -173,6 +187,7 @@ export function createRoomSheetHistory(options: {
       intent++;
       clearTimer();
       known = pending = queued = null;
+      inherited = null;
     },
   };
 }
