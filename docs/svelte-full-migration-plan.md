@@ -158,8 +158,8 @@ Evidence: completed feature matrix, module-graph report, first-party JS/legacy-r
 
 ## M7 — Developer experience, regression and performance gates
 
-- [ ] Provide documented frontend HMR with the local Worker/backend. Cold start, component edits, shared-contract edits and reloads work without manually rebuilding the app for each change. Production behavior stays separate from development URLs/code.
-Source workflow and pending runtime acceptance: [full app development](svelte-app-development.md). The HMR gate stays open until its browser acceptance passes.
+- [x] Provide documented frontend HMR with the local Worker/backend. Cold start, component edits, shared-contract edits and reloads work without manually rebuilding the app for each change. Production behavior stays separate from development URLs/code. Checkpoint evidence: `eeedb13`, [actual Worker/Vite browser run and exact source-restoration receipt](svelte-migration/app-hmr/2026-11-14/README.md). Revalidate after deferred-view changes and at the final deployed revision.
+Source workflow: [full app development](svelte-app-development.md). This checked development milestone does not complete the remaining M7 browser/performance gates.
 
 - [ ] Required checks cover frontend/backend/shared/tooling typing, protocol/RPC tests, bundle isolation, style policy, component behavior, build/version consistency, formatting and the relevant browser suite. Fresh install/build instructions work in a clean checkout.
 - [ ] Frontend releases keep deterministic asset/update versions, all generated preview assets are consistent, and no preview build rewrites vanilla assets. Review source-to-artifact boundaries, including independently loaded editor code.

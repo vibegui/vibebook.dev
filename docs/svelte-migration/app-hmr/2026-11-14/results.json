@@ -1,0 +1,129 @@
+{
+  "servedRevisionSuppliedByRunner": "45c2b4303d6616cc6f9d8efc961fa80a3615c067",
+  "scope": "Real full-app source HMR and local Worker proxy, not full feature/production acceptance",
+  "limitations": [
+    "Requires an isolated checkout, installed Chromium/dependencies and DEV_EMAIL configured in private .dev.vars; actual API requests initialize local D1 normally.",
+    "Creates one local fixture room; no production data or credentials are used.",
+    "OAuth provider callbacks, mobile/accessibility parity, collaborative editor content and production bundle integrity are separate gates.",
+    "Draft check covers the application-owned ComposerDrafts bank; Svelte component-local state may reset.",
+    "Linux /proc process identity checks cover observed descendants; very short-lived unobserved descendants are not claimed.",
+    "Startup/shutdown and initial build memory are real; run only after other memory-heavy checks finish."
+  ],
+  "startupCancellation": "pass",
+  "room": "0caac236598d",
+  "proxy": "HTTP identity/write and room/personal/editor WS handshakes passed",
+  "pathSecurity": "pass",
+  "componentAndStyle": "pass",
+  "sharedContract": "pass",
+  "backend": "pass",
+  "liveRoom": {
+    "snapshots": 3,
+    "roomSockets": 4
+  },
+  "status": "pass",
+  "startupPhases": [
+    {
+      "name": "build:api-types",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "build:api-types",
+      "status": "ready",
+      "elapsedMs": 315
+    },
+    {
+      "name": "build:mcp",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "build:mcp",
+      "status": "ready",
+      "elapsedMs": 79
+    },
+    {
+      "name": "worker",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "worker",
+      "status": "ready",
+      "elapsedMs": 1764
+    },
+    {
+      "name": "vite",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "vite",
+      "status": "ready",
+      "elapsedMs": 2143
+    },
+    {
+      "name": "startup",
+      "status": "ready",
+      "elapsedMs": 4305
+    }
+  ],
+  "startupDeadlineMs": 600000,
+  "sourceBackups": "/home/runner/work/vibebook.dev/vibebook.dev/.artifacts/app-hmr/report/source-backups-1de8bd19a601",
+  "restoredSources": [
+    {
+      "path": "src/api.ts",
+      "originalSHA256": "675c2120a91e70df86cbab825320cd2b1fafeeb33b028f1cbbab1aaad3168b19",
+      "mutatedSHA256": "04038855513835c49210d6f0a7c40f590a9cd73867476c41e8e1f26b26143913",
+      "restoredSHA256": "675c2120a91e70df86cbab825320cd2b1fafeeb33b028f1cbbab1aaad3168b19"
+    },
+    {
+      "path": "src/index.ts",
+      "originalSHA256": "edb9cdc8ba8ef1770f25b119ecad167199f68a42e89cb53fbcc837f667da6cc5",
+      "mutatedSHA256": "f9356b278e1225439aa1defc79e6f4da348e6a32ca3a0330cd6f3e71dc76b1dc",
+      "restoredSHA256": "edb9cdc8ba8ef1770f25b119ecad167199f68a42e89cb53fbcc837f667da6cc5"
+    },
+    {
+      "path": "shared/schemas.ts",
+      "originalSHA256": "8a4e26c943bda2276f7a842d9261a1260ae3abe2579cb9c1c0ea0f2bdb9362d9",
+      "mutatedSHA256": "6c099f1a011676f7ae3e500c78dc64c577559ec0d9f8c39ce4b351d4c5761df1",
+      "restoredSHA256": "8a4e26c943bda2276f7a842d9261a1260ae3abe2579cb9c1c0ea0f2bdb9362d9"
+    },
+    {
+      "path": "svelte/styles/tailwind.css",
+      "originalSHA256": "700abf3a2bed10815cf8c069d0868d9c15c86c7ded8c30f31f0eea8af97f4296",
+      "mutatedSHA256": "4d59cdc815113e6e82a056fb788f30ef2f4bc2a65e4d58e403921640aa049002",
+      "restoredSHA256": "700abf3a2bed10815cf8c069d0868d9c15c86c7ded8c30f31f0eea8af97f4296"
+    },
+    {
+      "path": "svelte/Sidebar.svelte",
+      "originalSHA256": "383c14a2d12c2de68080853c27e7164366b69b3df97ee58bbc6412ad6788a267",
+      "mutatedSHA256": "d72f87a75fe27ea1ca0b9b7134026bb6567d66ffdc574754f8e4bf3bffb018f6",
+      "restoredSHA256": "383c14a2d12c2de68080853c27e7164366b69b3df97ee58bbc6412ad6788a267"
+    }
+  ],
+  "activeMutations": 0,
+  "interrupted": false,
+  "shutdowns": [
+    {
+      "exitCode": 130,
+      "observedDescendants": 3
+    },
+    {
+      "exitCode": 130,
+      "observedDescendants": 13
+    }
+  ],
+  "steps": [
+    "Cancel real dev:app during initial API declaration build",
+    "Start real dev:app and wait for Worker plus source Vite",
+    "Check selected source shells, vanilla default and Worker access denial",
+    "Probe actual Vite forbidden files, encoded paths, symlinks and hostile request authorities",
+    "Open real room and verify mounted component/style HMR preserves composer draft and connections",
+    "Edit shared contract, verify declaration watcher plus full reload/reconnection",
+    "Edit Worker implementation and API declaration source without manual rebuild/restart",
+    "Stop dev:app and verify owned descendants plus both ports disappear"
+  ],
+  "errors": [],
+  "cleanupErrors": []
+}
