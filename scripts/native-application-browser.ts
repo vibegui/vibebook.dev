@@ -883,8 +883,8 @@ try {
             z.object({ doc: z.string() }).parse(
               await agent("read_room", {
                 room_id: roomA,
-                thread: "main",
-                limit: 1,
+                epic_id: "main",
+                all: true,
               }),
             ).doc,
         )
