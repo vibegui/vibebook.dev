@@ -9,12 +9,13 @@ import {
   homeApi,
   manualClock,
   me,
+  room,
   settle,
 } from "./native-home-fixtures";
 
 async function fixture() {
   const timer = manualClock();
-  let canonical = me();
+  let canonical = me({ books: [room("aaaaaa"), room("bbbbbb")] });
   const personal = createPersonalSession(
     homeApi({ me: async () => canonical }),
     { clock: timer.clock },
@@ -156,11 +157,14 @@ test("concurrent Search retains the existing Settings opening and ownership unti
     expect(get(h.controller.state).settingsId).toBe("aaaaaa");
     expect(get(h.presentation.bindings).settings).toBe(settings);
     expect(get(h.presentation.state)).toBe(settings);
-    h.controller.closeSettings(); h.controller.openSettings("bbbbbb");
+    h.controller.closeSettings();
+    h.controller.openSettings("bbbbbb");
     const replacement = get(h.presentation.bindings).settings!;
     h.presentation.close(settings);
     expect(get(h.controller.state).settingsId).toBe("bbbbbb");
     expect(h.presentation.owns(settings)).toBe(false);
     expect(h.presentation.owns(replacement)).toBe(true);
-  } finally { h.dispose(); }
+  } finally {
+    h.dispose();
+  }
 });

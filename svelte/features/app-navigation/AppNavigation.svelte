@@ -196,7 +196,12 @@
     }}
   />
 </div>
-{#if Dialogs}<Dialogs {controller} {lang} {presentation} fallback={() => homeButton} />{:else if $presentationView}{#key $presentationView}<Snapshot
+{#if Dialogs}<Dialogs
+    {controller}
+    {lang}
+    {presentation}
+    fallback={() => homeButton}
+  />{:else if $presentationView}{#key $presentationView}<Snapshot
       value={$presentationView}
       >{#snippet children(intent)}<Dialog
           open={presentation.owns(intent)}
