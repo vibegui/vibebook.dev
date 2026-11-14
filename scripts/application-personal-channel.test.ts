@@ -59,6 +59,7 @@ function harness() {
       },
       refreshAgents: async () => {
         calls.push("grants");
+        return true;
       },
     },
     agents: {

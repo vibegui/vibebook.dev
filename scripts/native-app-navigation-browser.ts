@@ -122,7 +122,7 @@ try {
           ? undefined
           : Buffer.from(await request.arrayBuffer()),
     });
-    return new Response(await response.body(), {
+    return new Response(new Uint8Array(await response.body()), {
       status: response.status(),
       headers: response.headers(),
     });
