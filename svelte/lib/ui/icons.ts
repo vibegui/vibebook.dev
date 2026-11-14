@@ -4,6 +4,7 @@ export const iconPaths = {
   undo: ["M3 9h10a6 6 0 0 1 0 12h-3", "m3 9 5-5M3 9l5 5"],
   trash: ["M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"],
   sidebar: ["M3 3h18v18H3Z", "M9 3v18"],
+  board: ["M3 3h18v18H3Z", "M9 3v18M15 3v18"],
   mic: [
     "M9 3a3 3 0 0 1 6 0v8a3 3 0 0 1-6 0V3Z",
     "M5 10v2a7 7 0 0 0 14 0v-2M12 19v4m-4 0h8",

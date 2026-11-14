@@ -62,6 +62,7 @@ if (native) {
     "svelte/features/apps",
     "svelte/features/room-layout",
     "svelte/features/application",
+    "svelte/features/room-shell",
   ])
     await collect(directory);
   files.push(

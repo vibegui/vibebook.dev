@@ -43,6 +43,7 @@
     onopenside = () => {},
     onagents = () => {},
     mountSheetHandle,
+    hideSheetHandle = false,
   }: SidebarProps = $props();
   const external = untrack(() => !!mutations);
   const owner = untrack(
@@ -149,13 +150,13 @@
       >{/each}
     <MutationStatus {owner} t={vb.t} />
   {:else}
-    <button
+    {#if !hideSheetHandle}<button
       type="button"
       use:sheetHandle
       aria-label={vb.t("Fechar")}
       class="tw:mx-auto tw:h-5 tw:w-12 tw:rounded-full tw:border-0 tw:bg-muted tw:min-[901px]:hidden"
       onclick={onopenside}
-    ></button>
+    ></button>{/if}
     {#if appNavigation}<RoomStrip
         controller={appNavigation.controller}
         lang={appNavigation.lang}

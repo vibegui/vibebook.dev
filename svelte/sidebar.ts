@@ -35,6 +35,8 @@ export type SidebarProps = {
   onagents?: () => void;
   /** Pending F50 shell geometry adapter, disposed with its native handle. */
   mountSheetHandle?: (node: HTMLElement) => () => void;
+  /** Direct RoomLayout owns the mobile grab handle; legacy shells retain theirs. */
+  hideSheetHandle?: boolean;
   foldOpen?: { off: boolean; friends: boolean | null };
   friends?: string[];
   vb: SidebarBridge;
