@@ -20,6 +20,8 @@
   import ThreadFiles from "../file-viewer/ThreadFiles.svelte";
   import SuggestionPreview from "../room-sidebar/SuggestionPreview.svelte";
   import RoomHeader from "./RoomHeader.svelte";
+  import { attachRoomEdgeBack } from "./edgeBack";
+  import type { RoomLayoutCells } from "../room-layout/types";
   import Dialog from "../../lib/ui/Dialog.svelte";
   import Button from "../../lib/ui/Button.svelte";
   import Snapshot from "../../lib/ui/Snapshot.svelte";
@@ -70,6 +72,22 @@
     view = owner.state,
     geometry = layout.state;
   scoped = owner;
+  function back(expectedThread: string) {
+    const value = get(owner.state);
+    if (!current() || !value || value.header.thread !== expectedThread) return;
+    if (expectedThread !== "main") owner.actions.setThread("main");
+    else services.actions.home();
+  }
+  function edgeBack(cells: RoomLayoutCells) {
+    const win = cells.root.ownerDocument.defaultView;
+    return attachRoomEdgeBack(cells.root, {
+      current,
+      mobile: () => get(layout.state).mobile,
+      standalone: () => !!win && (win.matchMedia("(display-mode: standalone)").matches || ("standalone" in win.navigator && win.navigator.standalone === true)),
+      target: () => get(owner.state)?.header.thread ?? "",
+      back,
+    });
+  }
   const boardModule = untrack(() =>
       createDeferredModule(
         () => import("../../Board.svelte").then((module) => module.default),
@@ -201,7 +219,7 @@
   };
 </script>
 
-<RoomLayout controller={layout} {labels} onChatSurface={owner.attachChat}>
+<RoomLayout controller={layout} {labels} onChatSurface={owner.attachChat} onCells={edgeBack}>
   {#snippet sidebar()}{#if $view}<Sidebar
         {...$view.sidebar}
         oninbox={() => {
@@ -216,6 +234,7 @@
         boardCount={$view.toolbar.counts?.board}
         {layout}
         {current}
+        {back}
       />{/if}{/snippet}
   {#snippet peek()}{#if $view}<DocumentToolbar {...$view.peek} />{/if}{/snippet}
   {#snippet attention()}{#if $view}

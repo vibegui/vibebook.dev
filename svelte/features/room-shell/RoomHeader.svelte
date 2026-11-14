@@ -11,6 +11,7 @@
   import IconButton from "../../lib/ui/IconButton.svelte";
   import Icon from "../../lib/ui/Icon.svelte";
   import Badge from "../../lib/ui/Badge.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   let {
     presentation,
     header,
@@ -18,6 +19,7 @@
     layout,
     current,
     boardCount,
+    back,
   }: {
     presentation: ApplicationRoomPresentation;
     header: ThreadHeaderProps;
@@ -25,6 +27,7 @@
     layout: RoomLayoutController;
     current(): boolean;
     boardCount?: number | string;
+    back(expectedThread: string): void;
   } = $props();
   const personal = untrack(() => presentation.services.personal.state),
     geometry = untrack(() => layout.state);
@@ -41,14 +44,15 @@
   data-native-room-header
   class="tw:flex tw:min-w-0 tw:flex-wrap tw:items-center tw:gap-2 tw:font-sans tw:text-sm tw:text-foreground"
 >
-  <Button
+  {#key header.thread}<Snapshot value={header.thread}>{#snippet children(expectedThread)}<Button
     variant="ghost"
     size="sm"
     class="tw:min-[901px]:hidden"
+    aria-label={t(expectedThread === "main" ? "Seus vibebooks" : "Voltar pra sala principal")}
     onclick={(event) => {
-      if (live(event)) presentation.services.actions.home();
-    }}>← {t("Seus vibebooks")}</Button
-  >
+      if (live(event)) back(expectedThread);
+    }}>← {t(expectedThread === "main" ? "Seus vibebooks" : "Voltar pra sala principal")}</Button
+  >{/snippet}</Snapshot>{/key}
   <div class="tw:min-w-0 tw:flex-1"><ThreadHeader {...header} /></div>
   <Button
     data-native-board-toggle
