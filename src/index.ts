@@ -1,3 +1,4 @@
+import { mountAppDocumentFiles, isAppDocumentNavigation } from "./appDocumentFile";
 import { authApi, uploadsApi, type ApiServices, type AuthServices } from "./api";
 import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
 import { services } from "./services";
@@ -395,7 +396,7 @@ app.use("*", async (c, next) => {
   }
   c.set("email", email);
   await next();
-  if (c.req.method !== "GET" && c.req.path.startsWith("/api/") && c.res.status < 400) c.executionCtx.waitUntil(poke(c.env, [email], { t: "me" }));
+  if (c.req.method !== "GET" && c.req.path.startsWith("/api/") && !isAppDocumentNavigation(c.req.raw) && c.res.status < 400) c.executionCtx.waitUntil(poke(c.env, [email], { t: "me" }));
 });
 
 
@@ -497,6 +498,8 @@ app.route("/", uploadsApi);
 // Cancel a pending invite (any member) or remove someone (owner only).
 
 // Files: stored in R2 under <book>/<file>; types, limits and serving headers live in rooms.ts.
+
+mountAppDocumentFiles(app);
 
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
