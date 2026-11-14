@@ -49,10 +49,12 @@
     },
     "fixes": {
       "pt": [
-        "A ↗ da sala volta a abrir a aba do Claude da sala no herdr, não a aba que estava aberta no workspace; quando o navegador bloqueia o acesso ao computador, o aviso diz como liberar"
+        "A ↗ da sala volta a abrir a aba do Claude da sala no herdr, não a aba que estava aberta no workspace; quando o navegador bloqueia o acesso ao computador, o aviso diz como liberar",
+        "No celular, arrastar da borda esquerda volta (do épico pra sala, da sala pra home, no app instalado) em vez de responder a mensagem"
       ],
       "en": [
-        "The room's ↗ opens the room Claude's tab in herdr again, not whatever tab was open in that workspace; when the browser blocks access to this computer, the notice says how to allow it"
+        "The room's ↗ opens the room Claude's tab in herdr again, not whatever tab was open in that workspace; when the browser blocks access to this computer, the notice says how to allow it",
+        "On phones, a drag from the left edge goes back (epic to room, room to home, in the installed app) instead of replying to the message"
       ]
     }
   },

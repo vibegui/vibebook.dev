@@ -5283,8 +5283,21 @@ function goToMsg(id, th) {
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && replyTo && document.activeElement?.id === "input") { replyTo = null; renderReply(); } });
 // Touch: drag a message right past 60px to reply, left past 60px to copy (it follows the finger, then snaps back).
-let sw = null;
-document.addEventListener("touchstart", (e) => { const m = !e.target.closest("pre, table, .embedBox") && e.target.closest(".msgs .msg[id^=m]"); sw = m && e.touches.length === 1 ? { m, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0 } : null; }, { passive: true });
+// A drag from the left edge is "back", not a reply (Gui 14/11: the reply swipe took the back gesture): left to the
+// system in Safari, and in the installed app (no system back on iOS) it does what the header's ← does.
+let sw = null, edge = null;
+const EDGE = 24; // STANDALONE (installed app) is defined above
+document.addEventListener("touchstart", (e) => {
+  const x = e.touches[0]?.clientX ?? 0;
+  edge = e.touches.length === 1 && x < EDGE && ROOM_PHONE.matches ? { x, y: e.touches[0].clientY } : null;
+  const m = !edge && !e.target.closest("pre, table, .embedBox") && e.target.closest(".msgs .msg[id^=m]");
+  sw = m && e.touches.length === 1 ? { m, x, y: e.touches[0].clientY, dx: 0 } : null;
+}, { passive: true });
+document.addEventListener("touchend", (e) => {
+  if (!edge) return;
+  const p = e.changedTouches[0], dx = p.clientX - edge.x, dy = Math.abs(p.clientY - edge.y); edge = null;
+  if (STANDALONE && dx > 60 && dy < dx) document.querySelector(".chathead .phHome")?.click();
+});
 // Once the drag reads as horizontal (10px, more sideways than up/down) it's locked: the list stops scrolling until
 // the finger lifts. A drag that starts vertical is a scroll and never becomes a reply.
 document.addEventListener("touchmove", (e) => {
