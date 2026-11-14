@@ -15,6 +15,12 @@ safe room/Home continuation. Provider messages, codes and state are omitted
 even from the generated noscript fallback. Vanilla responses retain their
 existing JSON/HTML behavior and status.
 
+Before those handlers, the global identity middleware uses a narrow GET plus
+Accept-HTML exception for native connection sign-in/callback navigation only.
+The signed-out result remains 401, with generic copy and a safe continuation;
+it never reads/consumes provider state or reaches the OAuth handler. Ordinary
+JSON API requests, POSTs and vanilla HTML requests retain their JSON 401.
+
 OAuth keeps its fixed registered callback URI. Native starts add `svelte.` to
 the opaque random state so expired/consumed callbacks still choose the native
 error presentation. This prefix grants no authority: `finishAuth` still deletes
@@ -30,8 +36,11 @@ secrecy, old state compatibility, unchanged provider callback URI and exact
 stored state, plus native localized DOM with no request replay. These are unit
 fixtures, not real OAuth or Worker acceptance.
 
-At the source checkpoint all formatter, pure/DOM tests, backend/tooling/Svelte
-checks and browser/build gates are **unrun** under the shared resource hold.
+The allocated scoped validation passed: owned frontend/fixture/metadata format,
+seven MCP unit cases with 108 assertions, backend types, API declaration emit,
+worker-test types and the auth DOM suite (14 cases, 84 assertions). The compact
+backend files retain their existing layout. Full Svelte/tooling/style checks,
+build and real browser/Worker OAuth gates remain **unrun** for this slice.
 Generated assets, vanilla sources, font/token manifests and style policy are
 untouched. The development source-shell middleware is unchanged; these routes
 continue through its existing Worker API proxy rather than adding a new

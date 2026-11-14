@@ -8,7 +8,7 @@ import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { accessPage, filePage, roomAccess, roomMeta } from "./access";
-import { nativeAuthPage } from "./native-page";
+import { nativeAuthPage, nativeConnectionSignedOut } from "./native-page";
 import { auth, authServices, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -376,6 +376,8 @@ app.get("/.well-known/jwks.json", async (c) => c.json(await jwks(c.env), 200, { 
 app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) {
+    const connection = nativeConnectionSignedOut(c.env, c.req.raw);
+    if (connection) return connection;
     const file = fileLink(c);
     if(file && uiVariant(c.req.url)==='svelte' && /^\/api\/books\/[a-z0-9]{6,40}\/files\/[0-9a-f]{1,64}$/.test(new URL(c.req.url).pathname))return nativeAuthPage(c.env,c.req.raw,'file-access',{status:401});
     return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json(UNAUTHENTICATED, 401);

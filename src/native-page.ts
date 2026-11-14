@@ -98,7 +98,12 @@ export async function nativeAuthPage(
     standard.searchParams.delete("ui");
     // A callback contains an OAuth code/state or provider error details. None
     // belong in the generated document, including its noscript fallback URL.
-    const fallback = page === "connection-error" ? standard.pathname.match(/^\/api\/books\/([a-z0-9]{6,40})\/connections\//)?.[1] : null;
+    const fallback =
+      page === "connection-error"
+        ? standard.pathname.match(
+            /^\/api\/books\/([a-z0-9]{6,40})\/connections\//,
+          )?.[1]
+        : null;
     const html = nativeAuthHtml(
       await asset.text(),
       {
@@ -106,9 +111,15 @@ export async function nativeAuthPage(
         lang: reqLang(request),
         autoAccess: !!options.autoAccess,
         consentFailure: !!options.consentFailure,
-        ...(page === "connection-error" ? { connectionFailure: options.connectionFailure ?? "failed" } : {}),
+        ...(page === "connection-error"
+          ? { connectionFailure: options.connectionFailure ?? "failed" }
+          : {}),
       },
-      page === "connection-error" ? fallback ? `/b/${fallback}` : "/app" : standard.pathname + standard.search,
+      page === "connection-error"
+        ? fallback
+          ? `/b/${fallback}`
+          : "/app"
+        : standard.pathname + standard.search,
     );
     return new Response(html, { status: options.status ?? 200, headers });
   } catch {
@@ -120,4 +131,33 @@ export async function nativeAuthPage(
       },
     );
   }
+}
+
+/** A presentation-only exception to the ordinary JSON API 401. This function
+ * neither identifies a person nor reads/consumes an OAuth state. */
+export function nativeConnectionSignedOut(
+  env: { ASSETS: Pick<Env["ASSETS"], "fetch"> },
+  request: Request,
+): Promise<Response> | null {
+  if (
+    request.method !== "GET" ||
+    !(request.headers.get("accept") ?? "").includes("text/html")
+  )
+    return null;
+  const url = new URL(request.url),
+    callback = url.pathname === "/api/mcp-oauth/callback",
+    signin =
+      /^\/api\/books\/[a-z0-9]{6,40}\/connections\/[a-z0-9]{6,40}\/signin$/.test(
+        url.pathname,
+      );
+  if (
+    (!callback && !signin) ||
+    (uiVariant(url) !== "svelte" &&
+      !(callback && url.searchParams.get("state")?.startsWith("svelte.")))
+  )
+    return null;
+  return nativeAuthPage(env, request, "connection-error", {
+    status: 401,
+    connectionFailure: "signed-out",
+  });
 }

@@ -589,19 +589,44 @@ test("native connection failure shows only typed localized copy and a safe conti
     const target = document.createElement("div");
     document.body.append(target);
     let requests = 0;
-    mounted.push(flushSync(() => mount(AuthRoot, {
-      target,
-      props: {
-        metadata: { page: "connection-error", lang, autoAccess: false, connectionFailure: "rate" },
-        href: "https://vibebook.test/api/mcp-oauth/callback?state=svelte.PRIVATE_STATE&code=PRIVATE_CODE&error_description=PRIVATE_PROVIDER_MESSAGE",
-        api: api({ login: async () => { requests++; return login; }, consent: async () => { requests++; return consent; } }),
-      },
-    })));
+    mounted.push(
+      flushSync(() =>
+        mount(AuthRoot, {
+          target,
+          props: {
+            metadata: {
+              page: "connection-error",
+              lang,
+              autoAccess: false,
+              connectionFailure: "rate",
+            },
+            href: "https://vibebook.test/api/mcp-oauth/callback?state=svelte.PRIVATE_STATE&code=PRIVATE_CODE&error_description=PRIVATE_PROVIDER_MESSAGE",
+            api: api({
+              login: async () => {
+                requests++;
+                return login;
+              },
+              consent: async () => {
+                requests++;
+                return consent;
+              },
+            }),
+          },
+        }),
+      ),
+    );
     await settle();
-    expect(target.querySelector('[role="alert"]')?.textContent).toContain(lang === "en" ? "Wait a minute" : "Espere um minuto");
+    expect(target.querySelector('[role="alert"]')?.textContent).toContain(
+      lang === "en" ? "Wait a minute" : "Espere um minuto",
+    );
     expect(target.querySelector('a[href="/app?ui=svelte"]')).not.toBeNull();
     expect(target.querySelector("button")).toBeNull();
-    for (const secret of ["PRIVATE_STATE", "PRIVATE_CODE", "PRIVATE_PROVIDER_MESSAGE"]) expect(target.textContent).not.toContain(secret);
+    for (const secret of [
+      "PRIVATE_STATE",
+      "PRIVATE_CODE",
+      "PRIVATE_PROVIDER_MESSAGE",
+    ])
+      expect(target.textContent).not.toContain(secret);
     expect(requests).toBe(0);
   }
 });
