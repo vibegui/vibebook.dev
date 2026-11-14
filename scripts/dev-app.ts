@@ -1,6 +1,7 @@
+import { APP_DOCUMENT_READY } from "./app-document-watch";
 import { fileURLToPath } from "node:url";
 
-type Child = { exited: Promise<number>; kill(): void };
+type Child = { ready?: Promise<void>; exited: Promise<number>; kill(): void };
 type Signals = {
   on(event: "SIGINT" | "SIGTERM", handler: () => void): unknown;
   off(event: "SIGINT" | "SIGTERM", handler: () => void): unknown;
@@ -110,6 +111,7 @@ export async function runDevelopmentProcesses(
     const child = spawn(cmd);
     let signalled = false;
     const owned: Child = {
+      ready: child.ready,
       exited: child.exited,
       kill() {
         if (!signalled) {
@@ -225,6 +227,26 @@ export async function runDevelopmentProcesses(
       true,
     );
     await phase("vite", () => untilReady(DEVELOPMENT_READY_URLS.vite));
+    const documents = start(
+      [process.execPath, "scripts/app-document-watch.ts"],
+      true,
+    );
+    await phase("app-documents", async () => {
+      if (!documents.ready)
+        throw new Error("App document watcher has no readiness signal");
+      await Promise.race([
+        documents.ready,
+        ...Array.from(children, (child) =>
+          child.exited.then((code) => {
+            throw new Error(
+              `Development child exited before app document readiness (${code})`,
+            );
+          }),
+        ),
+        interrupted,
+        deadline,
+      ]);
+    });
     const declarations = start(
       [
         "node",
@@ -244,6 +266,7 @@ export async function runDevelopmentProcesses(
       worker.exited,
       vite.exited,
       declarations.exited,
+      documents.exited,
       cancelled,
     ]);
   } catch (error) {
@@ -264,13 +287,44 @@ if (import.meta.main) {
     await runDevelopmentProcesses(
       (cmd) => {
         const grouped = process.platform !== "win32";
+        const documentWatcher = cmd.includes("scripts/app-document-watch.ts");
         const child = Bun.spawn(cmd, {
           cwd,
-          stdout: "inherit",
+          stdout: documentWatcher ? "pipe" : "inherit",
           stderr: "inherit",
           detached: grouped,
         });
+        let ready: Promise<void> | undefined;
+        if (documentWatcher)
+          ready = new Promise((resolve, reject) => {
+            void (async () => {
+              if (!child.stdout || typeof child.stdout === "number")
+                throw new Error("Missing generator stdout");
+              const reader = child.stdout.getReader();
+              const decoder = new TextDecoder();
+              let line = "",
+                seen = false;
+              for (;;) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                process.stdout.write(value);
+                line += decoder.decode(value, { stream: true });
+                let index;
+                while ((index = line.indexOf("\n")) !== -1) {
+                  if (line.slice(0, index).trimEnd() === APP_DOCUMENT_READY) {
+                    seen = true;
+                    resolve();
+                  }
+                  line = line.slice(index + 1);
+                }
+                if (line.length > 65536)
+                  throw new Error("Generator readiness line exceeded bound");
+              }
+              if (!seen) throw new Error("Generator exited before readiness");
+            })().catch(reject);
+          });
         return {
+          ready,
           exited: child.exited,
           kill() {
             if (!grouped) {

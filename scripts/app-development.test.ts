@@ -814,8 +814,9 @@ test("completed startup groups are released before later watcher shutdown", asyn
       const state = { kills: 0, end };
       children.push(state);
       if (children.length <= 2) end(0);
-      if (children.length === 5) notifyWatchers();
+      if (children.length === 6) notifyWatchers();
       return {
+        ready: Promise.resolve(),
         exited,
         kill() {
           state.kills++;
@@ -828,11 +829,11 @@ test("completed startup groups are released before later watcher shutdown", asyn
   );
   await ready;
   expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
-  expect(children.slice(2).map((child) => child.kills)).toEqual([0, 0, 0]);
+  expect(children.slice(2).map((child) => child.kills)).toEqual([0, 0, 0, 0]);
   signals.emit("SIGTERM");
   expect(await result).toBe(130);
   expect(children.slice(0, 2).map((child) => child.kills)).toEqual([1, 1]);
-  expect(children.slice(2).map((child) => child.kills)).toEqual([1, 1, 1]);
+  expect(children.slice(2).map((child) => child.kills)).toEqual([1, 1, 1, 1]);
 });
 
 test("startup stages fixed Worker then Vite readiness before declaration watch without resetting missed probes", async () => {
@@ -851,6 +852,7 @@ test("startup stages fixed Worker then Vite readiness before declaration watch w
       });
       if (commands.length <= 2) end(0);
       return {
+        ready: Promise.resolve(),
         exited,
         kill() {
           end(143);
@@ -875,10 +877,11 @@ test("startup stages fixed Worker then Vite readiness before declaration watch w
     },
   );
   expect(code).toBe(130);
-  expect(commands).toHaveLength(5);
+  expect(commands).toHaveLength(6);
   expect(commands[2]).toContain("wrangler");
   expect(commands[3]).toContain("vite");
-  expect(commands[4]).toContain("--watch");
+  expect(commands[4]).toContain("scripts/app-document-watch.ts");
+  expect(commands[5]).toContain("--watch");
   expect(probes).toEqual([
     DEVELOPMENT_READY_URLS.worker,
     DEVELOPMENT_READY_URLS.worker,
@@ -889,7 +892,14 @@ test("startup stages fixed Worker then Vite readiness before declaration watch w
     phases
       .filter((phase) => phase.status === "ready")
       .map((phase) => phase.name),
-  ).toEqual(["build:api-types", "build:mcp", "worker", "vite", "startup"]);
+  ).toEqual([
+    "build:api-types",
+    "build:mcp",
+    "worker",
+    "vite",
+    "app-documents",
+    "startup",
+  ]);
   expect(phases.every((phase) => phase.elapsedMs >= 0)).toBe(true);
 });
 
@@ -1191,4 +1201,52 @@ test("contract watcher recognizes logical and physical project-root paths, inclu
   } finally {
     await rm(base, { recursive: true, force: true });
   }
+});
+
+test("declaration watcher cannot start before the app document generator's explicit ready signal", async () => {
+  const { runDevelopmentProcesses } = await import("./dev-app");
+  const signals = new EventEmitter();
+  const commands: string[][] = [];
+  let generatorStarted!: () => void, generated!: () => void;
+  const reached = new Promise<void>((resolve) => {
+    generatorStarted = resolve;
+  });
+  const ready = new Promise<void>((resolve) => {
+    generated = resolve;
+  });
+  const result = runDevelopmentProcesses(
+    (command) => {
+      commands.push(command);
+      let finish!: (code: number) => void;
+      const exited = new Promise<number>((resolve) => {
+        finish = resolve;
+      });
+      if (commands.length <= 2) finish(0);
+      const generator = command.includes("scripts/app-document-watch.ts");
+      if (generator) generatorStarted();
+      return {
+        exited,
+        ready: generator ? ready : undefined,
+        kill() {
+          finish(143);
+        },
+      };
+    },
+    signals,
+    {
+      ...readyImmediately,
+      onPhase(phase) {
+        if (phase.name === "startup" && phase.status === "ready")
+          queueMicrotask(() => signals.emit("SIGTERM"));
+      },
+    },
+  );
+  await reached;
+  expect(commands).toHaveLength(5);
+  expect(
+    commands.some((command) => command.includes("--preserveWatchOutput")),
+  ).toBe(false);
+  generated();
+  expect(await result).toBe(130);
+  expect(commands[5]).toContain("--preserveWatchOutput");
 });

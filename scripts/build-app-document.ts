@@ -24,9 +24,12 @@ export async function buildAppDocument(
     host?: string;
     module?: string;
     shell?: string;
+    signal?: AbortSignal;
   } = {},
 ) {
   const root = options.root ?? projectRoot;
+  const assertCurrent = () => options.signal?.throwIfAborted();
+  assertCurrent();
   const bootstrap = await buildBrowser(
     {
       entrypoints: [
@@ -46,6 +49,7 @@ export async function buildAppDocument(
     throw new Error(
       "App bootstrap must keep all lexical bindings inside an IIFE",
     );
+  assertCurrent();
   await Bun.write(
     options.module ?? join(root, "shared/generated/appDocumentBootstrap.ts"),
     bootstrapModule(bootstrapJS),
@@ -59,6 +63,7 @@ export async function buildAppDocument(
   if (host.outputs.length !== 1)
     throw new Error("App host must be one browser module");
   const hostJS = await host.outputs[0]!.text();
+  assertCurrent();
   const digest = createHash("sha256").update(hostJS).digest("hex").slice(0, 20);
   const asset = "app-document-host." + digest + ".js";
   const publicRoot = join(root, "public");
@@ -76,8 +81,11 @@ export async function buildAppDocument(
     throw new Error(
       "Vanilla shell must import its app document host exactly once",
     );
+  assertCurrent();
   await Bun.write(join(publicRoot, asset), hostJS);
+  assertCurrent();
   if (next !== shell) await writeFile(shellPath, next);
+  assertCurrent();
   for (const file of await readdir(publicRoot))
     if (
       /^app-document-host(?:\.[a-f0-9]{20})?\.js$/.test(file) &&
