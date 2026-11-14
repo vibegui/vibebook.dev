@@ -18,7 +18,13 @@ const ClientRegistration = z.object({
 });
 // Numeric strings are a supported provider compatibility case. Keep the
 // existing saveGrant default/clamp behavior for zero and negative values.
-const numericString = z.string().check(z.refine(value => value.trim().length > 0 && Number.isFinite(Number(value))));
+const numericString = z
+  .string()
+  .check(
+    z.refine(
+      (value) => value.trim().length > 0 && Number.isFinite(Number(value)),
+    ),
+  );
 const TokenResponse = z.object({
   access_token: text,
   refresh_token: z.optional(z.nullable(z.string())),
@@ -27,7 +33,11 @@ const TokenResponse = z.object({
 const OAuthError = z.object({ error: z.optional(z.string()) });
 
 export type AuthorizationServerMetadata = z.infer<typeof AuthorizationServer>;
-export type ProviderGrant = { access_token: string; refresh_token?: string; expires_in?: number };
+export type ProviderGrant = {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+};
 export function protectedResourceMetadata(value: unknown) {
   const parsed = ProtectedResource.safeParse(value);
   return parsed.success ? parsed.data : null;
@@ -45,11 +55,17 @@ export function providerGrant(value: unknown): ProviderGrant | null {
   if (!parsed.success) return null;
   return {
     access_token: parsed.data.access_token,
-    ...(parsed.data.refresh_token == null ? {} : { refresh_token: parsed.data.refresh_token }),
-    ...(parsed.data.expires_in == null ? {} : { expires_in: Number(parsed.data.expires_in) }),
+    ...(parsed.data.refresh_token == null
+      ? {}
+      : { refresh_token: parsed.data.refresh_token }),
+    ...(parsed.data.expires_in == null
+      ? {}
+      : { expires_in: Number(parsed.data.expires_in) }),
   };
 }
 export function providerOAuthError(value: unknown): string | null {
   const parsed = OAuthError.safeParse(value);
-  return parsed.success && parsed.data.error ? parsed.data.error.slice(0, 60) : null;
+  return parsed.success && parsed.data.error
+    ? parsed.data.error.slice(0, 60)
+    : null;
 }
