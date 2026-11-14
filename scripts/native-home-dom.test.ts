@@ -96,6 +96,8 @@ plugin({
 const { mount, unmount, flushSync, tick } = await import("svelte");
 const { default: Home } =
   await import("../svelte/features/home/HomePanel.svelte");
+const { default: AppNavigation } = await import("../svelte/features/app-navigation/AppNavigation.svelte");
+const { default: NavigationDialogs } = await import("../svelte/features/app-navigation/AppNavigationDialogs.svelte");
 const { default: RoomTile } =
   await import("../svelte/features/home/RoomTile.svelte");
 const { default: ApplicationShellHarness } =
@@ -242,6 +244,7 @@ test("connected old creator controls cannot edit or submit a replacement opening
   creator.open();
   creator.edit("Preserved new draft");
   await flush();
+  await waitForView(document, "#native-new-room");
   const oldInput =
       document.querySelector<HTMLTextAreaElement>("#native-new-room")!,
     oldForm = oldInput.closest("form")!;
@@ -856,4 +859,53 @@ test("actual Home mounts three onboarding steps, preserves drafts across Back an
   expect(step()).toBe(undefined);
   expect(target.querySelector("#home-ask") === null).toBe(false);
   expect(localStorage.getItem("vb.obDone")).toBe("1");
+});
+
+
+async function pendingNavigation() {
+  const h = shellFixture(), target = document.createElement("div"), trigger = document.createElement("button");
+  trigger.textContent = "owned trigger"; document.body.append(target, trigger);
+  h.services.start(); await h.services.personal.refresh();
+  const code = deferred<typeof NavigationDialogs>();
+  const component = flushSync(() => mount(AppNavigation, { target, props: { controller: h.services.navigation, lang: "en", ontheme() {}, onlanguage() {}, loadDialogs: () => code.promise } }));
+  cleanups.push(() => { flushSync(() => { void unmount(component); }); h.services.dispose(); });
+  trigger.focus();
+  return { h, trigger, code, controller: h.services.navigation };
+}
+function loadingCancel() {
+  const status = document.querySelector("[data-deferred-view]");
+  expect(status).not.toBeNull();
+  const button = [...status!.closest('[role="dialog"]')!.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === "Cancel");
+  expect(button).toBeDefined(); return button!;
+}
+test("cancel loading navigation remains closed when actual dialog code arrives and does not steal focus", async () => {
+  const { controller, trigger, code } = await pendingNavigation();
+  controller.openSearch(trigger); await flush();
+  loadingCancel().click(); await flush();
+  expect(get(controller.search.state).open).toBe(false);
+  code.resolve(NavigationDialogs); await flush();
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+});
+test("old connected loading cancel cannot close a replacement creator and actual fields gain focus", async () => {
+  const { controller, trigger, code } = await pendingNavigation();
+  controller.openSearch(trigger); await flush(); const old = loadingCancel();
+  controller.search.close(); controller.openCreate(trigger);
+  expect(old.isConnected).toBe(true); old.click();
+  expect(get(controller.creator.state).open).toBe(true);
+  code.resolve(NavigationDialogs); await flush(); await waitForView(document, "#native-new-room");
+  expect(document.querySelector("[role=combobox]")).toBeNull();
+  expect(document.activeElement).toBe(document.querySelector("#native-new-room"));
+});
+test("account switch while navigation code loads drops private intent and cannot focus or reopen it", async () => {
+  const { h, controller, trigger, code } = await pendingNavigation();
+  controller.openSearch(trigger); await flush(); const old = loadingCancel();
+  h.canonical(me({ email: "replacement@example.test" }));
+  h.services.personal.acceptIdentity("replacement@example.test"); await h.services.personal.refresh();
+  controller.openSearch(); expect(old.isConnected).toBe(true); old.click();
+  expect(get(controller.search.state).open).toBe(true);
+  code.resolve(NavigationDialogs); await flush(); await waitForView(document, '[role="combobox"]');
+  expect(get(h.services.personal.state).me?.email).toBe("replacement@example.test");
+  expect(document.querySelector<HTMLInputElement>('[role="combobox"]')?.value).toBe("");
+  expect(document.activeElement).toBe(document.querySelector('[role="combobox"]'));
 });
