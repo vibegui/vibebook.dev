@@ -67,7 +67,7 @@ const TOOLS = [
   },
   {
     name: "router",
-    description: "Your human's hub router (A/B test, Nov 2026): when on, a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude), a third each by Jev alone, Jev deciding + Haiku writing, and Haiku alone, and wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
+    description: "Your human's hub router (on by default since 14/11/2026): a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude): fixed rules (their own messages always wake you; other people's that answer someone else or sit in someone else's epic, without mentioning them, are ignored), then Jev decides and Haiku writes the quick answers; a risky message always wakes you. wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { on: { type: "boolean" } } },
   },
   {

@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.8";
+var VERSION = "1.6.9";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -567,6 +567,11 @@ function herdrServer(appMode = false) {
         return send(200, { ok: true });
       }
       herdr("workspace", "focus", ws);
+      const panes = herdr("pane", "list").panes.filter((p) => p.workspace_id === ws);
+      const sess = map[u.searchParams.get("room") ?? ""]?.session;
+      const pane = panes.find((p) => sess && p.agent_session?.value === sess) ?? panes.find((p) => p.agent === "claude");
+      if (pane?.tab_id)
+        herdr("tab", "focus", pane.tab_id);
       const app = terminalApp();
       if (app)
         execFileSync("open", ["-a", app]);
