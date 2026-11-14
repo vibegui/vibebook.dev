@@ -62,6 +62,9 @@ function fixture(sockets: ReturnType<typeof socket>[] = []) {
         ws,
       );
     },
+    watch() {
+      return invoke(DocRoom.prototype, "watch", receiver);
+    },
     cleanup() {
       return invoke(YDurableObjects.prototype, "cleanup", receiver);
     },
@@ -92,6 +95,37 @@ test("actual dependency startup skips closed sockets and retains exact actual se
     expect(live.frames.length).toBeGreaterThan(0);
     expect([...f.sessions.keys()]).toEqual([live]);
   } finally {
+    f.dispose();
+  }
+});
+test("DocRoom startup clears the public pinned Awareness interval without destroying protocol ownership", async () => {
+  const live = socket(), f = fixture([live]);
+  const awareness = f.doc.awareness;
+  // The vendor's declaration is public but any-typed. Keep the observed handle
+  // unknown in first-party test code and assert exact identity at the native API.
+  const interval: unknown = awareness._checkInterval;
+  const clear = spyOn(globalThis, "clearInterval"),
+    destroy = spyOn(awareness, "destroy");
+  let notifications = 0;
+  const observe = () => { notifications++; };
+  awareness.on("update", observe);
+  try {
+    expect(interval).toBeDefined();
+    await invoke(DocRoom.prototype, "onStart", f.receiver);
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(clear.mock.calls[0]?.[0] === interval).toBe(true);
+    expect(destroy).not.toHaveBeenCalled();
+    expect(f.doc.awareness === awareness).toBe(true);
+    expect([...f.sessions.keys()]).toEqual([live]);
+    expect(live.frames.length).toBeGreaterThan(0);
+    awareness.setLocalState({ name: "still active" });
+    expect(notifications).toBe(1);
+    expect(awareness.getLocalState()).toEqual({ name: "still active" });
+    expect(f.receiver.awarenessClients.has(f.doc.clientID)).toBe(true);
+  } finally {
+    clear.mockRestore();
+    destroy.mockRestore();
+    awareness.off("update", observe);
     f.dispose();
   }
 });

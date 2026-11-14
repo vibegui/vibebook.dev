@@ -1,0 +1,57 @@
+# Remaining backend assertion boundaries
+
+Source checkpoint: `624582e`. This is a targeted inventory of explicit assertions
+and JSON consumption under `src/*.ts`, not a claim that every D1/storage generic
+or external response has been proved at runtime.
+
+## Pinned Awareness interop addressed here
+
+`y-durableobjects@1.0.5` declares `WSSharedDoc.awareness: Awareness` in
+`dist/index.d.ts`. `y-protocols@1.0.7` publicly declares `_checkInterval` in
+`awareness.d.ts:46`, albeit with vendor type `any`. Its `awareness.js:59` assigns
+the actual result of `setInterval`; `destroy():88` passes that same property to
+`clearInterval`. DocRoom therefore needs neither an object-shape assertion nor a
+`ReturnType<typeof setInterval>` assertion. Its direct timer cancellation is
+unchanged: it neither converts the Worker/Bun/Node handle nor destroys Awareness.
+The dependency-owned `any` is consumed only at the timer API boundary.
+
+The actual-dependency startup fixture observes exact cancellation identity,
+retained Awareness identity/local state/listeners and inherited live-socket setup.
+This does not establish real Durable Object hibernation billing or deployment
+behavior. Existing relay/unregister tests remain intact.
+
+## Unresolved data boundaries worth separate small changes
+
+| Source at checkpoint | Remaining assumption / next verification |
+| --- | --- |
+| `src/route-home.ts:24` | Stored `books.epics` JSON is assigned directly to `Epic[]`; `null`/object/nonobject elements can reach the later `map`/lookup. Validate the existing stored listing shape before use; retain valid room/epic selection and model semantics. |
+| `src/analytics.ts:63` | Stored event dimensions JSON is assigned to `Record<string, unknown>` without object validation. JSON `null` reaches direct `dims.ua`/`dims.model` access. Keep valid opaque fields, normalize malformed container shapes while retaining the event. |
+| `src/connect.ts:215,221–222` | Grant metadata fields `gid`/`client` are asserted before filtering/serialization. Inspect the pinned OAuth library metadata type and narrow existing fields; do not change grant lifecycle/business rules. |
+| `src/agent.ts:1178–1181` | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
+| `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption. |
+
+## Localized API interop still to inspect, not JSON schema failures
+
+- `src/index.ts:516`: asserted R2 range object. Compare the actual public Worker
+  `R2Range` union before replacing it; preserve suffix/range/206 behavior.
+- `src/track.ts:66`: double assertion around public request `cf` metadata; inspect
+  Worker request types and narrow only fields used by tracking.
+- `src/{start-room,route-home,router}.ts:50,74,67`: model-provider usage `raw.cost`
+  assertions. Resolve actual SDK/provider metadata contracts and preserve cost
+  accounting; these are not authority decisions.
+- `src/{mcpauth,webpush}.ts`: WebCrypto overload result assertions; several
+  `src/{agent,sandbox}.ts` assertions around freshly allocated byte buffers.
+  Check installed runtime declarations rather than assuming external JSON risk.
+- `src/sandbox.ts:61,296,319,382` and `src/router.ts:100`: caught values asserted
+  to `Error` for diagnostics. Narrow non-Error throws without logging new secrets.
+  `sandbox.ts:97` follows an actual successful schema parse; its generic return
+  assertion is distinct from an unchecked provider response.
+
+Raw JSON in `bookStored`, `bookMessages`, `mcpTools`, `report-analytics`, session/
+invite verification, agent limits and MCP connection handling already flows into
+`unknown` plus existing validators/record checks. This scan found no reason to
+reopen those completed boundaries. The shell command string in `sandbox.ts`
+contains VM-side configuration JSON, not a Worker-side cast to a trusted DTO.
+
+Only the unnecessary Awareness assertion is changed in this checkpoint. The
+other entries are explicit remaining work, not accepted runtime proofs.

@@ -36,7 +36,9 @@ export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
     // Durable Object awake, so every doc ever opened, or touched by an agent's update_doc, stayed in memory for good:
     // ~2.4M s of DocRoom duration in 12 days (Nov 2026), the one line over the Workers Paid plan. The server has no
     // local awareness state to renew, and a closing socket already removes its cursors (unregisterWebSocket).
-    clearInterval((this.doc.awareness as unknown as { _checkInterval: ReturnType<typeof setInterval> })._checkInterval);
+    // y-protocols 1.0.7 publicly exposes this exact setInterval handle (its .d.ts uses any).
+    // Consume it only at the timer API boundary; no cast, handle conversion, or Awareness.destroy().
+    clearInterval(this.doc.awareness._checkInterval);
     await super.onStart();
     this.watch();
   }
