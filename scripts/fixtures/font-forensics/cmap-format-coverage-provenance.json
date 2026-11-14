@@ -1,0 +1,213 @@
+{
+  "diagnosticOnly": true,
+  "accepted": false,
+  "originalSHA256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+  "retainedSHA256": "a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903",
+  "selectedCodepoints": 1011,
+  "originalBMPCodepoints": 2821,
+  "originalAstralCodepoints": 31,
+  "controls": [
+    {
+      "name": "selected-four-formats",
+      "bytes": 360764,
+      "sha256": "995e8f1d6557fc62805479033fa93fe76049e8d51e9921e580f8df8946d93f00",
+      "sfntSHA256": "0511cf2ba8dcd35c9bcb01b545bbd424f8e088365caa3bbba39d84995204cc04",
+      "cmapSHA256": "a59dd77f94fa76d4d1c366397cf6d9da2bbb9179dabdfc40e2a015fcc7457a70",
+      "nonCmapTablesOriginalExactExceptHeadChecksum": true,
+      "originalGlyphCount": 2937,
+      "records": [
+        {
+          "platform": 0,
+          "encoding": 3,
+          "format": 4,
+          "language": 0,
+          "mappings": 1011,
+          "aboveBMP": 0,
+          "rawSHA256": "4deaf6e2eb402d601a270044253dbff4a50b806274dc13ce1dc227bf4f19b2e4",
+          "mappingSHA256": "e917ae8a2b77f7b33ef3b9165c6b88546e08ecd7007db9005ed3f306c5d16751",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 0,
+          "encoding": 4,
+          "format": 12,
+          "language": 0,
+          "mappings": 1011,
+          "aboveBMP": 0,
+          "rawSHA256": "2d895cad01389c4452cf0a36e37705dca2c046868d383bf450c599531c0b30f3",
+          "mappingSHA256": "e917ae8a2b77f7b33ef3b9165c6b88546e08ecd7007db9005ed3f306c5d16751",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4,
+          "language": 0,
+          "mappings": 1011,
+          "aboveBMP": 0,
+          "rawSHA256": "4deaf6e2eb402d601a270044253dbff4a50b806274dc13ce1dc227bf4f19b2e4",
+          "mappingSHA256": "e917ae8a2b77f7b33ef3b9165c6b88546e08ecd7007db9005ed3f306c5d16751",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 3,
+          "encoding": 10,
+          "format": 12,
+          "language": 0,
+          "mappings": 1011,
+          "aboveBMP": 0,
+          "rawSHA256": "2d895cad01389c4452cf0a36e37705dca2c046868d383bf450c599531c0b30f3",
+          "mappingSHA256": "e917ae8a2b77f7b33ef3b9165c6b88546e08ecd7007db9005ed3f306c5d16751",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        }
+      ]
+    },
+    {
+      "name": "full-bmp-format4",
+      "bytes": 359136,
+      "sha256": "f163380528e4492d7ebce76fb15f1011d48aa66da552561615e4c32b94e5c4b1",
+      "sfntSHA256": "3f433e9c80d43e73e3f7d008fbea61bfbc2dfe06eeb6e4d7108b288118a85d24",
+      "cmapSHA256": "c874cd1c2aee42359877761d97cd9338592884f54f9b9d73c91acfbb51530ff4",
+      "nonCmapTablesOriginalExactExceptHeadChecksum": true,
+      "originalGlyphCount": 2937,
+      "records": [
+        {
+          "platform": 0,
+          "encoding": 3,
+          "format": 4,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "3b10f1461f5a74f642e780be7b09cfbb1e19e4207c9ffee1eb03bd926d9686fd",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "3b10f1461f5a74f642e780be7b09cfbb1e19e4207c9ffee1eb03bd926d9686fd",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        }
+      ]
+    },
+    {
+      "name": "full-bmp-four-formats",
+      "bytes": 365900,
+      "sha256": "f445e78eacd1cad2c50537d289f74cbd914b646cb757965a9192c34ae47016dd",
+      "sfntSHA256": "3cc1e9226904419f7998a9390534527591c64b14c64e2ca33bd9d8d33caa1afb",
+      "cmapSHA256": "0dcfa8fbb3ded16bcd9cb68e96f6b5eb465ef1f5248669d3aa73e833a124c0ab",
+      "nonCmapTablesOriginalExactExceptHeadChecksum": true,
+      "originalGlyphCount": 2937,
+      "records": [
+        {
+          "platform": 0,
+          "encoding": 3,
+          "format": 4,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "3b10f1461f5a74f642e780be7b09cfbb1e19e4207c9ffee1eb03bd926d9686fd",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 0,
+          "encoding": 4,
+          "format": 12,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "d12eec2834b1097b3a2c0af81ce00a410665a345271176679bbcbacbed0379de",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "3b10f1461f5a74f642e780be7b09cfbb1e19e4207c9ffee1eb03bd926d9686fd",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        },
+        {
+          "platform": 3,
+          "encoding": 10,
+          "format": 12,
+          "language": 0,
+          "mappings": 2821,
+          "aboveBMP": 0,
+          "rawSHA256": "d12eec2834b1097b3a2c0af81ce00a410665a345271176679bbcbacbed0379de",
+          "mappingSHA256": "74d0a579a0b58f0e4a02877ff22f6625887e986326c0f1e89927925df451852b",
+          "quotes": {
+            "0x2018": 1482,
+            "0x2019": 1483,
+            "0x201c": 1486,
+            "0x201d": 1487
+          }
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    "All full original glyph/variation/layout/metric data retained; not optimized/deployable assets",
+    "FullBMP pair shares EXACT codepoint/GID mapping; four-format versus format4-only presence is isolated",
+    "Original full four-format vs FullBMP four-format separates removal of 31 astral mappings",
+    "Selected-four vs FullBMP-four preserves platform/encoding/formats but changes BMP coverage",
+    "Per-record serialization is verified, not asserted identical to raw original when mappings change",
+    "No browser raster or M4/M7 acceptance from generation"
+  ],
+  "procStatus": "VmHWM:\t   73680 kB\nVmRSS:\t   51188 kB"
+}

@@ -79,11 +79,35 @@ assert.equal(
   sha(holesOnly),
   "4d21ed4102d1d794f2b54fbc2e8ac1f107045cc2009ab54ae03b4e98efba33ab",
 );
+const selectedFour = await readFile(
+  resolve(fixture, "selected-four-inter.woff2"),
+);
+const fullBMP4 = await readFile(
+  resolve(fixture, "full-bmp-format4-inter.woff2"),
+);
+const fullBMPFour = await readFile(
+  resolve(fixture, "full-bmp-four-inter.woff2"),
+);
+assert.equal(
+  sha(selectedFour),
+  "995e8f1d6557fc62805479033fa93fe76049e8d51e9921e580f8df8946d93f00",
+);
+assert.equal(
+  sha(fullBMP4),
+  "f163380528e4492d7ebce76fb15f1011d48aa66da552561615e4c32b94e5c4b1",
+);
+assert.equal(
+  sha(fullBMPFour),
+  "f445e78eacd1cad2c50537d289f74cbd914b646cb757965a9192c34ae47016dd",
+);
 const diagnosticAliases = new Set([
   "Rejected",
   "Retained",
   "CmapTrimOnly",
   "HolesOnly",
+  "SelectedFour",
+  "FullBMP4",
+  "FullBMPFour",
 ]);
 const aliases = [
   "OriginalA",
@@ -93,6 +117,9 @@ const aliases = [
   "Retained",
   "CmapTrimOnly",
   "HolesOnly",
+  "SelectedFour",
+  "FullBMP4",
+  "FullBMPFour",
 ] as const;
 const aliasFiles = {
   OriginalA: "original",
@@ -102,6 +129,9 @@ const aliasFiles = {
   Retained: "retained",
   CmapTrimOnly: "cmap-trim-only",
   HolesOnly: "holes-only",
+  SelectedFour: "selected-four",
+  FullBMP4: "full-bmp-format4",
+  FullBMPFour: "full-bmp-four",
 } as const;
 const text =
   "AVATAR To Wa office affine ffi fl fi 0123456789 € £ $ — … “quoted” → ✓";
@@ -139,6 +169,9 @@ const assets = new Map<string, Buffer>([
   ["/retained.woff2", retained],
   ["/cmap-trim-only.woff2", cmapTrimOnly],
   ["/holes-only.woff2", holesOnly],
+  ["/selected-four.woff2", selectedFour],
+  ["/full-bmp-format4.woff2", fullBMP4],
+  ["/full-bmp-four.woff2", fullBMPFour],
 ]);
 const server = Bun.serve({
   hostname: "127.0.0.1",
@@ -187,6 +220,9 @@ const report: {
   retainedSHA256: sha(retained),
   cmapTrimOnlySHA256: sha(cmapTrimOnly),
   holesOnlySHA256: sha(holesOnly),
+  selectedFourSHA256: sha(selectedFour),
+  fullBMP4SHA256: sha(fullBMP4),
+  fullBMPFourSHA256: sha(fullBMPFour),
   samples,
   observations: [],
 };
@@ -519,6 +555,19 @@ try {
   );
   report.factorialScope =
     "CmapTrimOnly=full original glyf/gvar+only exact Retained cmap; HolesOnly=Retained holes+exact original raw cmap; Retained=both factors. Original is reference. Cmap format versus coverage not separated. All inactive.";
+  report.formatCoverageComparisons = [
+    "SelectedFour",
+    "FullBMP4",
+    "FullBMPFour",
+  ].map((alias) => ({
+    alias,
+    changedCanvas: observations.filter(
+      (row) => row.alias === alias && row.pixelsChanged > 0,
+    ),
+    DOM: dom.filter((row) => row.alias === alias),
+  }));
+  report.formatCoverageScope =
+    "All three use exact full original non-cmap tables. FullBMP4 vs FullBMPFour holds all 2821 BMP codepoint/GID mappings constant, changing format12 record presence. Original vs FullBMPFour removes 31 astral mappings with original four formats retained. SelectedFour vs FullBMPFour changes BMP coverage while retaining original platform/encoding/formats. Compare SelectedFour to existing CmapTrimOnly (same selected mappings, format4 only). Serialization of modified records verified separately. No activation.";
   report.acceptance =
     "NONE: neither verdict activates a subset or establishes M4/M7 parity; raw evidence requires review.";
   await context.close();
