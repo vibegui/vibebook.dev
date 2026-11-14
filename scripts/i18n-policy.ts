@@ -78,8 +78,8 @@ export function translationKeys(source: string, filename: string): string[] {
   return [...keys];
 }
 
-export function inspectLegacyTranslations(source: string) {
-  const file = sourceFile(source, "host.js"),
+export function inspectLegacyTranslations(source: string, dictionarySource?: string) {
+  const file = sourceFile(source, "application.ts"),
     translations = new Map<string, string>();
   const leftovers: { line: number; text: string }[] = [];
   let dictionary = false;
@@ -160,6 +160,12 @@ export function inspectLegacyTranslations(source: string) {
     ts.forEachChild(node, visit);
   };
   visit(file);
+  if (!dictionary && dictionarySource !== undefined) {
+    const external = inspectLegacyTranslations(dictionarySource);
+    for (const [key, value] of Object.entries(external.translations))
+      translations.set(key, value);
+    dictionary = true;
+  }
   if (!dictionary) throw new Error("Missing EN translation dictionary");
   return {
     translations: Object.fromEntries(translations),
