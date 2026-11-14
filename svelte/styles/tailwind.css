@@ -518,11 +518,47 @@
   --animate-room-sheet: vb-room-sheet 1s linear both paused;
   --animate-room-scrim: vb-room-scrim 1s linear both paused;
   --animate-room-document-width: vb-room-document-width 1s linear both paused;
-  --animate-room-document-width-rail: vb-room-document-width-rail 1s linear both paused;
+  --animate-room-document-width-rail: vb-room-document-width-rail 1s linear both
+    paused;
   --animate-room-viewport: vb-room-viewport 1s linear both paused;
-  @keyframes vb-room-sheet { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-  @keyframes vb-room-scrim { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes vb-room-document-width { from { width: 260px; } to { width: max(260px, calc(100cqw - 592px)); } }
-  @keyframes vb-room-document-width-rail { from { width: 260px; } to { width: max(260px, calc(100cqw - 388px)); } }
-  @keyframes vb-room-viewport { from { height: 0%; } to { height: 100%; } }
+  @keyframes vb-room-sheet {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes vb-room-scrim {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes vb-room-document-width {
+    from {
+      width: 260px;
+    }
+    to {
+      width: max(260px, calc(100cqw - 592px));
+    }
+  }
+  @keyframes vb-room-document-width-rail {
+    from {
+      width: 260px;
+    }
+    to {
+      width: max(260px, calc(100cqw - 388px));
+    }
+  }
+  @keyframes vb-room-viewport {
+    from {
+      height: 0%;
+    }
+    to {
+      height: 100%;
+    }
+  }
 }

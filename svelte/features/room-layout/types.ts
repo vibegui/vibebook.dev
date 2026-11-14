@@ -37,7 +37,10 @@ export type RoomLayoutCells = {
 export type RoomLayoutController = {
   readonly state: Readable<RoomLayoutState>;
   read(): RoomLayoutState;
-  setPane(pane: DocumentPane, options?: { open?: boolean; toggle?: boolean }): void;
+  setPane(
+    pane: DocumentPane,
+    options?: { open?: boolean; toggle?: boolean },
+  ): void;
   toggleBoard(): void;
   toggleDocument(): void;
   toggleSidebar(): void;
@@ -54,7 +57,9 @@ export type RoomLayoutController = {
   mount(cells: RoomLayoutCells): () => void;
   bindHandle(node: HTMLElement, sheet: RoomSheet, opening: boolean): () => void;
   bindWidthInput(node: HTMLInputElement): () => void;
-  setViewerGate(gate: { deferNavigation(callback: () => void): boolean }): () => void;
+  setViewerGate(gate: {
+    deferNavigation(callback: () => void): boolean;
+  }): () => void;
   dispose(): void;
 };
 export type RoomLayoutProps = {

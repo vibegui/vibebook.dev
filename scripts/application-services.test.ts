@@ -7,7 +7,10 @@ import type { RoomConnectionOptions } from "../svelte/roomConnection";
 import type { AgentsApi } from "../svelte/features/agents/api";
 import { createApplicationServices } from "../svelte/features/application/services";
 import { HomeFailure } from "../svelte/features/home/api";
-import { applicationRoute, createApplicationRouter } from "../svelte/features/app-navigation/router";
+import {
+  applicationRoute,
+  createApplicationRouter,
+} from "../svelte/features/app-navigation/router";
 import { createDocumentDrafts } from "../svelte/features/documents/session";
 import type {
   ApplicationRoomAdapter,
@@ -275,24 +278,37 @@ function adapter() {
 
 test("transient suggestion navigation keeps main URL and one live connection, including deferred sheet-entry reuse", async () => {
   const h = fixture("http://vb.test/b/aaaaaa?ui=svelte");
-  h.services.start(); await settle();
-  const room = canonical(); room.suggestions = [{ title: "Preview", tasks: [] }];
+  h.services.start();
+  await settle();
+  const room = canonical();
+  room.suggestions = [{ title: "Preview", tasks: [] }];
   h.connections[0]!.callbacks.onEvent(event(room));
   const shell = adapter();
-  let queued: (() => void) | undefined, holding = true;
-  shell.owner.deferNavigation = callback => { if (!holding) return false; queued = callback; return true; };
+  let queued: (() => void) | undefined,
+    holding = true;
+  shell.owner.deferNavigation = (callback) => {
+    if (!holding) return false;
+    queued = callback;
+    return true;
+  };
   h.services.attachRoom(h.services.roomScope()!, shell.owner);
   shell.targets.length = 0;
   h.services.actions.selectThread("pre:0", { replace: true });
   expect(shell.targets).toHaveLength(0);
   expect(h.services.rootRoom.read().thread).toBe("main");
-  holding = false; queued?.();
-  expect(shell.targets.map(intent => intent.target.thread)).toEqual(["pre:0"]);
+  holding = false;
+  queued?.();
+  expect(shell.targets.map((intent) => intent.target.thread)).toEqual([
+    "pre:0",
+  ]);
   expect(h.services.rootRoom.read().thread).toBe("pre:0");
   expect(h.connections).toHaveLength(1);
   expect(h.history).toHaveLength(0); // Reuses the existing mobile sheet entry.
   expect(get(h.services.state).href).not.toContain("pre:");
-  expect(applicationRoute(get(h.services.state).href)).toMatchObject({ kind: "room", target: { thread: "main" } });
+  expect(applicationRoute(get(h.services.state).href)).toMatchObject({
+    kind: "room",
+    target: { thread: "main" },
+  });
   h.services.actions.selectThread("main");
   expect(h.history).toHaveLength(1); // Subsequent ordinary selection pushes.
   h.services.actions.selectThread("pre:1");
@@ -301,29 +317,54 @@ test("transient suggestion navigation keeps main URL and one live connection, in
 });
 
 test("deferred transient route retains its target once, but cannot run after router disposal", () => {
-  let href = "http://vb.test/b/aaaaaa?ui=svelte", holding = true;
+  let href = "http://vb.test/b/aaaaaa?ui=svelte",
+    holding = true;
   let queued: (() => void) | undefined;
-  const targets: string[] = [], writes: string[] = [];
+  const targets: string[] = [],
+    writes: string[] = [];
   const router = createApplicationRouter({
     current: () => href,
     history: {
-      pushState(_state, _unused, url) { href = new URL(String(url), href).href; writes.push("push"); },
-      replaceState(_state, _unused, url) { href = new URL(String(url), href).href; writes.push("replace"); },
+      pushState(_state, _unused, url) {
+        href = new URL(String(url), href).href;
+        writes.push("push");
+      },
+      replaceState(_state, _unused, url) {
+        href = new URL(String(url), href).href;
+        writes.push("replace");
+      },
     },
-    activate: () => { throw Error("same room must retain its connection"); }, beforeChange() {},
-    sameRoom: target => { targets.push(target.thread ?? "main"); return true; },
-    consumePop: () => false, document() {},
-    deferNavigation: callback => { if (!holding) return false; queued = callback; return true; },
+    activate: () => {
+      throw Error("same room must retain its connection");
+    },
+    beforeChange() {},
+    sameRoom: (target) => {
+      targets.push(target.thread ?? "main");
+      return true;
+    },
+    consumePop: () => false,
+    document() {},
+    deferNavigation: (callback) => {
+      if (!holding) return false;
+      queued = callback;
+      return true;
+    },
   });
   router.go({ roomId: "aaaaaa", thread: "main" }, true, "pre:0");
   expect(targets).toEqual([]);
-  holding = false; queued?.();
+  holding = false;
+  queued?.();
   expect(targets).toEqual(["pre:0"]);
   expect(writes).toEqual(["replace"]);
-  expect(applicationRoute(href)).toMatchObject({ kind: "room", target: { thread: "main" } });
+  expect(applicationRoute(href)).toMatchObject({
+    kind: "room",
+    target: { thread: "main" },
+  });
   holding = true;
   router.go({ roomId: "aaaaaa", thread: "main" }, false, "pre:0");
-  router.dispose(); holding = false; queued?.();
+  router.dispose();
+  holding = false;
+  queued?.();
   expect(targets).toEqual(["pre:0"]);
   expect(writes).toEqual(["replace"]);
 });

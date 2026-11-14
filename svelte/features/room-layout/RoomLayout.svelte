@@ -4,4 +4,4 @@
   let props: RoomLayoutProps = $props();
 </script>
 
-{#key props.controller}<RoomLayoutFrame {...props}/>{/key}
+{#key props.controller}<RoomLayoutFrame {...props} />{/key}

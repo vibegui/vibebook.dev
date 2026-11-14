@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["features/room-layout/**/*.ts", "features/room-layout/**/*.svelte", "gallery/RoomLayoutFixture*.svelte"]
+  "include": [
+    "features/room-layout/**/*.ts",
+    "features/room-layout/**/*.svelte",
+    "gallery/RoomLayoutFixture*.svelte"
+  ]
 }

@@ -28,3 +28,9 @@ LD_LIBRARY_PATH=/home/zip76/.cache/vibebook-browser-libs/usr/lib FONTCONFIG_FILE
 ```
 
 The runner owns only its temporary loopback static server and Chromium. Signals close those resources and preserve an interrupted JSON report; no Worker is started or stopped. Actual source/type/build/browser assumptions remain pending validation. No new PR is created; this work belongs to the single consolidated opt-in PR1.
+
+## First canonical scoped validation
+
+On2026-11-14, the allocated canonical-only cohort formatted all Layout/gallery/style/test/config sources plus the separately requested router/services/application-services test files. The initial pure run found five class-concatenation policy violations; static class arrays fixed them without policy exceptions. A source reviewer also identified hidden document→full Board playback searching for a nonexistent sheet animation; the owner now cancels that replaced target, with a pure regression and an UNRUN actual-browser negative case exceeding the discovery deadline.
+
+Final scoped receipts: **13 pure tests /102 assertions PASS** (`/tmp/vibebook-production-room-layout-pure-2.log`), **2 DOM tests /13 assertions PASS** (`…dom-1.log`), thin strict tool TypeScript PASS (`…types-1.log`), and **Svelte0errors/0warnings PASS** (`…svelte-1.log`). These cover only the production Layout source, not the later combined RoomScope/RoomShell/RootApp port. No local build or browser ran in this cohort. Hosted CI and integrated real-browser results remain pending; the earlier isolated prototype result is not substituted for them.

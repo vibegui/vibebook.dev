@@ -43,9 +43,14 @@ export function createApplicationRouter(options: {
 }) {
   let generation = 0,
     active = true;
-  function go(value: string | RoomTarget, replace = false, presentationThread?: PresentationThread) {
+  function go(
+    value: string | RoomTarget,
+    replace = false,
+    presentationThread?: PresentationThread,
+  ) {
     if (!active) return;
-    if (options.deferNavigation?.(() => go(value, replace, presentationThread))) return;
+    if (options.deferNavigation?.(() => go(value, replace, presentationThread)))
+      return;
     const target = typeof value === "string" ? value : targetHref(value),
       url = new URL(target, options.current());
     if (url.origin !== new URL(options.current()).origin) {
@@ -53,10 +58,16 @@ export function createApplicationRouter(options: {
       return;
     }
     const selected = uiNavigationUrl(url, options.current(), "svelte"),
-      serializedRoute = applicationRoute(new URL(selected, options.current()).href),
-      route: ApplicationRoute = serializedRoute.kind === "room" && presentationThread
-        ? { ...serializedRoute, target: { ...serializedRoute.target, thread: presentationThread } }
-        : serializedRoute;
+      serializedRoute = applicationRoute(
+        new URL(selected, options.current()).href,
+      ),
+      route: ApplicationRoute =
+        serializedRoute.kind === "room" && presentationThread
+          ? {
+              ...serializedRoute,
+              target: { ...serializedRoute.target, thread: presentationThread },
+            }
+          : serializedRoute;
     generation++;
     if (route.kind === "document") {
       options.document(selected);
