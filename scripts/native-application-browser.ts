@@ -383,6 +383,10 @@ export async function openIntegratedPane(
   pane: Exclude<DocumentPane, "view">,
 ) {
   const layout = page.locator("[data-native-room-layout]");
+  const content: Record<Exclude<DocumentPane,"view">,string> = {
+    doc:"[data-native-document]", board:"[data-board-scope]", files:'[data-vb-native="files"]',
+    apps:"[data-native-apps]", agents:"[data-native-agents]", decisions:"[data-decisions-panel]", reminders:"[data-reminders-panel]",
+  };
   await expect(layout).toBeVisible();
   const full = page.locator("[data-native-board-toggle]");
   if ((await full.getAttribute("aria-pressed")) === "true") await full.click();
@@ -393,6 +397,7 @@ export async function openIntegratedPane(
     if (pane === "board") {
       await full.click();
       await expect(full).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator(content.board)).toBeVisible();
       return;
     }
     if (
@@ -410,6 +415,9 @@ export async function openIntegratedPane(
     if ((await layout.getAttribute("data-pane")) !== pane) await button.click();
   }
   await expect(layout).toHaveAttribute("data-pane", pane);
+  // A selected pane or a loading placeholder is not feature readiness. Include
+  // its actual first module load before font/a11y/history assertions continue.
+  await expect(page.locator(content[pane])).toBeVisible();
 }
 async function expectThread(page: Page, roomId: string, thread = "main") {
   await expect
