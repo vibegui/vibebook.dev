@@ -3,8 +3,15 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["bun", "svelte"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "bun",
+      "svelte"
+    ],
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
@@ -148,7 +155,6 @@
     "scripts/app-document-file-browser.ts",
     "scripts/ui-chunk-attribution.ts",
     "scripts/ui-chunk-diagnostics.test.ts",
-    "scripts/navigation-presentation.test.ts",
-    "scripts/agent-grant-boundary.test.ts"
+    "scripts/navigation-presentation.test.ts"
   ]
 }
