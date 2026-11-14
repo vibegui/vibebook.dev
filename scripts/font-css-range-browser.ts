@@ -345,6 +345,25 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
                   ),
                 "Mapped range samples must not silently substitute system fonts",
               );
+            else
+              assert(
+                usedFonts.some(
+                  (font) => !font.isCustomFont && font.glyphCount > 0,
+                ) &&
+                  usedFonts.some(
+                    (font) =>
+                      font.isCustomFont &&
+                      font.familyName === "Inter Variable" &&
+                      font.postScriptName === "InterVariable" &&
+                      font.glyphCount >= 2,
+                  ),
+                "Unmapped samples require actual system fallback and custom Inter A/V",
+              );
+            const geometryEqual =
+              geometry.width === referenceGeometry.width &&
+              geometry.height === referenceGeometry.height &&
+              geometry.scrollWidth === referenceGeometry.scrollWidth &&
+              geometry.textWidth === referenceGeometry.textWidth;
             const pixels = await page.evaluate(
               async ({ left, right }) => {
                 async function decode(value: string) {
@@ -398,15 +417,22 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
               kind: sample.kind,
               ...pixels,
               geometry,
+              geometryEqual,
               referenceGeometry,
               fonts: usedFonts,
             });
             if (alias === "OriginalB")
               assert(
-                pixels.dimensionsEqual && pixels.pixelsChanged === 0,
+                pixels.dimensionsEqual &&
+                  pixels.pixelsChanged === 0 &&
+                  geometryEqual,
                 "Actual range A/A raster control changed",
               );
-            if (pixels.pixelsChanged !== 0 || !pixels.dimensionsEqual) {
+            if (
+              pixels.pixelsChanged !== 0 ||
+              !pixels.dimensionsEqual ||
+              !geometryEqual
+            ) {
               const name = `${alias}-${sample.kind}-${profile.size}-${profile.weight}-${profile.opsz}`;
               await writeFile(resolve(destination, `${name}.png`), bytes);
               await writeFile(
@@ -424,7 +450,7 @@ export async function auditFontCSSRanges(browser: Browser, output: string) {
     report.verdict = observations.some(
       (row) =>
         row.alias !== "OriginalB" &&
-        (!row.dimensionsEqual || row.pixelsChanged !== 0),
+        (!row.dimensionsEqual || row.pixelsChanged !== 0 || !row.geometryEqual),
     )
       ? "range-or-candidate-differences-rejected"
       : "zero-observed-differences-bounded-normal-only";

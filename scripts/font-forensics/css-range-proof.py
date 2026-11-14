@@ -17,6 +17,7 @@ holes_path = root / 'scripts/fixtures/font-forensics/holes-only-inter-4d21ed4102
 selected_path = root / 'scripts/fixtures/font-forensics/retained-inter-a189496942.woff2'
 assert sha(original_path.read_bytes()) == '693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3'
 assert sha(holes_path.read_bytes()) == '4d21ed4102d1d794f2b54fbc2e8ac1f107045cc2009ab54ae03b4e98efba33ab'
+assert sha(selected_path.read_bytes()) == 'a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903'
 original = TTFont(original_path, lazy=True, recalcBBoxes=False, recalcTimestamp=False)
 holes = TTFont(holes_path, lazy=True, recalcBBoxes=False, recalcTimestamp=False)
 selected = set(TTFont(selected_path, lazy=True).getBestCmap())
