@@ -13,3 +13,18 @@ All first-party presentation is declared in the single Tailwind entry, including
 Two formerly inconsistent legacy flag edges are normalized explicitly: choosing Board as a document pane ends full-chat Board mode, and opening a mobile document pane leaves full-chat Board mode so its peek/tab controls stay reachable. Desktop full-chat Board can coexist with a reopened right document pane. These placement choices need source review and actual integrated parity validation.
 
 Pending adoption gates include real Viewer/sheet Back/Forward ordering, safe-area/visualViewport keyboard behavior, rapid pending gestures, width/rail changes, mode/permission/account transitions and stable Board DOM/selection. Safari/hardware touch/assistive technology are not established by the earlier Chromium prototype proof. The legacy shell and stylesheet remain until the complete RoomScope/RoomShell/RootApp integration is validated and retired by their owners.
+
+The source follow-up registers eleven pure fixtures (actual-container bounds, measured fast-close threshold, release curve, one-entry Back/Forward, timeout/retry/deferred route ownership, stale/disposed intents, owned thread-entry replacement, foreign-marker refusal, Viewer gate cleanup, single-Board modes and presentation policy), plus two Happy DOM ownership cases. The latter cover stable Board node/draft/component lifetime through placement changes and the real native input path/disposal; Happy DOM is not a geometry proof. All remain UNRUN.
+
+The opt-in gallery at `/app?ui=svelte&gallery=1&probe=room-layout` renders the actual production component with explicitly neutral feature snippets. Its width storage is isolated under `vb.room-layout-fixture.docW`; it never changes a global UI-variant setting. The standalone browser runner checks real built CSSAnimation identity/currentTime/geometry/opacity, actual root-container/application-rail sizing, native input events and persistence, one Board node, real browser history, fast first-move/cancel, form focus stability and a real nested Bits AlertDialog Escape. Synthetic input/pointercancel are named as such. It does not fabricate canonical room/provider data or claim integrated FileViewer/RoomScope behavior. The HTML digest in static mode is a fixture marker, not the production Worker version.
+
+```sh
+bun run test:room-layout
+bun run check:room-layout
+bun run test:room-layout:dom
+# Build only in an allocated heavy-process cohort:
+node node_modules/vite/bin/vite.js build --config svelte/vite.config.ts
+LD_LIBRARY_PATH=/home/zip76/.cache/vibebook-browser-libs/usr/lib FONTCONFIG_FILE=/home/zip76/.cache/vibebook-browser-libs/fonts.conf TEST_PUBLIC_ROOT="$PWD/public" TEST_APP_REVISION="$(git rev-parse HEAD)" bun run test:room-layout:browser
+```
+
+The runner owns only its temporary loopback static server and Chromium. Signals close those resources and preserve an interrupted JSON report; no Worker is started or stopped. Actual source/type/build/browser assumptions remain pending validation. No new PR is created; this work belongs to the single consolidated opt-in PR1.

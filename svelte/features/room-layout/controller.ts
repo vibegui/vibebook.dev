@@ -82,14 +82,16 @@ export function createRoomLayout(options: RoomLayoutOptions): RoomLayoutControll
     consumePop: history.consumePop,
     deferNavigation: history.deferNavigation,
     retryHistory() { if (current()) history.retry(); },
-    setViewerGate(gate) { viewer = gate; return () => { if (viewer === gate) viewer = null; }; },
+    setViewerGate(gate) { if (!active) return () => {}; viewer = gate; return () => { if (viewer === gate) viewer = null; }; },
     bindHandle(node, sheet, opening) {
+      if (!active) return () => {};
       handles.get(node)?.stop?.();
       const entry = { sheet, opening, stop: geometry?.bindHandle(node, sheet, opening) ?? null };
       handles.set(node, entry);
       return () => { if (handles.get(node) === entry) { entry.stop?.(); handles.delete(node); } };
     },
     bindWidthInput(node) {
+      if (!active) return () => {};
       inputs.get(node)?.stop?.();
       const entry = { stop: geometry?.bindWidthInput(node) ?? null }; inputs.set(node, entry);
       return () => { if (inputs.get(node) === entry) { entry.stop?.(); inputs.delete(node); } };

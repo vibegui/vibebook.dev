@@ -17,6 +17,7 @@ export function createRoomGeometry(options: {
   const media = win.matchMedia("(max-width: 900px)"), reduced = win.matchMedia("(prefers-reduced-motion: reduce)");
   let active = true, rootWidth = cells.root.clientWidth, preferred = 380, shown: RoomSheet | null = null, lastSheet: RoomSheet | null = null, motion: number | null = null, motionRevision = 0, syncRevision = 0;
   const positions: Record<RoomSheet, number> = { doc: 0, side: 0 };
+  let opener: HTMLElement | null = null;
   const current = () => active && options.current() && cells.root.isConnected;
   const issue = () => { if (current()) options.changed({ animationUnavailable: true }); };
   const widthName = () => options.read().sidebarCollapsed ? "vb-room-document-width-rail" as const : "vb-room-document-width" as const;
@@ -45,7 +46,12 @@ export function createRoomGeometry(options: {
       const fraction = reduced.matches ? 1 : clamp((win.performance.now() - time) / 300, 0, 1);
       position(sheet, start + (target - start) * sheetEasing(fraction));
       if (fraction < 1) motion = win.requestAnimationFrame(run);
-      else if (!target) present(null);
+      else if (!target) {
+        present(null);
+        const focused = cells.root.ownerDocument.activeElement;
+        if (opener?.isConnected && opener.getClientRects().length && (focused === cells.root.ownerDocument.body || (focused && sheetElement(sheet).contains(focused))) && !cells.root.ownerDocument.querySelector("dialog[open], [data-dialog-content], [data-alert-dialog-content]")) opener.focus({ preventScroll: true });
+        opener = null;
+      }
     };
     run();
   }
@@ -109,7 +115,8 @@ export function createRoomGeometry(options: {
   }
   function sync(value: RoomLayoutState) {
     if (!current()) return;
-    if (drag && (drag.pane !== value.pane || drag.initialSheet !== value.sheet || !value.mobile)) releaseDrag();
+    const interrupted = drag && (drag.pane !== value.pane || drag.initialSheet !== value.sheet || !value.mobile);
+    if (interrupted) { releaseDrag(); if (value.mobile && shown) settle(shown, value.sheet === shown ? 1 : 0); }
     const target = value.mobile ? value.sheet : null;
     if (!value.mobile) {
       cancelMotion(); releaseResize(); side.suspend(); doc.suspend(); board.suspend(); scrim.suspend();
@@ -118,6 +125,8 @@ export function createRoomGeometry(options: {
     } else if (!drag && target !== lastSheet) {
       const previous = shown; lastSheet = target;
       if (target) {
+        const focused = cells.root.ownerDocument.activeElement;
+        if (!previous && focused instanceof HTMLElement && (focused instanceof HTMLButtonElement || focused instanceof HTMLAnchorElement) && !sheetElement(target).contains(focused)) opener = focused;
         if (previous && previous !== target) { positions[previous] = 0; sheetPlayback(previous).set(0); }
         settle(target, 1);
       } else if (previous) settle(previous, 0);

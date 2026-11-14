@@ -60,6 +60,7 @@ if (native) {
     "svelte/features/room-sidebar",
     "svelte/features/waits",
     "svelte/features/apps",
+    "svelte/features/room-layout",
     "svelte/features/application",
   ])
     await collect(directory);
