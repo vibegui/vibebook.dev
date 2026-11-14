@@ -33,17 +33,17 @@ They use explicit SQL/DO doubles, not real SQLite/Worker acceptance.
 
 The following direct `JSON.parse` paths remain outside this first cohort:
 
-| Path | Remaining payload |
-| --- | --- |
-| `messages` | Serialized message attachments and whole SQL row → Message assertion |
+| Path                                 | Remaining payload                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| `messages`                           | Serialized message attachments and whole SQL row → Message assertion   |
 | `roomWindow` recent rows and origins | Serialized attachments and whole Message assertions; origin truncation |
-| `closeAsk` | Serialized choices (existing guarded parse, shape still unchecked) |
-| `quotes` | Serialized attachments projected to names |
-| `agentRead` | Choices, cards and attachments in agent-facing output |
-| `pinAdd` | Cached MCP tool metadata/resource URI |
-| `search` | Serialized attachments projected to id/name |
-| `runCommand` older | Serialized attachments and whole Message assertions |
-| `fetch` access-requested | HTTP `{who,name}` assertion before request notice |
+| `closeAsk`                           | Serialized choices (existing guarded parse, shape still unchecked)     |
+| `quotes`                             | Serialized attachments projected to names                              |
+| `agentRead`                          | Choices, cards and attachments in agent-facing output                  |
+| `pinAdd`                             | Cached MCP tool metadata/resource URI                                  |
+| `search`                             | Serialized attachments projected to id/name                            |
+| `runCommand` older                   | Serialized attachments and whole Message assertions                    |
+| `fetch` access-requested             | HTTP `{who,name}` assertion before request notice                      |
 
 The receipt timer's `as unknown as number` remains a platform timer-handle type
 issue, not stored JSON. Other scalar SQL/type assertions (including statuses,
@@ -52,6 +52,8 @@ are not all runtime-validated by this cohort. Existing card normalization and
 WebSocket command-envelope validation remain separate boundaries; this change
 does not claim that their upstream stored strings are fully audited.
 
-At this source checkpoint all formatter, pure/DOM tests, backend/API/worker
-types, builds and browser execution are **unrun** under the resource hold.
-Book's compact file layout and generated assets are preserved.
+The allocated scoped formatter passed four paths, and focused Bun tests passed
+seven cases with 42 assertions in 2.49 seconds. Expected invalid-row diagnostics
+contain kinds only. Backend/API/worker and full UI/tooling types, builds and real
+Worker/browser validation remain **unrun** for this cohort. Book's compact file
+layout and generated assets are preserved.
