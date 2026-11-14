@@ -1132,7 +1132,7 @@ export class Book extends DurableObject<Env> {
         not_for_you: (m.author === email && m.kind !== "agent" && forOther(m.text)) || undefined,
         reply_to: m.reply_to ?? undefined,
         reply_quote: m.reply_to ? quoted.get(m.reply_to) : undefined,
-        choices: m.choices ? storedChoices(m.choices, (kind) => console.warn("book stored projection", kind)) ?? undefined : undefined,
+        choices_wire: m.choices || undefined,
         card: m.card ? storedCard(m.card, bookId, (kind) => console.warn("book stored projection", kind)) ?? undefined : undefined,
         // The replied message rides inside the text too, not only in reply_quote: a Sonnet read a bare "vc fez isso?"
         // (a reply to "Pode revisar o ledger?") and asked which "isso" (Nov 2026).

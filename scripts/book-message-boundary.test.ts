@@ -9,6 +9,7 @@ import {
   storedQuote,
   storedFileRefs,
   AccessRequested,
+  agentMessageFromWire,
 } from "../src/bookMessages";
 import { cachedTools } from "../src/mcpTools";
 import type { bookStub } from "../src/rooms";
@@ -18,6 +19,7 @@ type Assert<T extends true> = T;
 // method alone. Unknown extension values previously collapsed it to never.
 type AgentReadRemainsSerializable = Assert<[RemoteAgentRead] extends [never] ? false : RemoteAgentRead extends { last_id: number } ? true : false>;
 const remoteLastId = (value: RemoteAgentRead): number => value.last_id;
+type AgentChoiceWireRemainsFlat = Assert<RemoteAgentRead["messages"][number]["choices_wire"] extends string | undefined ? true : false>;
 mock.module("cloudflare:workers", () => ({
   DurableObject: class {},
   WorkerEntrypoint: class {},
@@ -87,6 +89,9 @@ test("choice extensions retain nested JSON-safe values without changing the orig
   const raw = JSON.stringify({ options: ["Yes", "No"], extension: { nested: [null, true, 7, "kept", { deep: "value" }] } });
   expect(storedChoices(raw)?.extension).toEqual({ nested: [null, true, 7, "kept", { deep: "value" }] });
   expect(storedMessageRows([{ ...row, choices: raw }], "abcdef")[0].choices).toBe(raw);
+  const publicMessage = agentMessageFromWire({ id: 1, text: "kept", choices_wire: raw });
+  expect(publicMessage).toMatchObject({ id: 1, text: "kept", choices: { options: ["Yes", "No"], extension: { nested: [null, true, 7, "kept", { deep: "value" }] } } });
+  expect(Object.hasOwn(publicMessage, "choices_wire")).toBe(false);
 });
 test("corrupt optional payloads do not discard valid text or neighboring messages; identity is never coerced", () => {
   const values = storedMessageRows(

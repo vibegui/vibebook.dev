@@ -37,6 +37,13 @@ export function storedChoices(raw: unknown, issue: StoredIssue = ignore) {
   issue("choices");
   return null;
 }
+/** JSON-safe extensions are recursive, while the DO RPC type mapper must stay
+ * finite. Only the string crosses that internal boundary; MCP restores the
+ * existing public object after the RPC response has arrived. */
+export function agentMessageFromWire<T extends { choices_wire?: string }>(message: T) {
+  const { choices_wire, ...rest } = message;
+  return { ...rest, choices: choices_wire ? storedChoices(choices_wire) ?? undefined : undefined };
+}
 export function storedCard(
   raw: unknown,
   room: string,

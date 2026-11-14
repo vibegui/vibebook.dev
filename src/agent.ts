@@ -4,6 +4,7 @@ import { parseMcpRequest, mcpArguments, recordValue } from "./mcpRequest";
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import { gate, routerOn, routerStats } from "./router";
 import { callTool, createConn, deleteConn, getConn, listConns, publicConn } from "./mcpconn";
+import { agentMessageFromWire } from "./bookMessages";
 import { AuthNeeded, signedInTo } from "./mcpauth";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
@@ -803,6 +804,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         room_id: id,
         url: `${origin}/b/${id}`,
         ...out,
+        messages: out.messages.map(agentMessageFromWire),
       };
     }
     case "post": {
