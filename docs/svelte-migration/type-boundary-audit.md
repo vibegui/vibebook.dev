@@ -40,3 +40,14 @@ their indices own persisted votes. Seven tests / 42 assertions include actual
 Book method and HTTP-handler calls through explicit SQL/DO fixture ports. See
 [book-stored-boundary.md](book-stored-boundary.md) for the remaining direct JSON,
 HTTP and scalar-cast paths; this cohort is not real SQLite/Worker evidence.
+
+Google's token/userinfo responses and HMAC-signed invite payloads now validate
+before login/session or database effects. Six Hono tests / 199 assertions cover
+state consumption, malformed/non-OK provider data, nullable profile fields,
+invalid signed payloads, expired continuation and existing current-session,
+known-account and one-time invite behavior. The Jev model's answers/usage also
+derive from runtime schemas; four tests / 18 assertions preserve nullable numeric
+fallbacks and reject malformed nested model output without applying decisions.
+The combined seven-file boundary cohort passes 44 tests / 489 assertions, and
+strict backend, Worker-test and tooling checks pass locally. Live providers and
+deployed acceptance remain separate requirements.

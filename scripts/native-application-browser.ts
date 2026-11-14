@@ -103,15 +103,32 @@ async function closeBrowser() {
   await closing;
 }
 async function closeInvocationEvidence() {
-  return Promise.all([...contexts].flatMap(context=>context.pages()).map(async page=>{
-    try { return await page.evaluate(()=>window.__nativeSocketCloseObservations??[]); }
-    catch { return []; }
-  }));
+  return Promise.all(
+    [...contexts]
+      .flatMap((context) => context.pages())
+      .map(async (page) => {
+        try {
+          return await page.evaluate(
+            () => window.__nativeSocketCloseObservations ?? [],
+          );
+        } catch {
+          return [];
+        }
+      }),
+  );
 }
 function sourceLocations(error: unknown): string[] {
-  return error instanceof Error ? [...new Set(
-    [...(error.stack??"").matchAll(/\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g)].map(match=>match[1]!),
-  )] : [];
+  return error instanceof Error
+    ? [
+        ...new Set(
+          [
+            ...(error.stack ?? "").matchAll(
+              /\bat [^\n]*?\b(scripts\/native-application-(?:browser|lifecycle|profiles)\.ts:\d+:\d+)\)?(?:\n|$)/g,
+            ),
+          ].map((match) => match[1]!),
+        ),
+      ]
+    : [];
 }
 const signal = () => {
   interrupted = true;
@@ -1069,63 +1086,80 @@ try {
   await a.setViewportSize({ width: 1440, height: 1000 });
   // All seven dependent core phases above must pass before any of these
   // independent audits starts. Each later audit uses its own fresh contexts.
-  const independentAudits: {name:string;status:"running"|"passed"|"failed";failure?:{name:string;phase:string;sourceLocations:string[]};closeInvocations?:Awaited<ReturnType<typeof closeInvocationEvidence>>}[] = [];
+  const independentAudits: {
+    name: string;
+    status: "running" | "passed" | "failed";
+    failure?: { name: string; phase: string; sourceLocations: string[] };
+    closeInvocations?: Awaited<ReturnType<typeof closeInvocationEvidence>>;
+  }[] = [];
   const independentFailures: Error[] = [];
-  report.independentAudits=independentAudits;
-  const independentAudit=async(name:string,run:()=>Promise<void>)=>{
-    const result: (typeof independentAudits)[number]={name,status:"running"};
+  report.independentAudits = independentAudits;
+  const independentAudit = async (name: string, run: () => Promise<void>) => {
+    const result: (typeof independentAudits)[number] = {
+      name,
+      status: "running",
+    };
     independentAudits.push(result);
-    try { if(interrupted)throw Error("Interrupted"); await run(); result.status="passed"; }
-    catch(error) {
-      result.status="failed";
-      result.failure={name:error instanceof Error?error.name:"UnknownError",phase:phases.at(-1)?.name??name,sourceLocations:sourceLocations(error)};
+    try {
+      if (interrupted) throw Error("Interrupted");
+      await run();
+      result.status = "passed";
+    } catch (error) {
+      result.status = "failed";
+      result.failure = {
+        name: error instanceof Error ? error.name : "UnknownError",
+        phase: phases.at(-1)?.name ?? name,
+        sourceLocations: sourceLocations(error),
+      };
       // Snapshot at this failure, before fresh audits or final teardown can
       // let closing transports disappear and obscure the lifecycle evidence.
-      result.closeInvocations=await closeInvocationEvidence();
-      if(interrupted)throw error;
-      independentFailures.push(error instanceof Error?error:new Error("Independent audit failed"));
+      result.closeInvocations = await closeInvocationEvidence();
+      if (interrupted) throw error;
+      independentFailures.push(
+        error instanceof Error ? error : new Error("Independent audit failed"),
+      );
     }
   };
-  await independentAudit("lifecycle",async()=>{
-  await auditNativeApplicationLifecycle({
-    page: a,
-    roomId: roomA,
-    secondRoomId: roomB,
-    epicId: epic,
-    async openRoom(id, thread) {
-      // Preserve this document and application heap across real router cycles.
-      await a
-        .locator(
-          '[data-vb-native="room-navigation"] [data-room-id="' + id + '"] a',
-        )
-        .click();
-      await expectThread(a, id);
-      await expect(a.locator("[data-native-room-layout]")).toBeVisible();
-      await expect(a.locator("[data-native-composer] #input")).toBeVisible();
-      if (thread) {
-        await openIntegratedSidebar(a);
-        await a.locator('[data-epic-thread="' + thread + '"]').click();
-        await expectThread(a, id, thread);
-      }
-    },
-    async openEditor() {
-      await nativeEdit(a);
-    },
-    async closeEditor() {
-      await a
-        .locator("[data-native-document] > footer")
-        .getByRole("button", { name: "Done", exact: true })
-        .click();
-      await expect(a.locator("[data-document-editor] .cm-editor")).toHaveCount(
-        0,
-      );
-    },
-    activeSockets: aWire.activeSockets,
-    step,
-    onEvidence: (evidence) => {
-      report.lifecycle = evidence;
-    },
-  });
+  await independentAudit("lifecycle", async () => {
+    await auditNativeApplicationLifecycle({
+      page: a,
+      roomId: roomA,
+      secondRoomId: roomB,
+      epicId: epic,
+      async openRoom(id, thread) {
+        // Preserve this document and application heap across real router cycles.
+        await a
+          .locator(
+            '[data-vb-native="room-navigation"] [data-room-id="' + id + '"] a',
+          )
+          .click();
+        await expectThread(a, id);
+        await expect(a.locator("[data-native-room-layout]")).toBeVisible();
+        await expect(a.locator("[data-native-composer] #input")).toBeVisible();
+        if (thread) {
+          await openIntegratedSidebar(a);
+          await a.locator('[data-epic-thread="' + thread + '"]').click();
+          await expectThread(a, id, thread);
+        }
+      },
+      async openEditor() {
+        await nativeEdit(a);
+      },
+      async closeEditor() {
+        await a
+          .locator("[data-native-document] > footer")
+          .getByRole("button", { name: "Done", exact: true })
+          .click();
+        await expect(
+          a.locator("[data-document-editor] .cm-editor"),
+        ).toHaveCount(0);
+      },
+      activeSockets: aWire.activeSockets,
+      step,
+      onEvidence: (evidence) => {
+        report.lifecycle = evidence;
+      },
+    });
   });
   const profileFixture: NativeApplicationAuditFixture = {
     base,
@@ -1144,37 +1178,46 @@ try {
       return { context: value.context, page };
     },
   };
-  report.profileAuditArtifact="native-root-profiles.json";
-  await independentAudit("profiles",async()=>{
+  report.profileAuditArtifact = "native-root-profiles.json";
+  await independentAudit("profiles", async () => {
     report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
   });
-  await independentAudit("app-navigation-authority",async()=>{
-  const appNavigation = await auditNativeAppNavigation(profileFixture);
-  report.appNavigation = appNavigation;
-  // A controlled replacement document inheriting the original App's room read
-  // capability is a security finding, not a passing functional receipt.
-  await step(
-    "replacement App authority requires an explicit refusal",
-    async () => {
-      assert.equal(
-        appNavigation.verdict,
-        "explicit-denial",
-        "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass",
-      );
-    },
-  );
+  await independentAudit("app-navigation-authority", async () => {
+    const appNavigation = await auditNativeAppNavigation(profileFixture);
+    report.appNavigation = appNavigation;
+    // A controlled replacement document inheriting the original App's room read
+    // capability is a security finding, not a passing functional receipt.
+    await step(
+      "replacement App authority requires an explicit refusal",
+      async () => {
+        assert.equal(
+          appNavigation.verdict,
+          "explicit-denial",
+          "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass",
+        );
+      },
+    );
   });
-  await independentAudit("page-errors",async()=>{assert.deepEqual(errors, []);});
-  if(independentFailures.length)throw new AggregateError(independentFailures,"Independent native application audits failed; see each retained audit result");
+  await independentAudit("page-errors", async () => {
+    assert.deepEqual(errors, []);
+  });
+  if (independentFailures.length)
+    throw new AggregateError(
+      independentFailures,
+      "Independent native application audits failed; see each retained audit result",
+    );
   report.status = "passed";
 } catch (error) {
   report.status = interrupted ? "interrupted" : "failed";
   report.failure = {
     name: error instanceof Error ? error.name : "UnknownError",
-    phase: error instanceof AggregateError ? "post-core independent audits" : phases.at(-1)?.name ?? "setup",
+    phase:
+      error instanceof AggregateError
+        ? "post-core independent audits"
+        : (phases.at(-1)?.name ?? "setup"),
     // Only repository-owned source locations, never exception text, URLs,
     // document content or authorization material from the first stack line.
-    sourceLocations:sourceLocations(error),
+    sourceLocations: sourceLocations(error),
   };
   process.exitCode = interrupted ? 130 : 1;
 } finally {

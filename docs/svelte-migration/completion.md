@@ -8,6 +8,13 @@ The sole migration PR is [#1](https://github.com/vibegui/vibebook.dev/pull/1).
 PR #2 is closed, with its work preserved in #1. No final deployed revision or
 maintainer acceptance is recorded yet.
 
+The newer clean source checkpoint `ba8e529` passes the complete frozen-install
+Linux/macOS repository matrix, committed preview asset consistency and neutral
+production RoomLayout Chromium job in
+[run 43562169505](https://github.com/vibegui/vibebook.dev/actions/runs/43562169505).
+Its integrated lifecycle and controlled performance jobs still failed; source
+CI does not establish browser, performance or deployment acceptance.
+
 | Gate | Current evidence | Remaining proof |
 | --- | --- | --- |
 | M0 inventory/parity | `inventory.json`, `feature-parity.md`, `change-ledger.md`, frozen Studio references | Complete current feature/state/route verification references and reconcile final main |
