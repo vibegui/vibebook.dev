@@ -57,14 +57,19 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
   const model = () => createOpenRouter({ apiKey: env.OPENROUTER_API_KEY })(env.MODEL_FAST, { reasoning: { enabled: false, effort: "none" } });
   const data = await roomData(env, bookId, text, history);
   const said = `${data ? `REAL DATA you may use (vibebook's own report, yesterday vs the 7 days before):\n${data}\n\n` : ""}${history.length ? `What they said before, in this session:\n${history.map((h) => `- ${h}`).join("\n")}\n\n` : ""}NEW SPEECH:\n${text}`;
-  const cardMode = async (current?: string) => {
+  // One retry with the validator's error (Gui's phone, 14/11: "Chart.data[0].value must be a number" ended the card).
+  const cardMode = async (current?: string, fix?: string): Promise<FireOut> => {
     const { output, usage } = await generateText({
       model: model(), temperature: 0.2, abortSignal: AbortSignal.timeout(45_000),
       output: Output.object({ schema: z.object({ card: z.string().describe("the whole card JSON"), title: z.string().describe("a 2-6 word title for the chat line") }) }),
       system: `You build one native chat card live while a person talks: each new piece of speech is an instruction (or a correction) for it. Apply it and return the WHOLE new card. Keep what they didn't ask to change. Write in the language they speak. Invent no numbers: if they didn't give data, use clear placeholders like "—".\n${CATALOG}`,
-      prompt: `${current ? `CURRENT CARD:\n${current}` : "There is no card yet: build it from this request."}\n\n${said}`,
+      prompt: `${current ? `CURRENT CARD:\n${current}` : "There is no card yet: build it from this request."}\n\n${said}${fix ? `\n\nYOUR LAST CARD WAS REFUSED: ${fix}\nFix that and return the whole card again.` : ""}`,
     });
-    const card = cardOf(JSON.parse(output.card), bookId);
+    let card;
+    try { card = cardOf(JSON.parse(output.card), bookId); } catch (e) {
+      if (fix) throw e;
+      return cardMode(current, String((e as Error)?.message ?? e).slice(0, 300));
+    }
     const r = await bookStub(env, bookId).fireCard(bookId, email, thread, `🔥 ${output.title}`, card, cardMsg || undefined);
     if (!r.ok) return { ok: false as const, error: r.error };
     await bookStub(env, bookId).firePiece(bookId, email, thread, text, { card_msg: r.id });
