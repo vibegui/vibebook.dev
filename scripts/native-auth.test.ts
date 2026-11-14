@@ -2,10 +2,12 @@ import { expect, test } from "bun:test";
 import { get } from "svelte/store";
 import {
   createAuthApi,
+  createAuthLogoutApi,
   AuthFailure,
   oauthQuery,
   type AuthApi,
 } from "../svelte/features/auth/api";
+
 import { createAuthOwner, type AuthClock } from "../svelte/features/auth/owner";
 import {
   createLoginSession,
@@ -600,4 +602,28 @@ test("file access uses grant-free context and preserves exact file continuation 
   expect(asks).toBe(1);
   expect(destinations).toEqual(["/b/abcdef?ui=svelte#faa"]);
   session.dispose();
+});
+
+test("owned logout adapter uses inferred routes and accepts only a valid JSON acknowledgement", async () => {
+  const calls: { url: string; method: string | undefined }[] = [];
+  let response = new Response('{"ok":true}');
+  const logout = createAuthLogoutApi(async (input, init) => {
+    calls.push({ url: String(input), method: init?.method });
+    return response.clone();
+  });
+  expect(await logout(false)).toEqual({ ok: true });
+  expect(calls.at(-1)).toMatchObject({ method: "POST" });
+  expect(calls.at(-1)!.url).toEndWith("/auth/logout");
+  expect(await logout(true)).toEqual({ ok: true });
+  expect(calls.at(-1)!.url).toEndWith("/auth/logout-all");
+  response = new Response("<html>Sign in</html>", {
+    headers: { "content-type": "text/html" },
+  });
+  await expect(logout(false)).rejects.toThrow();
+  response = new Response('{"ok":false}');
+  await expect(logout(false)).rejects.toThrow();
+  response = new Response('{"error":"cross-site request refused"}', {
+    status: 403,
+  });
+  await expect(logout(true)).rejects.toThrow("cross-site request refused");
 });

@@ -130,3 +130,15 @@ export function createAuthApi(fetcher?: FetchLike) {
   };
 }
 export type AuthApi = ReturnType<typeof createAuthApi>;
+
+/** Owned account logout: success requires the server's JSON acknowledgement,
+ * not merely a successful HTTP status (for example a redirected HTML page). */
+export function createAuthLogoutApi(fetcher?: FetchLike) {
+  const auth = authClient("/", fetcher).auth;
+  return async (all: boolean) =>
+    OkResult.parse(
+      await json(
+        await (all ? auth["logout-all"].$post({}) : auth.logout.$post({})),
+      ),
+    );
+}

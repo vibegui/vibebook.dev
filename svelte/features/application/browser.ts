@@ -4,6 +4,7 @@ import { createPwaService } from "../pwa/service";
 import { browserDeviceLock } from "../account/device";
 import { createHomeApi } from "../home/api";
 import { createAccountApi } from "../account/api";
+import { createAuthLogoutApi } from "../auth/api";
 import { createAgentsApi } from "../agents/api";
 import { pwaLogoutWarning, pwaLogoutFailure } from "../pwa/copy";
 import {
@@ -56,8 +57,7 @@ export function createBrowserApplicationServices(options: {
       win.location.href = href;
     },
     reload: () => win.location.reload(),
-    logoutPost: (all) =>
-      win.fetch(all ? "/auth/logout-all" : "/auth/logout", { method: "POST" }),
+    logoutPost: createAuthLogoutApi(win.fetch.bind(win)),
     logoutWarning: () => win.alert(pwaLogoutWarning(language)),
     logoutFailure: () => win.alert(pwaLogoutFailure(language)),
     shellVersion: options.shellVersion,
