@@ -286,9 +286,9 @@ test("room refresh keeps Home draft/focus, then unmount owns late routing result
 test("canonical ask clearance changes native room count to a task dot without hiding the task", async () => {
   const wait = (ref: string): ReturnType<typeof me>["waits"][number] => ({ book_id: "aaaaaa", room: "Room aaaaaa", ref, thread: "e", topic: "Epic", author: "other@test.com", author_name: "Other", text: "Task remains actionable", ts: 1 });
   let latest = me({ waits: [wait("m1"), wait("t2")] });
-  const { personal, rooms, pwa } = await setup({ me: async () => latest });
+  const { personal, rooms, pwa, profile, creator } = await setup({ me: async () => latest });
   const target = document.createElement("div"); document.body.append(target);
-  const component = flushSync(() => mount(Home, { target, props: { pwa, personal, rooms, lang: "en", ago: () => "now", onnavigate: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {} } }));
+  const component = flushSync(() => mount(Home, { target, props: { pwa, personal, rooms, profile, creator, lang: "en", ago: () => "now", onnavigate: () => {}, onlanguage: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {} } }));
   cleanups.push(() => flushSync(() => { void unmount(component); }));
   await flush();
   const tile = () => target.querySelector('[data-room-id="aaaaaa"]')!;
@@ -311,6 +311,11 @@ test("actual Home mounts three onboarding steps, preserves drafts across Back an
     onlanguage: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {},
   } }));
   cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  const click = (label: string) => {
+    const button = [...target.querySelectorAll("button")].find(value => value.textContent?.trim() === label);
+    expect(!!button).toBe(true);
+    button!.click();
+  };
   const step = () => target.querySelector("[data-native-onboarding]")?.getAttribute("data-onboarding-step");
   expect(step()).toBe("1");
   expect(target.querySelector('[role="dialog"]')).toBe(null);
@@ -320,17 +325,17 @@ test("actual Home mounts three onboarding steps, preserves drafts across Back an
   expect(step()).toBe("1"); // An HTTP success is not the canonical profile.
   canonical = me({ name: "Ada", books: [] }); await personal.refresh(); await flush();
   expect(step()).toBe("2");
-  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip for now")!.click(); await flush();
+  click("Skip for now"); await flush();
   expect(step()).toBe("3");
   const draft = target.querySelector("textarea")!;
   draft.value = "A careful first room"; draft.dispatchEvent(new Event("input", { bubbles: true }));
   const composing = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, isComposing: true }); draft.dispatchEvent(composing); await flush();
   expect(get(creator.state).busy).toBe(false);
-  [...target.querySelectorAll("button")].find(button => button.textContent === "Back")!.click(); await flush();
+  click("Back"); await flush();
   expect(step()).toBe("2");
-  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip for now")!.click(); await flush();
+  click("Skip for now"); await flush();
   expect(target.querySelector("textarea")!.value).toBe("A careful first room");
-  [...target.querySelectorAll("button")].find(button => button.textContent === "Skip and see the home")!.click(); await flush();
+  click("Skip and see the home"); await flush();
   expect(step()).toBe(undefined); expect(target.querySelector("#home-ask") === null).toBe(false);
   expect(localStorage.getItem("vb.obDone")).toBe("1");
 });
