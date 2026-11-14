@@ -318,7 +318,15 @@ export function createPersonalSession(
       dispose();
       identity = null;
       draft.set({ ask: "", create: "", unknown: null });
-      state.update(value => ({ ...value, me: null, agents: null, seen: {}, loading: false, error: "unauthorized", identityRevision: value.identityRevision + 1 }));
+      state.update((value) => ({
+        ...value,
+        me: null,
+        agents: null,
+        seen: {},
+        loading: false,
+        error: "unauthorized",
+        identityRevision: value.identityRevision + 1,
+      }));
       options.onIdentityChange?.();
     },
     dispose,

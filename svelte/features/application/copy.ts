@@ -62,7 +62,6 @@ const EN: Readonly<Record<string, string>> = {
     "The upload was not confirmed. Check the files before trying again.",
   "A conta mudou; selecione o arquivo novamente.":
     "The account changed; select the file again.",
-  Pronto: "Ready",
   Enviado: "Sent",
   "Enviado. Seu novo rascunho foi mantido.": "Sent. Your new draft was kept.",
   "Votação criada": "Poll created",
@@ -107,7 +106,6 @@ const EN: Readonly<Record<string, string>> = {
     "Still unconfirmed. Check the pinned items before trying again.",
   "Não deu pra atualizar os fixados. Tente de novo.":
     "Couldn't update pinned items. Try again.",
-  "Aguardando confirmação…": "Waiting for confirmation…",
   "Link inválido": "Invalid link",
   "Arquivo indisponível": "File unavailable",
   "App indisponível": "App unavailable",
@@ -142,7 +140,6 @@ const EN: Readonly<Record<string, string>> = {
   "Link copiado": "Link copied",
   "Caixa de entrada": "Inbox",
   "Caixa de entrada: o que espera por você": "Inbox: what's waiting on you",
-  "Esta sala": "This room",
   Todas: "All",
   "Seu agent espera você:": "Your agent is waiting on you:",
   "Nada esperando você. ✓": "Nothing waiting on you. ✓",
@@ -238,7 +235,6 @@ const EN: Readonly<Record<string, string>> = {
     "Room: everyone sees it; each one signs in with their own account",
   "Você entrou em {host} com a sua conta.":
     "You're signed in to {host} with your account.",
-  Sair: "Sign out",
   "Entre em {host} com a sua conta pra usar. O vibebook não guarda token: só diz quem é você e de qual sala.":
     "Sign in to {host} with your account to use it. vibebook keeps no token: it only says who you are and from which room.",
   "Entrar em {host}": "Sign in to {host}",
@@ -635,7 +631,6 @@ const EN: Readonly<Record<string, string>> = {
   "Ver as tasks abertas": "See open tasks",
   "Esperando {who}": "Waiting on {who}",
   "esperando OK": "waiting for OK",
-  fazendo: "doing",
   "a fazer": "to do",
   "Nome do épico:": "Epic name:",
   "Nome do vibebook:": "Vibebook name:",

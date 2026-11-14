@@ -4,4 +4,5 @@
   import type { SuggestionPreviewProps } from "../svelte/features/room-sidebar/types";
   let { values }: { values: Readable<SuggestionPreviewProps> } = $props();
 </script>
-<SuggestionPreview {...$values}/>
+
+<SuggestionPreview {...$values} />

@@ -1,6 +1,10 @@
 import type { RoomTarget } from "../home/model";
 import type { ApplicationRoute } from "../app-navigation/router";
-import type { RootConnection, RootRoomTransition, RootRoomSnapshot } from "../root-room/session";
+import type {
+  RootConnection,
+  RootRoomTransition,
+  RootRoomSnapshot,
+} from "../root-room/session";
 import type { DocumentPane } from "../documents/types";
 import type { AgentClock } from "../agents/lease";
 
@@ -12,7 +16,11 @@ export type ApplicationRoomScope = {
   navigationGeneration: number;
   connection: RootConnection;
 };
-export type ApplicationRoomIntent = { scope: ApplicationRoomScope; target: RoomTarget; pane?: DocumentPane };
+export type ApplicationRoomIntent = {
+  scope: ApplicationRoomScope;
+  target: RoomTarget;
+  pane?: DocumentPane;
+};
 /** A single live RoomShell, not a component/mount registry. Cleanup may only
  * detach the exact adapter installed by this scope. */
 export type ApplicationRoomAdapter = {

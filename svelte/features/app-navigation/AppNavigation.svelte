@@ -358,69 +358,86 @@
     >{/if}
 </Dialog>
 {#if $creator.binding}{#key $creator.binding}<Snapshot value={$creator.binding}>
-{#snippet children(binding)}
-<Dialog
-  open={$creator.open && !$creator.inline}
-  title={text("new")}
-  description={text("createHelp")}
-  closeLabel={text("close")}
-  onOpenChange={(open) => {
-    if (!open && !$creator.inline && controller.creator.owns(binding)) controller.creator.close(binding);
-  }}
-  initialFocus={() => createInput}
-  returnFocus={focusBack}
->
-  <form
-    class="tw:space-y-3"
-    aria-busy={$creator.busy}
-    onsubmit={(event) => {
-      event.preventDefault();
-      if (!event.currentTarget.isConnected || $creator.inline || !controller.creator.owns(binding)) return;
-      void controller.creator.submit(binding);
-    }}
-  >
-    <Label for="native-new-room">{text("createLabel")}</Label><Textarea
-      bind:ref={createInput}
-      id="native-new-room"
-      rows={4}
-      placeholder={text("createPlaceholder")}
-      value={$draft.create}
-      disabled={$creator.busy}
-      oninput={(event) => {
-        if (event.currentTarget.isConnected && !$creator.inline && controller.creator.owns(binding))
-          controller.creator.edit(event.currentTarget.value, binding);
-      }}
-      onkeydown={(event) => {
-        if (
-          event.key === "Enter" &&
-          !event.shiftKey &&
-          !event.isComposing &&
-          !$creator.inline && event.currentTarget.isConnected && controller.creator.owns(binding)
-        ) {
-          event.preventDefault();
-          void controller.creator.submit(binding);
-        }
-      }}
-    />
-    <div class="tw:flex tw:flex-wrap tw:gap-2">
-      <Button
-        variant="outline"
-        onclick={(event) => {
-          if (event.currentTarget.isConnected && controller.creator.owns(binding)) controller.creator.close(binding);
-        }}>{text("cancel")}</Button
-      ><Button type="submit" loading={$creator.busy}
-        >{text($creator.busy ? "creating" : "create")}</Button
-      >
-    </div>
-    {#if $creator.error}<p
-        role="alert"
-        class="tw:break-words tw:text-destructive"
-      >
-        {homeIssue(lang, $creator.error)}
-      </p>{/if}
-  </form>
-</Dialog>
-{/snippet}</Snapshot>{/key}{/if}
+      {#snippet children(binding)}
+        <Dialog
+          open={$creator.open && !$creator.inline}
+          title={text("new")}
+          description={text("createHelp")}
+          closeLabel={text("close")}
+          onOpenChange={(open) => {
+            if (!open && !$creator.inline && controller.creator.owns(binding))
+              controller.creator.close(binding);
+          }}
+          initialFocus={() => createInput}
+          returnFocus={focusBack}
+        >
+          <form
+            class="tw:space-y-3"
+            aria-busy={$creator.busy}
+            onsubmit={(event) => {
+              event.preventDefault();
+              if (
+                !event.currentTarget.isConnected ||
+                $creator.inline ||
+                !controller.creator.owns(binding)
+              )
+                return;
+              void controller.creator.submit(binding);
+            }}
+          >
+            <Label for="native-new-room">{text("createLabel")}</Label><Textarea
+              bind:ref={createInput}
+              id="native-new-room"
+              rows={4}
+              placeholder={text("createPlaceholder")}
+              value={$draft.create}
+              disabled={$creator.busy}
+              oninput={(event) => {
+                if (
+                  event.currentTarget.isConnected &&
+                  !$creator.inline &&
+                  controller.creator.owns(binding)
+                )
+                  controller.creator.edit(event.currentTarget.value, binding);
+              }}
+              onkeydown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.isComposing &&
+                  !$creator.inline &&
+                  event.currentTarget.isConnected &&
+                  controller.creator.owns(binding)
+                ) {
+                  event.preventDefault();
+                  void controller.creator.submit(binding);
+                }
+              }}
+            />
+            <div class="tw:flex tw:flex-wrap tw:gap-2">
+              <Button
+                variant="outline"
+                onclick={(event) => {
+                  if (
+                    event.currentTarget.isConnected &&
+                    controller.creator.owns(binding)
+                  )
+                    controller.creator.close(binding);
+                }}>{text("cancel")}</Button
+              ><Button type="submit" loading={$creator.busy}
+                >{text($creator.busy ? "creating" : "create")}</Button
+              >
+            </div>
+            {#if $creator.error}<p
+                role="alert"
+                class="tw:break-words tw:text-destructive"
+              >
+                {homeIssue(lang, $creator.error)}
+              </p>{/if}
+          </form>
+        </Dialog>
+      {/snippet}</Snapshot
+    >{/key}{/if}
 <Dialog
   open={!!selectedRoom}
   title={text("roomSettings", { title: selectedRoom?.title ?? "" })}
