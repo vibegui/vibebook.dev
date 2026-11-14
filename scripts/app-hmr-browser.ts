@@ -19,7 +19,7 @@ import {
   nativeBrowserFixtures,
   localBrowserError,
 } from "./native-browser-fixtures";
-import { MeResult, CreateRoomResult, AccessContext } from "../shared/schemas";
+import { MeResult, CreateRoomResult, AccessContext, UploadFileResult } from "../shared/schemas";
 import { isRoomEvent, record } from "../shared/validation";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -586,6 +586,54 @@ try {
     "Production version banner must remain disabled in source mode",
   );
   result.componentAndStyle = "pass";
+
+  step("Edit a mounted demand-loaded Files view, preserving owned filter, draft and retained mount");
+  const uploaded: UploadFileResult[] = [];
+  for (const fixture of [
+    {name:`hmr-text-${token}.txt`,type:"text/plain",body:"Real HMR text fixture\n"},
+    {name:`hmr-notes-${token}.md`,type:"text/markdown",body:"# Real HMR Markdown fixture\n"},
+  ]) {
+    const response=await context.request.post(`${base}/api/books/${room}/files`,{
+      headers:{origin:base,"content-type":fixture.type,"x-filename":encodeURIComponent(fixture.name)},data:fixture.body,
+    });
+    assert(response.ok(),"Actual HMR file fixture upload must succeed");
+    uploaded.push(UploadFileResult.parse(await response.json()));
+  }
+  const textFile=uploaded.find(file=>file.type==="text/plain"),markdownFile=uploaded.find(file=>file.type==="text/markdown");
+  assert(textFile&&markdownFile,"Both canonical fixture file types must exist");
+  const filesTab=page.locator('[data-room-document-toolbar] [data-document-pane="files"]');
+  if(!await filesTab.isVisible())await page.locator("[data-native-document-toggle]").click();
+  await filesTab.click();
+  const filesView=page.locator('[data-vb-native="files"]');
+  await expect(filesView).toBeVisible();
+  const textFilter=filesView.locator('[data-fkind="txt"]');
+  await textFilter.click();
+  await expect(textFilter).toHaveAttribute("aria-pressed","true");
+  await expect(filesView.locator(`[data-file-id="${textFile.id}"]`)).toBeVisible();
+  await expect(filesView.locator(`[data-file-id="${markdownFile.id}"]`)).toHaveCount(0);
+  await mutate("svelte/Files.svelte",source=>source.replace('<section\n  data-vb-native="files"',`<section\n  data-hmr-lazy-verification="${token}"\n  data-vb-native="files"`));
+  await expect(filesView).toHaveAttribute("data-hmr-lazy-verification",token);
+  assert.equal(await documentId(),token,"Lazy component HMR must preserve the actual document");
+  assert.equal(roomSockets,socketsBefore,"Lazy component HMR must preserve the existing Book connection");
+  await expect(composer).toHaveValue(`Unsent HMR draft ${token}`);
+  await expect(textFilter).toHaveAttribute("aria-pressed","true");
+  const retainedFiles=await filesView.elementHandle();
+  assert(retainedFiles,"Updated lazy Files view must have a real DOM root");
+  try {
+    await page.locator('[data-room-document-toolbar] [data-document-pane="doc"]').click();
+    await expect(filesView).toBeHidden();
+    await filesTab.click();
+    await expect(filesView).toBeVisible();
+    assert.equal(await retainedFiles.evaluate(node=>node===document.querySelector('[data-vb-native="files"]')),true,"Leaving and reopening the loaded view must retain its actual updated mount");
+    await expect(filesView).toHaveAttribute("data-hmr-lazy-verification",token);
+    await expect(textFilter).toHaveAttribute("aria-pressed","true");
+    await expect(filesView.locator(`[data-file-id="${textFile.id}"]`)).toBeVisible();
+    await expect(filesView.locator(`[data-file-id="${markdownFile.id}"]`)).toHaveCount(0);
+    await expect(composer).toHaveValue(`Unsent HMR draft ${token}`);
+    assert.equal(await documentId(),token);
+    assert.equal(roomSockets,socketsBefore);
+  } finally {await retainedFiles.dispose();}
+  result.lazyView={status:"pass",filter:"txt",fixtureFiles:uploaded.map(file=>file.id),retainedAfterReentry:true};
 
   step(
     "Edit shared contract, verify declaration watcher plus full reload/reconnection",
