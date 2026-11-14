@@ -3466,7 +3466,7 @@ function onEvent(ev, id) {
     case "closed": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.choices = ev.choices; const el = document.getElementById(`m${m.id}`)?.querySelector(".choice"); if (el) el.outerHTML = choiceHtml(m); } break; }
     case "msgCard": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.card = ev.card; const el = document.getElementById(`m${ev.id}`); if (el && m.thread === thread) renderChat(true); } return; }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread && ev.m.tag !== "fire") { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
       if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); const vc = q?.card && document.querySelector(`#m${q.id} .vcard`); if (vc) vc.outerHTML = cardHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
@@ -6098,7 +6098,7 @@ function renderChat(keep) {
     }, 400);
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
-  const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m) && !othersAsk(m) && !othersAsk(S.messages.find((x) => x.id === m.reply_to)));
+  const all = S.messages.filter((m) => m.thread === thread && m.tag !== "fire" && !isPermAnswer(m) && !othersAsk(m) && !othersAsk(S.messages.find((x) => x.id === m.reply_to)));
   if (liveState && all.length < WIN && !olderBusy && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread] && !fillOf.has(S.id + thread)) {
     fillOf.add(S.id + thread); olderBusy = true;
     send({ t: "older", thread, before: all[0]?.id ?? 0 });

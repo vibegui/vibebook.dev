@@ -67,6 +67,7 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
     const card = cardOf(JSON.parse(output.card), bookId);
     const r = await bookStub(env, bookId).fireCard(bookId, email, thread, `🔥 ${output.title}`, card, cardMsg || undefined);
     if (!r.ok) return { ok: false as const, error: r.error };
+    await bookStub(env, bookId).firePiece(bookId, email, thread, text, { card_msg: r.id });
     await track(env, "fire", { user: email, dims: { book: bookId, ms: Date.now() - t0, chars: text.length, mode: "card", cost: Number((usage as { raw?: { cost?: number } }).raw?.cost) || 0, created: !cardMsg } });
     return { ok: true as const, mode: "card" as const, card_msg: r.id, ms: Date.now() - t0 };
   };
@@ -114,6 +115,7 @@ export async function fire(env: Env, bookId: string, email: string, b: FireIn): 
   const meta = await storeFile(env, bookId, email, type, new TextEncoder().encode(body).buffer as ArrayBuffer, name);
   const opened = !fid ? (((await bookStub(env, bookId).agentOpenFile(bookId, email, meta.id)) as { opened_in_tabs?: number }).opened_in_tabs ?? 0) > 0 : false;
   const ms = Date.now() - t0;
+  await bookStub(env, bookId).firePiece(bookId, email, thread, text, { file: { id: meta.id, name: meta.name } });
   await track(env, "fire", { user: email, dims: { book: bookId, ms, chars: text.length, size: body.length, cost: Number((usage as { raw?: { cost?: number } }).raw?.cost) || 0, created: !fid } });
   return { ok: true, mode: "file", file: { id: meta.id, name: meta.name, type, size: meta.size, ts: meta.ts }, opened, ms };
 }

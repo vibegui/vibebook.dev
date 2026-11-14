@@ -671,7 +671,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue" | "notice"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue" | "notice" | "fire"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
     // A reply points at a message of this room; anything else is dropped rather than refused.
     const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
@@ -1159,6 +1159,9 @@ export class Book extends DurableObject<Env> {
         // A reminder file's prompt, posted by @vibe, is the instruction of whoever saved the file.
         from_your_human: mine,
         reminder: m.tag === "reminder" || undefined,
+        // Modo Fire: a piece of live speech, already applied by the fast model to the card it replies to (or the file
+        // named in it). Act fast, fix with fire_card / a new file version, no epic.
+        realtime: m.tag === "fire" || undefined,
         to_agent: m.author === email && m.kind !== "agent" ? toAgents((m.text as string) ?? "").join(", ") || undefined : undefined,
         not_for_you: (m.author === email && m.kind !== "agent" && forOther((m.text as string) ?? "")) || undefined,
         reply_to: (m.reply_to as number | null) ?? undefined,
@@ -1496,6 +1499,17 @@ export class Book extends DurableObject<Env> {
     if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
     const m = this.addMessage(thread, email, text.slice(0, 500), { card, quiet: true });
     return { ok: true as const, id: m.id };
+  }
+  /** Modo Fire, hybrid (Gui #2384): every piece of live speech, once the fast model applied it, is also posted as the
+   * person's own message tagged `fire` (reply_to = the live card, or the file named in the text). Not quiet, so their
+   * listening Claude wakes and checks it with real tools/data; the app doesn't draw these lines (the card and the
+   * review message already show them). */
+  async firePiece(bookId: string, email: string, thread: string, text: string, ref: { card_msg?: number; file?: { id: string; name: string } }) {
+    this.bind(bookId);
+    if (findSecret(text)) return;
+    if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
+    const at = ref.file ? `\n\n(ao vivo em ${ref.file.name}, file_id ${ref.file.id})` : "";
+    this.addMessage(thread, email, `🔥 ${text.slice(0, 1500)}${at}`, { tag: "fire", replyTo: ref.card_msg });
   }
   async humanPost(bookId: string, email: string, raw: string, thread = "main"): Promise<PostMessageResponse> {
     this.bind(bookId);
@@ -2112,7 +2126,7 @@ export class Book extends DurableObject<Env> {
     let since = Number(this.get("waits_at_id") ?? -1);
     if (since < 0) since = Math.max(0, last - 20); // a room from before this: only its latest messages
     const msgs = this.sql
-      .exec<{ id: number; thread: string; author: string; text: string; kind: string | null; ts: number }>(`SELECT id, thread, author, text, kind, ts FROM messages WHERE id > ? ORDER BY id LIMIT 20`, since)
+      .exec<{ id: number; thread: string; author: string; text: string; kind: string | null; ts: number }>(`SELECT id, thread, author, text, kind, ts FROM messages WHERE id > ? AND (tag IS NULL OR tag <> 'fire') ORDER BY id LIMIT 20`, since)
       .toArray();
     if (!msgs.length) return;
     const members = await this.members();
