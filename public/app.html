@@ -72,6 +72,7 @@
   .avatar.claude.gemini { background: linear-gradient(135deg, #4f8cff, #9b6bff); }
   .avatar.claude.cursor { background: light-dark(#2b2b2b, #d9d9d9); color: light-dark(#fff, #111); }
   .avatar.claude.copilot { background: #6e40c9; }
+  .agentWarn { margin: 2px 0 4px 34px; padding: 6px 9px; border-radius: 8px; background: var(--wait-bg); color: var(--wait-ink); font-size: 12.5px; line-height: 1.35; }
   .agentRow .aglyph:is(.codex, .gemini, .cursor, .copilot):not(.on) { background: var(--hover); box-shadow: inset 0 0 0 1px var(--line); } /* Claude's warm tile only for Claude */
   .agentRow .aglyph.gemini { color: #6f7dff; } .agentRow .aglyph.gemini.on { background: linear-gradient(135deg, #4f8cff, #9b6bff); color: #fff; }
   .agentRow .aglyph.cursor { color: light-dark(#2b2b2b, #d9d9d9); } .agentRow .aglyph.cursor.on { background: light-dark(#2b2b2b, #d9d9d9); color: light-dark(#fff, #111); }
@@ -499,7 +500,14 @@
   .vtable { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; } .vtable table { border-collapse: collapse; width: 100%; font-size: 13px; } .vtable th, .vtable td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; } .vtable th { color: var(--mute); font-weight: 600; background: var(--bg); } .vtable tr:last-child td { border-bottom: 0; }
   .vchart { margin: 0; display: grid; gap: 6px; color: var(--accent, #4f7cff); } .vchart figcaption { color: var(--ink); font-size: 13px; font-weight: 600; } .vchart svg { width: 100%; height: 90px; }
   .vbar { display: grid; grid-template-columns: minmax(60px, 30%) 1fr auto; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); } .vbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mute); } .vbar i { height: 10px; border-radius: 5px; background: var(--claude); min-width: 2px; } .vbar b { font-variant-numeric: tabular-nums; }
-  .vlab { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); }
+  .vlab { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); padding-left: 38px; }
+  .vplot { display: grid; grid-template-columns: 34px 1fr; gap: 4px; } .vyax { display: flex; flex-direction: column; justify-content: space-between; font-size: 10.5px; color: var(--mute); text-align: right; font-variant-numeric: tabular-nums; }
+  .vchart .vgrid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .vleg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink); } .vleg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .vbars { display: grid; gap: 2px; } .vbar.multi .vbars i { height: 6px; }
+  .vdelta { font-size: 12px; font-weight: 600; } .vdelta.good { color: #16a34a; } .vdelta.bad { color: #dc2626; } .vdelta.flat { color: var(--mute); }
+  .vtrend { display: block; font-size: 11px; color: var(--mute); }
+  a.vbtn, a.vbtn:hover { text-decoration: none; }
   .vhr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; } .vimg { max-width: 100%; border-radius: 10px; display: block; }
   .vact { display: flex; flex-wrap: wrap; gap: 8px; }
   .vbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 13.5px/1 "Schibsted Grotesk", system-ui, sans-serif; cursor: pointer; text-decoration: none; }
@@ -709,7 +717,23 @@
   .mentionPop { position: absolute; left: 24px; bottom: calc(100% - 8px); min-width: 240px; max-width: calc(100% - 48px); background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 20px 40px -20px rgb(10 30 70 / .35); padding: 6px; z-index: 5; }
   .mentionPop[hidden] { display: none; }
   .composer .emojiBtn { font-size: 19px; line-height: 1; filter: grayscale(.4); } .composer .emojiBtn:hover, .composer .emojiBtn[aria-expanded="true"] { filter: none; }
-  .composer .micBtn { color: var(--mute); touch-action: none; } .composer .micBtn.on { color: #fff; background: #d64545; border-radius: 50%; }
+  .composer .micBtn { color: var(--mute); touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  .composer.charging, .composer.charging * { -webkit-user-select: none; user-select: none; } .composer .micBtn.on { color: #fff; background: #d64545; border-radius: 50%; }
+  /* Modo Fire: holding 🎤 for 3s charges it (a ring fills), then it burns while live speech goes to the fast model. */
+  .composer .micBtn.charging { position: relative; border-radius: 50%; background: conic-gradient(#ff7a1a var(--fireP, 0%), transparent 0); transition: none; }
+  .composer .micBtn.fire { color: #fff; border-radius: 50%; background: radial-gradient(circle at 50% 70%, #ffd23f, #ff7a1a 45%, #e5381f 80%); box-shadow: 0 0 0 3px color-mix(in srgb, #ff7a1a 35%, transparent), 0 0 18px #ff7a1a; animation: fireFlick 1.1s ease-in-out infinite alternate; }
+  @keyframes fireFlick { from { box-shadow: 0 0 0 3px color-mix(in srgb, #ff7a1a 30%, transparent), 0 0 12px #ff7a1a; } to { box-shadow: 0 0 0 5px color-mix(in srgb, #e5381f 30%, transparent), 0 0 24px #ffb03a; } }
+  @media (prefers-reduced-motion: reduce) { .composer .micBtn.fire { animation: none; } }
+  .fireBar[hidden] { display: none; }
+  .fireBar .fbSpin { display: none; width: 12px; height: 12px; border: 2px solid color-mix(in srgb, #ff7a1a 30%, transparent); border-top-color: #ff7a1a; border-radius: 50%; animation: ackspin .7s linear infinite; }
+  .fireBar.hot .fbSpin { display: inline-block; }
+  .msg.fireCard.hot .vcard { position: relative; overflow: hidden; }
+  .msg.fireCard.hot .vcard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, #ff7a1a 18%, transparent) 50%, transparent 70%); background-size: 200% 100%; animation: fireSweep 1s linear infinite; pointer-events: none; }
+  @keyframes fireSweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  @media (prefers-reduced-motion: reduce) { .fireBar .fbSpin, .msg.fireCard.hot .vcard::after { animation: none; } }
+  .fireBar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin-bottom: 6px; border-radius: 10px; background: color-mix(in srgb, #ff7a1a 14%, var(--panel)); border: 1px solid color-mix(in srgb, #ff7a1a 40%, transparent); font-size: 13px; }
+  .fireBar .fbTx { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .fireBar .fbTx i { color: var(--mute); }
+  dialog.fireDlg { width: min(460px, calc(100% - 32px)); } dialog.fireDlg .fIco { font-size: 34px; } dialog.fireDlg ul { margin: 6px 0 16px; padding-left: 18px; line-height: 1.5; color: var(--mute); } dialog.fireDlg ul b { color: var(--ink); }
   .composer.dictating textarea, .composer.dictating input { box-shadow: 0 0 0 2px #d64545; }
   .emojiPop { width: min(340px, calc(100% - 48px)); }
   .emojiPop input { width: 100%; margin-bottom: 6px; }
@@ -991,6 +1015,10 @@
   .hcName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; } .hcHead small { color: var(--mute); flex: none; }
   .hcOpen { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 600; }
   .hcOpen:hover { border-color: var(--accent); }
+  .docApp { margin: 12px 0; } .docApp iframe.embed { width: 100%; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: #fff; display: block; }
+  .daSize { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; flex: none; } .daSize button { border: 0; background: none; padding: 2px 7px; font: 600 11px/1.4 inherit; color: var(--mute); cursor: pointer; } .daSize button.on { background: var(--ink); color: var(--panel); }
+  /* Abrir opens beside the chat (Gui 14/11, #2342); full screen is the small icon at the far right. */
+  .hcFull { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: var(--mute); } .hcFull:hover { color: var(--ink); background: var(--hover); }
   .htmlCard iframe.embed { border: 0; border-top: 1px solid var(--line); border-radius: 0; }
   .htmlCard .embedWrap.clipped::after { border-radius: 0; }
   .htmlCard .appAsk { margin: 8px; }
@@ -1456,6 +1484,114 @@ const LANG = (document.cookie.match(/(?:^|;\s*)vb_lang=(pt|en)\b/)?.[1]) || (/^p
 document.documentElement.lang = LANG === "en" ? "en" : "pt-BR";
 const LOCALE = LANG === "en" ? "en-US" : "pt-BR";
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; // dictation in the composer, when the browser has it
+// Modo Fire (Gui 14/11): live transcription; each pause goes at once to POST /api/books/:id/fire, where the fast model
+// applies it to the file open beside the chat (new version, the panel follows); one request at a time, speech that
+// arrives meanwhile joins the next one. Stopping posts the whole transcript with the file as your message, so your
+// own Claude reviews what the fast model did.
+let fireS = null; // { rec, on, chunks, pending, busy, fid, name, n, thread }
+const fireLive = () => !!fireS?.on;
+function fireArm() {
+  let seen = false; try { seen = localStorage.getItem("vb.fireSeen") === "1"; } catch {}
+  if (seen) return fireOn();
+  const d = document.createElement("dialog"); d.className = "fireDlg";
+  d.innerHTML = `<div class="fIco">🔥</div><h3>${t("Modo Fire")}</h3><ul>
+    <li>${t("<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).")}</li>
+    <li>${t("<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.")}</li>
+    <li>${t("<b>Ao parar</b> (toque no 🎤), a transcrição vai pro chat como mensagem sua, com o arquivo, e o seu Claude confere e melhora.")}</li>
+    <li>${t("O modelo rápido só mexe nesse arquivo. Custa centavos por minuto falado.")}</li></ul>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button type="button" class="ghost" data-x>${t("Cancelar")}</button><button type="button" class="primary" data-go>${t("Ligar o fogo")}</button></div>`;
+  document.body.appendChild(d); d.showModal();
+  d.querySelector("[data-x]").onclick = () => { d.close(); d.remove(); };
+  d.querySelector("[data-go]").onclick = () => { try { localStorage.setItem("vb.fireSeen", "1"); } catch {} d.close(); d.remove(); fireOn(); };
+}
+function fireBar(status) {
+  const b = document.getElementById("fireBar"); if (!b) return;
+  b.hidden = !fireLive();
+  if (fireLive()) b.innerHTML = `<span class="fbSpin" aria-hidden="true"></span><span>🔥</span><span class="fbTx">${status ? esc(status) : `<i>${t("ao vivo: fale, a cada pausa eu aplico")}</i>`}</span><button type="button" class="ghost" data-firestop>${t("Parar")}</button>`;
+  b.querySelector("[data-firestop]")?.addEventListener("click", fireStop);
+}
+function fireOn() {
+  if (!SR || !S) return;
+  fireS = { on: true, chunks: [], pending: "", busy: false, fid: "", name: "", n: 0, thread };
+  document.getElementById("micBtn")?.classList.add("fire");
+  const listen = () => {
+    if (!fireS?.on) return;
+    const rec = new SR(); rec.lang = LOCALE; rec.continuous = true; rec.interimResults = true; fireS.rec = rec;
+    // A piece goes when the browser marks it final, or sooner: when the words in progress stop changing for 0.7 s
+    // (browsers wait 1-2 s of silence to mark a result final; Gui #2378 wanted it faster).
+    let done = 0, stableT = 0;
+    rec.onresult = (ev) => {
+      let interim = "", at = -1;
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        if (i < done) continue;
+        if (ev.results[i].isFinal) { done = i + 1; fireSay(ev.results[i][0].transcript.trim()); }
+        else { if (at < 0) at = i; interim += ev.results[i][0].transcript; }
+      }
+      clearTimeout(stableT);
+      if (!interim.trim()) return;
+      fireHot(true);
+      if (!fireS.busy) fireBar(`… ${interim.trim()}`);
+      const upTo = ev.results.length;
+      stableT = setTimeout(() => { if (fireS?.rec === rec && done <= at) { done = upTo; fireSay(interim.trim()); } }, 700);
+    };
+    rec.onerror = (ev) => { if (ev.error === "not-allowed") { toast(t("O navegador não deixou usar o microfone.")); fireStop(); } };
+    rec.onend = () => setTimeout(listen, 150); // browsers end a session after a silence: keep listening while on
+    try { rec.start(); } catch {}
+  };
+  listen(); fireBar();
+}
+// Loading from the first word: the fire bar spins and the live card (or the page beside) shimmers while the person
+// talks and while the fast model works, so something moves before the answer comes back.
+function fireHot(on) {
+  const f = fireS; on = on || !!f?.busy;
+  document.getElementById("fireBar")?.classList.toggle("hot", on);
+  document.querySelectorAll(".msg.fireCard").forEach((x) => x.classList.toggle("hot", on && x.id === `m${f?.cardMsg}`));
+  if (f?.cardMsg) document.getElementById(`m${f.cardMsg}`)?.classList.add("fireCard");
+  document.getElementById(`m${f?.cardMsg}`)?.classList.toggle("hot", on);
+}
+function fireSay(text) {
+  if (!text || !fireS) return;
+  fireS.pending = `${fireS.pending} ${text}`.trim();
+  firePump();
+}
+async function firePump() {
+  const f = fireS; if (!f || f.busy || !f.pending) return;
+  f.busy = true; fireHot(true);
+  const text = f.pending; f.pending = "";
+  const open = sideView && sideView.room === S.id ? (fileVersions(sideView.name)[0]?.id || sideView.fid) : "";
+  fireBar(`${t("aplicando")}: ${text}`);
+  try {
+    const r = await fetch(`/api/books/${S.id}/fire`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text, file_id: f.cardMsg ? undefined : open || f.fid || undefined, card_msg: f.cardMsg || undefined, thread: f.thread, history: f.chunks.slice(-10) }) }).then((x) => x.json());
+    if (!r.ok) { fireBar(`⚠ ${r.error || t("falhou")}`); }
+    else if (r.mode === "card") { // a native card in the chat, replaced on every piece
+      f.chunks.push(text); f.cardMsg = r.card_msg; f.fid = ""; f.n++;
+      fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
+    } else {
+      f.chunks.push(text); f.fid = r.file.id; f.name = r.file.name; f.cardMsg = 0; f.n++; // "faz um html" leaves the card for a page (#2404)
+      if (!r.opened && !(sideView && sideView.room === S.id && sideView.name === r.file.name)) openSide(r.file.id, r.file.name);
+      fireBar(t("v{n} aplicada: {text}", { n: f.n, text }));
+    }
+  } catch { fireBar(`⚠ ${t("sem conexão")}`); }
+  f.busy = false; fireHot(false);
+  if (f.pending) firePump();
+  else if (!f.on) fireEnd(f);
+}
+function fireStop() {
+  const f = fireS; if (!f) return;
+  f.on = false; try { f.rec?.stop(); } catch {}
+  document.getElementById("micBtn")?.classList.remove("fire");
+  fireBar();
+  if (!f.busy) fireEnd(f);
+}
+// The slow pass: the transcript and the file as your message, which wakes your own Claude to review and fix.
+function fireEnd(f) {
+  if (fireS === f) fireS = null;
+  fireBar();
+  if (!f.chunks.length || !(f.fid || f.cardMsg)) return;
+  if (f.cardMsg) return send({ t: "msg", text: t("🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.", { n: f.chunks.length }) + "\n\n" + f.chunks.map((c) => `- ${c}`).join("\n"), thread: f.thread || "main", reply_to: f.cardMsg });
+  const text = t("🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku em {name}. Confere e melhora o que ele fez.", { n: f.chunks.length, name: f.name }) + "\n\n" + f.chunks.map((c) => `- ${c}`).join("\n");
+  send({ t: "msg", text, thread: f.thread || "main", files: [f.fid] });
+}
 const EN = {
   "Dono: {who}": "Owner: {who}",
   "clique pra trocar": "click to change",
@@ -1855,6 +1991,30 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "Tamanho": "Size",
+  "Abrir no painel Apps": "Open in the Apps panel",
+  "Não achei o app {name} nesta sala.": "Couldn't find the app {name} in this room.",
+  "Entre em {host} com a sua conta pra usar.": "Sign in to {host} with your account to use it.",
+  "Pôr este app no doc (sala ou épico aberto)": "Put this app in the doc (room or open epic)",
+  "Pôr no doc": "Put in doc",
+  "App posto no fim do doc. Em Editar, mova a linha {line} pra onde quiser.": "App added at the end of the doc. In Edit, move the line {line} wherever you want.",
+  "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku neste card. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to this card. Review and improve what it did.",
+  "Toque pra ditar (toque de novo pra parar) · segure 3 s pro Modo Fire": "Tap to dictate (tap again to stop) · hold 3 s for Fire mode",
+  "Modo Fire": "Fire mode",
+  "<b>Ao vivo:</b> o que você fala vai, a cada pausa, direto pra um modelo rápido (Haiku).": "<b>Live:</b> what you say goes, at every pause, straight to a fast model (Haiku).",
+  "<b>Ele aplica na hora</b> no arquivo aberto ao lado do chat (ou começa uma página nova) e o painel atualiza a cada versão.": "<b>It applies it right away</b> to the file open beside the chat (or starts a new page), and the panel updates with every version.",
+  "<b>Ao parar</b> (toque no 🎤), a transcrição vai pro chat como mensagem sua, com o arquivo, e o seu Claude confere e melhora.": "<b>When you stop</b> (tap 🎤), the transcript goes to the chat as your message, with the file, and your Claude reviews and improves it.",
+  "O modelo rápido só mexe nesse arquivo. Custa centavos por minuto falado.": "The fast model only touches that file. It costs cents per minute of speech.",
+  "Ligar o fogo": "Light it up",
+  "ao vivo: fale, a cada pausa eu aplico": "live: talk, I apply it at every pause",
+  "Parar": "Stop",
+  "aplicando": "applying",
+  "v{n} aplicada: {text}": "v{n} applied: {text}",
+  "🔥 Modo Fire: {n} pedido(s) aplicados ao vivo pelo Haiku em {name}. Confere e melhora o que ele fez.": "🔥 Fire mode: {n} request(s) applied live by Haiku to {name}. Review and improve what it did.",
+  "aberto ao lado": "open beside",
+  "Abrindo seu Claude no herdr…": "Opening your Claude in herdr…",
+  "Não deu agora. Tente de novo.": "Didn't work now. Try again.",
+  "{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.": "{n} of your Claudes are listening to this room: each may pick up the same request. Close the extra ones.",
   "O que é seu": "What's yours",
   "Seu Claude": "Your Claude",
   "Tarefas suas e o que espera seu OK. Clique pra abrir.": "Your tasks and what waits on your OK. Click to open.",
@@ -1864,7 +2024,6 @@ const EN = {
   "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
   "Resolvido": "Resolved",
   "esperando você": "waiting on you",
-  "O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.": "The browser blocked access to this computer: click the lock next to the address, allow \"Local network\" (or \"Apps on this device\") and reload.",
   "O que precisa de você aqui": "What needs you here",
   "só você vê": "only you see this",
   "Dispensar": "Dismiss",
@@ -3329,8 +3488,9 @@ function onEvent(ev, id) {
       return;
     }
     case "closed": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.choices = ev.choices; const el = document.getElementById(`m${m.id}`)?.querySelector(".choice"); if (el) el.outerHTML = choiceHtml(m); } break; }
+    case "msgCard": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.card = ev.card; const el = document.getElementById(`m${ev.id}`); if (el && m.thread === thread) renderChat(true); } return; }
     case "moved": { const m = S.messages.find((x) => x.id === ev.id); if (m) { m.thread = ev.thread; renderChat(true); refreshThreadCards(); renderSide(); } break; }
-    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread) { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
+    case "msg": seenHere(ev.m.id); S.messages.push(ev.m); if (ev.m.thread !== "main" && thread === "main") refreshThreadCards(); if (ev.m.thread === thread && ev.m.tag !== "fire") { appendMsg(ev.m); syncEnd(); if (ev.m.files?.length) renderThreadFiles(); } renderSide();
       if (ev.m.reply_to) { const q = S.messages.find((x) => x.id === ev.m.reply_to); const el = q?.choices && document.querySelector(`#m${q.id} .choice`); if (el) el.outerHTML = choiceHtml(q); const vc = q?.card && document.querySelector(`#m${q.id} .vcard`); if (vc) vc.outerHTML = cardHtml(q); } notifyMsg(ev.m); return;
     case "delta": {
       const m = S.messages.find((x) => x.id === ev.id); if (m) m.text = ev.text;
@@ -3372,12 +3532,14 @@ function onEvent(ev, id) {
     }
     case "requests": S.requests = ev.requests; renderSide(); return;
     case "members": S.members = ev.members; S.pending = ev.pending; S.requests = ev.requests || S.requests; S.names = ev.names || S.names; S.avatars = ev.avatars || S.avatars; renderSide(); return;
-    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
+    case "files": S.files = ev.files; S.filesAll = true; S.filesN = ev.files.length; renderFiles(); connsFilesChanged(); refreshVersions(); if (docAppsWait) { docAppsWait = false; renderDoc(true); } if (S.chipMiss) { S.chipMiss = false; renderChat(true); } return;
     case "fileAdd": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.filesN = (S.filesN ?? S.files?.length ?? 0) + 1; S.files = [ev.file, ...(S.files || []).filter((f) => f.id !== ev.file.id)]; renderFiles(); connsFilesChanged(); refreshVersions(); renderThreadFiles(); return;
     case "reminders": S.reminders = ev.reminders; renderReminders(); return;
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
     case "pins": S.pins = ev.pins; renderSide(); renderFiles(); renderApps(); return;
+    // Your Claude opened a file for you (MCP open_file): show it beside the chat; it follows newer versions.
+    case "openSide": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.files = [ev.file, ...(S.files || [])]; openSide(ev.file.id, ev.file.name); return;
     case "error": toast(esc(ev.error || t("falhou"))); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {
@@ -3540,9 +3702,10 @@ function renderBook() {
       <form class="composer" id="composer">
         <div class="tray" id="tray"></div>
         <div class="replyBar" id="replyBar" hidden></div>
+        <div class="fireBar" id="fireBar" hidden></div>
         <div class="mentionPop" id="mentionPop" role="listbox" aria-label="${t("Mencionar")}" hidden></div>
         <div class="row">
-          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Segure pra ditar (ou segure o espaço)")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}
+          <button type="button" class="ghost icon emojiBtn" id="emojiBtn" title="${t("Emoji")}" aria-label="${t("Emoji")}" aria-haspopup="dialog" aria-expanded="false">🙂</button>
           <div class="mentionPop emojiPop" id="emojiPop" role="dialog" aria-label="${t("Emoji")}" hidden><input type="search" id="emojiQ" placeholder="${t("Buscar emoji…")}" autocomplete="off"><div class="eGrid" id="emojiGrid"></div></div>
           <button type="button" class="ghost icon" id="plusBtn" title="${t("Anexar, mencionar, votação")}" aria-label="${t("Mais opções")}" aria-haspopup="menu" aria-expanded="false">${icon("plus", 18)}</button>
           <div class="mentionPop plusMenu" id="plusMenu" role="menu" hidden>
@@ -3551,7 +3714,7 @@ function renderBook() {
             <button type="button" role="menuitem" id="pollBtn">${icon("chart")} ${t("Criar votação")}</button>
           </div>
           <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/html,.html,.htm,text/markdown,.md,text/plain,.txt,text/csv,.csv,audio/*,.m4a,.mp3,.wav,.aac,.ogg,.opus,.webm,.flac" multiple hidden />
-          <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea><button class="primary" id="sendBtn">${t("Enviar")}</button>
+          <textarea id="input" rows="1" placeholder="${t("Mensagem…")}"></textarea>${SR ? `<button type="button" class="ghost icon micBtn" id="micBtn" title="${t("Toque pra ditar (toque de novo pra parar) · segure 3 s pro Modo Fire")}" aria-label="${t("Ditar mensagem")}">${icon("mic", 18)}</button>` : ""}<button class="primary" id="sendBtn">${t("Enviar")}</button>
         </div>
       </form>
     </main>
@@ -3647,7 +3810,13 @@ function renderBook() {
       try { rec.start(); } catch { rec = null; box.classList.remove("dictating"); mic?.classList.remove("on"); }
     };
     const stop = () => { try { rec?.stop(); } catch {} };
-    input.addEventListener("keydown", (e) => {
+    // Enviar while dictating (Gui #2405): the message goes, dictation stops, and late results don't write the sent
+    // text back into the empty box.
+    box.addEventListener("submit", () => { if (!rec) return; rec.onresult = null; base = ""; stop(); }, true);
+    // Hold-Space is for physical keyboards. On touch screens it cancelled every space of the on-screen keyboard
+    // (inserted later by hand), which broke autocorrect/predictions and froze iPhones (Gui 14/11): they have 🎤 and
+    // the keyboard's own dictation.
+    if (!matchMedia("(pointer: coarse)").matches) input.addEventListener("keydown", (e) => {
       // Fast typing: the next key can come before Space is released; the space goes in first, and no dictation.
       if (e.key !== " ") { if (pending) typeSpace(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
@@ -3657,12 +3826,34 @@ function renderBook() {
       holdT = setTimeout(() => { pending = false; held = true; start(); }, 350);
     });
     input.addEventListener("keyup", (e) => {
-      if (e.key !== " ") return;
+      if (e.key !== " " || matchMedia("(pointer: coarse)").matches) return;
       if (held) { held = false; stop(); return; }
       if (pending) typeSpace();
     });
-    mic?.addEventListener("pointerdown", (e) => { e.preventDefault(); mic.setPointerCapture?.(e.pointerId); start(); });
-    for (const ev of ["pointerup", "pointercancel"]) mic?.addEventListener(ev, stop);
+    // 🎤: a tap starts dictation and another tap stops it (Gui 14/11, #2364: no holding, on the phone or the desktop).
+    // Holding it charges Modo Fire: the ring shows after 0.4 s and fills to 3 s.
+    let fireT = 0, fireRaf = 0, showT = 0, fired = false;
+    mic?.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); try { mic.setPointerCapture?.(e.pointerId); } catch {}
+      fired = false;
+      if (fireLive()) { fired = true; return fireStop(); }
+      const t0 = performance.now();
+      box.classList.add("charging");
+      showT = setTimeout(() => {
+        mic.classList.add("charging");
+        const tick = () => { mic.style.setProperty("--fireP", `${Math.min(100, (performance.now() - t0) / 30)}%`); fireRaf = requestAnimationFrame(tick); };
+        tick();
+      }, 400);
+      fireT = setTimeout(() => { fired = true; cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); stop(); fireArm(); }, 3000);
+    });
+    mic?.addEventListener("pointerup", () => {
+      box.classList.remove("charging");
+      clearTimeout(fireT); clearTimeout(showT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging");
+      if (fired) return;
+      if (rec) stop(); else start(); // a tap: toggle dictation
+    });
+    mic?.addEventListener("contextmenu", (e) => e.preventDefault()); // a long press on iOS/Android must not select or open a menu
+    mic?.addEventListener("pointercancel", () => { box.classList.remove("charging"); clearTimeout(fireT); clearTimeout(showT); cancelAnimationFrame(fireRaf); mic.classList.remove("charging"); });
   }
   // 🙂 picker: the same names as the :shortcodes: (EMOJI), one button per emoji, filtered by name; a pick goes in at the
   // cursor. The keyboard's own emoji key still works; this is for the desktop and for finding one by name.
@@ -3711,9 +3902,15 @@ function renderBook() {
     picks = people.filter((p) => !q || p.handle.startsWith(q) || fold(p.label).includes(q)).slice(0, 8);
     pickAt = 0; renderPop();
   };
+  // Grow/shrink the box only when its line count changes. Setting height to "auto" and reading scrollHeight on every
+  // key laid out the whole room twice per keystroke: 264 ms per key in an 80-message room (Gui 14/11: "depois de 30
+  // chars fica ultra lagado, no celular trava").
+  let lastLen = 0;
   input.oninput = () => {
-    resizeTextarea(input);
-    updatePop();
+    const len = input.value.length, shrank = len < lastLen; lastLen = len;
+    if (shrank) { input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`; }
+    else if (input.scrollHeight > input.clientHeight) input.style.height = `${input.scrollHeight}px`;
+    if (input.value.includes("@")) updatePop(); else if (!pop.hidden) closePop();
   };
   input.onblur = () => setTimeout(closePop, 100);
   input.onkeydown = (e) => {
@@ -3833,6 +4030,7 @@ function renderBook() {
   const setPane = (pane) => {
     $app.querySelector(".doc").dataset.pane = pane;
     $app.querySelector(".book").dataset.pane = pane; // the phone's toolbar marks the open tab
+    syncSideCards(); // another tab over the file beside: its chat previews come back
     $app.querySelectorAll(".ptabs button").forEach((b) => { b.classList.toggle("sel", b.dataset.pane === pane); b.setAttribute("aria-selected", b.dataset.pane === pane); });
     // The room's state brings the newest 12 files; the whole list comes when Arquivos opens.
     if (pane === "files") { if (!S.filesAll) send({ t: "files.get" }); renderFiles(); }
@@ -4063,22 +4261,15 @@ async function loadRoomAgents() {
   renderSide();
 }
 const HERDR_LOCAL = "http://127.0.0.1:47321";
-// Chrome 142+ asks before a site talks to this machine (Local Network Access): without that permission the fetch just
-// fails, and the ↗ read "herdr não está rodando" while it was (Gui, 14/11). Say which one it is.
-const herdrBlocked = () => (navigator.permissions?.query({ name: "local-network-access" }) ?? Promise.reject())
-  .then((p) => toast(p.state === "granted" ? t("O vibebook herdr não está rodando nesta máquina.") : t("O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.")))
-  .catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
-let herdrSeen = null; // rooms with an open Claude per the local runner, refreshed at most every 20s
-const herdrPing = () => {
-  if (herdrSeen && Date.now() - herdrSeen.at < 20e3) return Promise.resolve(herdrSeen.rooms);
-  return fetch(`${HERDR_LOCAL}/ping`).then((r) => r.json()).then((j) => (herdrSeen = { at: Date.now(), rooms: j.rooms }).rooms).catch(() => (herdrSeen = { at: Date.now(), rooms: null }).rooms);
-};
+// Chrome 142+ asks before a site talks to this machine (Local Network Access). The ↗ goes through the server now; the
+// folder hint below asks the local runner only when that permission is already granted, so the page never prompts.
+const lanOk = () => (navigator.permissions?.query({ name: "local-network-access" }) ?? Promise.reject()).then((p) => p.state === "granted", () => true);
 // Where "Ligar Claude" opens this room on this machine (asked to the local vibebook herdr; nothing when it isn't running).
 const herdrWhere = {};
 const whereOf = (id, title) => {
   const c = herdrWhere[id];
   if (c && Date.now() - c.at < 20e3) return Promise.resolve(c.w);
-  return fetch(`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || "")}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+  return lanOk().then((ok) => (ok ? fetch(`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || "")}`).then((r) => (r.ok ? r.json() : null)) : null)).catch(() => null)
     .then((w) => (herdrWhere[id] = { at: Date.now(), w }).w);
 };
 const WHERE_HOW = { used: t("a pasta onde ele já abriu antes"), linked: t("ligada a esta sala pelo arquivo .vibebook"), slug: t("a pasta com o nome da sala"), new: t("pasta nova com o nome da sala, criada ao ligar") };
@@ -4148,10 +4339,12 @@ function renderAgentsPane(on, live, path, w) {
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
   document.getElementById("agConnCopy").onclick = copyConnect;
-  // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
+  // "↗": your vibebook herdr focuses this room's Claude and raises the terminal. It goes through the server to your
+  // CLI's hub (POST /focus → your channel → hub → the local runner), never from this page to 127.0.0.1, so the
+  // browser's Local Network Access permission isn't asked for (Gui, 14/11). Shown while ✻ is on for this room.
   const go = document.getElementById("agGo");
-  if (on) herdrPing().then((rooms) => { if (go.isConnected) go.hidden = !rooms?.includes(S.id); });
-  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(herdrBlocked);
+  go.hidden = !on;
+  go.onclick = () => api(`/api/books/${S.id}/focus`, {}).then(() => toast(t("Abrindo seu Claude no herdr…"))).catch(() => toast(t("Não deu agora. Tente de novo.")));
   el.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (ROOM_PHONE.matches) closeSheet(); goToMsg(Number(b.dataset.goto)); });
   el.querySelectorAll("[data-dismiss]").forEach((b) => b.onclick = () => send({ t: "ack.dismiss", id: Number(b.dataset.dismiss) }));
   document.getElementById("qMore")?.addEventListener("click", () => { qOpen = !qOpen; renderMyClaude(); });
@@ -4179,7 +4372,7 @@ function myQueue() {
   for (const k of S.acks || []) if (k.email === S.me) (byMsg.get(k.msg_id) ?? byMsg.set(k.msg_id, []).get(k.msg_id)).push(k);
   const msgs = S.messages ? allMsgs() : [];
   return msgs
-    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !msgs.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
+    .filter((m) => m.author === S.me && !m.kind && m.text && m.ts > since && !m.answers_ask && !msgs.some((q) => q.id === m.reply_to && isPermAsk(q))) // the permission hook already took that answer
     .map((m) => { const a = byMsg.get(m.id) || []; return { m, st: a.some((k) => k.status === "done" || k.status === "idle" || k.status === "dismissed") ? null : a.some((k) => k.status === "blocked") ? "blocked" : a.some((k) => k.status === "doing") ? "doing" : "queued" }; })
     .filter((x) => x.st);
 }
@@ -4360,8 +4553,12 @@ const ctxBar = (c) => {
 const agentRows = (email) => {
   if (roomAgents.id !== S?.id) return "";
   const seen = new Set();
-  // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first.
-  return roomAgents.list.filter((a) => a.email === email).sort((x, y) => y.listening - x.listening).filter((a) => !seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo)).slice(0, 3)
+  // The same Claude after a /mcp reconnect is a new session: one row per model + repo, listening first. Listening
+  // ones never fold: three Claudes of Gui's in one folder read as one row for days (14/11).
+  const mine = roomAgents.list.filter((a) => a.email === email);
+  const live = mine.filter((a) => a.listening && !a.all_rooms).length;
+  const warn = email === S.me && live > 1 ? `<div class="agentWarn">⚠ ${t("{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.", { n: live })}</div>` : "";
+  return warn + mine.sort((x, y) => y.listening - x.listening).filter((a) => a.listening || (!seen.has(prettyModel(a.who) + a.repo) && seen.add(prettyModel(a.who) + a.repo))).slice(0, live > 3 ? live : 3)
     .map((a) => `<div class="member agentRow" title="${t("{via} de {who}", { via: esc(prettyModel(a.who)), who: esc(name(email)) })}${a.repo ? ` ${t("em {repo}", { repo: esc(a.repo) })}` : ""} · ${a.listening ? (a.all_rooms ? t("ouvindo todas as salas agora") : t("ouvindo esta sala agora")) : t("visto há {ago}", { ago: ago(a.seen_at) })}"><span class="aglyph ${agentKind(a.who)[0]} ${a.listening ? "on" : ""}">${agentKind(a.who)[1]}</span><span class="fn">${esc(prettyModel(a.who).replace(/^Claude\s+/i, ""))}${a.repo ? ` · ${esc(a.repo)}` : ""}</span><small>${a.listening ? t("ouvindo") : ago(a.seen_at)}${a.context ? ` · ${ctxPct(a.context)}%` : ""}</small>${ctxBar(a.context)}${a.context ? ctxTip(a.context) : ""}</div>`).join("");
 };
 // A Claude is working on this epic: a live "doing" ack on the request it came from or on any message in its thread
@@ -5001,7 +5198,17 @@ function openSide(fid, name) {
   if (ROOM_PHONE.matches) openSheet("doc");
   renderSideView();
 }
+// The file open beside the chat isn't shown twice: its cards in the chat drop the preview and keep one compact row
+// (Gui 14/11, #2338); closing the panel brings the previews back. A stylesheet rule, so no message is redrawn.
+function syncSideCards() {
+  let css = document.getElementById("sideCss");
+  if (!css) { css = document.createElement("style"); css.id = "sideCss"; document.head.appendChild(css); }
+  const on = sideView && sideView.room === S?.id && document.querySelector('.doc[data-pane="view"]');
+  const sel = on ? `.htmlCard[data-hname="${CSS.escape(sideView.name)}"]` : "";
+  css.textContent = on ? `${sel} .embedWrap, ${sel} .hcOpen[data-side] { display: none; } ${sel} .hcHead::after { content: "${t("aberto ao lado")}"; flex: none; font-size: 12px; color: var(--accent); }` : "";
+}
 function renderSideView() {
+  syncSideCards();
   const el = document.getElementById("viewPane"); if (!el) return;
   if (!sideView || sideView.room !== S.id) { el.innerHTML = ""; return; }
   const vs = fileVersions(sideView.name);
@@ -5092,7 +5299,7 @@ const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.r
 // An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
 // the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
 function appFrameName() { return `app-document-${crypto.randomUUID()}`; }
-const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe name="${appFrameName()}" class="embed" data-app-file="${esc(fileUrl(f))}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+const htmlCard = (f) => `<div class="embedBox htmlCard" data-hname="${esc(f.name)}"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Abrir")}</button><a class="hcFull" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</a></div><div class="embedWrap"><iframe name="${appFrameName()}" class="embed" data-app-file="${esc(fileUrl(f))}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
   ? htmlCard(f)
   : f.type.startsWith("audio/")
@@ -5357,15 +5564,16 @@ function cardHtml(m) {
       case "Section": return `<section class="vsec">${p.title ? `<h5>${txt(p.title)}</h5>` : ""}${kids()}</section>`;
       case "Text": return `<p class="vtx ${esc(p.style || "plain")}">${txt(p.content)}</p>`;
       case "Fields": return `<dl class="vfields">${kids()}</dl>`;
-      case "Field": return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}</dd></div>`;
+      case "Field": {
+        // delta colored by direction: a leading "-" or "−" is down; good: "down" flips which way is green.
+        const dn = /^\s*[-−↓]/.test(p.delta || ""), good = p.delta && !/^\s*[0±=]/.test(p.delta) ? (dn === (p.good === "down") ? "good" : "bad") : "flat";
+        return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}${p.delta ? ` <span class="vdelta ${good}">${txt(p.delta)}</span>` : ""}</dd>${p.trend ? `<small class="vtrend">${txt(p.trend)}</small>` : ""}</div>`;
+      }
       case "Table": return `<div class="vtWrap"><button type="button" class="vtOpen" data-vtopen title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</button><div class="vtable"><table>${p.headers?.length ? `<thead><tr>${p.headers.map((h) => `<th>${txt(h)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(p.rows || []).map((r) => `<tr>${r.map((x) => `<td>${txt(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
       case "Chart": {
+        if (p.series?.length) return chartHtml(p, txt);
         const d = p.data || [], max = Math.max(...d.map((x) => Math.abs(x.value)), 1);
-        if (p.kind === "line") {
-          const w = 300, h = 90, step = d.length > 1 ? w / (d.length - 1) : 0, min = Math.min(...d.map((x) => x.value), 0), span = max - min || 1;
-          const pts = d.map((x, i) => `${(i * step).toFixed(1)},${(h - ((x.value - min) / span) * h).toFixed(1)}`).join(" ");
-          return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}<svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="vlab"><span>${txt(d[0]?.label)}</span><span>${txt(d.at(-1)?.label)}</span></div></figure>`;
-        }
+        if (p.kind === "line") return chartHtml({ ...p, labels: d.map((x) => x.label), series: [{ name: p.title || "", values: d.map((x) => x.value) }] }, txt);
         return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}${d.map((x) => `<div class="vbar"><span>${txt(x.label)}</span><i style="width:${Math.round((Math.abs(x.value) / max) * 100)}%"></i><b>${txt(x.value)}</b></div>`).join("")}</figure>`;
       }
       case "Divider": return `<hr class="vhr">`;
@@ -5376,12 +5584,33 @@ function cardHtml(m) {
         return mine ? `<button type="button" class="vbtn ${esc(p.style || "")}" data-cardbtn="${m.id}" data-v="${esc(v)}">${txt(p.label)}</button>` : `<span class="vbtn ro ${picked ? "on" : ""}">${picked ? icon("check", 14) : ""}${txt(p.label)}</span>`;
       }
       case "LinkButton":
-        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(p.url || "")) return `<button type="button" class="vbtn link" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
-        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
+        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(p.url || "")) return `<button type="button" class="vbtn vlink ${p.style === "primary" ? "primary" : ""}" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
+        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn vlink ${p.style === "primary" ? "primary" : ""}" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
       default: return "";
     }
   };
   return draw(c.root);
+}
+// Chart with axis, legend and a native tooltip per point (<title>): line = one polyline per series, bar = grouped
+// horizontal bars per label. Up to 4 series, colors from VSERIES.
+const VSERIES = ["var(--claude)", "#4f7cff", "#22a06b", "#b46ae6"];
+const vnum = (n) => Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : Math.abs(n) >= 1e4 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}k` : String(Math.round(n * 100) / 100);
+function chartHtml(p, txt) {
+  const L = p.labels || [], S2 = p.series || [], all = S2.flatMap((s) => s.values);
+  const max = Math.max(...all, 0), min = Math.min(...all, 0), span = max - min || 1;
+  const legend = S2.length > 1 ? `<div class="vleg">${S2.map((s, i) => `<span><i style="background:${VSERIES[i]}"></i>${txt(s.name)}</span>`).join("")}</div>` : "";
+  const cap = p.title ? `<figcaption>${txt(p.title)}</figcaption>` : "";
+  if (p.kind !== "line") {
+    const mx = Math.max(...all.map(Math.abs), 1);
+    return `<figure class="vchart">${cap}${legend}${L.map((l, j) => `<div class="vbar${S2.length > 1 ? " multi" : ""}"><span>${txt(l)}</span><div class="vbars">${S2.map((s, i) => `<i style="width:${Math.round((Math.abs(s.values[j]) / mx) * 100)}%;background:${VSERIES[i]}" title="${esc(`${l} · ${s.name ? `${s.name}: ` : ""}${s.values[j]}`)}"></i>`).join("")}</div><b>${S2.map((s) => txt(vnum(s.values[j]))).join(" · ")}</b></div>`).join("")}</figure>`;
+  }
+  const w = 300, h = 100, step = L.length > 1 ? w / (L.length - 1) : 0, y = (v) => (h - ((v - min) / span) * h).toFixed(1);
+  const lines = S2.map((s, i) => `<polyline points="${s.values.map((v, j) => `${(j * step).toFixed(1)},${y(v)}`).join(" ")}" fill="none" stroke="${VSERIES[i]}" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`).join("");
+  // An invisible column per label carries the tooltip, so hovering anywhere above a label shows every series there.
+  const hits = L.map((l, j) => `<rect x="${(j * step - step / 2).toFixed(1)}" y="0" width="${(step || w).toFixed(1)}" height="${h}" fill="transparent"><title>${esc(`${l}\n${S2.map((s) => `${s.name ? `${s.name}: ` : ""}${s.values[j]}`).join("\n")}`)}</title></rect>`).join("");
+  const grid = `<line x1="0" x2="${w}" y1="0" y2="0" class="vgrid"/><line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" class="vgrid"/><line x1="0" x2="${w}" y1="${h}" y2="${h}" class="vgrid"/>`;
+  const mid = L.length > 2 ? L[Math.floor((L.length - 1) / 2)] : "";
+  return `<figure class="vchart">${cap}${legend}<div class="vplot"><div class="vyax"><span>${vnum(max)}</span><span>${vnum((max + min) / 2)}</span><span>${vnum(min)}</span></div><svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none">${grid}${lines}${hits}</svg></div><div class="vlab"><span>${txt(L[0])}</span>${mid ? `<span>${txt(mid)}</span>` : ""}<span>${txt(L.at(-1))}</span></div></figure>`;
 }
 // A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
 function cardGo(to) {
@@ -5597,11 +5826,12 @@ function renderConnApp(el) {
   const pinRef = room ? a.tool : `${c.id}/${a.tool}`;
   const bar = el.querySelector(".connBar");
   if (el.querySelector(".connFrame")?.dataset.app === key && hosts.get(el.querySelector(".connFrame"))?.current()) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe name="${appFrameName()}" class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connDocPut" title="${t("Pôr este app no doc (sala ou épico aberto)")}">${t("Pôr no doc")}</button><button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe name="${appFrameName()}" class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
   wirePinToggles(el.querySelector(".connBar"));
   document.getElementById("connReload").onclick = () => { frame.dataset.app = ""; renderConnApp(el); };
+  document.getElementById("connDocPut").onclick = () => docAppPut(c.id, a.tool);
   mountApp(frame, c, a);
 }
 const textOf = (content) => (Array.isArray(content) ? content.filter((b) => b?.type === "text").map((b) => b.text).join("\n") : "");
@@ -5798,14 +6028,14 @@ async function embedHost(frame) {
     hosts.set(frame, host); host.start(); host.loadFile(frame.dataset.appFile);
   } catch { if (current()) frame.dataset.appDocumentExpired = "true"; }
 }
-async function mountApp(frame, c, a) {
+async function mountApp(frame, c, a, askBox) {
   const current = appDocumentScope(frame), room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
-  const ask = () => document.getElementById("appAsk");
+  const ask = askBox || (() => document.getElementById("appAsk"));
   try {
     const { createAppDocumentHost } = await loadAppDocumentHost();
     if (!current()) return;
     if (room) {
-      const host = makeHost(frame, { ask, reopen: (next) => mountApp(next, c, a), tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }, createAppDocumentHost, current);
+      const host = makeHost(frame, { ask, reopen: (next) => mountApp(next, c, a, askBox), tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }, createAppDocumentHost, current);
       hosts.set(frame, host); host.start(); host.loadFile(`/api/books/${S.id}/files/${a.file.id}`);
       return;
     }
@@ -5817,7 +6047,7 @@ async function mountApp(frame, c, a) {
     };
     // This initial call remains the person's explicit Open action, as before.
     const first = call(a.tool, {}).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
-    const host = makeHost(frame, { ask, call, first, reopen: (next) => mountApp(next, c, a), tool: ui.tool, base, toolName: a.tool }, createAppDocumentHost, current);
+    const host = makeHost(frame, { ask, call, first, reopen: (next) => mountApp(next, c, a, askBox), tool: ui.tool, base, toolName: a.tool }, createAppDocumentHost, current);
     hosts.set(frame, host); host.start(); host.loadHtml(ui.html);
   } catch (error) {
     if (!current()) return;
@@ -5976,7 +6206,7 @@ function renderChat(keep) {
     }, 400);
   }
   if (win.thread !== thread || win.room !== S.id) win = { thread, room: S.id, n: WIN };
-  const all = S.messages.filter((m) => m.thread === thread && !isPermAnswer(m) && !othersAsk(m) && !othersAsk(S.messages.find((x) => x.id === m.reply_to)));
+  const all = S.messages.filter((m) => m.thread === thread && m.tag !== "fire" && !isPermAnswer(m) && !othersAsk(m) && !othersAsk(S.messages.find((x) => x.id === m.reply_to)));
   if (liveState && all.length < WIN && !olderBusy && !S.complete && !S.full?.includes(thread) && !olderDone[S.id + thread] && !fillOf.has(S.id + thread)) {
     fillOf.add(S.id + thread); olderBusy = true;
     send({ t: "older", thread, before: all[0]?.id ?? 0 });
@@ -6157,6 +6387,64 @@ function placeTasks(pv, ep) {
   const first = [...pv.children].find((x) => x.tagName === "P");
   first ? first.after(tk) : pv.prepend(tk);
 }
+// Apps in the doc (Gui 14/11, #2372): a line [[app:<connection>/<tool>]] (room/<name> for a room app apps/<name>.html,
+// the same refs as app_open's #app:) anywhere in a room's or an epic's doc becomes a live card running that app, with
+// its own Permitir/Cancelar box. |p |m |g sets its height; the card's P M G rewrites the line in the doc.
+const DOC_APP_H = { p: 240, m: 420, g: 680 };
+const DOC_APP_RE = /^\[\[app:([\w-]+)\/([\w.-]+)(?:\|([pmg]))?\]\]$/i;
+let docAppsWait = false; // a room app not loaded yet: redraw the doc when the file list arrives
+async function docConns() {
+  if (Array.isArray(conns) && connsBook === S.id) return conns;
+  try { const r = await api(`/api/books/${S.id}/connections`); conns = r.connections; connsBook = S.id; } catch { conns = conns || []; }
+  return conns;
+}
+function docApps(pv, ep) {
+  const marks = [...pv.querySelectorAll("p")].filter((p) => DOC_APP_RE.test(p.textContent.trim()));
+  marks.forEach((p, i) => {
+    const [, cid, tool, sz0] = DOC_APP_RE.exec(p.textContent.trim()), sz = (sz0 || "m").toLowerCase();
+    const box = document.createElement("div");
+    box.className = "embedBox htmlCard docApp";
+    box.innerHTML = `<div class="hcHead">${icon("grid", 14)}<span class="hcName">${esc(cid === "room" ? tool : tool.replace(/[_-]/g, " "))}</span><span class="daSize" role="group" aria-label="${t("Tamanho")}">${["p", "m", "g"].map((k) => `<button type="button" data-dsz="${k}" class="${k === sz ? "on" : ""}" title="${t("Tamanho")} ${k.toUpperCase()}">${k.toUpperCase()}</button>`).join("")}</span><button type="button" class="hcFull" data-dopen title="${t("Abrir no painel Apps")}" aria-label="${t("Abrir no painel Apps")}">${icon("expand", 14)}</button></div><iframe name="${appFrameName()}" class="embed docAppFrame" sandbox="allow-scripts allow-forms" style="height:${DOC_APP_H[sz]}px" title="${esc(tool)}"></iframe><div class="appAsk" hidden></div>`;
+    p.replaceWith(box);
+    box.querySelector("[data-dopen]").onclick = () => { connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })); };
+    box.querySelectorAll("[data-dsz]").forEach((b) => (b.onclick = () => docAppSize(ep, i, b.dataset.dsz)));
+    const frame = box.querySelector("iframe"), ask = () => box.querySelector(".appAsk"), current = appDocumentScope(frame);
+    const fail = (msg) => { const d = document.createElement("div"); d.className = "empty"; d.textContent = msg; frame.replaceWith(d); };
+    if (cid === "room") {
+      const a = roomApps().find((x) => x.tool === tool);
+      if (a) return void mountApp(frame, { id: "room", scope: "room", title: t("Esta sala") }, a, ask);
+      if (!S.filesAll) { docAppsWait = true; send({ t: "files.get" }); return void (frame.replaceWith(Object.assign(document.createElement("div"), { className: "empty", textContent: t("Carregando…") }))); }
+      return fail(t("Não achei o app {name} nesta sala.", { name: `apps/${tool}.html` }));
+    }
+    docConns().then((cs) => {
+      if (!current()) return;
+      const c = cs.find((x) => x.id === cid), a = c?.apps.find((x) => x.tool === tool);
+      if (!c || !a) return fail(t("Esse app não está nas conexões que você pode usar nesta sala."));
+      if (c.auth === "identity" && !c.signed_in) return fail(t("Entre em {host} com a sua conta pra usar.", { host: c.host }));
+      mountApp(frame, c, a, ask);
+    });
+  });
+}
+// P M G: rewrite the i-th app line of this doc with its new size, and save the doc like an edit.
+function docAppSize(ep, i, sz) {
+  const text = ep ? S.docs[ep] ?? "" : S.doc ?? "";
+  let n = -1;
+  const out = text.split("\n").map((l) => (DOC_APP_RE.test(l.trim()) && ++n === i ? l.trim().replace(/(?:\|[pmg])?\]\]$/i, `|${sz}]]`) : l)).join("\n");
+  if (out === text) return;
+  if (ep) S.docs[ep] = out; else S.doc = out;
+  send({ t: "doc", text: out, epic: ep || undefined });
+  renderDoc(true);
+}
+// "Pôr no doc": the open app goes at the end of the doc that's showing (move the line anywhere in Editar).
+function docAppPut(cid, tool) {
+  const ep = docEpic(), text = ep ? S.docs[ep] ?? "" : S.doc ?? "", line = `[[app:${cid}/${tool}|m]]`;
+  const out = `${text.replace(/\s*$/, "")}\n\n${line}\n`;
+  if (ep) S.docs[ep] = out; else S.doc = out;
+  send({ t: "doc", text: out, epic: ep || undefined });
+  document.dispatchEvent(new CustomEvent("vb:pane", { detail: "doc" }));
+  renderDoc(true);
+  toast(t("App posto no fim do doc. Em Editar, mova a linha {line} pra onde quiser.", { line: esc(line) }));
+}
 // The doc panel follows the open epic (its own doc, a child of the room's); "Sala" in the crumb shows the room's.
 let docRoom = false, docShown = null;
 // Epic docs come one at a time: the room's state carries only the open epic's (Book.epicDocs), the rest on "doc.get".
@@ -6189,6 +6477,7 @@ function renderDoc(force) {
   if (!ep && S.docNotes?.length) pv.insertAdjacentHTML("afterbegin", `<div class="docNotes" title="${t("@vibe avaliou este doc. O agent de cada um também recebe isso (doc_notes).")}">${S.docNotes.map((n) => `<span class="vnote">${icon("alert", 12)} ${esc(n)}</span>`).join("")}</div>`);
   renderMermaid(pv);
   placeTasks(pv, ep || (thread === "main" && S.roomTasks?.length ? "main" : null));
+  docApps(pv, ep);
   renderPeek();
   // ponytail: last-writer-wins doc; don't clobber while someone is typing. CRDT (Yjs) if real co-editing matters.
   if (force || document.activeElement !== doc) doc.value = text;

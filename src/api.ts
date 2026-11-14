@@ -124,6 +124,8 @@ export interface ApiServices {
   removeMember(roomId: string, email: string): Promise<{ error: string; status: 400 | 403 } | null>;
   /** Tell the person's tabs to refetch this room's agents (after the response). */
   pokeAgents(roomId: string): void;
+  /** The room's ↗: ask this person's CLI hub (any machine) to focus the room's Claude in herdr. */
+  pokeFocus(roomId: string): void;
   /** Ask to join a room: unknown room, already a member, over the rate limit, or asked (the owner is told once). */
   requestAccess(roomId: string): Promise<"not_found" | "member" | "limited" | "asked">;
   /** A member approves (invites) or denies a pending request; false = no such pending request. */
@@ -385,6 +387,14 @@ export const roomApi = accountApi
     svc.pokeAgents(id);
     svc.track(on ? "claude_on" : "claude_off", { book: id });
     return c.json({ ok: true as const, claude_on: on } satisfies ClaudeToggleResult, 200);
+  })
+  // ↗ through the person's channel to their CLI hub, which asks the local herdr runner: the page never talks to
+  // 127.0.0.1 itself, so the browser's Local Network Access permission isn't needed (Gui, 14/11).
+  .post("/api/books/:id/focus", async (c) => {
+    const svc = c.get("svc"), id = c.req.param("id");
+    if (!(await svc.isMember(id))) return c.json(forbidden, 403);
+    svc.pokeFocus(id);
+    return c.json(ok, 200);
   })
   .post("/api/books/:id/request", async (c) => {
     const r = await c.get("svc").requestAccess(c.req.param("id"));

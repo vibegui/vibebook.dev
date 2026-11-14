@@ -283,7 +283,10 @@ export class Book extends DurableObject<Env> {
       .exec(
         // Archived epics are left out (the open one aside): in the product room 126 of 133 epics were archived and
         // their 5 messages each were most of a 655 KB room open (Nov 2026). Opening one fetches it (fillOf / older).
-        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn FROM messages m
+        // answers_ask: a reply to your Claude's ⏸/❓ (Aprovar/Negar…), which the Fila leaves out even when the question
+        // itself isn't loaded.
+        `SELECT * FROM (SELECT m.*, ROW_NUMBER() OVER (PARTITION BY m.thread ORDER BY m.id DESC) AS rn,
+           (SELECT 1 FROM messages q WHERE q.id = m.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')) AS answers_ask FROM messages m
            WHERE m.thread = ? OR m.thread = 'main' OR m.thread IN (SELECT id FROM epics WHERE COALESCE(archived, 0) <= 0))
          WHERE rn <= (CASE WHEN thread = ? THEN 60 ELSE 5 END)
          ORDER BY id`,
@@ -294,7 +297,10 @@ export class Book extends DurableObject<Env> {
     const origins = this.messageRows(this.sql
       .exec(
         `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL AND (COALESCE(archived, 0) <= 0 OR id = ?))
-           OR (author = ? AND kind IS NULL AND ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = messages.id AND a.email = ? AND a.status IN ('done', 'idle', 'dismissed')))
+           OR (author = ? AND kind IS NULL AND ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = messages.id AND a.email = ? AND a.status IN ('done', 'idle', 'dismissed'))
+               -- your answer to your Claude's ⏸/❓ (Aprovar/Negar) is not a request: the hook already took it. The app
+               -- only skipped it when the question was loaded too, so "Aprovar" rows filled the Fila (Gui, 14/11).
+               AND NOT EXISTS (SELECT 1 FROM messages q WHERE q.id = messages.reply_to AND q.kind = 'agent' AND q.choices IS NOT NULL AND (q.text LIKE '⏸%' OR q.text LIKE '❓%')))
            OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
         // Your own messages only while a Claude of yours hasn't closed them: the same rule as the app's myQueue (Fila do
         // seu Claude). Every own message of 48h was most of origins' 162 KB in a 561 KB room open (14/11).
@@ -655,7 +661,7 @@ export class Book extends DurableObject<Env> {
   }
 
   // ---- mutations (shared by humans over WS and by AI tools) ----
-  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue" | "notice"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
+  addMessage(thread: string, author: string, text: string, extra: { files?: FileMeta[]; poll?: string; kind?: "agent"; via?: string; tag?: "done" | "reminder" | "issue" | "notice" | "fire"; replyTo?: number; choices?: { options: string[]; multi: boolean }; forWho?: string; card?: Card; quiet?: boolean } = {}): Msg {
     // A reply points at a message of this room; anything else is dropped rather than refused.
     const replyTo = extra.replyTo && this.sql.exec(`SELECT 1 FROM messages WHERE id = ?`, extra.replyTo).toArray().length ? extra.replyTo : null;
     const ts = Date.now();
@@ -1148,6 +1154,7 @@ export class Book extends DurableObject<Env> {
         // A reminder file's prompt, posted by @vibe, is the instruction of whoever saved the file.
         from_your_human: mine,
         reminder: m.tag === "reminder" || undefined,
+        realtime: m.tag === "fire" || undefined,
         to_agent: m.author === email && m.kind !== "agent" ? toAgents(m.text).join(", ") || undefined : undefined,
         not_for_you: (m.author === email && m.kind !== "agent" && forOther(m.text)) || undefined,
         reply_to: m.reply_to ?? undefined,
@@ -1434,6 +1441,20 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     return this.pinAdd(email, kind, ref, title);
   }
+  /** open_file: the agent's human sees this room file beside the chat (Ao lado) in every tab of this room they have
+   * open; it follows newer versions of the same name, so a Claude can open its first draft and keep uploading. */
+  agentOpenFile(bookId: string, email: string, fileId: string) {
+    this.bind(bookId);
+    const f = this.sql.exec<{ id: string; name: string; type: string; size: number; author: string; ts: number }>(`SELECT id, name, type, size, author, ts FROM files WHERE id = ?`, fileId).toArray()[0];
+    if (!f) return { ok: false, error: "no such file in this room (file_id from upload_file / read_room files)" };
+    if (!/^(text\/html|application\/pdf|text\/markdown|text\/plain|image\/)/.test(f.type)) return { ok: false, error: `can't show ${f.type} beside the chat; html, pdf, markdown, text and images can` };
+    const tabs = this.sockets().filter((ws) => this.ctx.getTags(ws)[0] === email);
+    const s = JSON.stringify({ t: "openSide", file: f } satisfies RoomEvent);
+    for (const ws of tabs) ws.send(s);
+    return tabs.length
+      ? { ok: true, opened_in_tabs: tabs.length, note: "your human sees it beside the chat now; uploading a new version with the same name updates it there" }
+      : { ok: true, opened_in_tabs: 0, note: "your human doesn't have this room open right now: post the file (or link it) so they find it" };
+  }
   agentUnpin(bookId: string, id: string) {
     this.bind(bookId);
     return this.pinDel(id);
@@ -1448,6 +1469,41 @@ export class Book extends DurableObject<Env> {
   }
 
   /** A person posting from the home router (not over WS): same rules as the chat. */
+  /** The card of a message, as JSON, if it's this person's own card message (Modo Fire's live card). */
+  messageCard(bookId: string, id: number, email: string) {
+    this.bind(bookId);
+    const row = this.sql.exec<{ author: string; card: string | null }>(`SELECT author, card FROM messages WHERE id = ?`, id).toArray()[0];
+    return row && row.author === email && row.card ? row.card : null;
+  }
+  /** Modo Fire's native card (src/fire.ts): posted as the person's own quiet message the first time (no listener
+   * wakes on each piece of speech), then replaced in place on every new piece. Only that person's own card message. */
+  async fireCard(bookId: string, email: string, thread: string, text: string, card: Card, msgId?: number) {
+    this.bind(bookId);
+    const secret = findSecret(`${text}\n${cardText(card)}`);
+    if (secret) return { ok: false as const, error: `blocked: looks like a secret (${secret})` };
+    if (msgId) {
+      const row = this.sql.exec<{ author: string; card: string | null }>(`SELECT author, card FROM messages WHERE id = ?`, msgId).toArray()[0];
+      if (!row || row.author !== email || !row.card) return { ok: false as const, error: "not your live card" };
+      const json = JSON.stringify(card);
+      this.sql.exec(`UPDATE messages SET card = ? WHERE id = ?`, json, msgId);
+      this.broadcast({ t: "msgCard", id: msgId, card: json });
+      return { ok: true as const, id: msgId };
+    }
+    if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
+    const m = this.addMessage(thread, email, text.slice(0, 500), { card, quiet: true });
+    return { ok: true as const, id: m.id };
+  }
+  /** Modo Fire, hybrid (Gui #2384): every piece of live speech, once the fast model applied it, is also posted as the
+   * person's own message tagged `fire` (reply_to = the live card, or the file named in the text). Not quiet, so their
+   * listening Claude wakes and checks it with real tools/data; the app doesn't draw these lines (the card and the
+   * review message already show them). */
+  async firePiece(bookId: string, email: string, thread: string, text: string, ref: { card_msg?: number; file?: { id: string; name: string } }) {
+    this.bind(bookId);
+    if (findSecret(text)) return;
+    if (thread !== "main" && !this.epics().some((e) => e.id === thread)) thread = "main";
+    const at = ref.file ? `\n\n(ao vivo em ${ref.file.name}, file_id ${ref.file.id})` : "";
+    this.addMessage(thread, email, `🔥 ${text.slice(0, 1500)}${at}`, { tag: "fire", replyTo: ref.card_msg });
+  }
   async humanPost(bookId: string, email: string, raw: string, thread = "main"): Promise<PostMessageResponse> {
     this.bind(bookId);
     const text = raw.trim().slice(0, MESSAGE_TEXT_LIMIT);
@@ -2072,7 +2128,7 @@ export class Book extends DurableObject<Env> {
     let since = Number(this.get("waits_at_id") ?? -1);
     if (since < 0) since = Math.max(0, last - 20); // a room from before this: only its latest messages
     const msgs = this.sql
-      .exec<{ id: number; thread: string; author: string; text: string; kind: string | null; ts: number }>(`SELECT id, thread, author, text, kind, ts FROM messages WHERE id > ? ORDER BY id LIMIT 20`, since)
+      .exec<{ id: number; thread: string; author: string; text: string; kind: string | null; ts: number }>(`SELECT id, thread, author, text, kind, ts FROM messages WHERE id > ? AND (tag IS NULL OR tag <> 'fire') ORDER BY id LIMIT 20`, since)
       .toArray();
     if (!msgs.length) return;
     const members = await this.members();

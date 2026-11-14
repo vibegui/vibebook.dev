@@ -1,4 +1,5 @@
 import { mountAppDocumentFiles, isAppDocumentNavigation } from "./appDocumentFile";
+import { fire } from "./fire";
 import { authApi, uploadsApi, type ApiServices, type AuthServices } from "./api";
 import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
 import { services } from "./services";
@@ -98,6 +99,9 @@ const SCHEMA = [
   // The hub's router (src/router.ts): one decision per message and person, for the A/B and its room app.
   `CREATE TABLE IF NOT EXISTS router_log (book_id TEXT, msg_id INTEGER, email TEXT, arm TEXT, decision TEXT, why TEXT, source TEXT, reply_id INTEGER, ms INTEGER, cost REAL, text TEXT, ts INTEGER, PRIMARY KEY (book_id, msg_id, email))`,
   `CREATE INDEX IF NOT EXISTS router_log_email ON router_log (email, ts)`,
+  // The router's bench (scripts/router-bench.ts): messages the router got wrong for someone, with what it should have
+  // done, written by their agent when they say so (MCP router_feedback). Every change to the router runs against them.
+  `CREATE TABLE IF NOT EXISTS router_cases (book_id TEXT, msg_id INTEGER, email TEXT, own INTEGER, name TEXT, sender TEXT, text TEXT, topic TEXT, recent TEXT, memory TEXT, decided TEXT, expected TEXT, note TEXT, ts INTEGER, PRIMARY KEY (book_id, msg_id, email))`,
   `CREATE TABLE IF NOT EXISTS agent_reads (agent TEXT, book_id TEXT, email TEXT, last_id INTEGER, delivered_id INTEGER, PRIMARY KEY (agent, book_id))`,
   `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,
@@ -501,6 +505,17 @@ app.route("/", uploadsApi);
 
 mountAppDocumentFiles(app);
 
+// Modo Fire: a piece of live speech applied by a fast model to the file open beside the chat (src/fire.ts).
+app.post("/api/books/:id/fire", async (c) => {
+  const id = c.req.param("id"), email = c.get("email");
+  if (!(await isMember(c.env.DB, id, email))) return c.json({ ok: false, error: "forbidden" }, 403);
+  if (!(await c.env.AI_LIMIT.limit({ key: `fire:${email}` })).success) return c.json({ ok: false, error: "rate limited: wait a few seconds" }, 429);
+  try {
+    return c.json(await fire(c.env, id, email, await c.req.json().catch(() => ({}))));
+  } catch (e) {
+    return c.json({ ok: false, error: String((e as Error)?.message ?? e).slice(0, 200) }, 400);
+  }
+});
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
   if (!(await isMember(c.env.DB, id, c.get("email")))) {

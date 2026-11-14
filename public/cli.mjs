@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.9";
+var VERSION = "1.6.11";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -85,7 +85,8 @@ function agentId(root) {
     all[root] = `s_${randomBytes(16).toString("hex")}`;
     writePrivate(AGENTS, all);
   }
-  return all[root];
+  const sid = process.env.CLAUDE_CODE_SESSION_ID;
+  return sid ? `s_${createHash("sha256").update(`${all[root]}:${sid}`).digest("hex").slice(0, 32)}` : all[root];
 }
 var b64url = (b) => b.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 function openBrowser(url) {
@@ -1012,6 +1013,10 @@ async function hub() {
           bump(m.book);
         if (m.t === "agents")
           bumpAgents();
+        if (m.t === "focus" && typeof m.book === "string") {
+          const port = Number(process.env.VIBEBOOK_HERDR_PORT || 47321);
+          fetch(`http://127.0.0.1:${port}/focus?room=${encodeURIComponent(m.book)}`, { headers: { origin: s.origin } }).catch(() => {});
+        }
       } catch {}
     };
     ws.onclose = again;
@@ -1087,9 +1092,27 @@ async function main() {
     case "listen": {
       const room = flag("room") ?? roomHere(root);
       const parent = process.ppid;
+      const self = process.argv[1], born = (() => {
+        try {
+          return statSync(self).mtimeMs;
+        } catch {
+          return 0;
+        }
+      })();
       setInterval(() => {
         if (process.ppid !== parent)
           process.exit(0);
+        let now = born;
+        try {
+          now = statSync(self).mtimeMs;
+        } catch {}
+        if (born && now !== born) {
+          try {
+            process.stdout.write(`vibebook listen: a CLI foi atualizada; rode listen de novo
+`);
+          } catch {}
+          process.exit(0);
+        }
       }, 20000).unref();
       for (const [sig, n] of [["SIGHUP", 1], ["SIGINT", 2], ["SIGTERM", 15]])
         process.on(sig, () => {

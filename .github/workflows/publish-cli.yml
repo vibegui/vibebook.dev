@@ -1,0 +1,30 @@
+# Publishes the vibebook CLI (npm package vibebook.dev) when a tag cli-v<version> is pushed.
+# npm Trusted Publishing: GitHub's OIDC token proves this workflow is publishing, so there is no npm token stored
+# anywhere and nobody logs in. One-time setup on npmjs.com: package vibebook.dev → Settings → Trusted Publisher →
+# GitHub Actions, repository vibegui/vibebook.dev, workflow publish-cli.yml.
+name: Publish CLI
+on:
+  push:
+    tags: ["cli-v*"]
+permissions:
+  contents: read
+  id-token: write # the OIDC token npm trusts; also signs the provenance
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun run build:cli
+      - name: Tag, package.json and the built CLI agree
+        run: |
+          v=$(node -p "require('./cli/package.json').version")
+          test "cli-v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != cli/package.json $v"; exit 1; }
+          grep -q "VERSION = \"$v\"" cli/cli.mjs || { echo "cli/vibebook.ts VERSION != $v"; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest # Trusted Publishing needs npm 11.5.1+
+      - run: npm publish --access public --provenance
+        working-directory: cli

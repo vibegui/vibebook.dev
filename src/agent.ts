@@ -42,6 +42,8 @@ Workflow:
 - When you need your human to pick between options or say yes/no ("do I do it?", which files to delete, which approach), post the question with choices (a yes/no gets e.g. ["Sim, faz", "Não", "Ajustar antes"]) (and multi: true for several): the room shows buttons and their pick arrives as their message replying to yours. Don't ask them to type numbers.
 - Every message from your human gets an ack (doing when you pick it up, done when finished, idle when it needs nothing from you): read_room lists the ones from the last 48h that none of your human's agents acked as unacked, so nothing you skipped stays hidden. A short answer (no work to deliver) goes out as a post with reply_to = their message: that closes your ack; work you deliver gets done: true. Read every new message read_room returns, not only the last few: two can arrive seconds apart. When post returns unread_from_your_human, your human wrote that while you worked: handle it before going on. When you notice you failed (you skipped or ignored a message of your human's, a tool call failed and you gave up, you reported something wrong), call report_issue right away with what happened, then fix it and say so in the room.
 - A request is an epic, almost always: when your human asks you for a piece of work, (1) start_epic for it with 2-5 concrete tasks (each one checkable), (2) post in the epic (thread = its id) how you'll do it in 2-4 lines, or the question that blocks you if something is unclear, (3) unless you asked something, do it right away without waiting for an OK, moving each task to doing and done as you go, (4) post the result with done: true. If the work ships somewhere (deploy, publish, release): once it's out, update_epic prod: "deployed"; then open it in production, check it really works, and update_epic prod: "verified" with prod_note saying what you checked (URL, what you saw). The room shows the epic as "Claude fez" → "no ar" → "verificado em prod". With every task done the epic archives itself and shows as finished; if your human writes in it again, it reopens: add the new tasks there and run the same loop. Only quick answers and clarifications stay where they were asked. An epic you worked in archives itself only once every task is done AND the thread has your delivery (done: true) saying what you tested, plus a screenshot when there's something to see (upload it with thread = the epic id); verification that needs a person = a task in review with its owner, which keeps the epic open.
+- Modo Fire (realtime): a message of your human with realtime: true is a piece of live speech. vibebook's fast model already applied it to the live card it replies to (or the file named in it). Act fast and keep listening: check it against real data with your tools and fix it with fire_card (the whole new card for that message) or a new version of the file (upload_file, same name). No epic, no plan, no chat commentary; ack it idle, or done once you fixed something. Several pieces can arrive at once: handle the newest state once.
+- Deploy banner (required): every push to main that deploys, and every CLI publish, gets one native banner in the room's main thread once the build is green: post with thread \"main\" and a card (Card titled \"🚀 No ar · <commit or version>\", one Field per change a person would notice, Actions with a LinkButton to each epic it came from (#e<epic id>) and one to the commit). Not a plain text line.
 - Progress reports: when you work on something that belongs to a room (the repo has a .vibebook file with room_id, or your human said so), the room is the team's live channel. Post short updates with links: starting a task (set_task_status doing), an important commit, a PR ready for review (who should review it; task to review), a deploy or shipped change (task to done), a blocker and who you need. Skip routine steps and WIP pushes.`;
 
 const TOOLS = [
@@ -67,13 +69,22 @@ const TOOLS = [
   },
   {
     name: "router",
-    description: "Your human's hub router (on by default since 14/11/2026): a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude): fixed rules (their own messages always wake you; other people's that answer someone else or sit in someone else's epic, without mentioning them, are ignored), then Jev decides and Haiku writes the quick answers; a risky message always wakes you. wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
+    description: "Your human's hub router (on by default since 14/11/2026): a new message in a room where their Claude listens is decided first (ignore / answer it from the room's memory / wake the Claude): fixed rules (other people's messages that answer someone else or sit in someone else's epic, without mentioning them, are ignored; your human's own messages wake you unless Jev is clearly sure they're talking to other people), then Jev decides and Haiku writes the quick answers; a risky message always wakes you. wait_for_messages only wakes you for \"wake\". Pass on to turn it on or off for your human; omit it to see the state. Only when your human asked for it.",
     inputSchema: { type: "object", properties: { on: { type: "boolean" } } },
   },
   {
     name: "router_stats",
     description: "The router A/B so far for your human: per arm (jev, hybrid, haiku, rule) how many messages were ignored, answered or woke the Claude, latency p50/p95, cost, and the last 40 decisions. room_id narrows it to one room.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, days: { type: "number" } } },
+  },
+  {
+    name: "router_feedback",
+    description: "Teach your human's router (it decides which messages wake you): when your human says a message woke you but wasn't for you (\"não era contigo\", \"não tô falando com você\"), or that you should have answered one you never got, record it with what should have happened. It becomes a case in the router's bench, which every change to the router must pass. Only when your human said so.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, message_id: { type: "number" }, expected: { type: "string", enum: ["wake", "ignore"], description: "wake = it should have reached you; ignore = it shouldn't have" }, note: { type: "string", description: "your human's words, short" } },
+      required: ["room_id", "message_id", "expected"],
+    },
   },
   {
     name: "resolve_pending",
@@ -171,7 +182,7 @@ const TOOLS = [
         card: {
           type: "object",
           description:
-            'optional: a native card (json-render spec): { root: "c", elements: { c: { type: "Card", props: { title, subtitle }, children: [...] }, ... } }. Components: Card (root), Section {title}, Text {content, style: plain|bold|muted|code}, Fields > Field {label, value}, Table {headers: [], rows: [[]]} (≤50 rows, ≤10 cols), Chart {title, kind: bar|line, data: [{label, value}]} (≤30), Divider, Image {url: a file of this room}, Actions > Button {label, value?, style: primary|danger} (your human\'s click is posted as their reply to this message, like choices) / LinkButton {label, url: http(s) (new tab), or a place in the room: "#m<message id>", "#e<epic id>" (its thread), "#doc" or "#doc:<epic id>"}. Drawn natively by the app (no HTML): prefer it over html for tables, numbers, status and decisions. Which one: a `card` for status, reports, numbers, tables, small charts and decisions with buttons (drawn natively, phone-friendly, no safety check, the shape Slack/Teams cards use); `html` only for a visual a card can\'t draw (a custom interactive view); an app (the file apps/<name>.html, see app_open) when people should use it in the doc panel, more than once; plain text for everything else.',
+            'optional: a native card (json-render spec): { root: "c", elements: { c: { type: "Card", props: { title, subtitle }, children: [...] }, ... } }. Components: Card (root), Section {title}, Text {content, style: plain|bold|muted|code}, Fields > Field {label, value, delta?: "+12%" (green up, red down; good: "down" when lower is better, e.g. errors, cost), trend?: "4 sem: 6,0k · 6,2k · 6,3k"}, Table {headers: [], rows: [[]]} (≤50 rows, ≤10 cols), Chart {title, kind: bar|line, data: [{label, value}]} (≤30 points) or several series over the same labels {title, kind, labels: [...], series: [{name, values: [...]}]} (≤4 series; axis, legend and hover tooltip drawn by the app), Divider, Image {url: a file of this room}, Actions > Button {label, value?, style: primary|danger} (your human\'s click is posted as their reply to this message, like choices) / LinkButton {label, style?: primary, url: http(s) (new tab), or a place in the room: "#m<message id>", "#e<epic id>" (its thread), "#doc" or "#doc:<epic id>"}. Drawn natively by the app (no HTML): prefer it over html for tables, numbers, status and decisions. Which one: a `card` for status, reports, numbers, tables, small charts and decisions with buttons (drawn natively, phone-friendly, no safety check, the shape Slack/Teams cards use); `html` only for a visual a card can\'t draw (a custom interactive view); an app (the file apps/<name>.html, see app_open) when people should use it in the doc panel, more than once; plain text for everything else.',
         },
         thread: { type: "string", description: '"main" or an epic id from read_room; default: the thread of the message in reply_to, else "main"' },
         reply_to: { type: "number", description: "optional: id of the message you are answering (read_room id); the room shows it quoted above yours" },
@@ -363,6 +374,24 @@ const TOOLS = [
     name: "delete_epic",
     description: "Delete an epic with its tasks and doc. Only while nobody has written in its thread (@vibe's lines don't count); one with a conversation is archived instead (update_epic archived: true), so the history stays.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, epic_id: { type: "string" } }, required: ["room_id", "epic_id"] },
+  },
+  {
+    name: "open_file",
+    description: "Open a file of this room beside the chat for your human, in the room tabs they have open (the doc panel's \"Ao lado\" view): HTML, PDF, Markdown, text or an image. Use it when your human asked you to make something to look at (an HTML page from a meeting, a report): upload the first version with upload_file, call open_file with its id, then keep uploading new versions under the same name; the panel follows the newest. Only your human's tabs open it.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, file_id: { type: "string", description: "the file's id (upload_file's file.id, read_room files[].id) or its URL" } },
+      required: ["room_id", "file_id"],
+    },
+  },
+  {
+    name: "fire_card",
+    description: "Modo Fire: replace the live card of a Fire session of your human (the message a realtime piece replies to) with a whole new card (same catalog as post's card). Use it to fix what the fast model drew: real numbers from your tools, a better layout. Only your human's live Fire cards.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, message_id: { type: "number", description: "the live card message (the realtime piece's reply_to)" }, card: { type: "object", description: "the whole new card spec, as in post" } },
+      required: ["room_id", "message_id", "card"],
+    },
   },
   {
     name: "move_message",
@@ -607,6 +636,20 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         ctx.waitUntil(track(env, a.on ? "router_on" : "router_off", { user: me.email }));
       }
       return { on: await routerOn(db, me.email), note: "on: your listener wakes only for messages the router decides to wake for; it answers simple questions itself (posted as your Claude, with the source) and leaves the rest acked as idle" };
+    }
+    case "router_feedback": {
+      const id = await room(), msgId = Number(a.message_id), expected = str(a.expected);
+      if (expected !== "wake" && expected !== "ignore") throw new Error("expected is wake or ignore");
+      const input = await bookStub(env, id).routerInput(id, msgId - 1, me.email);
+      const m = input.messages.find((x) => x.id === msgId);
+      if (!m) throw new Error("no such message in this room");
+      const decided = (await db.prepare(`SELECT decision FROM router_log WHERE book_id = ? AND msg_id = ? AND email = ?`).bind(id, msgId, me.email).first<{ decision: string }>())?.decision ?? null;
+      await db
+        .prepare(`INSERT OR REPLACE INTO router_cases (book_id, msg_id, email, own, name, sender, text, topic, recent, memory, decided, expected, note, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(id, msgId, me.email, m.author === me.email ? 1 : 0, input.name, m.from, m.text, m.topic, m.recent, input.memory, decided, expected, str(a.note).slice(0, 300), Date.now())
+        .run();
+      ctx.waitUntil(track(env, "router_feedback", { user: me.email, dims: { book: id, decided: decided ?? undefined, expected } }));
+      return { ok: true, decided, expected, note: decided === expected ? "the router already decides this way now; kept as a case anyway" : "recorded: scripts/router-bench.ts runs it against every change to the router" };
     }
     case "router_stats": {
       const id = a.room_id ? await room() : undefined;
@@ -879,7 +922,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       ctx.waitUntil(track(env, "file_uploaded", { user: me.email, dims: { book: id, type, size: meta.size, agent: true } }));
       // Always posted, so the file shows up in the chat where people (and agents) will look for it.
       const posted = await bookStub(env, id).agentPost(id, me.email, str(a.message), str(a.thread) || "main", [meta.id], str(a.model));
-      const file = { name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
+      const file = { id: meta.id, name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
       return posted.ok ? { ok: true, file, message_id: posted.id } : { ...posted, file, note: "the file is stored in the room's files, but the message was not posted" };
     }
     case "upload_link": {
@@ -1002,6 +1045,22 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       return bookStub(env, id).agentEdit(id, me.email, name, a);
+    }
+    case "fire_card": {
+      const id = await room();
+      if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
+      const r = await bookStub(env, id).fireCard(id, me.email, "", "", cardOf(a.card, id), Number(a.message_id) || -1);
+      if (!r.ok) throw new Error(r.error);
+      ctx.waitUntil(track(env, "fire_card", { user: me.email, dims: { book: id } }));
+      return r;
+    }
+    case "open_file": {
+      const id = await room();
+      // The id, or the file's URL as upload_file / upload_link return it.
+      const fid = /\/files\/([0-9a-f]+)/.exec(str(a.file_id))?.[1] ?? str(a.file_id);
+      const r = await bookStub(env, id).agentOpenFile(id, me.email, fid);
+      if (r.ok) ctx.waitUntil(track(env, "open_file", { user: me.email, dims: { book: id, tabs: r.opened_in_tabs } }));
+      return r;
     }
     case "pin": {
       const id = await room();

@@ -102,6 +102,7 @@ export const MessageSchema = z.object({
   card: maybe(str),
   quiet: opt(bool),
   cut: opt(bool),
+  answers_ask: opt(bool),
   for_who: maybe(str),
   files: opt(z.array(AttachmentSchema)),
 });

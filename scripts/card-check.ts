@@ -12,5 +12,11 @@ const assert = (c: unknown, m: string) => { if (!c) { console.error("FAIL", m); 
   // Places in the room: a message, an epic, the doc; anything else that starts with # is refused.
   for (const url of ["#m42", "#ee21aabee", "#doc", "#doc:e21aabee"]) cardOf({ root: "c", elements: { c: { type: "Card", children: ["l"] }, l: { type: "LinkButton", props: { label: "ir", url } } } }, "r1");
   bad({ root: "c", elements: { c: { type: "Card", children: ["l"] }, l: { type: "LinkButton", props: { label: "x", url: "#x<script>" } } } }, /http/);
+  // Several series, deltas, a primary link button.
+  const multi = cardOf({ root: "c", elements: { c: { type: "Card", children: ["ch", "f"] }, ch: { type: "Chart", props: { kind: "line", labels: ["s1", "s2"], series: [{ name: "a", values: [1, "2"] }, { name: "b", values: [3, 4] }] } }, f: { type: "Fields", children: ["x"] }, x: { type: "Field", props: { label: "erros", value: "3", delta: "-40%", good: "down", trend: "4 sem: 5 · 4 · 3" } } } }, "r1");
+  assert((multi.elements.ch.props.series as { values: number[] }[])[0].values[1] === 2, "series values become numbers");
+  assert(multi.elements.x.props.good === "down" && multi.elements.x.props.delta === "-40%", "field keeps delta and good");
+  bad({ root: "c", elements: { c: { type: "Card", children: ["ch"] }, ch: { type: "Chart", props: { labels: ["a", "b"], series: [{ name: "x", values: [1] }] } } } }, /one number per label/);
+  bad({ root: "c", elements: { c: { type: "Card", children: ["ch"] }, ch: { type: "Chart", props: { labels: ["a"], series: [1, 2, 3, 4, 5].map((n) => ({ name: String(n), values: [n] })) } } } }, /1-4 series/);
   console.log("card checks passed");
 
