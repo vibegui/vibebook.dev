@@ -46,7 +46,10 @@ export function createHomeApi(fetcher?: FetchLike) {
     room = api.books[":id"];
   const param = (id: string) => ({ id: encodeURIComponent(id) });
   return {
-    inbox: (signal?: AbortSignal) => api.inbox.$get({}, {init:{signal,cache:"no-store"}}).then(response=>read(response,InboxResult)),
+    inbox: (signal?: AbortSignal) =>
+      api.inbox
+        .$get({}, { init: { signal, cache: "no-store" } })
+        .then((response) => read(response, InboxResult)),
     me: (signal?: AbortSignal) =>
       api.me
         .$get({ query: { ui: "svelte" } }, { init: { signal } })

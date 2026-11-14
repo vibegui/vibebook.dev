@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test";
 import { get } from "svelte/store";
 import { createApplicationServices } from "../svelte/features/application/services";
-import { createApplicationInbox } from "../svelte/features/application/inbox";
+import {
+  createApplicationInbox,
+  type InboxBinding,
+} from "../svelte/features/application/inbox";
 import { HomeFailure } from "../svelte/features/home/api";
 import type { HomeApi } from "../svelte/features/home/api";
 import {
@@ -62,7 +65,9 @@ async function fixture(
         return canonical;
       },
       resolve,
-      inbox:inboxRead ?? (async()=>({waits:canonical.waits,mentions:[],tasks:[]})),
+      inbox:
+        inboxRead ??
+        (async () => ({ waits: canonical.waits, mentions: [], tasks: [] })),
     }),
     pwa: () => ({
       account() {},
@@ -181,44 +186,200 @@ test("Inbox deadline settles an ignored-abort write without refreshing after its
   h.dispose();
 });
 
-const mention = {book_id:"aaaaaa",room:"Room",msg_id:7,thread:"main",author:"friend@test",author_name:"Friend",text:"Mention",ts:1};
-const task = {book_id:"aaaaaa",room:"Room",epic_id:"e",epic:"Epic",task_id:"task1",title:"Task",status:"doing",due:null};
-test("Inbox ignored-abort read deadline permits explicit retry and ignores late older data", async()=>{
-  const first=deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();let reads=0;
-  const h=await fixture(undefined,async()=>++reads===1?first.promise:{waits:[wait],mentions:[mention],tasks:[task]});
-  h.inbox.open();const binding=get(h.inbox.state).binding!;await settle();
-  expect(get(h.inbox.state).phase).toBe("loading");h.timer.advance(20_000);await settle();
-  expect(get(h.inbox.state).phase).toBe("error");expect(reads).toBe(1);
-  await h.inbox.refresh(binding);expect(get(h.inbox.state).data.mentions).toEqual([mention]);
-  first.resolve({waits:[],mentions:[],tasks:[]});await settle();
-  expect(get(h.inbox.state).phase).toBe("ready");expect(get(h.inbox.state).data.tasks).toEqual([task]);h.dispose();
-});
-test("closed and replaced Inbox openings never accept late rows or stale row navigation", async()=>{
-  const first=deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();let reads=0;
-  const h=await fixture(undefined,async()=>++reads===1?first.promise:{waits:[wait],mentions:[{...mention}],tasks:[{...task}]});
-  h.inbox.open();const old=get(h.inbox.state).binding!;await settle();h.inbox.close(old);h.inbox.open();await settle();
-  const binding=get(h.inbox.state).binding!, current=get(h.inbox.state).data.mentions[0];
-  first.resolve({waits:[],mentions:[{...mention,text:"Old private response"}],tasks:[]});await settle();
+const mention = {
+  book_id: "aaaaaa",
+  room: "Room",
+  msg_id: 7,
+  thread: "main",
+  author: "friend@test",
+  author_name: "Friend",
+  text: "Mention",
+  ts: 1,
+};
+const task = {
+  book_id: "aaaaaa",
+  room: "Room",
+  epic_id: "e",
+  epic: "Epic",
+  task_id: "task1",
+  title: "Task",
+  status: "doing",
+  due: null,
+};
+test("Inbox ignored-abort read deadline permits explicit retry and ignores late older data", async () => {
+  const first = deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();
+  let reads = 0;
+  const h = await fixture(undefined, async () =>
+    ++reads === 1
+      ? first.promise
+      : { waits: [wait], mentions: [mention], tasks: [task] },
+  );
+  h.inbox.open();
+  const binding = get(h.inbox.state).binding!;
+  await settle();
+  expect(get(h.inbox.state).phase).toBe("loading");
+  h.timer.advance(20_000);
+  await settle();
+  expect(get(h.inbox.state).phase).toBe("error");
+  expect(reads).toBe(1);
+  await h.inbox.refresh(binding);
   expect(get(h.inbox.state).data.mentions).toEqual([mention]);
-  const before=h.href();h.inbox.openMention(old,current);h.inbox.openMention(binding,{...current});expect(h.href()).toBe(before);
-  h.inbox.openMention(binding,current);expect(h.href()).toContain("/b/aaaaaa?ui=svelte#m7");expect(get(h.inbox.state).binding).toBeNull();h.dispose();
+  first.resolve({ waits: [], mentions: [], tasks: [] });
+  await settle();
+  expect(get(h.inbox.state).phase).toBe("ready");
+  expect(get(h.inbox.state).data.tasks).toEqual([task]);
+  h.dispose();
 });
-test("Inbox read401 clears document authority and late account reads cannot restore private data", async()=>{
-  const h=await fixture(undefined,async()=>{throw new HomeFailure("unauthenticated",401);});
-  h.inbox.open();await settle();expect(h.services.active()).toBe(false);expect(get(h.inbox.state).data).toEqual({waits:[],mentions:[],tasks:[]});h.dispose();
-  const late=deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();const other=await fixture(undefined,()=>late.promise);
-  other.inbox.open();await settle();other.canonical(me({email:"other@test",waits:[]}));await other.services.personal.refresh();
-  late.resolve({waits:[wait],mentions:[mention],tasks:[task]});await settle();
-  expect(get(other.inbox.state).binding).toBeNull();expect(get(other.inbox.state).data.mentions).toEqual([]);other.dispose();
+test("closed and replaced Inbox openings never accept late rows or stale row navigation", async () => {
+  const first = deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();
+  let reads = 0;
+  const h = await fixture(undefined, async () =>
+    ++reads === 1
+      ? first.promise
+      : { waits: [wait], mentions: [{ ...mention }], tasks: [{ ...task }] },
+  );
+  h.inbox.open();
+  const old = get(h.inbox.state).binding!;
+  await settle();
+  h.inbox.close(old);
+  h.inbox.open();
+  await settle();
+  const binding = get(h.inbox.state).binding!,
+    current = get(h.inbox.state).data.mentions[0];
+  first.resolve({
+    waits: [],
+    mentions: [{ ...mention, text: "Old private response" }],
+    tasks: [],
+  });
+  await settle();
+  expect(get(h.inbox.state).data.mentions).toEqual([mention]);
+  const before = h.href();
+  h.inbox.openMention(old, current);
+  h.inbox.openMention(binding, { ...current });
+  expect(h.href()).toBe(before);
+  h.inbox.openMention(binding, current);
+  expect(h.href()).toContain("/b/aaaaaa?ui=svelte#m7");
+  expect(get(h.inbox.state).binding).toBeNull();
+  h.dispose();
 });
-test("canonical task navigation preserves its exact epic and closes only the current opening", async()=>{
-  const h=await fixture(undefined,async()=>({waits:[],mentions:[],tasks:[task]}));h.inbox.open();await settle();
-  const binding=get(h.inbox.state).binding!,row=get(h.inbox.state).data.tasks[0];
-  h.inbox.openTask(binding,row);const url=new URL(h.href());expect(url.pathname).toBe("/b/aaaaaa");expect(url.searchParams.get("t")).toBe("e");expect(get(h.inbox.state).binding).toBeNull();h.dispose();
+test("Inbox read401 clears document authority and late account reads cannot restore private data", async () => {
+  const h = await fixture(undefined, async () => {
+    throw new HomeFailure("unauthenticated", 401);
+  });
+  h.inbox.open();
+  await settle();
+  expect(h.services.active()).toBe(false);
+  expect(get(h.inbox.state).data).toEqual({
+    waits: [],
+    mentions: [],
+    tasks: [],
+  });
+  h.dispose();
+  const late = deferred<Awaited<ReturnType<HomeApi["inbox"]>>>();
+  const other = await fixture(undefined, () => late.promise);
+  other.inbox.open();
+  await settle();
+  other.canonical(me({ email: "other@test", waits: [] }));
+  await other.services.personal.refresh();
+  late.resolve({ waits: [wait], mentions: [mention], tasks: [task] });
+  await settle();
+  expect(get(other.inbox.state).binding).toBeNull();
+  expect(get(other.inbox.state).data.mentions).toEqual([]);
+  other.dispose();
 });
-test("reentrant loading publication cannot start a replaced read or allocate its deadline",async()=>{
-  let reads=0;const h=await fixture(undefined,async()=>{reads++;return{waits:[],mentions:[mention],tasks:[]};});
-  let replaced=false;
-  const stop=h.inbox.state.subscribe(value=>{if(value.binding&&value.phase==="loading"&&!replaced){replaced=true;void h.inbox.refresh(value.binding);}});
-  h.inbox.open();await settle();expect(reads).toBe(1);expect(get(h.inbox.state).phase).toBe("ready");stop();h.dispose();
+test("canonical task navigation preserves its exact epic and closes only the current opening", async () => {
+  const h = await fixture(undefined, async () => ({
+    waits: [],
+    mentions: [],
+    tasks: [task],
+  }));
+  h.inbox.open();
+  await settle();
+  const binding = get(h.inbox.state).binding!,
+    row = get(h.inbox.state).data.tasks[0];
+  h.inbox.openTask(binding, row);
+  const url = new URL(h.href());
+  expect(url.pathname).toBe("/b/aaaaaa");
+  expect(url.searchParams.get("t")).toBe("e");
+  expect(get(h.inbox.state).binding).toBeNull();
+  h.dispose();
+});
+test("reentrant loading publication cannot start a replaced read or allocate its deadline", async () => {
+  let reads = 0;
+  const h = await fixture(undefined, async () => {
+    reads++;
+    return { waits: [], mentions: [mention], tasks: [] };
+  });
+  let replaced = false;
+  const stop = h.inbox.state.subscribe((value) => {
+    if (value.binding && value.phase === "loading" && !replaced) {
+      replaced = true;
+      void h.inbox.refresh(value.binding);
+    }
+  });
+  h.inbox.open();
+  await settle();
+  expect(reads).toBe(1);
+  expect(get(h.inbox.state).phase).toBe("ready");
+  stop();
+  h.dispose();
+});
+test("reentrant close publication cannot resurrect captured private opening after session loss or disposal", async () => {
+  for (const effect of ["session", "dispose"] as const) {
+    const h = await fixture();
+    let armed = false;
+    const stop = h.inbox.state.subscribe((value) => {
+      if (armed && !value.binding) {
+        armed = false;
+        if (effect === "session") h.services.actions.sessionLost();
+        else h.inbox.dispose();
+      }
+    });
+    armed = true;
+    h.inbox.open();
+    await settle();
+    expect(get(h.inbox.state).binding).toBeNull();
+    expect(get(h.inbox.state).data).toEqual({
+      waits: [],
+      mentions: [],
+      tasks: [],
+    });
+    stop();
+    h.dispose();
+  }
+});
+test("reentrant new opening and newer route win over outgoing open and row navigation", async () => {
+  const h = await fixture(undefined, async () => ({
+    waits: [wait],
+    mentions: [mention],
+    tasks: [],
+  }));
+  let armed = false,
+    replacement: InboxBinding | null = null;
+  const stop = h.inbox.state.subscribe((value) => {
+    if (armed && !value.binding) {
+      armed = false;
+      h.inbox.open();
+      replacement = get(h.inbox.state).binding;
+    }
+  });
+  armed = true;
+  h.inbox.open();
+  await settle();
+  expect(get(h.inbox.state).binding).toBe(replacement!);
+  stop();
+  const binding = get(h.inbox.state).binding!,
+    row = get(h.inbox.state).data.mentions[0];
+  let leave = false;
+  const stopRoute = h.inbox.state.subscribe((value) => {
+    if (leave && !value.binding) {
+      leave = false;
+      h.services.actions.navigate({ roomId: "bbbbbb" });
+    }
+  });
+  leave = true;
+  h.inbox.openMention(binding, row);
+  expect(new URL(h.href()).pathname).toBe("/b/bbbbbb");
+  stopRoute();
+  h.dispose();
 });

@@ -25,9 +25,9 @@
     onnav,
     onmention,
     ontask,
-    loading=false,
-    readError=false,
-    current=()=>true,
+    loading = false,
+    readError = false,
+    current = () => true,
     onretry,
     onresolve,
     onclose,
@@ -43,12 +43,12 @@
     ontab?: (all: boolean) => void;
     onopen: (wait: Wait, event: MouseEvent) => void;
     onnav?: (bookId: string, thread: string, msgId: number) => void;
-    onmention?: (mention:InboxMention) => void;
-    ontask?: (task:InboxTask) => void;
-    loading?:boolean;
-    readError?:boolean;
-    current?:()=>boolean;
-    onretry?:()=>void|Promise<void>;
+    onmention?: (mention: InboxMention) => void;
+    ontask?: (task: InboxTask) => void;
+    loading?: boolean;
+    readError?: boolean;
+    current?: () => boolean;
+    onretry?: () => void | Promise<void>;
     onresolve: (wait: Wait) => void | Promise<void>;
     onclose: () => void;
   } = $props();
@@ -103,14 +103,24 @@
     thread: string,
     msgId: number,
   ) {
-    if(!current()){event.preventDefault();return;}
-    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+    if (!current()) {
+      event.preventDefault();
+      return;
+    }
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
     if (!onnav) return; // no handler: let the anchor's href navigate
     event.preventDefault();
     onnav(bookId, thread, msgId);
   }
   async function resolve(wait: Wait) {
-    if(!current())return;
+    if (!current()) return;
     pending = key(wait);
     error = "";
     try {
@@ -134,7 +144,14 @@
   {#snippet children()}
     {#if error}<ErrorState title={error} compact />{/if}
     {#if loading}<p role="status">{vb.t("Carregando…")}</p>{/if}
-    {#if readError}<ErrorState title={vb.t("Não foi possível carregar a caixa de entrada.")} compact onretry={() => {if(current())void onretry?.();}} retryLabel={vb.t("Tentar de novo")} />{/if}
+    {#if readError}<ErrorState
+        title={vb.t("Não foi possível carregar a caixa de entrada.")}
+        compact
+        onretry={() => {
+          if (current()) void onretry?.();
+        }}
+        retryLabel={vb.t("Tentar de novo")}
+      />{/if}
     {#if roomId}
       <Tabs
         {items}
@@ -155,7 +172,8 @@
     >
       {#if waitList.length}
         <section>
-          <Heading level={3}
+          <Heading
+            level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Esperando você")} ({waitList.length})
@@ -165,7 +183,13 @@
               <li class="tw:flex tw:items-start tw:gap-2 tw:py-1">
                 <a
                   href={waitHref(wait)}
-                  onclick={(event) => {if(!current()){event.preventDefault();return;}onopen(wait, event);}}
+                  onclick={(event) => {
+                    if (!current()) {
+                      event.preventDefault();
+                      return;
+                    }
+                    onopen(wait, event);
+                  }}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >
                   {#if kind(wait) === "task"}<span
@@ -216,7 +240,8 @@
 
       {#if mentionList.length}
         <section>
-          <Heading level={3}
+          <Heading
+            level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Te mencionaram")} ({mentionList.length})
@@ -227,9 +252,22 @@
                 <a
                   href={navHref(m.book_id, m.thread, m.msg_id)}
                   onclick={(event) => {
-                    if(!current()){event.preventDefault();return;}
-                    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-                    if(onmention){event.preventDefault();onmention(m);}else clickNav(event,m.book_id,m.thread,m.msg_id);
+                    if (!current()) {
+                      event.preventDefault();
+                      return;
+                    }
+                    if (
+                      event.button !== 0 ||
+                      event.ctrlKey ||
+                      event.metaKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    )
+                      return;
+                    if (onmention) {
+                      event.preventDefault();
+                      onmention(m);
+                    } else clickNav(event, m.book_id, m.thread, m.msg_id);
                   }}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >
@@ -262,7 +300,8 @@
 
       {#if taskList.length}
         <section>
-          <Heading level={3}
+          <Heading
+            level={3}
             class="tw:m-0 tw:mb-1 tw:text-xs tw:font-semibold tw:uppercase tw:tracking-wide tw:text-muted-foreground"
           >
             {vb.t("Suas tarefas")} ({taskList.length})
@@ -273,9 +312,22 @@
                 <a
                   href={navHref(task.book_id, task.epic_id, 0)}
                   onclick={(event) => {
-                    if(!current()){event.preventDefault();return;}
-                    if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-                    if(ontask){event.preventDefault();ontask(task);}else clickNav(event,task.book_id,task.epic_id,0);
+                    if (!current()) {
+                      event.preventDefault();
+                      return;
+                    }
+                    if (
+                      event.button !== 0 ||
+                      event.ctrlKey ||
+                      event.metaKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    )
+                      return;
+                    if (ontask) {
+                      event.preventDefault();
+                      ontask(task);
+                    } else clickNav(event, task.book_id, task.epic_id, 0);
                   }}
                   class="tw:flex tw:min-w-0 tw:flex-1 tw:gap-3 tw:rounded-control tw:p-2 tw:text-foreground tw:no-underline tw:outline-none tw:hover:bg-accent tw:focus-visible:ring-2 tw:focus-visible:ring-ring"
                 >

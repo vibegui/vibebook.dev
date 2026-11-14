@@ -310,8 +310,8 @@
                 readError={$inboxView.error !== null}
                 current={() => inbox.owns(binding)}
                 onretry={() => inbox.refresh(binding)}
-                onmention={(mention) => inbox.openMention(binding,mention)}
-                ontask={(task) => inbox.openTask(binding,task)}
+                onmention={(mention) => inbox.openMention(binding, mention)}
+                ontask={(task) => inbox.openTask(binding, task)}
                 roomId={binding.roomId}
                 all={$inboxView.all}
                 vb={{ t: services.t, ago }}
