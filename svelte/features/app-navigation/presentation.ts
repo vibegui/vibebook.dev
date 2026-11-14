@@ -9,6 +9,7 @@ export type NavigationDialogIntent = Readonly<{
   identityRevision: number;
   revision: number;
   roomId: string | null;
+  scopeRoomId: string | null;
   trigger: HTMLElement | null;
 }>;
 
@@ -22,7 +23,7 @@ export function createNavigationPresentation<T>(controller: AppNavigationSession
   const identity = () => get(controller.personal.state);
   const owns = (intent: NavigationDialogIntent) => {
     const value = identity();
-    return active && binding === intent && value.me?.email === intent.account && value.identityRevision === intent.identityRevision;
+    return active && binding === intent && value.me?.email === intent.account && value.identityRevision === intent.identityRevision && get(controller.state).roomId === intent.scopeRoomId;
   };
   const sync = () => {
     if (!active) return;
@@ -31,9 +32,9 @@ export function createNavigationPresentation<T>(controller: AppNavigationSession
     const roomId = kind === "settings" ? nav.settingsId : kind === "archive" ? nav.archiveId : kind === "rename" ? nav.renameId : null;
     const nextCreator = kind === "create" ? creator.binding : null;
     if (!person.me || !kind) { binding = null; creatorBinding = null; state.set(null); return; }
-    if (binding?.kind === kind && binding.roomId === roomId && binding.account === person.me.email && binding.identityRevision === person.identityRevision && creatorBinding === nextCreator) return;
+    if (binding?.kind === kind && binding.roomId === roomId && binding.account === person.me.email && binding.identityRevision === person.identityRevision && binding.scopeRoomId === nav.roomId && creatorBinding === nextCreator) return;
     creatorBinding = nextCreator;
-    binding = Object.freeze({ kind, account: person.me.email, identityRevision: person.identityRevision, revision: ++revision, roomId, trigger: controller.returnFocus(null) });
+    binding = Object.freeze({ kind, account: person.me.email, identityRevision: person.identityRevision, revision: ++revision, roomId, scopeRoomId: nav.roomId, trigger: controller.returnFocus(null) });
     state.set(binding);
     if (active && binding) void module.ensure();
   };
@@ -48,7 +49,7 @@ export function createNavigationPresentation<T>(controller: AppNavigationSession
     },
     returnFocus(intent: NavigationDialogIntent, fallback: HTMLElement | null) {
       const person = identity();
-      return active && (!binding || binding === intent) && person.me?.email === intent.account && person.identityRevision === intent.identityRevision ? intent.trigger?.isConnected ? intent.trigger : fallback : null;
+      return active && (!binding || binding === intent) && person.me?.email === intent.account && person.identityRevision === intent.identityRevision && get(controller.state).roomId === intent.scopeRoomId ? intent.trigger?.isConnected ? intent.trigger : fallback : null;
     },
     dispose() { active = false; binding = null; creatorBinding = null; for (const stop of stops) stop(); state.set(null); module.dispose(); },
   };
