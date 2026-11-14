@@ -56,7 +56,7 @@ export function nativeAuthHtml(
   );
   return `<!doctype html><html lang="${data.lang === "en" ? "en" : "pt-BR"}"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="robots" content="noindex" /><meta name="vb-ui" content="svelte" /><meta name="vb-page" content="${data.page}" /><meta name="vb-auto-access" content="${data.autoAccess ? "1" : "0"}" /><meta name="vb-consent-failure" content="${data.page === "consent" && data.consentFailure ? "1" : "0"}" /><meta name="vb-v" content="${version}" />
+<meta name="robots" content="noindex" /><meta name="vb-ui" content="svelte" /><meta name="vb-page" content="${data.page}" /><meta name="vb-auto-access" content="${data.autoAccess ? "1" : "0"}" /><meta name="vb-consent-failure" content="${data.page === "consent" && data.consentFailure ? "1" : "0"}" />${data.page === "connection-error" ? `<meta name="vb-connection-failure" content="${data.connectionFailure ?? "failed"}" />` : ""}<meta name="vb-v" content="${version}" />
 <title>vibebook</title><link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="${css}" /></head>
 <body class="tw:m-0 tw:min-h-dvh tw:bg-background tw:font-sans tw:text-foreground"><div id="app"></div><noscript><main><p>${data.lang === "en" ? "This preview requires JavaScript." : "Esta versão requer JavaScript."}</p><a href="${fallback}">${data.lang === "en" ? "Open the standard page" : "Abrir a página padrão"}</a></main></noscript><script type="module" src="${app}"></script></body></html>`;
 }
@@ -77,8 +77,9 @@ export async function nativeAuthPage(
   page: NativeAuthMetadata["page"],
   options: {
     autoAccess?: boolean;
-    status?: 200 | 400 | 401 | 403 | 404 | 500;
+    status?: 200 | 400 | 401 | 403 | 404 | 429 | 500;
     consentFailure?: boolean;
+    connectionFailure?: NativeAuthMetadata["connectionFailure"];
   } = {},
 ) {
   const headers = {
@@ -95,6 +96,9 @@ export async function nativeAuthPage(
     if (asset.status !== 200) throw new Error("Native shell missing");
     const standard = new URL(request.url);
     standard.searchParams.delete("ui");
+    // A callback contains an OAuth code/state or provider error details. None
+    // belong in the generated document, including its noscript fallback URL.
+    const fallback = page === "connection-error" ? standard.pathname.match(/^\/api\/books\/([a-z0-9]{6,40})\/connections\//)?.[1] : null;
     const html = nativeAuthHtml(
       await asset.text(),
       {
@@ -102,8 +106,9 @@ export async function nativeAuthPage(
         lang: reqLang(request),
         autoAccess: !!options.autoAccess,
         consentFailure: !!options.consentFailure,
+        ...(page === "connection-error" ? { connectionFailure: options.connectionFailure ?? "failed" } : {}),
       },
-      standard.pathname + standard.search,
+      page === "connection-error" ? fallback ? `/b/${fallback}` : "/app" : standard.pathname + standard.search,
     );
     return new Response(html, { status: options.status ?? 200, headers });
   } catch {

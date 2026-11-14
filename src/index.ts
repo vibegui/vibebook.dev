@@ -73,7 +73,7 @@ export type Env = {
   MCP_AUTH_TOKEN?: string;
 };
 
-type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
+export type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, created_at INTEGER)`,

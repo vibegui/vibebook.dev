@@ -6,6 +6,7 @@ import { compile, compileModule } from "svelte/compiler";
 import { Window } from "happy-dom";
 import { writable } from "svelte/store";
 import type { AuthApi } from "../svelte/features/auth/api";
+import type { NativeAuthMetadata } from "../shared/nativeAuth";
 const environment = new Window({
   url: "https://vibebook.test/login?ui=svelte",
 });
@@ -122,7 +123,7 @@ async function settle() {
   flushSync();
 }
 async function render(
-  page: "login" | "access" | "consent" | "file-access",
+  page: NativeAuthMetadata["page"],
   http: AuthApi = api(),
   lang: "pt" | "en" = "en",
   consentFailure = false,
@@ -581,4 +582,26 @@ test("native file access asks only explicitly and retains exact version after th
   await settle();
   expect(asks).toBe(1);
   expect(navigations).toEqual(["/b/abcdef?ui=svelte#faa"]);
+});
+
+test("native connection failure shows only typed localized copy and a safe continuation without API replay", async () => {
+  for (const lang of ["en", "pt"] as const) {
+    const target = document.createElement("div");
+    document.body.append(target);
+    let requests = 0;
+    mounted.push(flushSync(() => mount(AuthRoot, {
+      target,
+      props: {
+        metadata: { page: "connection-error", lang, autoAccess: false, connectionFailure: "rate" },
+        href: "https://vibebook.test/api/mcp-oauth/callback?state=svelte.PRIVATE_STATE&code=PRIVATE_CODE&error_description=PRIVATE_PROVIDER_MESSAGE",
+        api: api({ login: async () => { requests++; return login; }, consent: async () => { requests++; return consent; } }),
+      },
+    })));
+    await settle();
+    expect(target.querySelector('[role="alert"]')?.textContent).toContain(lang === "en" ? "Wait a minute" : "Espere um minuto");
+    expect(target.querySelector('a[href="/app?ui=svelte"]')).not.toBeNull();
+    expect(target.querySelector("button")).toBeNull();
+    for (const secret of ["PRIVATE_STATE", "PRIVATE_CODE", "PRIVATE_PROVIDER_MESSAGE"]) expect(target.textContent).not.toContain(secret);
+    expect(requests).toBe(0);
+  }
 });

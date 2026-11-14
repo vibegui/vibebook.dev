@@ -8,9 +8,12 @@
 //   opaque-origin iframe (srcdoc, sandbox allow-scripts); its tools/call go through the host page to /call here.
 // - Agents: MCP tools `connections`, `app_call`, `app_open` (src/agent.ts).
 import * as z from "zod/mini";
+import type { Context, Hono } from "hono";
 import { ConnectionContext } from "../shared/schemas";
+import { record } from "../shared/validation";
 import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
-import type { Env } from "./index";
+import type { Ctx, Env } from "./index";
+import { nativeAuthPage } from "./native-page";
 import { checkUrl } from "./reader";
 import { findSecret } from "./secrets";
 import { seal, unseal } from "./sandbox";
@@ -39,7 +42,7 @@ const ToolSchema = z.object({
 });
 type Tool = z.infer<typeof ToolSchema>;
 const toolList = (v: unknown): Tool[] => (Array.isArray(v) ? v.flatMap((t) => { const r = ToolSchema.safeParse(t); return r.success ? [r.data] : []; }) : []);
-const json = (s: string | null, empty: unknown) => { try { return s ? JSON.parse(s) : empty; } catch { return empty; } };
+const json = (s: string | null, empty: unknown): unknown => { try { return s ? JSON.parse(s) : empty; } catch { return empty; } };
 
 const MAX_CONNS = 10; // per room
 const PROTOCOL = "2025-06-18";
@@ -97,15 +100,19 @@ async function post(url: string, token: string | null, body: unknown, session?: 
   });
   return r;
 }
-async function answer(r: Response, id: number) {
+export async function readMcpAnswer(r: Response, id: number): Promise<unknown> {
   const text = (await r.text()).slice(0, 4_000_000);
   if (!r.ok) throw new Error(`servidor MCP respondeu ${r.status}${r.status === 401 ? " (token errado ou faltando)" : ""}: ${text.slice(0, 160)}`);
   const msgs = (r.headers.get("content-type") || "").includes("text/event-stream")
     ? text.split(/\r?\n\r?\n/).map((ev) => ev.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trim()).join("")).filter(Boolean)
     : [text];
   for (const m of msgs) {
-    let j: any; try { j = JSON.parse(m); } catch { continue; }
-    for (const x of Array.isArray(j) ? j : [j]) if (x?.id === id) { if (x.error) throw new Error(`MCP: ${String(x.error.message).slice(0, 200)}`); return x.result; }
+    let j: unknown; try { j = JSON.parse(m); } catch { continue; }
+    const replies: unknown[] = Array.isArray(j) ? j : [j];
+    for (const x of replies) if (record(x) && x.id === id) {
+      if (x.error) throw new Error(`MCP: ${String(record(x.error) ? x.error.message : undefined).slice(0, 200)}`);
+      return x.result;
+    }
   }
   throw new Error("o servidor MCP não respondeu essa chamada");
 }
@@ -122,7 +129,7 @@ async function init(url: string, token: string | null, identity?: string, legacy
   const r = await post(url, token, { jsonrpc: "2.0", id, method: "initialize", params: { protocolVersion: PROTOCOL, capabilities: { extensions: { [UI_EXT]: { mimeTypes: [MIME_APP] } } }, clientInfo: { name: "vibebook", version: "1" } } }, null, identity);
   needsSignIn(r, url, legacy);
   const session = r.headers.get("mcp-session-id");
-  const result = await answer(r, id);
+  const result = await readMcpAnswer(r, id);
   await post(url, token, { jsonrpc: "2.0", method: "notifications/initialized" }, session, identity).then((x) => x.body?.cancel()).catch(() => {});
   return { session, result };
 }
@@ -137,7 +144,7 @@ export async function rpc(env: Env, c: Pick<Conn, "id" | "url" | "enc" | "iv">, 
     const r = await post(c.url, token, { jsonrpc: "2.0", id, method, params }, sessions.get(key), identity);
     needsSignIn(r, c.url, legacy);
     if ((r.status === 404 || r.status === 400) && attempt === 0 && sessions.get(key)) { sessions.delete(key); await r.body?.cancel(); continue; }
-    return answer(r, id);
+    return readMcpAnswer(r, id);
   }
 }
 async function listTools(env: Env, c: Pick<Conn, "id" | "url" | "enc" | "iv">, who: Who) {
@@ -145,8 +152,8 @@ async function listTools(env: Env, c: Pick<Conn, "id" | "url" | "enc" | "iv">, w
   let cursor: string | undefined;
   for (let page = 0; page < 5; page++) { // ≤5 pages: a server can't make us loop
     const r = await rpc(env, c, "tools/list", cursor ? { cursor } : {}, who);
-    if (Array.isArray(r?.tools)) out.push(...r.tools);
-    cursor = typeof r?.nextCursor === "string" ? r.nextCursor : undefined; if (!cursor) break;
+    if (record(r) && Array.isArray(r.tools)) out.push(...r.tools);
+    cursor = record(r) && typeof r.nextCursor === "string" ? r.nextCursor : undefined; if (!cursor) break;
   }
   return toolList(out.slice(0, 200)).map((t) => ({ ...t, description: (t.description ?? "").slice(0, 2000) }));
 }
@@ -172,7 +179,7 @@ export async function createConn(env: Env, book: string, email: string, b: { url
   const sealed = { enc: null, iv: null };
   const who: Who = { email, room: book, origin };
   // A server that asks its own sign-in is linked anyway: the tools come after this person signs in (needs_sign_in).
-  let result: any = null, tools: Tool[] = [], needsAuth = false;
+  let result: unknown = null, tools: Tool[] = [], needsAuth = false;
   try {
     const first = await init(ok.url, null, await identityJwt(env, origin, { email, room: book, aud: ok.url }));
     result = first.result;
@@ -182,7 +189,8 @@ export async function createConn(env: Env, book: string, email: string, b: { url
     if (!(e instanceof AuthNeeded)) throw e;
     needsAuth = true;
   }
-  const title = String(b.title || result?.serverInfo?.title || result?.serverInfo?.name || new URL(ok.url).host).slice(0, 60);
+  const server = record(result) && record(result.serverInfo) ? result.serverInfo : null;
+  const title = String(b.title || server?.title || server?.name || new URL(ok.url).host).slice(0, 60);
   const scope = b.scope === "room" ? "room" : "me"; // "minha" by default (hybrid model, Nov 2026)
   await env.DB.prepare(`INSERT INTO mcp_connections (id, book_id, owner, scope, url, title, enc, iv, tools, ctx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', ?)`)
     .bind(cid, book, email, scope, ok.url, title, sealed.enc, sealed.iv, JSON.stringify(tools), Date.now()).run();
@@ -216,8 +224,8 @@ export async function retireTokens(env: Env) {
 // ---- The app's HTML with its CSP. ----
 const DOMAIN = /^(https?|wss?):\/\/(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(:\d{1,5})?$/i;
 const domains = (v: unknown) => (Array.isArray(v) ? v.map(String).filter((d) => DOMAIN.test(d)).slice(0, 20) : []);
-export function cspFor(meta: any) {
-  const csp = meta?.ui?.csp ?? {};
+export function cspFor(meta: unknown) {
+  const csp = record(meta) && record(meta.ui) && record(meta.ui.csp) ? meta.ui.csp : {};
   const res = domains(csp.resourceDomains).join(" "), conn = domains(csp.connectDomains), frames = domains(csp.frameDomains).join(" "), base = domains(csp.baseUriDomains).join(" ");
   const ws = conn.filter((d) => d.startsWith("https://")).map((d) => d.replace(/^https/, "wss"));
   return [
@@ -232,9 +240,9 @@ export async function appHtml(env: Env, c: Conn, tool: string, who: Who) {
   const uri = t && uiOf(t);
   if (!uri) throw new Error(`${tool} não é um app`);
   const r = await rpc(env, c, "resources/read", { uri }, who);
-  const item = r?.contents?.[0];
-  if (!item) throw new Error("o servidor não devolveu o HTML do app");
-  const html = typeof item.text === "string" ? item.text : item.blob ? new TextDecoder().decode(Uint8Array.from(atob(item.blob), (ch) => ch.charCodeAt(0))) : "";
+  const item: unknown = record(r) && Array.isArray(r.contents) ? r.contents[0] : null;
+  if (!record(item)) throw new Error("o servidor não devolveu o HTML do app");
+  const html = typeof item.text === "string" ? item.text : typeof item.blob === "string" && item.blob ? new TextDecoder().decode(Uint8Array.from(atob(item.blob), (ch) => ch.charCodeAt(0))) : "";
   if (!html) throw new Error("HTML do app vazio");
   const csp = cspFor(item._meta).replace(/"/g, "");
   // Right after the doctype (or first): nothing in the page runs before the policy. Before the doctype = quirks mode.
@@ -244,24 +252,32 @@ export async function appHtml(env: Env, c: Conn, tool: string, who: Who) {
 }
 
 // ---- Routes ----
-export function mountConnections(app: any, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
-  const guard = async (c: any) => (await deps.isMember(c.env.DB, c.req.param("id"), c.get("email")) ? null : c.json({ error: "forbidden" }, 403));
-  const conn = async (c: any) => getConn(c.env, c.req.param("id"), c.req.param("cid"), c.get("email"));
-  const who = (c: any): Who => ({ email: c.get("email"), room: c.req.param("id"), origin: new URL(c.req.url).origin });
+type ConnectionRouteContext = Context<Ctx, "/api/books/:id/connections/:cid/signin">;
+export function mountConnections(app: Hono<Ctx>, deps: { isMember: (db: D1Database, id: string, email: string) => Promise<boolean>; track: (env: Env, name: string, o: object) => Promise<unknown> }) {
+  const guard = async (c: ConnectionRouteContext) => (await deps.isMember(c.env.DB, c.req.param("id"), c.get("email")) ? null : uiVariant(c.req.url) === "svelte" ? nativeAuthPage(c.env, c.req.raw, "connection-error", { status: 403, connectionFailure: "forbidden" }) : c.json({ error: "forbidden" }, 403));
+  const conn = async (c: ConnectionRouteContext) => getConn(c.env, c.req.param("id"), c.req.param("cid"), c.get("email"));
+  const who = (c: ConnectionRouteContext): Who => ({ email: c.get("email"), room: c.req.param("id"), origin: new URL(c.req.url).origin });
 
   // Sign in on a connection's server (OAuth per person): the browser goes to its consent page and comes back here.
-  app.get("/api/books/:id/connections/:cid/signin", async (c: any) => {
+  app.get("/api/books/:id/connections/:cid/signin", async (c) => {
     const no = await guard(c); if (no) return no;
-    const x = await conn(c); if (!x) return c.json({ error: "conexão não encontrada" }, 404);
-    if (!(await c.env.LOGIN_LIMIT.limit({ key: `mcpauth:${c.get("email")}` })).success) return c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
+    const x = await conn(c); if (!x) return uiVariant(c.req.url) === "svelte" ? nativeAuthPage(c.env, c.req.raw, "connection-error", { status: 404, connectionFailure: "missing" }) : c.json({ error: "conexão não encontrada" }, 404);
+    if (!(await c.env.LOGIN_LIMIT.limit({ key: `mcpauth:${c.get("email")}` })).success) return uiVariant(c.req.url) === "svelte" ? nativeAuthPage(c.env, c.req.raw, "connection-error", { status: 429, connectionFailure: "rate" }) : c.json({ error: "Muitas tentativas. Espera um minuto." }, 429);
     try {
       const w = who(c);
       return c.redirect(await startAuth(c.env, w.origin, { email: w.email, book: x.book_id, cid: x.id, resource: x.url, back: uiNavigationUrl(`/b/${x.book_id}#app:${x.id}`, c.req.url, uiVariant(c.req.url)) }));
-    } catch (e) { return c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String((e as Error).message).replace(/</g, "&lt;")}. <a href="/b/${x.book_id}">Voltar</a></p>`, 400); }
+    } catch (e) { return uiVariant(c.req.url) === "svelte" ? nativeAuthPage(c.env, c.req.raw, "connection-error", { status: 400, connectionFailure: "failed" }) : c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String(e instanceof Error ? e.message : undefined).replace(/</g, "&lt;")}. <a href="/b/${x.book_id}">Voltar</a></p>`, 400); }
   });
-  app.get("/api/mcp-oauth/callback", async (c: any) => {
+  app.get("/api/mcp-oauth/callback", async (c) => {
     const q = c.req.query();
+    // Presentation only: the opaque prefix survives expired/consumed state.
+    // Authentication still requires finishAuth's exact stored state + identity.
+    let native = uiVariant(c.req.url) === "svelte" || q.state?.startsWith("svelte.") === true;
     try {
+      if (!native && q.state) {
+        const stored = await c.env.DB.prepare(`SELECT back FROM mcp_oauth_states WHERE state = ? AND email = ?`).bind(q.state, c.get("email")).first<{ back: string }>();
+        native = !!stored && uiVariant(new URL(stored.back, c.req.url)) === "svelte";
+      }
       if (q.error) throw new Error(String(q.error_description || q.error).slice(0, 200));
       const w = { email: c.get("email"), origin: new URL(c.req.url).origin };
       const s = await finishAuth(c.env, w.origin, w.email, String(q.state ?? ""), String(q.code ?? ""));
@@ -273,7 +289,7 @@ export function mountConnections(app: any, deps: { isMember: (db: D1Database, id
       }
       c.executionCtx.waitUntil(deps.track(c.env, "mcp_signed_in", { user: w.email, dims: { book: s.book_id, host: new URL(s.resource).host } }));
       return c.redirect(s.back);
-    } catch (e) { return c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String((e as Error).message).replace(/</g, "&lt;")}. <a href="/app">Voltar</a></p>`, 400); }
+    } catch (e) { return native ? nativeAuthPage(c.env, c.req.raw, "connection-error", { status: 400, connectionFailure: "failed" }) : c.html(`<p style="font:16px system-ui;padding:24px">Não deu pra entrar: ${String(e instanceof Error ? e.message : undefined).replace(/</g, "&lt;")}. <a href="/app">Voltar</a></p>`, 400); }
   });
 }
 

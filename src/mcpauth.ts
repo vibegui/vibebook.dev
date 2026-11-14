@@ -94,7 +94,9 @@ export async function startAuth(env: Env, origin: string, o: { email: string; bo
   const { issuer, as, scope } = await discover(env, o.resource, o.wwwAuth);
   const redirect = `${origin}/api/mcp-oauth/callback`;
   const client = await clientFor(env, issuer, as, redirect);
-  const state = rand(), verifier = rand(48);
+  // An opaque presentation hint only; the exact full state remains the DB key.
+  // This keeps expired/replayed native callbacks on the native error surface.
+  const state = `${new URL(o.back, origin).searchParams.get("ui") === "svelte" ? "svelte." : ""}${rand()}`, verifier = rand(48);
   const challenge = b64u(await crypto.subtle.digest("SHA-256", te.encode(verifier)));
   await env.DB.prepare(`INSERT INTO mcp_oauth_states (state, email, book_id, conn_id, resource, issuer, verifier, back, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(state, o.email, o.book, o.cid, o.resource, issuer, verifier, o.back, Date.now() + 10 * 60e3).run();

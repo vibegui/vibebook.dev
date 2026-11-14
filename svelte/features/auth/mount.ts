@@ -6,6 +6,7 @@ export function readNativeAuthMetadata(document: Document) {
     'meta[name="vb-consent-failure"]',
   );
   const parsed = NativeAuthMetadata.safeParse({
+    ...(document.querySelector('meta[name="vb-connection-failure"]') ? { connectionFailure: document.querySelector('meta[name="vb-connection-failure"]')?.getAttribute("content") } : {}),
     ...(consentFailure
       ? { consentFailure: consentFailure.getAttribute("content") === "1" }
       : {}),
