@@ -1855,6 +1855,8 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "Abrindo seu Claude no herdr…": "Opening your Claude in herdr…",
+  "Não deu agora. Tente de novo.": "Didn't work now. Try again.",
   "{n} Claudes seus ouvindo esta sala: cada um pode pegar o mesmo pedido. Feche os que sobram.": "{n} of your Claudes are listening to this room: each may pick up the same request. Close the extra ones.",
   "O que é seu": "What's yours",
   "Seu Claude": "Your Claude",
@@ -1865,7 +1867,6 @@ const EN = {
   "Nada esperando você nesta sala. ✓": "Nothing waiting on you in this room. ✓",
   "Resolvido": "Resolved",
   "esperando você": "waiting on you",
-  "O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.": "The browser blocked access to this computer: click the lock next to the address, allow \"Local network\" (or \"Apps on this device\") and reload.",
   "O que precisa de você aqui": "What needs you here",
   "só você vê": "only you see this",
   "Dispensar": "Dismiss",
@@ -4048,22 +4049,15 @@ async function loadRoomAgents() {
   renderSide();
 }
 const HERDR_LOCAL = "http://127.0.0.1:47321";
-// Chrome 142+ asks before a site talks to this machine (Local Network Access): without that permission the fetch just
-// fails, and the ↗ read "herdr não está rodando" while it was (Gui, 14/11). Say which one it is.
-const herdrBlocked = () => (navigator.permissions?.query({ name: "local-network-access" }) ?? Promise.reject())
-  .then((p) => toast(p.state === "granted" ? t("O vibebook herdr não está rodando nesta máquina.") : t("O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.")))
-  .catch(() => toast(t("O vibebook herdr não está rodando nesta máquina.")));
-let herdrSeen = null; // rooms with an open Claude per the local runner, refreshed at most every 20s
-const herdrPing = () => {
-  if (herdrSeen && Date.now() - herdrSeen.at < 20e3) return Promise.resolve(herdrSeen.rooms);
-  return fetch(`${HERDR_LOCAL}/ping`).then((r) => r.json()).then((j) => (herdrSeen = { at: Date.now(), rooms: j.rooms }).rooms).catch(() => (herdrSeen = { at: Date.now(), rooms: null }).rooms);
-};
+// Chrome 142+ asks before a site talks to this machine (Local Network Access). The ↗ goes through the server now; the
+// folder hint below asks the local runner only when that permission is already granted, so the page never prompts.
+const lanOk = () => (navigator.permissions?.query({ name: "local-network-access" }) ?? Promise.reject()).then((p) => p.state === "granted", () => true);
 // Where "Ligar Claude" opens this room on this machine (asked to the local vibebook herdr; nothing when it isn't running).
 const herdrWhere = {};
 const whereOf = (id, title) => {
   const c = herdrWhere[id];
   if (c && Date.now() - c.at < 20e3) return Promise.resolve(c.w);
-  return fetch(`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || "")}`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+  return lanOk().then((ok) => (ok ? fetch(`${HERDR_LOCAL}/where?room=${id}&title=${encodeURIComponent(title || "")}`).then((r) => (r.ok ? r.json() : null)) : null)).catch(() => null)
     .then((w) => (herdrWhere[id] = { at: Date.now(), w }).w);
 };
 const WHERE_HOW = { used: t("a pasta onde ele já abriu antes"), linked: t("ligada a esta sala pelo arquivo .vibebook"), slug: t("a pasta com o nome da sala"), new: t("pasta nova com o nome da sala, criada ao ligar") };
@@ -4133,10 +4127,12 @@ function renderAgentsPane(on, live, path, w) {
     <h4>${t("Na nuvem")}</h4><div id="sbx">${sbxHtml()}</div>`;
   document.getElementById("agToggle").onchange = toggleClaude;
   document.getElementById("agConnCopy").onclick = copyConnect;
-  // "↗": the local vibebook herdr focuses this room's workspace and raises the terminal (shown only when it answers).
+  // "↗": your vibebook herdr focuses this room's Claude and raises the terminal. It goes through the server to your
+  // CLI's hub (POST /focus → your channel → hub → the local runner), never from this page to 127.0.0.1, so the
+  // browser's Local Network Access permission isn't asked for (Gui, 14/11). Shown while ✻ is on for this room.
   const go = document.getElementById("agGo");
-  if (on) herdrPing().then((rooms) => { if (go.isConnected) go.hidden = !rooms?.includes(S.id); });
-  go.onclick = () => fetch(`${HERDR_LOCAL}/focus?room=${S.id}`).then((r) => r.json()).then((r) => r.error && toast(esc(r.error))).catch(herdrBlocked);
+  go.hidden = !on;
+  go.onclick = () => api(`/api/books/${S.id}/focus`, {}).then(() => toast(t("Abrindo seu Claude no herdr…"))).catch(() => toast(t("Não deu agora. Tente de novo.")));
   el.querySelectorAll("[data-goto]").forEach((b) => b.onclick = () => { if (ROOM_PHONE.matches) closeSheet(); goToMsg(Number(b.dataset.goto)); });
   el.querySelectorAll("[data-dismiss]").forEach((b) => b.onclick = () => send({ t: "ack.dismiss", id: Number(b.dataset.dismiss) }));
   document.getElementById("qMore")?.addEventListener("click", () => { qOpen = !qOpen; renderMyClaude(); });

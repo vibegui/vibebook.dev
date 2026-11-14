@@ -7,7 +7,7 @@ import { appendFileSync, chmodSync, closeSync, existsSync, fstatSync, mkdirSync,
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-var VERSION = "1.6.10";
+var VERSION = "1.6.11";
 var HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 var SESSION = join(HOME, "session.json");
 var AGENTS = join(HOME, "agents.json");
@@ -1013,6 +1013,10 @@ async function hub() {
           bump(m.book);
         if (m.t === "agents")
           bumpAgents();
+        if (m.t === "focus" && typeof m.book === "string") {
+          const port = Number(process.env.VIBEBOOK_HERDR_PORT || 47321);
+          fetch(`http://127.0.0.1:${port}/focus?room=${encodeURIComponent(m.book)}`, { headers: { origin: s.origin } }).catch(() => {});
+        }
       } catch {}
     };
     ws.onclose = again;

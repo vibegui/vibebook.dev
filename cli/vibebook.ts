@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
-const VERSION = "1.6.10";
+const VERSION = "1.6.11";
 const HOME = process.env.VIBEBOOK_HOME || join(homedir(), ".vibebook");
 const SESSION = join(HOME, "session.json");
 const AGENTS = join(HOME, "agents.json");
@@ -912,7 +912,19 @@ async function hub() {
     let closed = false;
     const again = () => { if (closed) return; closed = true; clearInterval(ping); setTimeout(() => connect().catch(again), backoff); backoff = Math.min(backoff * 2, 60_000); };
     ws.onopen = () => { backoff = 1000; bump(); bumpAgents(); ping = setInterval(() => { try { ws.send("ping"); } catch {} }, 45_000); }; // (re)connected: everyone checks once
-    ws.onmessage = (e) => { try { const m = JSON.parse(String(e.data)); if (m.t === "me" && m.book) bump(m.book); if (m.t === "agents") bumpAgents(); } catch {} };
+    ws.onmessage = (e) => {
+      try {
+        const m = JSON.parse(String(e.data));
+        if (m.t === "me" && m.book) bump(m.book);
+        if (m.t === "agents") bumpAgents();
+        // The room's ↗ (POST /api/books/:id/focus): hand it to this machine's herdr runner. A machine without the room
+        // answers 404 and nothing happens.
+        if (m.t === "focus" && typeof m.book === "string") {
+          const port = Number(process.env.VIBEBOOK_HERDR_PORT || 47321);
+          fetch(`http://127.0.0.1:${port}/focus?room=${encodeURIComponent(m.book)}`, { headers: { origin: s.origin } }).catch(() => {});
+        }
+      } catch {}
+    };
     ws.onclose = again;
     ws.onerror = again;
   };

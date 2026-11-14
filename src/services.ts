@@ -126,6 +126,7 @@ export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
       return null;
     },
     pokeAgents: (roomId) => ctx.waitUntil(poke(env, [email], { t: "agents", book: roomId })),
+    pokeFocus: (roomId) => ctx.waitUntil(poke(env, [email], { t: "focus", book: roomId })),
     requestAccess: async (roomId) => {
       if (!(await env.DB.prepare(`SELECT 1 FROM books WHERE id = ?`).bind(roomId).first())) return "not_found";
       if (await isMember(env.DB, roomId, email)) return "member";
