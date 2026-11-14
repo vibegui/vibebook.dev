@@ -46,12 +46,34 @@ assert.equal(
   sha(retained),
   "a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903",
 );
+const cmapTrimOnly = await readFile(
+  resolve(fixture, "cmap-only-inter-99fcc57613.woff2"),
+);
+const holesOnly = await readFile(
+  resolve(fixture, "holes-only-inter-4d21ed4102.woff2"),
+);
+assert.equal(
+  sha(cmapTrimOnly),
+  "99fcc576132436e781ff7e49deec40358781b659333585cce940c8957d3684da",
+);
+assert.equal(
+  sha(holesOnly),
+  "4d21ed4102d1d794f2b54fbc2e8ac1f107045cc2009ab54ae03b4e98efba33ab",
+);
+const diagnosticAliases = new Set([
+  "Rejected",
+  "Retained",
+  "CmapTrimOnly",
+  "HolesOnly",
+]);
 const aliases = [
   "OriginalA",
   "OriginalB",
   "Roundtrip",
   "Rejected",
   "Retained",
+  "CmapTrimOnly",
+  "HolesOnly",
 ] as const;
 const aliasFiles = {
   OriginalA: "original",
@@ -59,6 +81,8 @@ const aliasFiles = {
   Roundtrip: "roundtrip",
   Rejected: "rejected",
   Retained: "retained",
+  CmapTrimOnly: "cmap-trim-only",
+  HolesOnly: "holes-only",
 } as const;
 const text =
   "AVATAR To Wa office affine ffi fl fi 0123456789 € £ $ — … “quoted” → ✓";
@@ -94,6 +118,8 @@ const assets = new Map<string, Buffer>([
   ["/roundtrip.woff2", roundtrip],
   ["/rejected.woff2", rejected],
   ["/retained.woff2", retained],
+  ["/cmap-trim-only.woff2", cmapTrimOnly],
+  ["/holes-only.woff2", holesOnly],
 ]);
 const server = Bun.serve({
   hostname: "127.0.0.1",
@@ -140,6 +166,8 @@ const report: {
   roundtripSHA256: sha(roundtrip),
   rejectedSHA256: sha(rejected),
   retainedSHA256: sha(retained),
+  cmapTrimOnlySHA256: sha(cmapTrimOnly),
+  holesOnlySHA256: sha(holesOnly),
   samples,
   observations: [],
 };
@@ -253,7 +281,7 @@ try {
   report.missingGlyphControl = { text: "A", fonts: missing };
   report.fontProof = fontProof;
   const observations = [];
-  let saved = 0;
+  const saved = new Map<string, number>();
   for (const weight of [400, 900]) {
     for (const sample of samples) {
       const result = await page.evaluate(
@@ -315,14 +343,19 @@ try {
       for (const r of result) {
         const { originalPNG, candidatePNG, ...summary } = r;
         assert(
-          r.alias === "Rejected" ||
-            r.alias === "Retained" ||
-            r.pixelsChanged === 0,
+          diagnosticAliases.has(r.alias) || r.pixelsChanged === 0,
           "A/A or byte-identical roundtrip raster changed",
         );
         let artifacts: string[] = [];
-        if (r.pixelsChanged && saved < 16 && originalPNG && candidatePNG) {
-          const stem = `canvas-${saved++}-${weight}`;
+        if (
+          r.pixelsChanged &&
+          (saved.get(r.alias) ?? 0) < 16 &&
+          originalPNG &&
+          candidatePNG
+        ) {
+          const index = saved.get(r.alias) ?? 0;
+          saved.set(r.alias, index + 1);
+          const stem = `canvas-${r.alias}-${index}-${weight}`;
           artifacts = [`${stem}-original.png`, `${stem}-${r.alias}.png`];
           await writeFile(
             resolve(output, artifacts[0]),
@@ -411,8 +444,7 @@ try {
           },
         );
         assert(
-          shot.alias === "Rejected" ||
-            shot.alias === "Retained" ||
+          diagnosticAliases.has(shot.alias) ||
             (difference.dimensionsEqual && difference.pixelsChanged === 0),
           "DOM A/A or roundtrip changed",
         );
@@ -451,6 +483,23 @@ try {
     dom.some((x) => x.alias === "Retained" && x.pixelsChanged !== 0)
       ? "retained-candidate-differences-localized"
       : "zero-observed-differences-in-bounded-fixtures";
+  report.factorialComparisons = ["CmapTrimOnly", "HolesOnly", "Retained"].map(
+    (alias) => ({
+      alias,
+      changedCanvas: observations
+        .filter((x) => x.alias === alias && x.pixelsChanged > 0)
+        .map((x) => ({
+          kind: x.kind,
+          text: x.text,
+          weight: x.weight,
+          pixelsChanged: x.pixelsChanged,
+          bounds: x.bounds,
+        })),
+      DOM: dom.filter((x) => x.alias === alias),
+    }),
+  );
+  report.factorialScope =
+    "CmapTrimOnly=full original glyf/gvar+only exact Retained cmap; HolesOnly=Retained holes+exact original raw cmap; Retained=both factors. Original is reference. Cmap format versus coverage not separated. All inactive.";
   report.acceptance =
     "NONE: neither verdict activates a subset or establishes M4/M7 parity; raw evidence requires review.";
   await context.close();
