@@ -32,6 +32,7 @@ import type {
   NativeApplicationAuditFixture,
 } from "./native-application-browser-types";
 import { auditNativeApplicationProfiles } from "./native-application-profiles";
+import { auditNativeAppNavigation } from "./native-app-navigation-probe";
 import {
   auditNativeApplicationLifecycle,
   type ApplicationSockets,
@@ -1003,6 +1004,13 @@ try {
     },
   };
   report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
+  const appNavigation = await auditNativeAppNavigation(profileFixture);
+  report.appNavigation = appNavigation;
+  // A controlled replacement document inheriting the original App's room read
+  // capability is a security finding, not a passing functional receipt.
+  await step("replacement App authority requires an explicit refusal", async () => {
+    assert.equal(appNavigation.verdict, "explicit-denial", "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass");
+  });
   assert.deepEqual(errors, []);
   report.status = "passed";
 } catch (error) {
