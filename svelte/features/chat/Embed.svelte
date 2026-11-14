@@ -5,6 +5,7 @@
   import { createAppConsent } from "../apps/consent";
   import Button from "../../lib/ui/Button.svelte";
   import Snapshot from "../../lib/ui/Snapshot.svelte";
+  import { appDocumentFrameName } from "../../../shared/appDocumentProtocol";
   let {
     url,
     file,
@@ -27,6 +28,10 @@
     bridgeRevoked = $state(false),
     bridgeFailed = $state(untrack(() => !actions.mountEmbed)),
     bridgeReady = $state(untrack(() => !actions.mountEmbed));
+  const frameName = $derived.by(() => {
+    void frameGeneration;
+    return appDocumentFrameName();
+  });
   const consent = createAppConsent(
       () => active && !bridgeDenied && !bridgeFailed && !bridgeRevoked,
     ),
@@ -129,6 +134,7 @@
 
 <div data-chat-embed class="tw:w-full tw:space-y-2">
   {#if !bridgeDenied}{#key frameGeneration}<iframe
+        name={frameName}
         use:attachFrame
         sandbox="allow-scripts"
         loading="lazy"

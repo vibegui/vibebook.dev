@@ -278,6 +278,7 @@ export async function auditAppDocumentFilePost(options: {
         const module: typeof import("../svelte/features/apps/bridge") =
           await import(/* @vite-ignore */ moduleURL);
         const frame = document.createElement("iframe");
+        frame.name = `app-document-${crypto.randomUUID()}`;
         frame.sandbox.add("allow-scripts");
         frame.id = "file-positive-frame";
         document.body.append(frame);
@@ -309,6 +310,9 @@ export async function auditAppDocumentFilePost(options: {
         Object.assign(window, {
           filePostProof: {
             state,
+            loadFile() {
+              bridge.loadFile(filePath);
+            },
             dispose() {
               bridge.dispose();
               frame.remove();
@@ -316,10 +320,19 @@ export async function auditAppDocumentFilePost(options: {
           },
         });
         await bridge.ready;
-        bridge.loadFile(filePath);
       },
       { filePath, marker },
     );
+    const initialElement = await page.$("#file-positive-frame");
+    assert(initialElement);
+    const initialChild = await initialElement.contentFrame();
+    const initialName = await initialElement.getAttribute("name");
+    assert(
+      initialChild && initialName && initialChild.name() === initialName,
+      "Pre-insertion public name must identify the actual child navigable",
+    );
+    report.initialTargetMatches = true;
+    await page.evaluate(() => Reflect.get(window, "filePostProof").loadFile());
     const frame = page.frameLocator("#file-positive-frame");
     report.phase = "initial-stage";
     await expect(frame.locator("#stage")).toHaveText("initial");
@@ -364,6 +377,11 @@ export async function auditAppDocumentFilePost(options: {
       },
     ]);
     report.initial = { read: true, nativeEvent: true, ...documentEvidence };
+    assert.equal(
+      extraPages.length,
+      0,
+      "File navigation must stay inside the owned iframe",
+    );
     report.phase = "replacement";
     await frame.locator("#navigate").click();
     await expect(frame.locator("#stage")).toHaveText("replacement");

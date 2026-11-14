@@ -4929,7 +4929,8 @@ document.addEventListener("click", (e) => {
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 // An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
 // the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
-const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe class="embed" data-app-file="${esc(fileUrl(f))}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+function appFrameName() { return `app-document-${crypto.randomUUID()}`; }
+const htmlCard = (f) => `<div class="embedBox htmlCard"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Ao lado")}</button><a class="hcOpen" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}">${icon("expand", 13)} ${t("Abrir")}</a></div><div class="embedWrap"><iframe name="${appFrameName()}" class="embed" data-app-file="${esc(fileUrl(f))}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
   ? htmlCard(f)
   : f.type.startsWith("audio/")
@@ -5389,7 +5390,7 @@ function renderConnApp(el) {
   const pinRef = room ? a.tool : `${c.id}/${a.tool}`;
   const bar = el.querySelector(".connBar");
   if (el.querySelector(".connFrame")?.dataset.app === key && hosts.get(el.querySelector(".connFrame"))?.current()) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe name="${appFrameName()}" class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
   wirePinToggles(el.querySelector(".connBar"));
@@ -5492,7 +5493,7 @@ async function vbCall(name, a = {}, ask, current = () => true) {
 const hosts = new WeakMap();
 const appDocuments = new Set();
 let appDocumentModule;
-const loadAppDocumentHost = () => appDocumentModule ||= import("/app-document-host.5c7068a75f0cb9c61147.js").catch((error) => { appDocumentModule = null; throw error; });
+const loadAppDocumentHost = () => appDocumentModule ||= import("/app-document-host.7e469427bbba31a553f7.js").catch((error) => { appDocumentModule = null; throw error; });
 function appDocumentScope(frame) {
   const room = S?.id, account = S?.me, at = thread, socket = ws;
   return () => frame.isConnected && S?.id === room && S?.me === account && thread === at && ws === socket && ws?.readyState === 1;
@@ -5522,7 +5523,7 @@ function makeHost(frame, o, createAppDocumentHost, current) { // o: { ask (a box
       if (!reopen.isConnected || !current()) return;
       const next = frame.cloneNode(false);
       for (const attribute of ["src", "srcdoc", "name", "hidden", "data-app-document-expired"]) next.removeAttribute(attribute);
-      owner.dispose(); frame.replaceWith(next); o.reopen(next);
+      next.name = appFrameName(); owner.dispose(); frame.replaceWith(next); o.reopen(next);
     };
   } });
   const post = (m) => documentHost.post({ jsonrpc: "2.0", ...m });

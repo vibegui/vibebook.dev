@@ -1,6 +1,8 @@
 /** Only opaque references cross WindowProxy; document data stays on the claimed port. */
 export const APP_DOCUMENT_CHANNEL = "vibebook.app-document.v1";
 export const APP_DOCUMENT_NONCE_PLACEHOLDER = "__VIBEBOOK_APP_DOCUMENT_NONCE__";
+/** Public routing label, not a grant. Set it before inserting the iframe. */
+export const appDocumentFrameName = () => `app-document-${crypto.randomUUID()}`;
 export const documentRecord = (
   value: unknown,
 ): value is Record<string, unknown> =>

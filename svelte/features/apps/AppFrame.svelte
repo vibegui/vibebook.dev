@@ -18,6 +18,8 @@
   } from "./tools";
   import Button from "../../lib/ui/Button.svelte";
   import Snapshot from "../../lib/ui/Snapshot.svelte";
+  import { appDocumentFrameName } from "../../../shared/appDocumentProtocol";
+  const frameName = appDocumentFrameName();
   let { props }: { props: AppsProps } = $props();
   const view = untrack(() => props.owner.state),
     requests = createAppRequests();
@@ -329,6 +331,7 @@
     </p>{/if}
   <iframe
     bind:this={frame}
+    name={frameName}
     sandbox="allow-scripts allow-forms"
     title={selected?.tool || "App"}
     class="tw:min-h-80 tw:w-full tw:flex-1 tw:border-0 tw:bg-background"

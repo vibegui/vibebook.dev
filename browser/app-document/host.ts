@@ -32,6 +32,9 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
     throw Error("App documents must load through their document host");
   grantedFrames.add(frame);
   const nonce = token();
+  // The name attribute only initializes a child navigable when it is created.
+  // Callers must put this public label on the iframe before DOM insertion.
+  const targetName = frame.getAttribute("name");
   let started = false;
   let loaded = false;
   let disposed = false;
@@ -236,13 +239,20 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
         !/^\/api\/books\/[^/]+\/files\/[^/]+$/.test(target.pathname)
       )
         throw Error("Invalid app document file URL");
+      if (
+        !targetName ||
+        !/^app-document-[a-zA-Z0-9-]+$/.test(targetName) ||
+        frame.getAttribute("name") !== targetName
+      )
+        throw Error(
+          "App file requires a stable target name before iframe insertion",
+        );
       beginLoad();
-      frame.name = `app-document-${token()}`;
       const form = document.createElement("form");
       form.hidden = true;
       form.method = "post";
       form.action = target.href;
-      form.target = frame.name;
+      form.target = targetName;
       const input = document.createElement("input");
       input.type = "hidden";
       input.name = "nonce";
