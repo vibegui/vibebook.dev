@@ -15,7 +15,10 @@ import {
   type Page,
 } from "@playwright/test";
 import { startupTimeout, DEVELOPMENT_READY_URLS } from "./dev-app";
-import { nativeBrowserFixtures, localBrowserError } from "./native-browser-fixtures";
+import {
+  nativeBrowserFixtures,
+  localBrowserError,
+} from "./native-browser-fixtures";
 import { MeResult, CreateRoomResult, AccessContext } from "../shared/schemas";
 import { isRoomEvent, record } from "../shared/validation";
 
@@ -42,8 +45,14 @@ const result: Record<string, unknown> = {
 };
 const steps: string[] = [];
 const errors: ReturnType<typeof localBrowserError>[] = [];
-const restoredSources: { path: string; originalSHA256: string; mutatedSHA256: string; restoredSHA256: string }[] = [];
-const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+const restoredSources: {
+  path: string;
+  originalSHA256: string;
+  mutatedSHA256: string;
+  restoredSHA256: string;
+}[] = [];
+const digest = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
 const changes = new Map<string, { before: string; after: string }>();
 const created: string[] = [];
 let browser: Browser | undefined;
@@ -54,7 +63,11 @@ let launcherStart: string | null = null;
 const shutdowns: { exitCode: number; observedDescendants: number }[] = [];
 let sampler: ReturnType<typeof setInterval> | undefined;
 let interrupted = false;
-const interrupt = () => { interrupted = true; process.exitCode = 130; void browser?.close().catch(() => {}); };
+const interrupt = () => {
+  interrupted = true;
+  process.exitCode = 130;
+  void browser?.close().catch(() => {});
+};
 const observed = new Map<number, { start: string; pgid: number }>();
 assert.equal(
   process.platform,
@@ -163,7 +176,8 @@ async function stopOwned() {
     if (identity(owned.pid) === launcherStart)
       process.kill(-owned.pid, "SIGTERM");
   } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "ESRCH")) throw error;
+    if (!(error instanceof Error && "code" in error && error.code === "ESRCH"))
+      throw error;
   }
   const code = await Promise.race([
     owned.exited,
@@ -211,8 +225,17 @@ async function restore() {
     );
     await writeFile(path, value.before);
     const restored = await readFile(path, "utf8");
-    assert.equal(restored, value.before, "Restored source bytes must match original");
-    restoredSources.push({ path: path.slice(root.length), originalSHA256: digest(value.before), mutatedSHA256: digest(value.after), restoredSHA256: digest(restored) });
+    assert.equal(
+      restored,
+      value.before,
+      "Restored source bytes must match original",
+    );
+    restoredSources.push({
+      path: path.slice(root.length),
+      originalSHA256: digest(value.before),
+      mutatedSHA256: digest(value.after),
+      restoredSHA256: digest(restored),
+    });
     changes.delete(path);
   }
 }
@@ -342,9 +365,20 @@ try {
   );
   assert.equal(denied.status(), 404);
   const deniedHTML = await denied.text();
-  assert(deniedHTML.includes('name="vb-page" content="access"') && deniedHTML.includes('src="/bootstrap.ts"'), "Missing room must serve source native access presentation, not RoomShell");
-  assert.equal(AccessContext.parse(await (await context.request.get(`${base}/auth/room/${missingRoom}`)).json()).state, "missing");
-  const outsider = await browser.newContext({locale:"en-US"});
+  assert(
+    deniedHTML.includes('name="vb-page" content="access"') &&
+      deniedHTML.includes('src="/bootstrap.ts"'),
+    "Missing room must serve source native access presentation, not RoomShell",
+  );
+  assert.equal(
+    AccessContext.parse(
+      await (
+        await context.request.get(`${base}/auth/room/${missingRoom}`)
+      ).json(),
+    ).state,
+    "missing",
+  );
+  const outsider = await browser.newContext({ locale: "en-US" });
   try {
     await outsider.addCookies([
       {
@@ -362,17 +396,32 @@ try {
       "Existing private room returns Worker access page",
     );
     const inaccessibleHTML = await inaccessible.text();
-    assert(inaccessibleHTML.includes('name="vb-page" content="access"') && inaccessibleHTML.includes('src="/bootstrap.ts"'), "Unauthorized identity receives only the native access source shell");
-    const access = AccessContext.parse(await (await outsider.request.get(`${base}/auth/room/${room}`)).json());
+    assert(
+      inaccessibleHTML.includes('name="vb-page" content="access"') &&
+        inaccessibleHTML.includes('src="/bootstrap.ts"'),
+      "Unauthorized identity receives only the native access source shell",
+    );
+    const access = AccessContext.parse(
+      await (await outsider.request.get(`${base}/auth/room/${room}`)).json(),
+    );
     assert.equal(access.state, "ask");
     const accessPage = await outsider.newPage();
     let unauthorizedRoomSockets = 0;
-    accessPage.on("websocket", socket => { if (new URL(socket.url()).pathname === `/ws/${room}`) unauthorizedRoomSockets++; });
+    accessPage.on("websocket", (socket) => {
+      if (new URL(socket.url()).pathname === `/ws/${room}`)
+        unauthorizedRoomSockets++;
+    });
     await accessPage.goto(`${base}/b/${room}?ui=svelte`);
     await expect(accessPage.locator('[data-vb-native="auth"]')).toBeVisible();
-    await expect(accessPage.getByRole("button", {name:"Ask to join",exact:true})).toBeVisible();
+    await expect(
+      accessPage.getByRole("button", { name: "Ask to join", exact: true }),
+    ).toBeVisible();
     await expect(accessPage.locator("[data-native-room-root]")).toHaveCount(0);
-    assert.equal(unauthorizedRoomSockets, 0, "Access presentation cannot open private Book transport");
+    assert.equal(
+      unauthorizedRoomSockets,
+      0,
+      "Access presentation cannot open private Book transport",
+    );
   } finally {
     await outsider.close();
   }
@@ -634,7 +683,9 @@ try {
   }
   if (sampler) clearInterval(sampler);
   for (const path of created.reverse())
-    await rm(path, { recursive: true, force: true }).catch(error => cleanup.push(String(error)));
+    await rm(path, { recursive: true, force: true }).catch((error) =>
+      cleanup.push(String(error)),
+    );
   if (logFd !== undefined) closeSync(logFd);
   const startupLog = await readFile(
     resolve(output, "dev-app.log"),
@@ -655,7 +706,13 @@ try {
         typeof value.elapsedMs === "number" &&
         Number.isFinite(value.elapsedMs)
       )
-        return [{name:value.name,status:value.status,elapsedMs:value.elapsedMs}];
+        return [
+          {
+            name: value.name,
+            status: value.status,
+            elapsedMs: value.elapsedMs,
+          },
+        ];
     } catch {
       /* Keep child logs as evidence even if one phase line is incomplete. */
     }
@@ -671,7 +728,10 @@ try {
   result.errors = errors;
   result.cleanupErrors = cleanup;
   if (cleanup.length) result.status = "fail";
-  if (interrupted) { result.status = "fail"; result.failure = "HMR harness interrupted"; }
+  if (interrupted) {
+    result.status = "fail";
+    result.failure = "HMR harness interrupted";
+  }
   await writeFile(
     `${output}/results.json`,
     JSON.stringify(result, null, 2) + "\n",
