@@ -7,7 +7,7 @@ import {
   appSessionFailure,
   type AppsAuthority,
 } from "./authority";
-import { createAppsApi, createAppMetrics } from "./api";
+import { createAppsApi, createAppMetrics, type AppsApi } from "./api";
 import { createAppRequests } from "./requests";
 import { createRoomAppTools, roomTools } from "./tools";
 export function mountNativeChatApp(options: {
@@ -22,6 +22,8 @@ export function mountNativeChatApp(options: {
   t(text: string, vars?: Record<string, string | number>): string;
   locale: string;
   open(url: string): void;
+  api?: AppsApi;
+  metrics?: ReturnType<typeof createAppMetrics>;
 }) {
   const candidate = options.room(),
     candidateAuthority = options.authority;
@@ -32,8 +34,8 @@ export function mountNativeChatApp(options: {
     account = initial.me,
     frame = options.frame,
     requests = createAppRequests(),
-    api = createAppsApi(roomId),
-    metrics = createAppMetrics();
+    api = options.api ?? createAppsApi(roomId),
+    metrics = options.metrics ?? createAppMetrics();
   let active = true,
     bridge: NativeAppBridge | null = null;
   const current = () => {

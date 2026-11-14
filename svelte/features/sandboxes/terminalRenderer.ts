@@ -1,3 +1,5 @@
+import { cssRGBA as terminalRGBA } from "../../lib/ui/cssColor";
+export { cssRGBA as terminalRGBA } from "../../lib/ui/cssColor";
 import type { ITheme, Terminal as Xterm } from "@xterm/xterm";
 export type TerminalSemanticTheme = Pick<
   ITheme,
@@ -26,25 +28,6 @@ export type TerminalRenderer = {
   input(enabled: boolean): void;
   dispose(): void;
 };
-/** CSS Color 4 (including Studio oklch) is resolved by the browser, not xterm 5.5's legacy parser or a guessed palette. */
-export function terminalRGBA(document: Document, color: string): string {
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 1;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) throw Error("Terminal color conversion unavailable");
-  // Two sentinels detect a color rejected by canvas without turning a sentinel into an application palette.
-  context.fillStyle = "rgb(1, 2, 3)";
-  context.fillStyle = color;
-  const first = context.fillStyle;
-  context.fillStyle = "rgb(4, 5, 6)";
-  context.fillStyle = color;
-  if (first !== context.fillStyle)
-    throw Error("Terminal color conversion failed");
-  context.clearRect(0, 0, 1, 1);
-  context.fillRect(0, 0, 1, 1);
-  const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
-  return `rgba(${r}, ${g}, ${b}, ${a! / 255})`;
-}
 /** The only approved renderer theme fields; application controls remain Tailwind-owned. */
 export function resolveTerminalTheme(
   mount: HTMLElement,

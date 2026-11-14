@@ -329,6 +329,9 @@ export function createChatViewport(options: {
         },
       );
     },
+    detachSurface(expected: ChatSurface) {
+      if (surface === expected) detach();
+    },
     capture(): ScrollCapture | null {
       return current() && surface?.connected()
         ? { ...surface.metrics(), scope }

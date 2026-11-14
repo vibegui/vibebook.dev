@@ -26,6 +26,7 @@ export function createAgentsService(options: {
     sessionDenied = false,
     attached: RoomAgentSession | null = null;
   const rooms = new Map<string, RoomAgentSession>();
+  let attachment: object | null = null;
   const refreshTimers = new Map<string, unknown>();
   let personal: ReturnType<typeof createAgentAccountSession> | null = null,
     credentials: ReturnType<typeof createSandboxCredentials> | null = null;
@@ -35,6 +36,7 @@ export function createAgentsService(options: {
     for (const room of rooms.values()) room.dispose();
     rooms.clear();
     attached = null;
+    attachment = null;
     personal?.dispose();
     credentials?.dispose();
     personal = credentials = null;
@@ -105,6 +107,14 @@ export function createAgentsService(options: {
       },
     });
   }
+  function detach() {
+    if (!active) return;
+    attachment = null;
+    attached?.detach();
+    attached = null;
+    for (const [id, owner] of rooms)
+      if (!owner.hasPending()) { owner.dispose(); rooms.delete(id); }
+  }
   return {
     identity,
     invalidate,
@@ -143,16 +153,14 @@ export function createAgentsService(options: {
       owner.sync(room, thread, waits, pane, visible);
       return owner;
     },
-    detach() {
-      if (!active) return;
-      attached?.detach();
-      attached = null;
-      for (const [id, owner] of rooms)
-        if (!owner.hasPending()) {
-          owner.dispose();
-          rooms.delete(id);
-        }
+    /** Room UI replacement can reuse the same actor; cleanup owns a lease,
+     * rather than merely comparing the reused actor object. */
+    claimAttachment() {
+      const token = {};
+      attachment = token;
+      return () => { if (attachment === token) detach(); };
     },
+    detach,
     reset,
     dispose() {
       reset();
