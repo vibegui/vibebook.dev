@@ -180,3 +180,39 @@ export async function searchRooms(env: Env, email: string, q: string, room?: str
   const epics = per.flatMap((p) => p.epics.map((e) => ({ ...e, room_id: p.room.id, room: p.room.title }))).sort((a, b) => b.ts - a.ts).slice(0, 15);
   return { rooms: rooms.length, failed: per.filter((p) => "failed" in p).length, epics, messages };
 }
+
+// The Inbox (GET /api/inbox): everything across the person's rooms that needs them, in one call.
+// waits + mentions are D1 only; tasks fan out to the newest-opened 30 rooms' Book DOs (like searchRooms). No model call.
+export async function inbox(env: Env, email: string) {
+  const db = env.DB;
+  const [waits, mentions, rooms] = await Promise.all([
+    waitsFor(db, email),
+    db
+      .prepare(
+        `SELECT d.book_id, b.title AS room, d.msg_id, d.thread, d.author, u.name AS author_name, d.text, d.ts
+         FROM digest_items d JOIN books b ON b.id = d.book_id LEFT JOIN users u ON u.email = d.author
+         WHERE d.email = ? ORDER BY d.ts DESC LIMIT 40`,
+      )
+      .bind(email)
+      .all<{ book_id: string; room: string; msg_id: number; thread: string; author: string; author_name: string | null; text: string; ts: number }>()
+      .then((r) => r.results),
+    db
+      .prepare(
+        `SELECT b.id, b.title FROM books b JOIN members m ON m.book_id = b.id
+         WHERE m.email = ?1 AND m.archived_at IS NULL ORDER BY coalesce(m.opened_at, 0) DESC, b.updated_at DESC LIMIT 30`,
+      )
+      .bind(email)
+      .all<{ id: string; title: string }>()
+      .then((r) => r.results),
+  ]);
+  const per = await Promise.all(
+    rooms.map(async (r) => {
+      try {
+        return (await bookStub(env, r.id).inboxTasks(r.id, email)).map((t) => ({ ...t, book_id: r.id, room: r.title }));
+      } catch {
+        return [];
+      }
+    }),
+  );
+  return { waits, mentions, tasks: per.flat() };
+}

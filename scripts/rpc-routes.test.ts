@@ -88,6 +88,7 @@ function fixture(overrides: Partial<ApiServices> = {}) {
     pushToMe: async () => 1,
     sqlAll: async () => [],
     search: async () => ({ rooms: 0, epics: [], messages: [] }),
+    inbox: async () => ({ waits: [], mentions: [], tasks: [] }),
     loginProviders: { google: false, github: false },
     isEmail: (value) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
     befriend: async () => {},

@@ -1,5 +1,14 @@
 # Vanilla and product change ledger
 
+Current-main reconciliation: `cbaf3dfe6a696a887da6640ef45c070a9ac0b5ed`
+includes `8a2d05e`'s cross-room Inbox (waits, held-back mentions and open tasks),
+`GET /api/inbox` and a sidebar trigger above the epic list. The default vanilla
+source and compiled Inbox are preserved. Native Inbox presentation incorporates
+the new sections, but its typed owner/RPC fetch, schema-derived DTO aliases,
+sidebar trigger, loading/error/retry and navigation/ownership verification are
+still pending. Native legacy host/chunks remain deleted; preview assets must be
+regenerated from the current native source. Both changelog entries are retained.
+
 | Reference                                          | Change                                                                                                                                                                                          | Migration action                                                                                                                                                                  | Status                                                                                                                                      |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fbbd82b` / `d3e1473`                              | PWA install/banner, push notifications, service worker, CLI warning behavior                                                                                                                    | Keep default assets/behavior; port owned push/install UI into native Svelte and include F12/F13/F52 in final tests                                                                | Baseline preserved; Svelte port pending                                                                                                     |

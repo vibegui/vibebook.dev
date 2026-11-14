@@ -340,6 +340,8 @@
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
   .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
   .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); flex: none; font-variant-numeric: tabular-nums; }
+  .sideInbox { cursor: pointer; color: var(--ink); } .sideInbox svg { width: 18px; height: 18px; flex: none; color: var(--mute); }
+  .sideInbox .n { color: var(--wait-ink); background: var(--wait-bg); min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 999px; padding: 0 5px; }
   .sec .thread + .thread, .sec .thread + .newRoom { margin-top: 2px; }
   /* Rows keep their hover/selected padding but their content lines up with the sidebar edge. */
   .side .sec .thread, .side .newRoom, .side .friendAdd { margin-left: -10px; margin-right: -10px; width: calc(100% + 20px); }
@@ -1069,7 +1071,9 @@
   dialog.inbox .ibTabs { display: flex; gap: 6px; }
   dialog.inbox .ibTabs button { flex: none; white-space: nowrap; border: 1px solid var(--line); background: none; color: var(--ink-2, inherit); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 13.5px; cursor: pointer; }
   dialog.inbox .ibTabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-  dialog.inbox ul { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; min-height: 0; overscroll-behavior: contain; }
+  dialog.inbox .ibBody { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; }
+  dialog.inbox .ibSec { margin: 0 0 2px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--mute); display: flex; gap: 6px; align-items: baseline; } dialog.inbox .ibSec small { font-weight: 600; }
+  dialog.inbox ul { list-style: none; margin: 0; padding: 0; }
   dialog.inbox li { display: flex; align-items: flex-start; gap: 8px; border-top: 1px solid var(--line); }
   dialog.inbox li a { flex: 1; display: flex; gap: 10px; padding: 10px 4px; color: inherit; text-decoration: none; min-width: 0; }
   dialog.inbox li a:hover { background: var(--hover); }
@@ -1680,6 +1684,9 @@ const EN = {
   "Este navegador não tem notificações": "This browser doesn't support notifications",
   "As notificações estão bloqueadas pra vibebook.dev neste navegador. Clique no cadeado ao lado do endereço → Notificações → Permitir, e recarregue a página.": "Notifications are blocked for vibebook.dev in this browser. Click the lock next to the address → Notifications → Allow, and reload the page.",
   "Te mencionaram": "You were mentioned",
+  "Suas tarefas": "Your tasks",
+  "revisar": "review",
+  "Não deu pra resolver agora. Tente de novo.": "Couldn't resolve just now. Try again.",
   "respondendo…": "replying…",
   "anexo": "attachment",
   "Abrir documento": "Open document",
@@ -3024,30 +3031,46 @@ function syncInbox() {
 // open, epic "Front-end framework evaluation"): the dialog and its CSS stay here, the component draws inside it.
 let uiLoad;
 const loadUI = () => (uiLoad ??= import("/svelte/ui.js"));
+// Mentions and tasks come from /api/inbox (cross-room); waits are instant from /api/me (myWaits). The dialog opens at
+// once with what we have, then the fetch fills the other two sections.
+let inboxExtra = { mentions: [], tasks: [] };
 function openInbox() {
   let d = document.getElementById("inbox");
   if (!d) { d = document.createElement("dialog"); d.id = "inbox"; d.className = "inbox"; document.body.appendChild(d); d.addEventListener("click", (e) => { if (e.target === d) d.close(); }); }
   loadUI().then(({ mountInbox }) => {
-    d._unmount?.(); d.replaceChildren();
-    d._unmount = mountInbox(d, {
-      waits: myWaits, roomId: S?.id ?? null, all: inboxAll, vb: { t, icon, avatar, ago },
-      ontab: (v) => (inboxAll = v),
-      onclose: () => d.close(),
-      onopen: (w, e) => {
-        d.close();
-        const mid = /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0;
-        if (S?.id === w.book_id) { e.preventDefault(); if (mid) goToMsg(mid, w.thread); else if (w.thread !== thread) { thread = w.thread; renderSide(); renderChat(); renderDoc(); } }
-      },
-      onresolve: (w) => {
-        myWaits = myWaits.filter((x) => x !== w);
-        renderSwitcher(); renderWaits(); if (S) renderSide(); openInbox();
-        api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
-      },
-    });
+    const goTo = (bid, th, mid) => {
+      d.close();
+      if (S?.id === bid) { if (mid) goToMsg(mid, th); else if (th && th !== thread) { thread = th; renderSide(); renderChat(); renderDoc(); } }
+      else location.href = `/b/${encodeURIComponent(bid)}${th && th !== "main" ? `?t=${encodeURIComponent(th)}` : ""}${mid ? `#m${mid}` : ""}`;
+    };
+    const draw = () => {
+      d._unmount?.(); d.replaceChildren();
+      d._unmount = mountInbox(d, {
+        waits: myWaits, mentions: inboxExtra.mentions, tasks: inboxExtra.tasks,
+        roomId: S?.id ?? null, all: inboxAll, vb: { t, icon, avatar, ago }, displayName: name,
+        ontab: (v) => (inboxAll = v),
+        onclose: () => d.close(),
+        onopen: (w, e) => { e.preventDefault(); goTo(w.book_id, w.thread, /^[mab]/.test(w.ref) ? Number(w.ref.slice(1)) : 0); },
+        onnav: (bid, th, mid) => goTo(bid, th, mid),
+        onresolve: (w) => {
+          myWaits = myWaits.filter((x) => x !== w);
+          renderSwitcher(); renderWaits(); if (S) renderSide(); draw();
+          api("/api/waits/resolve", { book_id: w.book_id, ref: w.ref }).catch(() => {});
+        },
+      });
+    };
+    draw();
     if (!d.open) d.showModal();
+    fetch("/api/inbox").then((r) => r.json()).then((j) => {
+      if (!j || j.error) return;
+      if (Array.isArray(j.waits)) myWaits = j.waits;
+      inboxExtra = { mentions: j.mentions || [], tasks: j.tasks || [] };
+      if (d.open) draw();
+      renderSwitcher(); renderWaits(); if (S) renderSide();
+    }).catch(() => {});
   }).catch(() => toast(t("Não deu pra abrir agora. Tente de novo.")));
 }
-document.addEventListener("click", (e) => { if (e.target.closest?.("#inboxBtn")) openInbox(); });
+document.addEventListener("click", (e) => { if (e.target.closest?.("#inboxBtn") || e.target.closest?.("#sideInbox")) openInbox(); });
 
 // First-class setup: vibebook assumes your Claude is connected. Until it is, the home and every room lead with one
 // sentence to paste into Claude Code (it installs the plugin, does the one OAuth step, links the folder and listens),
@@ -4396,6 +4419,7 @@ function renderSide() {
     </div>
     <div class="sec threadsSec">
       <button class="thread ${thread === "main" ? "sel" : ""} ${asksIn("main") ? "waiting" : ""}" data-thread="main" title="${esc(bookTitle())}${S.book?.summary ? ` · ${esc(S.book.summary)}` : ""}">${roomMark("ri roomIco")}<span class="rt">${esc(bookTitle())}</span>${isPre() ? "" : `<span class="rowEdit phOnly" role="button" tabindex="0" id="sideRename" title="${t("Renomear")}">${icon("pencil", 13)} ${t("editar")}</span>`}${waitPill("main")}<span class="n">${count("main")}</span></button>
+      <button type="button" class="thread sideInbox" id="sideInbox" title="${t("Caixa de entrada: o que espera por você")}">${icon("inbox")}<span class="rt">${t("Caixa de entrada")}</span>${myWaits.length ? `<span class="n${clW(myWaits)}">${myWaits.length}</span>` : ""}</button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
         const open = S.epics.filter((e) => !e.archived);
