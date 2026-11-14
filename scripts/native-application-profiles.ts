@@ -105,6 +105,7 @@ export type NativeApplicationProfileEvidence = NativeApplicationProfile & {
   renderedFonts?: Awaited<ReturnType<typeof renderedFonts>>;
   servedFonts?: { name: string; bytes: number; sha256: string }[];
   failure?: string;
+  failureSourceFrames?: string[];
 };
 const rootRoles: StudioRenderedRole[] = [
   {
@@ -399,17 +400,23 @@ async function keyboardOverlays(
     const layout = page.locator("[data-native-room-layout]");
     await expect(layout).toHaveAttribute("data-sheet", "side");
     await page.keyboard.press("Escape");
-    await expect.poll(() => layout.getAttribute("data-sheet")).toBe(null);
     await expect
-      .poll(() =>
-        page.evaluate(() => {
-          const state: unknown = history.state;
-          return (
-            state !== null &&
-            typeof state === "object" &&
-            "vbRoomSheet" in state
-          );
-        }),
+      .poll(() => layout.getAttribute("data-sheet"), {
+        message: "Escape closes the underlying mobile side sheet",
+      })
+      .toBe(null);
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const state: unknown = history.state;
+            return (
+              state !== null &&
+              typeof state === "object" &&
+              "vbRoomSheet" in state
+            );
+          }),
+        { message: "Mobile sheet Back must leave its history entry" },
       )
       .toBe(false);
     evidence.keyboard.push(
@@ -700,6 +707,18 @@ export async function auditNativeApplicationProfiles(
             error instanceof Error
               ? `${error.name}: ${error.message.split("\n")[0].slice(0, 300)}`
               : "Unknown audit failure";
+          evidence.failureSourceFrames =
+            error instanceof Error
+              ? (error.stack ?? "")
+                  .split("\n")
+                  .flatMap((line) => {
+                    const source = line.match(
+                      /scripts\/native-application-profiles\.ts:\d+:\d+/,
+                    );
+                    return source ? [source[0]] : [];
+                  })
+                  .slice(0, 3)
+              : [];
           failures.push(`${key}: ${evidence.failure}`);
         } finally {
           await context?.close();

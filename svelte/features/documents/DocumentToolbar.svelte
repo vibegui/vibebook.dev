@@ -120,9 +120,13 @@
         onclick={(event) => choose(event, item.id)}
         ><span>{item.label}</span
         >{#if compact && item.id === "doc" && docCount}<span
-            class="tw:text-xs tw:text-muted-foreground">{docCount}</span
+            class={pane === item.id
+              ? "tw:text-xs tw:text-secondary-foreground"
+              : "tw:text-xs tw:text-muted-foreground"}>{docCount}</span
           >{:else if counts[item.id]}<span
-            class="tw:text-xs tw:text-muted-foreground">{counts[item.id]}</span
+            class={pane === item.id
+              ? "tw:text-xs tw:text-secondary-foreground"
+              : "tw:text-xs tw:text-muted-foreground"}>{counts[item.id]}</span
           >{/if}{#if item.id === "agents" && agentState}<span
             aria-label={agentTitle}
             class={agentState === "blocked"
