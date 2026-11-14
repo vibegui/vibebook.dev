@@ -53,7 +53,7 @@
     "dev": "bun run build:api-types && bun run build:collab:svelte && bun run build:ui && bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
-    "check": "bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run check:styles:native && bun run test:store && bun run test:rpc && bun run test:auth && bun run test:home && bun run test:viewer && bun run test:ui && bun run test:ui:variants && bun run test:build && bun run test:connection && bun run check:worker-tests && bun run check:pwa && bun run test:pwa && bun run check:tooling && bun run format:check",
+    "check": "bun run build:api-types && bun run check:backend && bun run check:ui && bun run check:vanilla && bun run check:protocol && bun run check:client-boundary && bun run check:bundle && bun run check:styles:native && bun run check:styles && bun run test:store && bun run test:rpc && bun run test:auth && bun run test:home && bun run test:viewer && bun run test:ui && bun run test:ui:variants && bun run test:build && bun run test:connection && bun run check:worker-tests && bun run check:pwa && bun run test:pwa && bun run check:tooling && bun run format:check",
     "build:collab": "bun scripts/build-collab.ts",
     "build:cli": "bun build cli/vibebook.ts --outfile public/cli.mjs --target node --format esm && cp public/cli.mjs cli/cli.mjs",
     "build:ui": "bun run build:api-types && bun run build:pwa && vite build --config svelte/vite.config.ts",
