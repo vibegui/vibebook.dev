@@ -150,6 +150,9 @@ function observe(page: Page, roomId: string) {
     received: Record<string, number> = {};
   page.on("pageerror", (error) => errors.push(localBrowserError(error, base)));
   const active = new Map<object, keyof ApplicationSockets>();
+  const activeCounts: ApplicationSockets = { book: 0, personal: 0, yjs: 0 };
+  const observedAt = Date.now();
+  const socketEvents: { kind: keyof ApplicationSockets; path: string; createdMs: number; closedMs?: number; lifetimeMs?: number }[] = [];
   page.on("websocket", (socket) => {
     const path = new URL(socket.url()).pathname;
     const kind =
@@ -162,7 +165,19 @@ function observe(page: Page, roomId: string) {
             : null;
     if (kind) {
       active.set(socket, kind);
-      socket.on("close", () => active.delete(socket));
+      activeCounts[kind]++;
+      // Only these known local route shapes are retained; never URL queries,
+      // cookies, access codes, frames, userinfo or arbitrary remote paths.
+      const safePath = /^\/(?:ws\/[a-f0-9]{6,40}|yjs\/[a-f0-9]{6,40}(?:~[\w-]+)?|ws-me)$/.test(path) ? path : "/" + kind;
+      const event: (typeof socketEvents)[number] = { kind, path: safePath, createdMs: Date.now() - observedAt };
+      if (socketEvents.length === 128) socketEvents.shift();
+      socketEvents.push(event);
+      socket.on("close", () => {
+        if (!active.delete(socket)) return;
+        activeCounts[kind]--;
+        event.closedMs = Date.now() - observedAt;
+        event.lifetimeMs = event.closedMs - event.createdMs;
+      });
     }
     if (path !== `/ws/${roomId}`) return;
     socket.on("framesent", ({ payload }) => {
@@ -188,6 +203,8 @@ function observe(page: Page, roomId: string) {
     store,
     sent,
     received,
+    activeCounts,
+    socketEvents,
     activeSockets(): ApplicationSockets {
       const counts = { book: 0, personal: 0, yjs: 0 };
       for (const kind of active.values()) counts[kind]++;
@@ -456,8 +473,8 @@ try {
   const aWire = observe(a, roomA),
     bWire = observe(b, roomA);
   report.wire = {
-    owner: { sent: aWire.sent, received: aWire.received },
-    peer: { sent: bWire.sent, received: bWire.received },
+    owner: { sent: aWire.sent, received: aWire.received, active: aWire.activeCounts, sockets: aWire.socketEvents },
+    peer: { sent: bWire.sent, received: bWire.received, active: bWire.activeCounts, sockets: bWire.socketEvents },
   };
   await step(
     "Native Home → room/thread/Back with app-owned room and thread drafts",
