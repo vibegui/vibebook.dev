@@ -1,0 +1,51 @@
+name: Controlled frontend performance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  controlled-frontends:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+      TEST_APP_REVISION: ${{ github.sha }}
+      TEST_OUTPUT_DIR: ${{ github.workspace }}/.artifacts/frontend-performance
+      METRICS_EXCLUSIVE: "1"
+      METRICS_REPETITIONS: "7"
+      METRICS_WARMUPS: "1"
+      METRICS_PROFILES: long
+      METRICS_FONTS: network-public-fonts
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.23.5"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: node node_modules/playwright/cli.js install --with-deps chromium
+      - name: Build both current frontend graphs
+        run: bun run build:vanilla-ui && bun run build:ui
+      - name: Verify deterministic workload and unchanged acceptance thresholds
+        run: bun test scripts/ui-metrics-model.test.ts
+      - name: Run serial desktop/mobile controlled comparison
+        run: bun run measure:ui
+      - name: Retain every raw sample, failure and generated comparison
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-performance-${{ github.sha }}
+          path: ${{ github.workspace }}/.artifacts/frontend-performance/
+          if-no-files-found: warn
+          retention-days: 14
