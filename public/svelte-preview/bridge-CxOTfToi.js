@@ -1,5 +1,5 @@
 import { n as e } from "./rolldown-runtime-DfEuXgQw.js";
-import { i as t, l as n } from "./tools-Tr0Xzge5.js";
+import { h as t, i as n } from "./tools-DHPVTbuf.js";
 import { $ as r, $n as i, $t as a, A as o, An as s, At as c, B as l, Bn as u, C as d, Cn as f, Ct as p, D as m, Dt as h, E as ee, En as te, Et as ne, F as re, Fn as ie, Ft as ae, G as oe, Gn as se, Gt as ce, H as le, Hn as ue, Ht as de, I as fe, In as pe, It as me, J as he, Jn as ge, Jt as _e, K as ve, Kn as ye, Kt as be, L as xe, Ln as Se, Lt as Ce, M as we, Mn as Te, Mt as Ee, N as De, Nn as Oe, Nt as ke, O as Ae, On as je, Ot as Me, P as Ne, Pn as g, Pt as Pe, Q as Fe, Qn as _, Qt as Ie, R as Le, Rn as Re, Rt as ze, S as Be, Sn as Ve, St as He, T as Ue, Tt as We, U as Ge, Un as Ke, Ut as qe, V as Je, Vn as Ye, Vt as Xe, W as Ze, Wn as Qe, Wt as $e, X as et, Xn as tt, Xt as nt, Y as rt, Yn as it, Yt as at, Z as ot, Zn as v, Zt as st, _ as ct, _n as lt, _t as ut, a as dt, an as ft, ar as pt, at as mt, b as ht, bn as gt, bt as _t, c as vt, cn as yt, cr as bt, ct as xt, d as St, dn as Ct, dt as wt, en as Tt, er as Et, et as Dt, f as Ot, fn as kt, ft as At, g as jt, gn as Mt, gt as Nt, h as Pt, hn as Ft, ht as It, i as Lt, in as Rt, ir as zt, it as Bt, j as Vt, jn as Ht, jt as Ut, k as Wt, kn as Gt, kt as Kt, l as qt, ln as Jt, lt as Yt, m as Xt, mn as Zt, mt as Qt, n as $t, nn as en, nr as tn, nt as nn, o as rn, on as an, or as on, ot as sn, p as cn, pn as ln, pt as un, q as dn, qn as fn, qt as pn, r as mn, rn as hn, rr as gn, rt as _n, s as vn, sn as yn, sr as bn, st as xn, t as Sn, tn as Cn, tr as wn, tt as Tn, u as En, un as Dn, ut as On, v as kn, vn as An, vt as jn, w as Mn, wt as Nn, x as Pn, xn as Fn, xt as In, y as Ln, yn as Rn, yt as zn, z as Bn, zn as Vn, zt as Hn } from "./api-DKmEofkD.js";
 // node_modules/zod/v4/core/memoizer.js
 var Un = class extends Error {
@@ -3691,13 +3691,13 @@ function rl(e) {
 		} finally {
 			o--;
 		}
-	}, l = async (n) => {
-		if (!s()) return t("App is no longer active");
-		if (a >= 16) return t("This app already has too many pending requests");
+	}, l = async (t) => {
+		if (!s()) return n("App is no longer active");
+		if (a >= 16) return n("This app already has too many pending requests");
 		a++;
 		try {
-			let r = await e.message(n.trim().slice(0, 4e3));
-			return s() ? r : t("App is no longer active");
+			let r = await e.message(t.trim().slice(0, 4e3));
+			return s() ? r : n("App is no longer active");
 		} finally {
 			a--;
 		}
@@ -3716,21 +3716,21 @@ function rl(e) {
 	}, { hostContext: e.context() }), d = new nl(e.frame, s, (t) => {
 		"height" in t ? Number.isFinite(t.height) && e.resize?.(t.height) : l(t.text).catch(() => {});
 	});
-	return u.setRequestHandler(ks, async () => ({ tools: s() ? e.tools : [] })), u.oncalltool = async (n) => {
-		if (!s()) return t("App is no longer active");
-		if (a >= 16) return t("This app already has too many pending requests");
+	return u.setRequestHandler(ks, async () => ({ tools: s() ? e.tools : [] })), u.oncalltool = async (t) => {
+		if (!s()) return n("App is no longer active");
+		if (a >= 16) return n("This app already has too many pending requests");
 		a++;
 		try {
-			let r = await e.call(n.name, n.arguments || {});
-			return s() ? Z.parse(r) : t("App is no longer active");
+			let r = await e.call(t.name, t.arguments || {});
+			return s() ? Z.parse(r) : n("App is no longer active");
 		} finally {
 			a--;
 		}
 	}, u.onmessage = async (e) => {
 		let t = e.content.filter((e) => e.type === "text").map((e) => e.text).join("\n");
 		return t.trim() && (await l(t)).isError ? { isError: !0 } : {};
-	}, u.onopenlink = async ({ url: t }) => {
-		let r = n(t);
+	}, u.onopenlink = async ({ url: n }) => {
+		let r = t(n);
 		return !r || !await c(e.t("abrir um link"), r) ? { isError: !0 } : (e.open(r), {});
 	}, u.onupdatemodelcontext = async (t) => {
 		if (!s()) return {};

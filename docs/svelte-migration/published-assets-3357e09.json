@@ -1,0 +1,123 @@
+{
+  "sourceRevision": "3357e090a3899ceaacd63143bb860545c44111db",
+  "mergeRevision": "9a4eb2a6e9a1224b27283c5b140a6e3950762177",
+  "run": 43558762573,
+  "platforms": [
+    "ubuntu-24.04",
+    "macos-15"
+  ],
+  "comparison": "all paths and bytes identical",
+  "scope": "Generated preview assets; not a deployment. Overall run failed formatting and prior committed asset consistency.",
+  "files": [
+    {
+      "path": "app-svelte.html",
+      "bytes": 1315,
+      "sha256": "07063546b0dfac75deddc3a5f22aa47099df3faeae4f29684cad53620442093a"
+    },
+    {
+      "path": "svelte-preview/Card-DslCvQ-8.js",
+      "bytes": 144853,
+      "sha256": "ad80571f0ab8f9843048bcef1c3e117a412e1dfbaf058e2f6329434054e21da8"
+    },
+    {
+      "path": "svelte-preview/Field-BnyAEV2Y.js",
+      "bytes": 145037,
+      "sha256": "f113ab0ba77aa7d95fd06f3d3c6ef66b1909c8a9dfa9b2c16aed89ed6eaa0212"
+    },
+    {
+      "path": "svelte-preview/addon-fit-BVJcafbo.js",
+      "bytes": 1875,
+      "sha256": "1d8c1c61e312a27cd8152a75cc1a91b9726e842003bf94b6fe4d7d7f0be18d00"
+    },
+    {
+      "path": "svelte-preview/api-DKmEofkD.js",
+      "bytes": 73765,
+      "sha256": "b484aa806dc34b3e3df02e181dfff5dca36b98fb3615f01253f8f9668a31de75"
+    },
+    {
+      "path": "svelte-preview/api-Dv5tb54t.js",
+      "bytes": 22343,
+      "sha256": "72c73c010febfb12c2f655a2bbec052f149f7266d37633fcc516a93e614317c4"
+    },
+    {
+      "path": "svelte-preview/api-UCGkob2j.js",
+      "bytes": 5550,
+      "sha256": "1d75f11d0dcd962be6dcb84b2e9bcdcf1f77e545018a815ab8f68a7ca7fdc6d8"
+    },
+    {
+      "path": "svelte-preview/app.js",
+      "bytes": 677,
+      "sha256": "7fb704c8fd9b4efa36bcbc6856f3bbbb18075bc29bf8a74b9d1992946e7cb01b"
+    },
+    {
+      "path": "svelte-preview/bridge-CxOTfToi.js",
+      "bytes": 120904,
+      "sha256": "315d275d91359886025bd3aac6b215a53983323966baaa2ee0718dbe02aa521a"
+    },
+    {
+      "path": "svelte-preview/editor-BhkBY3D5.js",
+      "bytes": 760111,
+      "sha256": "4984ce25559e15a9a1669bbbc51a08b017d36a17d4a4520cefbcd7c7d6b23310"
+    },
+    {
+      "path": "svelte-preview/index-client-B2aDKUZc.js",
+      "bytes": 37501,
+      "sha256": "ed584fc049b18c5ef1da68533c30e39b12ea330a1cc828f7422b3c1ae15aa02a"
+    },
+    {
+      "path": "svelte-preview/logout-JIOvCZ-2.js",
+      "bytes": 587,
+      "sha256": "9853640e6e31d04db289cd45505edff0b2fba2479f4cdaac59cc9314c62bcda5"
+    },
+    {
+      "path": "svelte-preview/main--HBOkLv5.js",
+      "bytes": 103482,
+      "sha256": "3c6242dcd2ab730fdf2d3bd350fa9a64b764ad7d2d71c73a3599c422d44c9518"
+    },
+    {
+      "path": "svelte-preview/model-D2eQTgrV.js",
+      "bytes": 1822,
+      "sha256": "9a7984db5fbf6abe413a0d86000cc7610ddb4a51fed01efbf64a952541163efb"
+    },
+    {
+      "path": "svelte-preview/mount-DMXveM4j.js",
+      "bytes": 1143789,
+      "sha256": "c0149944e8d807749aa9e903a12aad57a384c01f640a3760a737d66d0844eb99"
+    },
+    {
+      "path": "svelte-preview/mount-DPAUGu6L.js",
+      "bytes": 35750,
+      "sha256": "53af651e02f256ed4163b5f50fe283c37dd95ed4770adc99e54836438b9df7f3"
+    },
+    {
+      "path": "svelte-preview/registration-pmsWf-DW.js",
+      "bytes": 5252,
+      "sha256": "72c9b68e4d0335f4eab6376f1c8bdb80c39c75cee73c735c74a42bf67773e524"
+    },
+    {
+      "path": "svelte-preview/rolldown-runtime-DfEuXgQw.js",
+      "bytes": 1232,
+      "sha256": "49fff281f26361bfef414eecc7dceab9af90d210c0eb153164d8d8c6fc479284"
+    },
+    {
+      "path": "svelte-preview/tools-DHPVTbuf.js",
+      "bytes": 10306,
+      "sha256": "3eb11d77a9cde5c154bc82af55f32c00c5d662543fec84c957aa6ece595dd262"
+    },
+    {
+      "path": "svelte-preview/ui.css",
+      "bytes": 61005,
+      "sha256": "9da04f91a424416b34315e689a479b389d65cc4892baca1d08c4073f7d052dad"
+    },
+    {
+      "path": "svelte-preview/xterm-CUdCSw3m.js",
+      "bytes": 368920,
+      "sha256": "b7676cafd9f7898189cbe5107b5184a95780f8517cbcc79d5c3783a823117c16"
+    },
+    {
+      "path": "sw.js",
+      "bytes": 17140,
+      "sha256": "80559c131cecdc0371262a69cbb70a1c0b8823a578a072459036fa65b9d867b7"
+    }
+  ]
+}

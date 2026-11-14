@@ -19,7 +19,10 @@ export type RoomTarget = {
   document?: boolean;
   app?: AppRouteTarget;
 };
-export const copyRoomTarget = (target: RoomTarget): RoomTarget => ({ ...target, ...(target.app ? { app: { ...target.app } } : {}) });
+export const copyRoomTarget = (target: RoomTarget): RoomTarget => ({
+  ...target,
+  ...(target.app ? { app: { ...target.app } } : {}),
+});
 export const orderedRooms = (books: readonly RoomSummary[]) =>
   [...books].sort(
     (a, b) =>
@@ -84,7 +87,7 @@ export const messageIdentity = (value: string | number | undefined) => {
 export function targetHref(target: RoomTarget) {
   const query = new URLSearchParams({ ui: "svelte" });
   if (target.thread && target.thread !== "main") query.set("t", target.thread);
-  return `/b/${encodeURIComponent(target.roomId)}?${query}${target.fileId ? "#f" + encodeURIComponent(target.fileId) : target.messageId ? "#m" + target.messageId : target.document ? "#doc" : target.app ? appRouteHash(target.app) ?? "" : ""}`;
+  return `/b/${encodeURIComponent(target.roomId)}?${query}${target.fileId ? "#f" + encodeURIComponent(target.fileId) : target.messageId ? "#m" + target.messageId : target.document ? "#doc" : target.app ? (appRouteHash(target.app) ?? "") : ""}`;
 }
 export function waitTarget(wait: Wait): RoomTarget {
   const id = /^[mab](\d+)$/.exec(wait.ref)?.[1];
