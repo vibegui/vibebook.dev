@@ -1335,9 +1335,14 @@ describe("native Svelte chat", () => {
   }, 30_000);
   test("native fenced code is a keyboard focus target without changing its canonical text", () => {
     const code = "const wide = " + "x".repeat(240) + ";";
-    const room = { ...fixture(), messages: [message(1, "```js\n" + code + "\n```")] };
+    const room = {
+      ...fixture(),
+      messages: [message(1, "```js\n" + code + "\n```")],
+    };
     const { target } = renderChat(room);
-    const pre = target.querySelector<HTMLPreElement>("#m1 [data-rich-content] pre");
+    const pre = target.querySelector<HTMLPreElement>(
+      "#m1 [data-rich-content] pre",
+    );
     expect(pre).not.toBeNull();
     expect(pre!.tabIndex).toBe(0);
     expect(pre!.textContent?.trim()).toBe(code);
@@ -2714,15 +2719,22 @@ describe("stable native sidebar integration", () => {
   }
   test("selected main-thread count uses the secondary surface foreground", async () => {
     const room = fixture();
-    const h = sidebar(room, {thread:"main"});
-    const selected = h.target.querySelector<HTMLButtonElement>("button.tw\\:bg-secondary");
+    const h = sidebar(room, { thread: "main" });
+    const selected = h.target.querySelector<HTMLButtonElement>(
+      "button.tw\\:bg-secondary",
+    );
     expect(selected).not.toBeNull();
-    const count = selected!.querySelector<HTMLElement>(":scope > span:last-child");
+    const count = selected!.querySelector<HTMLElement>(
+      ":scope > span:last-child",
+    );
     expect(count).not.toBeNull();
-    expect(count!.classList.contains("tw:text-secondary-foreground")).toBe(true);
+    expect(count!.classList.contains("tw:text-secondary-foreground")).toBe(
+      true,
+    );
     expect(count!.classList.contains("tw:text-muted-foreground")).toBe(false);
-    h.view.update({...h.props,thread:"e"});
-    await tick(); flushSync();
+    h.view.update({ ...h.props, thread: "e" });
+    await tick();
+    flushSync();
     expect(count!.classList.contains("tw:text-muted-foreground")).toBe(true);
   });
   test("epic and rail indicators count asks only and keep canonical task-only waits as a dot", async () => {

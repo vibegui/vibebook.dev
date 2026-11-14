@@ -189,9 +189,10 @@
           waits={vb.waitsIn("main")}
           label={(n) => vb.t("{n} coisas esperando você", { n })}
           taskLabel={vb.t("Tarefa sua pendente")}
-        /><span class={thread === "main"
-          ? "tw:text-xs tw:text-secondary-foreground"
-          : "tw:text-xs tw:text-muted-foreground"}
+        /><span
+          class={thread === "main"
+            ? "tw:text-xs tw:text-secondary-foreground"
+            : "tw:text-xs tw:text-muted-foreground"}
           >{messageCount(room, "main")}</span
         ></Button
       ><IconButton

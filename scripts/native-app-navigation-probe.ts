@@ -52,6 +52,7 @@ export type NativeAppNavigationEvidence = {
     hasSrc: boolean;
     hasSrcdoc: boolean;
     alerts: number;
+    alertCode: string | null;
     childStage: string | null;
     childOutcome: string | null;
     childInitialize: string | null;
@@ -403,7 +404,27 @@ export async function auditNativeAppNavigation(
             "[data-native-app-frame] iframe",
           );
           const frame = frames[0];
+          const alert =
+            document.querySelector("[data-native-app-frame] [role=alert]")
+              ?.textContent ?? "";
+          // Store fixed categories, never arbitrary browser/server error text.
+          const alertCode =
+            [
+              ["document-retired", "This app was closed"],
+              ["import-deadline", "Request unconfirmed"],
+              ["module-load", "Failed to fetch dynamically imported module"],
+              ["initialization-order", "Cannot access"],
+              ["missing-global", "is not defined"],
+              ["missing-function", "is not a function"],
+              ["missing-value", "Cannot read properties"],
+              ["frame-preloaded", "App documents must load through"],
+              ["frame-reused", "Reopening an app requires"],
+              ["load-state", "App document cannot be loaded"],
+              ["invalid-file-url", "Invalid app document file URL"],
+              ["owner-expired", "App is no longer active"],
+            ].find((entry) => alert.includes(entry[1]))?.[0] ?? null;
           return {
+            alertCode,
             count: frames.length,
             hidden: Boolean(frame?.hidden),
             hasSrc: frame?.hasAttribute("src") ?? false,

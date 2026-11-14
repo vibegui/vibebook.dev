@@ -37,6 +37,11 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
   let disposed = false;
   let revoked = false;
   let port: MessagePort | null = null;
+  let navigationForm: HTMLFormElement | null = null;
+  const clearNavigationForm = () => {
+    navigationForm?.remove();
+    navigationForm = null;
+  };
   let claimTimer: ReturnType<typeof setTimeout> | undefined;
   const pending = new Map<
     string,
@@ -50,6 +55,7 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
     if (revoked || disposed) return;
     revoked = true;
     clearTimeout(claimTimer);
+    clearNavigationForm();
     port?.close();
     port = null;
     for (const finish of [...ready]) finish(false);
@@ -164,6 +170,8 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
         return;
       }
       port = event.ports[0];
+      // A valid claim proves the initial navigation consumed the nonce form.
+      clearNavigationForm();
       port.onmessage = (message: MessageEvent<unknown>) => {
         const value = message.data;
         if (!documentRecord(value)) return;
@@ -241,10 +249,14 @@ export function createAppDocumentHost(options: AppDocumentHostOptions) {
       input.value = nonce;
       form.append(input);
       document.body.append(form);
+      navigationForm = form;
       try {
+        // Submission is asynchronous. Retain its source until the document
+        // claims its port, or scope/deadline retirement cancels ownership.
         form.submit();
-      } finally {
-        form.remove();
+      } catch (error) {
+        retire(true);
+        throw error;
       }
     },
     active,

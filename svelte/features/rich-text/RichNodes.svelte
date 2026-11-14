@@ -193,7 +193,9 @@
         xmlns={node.namespace}
         {...node.attrs}
         data-code-language={node.language}
-        tabindex={node.namespace === HTML_NS && node.tag === "pre" ? 0 : undefined}
+        tabindex={node.namespace === HTML_NS && node.tag === "pre"
+          ? 0
+          : undefined}
         class={elementClass(node.tag, node.namespace, node.attrs)}
         >{#if node.task !== undefined}<span
             aria-hidden="true"
