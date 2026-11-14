@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { chromium, expect as baseExpect } from "@playwright/test";
 import { MeResult } from "../shared/schemas";
 import { nativeBrowserFixtures } from "./native-browser-fixtures";
-import { auditNativeAppNavigation } from "./native-app-navigation-probe";
+import { auditNativeAppNavigation, type NativeAppNavigationFixture } from "./native-app-navigation-probe";
+import { vanillaAppNavigationDriver } from "./app-navigation-ui-driver";
+import { mkdir, writeFile } from "node:fs/promises";
 
 const expect = baseExpect.configure({ timeout: 30_000 });
 const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:8797";
@@ -28,7 +30,7 @@ try {
   } finally {
     await discovery.close();
   }
-  const evidence = await auditNativeAppNavigation({
+  const fixture: NativeAppNavigationFixture = {
     base,
     ownerEmail,
     output,
@@ -70,17 +72,22 @@ try {
       console.info(`[native-app-navigation] ${name}`);
       await run();
     },
-  });
-  console.info(
-    JSON.stringify({
-      status: evidence.status,
-      verdict: evidence.verdict,
-      output,
-    }),
-  );
-  // An observed inherited read is a finding, never a green security receipt.
-  if (evidence.verdict !== "explicit-denial")
-    process.exitCode = evidence.verdict === "read-inherited" ? 2 : 1;
+  };
+  const results: {variant:"svelte"|"vanilla";status:string;verdict:string}[] = [];
+  for (const variant of ["svelte", "vanilla"] as const) {
+    try {
+      const evidence = await auditNativeAppNavigation({...fixture,...(variant === "vanilla" ? {ui:vanillaAppNavigationDriver} : {})});
+      results.push({variant,status:evidence.status,verdict:evidence.verdict});
+    } catch {
+      // A cleanup/startup failure must not suppress the other independent frontend.
+      results.push({variant,status:"inconclusive",verdict:"inconclusive"});
+    }
+  }
+  const passed = results.every(result=>result.verdict==="explicit-denial");
+  await mkdir(output,{recursive:true});
+  await writeFile(`${output}/app-navigation-variants.json`,JSON.stringify({status:passed?"passed":"failed",results},null,2)+"\n");
+  console.info(JSON.stringify({status:passed?"passed":"failed",results,output}));
+  if (!passed) process.exitCode=results.some(result=>result.verdict==="read-inherited")?2:1;
 } finally {
   await browser.close();
 }

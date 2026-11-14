@@ -51,6 +51,7 @@ declare global {
 }
 import { auditNativeApplicationProfiles } from "./native-application-profiles";
 import { auditNativeAppNavigation } from "./native-app-navigation-probe";
+import { vanillaAppNavigationDriver } from "./app-navigation-ui-driver";
 import {
   auditNativeApplicationLifecycle,
   type ApplicationSockets,
@@ -1210,13 +1211,13 @@ try {
   await independentAudit("profiles", async () => {
     report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
   });
-  await independentAudit("app-navigation-authority", async () => {
-    const appNavigation = await auditNativeAppNavigation(profileFixture);
-    report.appNavigation = appNavigation;
+  for (const variant of ["svelte", "vanilla"] as const) await independentAudit(`app-navigation-authority-${variant}`, async () => {
+    const appNavigation = await auditNativeAppNavigation({...profileFixture,...(variant === "vanilla" ? {ui:vanillaAppNavigationDriver} : {})});
+    report[variant === "svelte" ? "appNavigation" : "vanillaAppNavigation"] = appNavigation;
     // A controlled replacement document inheriting the original App's room read
     // capability is a security finding, not a passing functional receipt.
     await step(
-      "replacement App authority requires an explicit refusal",
+      `${variant} replacement App authority requires an explicit refusal`,
       async () => {
         assert.equal(
           appNavigation.verdict,

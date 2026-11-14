@@ -12,6 +12,7 @@ import {
 import { createRoomApi } from "../svelte/transport";
 import { localBrowserError } from "./native-browser-fixtures";
 import type { NativeApplicationAuditFixture } from "./native-application-browser-types";
+import { nativeAppNavigationDriver, type AppNavigationUIDriver } from "./app-navigation-ui-driver";
 import {
   probeHTTP,
   probeFailure,
@@ -22,8 +23,9 @@ const expect = baseExpect.configure({ timeout: 30_000 });
 export type NativeAppNavigationFixture = Pick<
   NativeApplicationAuditFixture,
   "base" | "ownerEmail" | "output" | "createProfile" | "openPane" | "step"
->;
+> & { ui?: AppNavigationUIDriver };
 export type NativeAppNavigationEvidence = {
+  variant: AppNavigationUIDriver["variant"];
   status: "running" | "diagnosed" | "inconclusive";
   verdict: "pending" | "read-inherited" | "explicit-denial" | "inconclusive";
   roomId?: string;
@@ -75,8 +77,10 @@ export async function auditNativeAppNavigation(
 ): Promise<NativeAppNavigationEvidence> {
   assert(/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(fixture.base));
   assert(fixture.ownerEmail.endsWith("@example.test"));
+  const ui = fixture.ui ?? nativeAppNavigationDriver(fixture.openPane);
   const marker = `Controlled read marker ${randomBytes(16).toString("hex")}`;
   const evidence: NativeAppNavigationEvidence = {
+    variant:ui.variant,
     status: "running",
     phase: "listen",
     http: [],
@@ -89,7 +93,7 @@ export async function auditNativeAppNavigation(
     replacementRequests: 0,
     pageErrors: [],
     scope:
-      "Actual NativeApplication room-App self-navigation with real Worker/Book/R2 and installed SDK host; synthetic canonical message only",
+      `Actual ${ui.variant} room-App self-navigation with real Worker/Book/R2 and its production document-bound host; synthetic canonical message only`,
     gaps: [
       "Opening the initial room App is the trusted user capability grant; vibebook_read has no separate confirmation prompt",
       "HTML judgments use a controlled external-model ALLOW/DENY protocol fixture; actual model intelligence/quality remains unverified",
@@ -274,23 +278,20 @@ export async function auditNativeAppNavigation(
         assert(message.ok);
         evidence.messageId = message.id;
         evidence.phase = "room-open";
-        await page.goto(`${fixture.base}/b/${room.id}?ui=svelte`);
-        await expect(page.locator("[data-native-room-header]")).toBeVisible();
-        await fixture.openPane(page, "apps");
+        await ui.openRoom(page, fixture.base, room.id);
+        await ui.openApps(page);
         evidence.phase = "app-open";
-        await page
-          .locator("[data-native-apps]")
-          .getByRole("button", { name: /capability-probe/ })
-          .click();
+        await ui.openButton(page).click();
         evidence.initialUserOpen = true;
         evidence.phase = "initial-read";
-        const frame = page.frameLocator("[data-native-app-frame] iframe");
+        const frame = page.frameLocator(ui.frameSelector);
         await expect(frame.locator("#stage")).toHaveText("initial");
         await expect(frame.locator("#result")).toHaveAttribute(
           "data-outcome",
           "read",
         );
         await expect(frame.locator("#result")).toHaveText(marker);
+        assert.equal(await frame.locator("#stage").evaluate(()=>location.href),`${fixture.base}/api/books/${room.id}/files/${file.id}`,"Initial grant must be the actual uploaded HTTP file document");
         evidence.initialRead = true;
       },
     );
@@ -298,7 +299,7 @@ export async function auditNativeAppNavigation(
       "same iframe replacement-document controlled readonly probe",
       async () => {
         evidence.phase = "replacement-navigation";
-        const selector = "[data-native-app-frame] iframe",
+        const selector = ui.frameSelector,
           frame = page.frameLocator(selector),
           element = page.locator(selector);
         const sandbox = await element.getAttribute("sandbox");
@@ -399,13 +400,13 @@ export async function auditNativeAppNavigation(
   } catch (error) {
     if (auditPage && !auditPage.isClosed()) {
       const frameState = await auditPage
-        .evaluate(() => {
+        .evaluate(({frameSelector,containerSelector}) => {
           const frames = document.querySelectorAll<HTMLIFrameElement>(
-            "[data-native-app-frame] iframe",
+            frameSelector,
           );
           const frame = frames[0];
           const alert =
-            document.querySelector("[data-native-app-frame] [role=alert]")
+            document.querySelector(containerSelector + " [role=alert]")
               ?.textContent ?? "";
           // Store fixed categories, never arbitrary browser/server error text.
           const alertCode =
@@ -430,10 +431,10 @@ export async function auditNativeAppNavigation(
             hasSrc: frame?.hasAttribute("src") ?? false,
             hasSrcdoc: frame?.hasAttribute("srcdoc") ?? false,
             alerts: document.querySelectorAll(
-              "[data-native-app-frame] [role=alert]",
+              containerSelector + " [role=alert]",
             ).length,
           };
-        })
+        },{frameSelector:ui.frameSelector,containerSelector:ui.containerSelector})
         .catch(() => null);
       if (frameState) {
         const child = auditPage
@@ -489,7 +490,7 @@ export async function auditNativeAppNavigation(
       );
     await mkdir(fixture.output, { recursive: true });
     await writeFile(
-      `${fixture.output}/native-app-navigation.json`,
+      `${fixture.output}/${ui.variant === "svelte" ? "native" : "vanilla"}-app-navigation.json`,
       JSON.stringify(evidence, null, 2),
     );
   }

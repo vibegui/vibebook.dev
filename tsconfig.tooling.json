@@ -87,6 +87,7 @@
     "scripts/native-file-viewer-dom.test.ts",
     "scripts/native-file-viewer-browser.ts",
     "scripts/native-app-navigation-browser.ts",
+    "scripts/app-navigation-ui-driver.ts",
     "scripts/native-app-navigation-probe.ts",
     "scripts/native-app-probe-diagnostics.ts",
     "scripts/native-app-probe-diagnostics.test.ts",
