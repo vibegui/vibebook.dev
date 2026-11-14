@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import * as z from "zod/mini";
 import { reqLang } from "./lang";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
@@ -11,6 +12,7 @@ const COOKIE = "vb_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_CODE_ATTEMPTS = 5;
+const SessionPayload = z.object({ email: z.string(), iat: z.number() });
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const enc = new TextEncoder();
@@ -32,15 +34,17 @@ export const safeEqual = (a: string, b: string) => {
 };
 
 /** Email of the signed-in user, or null. */
-export async function sessionEmail(c: Context<any>): Promise<string | null> {
-  const env = c.env as Env;
+export async function sessionEmail<E extends { Bindings: Env }>(c: Context<E>): Promise<string | null> {
+  const env = c.env;
   const raw = getCookie(c, COOKIE);
   if (!raw || !env.SESSION_SECRET) return null;
   const [payload, sig] = raw.split(".");
   if (!payload || !sig || !safeEqual(sig, await hmac(env.SESSION_SECRET, payload))) return null;
   try {
-    const { email, iat } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    if (typeof email !== "string" || Date.now() - iat >= MAX_AGE * 1000) return null;
+    const parsed = SessionPayload.safeParse(JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))));
+    if (!parsed.success) return null;
+    const { email, iat } = parsed.data;
+    if (Date.now() - iat >= MAX_AGE * 1000) return null;
     // "Sair de todos os aparelhos" sets users.session_after: older cookies stop working (within a minute per server).
     return iat > (await sessionAfter(env, email)) ? email : null;
   } catch {
@@ -84,9 +88,9 @@ const sameOrigin = (c: Context) => {
 };
 
 /** Signed-in email; in local dev (DEV_EMAIL) the dev_as cookie picks the identity so two browsers can be two people. */
-export async function identify(c: Context<any>): Promise<string | null> {
+export async function identify<E extends { Bindings: Env }>(c: Context<E>): Promise<string | null> {
   const email = await sessionEmail(c);
-  const env = c.env as Env;
+  const env = c.env;
   // DEV_EMAIL is local dev only: even if it ever reached production config, it works on loopback alone.
   if (email || !env.DEV_EMAIL || !/^(127\.0\.0\.1|localhost)$/.test(new URL(c.req.url).hostname)) return email;
   const as = getCookie(c, "dev_as");
