@@ -1,0 +1,422 @@
+{
+  "servedRevisionSuppliedByRunner": "8f50d87d28a365515fb11f8890227d456a1c5b9e",
+  "scope": "Real full-app source HMR and local Worker proxy, not full feature/production acceptance",
+  "limitations": [
+    "Requires an isolated checkout, installed Chromium/dependencies and DEV_EMAIL configured in private .dev.vars; actual API requests initialize local D1 normally.",
+    "Creates one local fixture room; no production data or credentials are used.",
+    "OAuth provider callbacks, mobile/accessibility parity, collaborative editor content and production bundle integrity are separate gates.",
+    "Draft check covers the application-owned ComposerDrafts bank; Svelte component-local state may reset.",
+    "Linux /proc process identity checks cover observed descendants; very short-lived unobserved descendants are not claimed.",
+    "Startup/shutdown and initial build memory are real; run only after other memory-heavy checks finish."
+  ],
+  "transportProbes": [
+    {
+      "target": "vite",
+      "path": "/ws/a1048984e90e",
+      "origin": "vite",
+      "upgrade": true,
+      "status": 101,
+      "elapsedMs": 63
+    },
+    {
+      "target": "vite",
+      "path": "/ws/a1048984e90e",
+      "origin": "foreign",
+      "upgrade": true,
+      "status": 403,
+      "elapsedMs": 9
+    },
+    {
+      "target": "vite",
+      "path": "/ws-me",
+      "origin": "vite",
+      "upgrade": true,
+      "status": 101,
+      "elapsedMs": 7
+    },
+    {
+      "target": "vite",
+      "path": "/ws-me",
+      "origin": "foreign",
+      "upgrade": true,
+      "status": 403,
+      "elapsedMs": 7
+    },
+    {
+      "target": "vite",
+      "path": "/yjs/a1048984e90e",
+      "origin": "vite",
+      "upgrade": true,
+      "status": 101,
+      "elapsedMs": 21
+    },
+    {
+      "target": "vite",
+      "path": "/yjs/a1048984e90e",
+      "origin": "foreign",
+      "upgrade": true,
+      "status": 403,
+      "elapsedMs": 11
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/src/api.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 2
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/src/api.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/scripts/dev-app.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/scripts/dev-app.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 3
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/wrangler.jsonc",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/wrangler.jsonc",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/build/clientBoundary.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/build/clientBoundary.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/vite.config.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/vite.config.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/tsconfig.json",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/tsconfig.json",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/.wrangler/qa-hmr-6805e7b8a94d/index.js",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/.wrangler/qa-hmr-6805e7b8a94d/index.js",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/lib/hmr-denied-6805e7b8a94d.js",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev/svelte/lib/hmr-denied-6805e7b8a94d.js",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 2
+    },
+    {
+      "target": "vite",
+      "path": "/build/clientBoundary.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/vite.config.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev//%73cripts/dev-app.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/@fs//home/runner/work/vibebook.dev/vibebook.dev//%252e%252e/src/api.ts",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 0
+    },
+    {
+      "target": "vite",
+      "path": "/app",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 1
+    },
+    {
+      "target": "vite",
+      "path": "/app",
+      "origin": "absent",
+      "upgrade": false,
+      "status": 403,
+      "elapsedMs": 5
+    }
+  ],
+  "startupCancellation": "pass",
+  "room": "a1048984e90e",
+  "proxy": "HTTP identity/write and room/personal/editor WS handshakes passed",
+  "pathSecurity": "pass",
+  "componentAndStyle": "pass",
+  "lazyView": {
+    "status": "pass",
+    "filter": "txt",
+    "fixtureFiles": [
+      "da0402f0ab7b4d3c",
+      "5574dd2d8a1a4854"
+    ],
+    "retainedAfterReentry": true
+  },
+  "generator": {
+    "status": "pass",
+    "originalBootstrapSHA": "e99d802d70f3a41d2e223a79259510eb42ecc150e7b25cb4f8a8bcb6103cc976",
+    "originalGeneratedSHA": "5b4ae0cb2f962b7415a6ff1f716a7ba2b26fa75cca63bb25bc793ffc059b4cb0",
+    "originalHost": {
+      "path": "/app-document-host.4262f70823450d09be43.js",
+      "sha256": "4262f70823450d09be4360e1287ad949251de079f8ee422c3de5d1c97a580730",
+      "bytes": 304102
+    },
+    "limitation": "Generated shared code may trigger an automatic full-runtime reload; an in-memory composer draft is not promised across that boundary. No reload is forced by the fixture.",
+    "mutatedGeneratedSHA": "c98593aacc0c003591072362b5c62a013087dd4a03744173e95eef688ab6b82a",
+    "mutatedHost": {
+      "path": "/app-document-host.cb02d114bc37c855c56c.js",
+      "sha256": "cb02d114bc37c855c56c24348469b053fe985356773c6d9037ece171f8569b58",
+      "bytes": 304129
+    },
+    "mutation": {
+      "automaticDocumentReload": true,
+      "priorDraftRetained": false,
+      "snapshots": 2,
+      "roomSockets": 2
+    },
+    "restoration": {
+      "automaticDocumentReload": true,
+      "priorDraftRetained": false,
+      "generatedSHA": "5b4ae0cb2f962b7415a6ff1f716a7ba2b26fa75cca63bb25bc793ffc059b4cb0",
+      "hostPath": "/app-document-host.4262f70823450d09be43.js",
+      "hostSHA": "4262f70823450d09be4360e1287ad949251de079f8ee422c3de5d1c97a580730",
+      "snapshots": 3,
+      "roomSockets": 3
+    },
+    "ownedDraftPaneRoundtrip": "pass",
+    "cleanupRestoredGeneratedArtifacts": true
+  },
+  "sharedContract": "pass",
+  "backend": "pass",
+  "liveRoom": {
+    "snapshots": 5,
+    "roomSockets": 5
+  },
+  "status": "pass",
+  "startupPhases": [
+    {
+      "name": "build:api-types",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "build:api-types",
+      "status": "ready",
+      "elapsedMs": 413
+    },
+    {
+      "name": "build:mcp",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "build:mcp",
+      "status": "ready",
+      "elapsedMs": 92
+    },
+    {
+      "name": "worker",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "worker",
+      "status": "ready",
+      "elapsedMs": 2166
+    },
+    {
+      "name": "vite",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "vite",
+      "status": "ready",
+      "elapsedMs": 3017
+    },
+    {
+      "name": "app-documents",
+      "status": "start",
+      "elapsedMs": 0
+    },
+    {
+      "name": "app-documents",
+      "status": "ready",
+      "elapsedMs": 99
+    },
+    {
+      "name": "startup",
+      "status": "ready",
+      "elapsedMs": 5791
+    }
+  ],
+  "startupDeadlineMs": 600000,
+  "sourceBackups": "/home/runner/work/vibebook.dev/vibebook.dev/.artifacts/app-hmr/report/source-backups-6805e7b8a94d",
+  "restoredSources": [
+    {
+      "path": "browser/app-document/bootstrap.ts",
+      "originalSHA256": "e99d802d70f3a41d2e223a79259510eb42ecc150e7b25cb4f8a8bcb6103cc976",
+      "mutatedSHA256": "8832d70fde30bd0bd33f5ab55aa48a78b2eb183b0ec78ff357f269bb4da7f6e7",
+      "restoredSHA256": "e99d802d70f3a41d2e223a79259510eb42ecc150e7b25cb4f8a8bcb6103cc976"
+    },
+    {
+      "path": "src/api.ts",
+      "originalSHA256": "675c2120a91e70df86cbab825320cd2b1fafeeb33b028f1cbbab1aaad3168b19",
+      "mutatedSHA256": "4d100d4e6d6bb497d99bc566dcfac8857ffc242b56832138c3cd80a6727ebcd1",
+      "restoredSHA256": "675c2120a91e70df86cbab825320cd2b1fafeeb33b028f1cbbab1aaad3168b19"
+    },
+    {
+      "path": "src/index.ts",
+      "originalSHA256": "89751ce32515629975f83a0b6d8dea82f39dcad0593440b6a57c251d37d2b1bb",
+      "mutatedSHA256": "9f3c26f4a12eda399a2a06aded38ffa090e17b261c827fb3c2d346be08555218",
+      "restoredSHA256": "89751ce32515629975f83a0b6d8dea82f39dcad0593440b6a57c251d37d2b1bb"
+    },
+    {
+      "path": "shared/schemas.ts",
+      "originalSHA256": "8a4e26c943bda2276f7a842d9261a1260ae3abe2579cb9c1c0ea0f2bdb9362d9",
+      "mutatedSHA256": "126917e250a0e10b97f7b0a7e14e92cbad1630471003caf5f1fb46fb97e09b46",
+      "restoredSHA256": "8a4e26c943bda2276f7a842d9261a1260ae3abe2579cb9c1c0ea0f2bdb9362d9"
+    },
+    {
+      "path": "svelte/Files.svelte",
+      "originalSHA256": "c5d93400f8037fbe6cd4d27282ca604e7896677af270722a62f0423b56eabb56",
+      "mutatedSHA256": "03edf27802c906a9cc9c7ccbcc475d133969a34274c82e6ff74f4564be0d630d",
+      "restoredSHA256": "c5d93400f8037fbe6cd4d27282ca604e7896677af270722a62f0423b56eabb56"
+    },
+    {
+      "path": "svelte/styles/tailwind.css",
+      "originalSHA256": "700abf3a2bed10815cf8c069d0868d9c15c86c7ded8c30f31f0eea8af97f4296",
+      "mutatedSHA256": "ccfaefc9d98ac6385b41e3459493a748489af59484878b9264873608479977f5",
+      "restoredSHA256": "700abf3a2bed10815cf8c069d0868d9c15c86c7ded8c30f31f0eea8af97f4296"
+    },
+    {
+      "path": "svelte/Sidebar.svelte",
+      "originalSHA256": "383c14a2d12c2de68080853c27e7164366b69b3df97ee58bbc6412ad6788a267",
+      "mutatedSHA256": "e9184e8541232382400e5d30b5a1db881086bbbc88269c16ae206c17331419b0",
+      "restoredSHA256": "383c14a2d12c2de68080853c27e7164366b69b3df97ee58bbc6412ad6788a267"
+    }
+  ],
+  "activeMutations": 0,
+  "interrupted": false,
+  "shutdowns": [
+    {
+      "exitCode": 130,
+      "observedDescendants": 3
+    },
+    {
+      "exitCode": 130,
+      "observedDescendants": 16
+    }
+  ],
+  "steps": [
+    "Cancel real dev:app during initial API declaration build",
+    "Start real dev:app and wait for Worker plus source Vite",
+    "Check selected source shells, vanilla default and Worker access denial",
+    "Probe actual Vite forbidden files, encoded paths, symlinks and hostile request authorities",
+    "Open real room and verify mounted component/style HMR preserves composer draft and connections",
+    "Edit a mounted demand-loaded Files view, preserving owned filter, draft and retained mount",
+    "Edit the actual app-document bootstrap and observe the owned generator without rebuilding or restarting",
+    "Edit shared contract, verify declaration watcher plus full reload/reconnection",
+    "Edit Worker implementation and API declaration source without manual rebuild/restart",
+    "Stop dev:app and verify owned descendants plus both ports disappear"
+  ],
+  "errors": [],
+  "cleanupErrors": []
+}

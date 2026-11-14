@@ -1,0 +1,5 @@
+{
+  "interrupted": false,
+  "cleanupErrors": [],
+  "scope": "Isolated real dev:app; private vars, Worker state, raw child logs and source backups are excluded from artifact upload"
+}
