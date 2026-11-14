@@ -40,6 +40,7 @@ import {
 } from "./ui-metrics-model";
 import { assessBudgets } from "./ui-metrics-budgets";
 import { metricShell } from "./ui-metrics-shell";
+import { metricDocumentContent } from "./ui-metrics-document-model";
 type Variant = "vanilla" | "svelte";
 const variants: Variant[] = ["vanilla", "svelte"];
 const devices = [
@@ -461,6 +462,7 @@ const results: { [key: string]: unknown } = {
     "Controlled shells emulate the Worker's head metadata augmentation with the SHA-256 ETag of original public shell bytes and the same fixture Me.v. This declared synthetic ETag domain is not Cloudflare's production ETag. Actual bundle query versions and original/served hashes remain recorded separately.",
     "Public font network is allowed by default. Failed, blocked or missing font transfers remain unknown/unverified; requested local font bytes never establish matched production font totals.",
     "Desktop and 390px Chromium viewports use 4x CPU throttling and reduced motion. A narrow viewport is not a touch hardware/iOS/Safari/IME/GPU acceptance claim.",
+    "Entry readiness requires the complete canonical synthetic Markdown preview on desktop before fonts and two frames. Mobile must keep that document hidden. Older runs only asserted chat readiness; their timing endpoints are not interchangeable with this stronger contract. Their captured resource bytes remain historical evidence.",
     "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
     "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
     "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
@@ -999,6 +1001,30 @@ async function run(
       (await page.locator("[data-native-composer]").count()) > 0,
       variant === "svelte",
     );
+    const preview = page.locator(
+      variant === "svelte" ? "[data-document-preview]" : "#preview",
+    );
+    if (device.width > 900) {
+      const content = metricDocumentContent(first.doc);
+      await expect(preview).toBeVisible();
+      // Compare every canonical heading and paragraph, including the truncated
+      // final fixture block. A delivered parser, first heading or plain-text
+      // fallback alone cannot satisfy visible-document readiness.
+      await expect(preview.locator("h1")).toHaveText(content.titles);
+      await expect(preview.locator("h2")).toHaveText(content.sections);
+      await expect(preview.locator("p")).toHaveText(content.paragraphs);
+      sample.entryDocument = {
+        required: true,
+        visible: true,
+        sourceCharacters: first.doc.length,
+        sections: content.sections.length,
+        paragraphs: content.paragraphs.length,
+        sourceSHA256: createHash("sha256").update(first.doc).digest("hex"),
+      };
+    } else {
+      await expect(preview).not.toBeVisible();
+      sample.entryDocument = { required: false, visible: false };
+    }
     await page.evaluate(async () => {
       await document.fonts.ready;
       await new Promise<void>((resolve) =>

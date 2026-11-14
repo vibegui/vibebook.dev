@@ -6,6 +6,7 @@ import { metricShell } from "./ui-metrics-shell";
 import { MeResult } from "../shared/schemas";
 import { me } from "./native-home-fixtures";
 import { readFile } from "node:fs/promises";
+import { metricDocumentContent } from "./ui-metrics-document-model";
 test("deterministic public long-room shapes use real initial window and paging semantics", () => {
   const first = createMetricRoom(workloads.long, "A", 421),
     again = createMetricRoom(workloads.long, "A", 421),
@@ -20,6 +21,11 @@ test("deterministic public long-room shapes use real initial window and paging s
   expect(state.epics).toHaveLength(50);
   expect(state.epics.flatMap((epic) => epic.tasks)).toHaveLength(600);
   expect(state.doc?.length).toBe(40000);
+  const preview = metricDocumentContent(first.doc);
+  expect(preview.titles).toEqual(["Synthetic document"]);
+  expect(preview.sections[0]).toBe("Section 1");
+  expect(preview.paragraphs[0]).toContain("Unicode café 日本語");
+  expect(first.doc.trimEnd().endsWith(preview.paragraphs.at(-1)!)).toBe(true);
   const archived = new Set(
     state.epics.filter((epic) => epic.archived).map((epic) => epic.id),
   );
@@ -38,6 +44,19 @@ test("deterministic public long-room shapes use real initial window and paging s
   ).toBe(true);
   expect(older.more).toBe(true);
   expect(isRoomEvent(older)).toBe(true);
+});
+test("entry preview oracle retains every rendered fixture block and rejects missing content", () => {
+  expect(
+    metricDocumentContent(
+      "# Title\n\n## One\n\nCafé 日本語\n\n## Two\n\nTruncated bo",
+    ),
+  ).toEqual({
+    titles: ["Title"],
+    sections: ["One", "Two"],
+    paragraphs: ["Café 日本語", "Truncated bo"],
+  });
+  expect(() => metricDocumentContent("# Title\n\n## One")).toThrow();
+  expect(() => metricDocumentContent("Just plain text")).toThrow();
 });
 test("quantiles never fabricate a zero measurement for missing samples and expose nearest-rank tails", () => {
   expect(summarize([])).toEqual({
