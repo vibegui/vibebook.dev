@@ -165,7 +165,10 @@ try {
     hostModuleURL: new URL("/app-document-host.js", server.url).href,
     output,
   });
-  evidence.filePost = await auditAppDocumentFilePost({page:activePage,output});
+  evidence.filePost = await auditAppDocumentFilePost({
+    page: activePage,
+    output,
+  });
   evidence.status = "passed";
 } catch (error) {
   evidence.status = "failed";
