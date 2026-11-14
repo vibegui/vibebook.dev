@@ -146,6 +146,7 @@
     "scripts/vanilla-app-document.test.ts",
     "scripts/app-document-adversarial-browser.ts",
     "scripts/font-forensics-browser.ts",
+    "scripts/font-css-range-browser.ts",
     "scripts/native-app-document-actions.test.ts",
     "scripts/app-document-watch.ts",
     "scripts/app-document-watch.test.ts",

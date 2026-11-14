@@ -5,6 +5,7 @@ import { readFile, mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium, type Browser } from "@playwright/test";
 import * as z from "zod/mini";
+import { auditFontCSSRanges } from "./font-css-range-browser";
 
 type DOMPixelDifference =
   | { dimensionsEqual: false; pixelsChanged: null }
@@ -571,6 +572,7 @@ try {
   report.acceptance =
     "NONE: neither verdict activates a subset or establishes M4/M7 parity; raw evidence requires review.";
   await context.close();
+  report.cssRangeProof = await auditFontCSSRanges(browser, output);
 } catch (e) {
   report.verdict = "inconclusive-control-or-harness-failure";
   report.error = e instanceof Error ? e.message : "Unknown harness failure";
