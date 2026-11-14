@@ -547,8 +547,23 @@ try {
   await step(
     "unpinned reading anchor → full Board → real hidden peer WS update → restore",
     async () => {
+      const reading: { checkpoint:string; before?:Awaited<ReturnType<typeof anchor>>; peerMessage?:number; snapshots:unknown[] } = {checkpoint:"fonts-ready",snapshots:[]};
+      report.reading=reading;
+      const capture = async () => {
+        const geometry=await a.evaluate(prior => {
+          const node=document.querySelector<HTMLElement>("[data-room-chat]"),layout=document.querySelector("[data-native-room-layout]");
+          if(!node)return {missingScroller:true};
+          const rect=node.getBoundingClientRect(),rows=[...node.querySelectorAll<HTMLElement>('[id^="m"]')].filter(row=>/^m\d+$/.test(row.id));
+          const row=prior?node.querySelector<HTMLElement>("#"+prior.id):null;
+          return {top:node.scrollTop,height:node.scrollHeight,client:node.clientHeight,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},visible:node.getClientRects().length>0,pane:layout?.getAttribute("data-pane"),sheet:layout?.getAttribute("data-sheet"),boardPressed:document.querySelector("[data-native-board-toggle]")?.getAttribute("aria-pressed"),mountedRows:rows.length,firstId:rows[0]?.id,lastId:rows.at(-1)?.id,anchor:row?{id:row.id,y:row.getBoundingClientRect().top-rect.top}:null};
+        },reading.before??null);
+        reading.snapshots.push({checkpoint:reading.checkpoint,geometry});
+      };
+      const checkpoint=async(name:string)=>{reading.checkpoint=name;console.info("[native-application:reading] "+name);await capture();};
+      try {
       await a.evaluate(() => document.fonts.ready);
       const scroller = a.locator("[data-room-chat]");
+      await checkpoint("wheel-unpin");
       await scroller.hover();
       await a.mouse.wheel(0, -800);
       await expect
@@ -559,21 +574,29 @@ try {
         )
         .toBeGreaterThan(200);
       const before = await anchor(a);
+      reading.before=before;
       assert(before.top > 150);
+      await checkpoint("hide-with-full-board");
       await a.locator("[data-native-board-toggle]").click();
       await expect(scroller).toBeHidden();
       await expect(
         a.locator('[data-room-board][data-placement="full"]'),
       ).toBeVisible();
+      await checkpoint("peer-post-while-hidden");
       const id = await post(peer.context, roomA, `Peer hidden update ${token}`);
+      reading.peerMessage=id;
+      await checkpoint("actual-canonical-peer-message");
       await expect
         .poll(() =>
           aWire.store.get()?.messages.some((message) => message.id === id),
         )
         .toBe(true);
+      await checkpoint("hidden-native-message-attached");
       await expect(a.locator(`[data-room-chat] #m${id}`)).toBeAttached();
+      await checkpoint("restore-chat-visibility");
       await a.locator("[data-native-board-toggle]").click();
       await expect(scroller).toBeVisible();
+      await checkpoint("restore-visible-anchor-y");
       await expect
         .poll(() =>
           scroller.evaluate((node, prior) => {
@@ -588,6 +611,7 @@ try {
           }, before),
         )
         .toBeLessThan(2);
+      await checkpoint("restore-scroll-top");
       await expect
         .poll(() =>
           scroller.evaluate(
@@ -612,7 +636,11 @@ try {
         Math.abs(after.y - before.y) < 2,
         "Visible message anchor must survive the real hidden update",
       );
-      report.reading = { before, after, peerMessage: id };
+      Object.assign(reading,{before,after,peerMessage:id});
+      await checkpoint("passed");
+      } finally {
+        try { await capture(); } catch(error) { reading.snapshots.push({checkpoint:reading.checkpoint,diagnosticError:error instanceof Error?error.name:"UnknownError"}); }
+      }
     },
   );
   await step(
