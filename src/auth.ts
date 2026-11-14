@@ -15,6 +15,18 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_CODE_ATTEMPTS = 5;
 const SessionPayload = z.object({ email: z.string(), iat: z.number() });
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GoogleToken = z.object({ access_token: z.string().check(z.minLength(1)) });
+const GoogleIdentity = z.object({
+  email: z.string().check(z.regex(EMAIL_RE)),
+  email_verified: z.literal(true),
+  given_name: z.optional(z.nullable(z.string())),
+  name: z.optional(z.nullable(z.string())),
+});
+const InvitePayload = z.object({
+  e: z.string().check(z.regex(EMAIL_RE)),
+  b: z.string().check(z.regex(/^[a-z0-9]+$/)),
+  x: z.number(),
+});
 
 const enc = new TextEncoder();
 const b64url = (buf: ArrayBuffer | Uint8Array) =>
@@ -225,18 +237,18 @@ auth.get("/google/callback", async (c) => {
       redirect_uri: `${new URL(c.req.url).origin}/auth/google/callback`,
       grant_type: "authorization_code",
     }),
-  }).then((r) => r.json<{ access_token?: string }>());
-  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=google"));
+  }).then(async (r) => r.ok ? GoogleToken.safeParse(await r.json()) : null).catch(() => null);
+  if (!tok?.success) return c.redirect(loginUrl(c, next, "?error=google"));
   const info = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-    headers: { authorization: `Bearer ${tok.access_token}` },
-  }).then((r) => r.json<{ email?: string; email_verified?: boolean; given_name?: string; name?: string }>());
-  if (!info.email || !info.email_verified) return c.redirect(loginUrl(c, next, "?error=google"));
-  await startSession(c, info.email);
-  c.executionCtx.waitUntil(track(c.env, "login", { user: info.email.toLowerCase(), dims: { method: "google" } }));
-  const gname = (info.given_name || info.name || "").trim().slice(0, 60);
+    headers: { authorization: `Bearer ${tok.data.access_token}` },
+  }).then(async (r) => r.ok ? GoogleIdentity.safeParse(await r.json()) : null).catch(() => null);
+  if (!info?.success) return c.redirect(loginUrl(c, next, "?error=google"));
+  await startSession(c, info.data.email);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: info.data.email.toLowerCase(), dims: { method: "google" } }));
+  const gname = (info.data.given_name || info.data.name || "").trim().slice(0, 60);
   if (gname)
     await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
-      .bind(info.email.toLowerCase(), Date.now(), gname)
+      .bind(info.data.email.toLowerCase(), Date.now(), gname)
       .run()
       .catch(() => {});
   return c.redirect(safeNext(next));
@@ -253,15 +265,17 @@ export async function inviteLink(env: Env, origin: string, email: string, bookId
 auth.get("/invite", async (c) => {
   const [payload, sig] = (c.req.query("t") ?? "").split(".");
   if (!payload || !sig || !safeEqual(sig, await hmac(c.env.SESSION_SECRET, `invite:${payload}`))) return c.redirect("/login");
-  let t: { e?: string; b?: string; x?: number };
+  let t: z.output<typeof InvitePayload>;
   try {
-    t = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    const parsed = InvitePayload.safeParse(JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))));
+    if (!parsed.success) return c.redirect("/login");
+    t = parsed.data;
   } catch {
     return c.redirect("/login");
   }
   const next = `/b/${t.b}`;
   // Expired link: still useful, just log in normally and come back to the book.
-  if (!t.e || !t.b || !t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   // The link signs in only a first-timer, once (security review, Nov 2026): it reached whole accounts, could be
   // forwarded or quoted back in a reply, and swapped the session of whoever was signed in (login CSRF).
   // Someone already signed in goes to the room as they are; an existing account logs in the normal way.
