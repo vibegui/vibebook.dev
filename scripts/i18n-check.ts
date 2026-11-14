@@ -1,18 +1,13 @@
 import { inspectLegacyTranslations, translationKeys } from "./i18n-policy";
 const source = await Bun.file(
-  new URL("../svelte/legacy/host.js", import.meta.url),
+  new URL("../svelte/features/application/copy.ts", import.meta.url),
 ).text();
 const {
   translations: EN,
-  keys: hostKeys,
+  keys: dictionaryKeys,
   leftovers,
-} = inspectLegacyTranslations(
-  source,
-  await Bun.file(
-    new URL("../svelte/features/application/copy.ts", import.meta.url),
-  ).text(),
-);
-const keys = new Set(hostKeys);
+} = inspectLegacyTranslations(source);
+const keys = new Set(dictionaryKeys);
 for await (const file of new Bun.Glob("svelte/**/*.{svelte,ts}").scan("."))
   for (const key of translationKeys(await Bun.file(file).text(), file))
     keys.add(key);

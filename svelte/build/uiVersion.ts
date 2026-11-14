@@ -29,10 +29,7 @@ export async function versionAppShell(
     throw new Error(
       "Cannot version the app shell before svelte-preview/app.js is built",
     );
-  const names = [
-    ...scripts.map((name) => `svelte-preview/${name}`),
-    "app-svelte.css",
-  ];
+  const names = scripts.map((name) => `svelte-preview/${name}`);
   // The editor is loaded separately, but its changes must also wake installed PWAs.
   try {
     await readFile(join(publicDirectory, "collab-svelte.js"));
@@ -59,8 +56,7 @@ export async function versionAppShell(
   const shell = await readFile(shellPath, "utf8");
   // Do not hash the shell or inject another line: that would either make each
   // rebuild change its own input or couple the HTML layout to build metadata.
-  let css = 0,
-    app = 0,
+  let app = 0,
     utilities = 0;
   const next = shell
     .replace(
@@ -71,22 +67,15 @@ export async function versionAppShell(
       },
     )
     .replace(
-      /(\bhref=["'])\/app-svelte\.css(?:\?[^"']*)?(["'])/g,
-      (_match, start: string, end: string) => {
-        css++;
-        return `${start}/app-svelte.css?v=${version}${end}`;
-      },
-    )
-    .replace(
       /(\bsrc=["'])\/svelte-preview\/app\.js(?:\?[^"']*)?(["'])/g,
       (_match, start: string, end: string) => {
         app++;
         return `${start}/svelte-preview/app.js?v=${version}${end}`;
       },
     );
-  if (css !== 1 || app !== 1)
+  if (app !== 1)
     throw new Error(
-      "App shell must reference app-svelte.css and svelte-preview/app.js exactly once",
+      "App shell must reference svelte-preview/app.js exactly once",
     );
   if (scripts.includes("ui.css") && utilities !== 1)
     throw new Error(

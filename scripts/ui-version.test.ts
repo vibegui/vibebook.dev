@@ -6,7 +6,7 @@ import { build } from "vite";
 import { uiVersion, versionAppShell } from "../svelte/build/uiVersion";
 
 const shell =
-  '<!doctype html>\n<link rel="stylesheet" href="/app-svelte.css">\n<script type="module" src="/svelte-preview/app.js"></script>\n';
+  '<!doctype html>\n<link rel="stylesheet" href="/svelte-preview/ui.css">\n<script type="module" src="/svelte-preview/app.js"></script>\n';
 async function fixture(run: (directory: string) => Promise<void>) {
   const directory = await mkdtemp(join(tmpdir(), "vibebook-ui-version-"));
   try {
@@ -14,7 +14,7 @@ async function fixture(run: (directory: string) => Promise<void>) {
     await Promise.all([
       writeFile(join(directory, "app.html"), "unchanged vanilla shell"),
       writeFile(join(directory, "app-svelte.html"), shell),
-      writeFile(join(directory, "app-svelte.css"), "body{color:blue}"),
+      writeFile(join(directory, "svelte-preview/ui.css"), "body{color:blue}"),
       writeFile(
         join(directory, "svelte-preview/app.js"),
         'import "./shared.js";',
@@ -67,13 +67,14 @@ describe("app shell content version", () => {
     fixture(async (directory) => {
       const path = join(directory, "svelte-preview/ui.css");
       await writeFile(path, ".bg-card{background:white}");
+      await writeFile(
+        join(directory, "app-svelte.html"),
+        shell.replace(/<link[^>]+>\n/, ""),
+      );
       await expect(versionAppShell(directory)).rejects.toThrow(
         "ui.css exactly once",
       );
-      await writeFile(
-        join(directory, "app-svelte.html"),
-        shell + '<link rel="stylesheet" href="/svelte-preview/ui.css">',
-      );
+      await writeFile(join(directory, "app-svelte.html"), shell);
       const first = await versionAppShell(directory);
       expect(
         await readFile(join(directory, "app-svelte.html"), "utf8"),
@@ -90,7 +91,10 @@ describe("app shell content version", () => {
       );
       expect(updated).toBe(
         shell
-          .replace("/app-svelte.css", "/app-svelte.css?v=" + version)
+          .replace(
+            "/svelte-preview/ui.css",
+            "/svelte-preview/ui.css?v=" + version,
+          )
           .replace(
             "/svelte-preview/app.js",
             "/svelte-preview/app.js?v=" + version,
@@ -114,7 +118,10 @@ describe("app shell content version", () => {
       );
       const js = await versionAppShell(directory);
       expect(js).not.toBe(initial);
-      await writeFile(join(directory, "app-svelte.css"), "body{color:red}");
+      await writeFile(
+        join(directory, "svelte-preview/ui.css"),
+        "body{color:red}",
+      );
       const css = await versionAppShell(directory);
       expect(css).not.toBe(js);
       await mkdir(join(directory, "svelte-preview/chunks"));
@@ -166,7 +173,7 @@ describe("app shell content version", () => {
       await writeFile(
         join(directory, "app-svelte.html"),
         shell
-          .replace("/app-svelte.css", "/app-svelte.css?v=old")
+          .replace("/svelte-preview/ui.css", "/svelte-preview/ui.css?v=old")
           .replace("/svelte-preview/app.js", "/svelte-preview/app.js?v=old"),
       );
       expect(await versionAppShell(directory)).toBe(current);

@@ -11,5 +11,8 @@ if (document.querySelector('meta[name="vb-page"]')) {
   const { mountGallery } = await import("./gallery/main");
   mountGallery(target);
 } else {
-  await import("./legacy/host.js");
+  const target = document.getElementById("app");
+  if (!target) throw new Error("Missing native application root");
+  const { mountApplication } = await import("./features/application/mount");
+  mountApplication(target, document);
 }
