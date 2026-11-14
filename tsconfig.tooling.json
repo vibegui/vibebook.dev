@@ -90,6 +90,7 @@
     "scripts/application-copy.test.ts",
     "scripts/application-services.test.ts",
     "scripts/room-scope.test.ts",
+    "scripts/room-scope-fixtures.ts",
     "scripts/application-shell-fixtures.ts",
     "scripts/application-shell-harness.svelte",
     "scripts/suggestion-preview-harness.svelte",
