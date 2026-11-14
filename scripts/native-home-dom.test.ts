@@ -417,7 +417,7 @@ test("real RoomShell uses genuine loading/terminal states and directly renders c
   expect(h.target.querySelector("[data-native-composer]") !== null).toBe(true);
   expect(h.target.querySelector("[data-native-document]") !== null).toBe(true);
   expect(h.target.textContent).toContain("Canonical visible message");
-  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
+  h.connectionCallbacks.at(-1)!.onRemoved?.();
   await flush();
   expect(
     h.target.querySelector('[data-native-room-status="removed"]') !== null,
@@ -460,7 +460,7 @@ test("real RoomShell revokes connected outgoing Composer controls before a remov
   input.value = "An outgoing private draft";
   input.dispatchEvent(new Event("input", { bubbles: true }));
   await flush();
-  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
+  h.connectionCallbacks.at(-1)!.onRemoved?.();
   expect(form.isConnected).toBe(true);
   const before = h.roomCommands.filter((command) => command.t === "msg").length;
   form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
