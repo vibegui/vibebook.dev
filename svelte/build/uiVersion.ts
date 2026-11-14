@@ -30,18 +30,7 @@ export async function versionAppShell(
       "Cannot version the app shell before svelte-preview/app.js is built",
     );
   const names = scripts.map((name) => `svelte-preview/${name}`);
-  // The editor is loaded separately, but its changes must also wake installed PWAs.
-  try {
-    await readFile(join(publicDirectory, "collab-svelte.js"));
-    names.push("collab-svelte.js");
-  } catch (error) {
-    if (
-      !(error instanceof Error) ||
-      !("code" in error) ||
-      error.code !== "ENOENT"
-    )
-      throw error;
-  }
+  // Lazy editor code is emitted into this same Vite browser-assets graph.
   names.sort();
   const contents = await Promise.all(
     names.map((name) => readFile(join(publicDirectory, name))),

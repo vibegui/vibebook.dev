@@ -131,17 +131,17 @@ describe("app shell content version", () => {
       );
       expect(await versionAppShell(directory)).not.toBe(css);
     }));
-  test("the separately loaded editor affects the version; shell changes cannot cause a circular hash", () =>
+  test("the lazy Vite editor chunk affects the version; shell changes cannot cause a circular hash", () =>
     fixture(async (directory) => {
       const initial = await versionAppShell(directory);
       await writeFile(
-        join(directory, "collab-svelte.js"),
+        join(directory, "svelte-preview/editor-lazy.js"),
         "export const editor = 1;",
       );
       const editor = await versionAppShell(directory);
       expect(editor).not.toBe(initial);
       await writeFile(
-        join(directory, "collab-svelte.js"),
+        join(directory, "svelte-preview/editor-lazy.js"),
         "export const editor = 2;",
       );
       const changed = await versionAppShell(directory);

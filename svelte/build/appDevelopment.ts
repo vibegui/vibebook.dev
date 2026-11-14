@@ -258,19 +258,8 @@ export function appDevelopment(
         try {
           const parsed = localRequestUrl(req.url);
           const pathname = decodeURIComponent(parsed.pathname);
-          if (
-            !new RegExp(workerRoutes).test(pathname) &&
-            pathname !== "/collab-svelte.js"
-          )
+          if (!new RegExp(workerRoutes).test(pathname))
             policy.assertRequest(req.url);
-          if (pathname === "/collab-svelte.js") {
-            res.setHeader("content-type", "text/javascript");
-            res.setHeader("cache-control", "no-store");
-            res.end(
-              `export * from ${JSON.stringify(`/@fs/${resolve(root, "collab/editor.ts")}`)};`,
-            );
-            return;
-          }
           const consentPost =
             req.method === "POST" &&
             parsed.pathname === "/authorize" &&
