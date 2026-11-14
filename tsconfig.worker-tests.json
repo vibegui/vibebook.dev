@@ -11,6 +11,7 @@
     "scripts/native-auth.test.ts",
     "scripts/native-auth-post.test.ts",
     "scripts/mcp-connections.test.ts",
+    "scripts/mcp-oauth-responses.test.ts",
     "scripts/document-scope-guards.test.ts",
     "scripts/docroom-socket.test.ts",
     "scripts/epic-delete-guards.test.ts",
