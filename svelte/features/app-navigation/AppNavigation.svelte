@@ -20,7 +20,8 @@
     onlanguage,
     onreload = () => location.reload(),
     inRoom = false,
-    loadDialogs = () => import("./AppNavigationDialogs.svelte").then(module => module.default),
+    loadDialogs = () =>
+      import("./AppNavigationDialogs.svelte").then((module) => module.default),
   }: {
     controller: AppNavigationSession;
     lang: HomeLanguage;
@@ -30,7 +31,9 @@
     onreload?: () => void;
     inRoom?: boolean;
     /** Public-code transport seam; owners and canonical records are never supplied by the loader. */
-    loadDialogs?: () => Promise<typeof import("./AppNavigationDialogs.svelte").default>;
+    loadDialogs?: () => Promise<
+      typeof import("./AppNavigationDialogs.svelte").default
+    >;
   } = $props();
   const personal = $derived(controller.personal.state),
     draft = $derived(controller.personal.draft),
@@ -51,8 +54,11 @@
     $personal.me?.books.find((room) => room.id === $nav.renameId),
   );
   let homeButton = $state<HTMLButtonElement | null>(null);
-  const presentation = untrack(() => createNavigationPresentation(controller, loadDialogs));
-  const presentationView = presentation.state, moduleView = presentation.module.state;
+  const presentation = untrack(() =>
+    createNavigationPresentation(controller, loadDialogs),
+  );
+  const presentationView = presentation.state,
+    moduleView = presentation.module.state;
   const Dialogs = $derived($moduleView.component);
   $effect(() => {
     if ($nav.settingsId && !selectedRoom) controller.closeSettings();
@@ -67,7 +73,10 @@
     )
       controller.closeSettings();
   });
-  onDestroy(() => { presentation.dispose(); controller.pageLeft(); });
+  onDestroy(() => {
+    presentation.dispose();
+    controller.pageLeft();
+  });
   onMount(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (
@@ -187,7 +196,60 @@
     }}
   />
 </div>
-{#if Dialogs}{#key $presentationView}<Snapshot value={$presentationView}>{#snippet children(intent)}<Dialogs {controller} {lang} current={() => !!intent && presentation.owns(intent)} focusBack={() => intent ? presentation.returnFocus(intent, homeButton) : null} />{/snippet}</Snapshot>{/key}{:else if $presentationView}{#key $presentationView}<Snapshot value={$presentationView}>{#snippet children(intent)}<Dialog open={presentation.owns(intent)} title={text(intent.kind === "create" ? "new" : intent.kind === "settings" ? "settings" : intent.kind)} closeLabel={text("close")} onOpenChange={(open) => { if (!open && get(moduleView).phase !== "ready") presentation.close(intent); }} returnFocus={() => get(moduleView).phase === "ready" ? null : presentation.returnFocus(intent, homeButton)}><DeferredViewStatus phase={$moduleView.phase} {lang} label={text(intent.kind === "create" ? "new" : intent.kind === "settings" ? "settings" : intent.kind)} current={() => presentation.owns(intent)} retry={() => { if (presentation.owns(intent)) void presentation.module.retry(); }} /><Button variant="outline" onclick={(event) => { if (event.currentTarget.isConnected && get(moduleView).phase !== "ready") presentation.close(intent); }}>{text("cancel")}</Button></Dialog>{/snippet}</Snapshot>{/key}{/if}
+{#if Dialogs}{#key $presentationView}<Snapshot value={$presentationView}
+      >{#snippet children(intent)}<Dialogs
+          {controller}
+          {lang}
+          current={() => !!intent && presentation.owns(intent)}
+          focusBack={() =>
+            intent ? presentation.returnFocus(intent, homeButton) : null}
+        />{/snippet}</Snapshot
+    >{/key}{:else if $presentationView}{#key $presentationView}<Snapshot
+      value={$presentationView}
+      >{#snippet children(intent)}<Dialog
+          open={presentation.owns(intent)}
+          title={text(
+            intent.kind === "create"
+              ? "new"
+              : intent.kind === "settings"
+                ? "settings"
+                : intent.kind,
+          )}
+          closeLabel={text("close")}
+          onOpenChange={(open) => {
+            if (!open && get(moduleView).phase !== "ready")
+              presentation.close(intent);
+          }}
+          returnFocus={() =>
+            get(moduleView).phase === "ready"
+              ? null
+              : presentation.returnFocus(intent, homeButton)}
+          ><DeferredViewStatus
+            phase={$moduleView.phase}
+            {lang}
+            label={text(
+              intent.kind === "create"
+                ? "new"
+                : intent.kind === "settings"
+                  ? "settings"
+                  : intent.kind,
+            )}
+            current={() => presentation.owns(intent)}
+            retry={() => {
+              if (presentation.owns(intent)) void presentation.module.retry();
+            }}
+          /><Button
+            variant="outline"
+            onclick={(event) => {
+              if (
+                event.currentTarget.isConnected &&
+                get(moduleView).phase !== "ready"
+              )
+                presentation.close(intent);
+            }}>{text("cancel")}</Button
+          ></Dialog
+        >{/snippet}</Snapshot
+    >{/key}{/if}
 
 {#if $draft.unknown && $draft.unknown.roomId === $nav.roomId}<aside
     data-vb-native="home-notice"

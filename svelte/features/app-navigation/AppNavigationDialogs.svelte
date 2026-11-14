@@ -17,7 +17,17 @@
   import { homeText, homeIssue, type HomeLanguage } from "../home/copy";
   import { roomIconPng } from "../rooms/images";
   import type { AppNavigationSession } from "./controller";
-  let { controller, lang, focusBack, current }: { controller: AppNavigationSession; lang: HomeLanguage; focusBack(): HTMLElement | null; current(): boolean } = $props();
+  let {
+    controller,
+    lang,
+    focusBack,
+    current,
+  }: {
+    controller: AppNavigationSession;
+    lang: HomeLanguage;
+    focusBack(): HTMLElement | null;
+    current(): boolean;
+  } = $props();
   const personal = $derived(controller.personal.state),
     draft = $derived(controller.personal.draft),
     nav = $derived(controller.state),
@@ -73,8 +83,13 @@
     imageBusy = false;
     imageError = "";
   });
-  onMount(() => { mounted = true; });
-  onDestroy(() => { mounted = false; imageSequence++; });
+  onMount(() => {
+    mounted = true;
+  });
+  onDestroy(() => {
+    mounted = false;
+    imageSequence++;
+  });
   async function upload(
     event: Event & { currentTarget: EventTarget & HTMLInputElement },
   ) {
@@ -89,7 +104,8 @@
     try {
       const image = await roomIconPng(file);
       if (
-        current() && mounted &&
+        current() &&
+        mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision &&
         input.isConnected &&
@@ -98,21 +114,22 @@
         await controller.rooms.icon(id, image);
     } catch (error) {
       if (
-        current() && mounted &&
+        current() &&
+        mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision
       )
         imageError = error instanceof Error ? error.message : "network";
     } finally {
       if (
-        current() && mounted &&
+        current() &&
+        mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision
       )
         imageBusy = false;
     }
   }
-
 </script>
 
 <Dialog
@@ -168,7 +185,10 @@
           ? "tw:block tw:w-full tw:rounded-control tw:bg-accent tw:p-3 tw:text-left tw:text-foreground tw:no-underline"
           : "tw:block tw:w-full tw:rounded-control tw:bg-transparent tw:p-3 tw:text-left tw:text-foreground tw:no-underline tw:hover:bg-accent"}
         onclick={(event) => {
-          if (!current() || !event.currentTarget.isConnected) { event.preventDefault(); return; }
+          if (!current() || !event.currentTarget.isConnected) {
+            event.preventDefault();
+            return;
+          }
           if (
             event.ctrlKey ||
             event.metaKey ||
@@ -221,7 +241,12 @@
           description={text("createHelp")}
           closeLabel={text("close")}
           onOpenChange={(open) => {
-            if (!open && current() && !$creator.inline && controller.creator.owns(binding))
+            if (
+              !open &&
+              current() &&
+              !$creator.inline &&
+              controller.creator.owns(binding)
+            )
               controller.creator.close(binding);
           }}
           initialFocus={() => createInput}
@@ -251,7 +276,8 @@
               disabled={$creator.busy}
               oninput={(event) => {
                 if (
-                  current() && event.currentTarget.isConnected &&
+                  current() &&
+                  event.currentTarget.isConnected &&
                   !$creator.inline &&
                   controller.creator.owns(binding)
                 )
@@ -263,7 +289,8 @@
                   !event.shiftKey &&
                   !event.isComposing &&
                   !$creator.inline &&
-                  current() && event.currentTarget.isConnected &&
+                  current() &&
+                  event.currentTarget.isConnected &&
                   controller.creator.owns(binding)
                 ) {
                   event.preventDefault();
@@ -276,7 +303,8 @@
                 variant="outline"
                 onclick={(event) => {
                   if (
-                    current() && event.currentTarget.isConnected &&
+                    current() &&
+                    event.currentTarget.isConnected &&
                     controller.creator.owns(binding)
                   )
                     controller.creator.close(binding);
@@ -342,23 +370,27 @@
         variant="outline"
         disabled={!!$mutations.pending.order}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected) controller.move(room.id, -1);
+          if (current() && event.currentTarget.isConnected)
+            controller.move(room.id, -1);
         }}>{text("moveUp")}</Button
       ><Button
         variant="outline"
         disabled={!!$mutations.pending.order}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected) controller.move(room.id, 1);
+          if (current() && event.currentTarget.isConnected)
+            controller.move(room.id, 1);
         }}>{text("moveDown")}</Button
       >{#if $nav.roomId === room.id && controller.callbacks.rename}<Button
           variant="outline"
           onclick={(event) => {
-            if (current() && event.currentTarget.isConnected) controller.askRename(room.id);
+            if (current() && event.currentTarget.isConnected)
+              controller.askRename(room.id);
           }}>{text("rename")}</Button
         >{/if}<Button
         variant="destructive"
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected) controller.askArchive(room.id);
+          if (current() && event.currentTarget.isConnected)
+            controller.askArchive(room.id);
         }}>{text("archiveAction")}</Button
       >
     </div>
@@ -391,13 +423,15 @@
         bind:ref={archiveCancel}
         variant="outline"
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected) controller.closeSettings();
+          if (current() && event.currentTarget.isConnected)
+            controller.closeSettings();
         }}>{text("cancel")}</Button
       ><Button
         variant="destructive"
         loading={!!$mutations.pending[`archive:${archiveRoom.id}`]}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected) controller.confirmArchive();
+          if (current() && event.currentTarget.isConnected)
+            controller.confirmArchive();
         }}>{text("archiveAction")}</Button
       >
     </div>
@@ -443,7 +477,8 @@
         <Button
           variant="outline"
           onclick={(event) => {
-            if (current() && event.currentTarget.isConnected) controller.closeSettings();
+            if (current() && event.currentTarget.isConnected)
+              controller.closeSettings();
           }}>{text("cancel")}</Button
         ><Button
           type="submit"
