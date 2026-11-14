@@ -383,9 +383,14 @@ export async function openIntegratedPane(
   pane: Exclude<DocumentPane, "view">,
 ) {
   const layout = page.locator("[data-native-room-layout]");
-  const content: Record<Exclude<DocumentPane,"view">,string> = {
-    doc:"[data-native-document]", board:"[data-board-scope]", files:'[data-vb-native="files"]',
-    apps:"[data-native-apps]", agents:"[data-native-agents]", decisions:"[data-decisions-panel]", reminders:"[data-reminders-panel]",
+  const content: Record<Exclude<DocumentPane, "view">, string> = {
+    doc: "[data-native-document]",
+    board: "[data-board-scope]",
+    files: '[data-vb-native="files"]',
+    apps: "[data-native-apps]",
+    agents: "[data-native-agents]",
+    decisions: "[data-decisions-panel]",
+    reminders: "[data-reminders-panel]",
   };
   await expect(layout).toBeVisible();
   const full = page.locator("[data-native-board-toggle]");

@@ -15,6 +15,7 @@
   import Dialog from "../../lib/ui/Dialog.svelte";
   import { createDeferredModule } from "../deferred-view/module";
   import DeferredViewStatus from "../deferred-view/DeferredViewStatus.svelte";
+  import DeferredRouteStatus from "../deferred-view/DeferredRouteStatus.svelte";
   import type { HomeBridge } from "../home/types";
   import { personAvatar } from "../home/model";
   let {
@@ -34,11 +35,45 @@
   let active = true,
     theme = $state<ApplicationTheme>(untrack(() => effects.theme()));
   const current = () => active && services.active();
-  const homeModule = untrack(() => createDeferredModule(() => import("../home/HomePanel.svelte").then(module => module.default), { current })), homeModuleView = homeModule.state;
-  const archivedModule = untrack(() => createDeferredModule(() => import("../home/ArchivedPanel.svelte").then(module => module.default), { current })), archivedModuleView = archivedModule.state;
-  const accountModule = untrack(() => createDeferredModule(() => import("../account/AccountSettings.svelte").then(module => module.default), { current })), accountModuleView = accountModule.state;
-  const inboxModule = untrack(() => createDeferredModule(() => import("../../Inbox.svelte").then(module => module.default), { current })), inboxModuleView = inboxModule.state;
-  const Home = $derived($homeModuleView.component), Archived = $derived($archivedModuleView.component), AccountSettings = $derived($accountModuleView.component), Inbox = $derived($inboxModuleView.component);
+  const homeModule = untrack(() =>
+      createDeferredModule(
+        () =>
+          import("../home/HomePanel.svelte").then((module) => module.default),
+        { current },
+      ),
+    ),
+    homeModuleView = homeModule.state;
+  const archivedModule = untrack(() =>
+      createDeferredModule(
+        () =>
+          import("../home/ArchivedPanel.svelte").then(
+            (module) => module.default,
+          ),
+        { current },
+      ),
+    ),
+    archivedModuleView = archivedModule.state;
+  const accountModule = untrack(() =>
+      createDeferredModule(
+        () =>
+          import("../account/AccountSettings.svelte").then(
+            (module) => module.default,
+          ),
+        { current },
+      ),
+    ),
+    accountModuleView = accountModule.state;
+  const inboxModule = untrack(() =>
+      createDeferredModule(
+        () => import("../../Inbox.svelte").then((module) => module.default),
+        { current },
+      ),
+    ),
+    inboxModuleView = inboxModule.state;
+  const Home = $derived($homeModuleView.component),
+    Archived = $derived($archivedModuleView.component),
+    AccountSettings = $derived($accountModuleView.component),
+    Inbox = $derived($inboxModuleView.component);
   const accountView = untrack(() => services.account.state);
   $effect(() => {
     $application.lifecycle;
@@ -140,7 +175,10 @@
   });
   onDestroy(() => {
     active = false;
-    homeModule.dispose(); archivedModule.dispose(); accountModule.dispose(); inboxModule.dispose();
+    homeModule.dispose();
+    archivedModule.dispose();
+    accountModule.dispose();
+    inboxModule.dispose();
     inbox.dispose();
     services.dispose();
   });
@@ -167,8 +205,32 @@
           if (current()) services.actions.reload();
         }}
       />{/if}
-    {#if $application.route.kind === "home"}{#if Home}<Home {...home} />{:else}<svelte:head><title>vibebook</title></svelte:head><main aria-busy="true"><DeferredViewStatus phase={$homeModuleView.phase} lang={services.language} label={services.language === "en" ? "Your vibebooks" : "Seus vibebooks"} retry={() => { void homeModule.retry(); }} current={current} /></main>{/if}
-    {:else if $application.route.kind === "archived"}{#if Archived}<Archived {...home} />{:else}<svelte:head><title>vibebook</title></svelte:head><main aria-busy="true"><DeferredViewStatus phase={$archivedModuleView.phase} lang={services.language} label={services.language === "en" ? "Archived rooms" : "Salas arquivadas"} retry={() => { void archivedModule.retry(); }} current={current} /></main>{/if}
+    {#if $application.route.kind === "home"}{#if Home}<Home
+          {...home}
+        />{:else}<DeferredRouteStatus
+          phase={$homeModuleView.phase}
+          lang={services.language}
+          label={services.language === "en"
+            ? "Your vibebooks"
+            : "Seus vibebooks"}
+          retry={() => {
+            void homeModule.retry();
+          }}
+          {current}
+        />{/if}
+    {:else if $application.route.kind === "archived"}{#if Archived}<Archived
+          {...home}
+        />{:else}<DeferredRouteStatus
+          phase={$archivedModuleView.phase}
+          lang={services.language}
+          label={services.language === "en"
+            ? "Archived rooms"
+            : "Salas arquivadas"}
+          retry={() => {
+            void archivedModule.retry();
+          }}
+          {current}
+        />{/if}
     {:else if $application.route.kind === "room"}<div
         data-native-room-root
         class="tw:col-start-1 tw:row-start-2 tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden"
@@ -176,60 +238,107 @@
         {@render roomSnippet({ services, openInbox: inbox.open })}
       </div>{/if}
     {#if AccountSettings}
-    <AccountSettings
-      owner={services.account}
-      device={services.device}
-      pwa={services.pwa}
-      agents={services.agents}
-      origin={effects.origin}
-      lang={services.language}
-      vb={{ t: services.t, ago }}
-      {theme}
-      onTheme={nextTheme}
-      onLanguage={language}
-      onArchive={() => {
-        if (current()) {
-          services.account.close();
-          services.actions.archived();
-        }
-      }}
-      onLogout={(all) => {
-        if (current() && services.account.current())
-          void services.actions.logout(all);
-      }}
-    />
-    {:else if $accountView.open && $accountView.binding}{#key $accountView.binding}<Snapshot value={$accountView.binding}>{#snippet children(binding)}<Dialog open title={services.language === "en" ? "Your account" : "Sua conta"} closeLabel={services.t("Fechar")} sheet returnFocus={services.account.returnFocus} onOpenChange={(open) => { if(!open && !AccountSettings && current() && services.account.owns(binding)) services.account.close(binding); }}><DeferredViewStatus phase={$accountModuleView.phase} lang={services.language} label={services.language === "en" ? "Your account" : "Sua conta"} retry={() => { void accountModule.retry(); }} current={() => current() && services.account.owns(binding)} /></Dialog>{/snippet}</Snapshot>{/key}{/if}
+      <AccountSettings
+        owner={services.account}
+        device={services.device}
+        pwa={services.pwa}
+        agents={services.agents}
+        origin={effects.origin}
+        lang={services.language}
+        vb={{ t: services.t, ago }}
+        {theme}
+        onTheme={nextTheme}
+        onLanguage={language}
+        onArchive={() => {
+          if (current()) {
+            services.account.close();
+            services.actions.archived();
+          }
+        }}
+        onLogout={(all) => {
+          if (current() && services.account.current())
+            void services.actions.logout(all);
+        }}
+      />
+    {:else if $accountView.open && $accountView.binding}{#key $accountView.binding}<Snapshot
+          value={$accountView.binding}
+          >{#snippet children(binding)}<Dialog
+              open
+              title={services.language === "en" ? "Your account" : "Sua conta"}
+              closeLabel={services.t("Fechar")}
+              sheet
+              returnFocus={services.account.returnFocus}
+              onOpenChange={(open) => {
+                if (
+                  !open &&
+                  !AccountSettings &&
+                  current() &&
+                  services.account.owns(binding)
+                )
+                  services.account.close(binding);
+              }}
+              ><DeferredViewStatus
+                phase={$accountModuleView.phase}
+                lang={services.language}
+                label={services.language === "en"
+                  ? "Your account"
+                  : "Sua conta"}
+                retry={() => {
+                  void accountModule.retry();
+                }}
+                current={() => current() && services.account.owns(binding)}
+              /></Dialog
+            >{/snippet}</Snapshot
+        >{/key}{/if}
     {#if $inboxView.binding}{#key $inboxView.binding}<Snapshot
           value={$inboxView.binding}
         >
           {#snippet children(binding)}
             {#if Inbox}<Inbox
-              waits={$personal.me?.waits ?? []}
-              roomId={$room.roomId}
-              all={$inboxView.all}
-              vb={{ t: services.t, ago }}
-              {displayName}
-              avatarUrl={avatar}
-              ontab={(all) => inbox.tab(binding, all)}
-              onclose={() => inbox.close(binding)}
-              onresolve={(wait) => inbox.resolve(binding, wait)}
-              onopen={(wait, event) => {
-                if (
-                  event.button !== 0 ||
-                  event.ctrlKey ||
-                  event.metaKey ||
-                  event.shiftKey ||
-                  event.altKey
-                )
-                  return;
-                event.preventDefault();
-                if (
-                  event.currentTarget instanceof Element &&
-                  event.currentTarget.isConnected
-                )
-                  inbox.openWait(binding, wait);
-              }}
-            />{:else}<Dialog open title={services.t("Caixa de entrada")} closeLabel={services.t("Fechar")} onOpenChange={(open) => { if(!open && !Inbox && current()) inbox.close(binding); }}><DeferredViewStatus phase={$inboxModuleView.phase} lang={services.language} label={services.language === "en" ? "Inbox" : "Caixa de entrada"} retry={() => { void inboxModule.retry(); }} current={() => current() && inbox.owns(binding)} /></Dialog>{/if}
+                waits={$personal.me?.waits ?? []}
+                roomId={$room.roomId}
+                all={$inboxView.all}
+                vb={{ t: services.t, ago }}
+                {displayName}
+                avatarUrl={avatar}
+                ontab={(all) => inbox.tab(binding, all)}
+                onclose={() => inbox.close(binding)}
+                onresolve={(wait) => inbox.resolve(binding, wait)}
+                onopen={(wait, event) => {
+                  if (
+                    event.button !== 0 ||
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  )
+                    return;
+                  event.preventDefault();
+                  if (
+                    event.currentTarget instanceof Element &&
+                    event.currentTarget.isConnected
+                  )
+                    inbox.openWait(binding, wait);
+                }}
+              />{:else}<Dialog
+                open
+                title={services.t("Caixa de entrada")}
+                closeLabel={services.t("Fechar")}
+                onOpenChange={(open) => {
+                  if (!open && !Inbox && current()) inbox.close(binding);
+                }}
+                ><DeferredViewStatus
+                  phase={$inboxModuleView.phase}
+                  lang={services.language}
+                  label={services.language === "en"
+                    ? "Inbox"
+                    : "Caixa de entrada"}
+                  retry={() => {
+                    void inboxModule.retry();
+                  }}
+                  current={() => current() && inbox.owns(binding)}
+                /></Dialog
+              >{/if}
           {/snippet}
         </Snapshot>{/key}{/if}
   {/if}
