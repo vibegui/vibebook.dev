@@ -1211,22 +1211,27 @@ try {
   await independentAudit("profiles", async () => {
     report.profileAudit = await auditNativeApplicationProfiles(profileFixture);
   });
-  for (const variant of ["svelte", "vanilla"] as const) await independentAudit(`app-navigation-authority-${variant}`, async () => {
-    const appNavigation = await auditNativeAppNavigation({...profileFixture,...(variant === "vanilla" ? {ui:vanillaAppNavigationDriver} : {})});
-    report[variant === "svelte" ? "appNavigation" : "vanillaAppNavigation"] = appNavigation;
-    // A controlled replacement document inheriting the original App's room read
-    // capability is a security finding, not a passing functional receipt.
-    await step(
-      `${variant} replacement App authority requires an explicit refusal`,
-      async () => {
-        assert.equal(
-          appNavigation.verdict,
-          "explicit-denial",
-          "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass",
-        );
-      },
-    );
-  });
+  for (const variant of ["svelte", "vanilla"] as const)
+    await independentAudit(`app-navigation-authority-${variant}`, async () => {
+      const appNavigation = await auditNativeAppNavigation({
+        ...profileFixture,
+        ...(variant === "vanilla" ? { ui: vanillaAppNavigationDriver } : {}),
+      });
+      report[variant === "svelte" ? "appNavigation" : "vanillaAppNavigation"] =
+        appNavigation;
+      // A controlled replacement document inheriting the original App's room read
+      // capability is a security finding, not a passing functional receipt.
+      await step(
+        `${variant} replacement App authority requires an explicit refusal`,
+        async () => {
+          assert.equal(
+            appNavigation.verdict,
+            "explicit-denial",
+            "Replacement App read authority must be explicitly refused; inherited or inconclusive evidence cannot pass",
+          );
+        },
+      );
+    });
   await independentAudit("page-errors", async () => {
     assert.deepEqual(errors, []);
   });

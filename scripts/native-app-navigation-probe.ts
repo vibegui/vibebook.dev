@@ -12,7 +12,10 @@ import {
 import { createRoomApi } from "../svelte/transport";
 import { localBrowserError } from "./native-browser-fixtures";
 import type { NativeApplicationAuditFixture } from "./native-application-browser-types";
-import { nativeAppNavigationDriver, type AppNavigationUIDriver } from "./app-navigation-ui-driver";
+import {
+  nativeAppNavigationDriver,
+  type AppNavigationUIDriver,
+} from "./app-navigation-ui-driver";
 import {
   probeHTTP,
   probeFailure,
@@ -80,7 +83,7 @@ export async function auditNativeAppNavigation(
   const ui = fixture.ui ?? nativeAppNavigationDriver(fixture.openPane);
   const marker = `Controlled read marker ${randomBytes(16).toString("hex")}`;
   const evidence: NativeAppNavigationEvidence = {
-    variant:ui.variant,
+    variant: ui.variant,
     status: "running",
     phase: "listen",
     http: [],
@@ -92,8 +95,7 @@ export async function auditNativeAppNavigation(
     replacementOriginDiffers: false,
     replacementRequests: 0,
     pageErrors: [],
-    scope:
-      `Actual ${ui.variant} room-App self-navigation with real Worker/Book/R2 and its production document-bound host; synthetic canonical message only`,
+    scope: `Actual ${ui.variant} room-App self-navigation with real Worker/Book/R2 and its production document-bound host; synthetic canonical message only`,
     gaps: [
       "Opening the initial room App is the trusted user capability grant; vibebook_read has no separate confirmation prompt",
       "HTML judgments use a controlled external-model ALLOW/DENY protocol fixture; actual model intelligence/quality remains unverified",
@@ -291,7 +293,11 @@ export async function auditNativeAppNavigation(
           "read",
         );
         await expect(frame.locator("#result")).toHaveText(marker);
-        assert.equal(await frame.locator("#stage").evaluate(()=>location.href),`${fixture.base}/api/books/${room.id}/files/${file.id}`,"Initial grant must be the actual uploaded HTTP file document");
+        assert.equal(
+          await frame.locator("#stage").evaluate(() => location.href),
+          `${fixture.base}/api/books/${room.id}/files/${file.id}`,
+          "Initial grant must be the actual uploaded HTTP file document",
+        );
         evidence.initialRead = true;
       },
     );
@@ -400,41 +406,46 @@ export async function auditNativeAppNavigation(
   } catch (error) {
     if (auditPage && !auditPage.isClosed()) {
       const frameState = await auditPage
-        .evaluate(({frameSelector,containerSelector}) => {
-          const frames = document.querySelectorAll<HTMLIFrameElement>(
-            frameSelector,
-          );
-          const frame = frames[0];
-          const alert =
-            document.querySelector(containerSelector + " [role=alert]")
-              ?.textContent ?? "";
-          // Store fixed categories, never arbitrary browser/server error text.
-          const alertCode =
-            [
-              ["document-retired", "This app was closed"],
-              ["import-deadline", "Request unconfirmed"],
-              ["module-load", "Failed to fetch dynamically imported module"],
-              ["initialization-order", "Cannot access"],
-              ["missing-global", "is not defined"],
-              ["missing-function", "is not a function"],
-              ["missing-value", "Cannot read properties"],
-              ["frame-preloaded", "App documents must load through"],
-              ["frame-reused", "Reopening an app requires"],
-              ["load-state", "App document cannot be loaded"],
-              ["invalid-file-url", "Invalid app document file URL"],
-              ["owner-expired", "App is no longer active"],
-            ].find((entry) => alert.includes(entry[1]))?.[0] ?? null;
-          return {
-            alertCode,
-            count: frames.length,
-            hidden: Boolean(frame?.hidden),
-            hasSrc: frame?.hasAttribute("src") ?? false,
-            hasSrcdoc: frame?.hasAttribute("srcdoc") ?? false,
-            alerts: document.querySelectorAll(
-              containerSelector + " [role=alert]",
-            ).length,
-          };
-        },{frameSelector:ui.frameSelector,containerSelector:ui.containerSelector})
+        .evaluate(
+          ({ frameSelector, containerSelector }) => {
+            const frames =
+              document.querySelectorAll<HTMLIFrameElement>(frameSelector);
+            const frame = frames[0];
+            const alert =
+              document.querySelector(containerSelector + " [role=alert]")
+                ?.textContent ?? "";
+            // Store fixed categories, never arbitrary browser/server error text.
+            const alertCode =
+              [
+                ["document-retired", "This app was closed"],
+                ["import-deadline", "Request unconfirmed"],
+                ["module-load", "Failed to fetch dynamically imported module"],
+                ["initialization-order", "Cannot access"],
+                ["missing-global", "is not defined"],
+                ["missing-function", "is not a function"],
+                ["missing-value", "Cannot read properties"],
+                ["frame-preloaded", "App documents must load through"],
+                ["frame-reused", "Reopening an app requires"],
+                ["load-state", "App document cannot be loaded"],
+                ["invalid-file-url", "Invalid app document file URL"],
+                ["owner-expired", "App is no longer active"],
+              ].find((entry) => alert.includes(entry[1]))?.[0] ?? null;
+            return {
+              alertCode,
+              count: frames.length,
+              hidden: Boolean(frame?.hidden),
+              hasSrc: frame?.hasAttribute("src") ?? false,
+              hasSrcdoc: frame?.hasAttribute("srcdoc") ?? false,
+              alerts: document.querySelectorAll(
+                containerSelector + " [role=alert]",
+              ).length,
+            };
+          },
+          {
+            frameSelector: ui.frameSelector,
+            containerSelector: ui.containerSelector,
+          },
+        )
         .catch(() => null);
       if (frameState) {
         const child = auditPage
