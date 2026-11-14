@@ -1,0 +1,778 @@
+{
+  "status": "incomplete-or-failed",
+  "scope": "Controlled synthetic CURRENT browser frontends; not Worker/database/provider/network/deployment acceptance",
+  "harnessRevision": "2f555a53eaef9f6df635f6a3dc2d0858d650647e",
+  "servedRevisionSuppliedByRunner": "e54e9e4",
+  "config": {
+    "repetitions": 3,
+    "warmups": 1,
+    "historyPages": 3,
+    "scrollFrames": 30,
+    "seed": 421,
+    "width": 1440,
+    "height": 1000,
+    "fontPolicy": "local-only",
+    "forceGC": false,
+    "cohortDeclaredExclusive": true,
+    "stepTimeoutMs": 30000,
+    "failFast": true
+  },
+  "profiles": [
+    {
+      "name": "long",
+      "messages": 5000,
+      "epics": 50,
+      "tasksPerEpic": 12,
+      "docCharacters": 40000,
+      "members": 16,
+      "archivedFraction": 0.8
+    }
+  ],
+  "environmentStart": {
+    "timestamp": "2026-11-13T20:50:38.603Z",
+    "platform": "linux",
+    "arch": "arm64",
+    "release": "7.3.3-1-aarch64-ARCH",
+    "cpuModels": [
+      "unknown"
+    ],
+    "cpuCount": 4,
+    "totalMemoryBytes": 922783744,
+    "freeMemoryBytes": 597970944,
+    "loadAverage": [
+      6.69,
+      5.46,
+      5.76
+    ],
+    "bun": "1.4.4",
+    "node": "v26.3.0"
+  },
+  "samples": [
+    {
+      "variant": "vanilla",
+      "profile": "long",
+      "repetition": 1,
+      "warmup": true,
+      "status": "failed",
+      "metrics": {
+        "entry.readyWithFontsAndTwoFramesMs": 8240.59999999404,
+        "history1.ms": 6511.800000011921,
+        "history2.ms": 5558.700000017881,
+        "history3.ms": 6301.899999976158,
+        "history.TaskDuration": 19.212833000000003,
+        "history.ScriptDuration": 8.062555,
+        "history.LayoutDuration": 5.33278,
+        "history.RecalcStyleDuration": 1.7947849999999999,
+        "history.LayoutCount": 9,
+        "history.RecalcStyleCount": 82,
+        "scroll.frameP95Ms": 322.19999998807907,
+        "scroll.framesOver50ms": 29,
+        "scroll.TaskDuration": 13.741520000000005,
+        "scroll.ScriptDuration": 3.2707320000000006,
+        "scroll.LayoutDuration": 3.4570570000000007,
+        "scroll.RecalcStyleDuration": 1.1315060000000003,
+        "scroll.LayoutCount": 3,
+        "scroll.RecalcStyleCount": 38,
+        "receiptUpdate.ms": 544.6999999880791,
+        "receiptUpdate.TaskDuration": 0.8409520000000015,
+        "receiptUpdate.ScriptDuration": 0.019531999999999883,
+        "receiptUpdate.LayoutDuration": 0.13274599999999914,
+        "receiptUpdate.RecalcStyleDuration": 0.008537999999999712,
+        "receiptUpdate.LayoutCount": 1,
+        "receiptUpdate.RecalcStyleCount": 7,
+        "draftInput.ms": 298.19999998807907,
+        "composeEcho.ms": 2989,
+        "compose.TaskDuration": 5.919350999999999,
+        "compose.ScriptDuration": 1.389704,
+        "compose.LayoutDuration": 1.273390000000001,
+        "compose.RecalcStyleDuration": 0.19989299999999988,
+        "compose.LayoutCount": 8,
+        "compose.RecalcStyleCount": 44,
+        "threadSwitch.ms": 2883.699999988079,
+        "roomSwitch.ms": 3741
+      },
+      "resources": [
+        {
+          "url": "http://127.0.0.1:41989/b/aabbccdd0011",
+          "phase": "entry",
+          "type": "Document",
+          "transferBytes": 151502,
+          "decodedDataBytes": 524525,
+          "encodedDataBytes": 0,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "@shell/vanilla"
+        },
+        {
+          "url": "http://127.0.0.1:41989/vendor/marked-12.0.2.min.js",
+          "phase": "entry",
+          "type": "Script",
+          "transferBytes": 11141,
+          "decodedDataBytes": 35479,
+          "encodedDataBytes": 10898,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "/vendor/marked-12.0.2.min.js"
+        },
+        {
+          "url": "http://127.0.0.1:41989/vendor/purify-3.1.6.min.js",
+          "phase": "entry",
+          "type": "Script",
+          "transferBytes": 8690,
+          "decodedDataBytes": 21496,
+          "encodedDataBytes": 8449,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "/vendor/purify-3.1.6.min.js"
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap",
+          "phase": "entry",
+          "type": "Stylesheet",
+          "transferBytes": null,
+          "decodedDataBytes": 0,
+          "encodedDataBytes": 0,
+          "completed": false,
+          "failed": "net::ERR_FAILED"
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/me",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 1599,
+          "decodedDataBytes": 1425,
+          "encodedDataBytes": 1425,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/books/aabbccdd0011/agents",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 218,
+          "decodedDataBytes": 46,
+          "encodedDataBytes": 46,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "history1",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "history2",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "history3",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "scroll",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "scroll",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "compose",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "threadSwitch",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/me",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 1599,
+          "decodedDataBytes": 1425,
+          "encodedDataBytes": 1425,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/books/aabbccdd0022/agents",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 218,
+          "decodedDataBytes": 46,
+          "encodedDataBytes": 46,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0022&title=Synthetic%20long%20room%20B",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0022&title=Synthetic%20long%20room%20B",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0022&title=Synthetic%20long%20room%20B",
+          "phase": "roomSwitch",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/svelte/ui.js",
+          "phase": "inboxDeferred",
+          "type": "Script",
+          "transferBytes": 18100,
+          "decodedDataBytes": 56158,
+          "encodedDataBytes": 17872,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "/svelte/ui.js"
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:41989/api/agents",
+          "phase": "inboxDeferred",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        }
+      ],
+      "fixture": {
+        "seed": 421,
+        "digests": [
+          "e2be3dd57c02962c7b9e9edde56d0a7f3505147f7ccd424361d24ab49e189cf6",
+          "3e29eefc1c82cc0162f5b6c4e0abe0fb00f2f2584c28ac1af71ffcbd8870cce5"
+        ],
+        "totalMessagesPerRoom": 5000,
+        "epicsPerRoom": 50,
+        "tasksPerRoom": 600,
+        "initialStateMessages": [
+          110,
+          110
+        ]
+      },
+      "lastCheckpoint": {
+        "phase": "inboxDeferred",
+        "at": "2026-11-13T20:51:48.093Z",
+        "commands": {
+          "older": 5,
+          "msg": 1,
+          "doc.get": 1
+        },
+        "events": {
+          "state": 2,
+          "older": 5,
+          "receipts": 1,
+          "msg": 1,
+          "doc": 1
+        }
+      },
+      "entryLayout": {
+        "scrollTop": 8785,
+        "scrollHeight": 9399,
+        "clientHeight": 614,
+        "renderedMessages": 60,
+        "firstDOM": "m4901",
+        "firstVisible": "m4995"
+      },
+      "entryCounters": {
+        "Timestamp": 178479.326282,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 26,
+        "Frames": 4,
+        "JSEventListeners": 388,
+        "LayoutObjects": 2905,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 5384,
+        "Resources": 9,
+        "ContextLifecycleStateObservers": 37,
+        "V8PerContextDatas": 4,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 26,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 2,
+        "ArrayBufferContents": 2,
+        "LayoutCount": 11,
+        "RecalcStyleCount": 31,
+        "LayoutDuration": 1.680004,
+        "RecalcStyleDuration": 0.871273,
+        "DevToolsCommandDuration": 1.046473,
+        "ScriptDuration": 2.513313,
+        "V8CompileDuration": 0.099076,
+        "TaskDuration": 7.981046,
+        "TaskOtherDuration": 1.770907,
+        "ThreadTime": 5.544031,
+        "ProcessTime": 8.7,
+        "JSHeapUsedSize": 5944096,
+        "JSHeapTotalSize": 7581696,
+        "FirstMeaningfulPaint": 0,
+        "DomContentLoaded": 178472.655985,
+        "NavigationStart": 178470.592564
+      },
+      "fontEvidence": {
+        "family": "\"Schibsted Grotesk\", system-ui, sans-serif",
+        "size": "16px"
+      },
+      "historyBefore": {
+        "scrollTop": 8785,
+        "scrollHeight": 9399,
+        "clientHeight": 614,
+        "renderedMessages": 60,
+        "firstDOM": "m4901",
+        "firstVisible": "m4995"
+      },
+      "historyAfter": {
+        "scrollTop": 15361,
+        "scrollHeight": 55562,
+        "clientHeight": 614,
+        "renderedMessages": 360,
+        "firstDOM": "m4401",
+        "firstVisible": "m4566"
+      },
+      "scrollFramesMs": [
+        4.699999988079071,
+        138.90000000596046,
+        8331.59999999404,
+        316.19999998807907,
+        227.30000001192093,
+        322.19999998807907,
+        177.90000000596046,
+        195.5,
+        173.90000000596046,
+        207.30000001192093,
+        265.7999999821186,
+        244,
+        239.2000000178814,
+        218.7999999821186,
+        187,
+        147.40000000596046,
+        170.40000000596046,
+        185.09999999403954,
+        224.5,
+        180.69999998807907,
+        222.80000001192093,
+        184.19999998807907,
+        146.5,
+        139.40000000596046,
+        128.90000000596046,
+        131.80000001192093,
+        133.89999997615814,
+        126.40000000596046,
+        120.09999999403954,
+        115.30000001192093
+      ],
+      "scrollFrameSummary": {
+        "n": 30,
+        "min": 4.699999988079071,
+        "p50": 180.69999998807907,
+        "p95": 322.19999998807907,
+        "max": 8331.59999999404,
+        "mean": 453.58999999960264
+      },
+      "receiptMarks": {
+        "before": 0,
+        "after": 1
+      },
+      "updateAnchor": {
+        "before": {
+          "scrollTop": 35179,
+          "scrollHeight": 70972,
+          "clientHeight": 614,
+          "renderedMessages": 460,
+          "firstDOM": "m4235",
+          "firstVisible": "m4612"
+        },
+        "after": {
+          "scrollTop": 35179,
+          "scrollHeight": 70972,
+          "clientHeight": 614,
+          "renderedMessages": 460,
+          "firstDOM": "m4235",
+          "firstVisible": "m4612"
+        },
+        "preserved": true
+      },
+      "failedPhase": "inboxDeferred",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: getByRole('dialog', { name: 'Inbox', exact: true })\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByRole('dialog', { name: 'Inbox', exact: true }) with timeout 30000ms\n  - waiting for getByRole('dialog', { name: 'Inbox', exact: true })\n",
+      "probeAtFailure": {
+        "pending": {
+          "key": "inboxDeferred",
+          "gesture": "click",
+          "start": 59578.09999999404
+        },
+        "results": {
+          "history1": {
+            "ms": 6511.800000011921,
+            "start": 9475.199999988079,
+            "end": 15987.09999999404
+          },
+          "history2": {
+            "ms": 5558.700000017881,
+            "start": 16612.19999998808,
+            "end": 22170.90000000596
+          },
+          "history3": {
+            "ms": 6301.899999976158,
+            "start": 22754.80000001192,
+            "end": 29056.80000001192
+          },
+          "receiptUpdate": {
+            "ms": 544.6999999880791,
+            "start": 44407.5,
+            "end": 44952.19999998808
+          },
+          "draftInput": {
+            "ms": 298.19999998807907,
+            "start": 46354.40000000596,
+            "end": 46652.69999998808
+          },
+          "composeEcho": {
+            "ms": 2989,
+            "start": 48449.19999998808,
+            "end": 51438.19999998808
+          },
+          "threadSwitch": {
+            "ms": 2883.699999988079,
+            "start": 52288.40000000596,
+            "end": 55172.09999999404
+          },
+          "roomSwitch": {
+            "ms": 3741,
+            "start": 55560,
+            "end": 59301.09999999404
+          }
+        }
+      },
+      "layoutAtFailure": {
+        "scrollTop": 8785,
+        "scrollHeight": 9399,
+        "clientHeight": 614,
+        "renderedMessages": 60,
+        "firstDOM": "m4901"
+      },
+      "blockedExternalRequests": [
+        "https://fonts.googleapis.com/css2"
+      ],
+      "pageErrors": [],
+      "fixtureTraffic": {
+        "http": {
+          "/api/me": 2,
+          "/api/books/aabbccdd0011/agents": 1,
+          "/api/agents": 15,
+          "/api/books/aabbccdd0022/agents": 1
+        },
+        "commands": {
+          "older": 5,
+          "msg": 1,
+          "doc.get": 1
+        },
+        "events": {
+          "state": 2,
+          "older": 5,
+          "receipts": 1,
+          "msg": 1,
+          "doc": 1
+        },
+        "deliveredUTF8Bytes": 428526,
+        "unsupported": []
+      }
+    }
+  ],
+  "gaps": [
+    "No real Worker/D1/R2/AI/provider/CRDT persistence or production network costs. HTTP/WS fixtures are deliberately simulated.",
+    "Fresh contexts and cache disabled; browser process, OS files, DNS/TLS and local static server are warm. Browser launch is excluded.",
+    "Default local-only font policy blocks external fonts; native local fonts remain measured. Optional network-public-fonts changes this experiment.",
+    "Desktop headless Chromium/reduced motion only; no iOS/Safari/mobile/IME/hardware GPU claim.",
+    "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
+    "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
+    "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
+    "Deferred bytes cover only exercised interactions and Inbox. Editor/Yjs/MCP/media/tool graphs not visited are unmeasured, not zero.",
+    "Synthetic workload is deterministic, not representative production telemetry. Full raw samples and failures are retained."
+  ],
+  "chromium": "158.0.8127.18",
+  "stoppedAfterInvalidSample": true,
+  "assetChangesDuringRun": [],
+  "summaries": [
+    {
+      "profile": "long",
+      "variant": "vanilla",
+      "samples": 0,
+      "passed": 0,
+      "failed": 0,
+      "metrics": {}
+    },
+    {
+      "profile": "long",
+      "variant": "svelte",
+      "samples": 0,
+      "passed": 0,
+      "failed": 0,
+      "metrics": {}
+    }
+  ],
+  "assets": [
+    {
+      "key": "@shell/vanilla",
+      "sourcePath": "app.html",
+      "sourceSHA256": "e2c29a3751fa7b24b233ace07c534f4b2729034294de32c25f2e2a0ecd5fe27c",
+      "servedSHA256": "e2c29a3751fa7b24b233ace07c534f4b2729034294de32c25f2e2a0ecd5fe27c",
+      "rawBytes": 524525,
+      "gzipBytes": 151254,
+      "type": "text/html;charset=utf-8",
+      "injectedVersion": false
+    },
+    {
+      "key": "@shell/svelte",
+      "sourcePath": "app-svelte.html",
+      "sourceSHA256": "6e64cda97e3c9e59ebb11dc51aaafb81dac1aca9fa3044309e64283672d88c82",
+      "servedSHA256": "8dde3cfdd219ae8cff36b23b046c47dc757090480cfa431c199639727ae6e4c8",
+      "rawBytes": 1868,
+      "gzipBytes": 896,
+      "type": "text/html;charset=utf-8",
+      "injectedVersion": true
+    },
+    {
+      "key": "/vendor/marked-12.0.2.min.js",
+      "sourcePath": "vendor/marked-12.0.2.min.js",
+      "sourceSHA256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "servedSHA256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "rawBytes": 35479,
+      "gzipBytes": 10898,
+      "type": "text/javascript;charset=utf-8",
+      "injectedVersion": false
+    },
+    {
+      "key": "/vendor/purify-3.1.6.min.js",
+      "sourcePath": "vendor/purify-3.1.6.min.js",
+      "sourceSHA256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "servedSHA256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "rawBytes": 21496,
+      "gzipBytes": 8449,
+      "type": "text/javascript;charset=utf-8",
+      "injectedVersion": false
+    },
+    {
+      "key": "/svelte/ui.js",
+      "sourcePath": "svelte/ui.js",
+      "sourceSHA256": "18d76179998c34d00ce840f0baa46d08d837c566c8f6360cccd350fa81f079ce",
+      "servedSHA256": "18d76179998c34d00ce840f0baa46d08d837c566c8f6360cccd350fa81f079ce",
+      "rawBytes": 56158,
+      "gzipBytes": 17872,
+      "type": "text/javascript;charset=utf-8",
+      "injectedVersion": false
+    }
+  ],
+  "environmentEnd": {
+    "timestamp": "2026-11-13T20:52:19.029Z",
+    "platform": "linux",
+    "arch": "arm64",
+    "release": "7.3.3-1-aarch64-ARCH",
+    "cpuModels": [
+      "unknown"
+    ],
+    "cpuCount": 4,
+    "totalMemoryBytes": 922783744,
+    "freeMemoryBytes": 503902208,
+    "loadAverage": [
+      4.12,
+      5,
+      5.57
+    ],
+    "bun": "1.4.4",
+    "node": "v26.3.0"
+  },
+  "byteSummary": []
+}

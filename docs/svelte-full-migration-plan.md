@@ -47,7 +47,7 @@ Evidence: `docs/svelte-migration/feature-parity.md`, `inventory.md` and reproduc
 
 ## M1 — Typed architecture and schema-derived contracts
 
-- [ ] Frontend, backend, shared contracts and tooling pass separate strict TypeScript checks; Svelte checking reports zero errors/warnings. Build/type dependencies are explicit and reproducible from the frozen lockfile.
+- [x] Frontend, backend, shared contracts and tooling pass separate strict TypeScript checks; Svelte checking reports zero errors/warnings. Build/type dependencies are explicit and reproducible from the frozen lockfile.
 - [ ] Shared wire types derive from runtime schemas. Remove the manually duplicated DTO/interface-versus-validator definitions for migrated operations. A schema edit changes the inferred consumer type.
 - [ ] Validate untrusted HTTP inputs/responses and WebSocket commands/events at their boundaries. Cover nullable values, malformed nested data, invalid discriminants and rolling compatibility with stored/older payloads. Type assertions alone are not validation.
 - [ ] Keep shared runtime schemas browser-safe. No database bindings, credentials, environment objects, Node/Worker runtime modules or backend implementations are exported as shared values. Normalize database representations before exposing public DTOs.
@@ -70,13 +70,13 @@ Evidence: `docs/svelte-migration/api-coverage.md`, generated/inferred API declar
 
 ## M3 — Exactly one Tailwind stylesheet
 
-- [ ] Install Tailwind through its Vite plugin. Exactly one first-party authored stylesheet exists for the new app: `svelte/styles/tailwind.css`. Import it once at the Svelte root; point component-generator configuration at that same file.
+- [x] Install Tailwind through its Vite plugin. Exactly one first-party authored stylesheet exists for the new app: `svelte/styles/tailwind.css`. Import it once at the Svelte root; point component-generator configuration at that same file.
 - [ ] The file contains only Tailwind imports/configuration, semantic theme tokens, light/dark token assignments, required font registrations, token-based animation definitions and explicitly permitted vendor imports. All application/component presentation uses Tailwind utilities and variants.
-- [ ] No Svelte `<style>` blocks, CSS modules, SCSS/Sass/Less, additional app stylesheets, CSS-in-JS, bespoke component selectors, first-party inline styles/style directives, DOM style mutations or first-party runtime stylesheet injection remain. Do not move old CSS into the one file, hide it behind `@apply`/custom utilities, or pass custom style objects through a vendor API.
-- [ ] Remove the legacy stylesheet `public/app-svelte.css` as an authored dependency. The Svelte build emits one generated application CSS asset from the sole entry; disable application CSS splitting and component-style injection. Generated output is not another authored source. Vendor runtime styling below is the only permitted exception.
+- [ ] No Svelte `<style>` blocks, CSS modules, SCSS/Sass/Less, additional app stylesheets, CSS-in-JS, bespoke component selectors, first-party inline styles/style directives, DOM style mutations or first-party runtime stylesheet injection remain. Do not move old CSS into the one file, hide it behind `@apply`/custom utilities, or pass custom style objects through a vendor API except the narrowly approved xterm semantic theme options below.
+- [x] Remove the legacy stylesheet `public/app-svelte.css` as an authored dependency. The Svelte build emits one generated application CSS asset from the sole entry; disable application CSS splitting and component-style injection. Generated output is not another authored source. Vendor runtime styling below is the only permitted exception.
 - [ ] Use complete statically discoverable utility classes and typed variant maps. Avoid runtime class-name concatenation that Tailwind cannot discover. Theme colors, fonts, radii, shadows, spacing and motion use semantic tokens rather than repeated feature-specific values.
 - [ ] Markdown, tables, rich messages, viewers, portals, dialogs and editor wrappers are styled through Tailwind classes, including descendant/data-state variants when necessary. Tailwind-generated typography utilities are allowed; an imported second theme stylesheet is not.
-- [ ] A required `check:styles` audit enforces these rules in first-party source and actual production artifacts. Include HTML/template strings, generated/copied component source, TS/JS style objects, CSSOM calls, imports and lazy entries; a grep for `.css` alone is insufficient.
+- [x] A required `check:styles` audit enforces these rules in first-party source and actual production artifacts. Include HTML/template strings, generated/copied component source, TS/JS style objects, CSSOM calls, imports and lazy entries; a grep for `.css` alone is insufficient.
 
 ### Small third-party styling allowlist
 
@@ -87,11 +87,14 @@ Only the following families may supply styling that is not generated from applic
 | CodeMirror 6 view internals         | Required editor structure/behavior supplied by the dependency                          |
 | Yjs/`y-codemirror.next` integration | Required collaborator caret/selection rendering supplied by the dependency             |
 | Bits UI/Floating UI internals       | Required runtime positioning/measurement of headless overlays, not application theming |
+| xterm terminal rendering internals | Pinned terminal structural CSS, vendor rendering geometry and approved Studio semantic theme options |
 
-- [ ] The manifest is limited to these three narrowly scoped families; unused entries are absent. No wildcard permission for `node_modules`, framework CSS, copied shadcn source or arbitrary vendor themes exists.
+- [ ] The manifest is limited to these four narrowly scoped families; unused entries are absent. No wildcard permission for `node_modules`, framework CSS, copied shadcn source or arbitrary vendor themes exists.
 - [ ] Static vendor CSS imports enter through the sole Tailwind entry. Necessary vendor-injected styles/inline geometry are attributed to the named dependency and tested. Forwarding genuine primitive positioning props is allowed; adding first-party presentation rules to them is not.
 - [ ] App colors, typography and component appearance still come from Tailwind/Studio tokens. First-party CodeMirror theme CSS objects and legacy override styles are removed. Use Tailwind utilities to adapt vendor surfaces.
 - [ ] Fonts are assets, not a second theme stylesheet: register required font files in the sole entry and preserve their required notices. Do not retain separate Google Fonts CSS links or import `tw-animate-css`/other style packs without an explicit amendment to this policy.
+
+The maintainer explicitly approved the scoped xterm amendment on 2026-11-13. Pin `@xterm/xterm` 5.5.0 and `@xterm/addon-fit` 0.10.0; import upstream structural CSS only through the sole Tailwind entry. Vendor-owned terminal rendering/measurement styles are allowed only inside its terminal subtree. Native renderer options may use the resolved Studio background, foreground, cursor, selection and monospace font tokens; terminal ANSI/true-color output remains protocol data. Surrounding controls remain atomic Tailwind components. No arbitrary theme objects, first-party CSS injectors, copied vendor styles or general dependency exemption is allowed. Exact sources/digests, lifecycle and rejection gates are specified in [the approved amendment](svelte-migration/xterm-vendor-amendment-proposal.md); approval does not prove implementation or runtime acceptance.
 
 Adding another exception or relaxing this rule requires an explicit maintainer amendment before completion. Preserve vanilla's CSS in its isolated version; it is never an allowed Svelte dependency.
 
@@ -100,6 +103,8 @@ Adding another exception or relaxing this rule requires an explicit maintainer a
 Here, Studio means **deco Studio at https://studio.decocms.com/**, not its marketing site or a generic shadcn palette. Match its typography and semantic colors; adapt the product layout for vibebook's workflows.
 
 Reference inspected on 2026-11-12: [Studio stylesheet](https://studio.decocms.com/assets/index-69S-cBsb.css), SHA-256 `eb3311919cdb7d1d1ff2dfb8d422e3d449526450239c572f194b35de1f4aaafb`. Its root tokens specify Inter variable for sans-serif UI and CommitMono for monospace; its semantic font-weight mapping is normal 400, medium 500, semibold 500 and bold 600. A Switzer font-face also exists in that stylesheet; its presence alone is not evidence that every heading uses it.
+
+Authenticated workspace reference was additionally frozen on 2026-11-13: [computed roles and privacy-safe control crops](svelte-migration/studio-authenticated/README.md). The active public stylesheet is [index-DYPWHH-M.css](https://studio.decocms.com/assets/index-DYPWHH-M.css), SHA-256 `be4f9189010f38e29e5035103f18eedb86fe7a700f42c2ee7db3b951bf619f37`. The sample confirms actual Inter/CommitMono loading; the dark sample uses a temporary CSS class that was restored. Final app/interactive comparison remains required.
 
 Selected observed tokens, to make the intended palette concrete:
 
@@ -143,7 +148,7 @@ Evidence: component catalog, component/interaction tests, accessibility results 
 
 - [ ] Port every feature-matrix row to typed Svelte components and typed services, using the shared atomic design system and Tailwind theme. Routing, home/room navigation, composer and account UI are included, not just the already-migrated room panels.
 - [ ] Port document/editor lifecycle, files/viewers, embeds/MCP connections, agents/sandboxes, mobile sheets and PWA/push/install flows. Existing third-party editor/protocol internals remain dependencies; first-party integration code is TypeScript.
-- [ ] Remove `svelte/legacy/host.js` and its preview dependency/mount compatibility layer after replacement. The final preview module graph contains no legacy host, copied vanilla application entry or hidden iframe running vanilla to provide missing features.
+- [x] Remove `svelte/legacy/host.js` and its preview dependency/mount compatibility layer after replacement. The final preview module graph contains no legacy host, copied vanilla application entry or hidden iframe running vanilla to provide missing features.
 - [ ] Remove first-party string-based application rendering, direct DOM replacement/event wiring and component-style injection replaced by Svelte. Narrow, typed vendor/DOM adapters are permitted for actual interop; recreating the monolithic host inside an adapter is not.
 - [ ] Preserve drafts, scroll/history/reply context and keyed state during ordinary updates. Scope drafts to room/thread. Dispose sockets, reconnect timers, observers, subscriptions and Yjs providers on transitions, including delayed imports and queued callbacks.
 - [ ] Verify both local actions and remote updates for the complete matrix, with persistence after reload and simultaneous vanilla/Svelte clients. Maintain i18n, authentication/membership behavior, mobile interactions and current vanilla feature compatibility.
@@ -153,7 +158,9 @@ Evidence: completed feature matrix, module-graph report, first-party JS/legacy-r
 
 ## M7 — Developer experience, regression and performance gates
 
-- [ ] Provide documented frontend HMR with the local Worker/backend. Cold start, component edits, shared-contract edits and reloads work without manually rebuilding the app for each change. Production behavior stays separate from development URLs/code.
+- [x] Provide documented frontend HMR with the local Worker/backend. Cold start, component edits, shared-contract edits and reloads work without manually rebuilding the app for each change. Production behavior stays separate from development URLs/code. Checkpoint evidence: `eeedb13`, [actual Worker/Vite browser run and exact source-restoration receipt](svelte-migration/app-hmr/2026-11-14/README.md). Deferred-view and owned bootstrap-generator revalidation: [run 43580277105, seven exact source restorations and cleanup receipt](svelte-migration/app-hmr/2026-11-14-deferred-generator/README.md), source head `674b8fb` / tested merge `8f50d87d28a365515fb11f8890227d456a1c5b9e`. Revalidate at the final deployed revision.
+Source workflow: [full app development](svelte-app-development.md). This checked development milestone does not complete the remaining M7 browser/performance gates.
+
 - [ ] Required checks cover frontend/backend/shared/tooling typing, protocol/RPC tests, bundle isolation, style policy, component behavior, build/version consistency, formatting and the relevant browser suite. Fresh install/build instructions work in a clean checkout.
 - [ ] Frontend releases keep deterministic asset/update versions, all generated preview assets are consistent, and no preview build rewrites vanilla assets. Review source-to-artifact boundaries, including independently loaded editor code.
 - [ ] Real browser checks cover English/Portuguese, light/dark, desktop/mobile, keyboard flows, permission/error states, two concurrent clients and collaborative editing. No uncaught errors or failed required assets remain.
@@ -205,3 +212,5 @@ Sign-off fields: deployed commit; check-run URLs; vanilla URL; Svelte URL; Studi
 - [Zod Mini](https://zod.dev/packages/mini)
 
 The earlier `svelte-rollout-plan.md` describes the initial online-preview rollout. This file is the acceptance specification for the complete migration, including the subsequent design-system and Studio-theme requirements.
+
+Verified source checkpoint (2026-11-14): `b247805`, [run 43549278094](https://github.com/vibegui/vibebook.dev/actions/runs/43549278094). Linux/macOS frozen-install checks and the production RoomLayout Chromium job pass. The checked source criteria above are supported by the strict configs/client-boundary checks, direct native root composition, deleted host/registry/stylesheet, full style audit (287 sources), sole emitted CSS/font validation and committed asset consistency. The layout browser uses neutral snippets; it does not establish integrated Worker, provider, hardware or deployed behavior. Other criteria, feature rows and final sign-off remain open.

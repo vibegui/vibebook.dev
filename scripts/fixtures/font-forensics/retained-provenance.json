@@ -1,0 +1,43 @@
+{
+  "diagnosticOnly": true,
+  "accepted": false,
+  "sourceSHA256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+  "candidateSHA256": "a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903",
+  "candidateBytes": 241964,
+  "sfntSHA256": "2ba36b5049982138f0506410fed570209432641ecdf583445b1d42732431d27d",
+  "originalGlyphCount": 2937,
+  "candidateGlyphCount": 2937,
+  "retainedGlyphs": 1834,
+  "exactOldSubsetCmapCodepoints": 1011,
+  "originalGIDsVerified": true,
+  "originalRetainedGlyfAndGvarBlocksVerified": true,
+  "originalNotdefOutlineVerified": true,
+  "unchangedTables": [
+    "GDEF",
+    "GPOS",
+    "GSUB",
+    "HVAR",
+    "MVAR",
+    "OS/2",
+    "STAT",
+    "avar",
+    "fvar",
+    "hhea",
+    "hmtx",
+    "maxp",
+    "name",
+    "post"
+  ],
+  "tools": {
+    "fontTools": "4.68.0",
+    "Brotli": "1.2.1",
+    "python": "3.13.11"
+  },
+  "gaps": [
+    "Browser sanitizer/shaping/raster UNRUN; candidate inactive",
+    "Private fontTools Subsetter state glyphs_retained used only as pinned diagnostic closure metadata; no app runtime dependency",
+    "No performance savings claim; unchanged full layout and metrics intentionally conservative"
+  ],
+  "procStatus": "VmHWM:\t   86700 kB\nVmRSS:\t   81652 kB",
+  "ruMaxRSSKiB": 278136
+}

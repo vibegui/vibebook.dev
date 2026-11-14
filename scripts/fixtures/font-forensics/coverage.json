@@ -1,0 +1,393 @@
+{
+  "failedRasterRows": [
+    {
+      "index": 0,
+      "axes": {},
+      "fixture": 0
+    },
+    {
+      "index": 5,
+      "axes": {
+        "opsz": 14
+      },
+      "fixture": 0
+    },
+    {
+      "index": 10,
+      "axes": {
+        "opsz": 14
+      },
+      "fixture": 0
+    },
+    {
+      "index": 15,
+      "axes": {
+        "opsz": 23
+      },
+      "fixture": 0
+    },
+    {
+      "index": 20,
+      "axes": {
+        "opsz": 32
+      },
+      "fixture": 0
+    },
+    {
+      "index": 30,
+      "axes": {
+        "wght": 400
+      },
+      "fixture": 0
+    },
+    {
+      "index": 40,
+      "axes": {
+        "wght": 900
+      },
+      "fixture": 0
+    }
+  ],
+  "coverage": [
+    {
+      "text": "AVATAR To Wa office affine ffi fl fi 0123456789 \u20ac \u00a3 $ \u2014 \u2026 \u201cquoted\u201d \u2192 \u2713",
+      "codepoints": [
+        {
+          "point": "U+0041",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0056",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0054",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0052",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0020",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+006F",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0057",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0061",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0066",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0069",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0063",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0065",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+006E",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+006C",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0030",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0031",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0032",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0033",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0034",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0035",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0036",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0037",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0038",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0039",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+20AC",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00A3",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0024",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2014",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2026",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+201C",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0071",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0075",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0074",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0064",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+201D",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2192",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2713",
+          "original": true,
+          "candidate": true
+        }
+      ]
+    },
+    {
+      "text": "\u20ac \u00a3 \u201c \u201d \u2018 \u2019 \u00a0 ac\u0327a\u0303o cafe\u0301 \u00c0 \u00c1 \u00c2 \u00c3 \u00c7 \u00c9 \u00ca \u00cd \u00d3 \u00d4 \u00d5 \u00da \u00dc",
+      "codepoints": [
+        {
+          "point": "U+20AC",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0020",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00A3",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+201C",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+201D",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2018",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+2019",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00A0",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0061",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0063",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0327",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0303",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+006F",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0066",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0065",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+0301",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C0",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C1",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C2",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C3",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C7",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00C9",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00CA",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00CD",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00D3",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00D4",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00D5",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00DA",
+          "original": true,
+          "candidate": true
+        },
+        {
+          "point": "U+00DC",
+          "original": true,
+          "candidate": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "scope": "Read-only SFNT directory/slice metadata; no font decoder, shaping, generation or compression ablations",
+  "originalSourceSHA256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+  "originalTableView": "Verified CmapTrimOnly full-original non-cmap SFNT plus exact-original cmap from core; head checksum excluded",
+  "sourceControlSFNTSHA256": "810e8ea438cc3949faff480ebd42ff8322d4026fd7af5c5ea99a17e457e99649",
+  "coreSFNTSHA256": "4bea4eb74afb3e358c1f71601af89c3a4e120cf191d5ad1765b069d868307324",
+  "coreFontSHA256": "9e3f607808332c30ae74002724fbca992a2b8970008616105496d829a9cd2b30",
+  "rows": [
+    {
+      "tag": "gvar",
+      "originalBytes": 456620,
+      "coreBytes": 358558,
+      "saved": 98062,
+      "identical": false
+    },
+    {
+      "tag": "GPOS",
+      "originalBytes": 153994,
+      "coreBytes": 153994,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "glyf",
+      "originalBytes": 138378,
+      "coreBytes": 107899,
+      "saved": 30479,
+      "identical": false
+    },
+    {
+      "tag": "post",
+      "originalBytes": 32773,
+      "coreBytes": 32773,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "cmap",
+      "originalBytes": 25900,
+      "coreBytes": 25900,
+      "saved": 0,
+      "identical": "original restored"
+    },
+    {
+      "tag": "GSUB",
+      "originalBytes": 24406,
+      "coreBytes": 24406,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "loca",
+      "originalBytes": 11752,
+      "coreBytes": 11752,
+      "saved": 0,
+      "identical": false
+    },
+    {
+      "tag": "hmtx",
+      "originalBytes": 11748,
+      "coreBytes": 11748,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "HVAR",
+      "originalBytes": 11239,
+      "coreBytes": 11239,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "GDEF",
+      "originalBytes": 8322,
+      "coreBytes": 8322,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "name",
+      "originalBytes": 3404,
+      "coreBytes": 3404,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "STAT",
+      "originalBytes": 220,
+      "coreBytes": 220,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "fvar",
+      "originalBytes": 182,
+      "coreBytes": 182,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "MVAR",
+      "originalBytes": 168,
+      "coreBytes": 168,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "OS/2",
+      "originalBytes": 96,
+      "coreBytes": 96,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "head",
+      "originalBytes": 54,
+      "coreBytes": 54,
+      "saved": 0,
+      "identical": false
+    },
+    {
+      "tag": "avar",
+      "originalBytes": 52,
+      "coreBytes": 52,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "hhea",
+      "originalBytes": 36,
+      "coreBytes": 36,
+      "saved": 0,
+      "identical": true
+    },
+    {
+      "tag": "maxp",
+      "originalBytes": 32,
+      "coreBytes": 32,
+      "saved": 0,
+      "identical": true
+    }
+  ],
+  "glyphs": 2937,
+  "originalNonempty": 2915,
+  "coreNonempty": 2181,
+  "removed": 734,
+  "changedRetainedGlyphs": 0,
+  "manifestRetained": 2203,
+  "coreBytes": 309200
+}

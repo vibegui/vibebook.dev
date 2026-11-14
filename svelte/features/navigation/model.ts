@@ -1,4 +1,7 @@
 import type { Epic, Message } from "../../../shared/room";
+/** Keep a directly opened archived epic in its original tree position. */
+export const activeEpics = (epics: readonly Epic[], thread: string) =>
+  epics.filter((epic) => !epic.archived || epic.id === thread);
 
 export type EpicForest = {
   roots: Epic[];

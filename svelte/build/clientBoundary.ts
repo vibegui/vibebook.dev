@@ -4,14 +4,25 @@ import { readdir, stat } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin, ResolverFunction } from "vite";
+import { canonicalFilesystemPath } from "./filesystemPaths";
 
 /** Shared by browser builders; keep backend and private configuration out of emitted assets. */
 export function createClientBoundaryPolicy(options: { projectRoot: string }) {
-  const root = realpathSync(resolve(options.projectRoot));
-  const serverRoots = [
-    resolve(root, "src"),
-    resolve(root, "packages/server-only"),
-  ];
+  const logicalRoot = resolve(options.projectRoot);
+  const root = realpathSync(logicalRoot);
+  const roots = [...new Set([logicalRoot, root])];
+  const serverRoots = roots.flatMap((base) =>
+    ["src", "packages/server-only"].flatMap((path) => {
+      const file = resolve(base, path);
+      return [file, canonicalFilesystemPath(file)];
+    }),
+  );
+  const toolingRoots = roots.flatMap((base) =>
+    ["scripts", "cli", "svelte/build"].flatMap((path) => {
+      const file = resolve(base, path);
+      return [file, canonicalFilesystemPath(file)];
+    }),
+  );
   const builtins = new Set(
     builtinModules.flatMap((name) => [name, `node:${name}`]),
   );
@@ -21,7 +32,7 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
     id
       .split(/[/\\]/)
       .some((part) =>
-        /^(?:\.env(?:\..*)?|\.dev\.vars(?:\..*)?|\.git|\.ssh|\.vibebook)$/i.test(
+        /^(?:\.env(?:\..*)?|\.dev\.vars(?:\..*)?|\.git|\.ssh|\.vibebook|\.wrangler|\.api-types|\.claude|\.codex|\.cursor|\.cache|\.vercel|\.netlify)$/i.test(
           part,
         ),
       );
@@ -36,11 +47,27 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
   // The server/ directory convention belongs to this project. Dependencies can
   // legitimately publish browser-safe helpers under their own server/ directory.
   const serverDirectory = (id: string) => {
-    if (!within(id, root)) return false;
-    const path = relative(root, id);
+    const base = roots.find((directory) => within(id, directory));
+    if (!base) return false;
+    const path = relative(base, id);
     return (
       !/(?:^|[/\\])node_modules[/\\]/.test(path) &&
       /(?:^|[/\\])server[/\\]/.test(path)
+    );
+  };
+  const toolingFile = (id: string) => {
+    if (toolingRoots.some((directory) => within(id, directory))) return true;
+    const base = roots.find((directory) => within(id, directory));
+    if (!base) return false;
+    const path = relative(base, id).replaceAll("\\", "/");
+    if (/(?:^|\/)node_modules\//.test(path)) return false;
+    return (
+      toolingRoots.some((directory) => within(id, directory)) ||
+      /(?:^|\/)(?:vite|svelte|tailwind|postcss)\.config\.[^/]+$/.test(path) ||
+      /(?:^|\/)tsconfig[^/]*\.json$/.test(path) ||
+      /^(?:wrangler[^/]*\.(?:jsonc?|toml)|package\.json|bun\.lockb?|components\.json|AGENTS\.md)$/.test(
+        path,
+      )
     );
   };
   const reason = (source: string): string | undefined => {
@@ -51,28 +78,31 @@ export function createClientBoundaryPolicy(options: { projectRoot: string }) {
       return "a server runtime module";
     // Check unresolved IDs too, including modules another plugin declares external.
     if (privatePath(id)) return "private configuration or credential metadata";
+    if (/\.(?:pem|key)$/i.test(id)) return "private key material";
     if (serverFile(id)) return "a server-only file";
     if (!isAbsolute(id)) return;
     // Check real paths too: an alias or symlink must not hide a backend module.
-    let file = id;
-    try {
-      file = realpathSync(id);
-    } catch {
-      /* Vite will report missing modules itself. */
-    }
+    const file = canonicalFilesystemPath(id);
     if (privatePath(file))
       return "private configuration or credential metadata";
+    if (/\.(?:pem|key)$/i.test(file)) return "private key material";
     if (
       serverRoots.some(
         (directory) => within(file, directory) || within(id, directory),
       )
     )
       return "backend code";
+    if (toolingFile(id) || toolingFile(file))
+      return "build tooling or project configuration";
     if (serverFile(file) || serverDirectory(file) || serverDirectory(id))
       return "a server-only file";
   };
   function assertClient(id: string, importer?: string) {
-    const why = reason(id);
+    const why =
+      reason(id) ??
+      (id.startsWith(".") && importer && isAbsolute(clean(importer))
+        ? reason(resolve(dirname(clean(importer)), clean(id)))
+        : undefined);
     if (why)
       throw new Error(
         `[client-boundary] Browser code cannot import ${why}: ${id}${importer ? ` (from ${importer})` : ""}. Move browser-safe values and contracts to shared/; use import type for backend types.`,

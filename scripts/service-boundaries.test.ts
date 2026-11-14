@@ -1,4 +1,4 @@
-import { expect, mock, test } from "bun:test";
+import { afterEach, expect, mock, test } from "bun:test";
 // External service answers are checked where they come in (review, room 1935). These modules reach the Workers
 // runtime through their imports; the names they use are enough here.
 mock.module("cloudflare:workers", () => ({
@@ -9,11 +9,18 @@ mock.module("cloudflare:workers", () => ({
 const { fs, FsVm, FsExec, FsCreated } = await import("../src/sandbox");
 const { publicConn } = await import("../src/mcpconn");
 
+const originalFetch = globalThis.fetch;
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
 const answer = (status: number, body: unknown) => {
-  globalThis.fetch = (async () =>
-    new Response(typeof body === "string" ? body : JSON.stringify(body), {
-      status,
-    })) as unknown as typeof fetch;
+  globalThis.fetch = Object.assign(
+    async () =>
+      new Response(typeof body === "string" ? body : JSON.stringify(body), {
+        status,
+      }),
+    { preconnect: originalFetch.preconnect },
+  );
 };
 
 test("freestyle: well-formed answers parse, malformed ones are errors with the path (ids hidden)", async () => {

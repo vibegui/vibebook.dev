@@ -7,6 +7,8 @@
 // Test people (@test.vibebook.dev) are left out. Check: bun scripts/reports-check.ts (formatting only).
 import { AiSpend } from "../shared/schemas";
 import type { Env } from "./index";
+import * as z from "zod/mini";
+import { WorkerAnalytics, ZoneAnalytics, KindAnalytics, BytesAnalytics, readAnalyticsResponse, readZoneResponse, parseSpendKey, parseIssueDimensions, reportError } from "./report-analytics";
 
 const DAY = 86_400_000;
 const BRT = 3 * 3600_000; // São Paulo, no DST since 2019
@@ -60,9 +62,9 @@ export async function growthReport(env: Env, now = Date.now()) {
       )
         .bind(start, end)
         .all<{ k: string | null; v: number }>()
-    ).results.filter((x) => x.k);
+    ).results.filter((x): x is { k: string; v: number } => typeof x.k === "string" && x.k.length > 0);
   const [pages, rawRefs] = await Promise.all([top("path", 5), top("json_extract(dims, '$.ref')", 100)]);
-  const refs = externalRefs(rawRefs as { k: string; v: number }[]);
+  const refs = externalRefs(rawRefs);
   const pv = y.by("pageview"), pw = w.by("pageview");
   const funnel = FUNNEL.map(([k, label], i) => {
     // pageview and login count distinct people (one visitor logs in more than once); the rest are one-per-person events
@@ -100,15 +102,13 @@ export function externalRefs(rows: { k: string; v: number }[]) {
   return [...by].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => ({ k, v }));
 }
 
-async function cfQuery(env: Env, query: string, variables: Record<string, unknown>) {
+async function cfQuery<S extends z.ZodMiniType>(env: Env, query: string, variables: Record<string, unknown>, schema: S): Promise<z.output<S>> {
   const r = await fetch("https://api.cloudflare.com/client/v4/graphql", {
     method: "POST",
     headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`, "content-type": "application/json" },
     body: JSON.stringify({ query, variables }),
   });
-  const j = (await r.json().catch(() => ({}))) as { data?: any; errors?: { message: string }[] };
-  if (!r.ok || j.errors?.length) throw new Error(j.errors?.map((e) => e.message).join("; ") || `HTTP ${r.status}`);
-  return j.data;
+  return readAnalyticsResponse(r, schema);
 }
 
 const WORKER_Q = `query($acc: string!, $from: Time!, $to: Time!) { viewer { accounts(filter: { accountTag: $acc }) {
@@ -124,14 +124,7 @@ async function issuesLine(env: Env, start: number, end: number) {
     .bind(start - 7 * DAY, Date.now())
     .all<{ ts: number; dims: string }>();
   const rows = r.results.map((x) => {
-    let d: { kind?: string; model?: string; what?: string } = {};
-    try {
-      d = JSON.parse(x.dims);
-    } catch {
-      // Rows from before fitDims: the JSON was cut at 512 chars. Take what's there.
-      const f = (k: string) => new RegExp(`"${k}":"((?:[^"\\\\]|\\\\.)*)`).exec(x.dims)?.[1]?.replace(/\\(.)/g, "$1");
-      d = { kind: f("kind"), model: f("model"), what: f("what") ? `${f("what")}…` : undefined };
-    }
+    const d = parseIssueDimensions(x.dims);
     return { ts: x.ts, kind: d.kind || "other", model: d.model, what: d.what ?? "" };
   });
   const y = rows.filter((x) => x.ts >= start && x.ts < end);
@@ -179,27 +172,27 @@ async function agentCallLine(env: Env, start: number, end: number) {
 
 export async function productReport(env: Env, now = Date.now()) {
   const { start, end } = yesterday(now);
-  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch((e) => `- Falhas reportadas pelos Claudes: não consegui ler (${String((e as Error)?.message ?? e).slice(0, 160)})`)}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}${await agentCallLine(env, now - DAY, now).catch(() => "")}`;
+  const head = `**⚙️ Produto · ${day(end - 1)}** (ontem, vs média diária dos 7 dias antes)\n\n${await issuesLine(env, start, end).catch((e: unknown) => `- Falhas reportadas pelos Claudes: não consegui ler (${reportError(e).slice(0, 160)})`)}${await unblockLine(env, start, end).catch(() => "")}${await wsStateLine(env, now - DAY, now).catch(() => "")}${await agentCallLine(env, now - DAY, now).catch(() => "")}`;
   if (!env.CF_ANALYTICS_TOKEN) return `${head}\n\nSem números da Cloudflare ainda: falta o token de analytics (secret \`CF_ANALYTICS_TOKEN\`, leitura de analytics da conta e da zona vibebook.dev).`;
   try {
     const iso = (ms: number) => new Date(ms).toISOString();
     const worker = async (from: number, to: number) => {
-      const rows = (await cfQuery(env, WORKER_Q, { acc: env.CF_ACCOUNT_ID, from: iso(from), to: iso(to) })).viewer.accounts[0]?.workersInvocationsAdaptive ?? [];
-      const sum = (k: string) => rows.reduce((t: number, r: any) => t + (r.sum?.[k] ?? 0), 0);
+      const rows = (await cfQuery(env, WORKER_Q, { acc: env.CF_ACCOUNT_ID, from: iso(from), to: iso(to) }, WorkerAnalytics)).viewer.accounts[0]?.workersInvocationsAdaptive ?? [];
+      const sum = (k: "requests" | "errors" | "subrequests" | "responseBodySize") => rows.reduce((t, r) => t + (r.sum[k] ?? 0), 0);
       // Quantiles come per row (status, etc.); the busiest row stands for the day.
-      const q = [...rows].sort((a: any, b: any) => b.sum.requests - a.sum.requests)[0]?.quantiles ?? {};
+      const q = [...rows].sort((a, b) => (b.sum.requests ?? 0) - (a.sum.requests ?? 0))[0]?.quantiles;
       // Errors by invocation status: a socket or long-poll the client dropped (clientDisconnected) is not a bug.
-      const byStatus = rows.filter((r: any) => r.sum.errors).sort((a: any, b: any) => b.sum.errors - a.sum.errors).map((r: any) => `${r.dimensions?.status ?? "?"} ${r.sum.errors}`).join(" · ");
+      const byStatus = rows.filter((r) => r.sum.errors).sort((a, b) => (b.sum.errors ?? 0) - (a.sum.errors ?? 0)).map((r) => `${r.dimensions?.status ?? "?"} ${r.sum.errors}`).join(" · ");
       return { requests: sum("requests"), errors: sum("errors"), sub: sum("subrequests"), body: sum("responseBodySize"), q, byStatus };
     };
     const [wy, ww] = await Promise.all([worker(start, end), worker(start - 7 * DAY, start)]);
     let zone = "";
     const zid = await zoneId(env);
     if (zid) {
-      const days = (await cfQuery(env, ZONE_Q, { zone: zid, from: day(start - 7 * DAY + 1), to: day(end + 1) })).viewer.zones[0]?.httpRequests1dGroups ?? [];
-      const yd = days.find((d: any) => d.dimensions.date === day(end - 1));
-      const wk = days.filter((d: any) => d.dimensions.date !== day(end - 1));
-      const tot = (k: string) => wk.reduce((t: number, d: any) => t + (d.sum[k] ?? 0), 0);
+      const days = (await cfQuery(env, ZONE_Q, { zone: zid, from: day(start - 7 * DAY + 1), to: day(end + 1) }, ZoneAnalytics)).viewer.zones[0]?.httpRequests1dGroups ?? [];
+      const yd = days.find((d) => d.dimensions.date === day(end - 1));
+      const wk = days.filter((d) => d.dimensions.date !== day(end - 1));
+      const tot = (k: "requests" | "bytes" | "cachedBytes" | "threats") => wk.reduce((t, d) => t + d.sum[k], 0);
       if (yd) zone = [
         "",
         "**Zona vibebook.dev** (tudo que passa pela CF)",
@@ -207,8 +200,8 @@ export async function productReport(env: Env, now = Date.now()) {
         `- Banda: **${bytes(yd.sum.bytes)}** (média ${bytes(tot("bytes") / 7)}) · do cache ${yd.sum.bytes ? Math.round((yd.sum.cachedBytes / yd.sum.bytes) * 100) : 0}%`,
         yd.sum.threats ? `- Ameaças bloqueadas: ${yd.sum.threats}` : "",
       ].filter(Boolean).join("\n");
-      zone += await kindLines(env, zid, start, end, now).catch((e) => `\n\n(requests por tipo indisponíveis: ${String((e as Error).message).slice(0, 120)})`);
-      zone += await bytesLines(env, zid, start, end).catch((e) => `\n\n(banda por rota indisponível: ${String((e as Error).message).slice(0, 120)})`);
+      zone += await kindLines(env, zid, start, end, now).catch((e: unknown) => `\n\n(requests por tipo indisponíveis: ${reportError(e).slice(0, 120)})`);
+      zone += await bytesLines(env, zid, start, end).catch((e: unknown) => `\n\n(banda por rota indisponível: ${reportError(e).slice(0, 120)})`);
     }
     const errRate = wy.requests ? ((wy.errors / wy.requests) * 100).toFixed(2) : "0";
     return [
@@ -217,12 +210,12 @@ export async function productReport(env: Env, now = Date.now()) {
       "**Worker vibebook**",
       `- Requests: ${vs(wy.requests, ww.requests)}`,
       `- Erros: ${vs(wy.errors, ww.errors)} (${errRate}% dos requests)${wy.byStatus ? ` · ${wy.byStatus}` : ""}`,
-      `- Tempo de parede p50 / p99: **${ms(wy.q.wallTimeP50)} / ${ms(wy.q.wallTimeP99)}** · CPU p50 / p99: ${ms(wy.q.cpuTimeP50)} / ${ms(wy.q.cpuTimeP99)}`,
+      `- Tempo de parede p50 / p99: **${ms(wy.q?.wallTimeP50)} / ${ms(wy.q?.wallTimeP99)}** · CPU p50 / p99: ${ms(wy.q?.cpuTimeP50)} / ${ms(wy.q?.cpuTimeP99)}`,
       `- Resposta enviada: **${bytes(wy.body)}** (média ${bytes(ww.body / 7)}) · subrequests ${wy.sub}`,
       zone,
     ].join("\n");
   } catch (e) {
-    return `${head}\n\nNão consegui ler a Cloudflare: ${String((e as Error).message).slice(0, 300)}`;
+    return `${head}\n\nNão consegui ler a Cloudflare: ${reportError(e).slice(0, 300)}`;
   }
 }
 // Requests by kind in a window (zone, adaptive): the Claudes' MCP (/mcp: long-polls and tool calls), the app's API and
@@ -233,8 +226,8 @@ const KIND_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zones
   api: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to, clientRequestPath_like: "/api/%" }) { count }
   ws: httpRequestsAdaptiveGroups(limit: 1, filter: { datetime_geq: $from, datetime_lt: $to, clientRequestPath_like: "/ws%" }) { count } } } }`;
 async function kinds(env: Env, zone: string, from: number, to: number) {
-  const z = (await cfQuery(env, KIND_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
-  const n = (k: string) => z[k]?.[0]?.count ?? 0;
+  const z = (await cfQuery(env, KIND_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() }, KindAnalytics)).viewer.zones[0];
+  const n = (k: "all" | "mcp" | "api" | "ws") => z?.[k][0]?.count ?? 0;
   const h = (to - from) / 3600_000;
   const per = (x: number) => Math.round(x / h);
   return { mcp: per(n("mcp")), app: per(n("api") + n("ws")), other: per(n("all") - n("mcp") - n("api") - n("ws")) };
@@ -255,27 +248,26 @@ const BYTES_Q = `query($zone: string!, $from: Time!, $to: Time!) { viewer { zone
   errs: httpRequestsAdaptiveGroups(limit: 50, orderBy: [count_DESC], filter: { datetime_geq: $from, datetime_lt: $to, edgeResponseStatus_geq: 500, requestSource: "eyeball" }) { count dimensions { clientRequestPath edgeResponseStatus } } } } }`;
 export const foldPath = (p: string) => p.replace(/\/[0-9a-f]{8,}(?=\/|$)/gi, "/:id").replace(/\/avatar\/[^/]+/, "/avatar/:email").replace(/\/upload\/[^/]+/, "/upload/:token");
 async function bytesLines(env: Env, zone: string, from: number, to: number) {
-  const z = (await cfQuery(env, BYTES_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() })).viewer.zones[0] ?? {};
+  const z = (await cfQuery(env, BYTES_Q, { zone, from: new Date(from).toISOString(), to: new Date(to).toISOString() }, BytesAnalytics)).viewer.zones[0];
   const by = new Map<string, { b: number; n: number }>();
-  for (const r of z.paths ?? []) {
+  for (const r of z?.paths ?? []) {
     const k = foldPath(r.dimensions.clientRequestPath);
     const o = by.get(k) ?? { b: 0, n: 0 };
     o.b += r.sum.edgeResponseBytes; o.n += r.count; by.set(k, o);
   }
   const top = [...by].sort((a, b) => b[1].b - a[1].b).slice(0, 8);
-  const types = (z.types ?? []).map((r: any) => `${r.dimensions.edgeResponseContentTypeName || "?"} ${bytes(r.sum.edgeResponseBytes)}`).join(" · ");
+  const types = (z?.types ?? []).map((r) => `${r.dimensions.edgeResponseContentTypeName || "?"} ${bytes(r.sum.edgeResponseBytes)}`).join(" · ");
   const errs = new Map<string, number>();
-  for (const r of z.errs ?? []) { const k = `${r.dimensions.edgeResponseStatus} ${foldPath(r.dimensions.clientRequestPath)}`; errs.set(k, (errs.get(k) ?? 0) + r.count); }
+  for (const r of z?.errs ?? []) { const k = `${r.dimensions.edgeResponseStatus} ${foldPath(r.dimensions.clientRequestPath)}`; errs.set(k, (errs.get(k) ?? 0) + r.count); }
   const errTop = [...errs].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => `\`${k}\` ${n}`).join(" · ");
   return ["", "", "**Banda por rota** (ontem, top 8)", ...top.map(([k, o]) => `- \`${k}\` **${bytes(o.b)}** · ${o.n} req · ${bytes(o.b / o.n)} cada`), `- Por tipo: ${types}`, `- 5xx por rota: ${errTop || "nenhum"}`].join("\n");
 }
 // Quantiles come in microseconds.
-const ms = (us?: number) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);
+const ms = (us?: number | null) => (us == null ? "?" : us >= 1e6 ? `${(us / 1e6).toFixed(1)}s` : `${Math.round(us / 1000)}ms`);
 
 async function zoneId(env: Env) {
   const r = await fetch("https://api.cloudflare.com/client/v4/zones?name=vibebook.dev", { headers: { authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}` } });
-  const j = (await r.json().catch(() => ({}))) as { result?: { id: string }[] };
-  return j.result?.[0]?.id ?? null;
+  return readZoneResponse(r);
 }
 
 // What vibebook spent on models (Gui, room #1965): every model call that records its cost in D1 events (by event and
@@ -310,12 +302,11 @@ export async function aiSpend(env: Env, now = Date.now()): Promise<AiSpend> {
     .all<{ d: number; name: string; cost: number }>();
   const router = await env.DB.prepare(`SELECT arm, count(*) AS n, sum(coalesce(cost, 0)) AS cost FROM router_log GROUP BY arm`)
     .all<{ arm: string; n: number; cost: number }>()
-    .catch(() => ({ results: [] as { arm: string; n: number; cost: number }[] }));
+    .catch((): { results: { arm: string; n: number; cost: number }[] } => ({ results: [] }));
   let key: { usage: number; limit: number | null; daily: number | null; weekly: number | null; monthly: number | null } | null = null;
   try {
     const r = await fetch("https://openrouter.ai/api/v1/key", { headers: { authorization: `Bearer ${env.OPENROUTER_API_KEY}` }, signal: AbortSignal.timeout(5000) });
-    const j = r.ok ? ((await r.json()) as { data?: { usage?: number; limit?: number | null; usage_daily?: number; usage_weekly?: number; usage_monthly?: number } }) : null;
-    if (j?.data) key = { usage: j.data.usage ?? 0, limit: j.data.limit ?? null, daily: j.data.usage_daily ?? null, weekly: j.data.usage_weekly ?? null, monthly: j.data.usage_monthly ?? null };
+    if (r.ok) key = parseSpendKey(await r.json());
   } catch {}
   const kind = (name: string) => COST_EVENTS[name] ?? "llm";
   const days = Array.from({ length: 30 }, (_, d) => ({ day: new Date(from + d * DAY).toISOString().slice(0, 10), jev: 0, llm: 0, router: 0 }));

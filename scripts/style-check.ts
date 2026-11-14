@@ -1,3 +1,9 @@
+import {
+  TERMINAL_VENDOR_FAMILY,
+  TERMINAL_ARTIFACTS,
+  terminalVendorProblems,
+  terminalArtifactMatches,
+} from "./terminal-vendor-policy";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join, relative } from "node:path";
 import { createHash } from "node:crypto";
@@ -24,6 +30,7 @@ async function collect(path: string) {
 }
 if (native) {
   for (const directory of [
+    "browser",
     "svelte/lib/ui",
     "svelte/lib/components",
     "svelte/gallery",
@@ -31,22 +38,58 @@ if (native) {
     "svelte/features/board",
     "svelte/features/navigation",
     "svelte/features/pins",
+    "svelte/features/reminders",
+    "svelte/features/files",
+    "svelte/features/decisions",
+    "svelte/features/people",
+    "svelte/features/auth",
+    "svelte/features/pwa",
+    "svelte/features/notifications",
+    "svelte/features/chat",
+    "svelte/features/needs-you",
+    "svelte/features/rich-text",
+    "svelte/features/chat-interactive",
+    "svelte/features/home",
+    "svelte/features/onboarding",
+    "svelte/features/app-navigation",
+    "svelte/features/rooms",
+    "svelte/features/documents",
+    "svelte/features/account",
+    "svelte/features/agents",
+    "svelte/features/sandboxes",
+    "svelte/features/file-viewer",
+    "svelte/features/composer",
+    "svelte/features/room-sidebar",
+    "svelte/features/waits",
+    "svelte/features/apps",
+    "svelte/features/room-layout",
+    "svelte/features/application",
+    "svelte/features/room-shell",
   ])
     await collect(directory);
   files.push(
     "svelte/Inbox.svelte",
-    "svelte/InboxMount.svelte",
     "svelte/TaskList.svelte",
     "svelte/Tasks.svelte",
     "svelte/Board.svelte",
-    "svelte/legacy/boardLayout.ts",
+    "svelte/Files.svelte",
+    "svelte/Reminders.svelte",
+    "svelte/Decisions.svelte",
+    "svelte/People.svelte",
+    "svelte/Sidebar.svelte",
+    "svelte/sidebar.ts",
+    "svelte/Chat.svelte",
+    "svelte/Composer.svelte",
+    "svelte/Message.svelte",
+    "svelte/chatTypes.ts",
     "svelte/styles.ts",
     "svelte/index.html",
   );
 } else {
   await collect("svelte");
   await collect("collab");
-  files.push("public/app-svelte.css", "public/app-svelte.html");
+  await collect("browser");
+  files.push("public/app-svelte.html");
 }
 for (const file of files.sort()) {
   const source = await readFile(join(projectRoot, file), "utf8");
@@ -178,6 +221,7 @@ const families = new Map([
   ["Bits UI/Floating UI internals", new Set(["bits-ui", "@floating-ui/dom"])],
   ["CodeMirror 6 view internals", new Set(["@codemirror/view", "style-mod"])],
   ["Yjs/y-codemirror.next integration", new Set(["y-codemirror.next"])],
+  [TERMINAL_VENDOR_FAMILY, new Set(["@xterm/xterm", "@xterm/addon-fit"])],
 ]);
 const vendor: unknown = JSON.parse(
   await readFile(join(projectRoot, "svelte/styles/vendor-css.json"), "utf8"),
@@ -187,7 +231,7 @@ if (
   typeof vendor !== "object" ||
   !("entries" in vendor) ||
   !Array.isArray(vendor.entries) ||
-  vendor.entries.length > 3
+  vendor.entries.length > 4
 )
   throw new Error("Invalid vendor CSS allowlist");
 const seen = new Set<string>();
@@ -208,6 +252,17 @@ for (const entry of vendor.entries) {
   )
     throw new Error("Invalid vendor CSS family");
   seen.add(entry.family);
+  if (entry.family === TERMINAL_VENDOR_FAMILY) {
+    const failures = terminalVendorProblems(entry);
+    if (failures.length) throw new Error(failures.join("; "));
+    for (const artifact of TERMINAL_ARTIFACTS) {
+      const bytes = await readFile(
+        join(projectRoot, "node_modules", artifact.path),
+      );
+      if (!terminalArtifactMatches(artifact.path, bytes))
+        throw new Error(`Terminal artifact changed: ${artifact.path}`);
+    }
+  }
   const declared = new Set<string>();
   for (const dependency of entry.packages) {
     if (

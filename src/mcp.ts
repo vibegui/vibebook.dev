@@ -1,3 +1,4 @@
+import { parseMcpRequest, mcpArguments } from "./mcpRequest";
 // Admin MCP: plain JSON-RPC over POST (same shape as holocard), bearer MCP_AUTH_TOKEN.
 // Each tool points at a ui://vibebook/* MCP-App resource; deco studio renders the
 // single-file bundle (mcp-app/, built into dist-mcp/) in a sandboxed iframe and
@@ -7,7 +8,7 @@ import { adminOverview, DIMENSIONS, trafficOverview } from "./analytics";
 import type { Env } from "./index";
 
 const MCP_APP_MIME = "text/html;profile=mcp-app";
-const HTML = bundledHtml as unknown as string;
+const HTML = bundledHtml;
 
 const RESOURCES = [
   { uri: "ui://vibebook/admin", name: "Back office", description: "KPIs, atividade por dia, funil, uso da AI, pessoas e vibebooks." },
@@ -66,8 +67,8 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
   if (!token || !safeEqual(token, env.MCP_AUTH_TOKEN)) return rpcError(null, -32001, "Unauthorized. Send Authorization: Bearer <token>.", 401);
   if (request.method !== "POST") return new Response("MCP endpoint: POST JSON-RPC", { status: 405 });
 
-  const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;
-  if (!body || body.jsonrpc !== "2.0" || !body.method) return rpcError(null, -32600, "Invalid Request", 400);
+  const body = parseMcpRequest(await request.json().catch(() => null));
+  if (!body) return rpcError(null, -32600, "Invalid Request", 400);
   if (body.id === undefined) return new Response(null, { status: 202 });
   const p = body.params ?? {};
   try {
@@ -90,7 +91,7 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
       case "tools/call": {
         const tool = TOOLS.find((t) => t.name === p.name);
         if (!tool) throw new Error(`Unknown tool: ${p.name}`);
-        const out = await tool.run(env, p.arguments && typeof p.arguments === "object" ? p.arguments : {});
+        const out = await tool.run(env, mcpArguments(p.arguments));
         result = { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: false };
         break;
       }

@@ -1,0 +1,227 @@
+import * as z from "zod/mini";
+import { get, writable } from "svelte/store";
+import type { FetchLike } from "../../transport";
+import { createAgentLease, agentClock, type AgentClock } from "./lease";
+import { RUNNER_TTL } from "./model";
+export const LOCAL_RUNNER_ORIGIN = "http://127.0.0.1:47321";
+const Ping = z.object({ rooms: z.array(z.string()) });
+const Where = z.object({
+  folder: z.optional(z.nullable(z.string())),
+  home: z.optional(z.nullable(z.string())),
+  how: z.optional(z.nullable(z.string())),
+});
+/** The emerging permission name is not in every installed DOM declaration.
+ * Query the actual browser method with its original receiver, then narrow its
+ * result; no permission request, network probe or assertion is substituted. */
+export async function localNetworkPermission(): Promise<PermissionState | null> {
+  if (typeof navigator === "undefined" || !navigator.permissions) return null;
+  try {
+    const query: unknown = Reflect.get(navigator.permissions, "query");
+    if (typeof query !== "function") return null;
+    const result: unknown = await Reflect.apply(query, navigator.permissions, [
+      { name: "local-network-access" },
+    ]);
+    if (typeof result !== "object" || result === null || !("state" in result))
+      return null;
+    return result.state === "granted" ||
+      result.state === "denied" ||
+      result.state === "prompt"
+      ? result.state
+      : null;
+  } catch {
+    return null;
+  }
+}
+export type RunnerWhere = z.infer<typeof Where>;
+export type RunnerState = {
+  where: RunnerWhere | null;
+  available: boolean;
+  rooms: readonly string[];
+  probing: boolean;
+  focusing: boolean;
+  focusError: boolean;
+  focusBlocked: boolean;
+};
+const blank = (): RunnerState => ({
+  where: null,
+  available: false,
+  rooms: [],
+  probing: false,
+  focusing: false,
+  focusError: false,
+  focusBlocked: false,
+});
+/** Focus travels through the authenticated server/CLI relay. Optional local folder hints are read only after an existing permission grant; they never prompt. */
+export function createLocalRunner(
+  options: {
+    fetcher?: FetchLike;
+    clock?: AgentClock;
+    permission?: () => Promise<PermissionState | null>;
+    relayFocus?: (roomId: string, signal: AbortSignal) => Promise<{ ok: true }>;
+  } = {},
+) {
+  const fetcher = options.fetcher ?? fetch,
+    clock = options.clock ?? agentClock,
+    state = writable<RunnerState>(blank()),
+    probeLease = createAgentLease(clock),
+    focusLease = createAgentLease(clock);
+  let active = true,
+    scope = "",
+    ticket = 0,
+    focusTicket = 0,
+    cachedWhere = -Infinity,
+    cachedPing = -Infinity,
+    probing: Promise<void> | null = null;
+  async function json<T>(
+    path: string,
+    schema: { parse(value: unknown): T },
+    signal: AbortSignal,
+  ): Promise<T | null> {
+    try {
+      const response = await fetcher(LOCAL_RUNNER_ORIGIN + path, {
+        credentials: "omit",
+        cache: "no-store",
+        signal,
+      });
+      if (!response.ok) return null;
+      const value: unknown = await response.json();
+      return schema.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return {
+    state,
+    probe(roomId: string, title: string, includePing: boolean) {
+      if (!active) return Promise.resolve();
+      const next = JSON.stringify([roomId, title]);
+      if (next === scope && probing) return probing;
+      const needWhere =
+          next !== scope || clock.now() - cachedWhere >= RUNNER_TTL,
+        needPing = includePing && clock.now() - cachedPing >= RUNNER_TTL;
+      if (!needWhere && !needPing) return probing ?? Promise.resolve();
+      scope = next;
+      const own = ++ticket;
+      probeLease.cancel();
+      state.update((value) => ({ ...value, probing: true }));
+      const job = probeLease
+        .run(async (signal) => {
+          const permission = await (
+            options.permission ?? localNetworkPermission
+          )();
+          if (
+            permission !== "granted" ||
+            !active ||
+            own !== ticket ||
+            signal.aborted
+          )
+            return [null, null] as const;
+          return Promise.all([
+            needWhere
+              ? json(
+                  `/where?room=${encodeURIComponent(roomId)}&title=${encodeURIComponent(title)}`,
+                  Where,
+                  signal,
+                )
+              : Promise.resolve(get(state).where),
+            needPing ? json("/ping", Ping, signal) : Promise.resolve(null),
+          ]);
+        }, 10_000)
+        .then(
+          ([where, ping]) => {
+            if (!active || own !== ticket) return;
+            if (needWhere) cachedWhere = clock.now();
+            if (needPing) cachedPing = clock.now();
+            state.update((value) => ({
+              ...value,
+              where,
+              ...(needPing
+                ? { rooms: ping?.rooms ?? [], available: !!ping }
+                : {}),
+              probing: false,
+            }));
+          },
+          () => {
+            if (active && own === ticket) {
+              if (needWhere) cachedWhere = clock.now();
+              if (needPing) cachedPing = clock.now();
+              state.update((value) => ({
+                ...value,
+                probing: false,
+                ...(needWhere ? { where: null } : {}),
+                ...(needPing ? { available: false, rooms: [] } : {}),
+              }));
+            }
+          },
+        )
+        .finally(() => {
+          if (own === ticket) probing = null;
+        });
+      probing = job;
+      return job;
+    },
+    async focus(roomId: string) {
+      if (!active || get(state).focusing) return;
+      const own = ++focusTicket;
+      state.update((value) => ({
+        ...value,
+        focusing: true,
+        focusError: false,
+        focusBlocked: false,
+      }));
+      // Publication may synchronously cancel/dispose this owner. Do not create
+      // a new lease or contact the old room after that invalidation.
+      if (!active || own !== focusTicket) return;
+      try {
+        await focusLease.run(async (signal) => {
+          if (!active || own !== focusTicket || !options.relayFocus)
+            throw Error("Focus relay unavailable");
+          const result = await options.relayFocus(roomId, signal);
+          if (result.ok !== true) throw Error("Invalid focus response");
+        }, 10_000);
+        if (active && own === focusTicket)
+          state.update((value) => ({
+            ...value,
+            focusing: false,
+            focusError: false,
+            focusBlocked: false,
+          }));
+      } catch {
+        if (active && own === focusTicket)
+          state.update((value) => ({
+            ...value,
+            focusing: false,
+            focusError: true,
+            focusBlocked: false,
+          }));
+      }
+    },
+    cancel() {
+      ticket++;
+      focusTicket++;
+      probeLease.cancel();
+      focusLease.cancel();
+      probing = null;
+      state.update((value) => ({ ...value, probing: false, focusing: false }));
+    },
+    dispose() {
+      active = false;
+      ticket++;
+      focusTicket++;
+      probeLease.cancel();
+      focusLease.cancel();
+      probing = null;
+      scope = "";
+      cachedWhere = cachedPing = -Infinity;
+      state.set(blank());
+    },
+  };
+}
+export type LocalRunner = ReturnType<typeof createLocalRunner>;
+export function runnerPath(where: RunnerWhere | null) {
+  const folder = where?.folder;
+  if (!folder) return "";
+  return where.home && folder.startsWith(where.home + "/")
+    ? "~" + folder.slice(where.home.length)
+    : folder;
+}

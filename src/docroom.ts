@@ -1,6 +1,7 @@
 import { YDurableObjects } from "y-durableobjects";
 import type { Env } from "./index";
 import { bookStub } from "./rooms";
+import { registerDocSocket } from "./docroom-socket";
 
 /**
  * One live co-editing relay per doc (the room's, or an epic's): a Yjs CRDT on a Durable Object, speaking the
@@ -12,9 +13,19 @@ import { bookStub } from "./rooms";
  * @vibe/agent writes flow back in through setText.
  */
 export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
+  protected registerWebSocket(ws: WebSocket) {
+    // 1.0.5's setup and notification listener send without checking readyState.
+    // Hibernation can enumerate closing sockets; awareness removal broadcasts
+    // while other kicked peers are already closed. Keep actual socket identity
+    // for inherited unregister/storage cleanup, and guard every dependency send.
+    registerDocSocket(ws, this.sessions, (view) => super.registerWebSocket(view));
+  }
   // A socket closing threw a bare "close" 3× on 10/11 (hibernatable WebSocket, no stack): name the DO in the log so the
   // next one says where it came from, and don't let it surface as a Worker exception.
   async webSocketClose(ws: WebSocket) {
+    // The provider unregisters sessions; explicitly acknowledge the peer close.
+    // Cleanup still runs if the runtime has already completed the handshake.
+    try { ws.close(); } catch {}
     try { await super.webSocketClose(ws); } catch (e) { console.error("docroom webSocketClose", String(e)); }
   }
   async webSocketError(ws: WebSocket) {
@@ -25,7 +36,9 @@ export class DocRoom extends YDurableObjects<{ Bindings: Env }> {
     // Durable Object awake, so every doc ever opened, or touched by an agent's update_doc, stayed in memory for good:
     // ~2.4M s of DocRoom duration in 12 days (Nov 2026), the one line over the Workers Paid plan. The server has no
     // local awareness state to renew, and a closing socket already removes its cursors (unregisterWebSocket).
-    clearInterval((this.doc.awareness as unknown as { _checkInterval: ReturnType<typeof setInterval> })._checkInterval);
+    // y-protocols 1.0.7 publicly exposes this exact setInterval handle (its .d.ts uses any).
+    // Consume it only at the timer API boundary; no cast, handle conversion, or Awareness.destroy().
+    clearInterval(this.doc.awareness._checkInterval);
     await super.onStart();
     this.watch();
   }

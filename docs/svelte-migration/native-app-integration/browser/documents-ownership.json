@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "harnessRevision": "76772b5a2ceb6aa9f72402b58f960d1bbe237855",
+  "suppliedAppRevision": "e54e9e4",
+  "steps": [
+    {
+      "name": "establish DEV owner and create real room",
+      "status": "passed",
+      "ms": 1767
+    },
+    {
+      "name": "owner room app readiness and actual native editor write",
+      "status": "passed",
+      "ms": 35748
+    },
+    {
+      "name": "real home readiness and prior editor teardown",
+      "status": "passed",
+      "ms": 15864
+    },
+    {
+      "name": "foreign identity and positive real native access-page readiness",
+      "status": "passed",
+      "ms": 20421
+    },
+    {
+      "name": "restore owner and prove desktop room/editor readiness again",
+      "status": "passed",
+      "ms": 15303
+    },
+    {
+      "name": "390px genuine native Doc sheet and editor readiness",
+      "status": "passed",
+      "ms": 4124
+    },
+    {
+      "name": "390px native keyboard Doc to Files and back preserves focus/sheet",
+      "status": "passed",
+      "ms": 4264
+    }
+  ],
+  "pageErrors": [],
+  "scope": "Real HTTP-created room, native UI Yjs writes, independent real Book snapshot mirror read, real DEV identity/access UI and 390px native document keyboard navigation",
+  "gaps": [
+    "DEV identity switching does not test production session issuance",
+    "Chromium viewport is not hardware touch/iOS/IME acceptance",
+    "No DB seeding or fabricated canonical/transport frames; public-font/local-runner isolation only",
+    "Single focused lifecycle cohort, not the full document suite"
+  ],
+  "apiVersion": "91e34bf43f6eec832fa0b5056a780938",
+  "room": "c2b134a07148",
+  "shellVersion": "91e34bf43f6eec832fa0b5056a780938",
+  "asset": {
+    "path": "/svelte-preview/app.js",
+    "sha256": "4d9d4e09d0732fba5da49911c04870e99c344a9df831f2a2cbb3ee0e8a7b8d74"
+  }
+}

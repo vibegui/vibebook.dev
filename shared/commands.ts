@@ -1,5 +1,5 @@
 import * as z from "zod/mini";
-import { TASK_STATUSES } from "./room";
+import { TASK_STATUSES, SuggestionSchema } from "./room";
 
 // Commands accepted by Book.webSocketMessage (M1): the runtime schemas are the source, the TypeScript type is derived
 // from them. Authentication and every business rule stay on the server. Browser-safe: zod/mini only.
@@ -73,6 +73,7 @@ export const RoomCommandSchema = z.discriminatedUnion("t", [
   z.object({
     t: z.literal("suggestion"),
     i: num,
+    expected: z.optional(SuggestionSchema),
     accept: z.optional(z.boolean()),
   }),
 ]);

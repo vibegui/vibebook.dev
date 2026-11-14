@@ -1,0 +1,19 @@
+{
+  "workflow": "Controlled frontend performance",
+  "run": 43585038355,
+  "url": "https://github.com/vibegui/vibebook.dev/actions/runs/43585038355",
+  "sourceHead": "b292537c75aa95a1cfff3a8acd46aecabefc5fdf",
+  "artifact": "frontend-performance-b22c5089863df87092cdbd85cad9118d3fd9248f",
+  "execution": "success",
+  "performanceAcceptance": "failed",
+  "files": {
+    "metrics.json": {
+      "bytes": 4080069,
+      "sha256": "19a1f5ba122ddf084ff1cb395f10361bae297aece043a54f7936715b5b8bc77f"
+    },
+    "report.md": {
+      "bytes": 6857,
+      "sha256": "04c8e35fd4ed4db851a0d176421695836d7b06e94b954c901b421e6413153ae6"
+    }
+  }
+}

@@ -1,7 +1,8 @@
 import type { Bridge, Wait } from "./types";
+import type { RequestRoomCommand } from "./roomConnection";
 import type { SendRoomCommand } from "../shared/commands";
 import type { Attachment, Room } from "./roomStore";
-export type { Task, Epic, Reminder } from "./roomStore";
+export type { Task, Epic, Reminder, Decision } from "./roomStore";
 export type RoomFile = Attachment;
 export type PanelRoom = Pick<
   Room,
@@ -12,16 +13,14 @@ export type PanelRoom = Pick<
   | "roomTasks"
   | "files"
   | "filesN"
+  | "decisions"
   | "reminders"
   | "pins"
   | "book"
 >;
 export type PanelBridge = Bridge & {
   name: (email: string) => string;
-  color: (text: string) => string;
-  initials: (text: string) => string;
   locale?: string;
-  mentions?: (html: string) => string;
 };
 export type Send = SendRoomCommand;
 export type PanelProps = {
@@ -29,6 +28,7 @@ export type PanelProps = {
   thread: string;
   vb: PanelBridge;
   send: Send;
+  request: RequestRoomCommand;
   waits?: Wait[];
   onopen?: (epic: string) => void;
 };

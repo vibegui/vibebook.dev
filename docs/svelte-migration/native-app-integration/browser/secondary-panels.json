@@ -1,0 +1,277 @@
+{
+  "scope": "Incremental native Decisions/People plus real Reminder failed-processing path; not complete M6/M7 or production acceptance",
+  "gaps": [
+    "Successful AI schedule creation, next-run calculation, alarm execution and successful-reminder enable/edit are not verified: they require usable MODEL_ROUTE credentials.",
+    "Reminder processing failure is claimed only if the real typed upload answers reminder.ok=false; a model-backed success is reported as a missing failure-path gate.",
+    "Clipboard rejection is an explicit browser capability fixture; all room data, permissions, HTTP responses and WS events are real.",
+    "Four EN/PT, desktop/mobile, light/dark profiles cover these axes; this is not the complete product regression matrix.",
+    "Fixture rooms, OAuth grant and example.test identities remain in the local database; no production data is touched."
+  ],
+  "step": "Audit native panels across EN/PT, desktop/mobile and light/dark, including keyboard dialogs",
+  "room": "595239bf6562",
+  "application": {
+    "sourceHead": "aa50c3fbf80f5eca9e7c457efcead92104328fbd",
+    "entry": "/svelte-preview/app.js?v=e084b86f5a8b1be7ba28",
+    "entrySha256": "a6657ebb68f6c20b00fe6cfdf4b148bd1046127abb100980d684099c0273eb6b",
+    "shellVersion": "6032eebcf8f4591994893b364f6b9b03",
+    "shellEtag": "\"6032eebcf8f4591994893b364f6b9b03\""
+  },
+  "decisions": "pass",
+  "people": "pass",
+  "reminderUpload": {
+    "ok": false,
+    "name": "failure-b8f09f07f9",
+    "error": "couldn't read the file right now; save it again in a moment"
+  },
+  "remindersFailure": "pass: real canonical error row deleted through reminder.delete",
+  "status": "pass-scoped",
+  "errors": [],
+  "commands": {
+    "older": 1,
+    "decision.del": 1,
+    "reminder.delete": 1
+  },
+  "events": {
+    "state": 5,
+    "online": 8,
+    "older": 1,
+    "docNotes": 1,
+    "decisions": 3,
+    "result": 2,
+    "members": 3,
+    "msg": 2,
+    "requests": 4,
+    "fileAdd": 1,
+    "reminders": 2
+  },
+  "audits": [
+    {
+      "key": "people-en-390-dark",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "decisions-en-390-dark",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "reminders-en-390-dark",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "people-pt-390-light",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    },
+    {
+      "key": "decisions-pt-390-light",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    },
+    {
+      "key": "reminders-pt-390-light",
+      "native": {
+        "boundary": true,
+        "width": 342,
+        "viewport": 390,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    },
+    {
+      "key": "people-en-1440-light",
+      "native": {
+        "boundary": true,
+        "width": 223,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "decisions-en-1440-light",
+      "native": {
+        "boundary": true,
+        "width": 331,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "reminders-en-1440-light",
+      "native": {
+        "boundary": true,
+        "width": 331,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "light",
+        "lang": "en"
+      },
+      "violations": []
+    },
+    {
+      "key": "people-pt-1440-dark",
+      "native": {
+        "boundary": true,
+        "width": 223,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    },
+    {
+      "key": "decisions-pt-1440-dark",
+      "native": {
+        "boundary": true,
+        "width": 331,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    },
+    {
+      "key": "reminders-pt-1440-dark",
+      "native": {
+        "boundary": true,
+        "width": 331,
+        "viewport": 1440,
+        "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+        "headings": [
+          {
+            "family": "\"Inter var\", Inter, ui-sans-serif, system-ui, sans-serif",
+            "variation": "normal"
+          }
+        ],
+        "loadedFont": true,
+        "dark": "dark",
+        "lang": "pt-BR"
+      },
+      "violations": []
+    }
+  ]
+}

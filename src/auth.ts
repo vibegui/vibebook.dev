@@ -1,4 +1,6 @@
+import { githubEmail, githubName, githubToken } from "./githubIdentity";
 import { Hono } from "hono";
+import * as z from "zod/mini";
 import { reqLang } from "./lang";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { Context } from "hono";
@@ -11,7 +13,20 @@ const COOKIE = "vb_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_CODE_ATTEMPTS = 5;
+const SessionPayload = z.object({ email: z.string(), iat: z.number() });
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GoogleToken = z.object({ access_token: z.string().check(z.minLength(1)) });
+const GoogleIdentity = z.object({
+  email: z.string().check(z.regex(EMAIL_RE)),
+  email_verified: z.literal(true),
+  given_name: z.optional(z.nullable(z.string())),
+  name: z.optional(z.nullable(z.string())),
+});
+const InvitePayload = z.object({
+  e: z.string().check(z.regex(EMAIL_RE)),
+  b: z.string().check(z.regex(/^[a-z0-9]+$/)),
+  x: z.number(),
+});
 
 const enc = new TextEncoder();
 const b64url = (buf: ArrayBuffer | Uint8Array) =>
@@ -32,15 +47,17 @@ export const safeEqual = (a: string, b: string) => {
 };
 
 /** Email of the signed-in user, or null. */
-export async function sessionEmail(c: Context<any>): Promise<string | null> {
-  const env = c.env as Env;
+export async function sessionEmail<E extends { Bindings: Env }>(c: Context<E>): Promise<string | null> {
+  const env = c.env;
   const raw = getCookie(c, COOKIE);
   if (!raw || !env.SESSION_SECRET) return null;
   const [payload, sig] = raw.split(".");
   if (!payload || !sig || !safeEqual(sig, await hmac(env.SESSION_SECRET, payload))) return null;
   try {
-    const { email, iat } = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    if (typeof email !== "string" || Date.now() - iat >= MAX_AGE * 1000) return null;
+    const parsed = SessionPayload.safeParse(JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))));
+    if (!parsed.success) return null;
+    const { email, iat } = parsed.data;
+    if (Date.now() - iat >= MAX_AGE * 1000) return null;
     // "Sair de todos os aparelhos" sets users.session_after: older cookies stop working (within a minute per server).
     return iat > (await sessionAfter(env, email)) ? email : null;
   } catch {
@@ -84,9 +101,9 @@ const sameOrigin = (c: Context) => {
 };
 
 /** Signed-in email; in local dev (DEV_EMAIL) the dev_as cookie picks the identity so two browsers can be two people. */
-export async function identify(c: Context<any>): Promise<string | null> {
+export async function identify<E extends { Bindings: Env }>(c: Context<E>): Promise<string | null> {
   const email = await sessionEmail(c);
-  const env = c.env as Env;
+  const env = c.env;
   // DEV_EMAIL is local dev only: even if it ever reached production config, it works on loopback alone.
   if (email || !env.DEV_EMAIL || !/^(127\.0\.0\.1|localhost)$/.test(new URL(c.req.url).hostname)) return email;
   const as = getCookie(c, "dev_as");
@@ -220,18 +237,18 @@ auth.get("/google/callback", async (c) => {
       redirect_uri: `${new URL(c.req.url).origin}/auth/google/callback`,
       grant_type: "authorization_code",
     }),
-  }).then((r) => r.json<{ access_token?: string }>());
-  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=google"));
+  }).then(async (r) => r.ok ? GoogleToken.safeParse(await r.json()) : null).catch(() => null);
+  if (!tok?.success) return c.redirect(loginUrl(c, next, "?error=google"));
   const info = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
-    headers: { authorization: `Bearer ${tok.access_token}` },
-  }).then((r) => r.json<{ email?: string; email_verified?: boolean; given_name?: string; name?: string }>());
-  if (!info.email || !info.email_verified) return c.redirect(loginUrl(c, next, "?error=google"));
-  await startSession(c, info.email);
-  c.executionCtx.waitUntil(track(c.env, "login", { user: info.email.toLowerCase(), dims: { method: "google" } }));
-  const gname = (info.given_name || info.name || "").trim().slice(0, 60);
+    headers: { authorization: `Bearer ${tok.data.access_token}` },
+  }).then(async (r) => r.ok ? GoogleIdentity.safeParse(await r.json()) : null).catch(() => null);
+  if (!info?.success) return c.redirect(loginUrl(c, next, "?error=google"));
+  await startSession(c, info.data.email);
+  c.executionCtx.waitUntil(track(c.env, "login", { user: info.data.email.toLowerCase(), dims: { method: "google" } }));
+  const gname = (info.data.given_name || info.data.name || "").trim().slice(0, 60);
   if (gname)
     await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
-      .bind(info.email.toLowerCase(), Date.now(), gname)
+      .bind(info.data.email.toLowerCase(), Date.now(), gname)
       .run()
       .catch(() => {});
   return c.redirect(safeNext(next));
@@ -248,15 +265,17 @@ export async function inviteLink(env: Env, origin: string, email: string, bookId
 auth.get("/invite", async (c) => {
   const [payload, sig] = (c.req.query("t") ?? "").split(".");
   if (!payload || !sig || !safeEqual(sig, await hmac(c.env.SESSION_SECRET, `invite:${payload}`))) return c.redirect("/login");
-  let t: { e?: string; b?: string; x?: number };
+  let t: z.output<typeof InvitePayload>;
   try {
-    t = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    const parsed = InvitePayload.safeParse(JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))));
+    if (!parsed.success) return c.redirect("/login");
+    t = parsed.data;
   } catch {
     return c.redirect("/login");
   }
   const next = `/b/${t.b}`;
   // Expired link: still useful, just log in normally and come back to the book.
-  if (!t.e || !t.b || !t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
+  if (!t.x || t.x < Date.now()) return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   // The link signs in only a first-timer, once (security review, Nov 2026): it reached whole accounts, could be
   // forwarded or quoted back in a reply, and swapped the session of whoever was signed in (login CSRF).
   // Someone already signed in goes to the room as they are; an existing account logs in the normal way.
@@ -305,16 +324,14 @@ auth.get("/github/callback", async (c) => {
       client_secret: c.env.GITHUB_CLIENT_SECRET!,
       redirect_uri: `${new URL(c.req.url).origin}/auth/github/callback`,
     }),
-  }).then((r) => r.json<{ access_token?: string }>()).catch(() => ({}) as { access_token?: string });
-  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=github"));
-  const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok.access_token}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
-  const emails = await gh("/user/emails").then((r) => (r.ok ? r.json<{ email: string; primary: boolean; verified: boolean }[]>() : [])).catch(() => []);
-  const email = emails.find((e) => e.primary && e.verified)?.email;
+  }).then(async (r) => r.ok ? githubToken(await r.json()) : null).catch(() => null);
+  if (!tok) return c.redirect(loginUrl(c, next, "?error=github"));
+  const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
+  const email = await gh("/user/emails").then(async (r) => r.ok ? githubEmail(await r.json()) : null).catch(() => null);
   if (!email) return c.redirect(loginUrl(c, next, "?error=github"));
   await startSession(c, email);
   c.executionCtx.waitUntil(track(c.env, "login", { user: email.toLowerCase(), dims: { method: "github" } }));
-  const user = await gh("/user").then((r) => (r.ok ? r.json<{ name?: string; login?: string }>() : {}) as Promise<{ name?: string; login?: string }>).catch(() => ({}) as { name?: string; login?: string });
-  const gname = (user.name || user.login || "").trim().slice(0, 60);
+  const gname = await gh("/user").then(async (r) => r.ok ? githubName(await r.json()) : "").catch(() => "");
   if (gname)
     await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
       .bind(email.toLowerCase(), Date.now(), gname)

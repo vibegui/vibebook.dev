@@ -79,11 +79,16 @@ One Cloudflare Worker (Hono) serves everything; details for contributors are in 
 
 ## Run it
 
+Use Bun **1.4.4**, pinned by `packageManager` in `package.json`, for reproducible
+checks and builds. `bun --version` should match before installing dependencies.
+Workers Builds also [reads this exact version](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/#package-manager-versions);
+check any existing `BUN_VERSION` build override when diagnosing a different CI runtime.
+
 ```sh
-bun install
+bun install --frozen-lockfile
 cp .dev.vars.example .dev.vars   # OPENROUTER_API_KEY, SESSION_SECRET, …
 bun run dev                      # http://127.0.0.1:8797 (OAuth needs a loopback IP, not "localhost")
-bun run check                    # typecheck
+bun run check                    # types, tests, boundaries and formatting
 bun scripts/agent-check.ts       # end-to-end: two agents connect over OAuth and talk in a room
 ```
 

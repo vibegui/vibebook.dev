@@ -13,9 +13,32 @@ const backendSentinel = "SYNTHETIC_BACKEND_MUST_NEVER_SHIP";
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), "vibebook-bun-boundary-"));
   entrypoint = join(root, "client/main.ts");
-  for (const directory of ["client", "src", "shared", "packages/server-only"]) {
+  for (const directory of [
+    "client",
+    "src",
+    "shared",
+    "packages/server-only",
+    ".wrangler/qa-generated",
+    "scripts",
+  ]) {
     await mkdir(join(root, directory), { recursive: true });
   }
+  await writeFile(
+    join(root, ".wrangler/qa-generated/index.js"),
+    'export const value = "GENERATED_BACKEND_MUST_NEVER_SHIP";',
+  );
+  await writeFile(
+    join(root, ".wrangler/qa-generated/style.css"),
+    '.probe { --value: "GENERATED_BACKEND_MUST_NEVER_SHIP"; }',
+  );
+  await writeFile(
+    join(root, "scripts/build.ts"),
+    'export const value = "TOOLING_MUST_NEVER_SHIP";',
+  );
+  await symlink(
+    join(root, ".wrangler/qa-generated/index.js"),
+    join(root, "shared/generated.woff2"),
+  );
   await writeFile(
     join(root, "src/private.ts"),
     `export type Contract = { id: string }; export const value = ${JSON.stringify(backendSentinel)};`,
@@ -74,6 +97,15 @@ test("Bun allows shared runtime values and erases backend type imports", async (
 });
 
 const forbidden = [
+  [
+    "generated backend bundle",
+    'export { value } from "../.wrangler/qa-generated/index.js";',
+  ],
+  [
+    "generated backend string",
+    'import value from "../.wrangler/qa-generated/index.js?raw"; export { value };',
+  ],
+  ["project tooling", 'export { value } from "../scripts/build.ts";'],
   ["backend", 'export { value } from "../src/private";'],
   ["transitive backend", 'export { value } from "../shared/transitive";'],
   ["symlinked backend", 'export { value } from "../shared/link";'],
@@ -98,6 +130,15 @@ for (const [name, source] of forbidden) {
 }
 
 for (const [name, css] of [
+  [
+    "generated backend URL",
+    '.probe{background:url("../.wrangler/qa-generated/index.js")}',
+  ],
+  ["generated backend CSS", '@import "../.wrangler/qa-generated/style.css";'],
+  [
+    "generated backend symlink font",
+    '@font-face{font-family:"probe";src:url("../shared/generated.woff2")}',
+  ],
   [
     "private font URL",
     '@font-face{font-family:"probe";src:url("../.dev.vars")}',

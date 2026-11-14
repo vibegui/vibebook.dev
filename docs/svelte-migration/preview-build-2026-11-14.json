@@ -1,0 +1,33 @@
+{
+  "sourceRevision": "00e1cf1dd561de925895d4c17c0d0672bd07b667",
+  "node": "22.23.5",
+  "bun": "1.4.4",
+  "archiveSHA256": "8b783c499ec5c47fe7ca7049ff2e57e568163186db212604b6e2eb630be97f9a",
+  "previewFiles": 79,
+  "sha256": {
+    "public/app-svelte.html": "5ce3114bacc15be3805cc8b13564dd971a0ea0b36f6903218ff0b0dbf1a77d21",
+    "public/svelte-preview/app.js": "30f1e921986f72735bd433ed31ecab9e6be67df4668f5f71ca9c3ea9feb37ec5",
+    "public/svelte-preview/ui.css": "0c77adf933880354309872ec327f497169737993bbc32d01ea508b805af88ed6",
+    "public/sw.js": "80559c131cecdc0371262a69cbb70a1c0b8823a578a072459036fa65b9d867b7"
+  },
+  "defaultAssetsUnchangedByRefresh": {
+    "public/app.html": "d024591c5ecea0af9364ff3fd53e9ee5fc45b30eddf352ab7a11ff1a22a3e157",
+    "public/svelte/ui.js": "863eaed36b1b8419013a7a07d72aac26a00a90e69ab99fa0a0682803499d22b8"
+  },
+  "emittedJavaScriptComparison": {
+    "before": {
+      "files": 78,
+      "rawBytes": 3018049,
+      "separatelyGzippedBytes": 833495,
+      "newlineCount": 86235
+    },
+    "after": {
+      "files": 78,
+      "rawBytes": 2354549,
+      "separatelyGzippedBytes": 747920,
+      "newlineCount": 346
+    },
+    "scope": "Entire emitted JS graph, including unrequested lazy entries; same gzip level 6 for each file. Not observed initial transfer, readiness, or a performance-budget result."
+  },
+  "verification": "Fresh native build and all 23 repository gates pass at this source revision. Final CI/browser/performance and authenticated production acceptance remain required. Original Studio fonts stay active."
+}

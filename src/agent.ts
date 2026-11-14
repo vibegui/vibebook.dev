@@ -1,8 +1,10 @@
+import { parseMcpRequest, mcpArguments, recordValue } from "./mcpRequest";
 // The agents' MCP: a person's own agent (Claude Code, Claude.ai…) acting for them in their rooms.
 // JSON-RPC over POST like the admin MCP. Auth is the OAuth token checked by workers-oauth-provider,
 // whose props carry the person's email. Every room call re-checks membership in D1.
 import { gate, routerOn, routerStats } from "./router";
 import { callTool, createConn, deleteConn, getConn, listConns, publicConn } from "./mcpconn";
+import { agentMessageFromWire } from "./bookMessages";
 import { AuthNeeded, signedInTo } from "./mcpauth";
 import { ASK_OPENER } from "./book";
 import { cardOf } from "./card";
@@ -845,6 +847,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         room_id: id,
         url: `${origin}/b/${id}`,
         ...out,
+        messages: out.messages.map(agentMessageFromWire),
       };
     }
     case "post": {
@@ -1151,8 +1154,8 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   if (request.headers.get("upgrade") === "websocket" && props.room) return new Response("a sandbox login reaches only its own room", { status: 403 });
   if (request.headers.get("upgrade") === "websocket") return env.PEOPLE.get(env.PEOPLE.idFromName(props.email.toLowerCase())).fetch(request);
   if (request.method !== "POST") return new Response("vibebook MCP: POST JSON-RPC", { status: 405, headers: { allow: "POST" } });
-  const body = (await request.json().catch(() => null)) as { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, any> } | null;
-  if (!body || body.jsonrpc !== "2.0" || !body.method) return rpcError(null, -32600, "Invalid Request", 400);
+  const body = parseMcpRequest(await request.json().catch(() => null));
+  if (!body) return rpcError(null, -32600, "Invalid Request", 400);
   if (body.id === undefined) return new Response(null, { status: 202 });
   const p = body.params ?? {};
   const origin = new URL(request.url).origin;
@@ -1179,9 +1182,14 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
   // With the CLI's statusline wrapper, also the plan's limits: {five_hour|seven_day: {p: % used, r: reset epoch s}}.
   const limits = (() => {
     try {
-      const j = JSON.parse(request.headers.get("x-vibebook-limits") ?? "");
+      const j: unknown = JSON.parse(request.headers.get("x-vibebook-limits") ?? "");
       const out: Record<string, { p: number; r: number }> = {};
-      for (const k of ["five_hour", "seven_day"]) if (Number.isFinite(j?.[k]?.p) && Number.isFinite(j?.[k]?.r)) out[k] = { p: Math.max(0, Math.min(100, Math.round(j[k].p))), r: Math.round(j[k].r) };
+      for (const k of ["five_hour", "seven_day"]) {
+        const item = recordValue(j) ? j[k] : null;
+        if (!recordValue(item)) continue;
+        const { p, r } = item;
+        if (typeof p === "number" && typeof r === "number" && Number.isFinite(p) && Number.isFinite(r)) out[k] = { p: Math.max(0, Math.min(100, Math.round(p))), r: Math.round(r) };
+      }
       return Object.keys(out).length ? JSON.stringify(out) : null;
     } catch {
       return null;
@@ -1214,7 +1222,7 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
       const started = Date.now();
       let ok = true;
       try {
-        const args = (p.arguments && typeof p.arguments === "object" ? p.arguments : {}) as Record<string, unknown>;
+        const args = mcpArguments(p.arguments);
         // Unknown arguments are an error, not silently dropped (a misnamed "goal" left an epic's doc empty).
         const tool = TOOLS.find((t) => t.name === p.name);
         const known = Object.keys(tool?.inputSchema.properties ?? {});
@@ -1226,10 +1234,11 @@ export async function handleAgentMcp(request: Request, env: Env, ctx: ExecutionC
         if ((model || repo) && due(`mr:${agentId}:${model}:${repo}`, 600_000)) ctx.waitUntil(env.DB.prepare(`UPDATE agents SET model = coalesce(?, model), repo = coalesce(?, repo) WHERE id = ?`).bind(model || null, repo || null, agentId).run());
         // This session touched this room: it shows under its person in the room's Pessoas for the next hour.
         if (typeof args.room_id === "string" && due(`room:${agentId}:${args.room_id}`)) ctx.waitUntil(env.DB.prepare(`UPDATE agent_reads SET seen_at = ? WHERE agent = ? AND book_id = ?`).bind(Date.now(), agentId, args.room_id).run());
-        ok = !(out && typeof out === "object" && (out as { ok?: boolean }).ok === false);
+        const output = recordValue(out) ? out : null;
+        ok = output?.ok !== false;
         // get_file hands back MCP content parts (an image) instead of JSON.
-        const parts = out && typeof out === "object" ? (out as { __content?: unknown[] }).__content : undefined;
-        result = parts ? { content: parts } : { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: !ok };
+        const parts = output?.__content;
+        result = Array.isArray(parts) ? { content: parts } : { content: [{ type: "text", text: JSON.stringify(out) }], structuredContent: out, isError: !ok };
       } catch (e) {
         ok = false;
         result = { content: [{ type: "text", text: e instanceof Error ? e.message : String(e) }], isError: true };

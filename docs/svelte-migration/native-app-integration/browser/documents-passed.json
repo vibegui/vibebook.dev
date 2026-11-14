@@ -1,0 +1,85 @@
+{
+  "status": "passed",
+  "servedRevisionSuppliedByRunner": "e54e9e4",
+  "harnessRevision": "5ce9ba37b5b9e9b57c46665df18b6e227665c913",
+  "phases": [
+    "unicode and collaborative undo",
+    "scoped epic, crumbs and >8k offline reconnect",
+    "all-editor4003 authorized recovery",
+    "deleted open epic cannot retarget room document",
+    "task slot, real Mermaid and uploaded image",
+    "removed member privacy and authorized peer resume",
+    "scope disposal, account replacement and mobile controls"
+  ],
+  "fixtures": [
+    "legacy font/local runner isolation",
+    "Yjs transport disconnect only; server frames forwarded unchanged"
+  ],
+  "gaps": [
+    "Chromium only; mobile viewport is not Safari/iOS, hardware IME or touch-device acceptance",
+    "DEV identities do not verify email/session issuance",
+    "Mirror convergence is observable; crash durability/replication is not proven",
+    "No backend database/KV seeding or fabricated canonical events",
+    "Harness leaves uniquely named local rooms and its real OAuth grant for inspection; use disposable Worker persistence"
+  ],
+  "pageErrors": [],
+  "ownershipSteps": [
+    {
+      "name": "owner editor readiness, real Home readiness and prior editor disposal",
+      "status": "passed",
+      "ms": 13913
+    },
+    {
+      "name": "foreign DEV identity, positive access UI and fresh matching AccessContext",
+      "status": "passed",
+      "ms": 14974
+    },
+    {
+      "name": "restore owner identity before direct phone navigation",
+      "status": "passed",
+      "ms": 1346
+    },
+    {
+      "name": "direct 390px owner room app readiness without desktop restoration detour",
+      "status": "passed",
+      "ms": 13087
+    },
+    {
+      "name": "open actual phone Doc sheet and prove visible native document",
+      "status": "passed",
+      "ms": 5026
+    },
+    {
+      "name": "native phone Doc toolbar keyboard activation retains focus",
+      "status": "passed",
+      "ms": 642
+    }
+  ],
+  "version": "c4e6ea7fceff83b04a95d2d2745c70ab",
+  "room": "d30aeb050214",
+  "shellVersion": "91e34bf43f6eec832fa0b5056a780938",
+  "asset": {
+    "path": "/svelte-preview/app.js",
+    "sha256": "4d9d4e09d0732fba5da49911c04870e99c344a9df831f2a2cbb3ee0e8a7b8d74"
+  },
+  "transport": {
+    "native": {
+      "real4003": 7,
+      "connections": 11,
+      "stale": 1,
+      "fetched": 11,
+      "fullTextCommands": 0
+    },
+    "peer": {
+      "real4003": 3,
+      "connections": 5,
+      "stale": 1,
+      "fetched": 7,
+      "fullTextCommands": 0
+    }
+  },
+  "additionalGaps": [
+    "Account replacement is navigation-bound; same-document queued private callback protection needs its separate source/DOM evidence",
+    "No hardware touch drag/Back, IME or multi-process browser crash acceptance"
+  ]
+}

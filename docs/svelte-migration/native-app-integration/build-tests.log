@@ -1,0 +1,88 @@
+$ bun test scripts/client-boundary-policy.test.ts scripts/app-development.test.ts scripts/ui-version.test.ts scripts/bun-client-boundary.test.ts scripts/ui-variant.test.ts scripts/ui-variant-boundary.test.ts scripts/i18n-policy.test.ts
+bun test v1.4.4 (38afee6c8)
+
+scripts/i18n-policy.test.ts:
+(pass) formatted multiline translations retain keys without becoming Portuguese leftovers [252.81ms]
+(pass) unwrapped Portuguese is still rejected with its original source line [37.42ms]
+(pass) comments, regexes and deliberately non-UI data do not create translation calls or labels [60.23ms]
+(pass) TypeScript calls support whitespace, property access and static template keys [28.58ms]
+(pass) Svelte script and template expressions are parsed without translating inert examples [156.93ms]
+(pass) dictionary inspection never executes code or silently accepts dynamic entries [25.54ms]
+
+scripts/ui-variant.test.ts:
+(pass) explicit per-URL preview selection > normal and unknown URLs always select vanilla [2.28ms]
+(pass) explicit per-URL preview selection > navigation retains the variant, thread, login continuation and file hash [23.27ms]
+(pass) explicit per-URL preview selection > history adapter preserves state and leaves history API untouched [2.68ms]
+(pass) explicit per-URL preview selection > preview shell and vanilla shell use disjoint entry assets [76.08ms]
+
+scripts/bun-client-boundary.test.ts:
+(pass) Bun allows shared runtime values and erases backend type imports [303.91ms]
+(pass) Bun rejects generated backend bundle before browser output [27.61ms]
+(pass) Bun rejects generated backend string before browser output [15.99ms]
+(pass) Bun rejects project tooling before browser output [16.00ms]
+(pass) Bun rejects backend before browser output [13.17ms]
+(pass) Bun rejects transitive backend before browser output [22.38ms]
+(pass) Bun rejects symlinked backend before browser output [19.68ms]
+(pass) Bun rejects server marker before browser output [17.05ms]
+(pass) Bun rejects server suffix before browser output [18.02ms]
+(pass) Bun rejects dynamic backend before browser output [23.29ms]
+(pass) Bun rejects Node runtime before browser output [20.16ms]
+(pass) Bun rejects Worker runtime before browser output [21.95ms]
+(pass) Bun rejects private configuration before browser output [22.23ms]
+(pass) Bun rejects CSS generated backend URL before browser output [123.61ms]
+(pass) Bun rejects CSS generated backend CSS before browser output [50.35ms]
+(pass) Bun rejects CSS generated backend symlink font before browser output [36.92ms]
+(pass) Bun rejects CSS private font URL before browser output [44.27ms]
+(pass) Bun rejects CSS backend asset URL before browser output [23.97ms]
+(pass) Bun rejects CSS nested backend CSS import before browser output [26.60ms]
+(pass) Bun rejects CSS private font symlink before browser output [19.04ms]
+(pass) Bun permits a browser-safe CSS font without private markers [30.84ms]
+(pass) production editor build configuration enforces the boundary [26.93ms]
+(pass) production MCP build configuration enforces the boundary [33.91ms]
+(pass) production MCP build keeps its self-contained HTML output [26.31ms]
+(pass) production editor build writes the standalone browser bundle [19.42ms]
+
+scripts/client-boundary-policy.test.ts:
+(pass) shared browser policy refuses generated backend strings, tooling and symlink assets [23.59ms]
+(pass) browser roots, temporary entries and package-internal tooling names remain valid [6.68ms]
+
+scripts/ui-version.test.ts:
+(pass) app shell content version > rejects a real emitted chunk importing the versioned bootstrap [1384.06ms]
+(pass) app shell content version > generated Tailwind CSS changes the update version and is linked exactly once [36.26ms]
+(pass) app shell content version > unchanged builds are stable, preserve layout and use the same version for CSS/JS [36.12ms]
+(pass) app shell content version > every emitted JS chunk and CSS affect the shell version [65.86ms]
+(pass) app shell content version > the separately loaded editor affects the version; shell changes cannot cause a circular hash [67.88ms]
+(pass) app shell content version > repairs stale query versions deterministically and ignores unrelated output files [49.53ms]
+(pass) app shell content version > Vite writes the version after emission and unchanged rebuilds keep the shell identical [821.08ms]
+(pass) app shell content version > fails clearly instead of publishing an unversioned or incomplete shell [10.09ms]
+
+scripts/ui-variant-boundary.test.ts:
+(pass) both variants can build their own UI with shared browser-safe contracts [382.61ms]
+(pass) vanilla cannot acquire preview UI directly, through aliases or through a symlink [436.36ms]
+(pass) preview cannot delegate its UI to vanilla source or its runtime assets [323.73ms]
+
+scripts/app-development.test.ts:
+(pass) only explicit Svelte app pages select source HTML [6.24ms]
+(pass) source HTML removes production version and compiled entry without changing production shell [6.25ms]
+(pass) HTTP and websocket proxy trust the configured Vite origin, never a supplied Host [6.82ms]
+(pass) native auth error shells retain status and cookies while using source HMR [56.96ms]
+(pass) selected consent POST forwards exact raw form, cookie and origin boundary before transforming only native consent errors [442.35ms]
+(pass) unselected vanilla consent and other POST routes remain with the ordinary proxy unread [7.39ms]
+(pass) selected consent POST cancels upstream body and response when its client disconnects [21.63ms]
+(pass) consent POST byte adapter preserves backpressure, rejects decoded chunks and destroys its source on cancel [27.64ms]
+(pass) source GET access-return Referer preserves the Worker's real autoAccess trust predicate [10.39ms]
+(pass) runtime contracts reload while component/style edits remain HMR [1.33ms]
+(pass) raw source middleware denies backend and private reads before Vite serves files [12.99ms]
+(pass) request allowlist excludes tooling, caches, encoded paths and real symlink escapes [79.38ms]
+(pass) supervisor reaps startup children on cancellation and spawn failure [47.88ms]
+(pass) supervisor reaps already-started watchers when a later spawn throws [13.59ms]
+(pass) completed startup groups are released before later watcher shutdown [6.76ms]
+(pass) startup stages fixed Worker then Vite readiness before declaration watch without resetting missed probes [8.77ms]
+(pass) startup cancellation aborts an in-flight readiness probe and never spawns later stages [6.22ms]
+(pass) an earlier server exit and startup deadline both terminate readiness and reap active children [41.34ms]
+(pass) only explicit native denied file navigations transform; successful bytes and Range remain raw [24.61ms]
+
+ 67 pass
+ 0 fail
+ 2618 expect() calls
+Ran 67 tests across 7 files. [17.34s]

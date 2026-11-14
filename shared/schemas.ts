@@ -128,6 +128,9 @@ export const SearchResult = z.object({
   ),
 });
 export type SearchResult = z.infer<typeof SearchResult>;
+/** Query values remain permissive strings; the existing handler trims/slices q. */
+export const SearchQuery = z.object({ q: z.optional(z.string()) });
+export type SearchQuery = z.infer<typeof SearchQuery>;
 export const LoginsResult = z.object({
   logins: z.array(
     z.object({ method: z.string(), last: z.number(), n: z.number() }),
@@ -226,6 +229,7 @@ export const RoomSandbox = z.object({
   disk_rate: num,
   checked_at: num,
   created_at: num,
+  cost_unknown: z.optional(z.boolean()),
 });
 export const AgentsResult = z.object({
   claude_on: z.boolean(),
@@ -250,15 +254,16 @@ export const AgentDbRow = z.object({
 // Slice 8: the person's own cloud sandboxes in a room (freestyle.sh VMs; the key never leaves the server).
 export const SandboxCard = z.object({
   id: z.string(),
-  name: z.string(),
+  name: z.nullable(z.string()),
   vm_id: z.string(),
   ready: z.boolean(),
   state: z.string(),
   error: z.optional(z.string()),
   log: z.optional(z.string()),
-  created_at: z.number(),
+  created_at: z.nullable(z.number()),
   rate: z.number(),
   cost: z.number(),
+  cost_unknown: z.optional(z.boolean()),
 });
 export const SandboxesResult = z.object({
   connected: z.boolean(),
@@ -426,6 +431,9 @@ export const MeResult = z.extend(MeData, {
   cached: z.optional(z.literal(true)),
 });
 export type MeResult = z.infer<typeof MeResult>;
+/** Unknown UI names intentionally retain the existing vanilla fallback. */
+export const MeQuery = z.object({ ui: z.optional(z.string()) });
+export type MeQuery = z.infer<typeof MeQuery>;
 
 // Inbox (GET /api/inbox): everything across the person's rooms that needs them — waits (reuses MeWait), the @mentions
 // held back for the digest, and their open tasks (todo/doing/review). D1 for waits + mentions; a DO fan-out for tasks.
@@ -639,3 +647,36 @@ export const AiSpend = z.object({
   note: z.string(),
 });
 export type AiSpend = z.infer<typeof AiSpend>;
+
+/** One live speech segment; normalized output is always checked before delivery. */
+export const FireBody = z.object({
+  text: z.string(),
+  file_id: z.optional(z.string()),
+  history: z.optional(z.array(z.string())),
+  card_msg: z.optional(z.int().check(z.minimum(0))),
+  thread: z.optional(z.string()),
+});
+export type FireBody = z.infer<typeof FireBody>;
+export const FireResult = z.union([
+  z.object({ ok: z.literal(false), error: z.string() }),
+  z.object({
+    ok: z.literal(true),
+    mode: z.literal("card"),
+    card_msg: z.int().check(z.minimum(1)),
+    ms: z.number().check(z.minimum(0)),
+  }),
+  z.object({
+    ok: z.literal(true),
+    mode: z.literal("file"),
+    file: z.pick(AttachmentSchema, {
+      id: true,
+      name: true,
+      type: true,
+      size: true,
+      ts: true,
+    }),
+    opened: z.boolean(),
+    ms: z.number().check(z.minimum(0)),
+  }),
+]);
+export type FireResult = z.infer<typeof FireResult>;

@@ -6,6 +6,7 @@
   @import "tailwindcss/preflight.css" layer(base);
 }
 @import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);
+@import "@xterm/xterm/css/xterm.css" layer(components);
 @source "../";
 @source "../../public/app-svelte.html";
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
@@ -476,6 +477,12 @@
     "CommitMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
   --spacing: 0.25rem;
+  --spacing-room-sidebar: 272px;
+  --spacing-room-sidebar-rail: 68px;
+  --spacing-room-document-sheet: calc(100% - max(96px, 20cqh));
+  --spacing-room-sheet-expanded: calc(
+    var(--vvh, 100dvh) - var(--headH, 60px) - var(--peekH, 44px)
+  );
   --text-xs: 0.75rem;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -505,4 +512,53 @@
   --radius-button: var(--vb-studio-button-radius);
   --radius-control: var(--vb-studio-control-radius);
   --radius-surface: var(--vb-studio-surface-radius);
+}
+
+@theme {
+  --animate-room-sheet: vb-room-sheet 1s linear both paused;
+  --animate-room-scrim: vb-room-scrim 1s linear both paused;
+  --animate-room-document-width: vb-room-document-width 1s linear both paused;
+  --animate-room-document-width-rail: vb-room-document-width-rail 1s linear both
+    paused;
+  --animate-room-viewport: vb-room-viewport 1s linear both paused;
+  @keyframes vb-room-sheet {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  @keyframes vb-room-scrim {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes vb-room-document-width {
+    from {
+      width: 260px;
+    }
+    to {
+      width: max(260px, calc(100cqw - 592px));
+    }
+  }
+  @keyframes vb-room-document-width-rail {
+    from {
+      width: 260px;
+    }
+    to {
+      width: max(260px, calc(100cqw - 388px));
+    }
+  }
+  @keyframes vb-room-viewport {
+    from {
+      height: 0%;
+    }
+    to {
+      height: 100%;
+    }
+  }
 }

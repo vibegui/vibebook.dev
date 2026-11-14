@@ -1,4 +1,6 @@
 import "server-only";
+import { FILE_TYPES, maxBytes } from "../shared/composition";
+export { AUDIO_TYPES, FILE_TYPES, MAX_FILE_BYTES, MAX_AUDIO_BYTES, maxBytes } from "../shared/composition";
 import type { UploadFileResponse } from "../shared/rpc";
 import { checkEmbed } from "./embed";
 import { poke } from "./person";
@@ -8,6 +10,7 @@ import { emailHtml, escapeHtml, inviteLink } from "./auth";
 import type { Env } from "./index";
 import { findSecret } from "./secrets";
 import { track } from "./track";
+import { INBOX_MENTIONS_SQL } from "./digestItems";
 
 export const isMember = async (db: D1Database, bookId: string, email: string) =>
   !!(await db.prepare(`SELECT 1 FROM members WHERE book_id = ? AND email = ?`).bind(bookId, email).first());
@@ -104,13 +107,8 @@ export async function setRoomIcon(env: Env, bookId: string, img: { type: string;
 // Files: images, PDF, HTML, Markdown, plain text, CSV and audio (no SVG: it can carry script without our sandbox applying to <img>).
 // HTML is served under a sandbox CSP with no same-origin (see fileHeaders), so it can't touch vibebook.dev.
 // Audio: recordings already made (iPhone's Voice Memos exports .m4a, recorders .mp3/.wav); played with <audio> in the app.
-export const AUDIO_TYPES = ["audio/mp4", "audio/x-m4a", "audio/m4a", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/aac", "audio/x-aac", "audio/ogg", "audio/webm", "audio/flac", "audio/x-flac"];
-export const FILE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif", "application/pdf", "text/html", "text/markdown", "text/plain", "text/csv", ...AUDIO_TYPES];
 /** reminders/<name>.md: a room reminder (Book.reminderFile reads its schedule). */
 export const REMINDER_FILE = /^reminders\/([^\\/\u0000-\u001f]{1,60})\.md$/i;
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
-export const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
-export const maxBytes = (type: string) => (type.startsWith("audio/") ? MAX_AUDIO_BYTES : MAX_FILE_BYTES);
 export const TYPES_ERROR = "Tipo de arquivo não suportado (imagens, PDF, HTML, Markdown, texto, CSV e áudio).";
 export const sizeError = (type: string) => `Arquivo vazio ou maior que ${maxBytes(type) / 1024 / 1024}MB.`;
 export type StoredFile = UploadFileResponse;
@@ -138,23 +136,7 @@ export async function storeFile(env: Env, bookId: string, email: string, type: s
   return meta;
 }
 
-// Uploaded HTML runs in an opaque origin: scripts may run (reports draw charts) but can't reach vibebook.dev's
-// cookies or storage, can't fetch anything, submit forms, open popups or navigate the top page. Images only from
-// here or data: (no tracking pixels); fonts from Google Fonts.
-const HTML_CSP =
-  "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; " +
-  "font-src https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'";
-const FILE_CSP = "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'";
-
-export const fileHeaders = (type: string, name: string) => ({
-  "content-type": FILE_TYPES.includes(type) ? (type === "text/html" ? "text/html; charset=utf-8" : type.startsWith("text/") ? "text/plain; charset=utf-8" : type) : "application/octet-stream",
-  "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(name)}`,
-  "x-content-type-options": "nosniff",
-  "content-security-policy": type === "text/html" ? HTML_CSP : FILE_CSP,
-  "referrer-policy": "no-referrer",
-  "cross-origin-opener-policy": "same-origin",
-  "cache-control": "private, max-age=86400",
-});
+export { fileHeaders } from "./fileHeaders";
 
 /** "Esperando você": what people are waiting on this person for, newest first, in rooms they haven't archived.
  * ref m<id> = a message Jev read as an ask to them; t<id> = a task of theirs in review. */
@@ -208,9 +190,7 @@ export async function inbox(env: Env, email: string) {
     waitsFor(db, email),
     db
       .prepare(
-        `SELECT d.book_id, b.title AS room, d.msg_id, d.thread, d.author, u.name AS author_name, d.text, d.ts
-         FROM digest_items d JOIN books b ON b.id = d.book_id LEFT JOIN users u ON u.email = d.author
-         WHERE d.email = ? ORDER BY d.ts DESC LIMIT 40`,
+        INBOX_MENTIONS_SQL,
       )
       .bind(email)
       .all<{ book_id: string; room: string; msg_id: number; thread: string; author: string; author_name: string | null; text: string; ts: number }>()

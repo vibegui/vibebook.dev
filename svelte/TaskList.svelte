@@ -53,6 +53,27 @@
     })),
   ]);
   let edit = $state<string | null>(null);
+  let highlighted = $state<ReadonlySet<string>>(new Set());
+  function attention(node: HTMLElement, id: string) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const clear = () => {
+      highlighted = new Set([...highlighted].filter((value) => value !== id));
+    };
+    const show = () => {
+      if (!node.isConnected) return;
+      if (timer !== undefined) clearTimeout(timer);
+      highlighted = new Set([...highlighted, id]);
+      timer = setTimeout(clear, 1800);
+    };
+    node.addEventListener("vb:task-highlight", show);
+    return {
+      destroy() {
+        node.removeEventListener("vb:task-highlight", show);
+        if (timer !== undefined) clearTimeout(timer);
+        clear();
+      },
+    };
+  }
   let title = $state("");
   let editInput = $state<HTMLInputElement | null>(null);
   let newTitle = $state("");
@@ -135,6 +156,7 @@
     <div class="tw:space-y-2">
       {#each tasks as task (task.id)}
         <div
+          use:attention={task.id}
           data-task={task.id}
           role="group"
           aria-label={task.title}
@@ -145,6 +167,8 @@
               : "tw:border-border tw:bg-card tw:text-card-foreground",
             !task.done && task.owner === room.me && "tw:border-ring/50",
             waiting(task) && "tw:bg-warning/10",
+            highlighted.has(task.id) &&
+              "tw:animate-pulse tw:motion-reduce:animate-none",
           )}
         >
           <Checkbox

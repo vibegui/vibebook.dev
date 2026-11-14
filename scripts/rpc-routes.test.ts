@@ -1,6 +1,33 @@
 import { expect, test } from "bun:test";
 import { Hono } from "hono";
+import { hc, type InferRequestType } from "hono/client";
 import { uploadsApi as api, type ApiCtx, type ApiServices } from "../src/api";
+import { parsePersonEvent, PersonEventSchema } from "../shared/person";
+import type { MeQuery, SearchQuery } from "../shared/schemas";
+import { uiVariant } from "../shared/uiVariant";
+
+// Compile-time route contracts must come from the actual validator chain, not a
+// client-side query cast/wrapper that could hide missing server inference.
+type PersonalClient = ReturnType<typeof hc<typeof api>>;
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
+type Assert<T extends true> = T;
+export type PersonalQueryContracts = [
+  Assert<
+    Equal<
+      InferRequestType<PersonalClient["api"]["me"]["$get"]>["query"],
+      MeQuery
+    >
+  >,
+  Assert<
+    Equal<
+      InferRequestType<PersonalClient["api"]["search"]["$get"]>["query"],
+      SearchQuery
+    >
+  >,
+];
 
 // Exercise the real handlers/validators without Worker bindings or unchecked Env casts.
 // Authentication middleware and persistence are separate Worker integration gates.
@@ -662,6 +689,120 @@ test("me: the home's one read, typed end to end", async () => {
   expect([r.status, (await r.json()).v]).toEqual([200, "v1"]);
 });
 
+test("personal query contracts preserve first duplicates, search normalization and UI fallback", async () => {
+  const searches: string[] = [];
+  const f = fixture({
+    search: async (q) => {
+      searches.push(q);
+      return { rooms: 0, epics: [], messages: [] };
+    },
+  });
+  const rpc = hc<typeof api>("http://localhost", { fetch: f.app.request });
+  expect((await rpc.api.me.$get({ query: { ui: "svelte" } })).status).toBe(200);
+  expect((await rpc.api.me.$get({ query: { ui: "unknown" } })).status).toBe(
+    200,
+  );
+  expect(
+    (await rpc.api.search.$get({ query: { q: "  typed search  " } })).status,
+  ).toBe(200);
+  expect(searches).toEqual(["typed search"]);
+  await f.app.request("/api/search?q=%20first%20&q=second");
+  expect(searches.at(-1)).toBe("first");
+  await f.app.request(
+    `/api/search?q=${encodeURIComponent("  " + "x".repeat(130) + "  ")}`,
+  );
+  expect(searches.at(-1)).toBe("x".repeat(120));
+  const count = searches.length;
+  for (const path of [
+    "/api/search",
+    "/api/search?q=",
+    "/api/search?q=%20a%20&q=longer",
+  ]) {
+    const response = await f.app.request(path);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      rooms: 0,
+      epics: [],
+      messages: [],
+    });
+  }
+  expect(searches).toHaveLength(count);
+  for (const query of [
+    "ui=svelte&ui=unknown",
+    "ui=unknown&ui=svelte",
+    "ui=&ui=svelte",
+  ]) {
+    const url = `http://localhost/api/me?${query}`;
+    expect((await f.app.request(url)).status).toBe(200);
+    expect(uiVariant(url)).toBe(
+      query.startsWith("ui=svelte&") ? "svelte" : "vanilla",
+    );
+  }
+  if (false) {
+    // @ts-expect-error inferred ui accepts a string, not an untyped numeric value.
+    await rpc.api.me.$get({ query: { ui: 123 } });
+    // @ts-expect-error inferred q accepts a string, not an untyped numeric value.
+    await rpc.api.search.$get({ query: { q: 123 } });
+    // @ts-expect-error there is no room search query in this existing endpoint.
+    await rpc.api.search.$get({ query: { room: "room" } });
+  }
+});
+
+test("personal query contracts leave rate limits and cached me payloads unchanged", async () => {
+  const limited = fixture({ search: async () => false });
+  const response = await limited.app.request("/api/search?q=hello");
+  expect(response.status).toBe(429);
+  expect(await response.json()).toEqual({ error: "rate limited" });
+  let calls = 0;
+  const cached = fixture({
+    me: async () => {
+      calls++;
+      return {
+        email: "test@example.com",
+        name: null,
+        avatar: null,
+        books: [],
+        friends: [],
+        waits: [],
+        v: "current",
+        cached: true,
+      };
+    },
+  });
+  for (const query of ["", "?ui=unknown", "?ui=svelte&ui=unknown"]) {
+    const response = await cached.app.request(`/api/me${query}`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ v: "current", cached: true });
+  }
+  expect(calls).toBe(3);
+});
+
+test("personal event contracts decode raw ws-me data and retain the literal new-message flag", () => {
+  for (const notice of [
+    { t: "me" },
+    { t: "me", book: "room", msg: 1 },
+    { t: "agents", book: "*" },
+  ] as const) {
+    expect(parsePersonEvent(JSON.stringify(notice))).toEqual(notice);
+    expect(PersonEventSchema.safeParse(notice).success).toBe(true);
+  }
+  for (const value of [
+    null,
+    {},
+    new Uint8Array([1]),
+    "pong",
+    "{",
+    "[]",
+    "null",
+    '{"t":"agents"}',
+    '{"t":"me","msg":2}',
+    '{"t":"me","book":3}',
+    '{"t":"unknown"}',
+  ])
+    expect(parsePersonEvent(value)).toBeNull();
+  expect(parsePersonEvent('{"t":"me","extra":"ignored"}')).toEqual({ t: "me" });
+});
+
 test("avatar and room icon: same origin, type, size and rate limits keep their old answers", async () => {
   const f = fixture();
   const send = (path: string, type: string, body: BodyInit, origin?: string) =>
@@ -854,4 +995,77 @@ test("model spend: only in the report rooms, for their members", async () => {
   expect(
     (await outsider.app.request("/api/metrics/ai-spend?room=report")).status,
   ).toBe(403);
+});
+
+test("room sandbox presence normalizes nullable and malformed SQLite metadata without changing membership or row order", async () => {
+  const { Database } = await import("bun:sqlite");
+  const db = new Database(":memory:");
+  try {
+    db.run(
+      "CREATE TABLE sandboxes (id TEXT PRIMARY KEY, email TEXT, book_id TEXT, name TEXT, state TEXT, run_s INTEGER, rate REAL, disk_rate REAL, checked_at INTEGER, created_at INTEGER)",
+    );
+    db.run(
+      "INSERT INTO sandboxes VALUES ('bad','owner@test','room',X'0102',NULL,'broken',0,0,0,NULL), ('null','owner@test','room',NULL,NULL,NULL,NULL,NULL,NULL,NULL), ('valid','owner@test','room','valid','paused',0,0,0,0,0), (NULL,'owner@test','room','missing','paused',0,0,0,0,0), ('private','other@test','other','private','running',0,0,0,0,0)",
+    );
+    const rows = db
+      .query(
+        "SELECT id,email,name,state,run_s,rate,disk_rate,checked_at,created_at FROM sandboxes WHERE book_id='room' ORDER BY created_at",
+      )
+      .all();
+    const queries: { sql: string; values: (string | number | null)[] }[] = [];
+    const f = fixture({
+      sqlAll: async (sql, ...values) => {
+        queries.push({ sql, values });
+        return sql.includes("FROM sandboxes")
+          ? rows
+          : sql.includes("SELECT claude_on")
+            ? [{ claude_on: 0 }]
+            : [];
+      },
+    });
+    const response = await f.app.request("/api/books/room/agents");
+    expect(response.status).toBe(200);
+    const { AgentsResult } = await import("../shared/schemas");
+    const value = AgentsResult.parse(await response.json());
+    expect(value.sandboxes.map((row: { id: string }) => row.id)).toEqual([
+      "bad",
+      "null",
+      "valid",
+    ]);
+    expect(value.sandboxes[0]).toMatchObject({
+      name: null,
+      run_s: null,
+      created_at: null,
+      cost_unknown: true,
+    });
+    expect(value.sandboxes[1]).toMatchObject({
+      name: null,
+      run_s: null,
+      created_at: null,
+      cost_unknown: true,
+    });
+    expect(value.sandboxes[2]).toMatchObject({
+      name: "valid",
+      run_s: 0,
+      rate: 0,
+      disk_rate: 0,
+      checked_at: 0,
+      created_at: 0,
+      cost_unknown: false,
+    });
+    expect(
+      queries.find((query) => query.sql.includes("FROM sandboxes"))?.values,
+    ).toEqual(["room"]);
+    expect(
+      queries.find((query) => query.sql.includes("SELECT claude_on"))?.values,
+    ).toEqual(["room", "test@example.com"]);
+    const outsider = fixture({
+      sqlAll: async (sql) => (sql.includes("SELECT claude_on") ? [] : rows),
+    });
+    expect((await outsider.app.request("/api/books/room/agents")).status).toBe(
+      403,
+    );
+  } finally {
+    db.close();
+  }
 });

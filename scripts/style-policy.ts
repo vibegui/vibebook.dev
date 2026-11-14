@@ -1,3 +1,4 @@
+import { TERMINAL_RENDERER_SOURCE } from "./terminal-vendor-policy";
 import ts from "typescript";
 import { parse } from "svelte/compiler";
 import postcss from "postcss";
@@ -172,8 +173,75 @@ export function auditPresentation(
       true,
       ts.ScriptKind.TS,
     );
+    const approvedTerminalTheme = (value: ts.Node) =>
+      file === TERMINAL_RENDERER_SOURCE &&
+      ts.isCallExpression(value) &&
+      value.expression.getText(ast) === "resolveTerminalTheme" &&
+      value.arguments.length === 1;
+    // The card protocol's `props.style` is a closed semantic variant, not CSS.
+    // Permit only strict comparisons with its catalog values, never mutation,
+    // forwarding as inline CSS, computed access, or reading DOM style fields.
+    const cardVariantComparison = (node: ts.PropertyAccessExpression) => {
+      if (
+        node.name.text !== "style" ||
+        !ts.isPropertyAccessExpression(node.expression) ||
+        node.expression.name.text !== "props"
+      )
+        return false;
+      const parent = node.parent;
+      if (
+        !ts.isBinaryExpression(parent) ||
+        ![
+          ts.SyntaxKind.EqualsEqualsEqualsToken,
+          ts.SyntaxKind.ExclamationEqualsEqualsToken,
+        ].includes(parent.operatorToken.kind)
+      )
+        return false;
+      const other = parent.left === node ? parent.right : parent.left;
+      return (
+        ts.isStringLiteral(other) &&
+        [
+          "plain",
+          "bold",
+          "muted",
+          "code",
+          "default",
+          "primary",
+          "danger",
+        ].includes(other.text)
+      );
+    };
+    // ECMA-402's number-format option is unrelated to CSS. Only the literal
+    // built-in constructor/call option is allowed; generic style objects stay banned.
+    const numberFormatOption = (node: ts.PropertyAssignment) => {
+      const options = node.parent;
+      if (!ts.isObjectLiteralExpression(options)) return false;
+      const call = options.parent;
+      return (
+        (ts.isNewExpression(call) || ts.isCallExpression(call)) &&
+        call.expression.getText(ast) === "Intl.NumberFormat" &&
+        call.arguments?.[1] === options &&
+        ts.isStringLiteral(node.initializer) &&
+        ["decimal", "currency", "percent", "unit"].includes(
+          node.initializer.text,
+        )
+      );
+    };
     const visit = (node: ts.Node) => {
       const at = offset + node.getStart(ast);
+      const imported = ts.isImportDeclaration(node)
+        ? node.moduleSpecifier
+        : ts.isCallExpression(node) &&
+            node.expression.kind === ts.SyntaxKind.ImportKeyword
+          ? node.arguments[0]
+          : undefined;
+      if (
+        imported &&
+        ts.isStringLiteralLike(imported) &&
+        /^@xterm\//.test(imported.text) &&
+        file !== TERMINAL_RENDERER_SOURCE
+      )
+        add(at, "Terminal vendor import outside the approved adapter");
       if (
         ts.isBindingElement(node) &&
         ts.isObjectBindingPattern(node.parent) &&
@@ -184,7 +252,8 @@ export function auditPresentation(
         add(at, "Destructured CSSOM access");
       if (
         ts.isPropertyAccessExpression(node) &&
-        ["style", "adoptedStyleSheets"].includes(node.name.text)
+        ["style", "adoptedStyleSheets"].includes(node.name.text) &&
+        !cardVariantComparison(node)
       )
         add(at, `CSSOM access: ${node.name.text}`);
       if (
@@ -197,6 +266,10 @@ export function auditPresentation(
         ts.isPropertyAssignment(node) &&
         ["style", "cssText"].includes(
           node.name.getText(ast).replace(/["']/g, ""),
+        ) &&
+        !(
+          node.name.getText(ast).replace(/["']/g, "") === "style" &&
+          numberFormatOption(node)
         )
       )
         add(at, "First-party style object");
@@ -228,6 +301,55 @@ export function auditPresentation(
           node.arguments[0].text.toLowerCase() === "style"
         )
           add(at, "Inline style attribute mutation");
+      }
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+      ) {
+        const left = node.left;
+        const themeTarget =
+          ts.isPropertyAccessExpression(left) && left.name.text === "theme"
+            ? left.expression
+            : ts.isElementAccessExpression(left) &&
+                ts.isStringLiteralLike(left.argumentExpression) &&
+                left.argumentExpression.text === "theme"
+              ? left.expression
+              : null;
+        if (
+          themeTarget &&
+          /\.options$/.test(themeTarget.getText(ast)) &&
+          !approvedTerminalTheme(node.right)
+        )
+          add(at, "Unapproved vendor theme options");
+      }
+      if (
+        ts.isNewExpression(node) &&
+        /(?:^|\.)Terminal$/.test(node.expression.getText(ast))
+      ) {
+        const options = node.arguments?.[0];
+        if (
+          file !== TERMINAL_RENDERER_SOURCE ||
+          !options ||
+          !ts.isObjectLiteralExpression(options)
+        )
+          add(
+            at,
+            "Terminal construction outside the approved explicit adapter",
+          );
+        else
+          for (const property of options.properties) {
+            if (
+              ts.isSpreadAssignment(property) ||
+              ts.isShorthandPropertyAssignment(property)
+            )
+              add(at, "Unbounded terminal options");
+            else if (
+              ts.isPropertyAssignment(property) &&
+              property.name.getText(ast).replace(/["']/g, "") === "theme" &&
+              !approvedTerminalTheme(property.initializer)
+            )
+              add(at, "Unapproved vendor theme options");
+          }
       }
       if (
         ts.isNewExpression(node) &&
@@ -465,6 +587,11 @@ export function auditTailwind(file: string, source: string): StyleViolation[] {
       add(rule.source?.start?.line, "Custom utility/@apply escape");
     if (
       rule.name === "import" &&
+      !(
+        file === "svelte/styles/tailwind.css" &&
+        rule.parent?.type === "root" &&
+        rule.params === '"@xterm/xterm/css/xterm.css" layer(components)'
+      ) &&
       !/^"tailwindcss(?:\/(?:theme|preflight|utilities)\.css)?"(?:\s|;|$)/.test(
         rule.params,
       )

@@ -13,8 +13,10 @@
     children,
     closeLabel,
     sheet = false,
+    fullScreen = false,
     onOpenChange,
     initialFocus,
+    returnFocus,
   }: {
     open?: boolean;
     title: string;
@@ -23,8 +25,10 @@
     children: Snippet;
     closeLabel: string;
     sheet?: boolean;
+    fullScreen?: boolean;
     onOpenChange?: (open: boolean) => void;
     initialFocus?: () => HTMLElement | null;
+    returnFocus?: () => HTMLElement | null;
   } = $props();
   $effect(() => {
     if (open)
@@ -55,14 +59,23 @@
           target.focus();
         }
       }}
+      onCloseAutoFocus={(event) => {
+        const target = returnFocus?.();
+        if (target?.isConnected) {
+          event.preventDefault();
+          target.focus();
+        }
+      }}
       preventScroll={false}
       preventBodyPointerEvents={false}
       preventOverflowTextSelection={false}
       class={cn(
         "tw:fixed tw:z-50 tw:m-0 tw:box-border tw:flex tw:max-h-[90dvh] tw:flex-col tw:gap-4 tw:overflow-auto tw:border tw:border-solid tw:border-border tw:bg-card tw:p-6 tw:font-sans tw:text-sm tw:text-card-foreground tw:shadow-lg tw:outline-none",
-        sheet
-          ? "tw:inset-x-0 tw:bottom-0 tw:rounded-t-surface tw:sm:inset-y-0 tw:sm:left-auto tw:sm:right-0 tw:sm:max-h-none tw:sm:w-96 tw:sm:rounded-none"
-          : "tw:left-1/2 tw:top-1/2 tw:w-[calc(100%-2rem)] tw:max-w-lg tw:-translate-x-1/2 tw:-translate-y-1/2 tw:rounded-surface",
+        fullScreen
+          ? "tw:inset-2 tw:max-h-none tw:rounded-surface"
+          : sheet
+            ? "tw:inset-x-0 tw:bottom-0 tw:rounded-t-surface tw:sm:inset-y-0 tw:sm:left-auto tw:sm:right-0 tw:sm:max-h-none tw:sm:w-96 tw:sm:rounded-none"
+            : "tw:left-1/2 tw:top-1/2 tw:w-[calc(100%-2rem)] tw:max-w-lg tw:-translate-x-1/2 tw:-translate-y-1/2 tw:rounded-surface",
       )}
     >
       <div class="tw:flex tw:items-start tw:gap-3">

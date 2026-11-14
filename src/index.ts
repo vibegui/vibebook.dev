@@ -1,3 +1,4 @@
+import { mountAppDocumentFiles, isAppDocumentNavigation } from "./appDocumentFile";
 import { fire } from "./fire";
 import { authApi, uploadsApi, type ApiServices, type AuthServices } from "./api";
 import { CROSS_SITE, UNAUTHENTICATED } from "../shared/schemas";
@@ -9,6 +10,7 @@ import { cookieLang, reqLang } from "./lang";
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
 import { ensureAgent, markDelivered, unreadRooms } from "./agent";
 import { accessPage, filePage, roomAccess, roomMeta } from "./access";
+import { nativeAuthPage, nativeConnectionSignedOut } from "./native-page";
 import { auth, authServices, EMAIL_RE, identify } from "./auth";
 import type { Book } from "./book";
 import { connect, providerFor } from "./connect";
@@ -69,11 +71,13 @@ export type Env = {
   MODEL_CLASSIFY: string;
   /** Jev decision model for @vibe's grading (src/jev.ts); "off" disables it. */
   MODEL_JUDGE?: string;
+  /** Local CI provider-protocol fixture only: DEV_EMAIL + exact 127.0.0.1 HTTP endpoint. */
+  DECISION_API?: string;
   DEV_EMAIL?: string;
   MCP_AUTH_TOKEN?: string;
 };
 
-type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
+export type Ctx = { Bindings: Env; Variables: { email: string; svc: ApiServices; auth: AuthServices } };
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, created_at INTEGER)`,
@@ -254,7 +258,10 @@ for (const prefix of ["/_site/*", "/deco/*", "/_serverFn/*"])
     return res;
   });
 // Already signed in: /login goes straight to the app (or to ?next=, which the client keeps safe).
-app.get("/login", async (c) => ((await identify(c)) && !c.req.query("next") ? c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url))) : pageview(c, await shell(c))));
+app.get("/login", async (c) => {
+  if ((await identify(c)) && !c.req.query("next")) return c.redirect(uiNavigationUrl("/app", c.req.url, uiVariant(c.req.url)));
+  return pageview(c, uiVariant(c.req.url) === "svelte" ? await nativeAuthPage(c.env, c.req.raw, "login") : await shell(c));
+});
 app.get("/app", async (c) => {
   const email = await identify(c);
   return email ? pageview(c, await shell(c), email) : c.redirect(uiNavigationUrl("/login", c.req.url, uiVariant(c.req.url)));
@@ -273,6 +280,12 @@ app.get("/b/*", async (c) => {
   const { state, title } = await roomAccess(c.env.DB, id, email ?? null);
   if (state === "member")
     return pageview(c, new HTMLRewriter().on("title", { element: (el) => { el.replace(roomMeta(url.origin, id, title ?? ""), { html: true }); } }).transform(await shell(c)), email ?? undefined);
+  if (uiVariant(url) === "svelte") {
+    const autoAccess = url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`);
+    const native = await nativeAuthPage(c.env, c.req.raw, "access", {autoAccess,status:state === "missing" ? 404 : 200});
+    const res = native.status === 503 ? native : new HTMLRewriter().on("title", {element: (el) => {el.replace(roomMeta(url.origin,id,state === "missing" ? null : title),{html:true});}}).transform(native);
+    return pageview(c,res,email ?? undefined);
+  }
   const res = c.html(accessPage({ origin: url.origin, id, title, state, email: email ?? undefined, auto: url.searchParams.has("pedir") && (c.req.header("referer") ?? "").startsWith(`${url.origin}/`) /* only when our own login sent them here: a bare link must not ask (and tell the room who clicked) by itself */, lang: reqLang(c.req.raw), ui: uiVariant(url) }), state === "missing" ? 404 : 200);
   res.headers.set("x-frame-options", "DENY");
   res.headers.set("content-security-policy", "frame-ancestors 'none'");
@@ -370,7 +383,10 @@ app.get("/.well-known/jwks.json", async (c) => c.json(await jwks(c.env), 200, { 
 app.use("*", async (c, next) => {
   const email = await identify(c);
   if (!email) {
+    const connection = nativeConnectionSignedOut(c.env, c.req.raw);
+    if (connection) return connection;
     const file = fileLink(c);
+    if(file && uiVariant(c.req.url)==='svelte' && /^\/api\/books\/[a-z0-9]{6,40}\/files\/[0-9a-f]{1,64}$/.test(new URL(c.req.url).pathname))return nativeAuthPage(c.env,c.req.raw,'file-access',{status:401});
     return file ? c.html(filePage({ id: file, path: new URL(c.req.url).pathname, signedIn: false, lang: reqLang(c.req.raw) }), 401) : c.json(UNAUTHENTICATED, 401);
   }
   // The users row once per isolate, off the request path: a D1 write here cost every request a round trip.
@@ -384,7 +400,7 @@ app.use("*", async (c, next) => {
   }
   c.set("email", email);
   await next();
-  if (c.req.method !== "GET" && c.req.path.startsWith("/api/") && c.res.status < 400) c.executionCtx.waitUntil(poke(c.env, [email], { t: "me" }));
+  if (c.req.method !== "GET" && c.req.path.startsWith("/api/") && !isAppDocumentNavigation(c.req.raw) && c.res.status < 400) c.executionCtx.waitUntil(poke(c.env, [email], { t: "me" }));
 });
 
 
@@ -428,6 +444,8 @@ async function edgeCached(c: Context<Ctx>, load: () => Promise<Response | null>)
   }
   const out = new Response(res.body, res);
   out.headers.set("cache-control", "private, max-age=31536000, immutable");
+  // Also partition older edge entries created before fileHeaders varied by Cookie.
+  out.headers.set("vary", "Cookie");
   return out;
 }
 app.get("/api/books/:id/icon", async (c) => {
@@ -485,6 +503,8 @@ app.route("/", uploadsApi);
 
 // Files: stored in R2 under <book>/<file>; types, limits and serving headers live in rooms.ts.
 
+mountAppDocumentFiles(app);
+
 // Modo Fire: a piece of live speech applied by a fast model to the file open beside the chat (src/fire.ts).
 app.post("/api/books/:id/fire", async (c) => {
   const id = c.req.param("id"), email = c.get("email");
@@ -498,8 +518,10 @@ app.post("/api/books/:id/fire", async (c) => {
 });
 app.get("/api/books/:id/files/:fid", async (c) => {
   const id = c.req.param("id");
-  if (!(await isMember(c.env.DB, id, c.get("email"))))
+  if (!(await isMember(c.env.DB, id, c.get("email")))) {
+    if(fileLink(c) && uiVariant(c.req.url)==='svelte' && /^[a-z0-9]{6,40}$/.test(id) && /^[0-9a-f]{1,64}$/.test(c.req.param('fid')))return nativeAuthPage(c.env,c.req.raw,'file-access',{status:403});
     return fileLink(c) ? c.html(filePage({ id, path: "", signedIn: true, lang: reqLang(c.req.raw) }), 403) : c.json({ error: "forbidden" }, 403);
+  }
   // Range: iOS Safari's <audio> plays only what answers 206 to a byte range (also lets any player seek).
   const ranged = !!c.req.header("range");
   const obj = await c.env.FILES.get(`${id}/${c.req.param("fid")}`, ranged ? { range: c.req.raw.headers } : undefined);
@@ -557,6 +579,9 @@ app.get("/ws/:id", async (c) => {
 // Cloud agents (freestyle.sh sandboxes): src/sandbox.ts. agents/<name>.md is the sandbox's CLAUDE.md, kept in the
 // room's files so people (and their Claudes) edit it there; created with a template the first time.
 mountConnections(app, { isMember, track });
+const appHandler: ExportedHandler<Env> = {
+  fetch: (request, env, ctx) => app.fetch(request, env, ctx),
+};
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -569,7 +594,7 @@ export default {
     }
     if (url.pathname.startsWith("//")) return new Response("not found", { status: 404 });
     if (url.pathname === "/mcp" && isAdminMcp(request, env)) return handleMcp(request, env);
-    return providerFor(url.origin, app as unknown as ExportedHandler<Env>).fetch(request, env, ctx);
+    return providerFor(url.origin, appHandler).fetch(request, env, ctx);
   },
   // 11:00 and 21:00 UTC = 8h and 18h in São Paulo: the catch-up e-mail.
   scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {

@@ -1,19 +1,30 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import ts from "typescript";
 import { projectRoot } from "../svelte/build/clientBoundary";
+import { inventoryOutput } from "./inventory-output";
+import { createInventoryCallClassifier } from "./inventory-calls";
 
 const destination = join(projectRoot, "docs/svelte-migration");
+const output = inventoryOutput(process.argv.slice(2), projectRoot);
 const publishedBaseline = "d3e1473";
-const sources = ["src", "shared", "svelte", "collab", "vanilla"];
+const sources = [
+  "src",
+  "shared",
+  "svelte",
+  "collab",
+  "vanilla",
+  "service-worker",
+];
 type Location = { file: string; line: number };
 type NetworkCall = Location & {
   callee: string;
   target: string;
   method: string;
+  kind?: "inferred-rpc";
 };
 const functions: (Location & { name: string; lines: number })[] = [];
 const network: NetworkCall[] = [];
@@ -35,10 +46,7 @@ async function collect(directory: string) {
   }
 }
 for (const directory of sources) await collect(join(projectRoot, directory));
-files.push(
-  join(projectRoot, "public/app-svelte.css"),
-  join(projectRoot, "public/app-svelte.html"),
-);
+files.push(join(projectRoot, "public/app-svelte.html"));
 
 for (const absolute of files.sort()) {
   const file = relative(projectRoot, absolute);
@@ -94,6 +102,7 @@ for (const absolute of files.sort()) {
       file,
       line: lineAt(section.offset + node.getStart(source)),
     });
+    const calls = createInventoryCallClassifier(source);
     const visit = (node: ts.Node) => {
       if (node.kind === ts.SyntaxKind.AnyKeyword)
         typeEscapes.push({ ...location(node), kind: "explicit any" });
@@ -128,20 +137,21 @@ for (const absolute of files.sort()) {
         });
       if (ts.isCallExpression(node)) {
         const callee = node.expression.getText(source);
+        const rpc = calls.inferredRpc(node);
         if (
           ["fetch", "api"].includes(callee) ||
-          /\.(?:postMessage|uploadFile|\$get|\$post|\$put|\$patch|\$delete)$/.test(
-            callee,
-          )
+          rpc ||
+          /\.(?:postMessage|uploadFile)$/.test(callee)
         ) {
           let method =
-            callee === "api"
+            rpc?.method ??
+            (callee === "api"
               ? node.arguments[1]
                 ? "POST"
                 : "GET"
-              : "GET/default or typed transport";
+              : "GET/default or typed transport");
           const init = node.arguments[1];
-          if (init && ts.isObjectLiteralExpression(init)) {
+          if (!rpc && init && ts.isObjectLiteralExpression(init)) {
             const property = init.properties.find(
               (property) =>
                 ts.isPropertyAssignment(property) &&
@@ -153,21 +163,19 @@ for (const absolute of files.sort()) {
                 .replace(/["']/g, "");
           }
           network.push({
-            ...location(node),
+            ...location(calls.site(node)),
+            ...(rpc ? { kind: rpc.kind } : {}),
             callee,
             target:
               node.arguments[0]?.getText(source) ?? "typed transport input",
             method,
           });
         }
-        const route = /^(?:app|auth|router)\.(get|post|put|patch|delete)$/.exec(
-          callee,
-        );
-        if (route && node.arguments[0])
+        const route = calls.endpoint(node);
+        if (route)
           endpoints.push({
-            ...location(node),
-            method: route[1]!.toUpperCase(),
-            path: node.arguments[0].getText(source),
+            ...location(calls.site(node)),
+            ...route,
           });
         if (
           /\.(?:insertAdjacentHTML|replaceChildren|createElement|addEventListener|appendChild|setProperty|insertRule|replaceSync|adoptedStyleSheets)$/.test(
@@ -187,48 +195,55 @@ for (const absolute of files.sort()) {
   }
 }
 
-await mkdir(destination, { recursive: true });
-const baselinePath = join(destination, "baseline.json");
-let baselineExists = true;
-try {
-  await readFile(baselinePath);
-} catch {
-  baselineExists = false;
-}
-if (!baselineExists) {
-  const paths = [
-    "public/app.html",
-    "public/svelte/ui.js",
-    "public/collab.js",
-    "public/sw.js",
-    "public/manifest.webmanifest",
-    "src/webpush.ts",
-  ];
-  const assets = paths.map((path) => {
-    const body = execFileSync("git", ["show", `${publishedBaseline}:${path}`], {
-      cwd: projectRoot,
-      maxBuffer: 16 * 1024 * 1024,
+await mkdir(dirname(output.file), { recursive: true });
+// A separate current snapshot never creates or replaces the frozen baseline.
+if (!output.explicit) {
+  const baselinePath = join(destination, "baseline.json");
+  let baselineExists = true;
+  try {
+    await readFile(baselinePath);
+  } catch {
+    baselineExists = false;
+  }
+  if (!baselineExists) {
+    const paths = [
+      "public/app.html",
+      "public/svelte/ui.js",
+      "public/collab.js",
+      "public/sw.js",
+      "public/manifest.webmanifest",
+      "src/webpush.ts",
+    ];
+    const assets = paths.map((path) => {
+      const body = execFileSync(
+        "git",
+        ["show", `${publishedBaseline}:${path}`],
+        {
+          cwd: projectRoot,
+          maxBuffer: 16 * 1024 * 1024,
+        },
+      );
+      return {
+        path,
+        sha256: createHash("sha256").update(body).digest("hex"),
+        rawBytes: body.length,
+        gzipBytes: gzipSync(body).length,
+      };
     });
-    return {
-      path,
-      sha256: createHash("sha256").update(body).digest("hex"),
-      rawBytes: body.length,
-      gzipBytes: gzipSync(body).length,
-    };
-  });
-  await writeFile(
-    baselinePath,
-    JSON.stringify(
-      {
-        startingCommit: "9579bc4",
-        publishedBaseline,
-        variants: { vanilla: "/app and /b/ROOM", svelte: "?ui=svelte" },
-        assets,
-      },
-      null,
-      2,
-    ) + "\n",
-  );
+    await writeFile(
+      baselinePath,
+      JSON.stringify(
+        {
+          startingCommit: "9579bc4",
+          publishedBaseline,
+          variants: { vanilla: "/app and /b/ROOM", svelte: "?ui=svelte" },
+          assets,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  }
 }
 const inventory = {
   sourceRevision: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -238,14 +253,7 @@ const inventory = {
   workingTreeDirty:
     execFileSync(
       "git",
-      [
-        "status",
-        "--porcelain",
-        "--",
-        ...sources,
-        "public/app-svelte.html",
-        "public/app-svelte.css",
-      ],
+      ["status", "--porcelain", "--", ...sources, "public/app-svelte.html"],
       { cwd: projectRoot, encoding: "utf8" },
     ).trim().length > 0,
   sourceFingerprint: createHash("sha256")
@@ -271,10 +279,12 @@ const inventory = {
   styles,
 };
 await writeFile(
-  join(destination, "inventory.json"),
+  output.file,
   JSON.stringify(inventory, null, 2) + "\n",
+  // Refuse existing explicit targets, including symlinks/hard links to frozen records.
+  { flag: output.explicit ? "wx" : "w" },
 );
 console.log(JSON.stringify(inventory.counts));
 console.log(
-  `Wrote ${relative(projectRoot, destination)}/inventory.json; frozen vanilla baseline ${publishedBaseline}`,
+  `Wrote ${relative(projectRoot, output.file)}; frozen vanilla baseline ${publishedBaseline}`,
 );

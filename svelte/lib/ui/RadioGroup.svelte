@@ -15,7 +15,7 @@
     name?: string;
     items: readonly { value: string; label: string; disabled?: boolean }[];
     disabled?: boolean;
-    onValueChange?: (value: string) => void;
+    onValueChange?: (value: string, event: Event) => void;
     class?: string;
   } = $props();
 </script>
@@ -37,7 +37,7 @@
           value={item.value}
           disabled={disabled || item.disabled}
           bind:group={value}
-          onchange={() => onValueChange?.(item.value)}
+          onchange={(event) => onValueChange?.(item.value, event)}
           class="tw:m-0 tw:size-4 tw:appearance-none tw:rounded-full tw:border tw:border-input tw:bg-card tw:p-0 tw:outline-none tw:checked:border-primary tw:focus-visible:ring-2 tw:focus-visible:ring-ring tw:focus-visible:ring-offset-2 tw:focus-visible:ring-offset-background tw:disabled:opacity-50"
         />
         {#if value === item.value}<span

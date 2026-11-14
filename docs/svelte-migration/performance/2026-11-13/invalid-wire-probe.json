@@ -1,0 +1,555 @@
+{
+  "status": "running",
+  "scope": "Controlled synthetic CURRENT browser frontends; not Worker/database/provider/network/deployment acceptance",
+  "harnessRevision": "76772b5a2ceb6aa9f72402b58f960d1bbe237855",
+  "servedRevisionSuppliedByRunner": "e54e9e4",
+  "config": {
+    "repetitions": 3,
+    "warmups": 1,
+    "historyPages": 3,
+    "scrollFrames": 30,
+    "seed": 421,
+    "width": 1440,
+    "height": 1000,
+    "fontPolicy": "local-only",
+    "forceGC": false,
+    "cohortDeclaredExclusive": true
+  },
+  "profiles": [
+    {
+      "name": "long",
+      "messages": 5000,
+      "epics": 50,
+      "tasksPerEpic": 12,
+      "docCharacters": 40000,
+      "members": 16,
+      "archivedFraction": 0.8
+    }
+  ],
+  "environmentStart": {
+    "timestamp": "2026-11-13T20:22:38.143Z",
+    "platform": "linux",
+    "arch": "arm64",
+    "release": "7.3.3-1-aarch64-ARCH",
+    "cpuModels": [
+      "unknown"
+    ],
+    "cpuCount": 4,
+    "totalMemoryBytes": 922783744,
+    "freeMemoryBytes": 568360960,
+    "loadAverage": [
+      3.43,
+      4.24,
+      5.8
+    ],
+    "bun": "1.4.4",
+    "node": "v26.3.0"
+  },
+  "samples": [
+    {
+      "variant": "vanilla",
+      "profile": "long",
+      "repetition": 1,
+      "warmup": true,
+      "status": "failed",
+      "metrics": {
+        "entry.readyWithFontsAndTwoFramesMs": 8733.799999982119
+      },
+      "resources": [
+        {
+          "url": "http://127.0.0.1:38551/b/aabbccdd0011",
+          "phase": "entry",
+          "type": "Document",
+          "transferBytes": 151502,
+          "decodedDataBytes": 524525,
+          "encodedDataBytes": 0,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "@shell/vanilla"
+        },
+        {
+          "url": "http://127.0.0.1:38551/vendor/marked-12.0.2.min.js",
+          "phase": "entry",
+          "type": "Script",
+          "transferBytes": 11141,
+          "decodedDataBytes": 35479,
+          "encodedDataBytes": 10898,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "/vendor/marked-12.0.2.min.js"
+        },
+        {
+          "url": "http://127.0.0.1:38551/vendor/purify-3.1.6.min.js",
+          "phase": "entry",
+          "type": "Script",
+          "transferBytes": 8690,
+          "decodedDataBytes": 21496,
+          "encodedDataBytes": 8449,
+          "completed": true,
+          "status": 200,
+          "cache": false,
+          "assetKey": "/vendor/purify-3.1.6.min.js"
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Caprasimo&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap",
+          "phase": "entry",
+          "type": "Stylesheet",
+          "transferBytes": null,
+          "decodedDataBytes": 0,
+          "encodedDataBytes": 0,
+          "completed": false,
+          "failed": "net::ERR_FAILED"
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/me",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 1599,
+          "decodedDataBytes": 1425,
+          "encodedDataBytes": 1425,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/books/aabbccdd0011/agents",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 218,
+          "decodedDataBytes": 46,
+          "encodedDataBytes": 46,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:47321/where?room=aabbccdd0011&title=Synthetic%20long%20room%20A",
+          "phase": "entry",
+          "type": "Fetch",
+          "transferBytes": 119,
+          "decodedDataBytes": 4,
+          "encodedDataBytes": 4,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        },
+        {
+          "url": "http://127.0.0.1:38551/api/agents",
+          "phase": "history",
+          "type": "Fetch",
+          "transferBytes": 202,
+          "decodedDataBytes": 30,
+          "encodedDataBytes": 30,
+          "completed": true,
+          "status": 200,
+          "cache": false
+        }
+      ],
+      "fixture": {
+        "seed": 421,
+        "digests": [
+          "e2be3dd57c02962c7b9e9edde56d0a7f3505147f7ccd424361d24ab49e189cf6",
+          "3e29eefc1c82cc0162f5b6c4e0abe0fb00f2f2584c28ac1af71ffcbd8870cce5"
+        ],
+        "totalMessagesPerRoom": 5000,
+        "epicsPerRoom": 50,
+        "tasksPerRoom": 600,
+        "initialStateMessages": [
+          110,
+          110
+        ]
+      },
+      "entryLayout": {
+        "scrollTop": 8785,
+        "scrollHeight": 9399,
+        "clientHeight": 614,
+        "renderedMessages": 60,
+        "firstDOM": "m4901",
+        "firstVisible": "m4995"
+      },
+      "entryCounters": {
+        "Timestamp": 176798.737941,
+        "AudioHandlers": 0,
+        "AudioWorkletProcessors": 0,
+        "Documents": 26,
+        "Frames": 4,
+        "JSEventListeners": 388,
+        "LayoutObjects": 2905,
+        "MediaKeySessions": 0,
+        "MediaKeys": 0,
+        "Nodes": 5384,
+        "Resources": 9,
+        "ContextLifecycleStateObservers": 37,
+        "V8PerContextDatas": 4,
+        "WorkerGlobalScopes": 0,
+        "UACSSResources": 0,
+        "RTCPeerConnections": 0,
+        "ResourceFetchers": 26,
+        "AdSubframes": 0,
+        "DetachedScriptStates": 2,
+        "ArrayBufferContents": 2,
+        "LayoutCount": 11,
+        "RecalcStyleCount": 32,
+        "LayoutDuration": 1.86382,
+        "RecalcStyleDuration": 0.889165,
+        "DevToolsCommandDuration": 1.237996,
+        "ScriptDuration": 2.661292,
+        "V8CompileDuration": 0.077049,
+        "TaskDuration": 8.413356,
+        "TaskOtherDuration": 1.684034,
+        "ThreadTime": 5.690254,
+        "ProcessTime": 8.91,
+        "JSHeapUsedSize": 5968304,
+        "JSHeapTotalSize": 7581696,
+        "FirstMeaningfulPaint": 0,
+        "DomContentLoaded": 176791.624694,
+        "NavigationStart": 176789.544804
+      },
+      "fontEvidence": {
+        "family": "\"Schibsted Grotesk\", system-ui, sans-serif",
+        "size": "16px"
+      },
+      "failedPhase": "history",
+      "error": "waitForFunction: Timeout 90000ms exceeded.",
+      "blockedExternalRequests": [
+        "https://fonts.googleapis.com/css2"
+      ],
+      "pageErrors": [],
+      "fixtureTraffic": {
+        "http": {
+          "/api/me": 1,
+          "/api/books/aabbccdd0011/agents": 1,
+          "/api/agents": 23
+        },
+        "commands": {
+          "older": 1
+        },
+        "events": {
+          "state": 1,
+          "older": 1
+        },
+        "deliveredUTF8Bytes": 185874
+      }
+    }
+  ],
+  "gaps": [
+    "No real Worker/D1/R2/AI/provider/CRDT persistence or production network costs. HTTP/WS fixtures are deliberately simulated.",
+    "Fresh contexts and cache disabled; browser process, OS files, DNS/TLS and local static server are warm. Browser launch is excluded.",
+    "Default local-only font policy blocks external fonts; native local fonts remain measured. Optional network-public-fonts changes this experiment.",
+    "Desktop headless Chromium/reduced motion only; no iOS/Safari/mobile/IME/hardware GPU claim.",
+    "Switch/inbox DOM probes include automation observation overhead. Two animation frames are paint opportunities, not compositor presentation proof.",
+    "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
+    "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
+    "Deferred bytes cover only exercised interactions and Inbox. Editor/Yjs/MCP/media/tool graphs not visited are unmeasured, not zero.",
+    "Synthetic workload is deterministic, not representative production telemetry. Full raw samples and failures are retained."
+  ],
+  "chromium": "158.0.8127.18",
+  "assets": [
+    {
+      "key": "@shell/vanilla",
+      "sourcePath": "app.html",
+      "sourceSHA256": "e2c29a3751fa7b24b233ace07c534f4b2729034294de32c25f2e2a0ecd5fe27c",
+      "servedSHA256": "e2c29a3751fa7b24b233ace07c534f4b2729034294de32c25f2e2a0ecd5fe27c",
+      "rawBytes": 524525,
+      "gzipBytes": 151254,
+      "type": "text/html;charset=utf-8",
+      "injectedVersion": false
+    },
+    {
+      "key": "@shell/svelte",
+      "sourcePath": "app-svelte.html",
+      "sourceSHA256": "6e64cda97e3c9e59ebb11dc51aaafb81dac1aca9fa3044309e64283672d88c82",
+      "servedSHA256": "8dde3cfdd219ae8cff36b23b046c47dc757090480cfa431c199639727ae6e4c8",
+      "rawBytes": 1868,
+      "gzipBytes": 896,
+      "type": "text/html;charset=utf-8",
+      "injectedVersion": true
+    },
+    {
+      "key": "/vendor/marked-12.0.2.min.js",
+      "sourcePath": "vendor/marked-12.0.2.min.js",
+      "sourceSHA256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "servedSHA256": "15fabce5b65898b32b03f5ed25e9f891a729ad4c0d6d877110a7744aa847a894",
+      "rawBytes": 35479,
+      "gzipBytes": 10898,
+      "type": "text/javascript;charset=utf-8",
+      "injectedVersion": false
+    },
+    {
+      "key": "/vendor/purify-3.1.6.min.js",
+      "sourcePath": "vendor/purify-3.1.6.min.js",
+      "sourceSHA256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "servedSHA256": "c0845096a7c4a6741f362ac506c94c1c7d27dc603bcc1bf64a587f76f2dbe3a1",
+      "rawBytes": 21496,
+      "gzipBytes": 8449,
+      "type": "text/javascript;charset=utf-8",
+      "injectedVersion": false
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 // /authorize signs the person in with the normal vibebook session and asks for consent; the grant's
 // props carry only their email. The app lists and revokes grants through /api/agents.
 import { reqLang } from "./lang";
+import { nativeAuthPage,consentLoginUrl } from "./native-page";
 import { AuthorizationError, CimdFetchError, type ConsentDescription, OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { type Context, Hono } from "hono";
 import { handleAgentMcp } from "./agent";
@@ -10,9 +11,11 @@ import type { Env } from "./index";
 import { track } from "./track";
 import type { AgentGrantsResult, ConsentContext, ConsentError } from "../shared/schemas";
 import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
+import { withAgentGrant, type AgentProps } from "./agentGrant";
+import { grantMetadata } from "./grantMetadata";
+export type { AgentProps } from "./agentGrant";
 
 export const SCOPE = "rooms";
-export type AgentProps = { email: string; client: string; gid?: string; sandbox?: string; room?: string }; // gid: this grant, to record its last use; sandbox: the cloud sandbox (name) this grant was made for
 
 // The resource URL is the request's own origin, so local dev (http://localhost:8787) works like prod.
 const providers = new Map<string, OAuthProvider<Env>>();
@@ -22,7 +25,7 @@ export function providerFor(origin: string, defaultHandler: ExportedHandler<Env>
     p = new OAuthProvider<Env>({
       apiRoute: "/mcp",
       apiHandler: {
-        fetch: (req: Request, env: Env, ctx: ExecutionContext) => handleAgentMcp(req, env, ctx, (ctx as unknown as { props: AgentProps }).props),
+        fetch: (req: Request, env: Env, ctx: ExecutionContext) => withAgentGrant(ctx.props, props => handleAgentMcp(req, env, ctx, props)),
       },
       defaultHandler,
       authorizeEndpoint: "/authorize",
@@ -127,17 +130,21 @@ connect.get("/authorize", async (c) => {
     const oauth = c.env.OAUTH_PROVIDER;
     const request = await oauth.parseAuthRequest(c.req.raw);
     const details = await oauth.describeConsent(request);
+    // Validate the original request before serving native UI. Its typed context GET creates the consent transaction.
+    if (uiVariant(url) === "svelte") return nativeAuthPage(c.env, c.req.raw, "consent");
     const consent = await oauth.beginConsent(request);
     consent.headers.set("content-type", "text/html; charset=utf-8");
     return new Response(consentHtml(T[lang(c)], details, email, consent.handle, url.pathname + url.search), { headers: consent.headers });
   } catch (e) {
+    if (uiVariant(url) === "svelte" && (e instanceof AuthorizationError || e instanceof CimdFetchError) && !(e instanceof AuthorizationError && e.redirectTo))
+      return nativeAuthPage(c.env, c.req.raw, "consent", {status:400});
     return fail(c, e);
   }
 });
 
 connect.post("/authorize", async (c) => {
   const email = await identify(c);
-  if (!email) return c.redirect("/login");
+  if (!email) return c.redirect(consentLoginUrl(c.req.url));
   try {
     const oauth = c.env.OAUTH_PROVIDER;
     const form = await c.req.raw.clone().formData();
@@ -161,6 +168,13 @@ connect.post("/authorize", async (c) => {
     approved.headers.set("location", redirectTo);
     return new Response(null, { status: 302, headers: approved.headers });
   } catch (e) {
+    if (uiVariant(c.req.url) === 'svelte' && !(e instanceof AuthorizationError && e.redirectTo)) {
+      const known=e instanceof AuthorizationError || e instanceof CimdFetchError;
+      // Presentation only: the provider still owns all validation/consumption and success headers.
+      // Keep unexpected failures visible in server logs without disclosing details in the browser.
+      if(!known)console.error('Native consent POST failed',e);
+      return nativeAuthPage(c.env,c.req.raw,'consent',{status:known?400:500,consentFailure:true});
+    }
     return fail(c, e);
   }
 });
@@ -199,14 +213,15 @@ export function grantOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
         .first<{ ts: number | null }>();
       // Last use per grant: grants made since Nov 2026 carry a gid that handleAgentMcp stamps in D1 grant_seen; older
       // ones only have the person-wide last call (null per grant = unknown).
-      const gids = items.map((g) => (g.metadata as { gid?: string } | undefined)?.gid).filter(Boolean) as string[];
-      const seen = gids.length
-        ? Object.fromEntries((await env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r) => [r.gid, r.ts]))
-        : {};
+      const grants = items.map(g => ({ grant: g, metadata: grantMetadata(g.metadata) }));
+      const gids = grants.flatMap(({ metadata }) => metadata.gid ? [metadata.gid] : []);
+      const seen = new Map<string, number>(gids.length
+        ? (await env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r): [string, number] => [r.gid, r.ts])
+        : []);
       return {
-        agents: items.map((g) => {
-          const gid = (g.metadata as { gid?: string } | undefined)?.gid;
-          return { id: g.id, client: String((g.metadata as { client?: string } | undefined)?.client ?? g.clientId), connected_at: g.createdAt * 1000, used_at: gid ? (seen[gid] ?? null) : undefined };
+        agents: grants.map(({ grant: g, metadata }) => {
+          const gid = metadata.gid;
+          return { id: g.id, client: metadata.client ?? g.clientId, connected_at: g.createdAt * 1000, used_at: gid ? (seen.get(gid) ?? null) : undefined };
         }),
         last_used: last?.ts ?? null,
       };

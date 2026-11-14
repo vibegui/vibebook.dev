@@ -1,3 +1,4 @@
+import { roomSandbox } from "./sandboxRows";
 // Typed application routes (M2): validated Hono handlers chained into one app whose type (AppType) the Svelte client
 // consumes through hc<AppType> (svelte/lib/client/api.ts, import type only: no backend code reaches the browser).
 // The vanilla app calls the same paths with the same payloads. Routes move here slice by slice
@@ -23,6 +24,7 @@ import {
   CreateConnectionBody,
   type CreateConnectionResult,
   type MeResult,
+  MeQuery,
   AVATAR_TYPES,
   type AvatarResult,
   ImageHeaders,
@@ -35,7 +37,6 @@ import {
   AgentDbRow,
   AgentLimits,
   type AgentsResult,
-  RoomSandbox,
   ClaudeTokenBody,
   type ConnectedResult,
   FreestyleKeyBody,
@@ -57,6 +58,7 @@ import {
   EmailBody,
   LoginsResult,
   type SearchResult,
+  SearchQuery,
   type InboxResult,
   type ErrorBody,
   type OkResult,
@@ -329,8 +331,12 @@ export const accountApi = api
     );
     return c.json({ books: zm.array(ArchivedRoom).parse(rows) } satisfies ArchivedResult, 200);
   })
-  .get("/api/search", async (c) => {
-    const q = (c.req.query("q") ?? "").trim().slice(0, 120);
+  .get("/api/search", validator("query", (value,c) => {
+    // Hono gives repeated keys as arrays; query() previously used the first.
+    const r=SearchQuery.safeParse({q:Array.isArray(value.q)?value.q[0]:value.q});
+    return r.success?r.data:c.json({error:"bad request"} satisfies ErrorBody,400);
+  }), async (c) => {
+    const q = (c.req.valid("query").q ?? "").trim().slice(0, 120);
     const none: SearchResult = { rooms: 0, epics: [], messages: [] }; // typed, so both answers are one SearchResult
     if (q.length < 2) return c.json(none, 200);
     const out = await c.get("svc").search(q);
@@ -511,7 +517,7 @@ export const agentsApi = keysApi.get("/api/books/:id/agents", async (c) => {
   if (!me) return c.json(forbidden, 403);
   const out: AgentsResult = {
     claude_on: !!me.claude_on,
-    sandboxes: sbx.map((s) => RoomSandbox.parse(s)),
+    sandboxes: sbx.flatMap((row) => { try { return [roomSandbox(row)]; } catch { console.error("room sandbox has invalid identity"); return []; } }),
     agents: rows.map((row) => {
       const a = AgentDbRow.parse(row);
       return {
@@ -634,7 +640,10 @@ export const connectionsApi = sandboxApi
   });
 
 // Slice 10: GET /api/me (POST /api/me, your name, is slice 5).
-export const meApi = connectionsApi.get("/api/me", async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
+export const meApi = connectionsApi.get("/api/me", validator("query", (value,c) => {
+  const r=MeQuery.safeParse({ui:Array.isArray(value.ui)?value.ui[0]:value.ui});
+  return r.success?r.data:c.json({error:"bad request"} satisfies ErrorBody,400);
+}), async (c) => c.json((await c.get("svc").me()) satisfies MeResult, 200));
 
 // Slice 11: the profile picture and the room icon, raw image bytes (the app resizes them first). Same-origin only.
 const imageHeaders = validator("header", (value, c) => {

@@ -1,7 +1,1 @@
-// svelte/bootstrap.ts
-if (new URLSearchParams(location.search).get("gallery") === "1") {
-	let e = document.getElementById("app");
-	if (!e) throw Error("Missing gallery root");
-	let { mountGallery: t } = await import("./main-_wHoB1qN.js");
-	t(e);
-} else await import("./host-DOalIwem.js");
+if(document.querySelector(`meta[name="vb-page"]`)){let e=document.getElementById(`app`);if(!e)throw Error(`Missing native page root`);let{mountAuthPage:t}=await import(`./mount-Do8kCOJF.js`);t(e,document)}else if(new URLSearchParams(location.search).get(`gallery`)===`1`){let e=document.getElementById(`app`);if(!e)throw Error(`Missing gallery root`);let{mountGallery:t}=await import(`./main-B7vo7TtR.js`);t(e)}else{let e=document.getElementById(`app`);if(!e)throw Error(`Missing native application root`);let{mountApplication:t}=await import(`./mount-DuJTsPxc.js`);t(e,document)}

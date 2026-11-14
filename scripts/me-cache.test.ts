@@ -1,4 +1,6 @@
 import { expect, mock, test } from "bun:test";
+import { Database } from "bun:sqlite";
+import { MeData, MeResult } from "../shared/schemas";
 // src/services.ts reaches modules that import the Workers runtime; the bits they name are enough here.
 mock.module("cloudflare:workers", () => ({
   DurableObject: class {},
@@ -9,7 +11,10 @@ const { meFor } = await import("../src/services");
 import type { Env } from "../src/index";
 
 // GET /api/me's cache in the Person DO (src/person.ts), with a fake DO and a fake D1 that counts reads.
-function fakeEnv(cached: unknown) {
+function fakeEnv(
+  cached: unknown,
+  profile: Record<string, unknown> = { name: "A", avatar: null, lang: "pt" },
+) {
   let gen = 3;
   let stored: string | null =
     cached === undefined ? null : JSON.stringify(cached);
@@ -82,10 +87,7 @@ function fakeEnv(cached: unknown) {
       const st = {
         bind: () => st,
         all: async () => (reads.push(sql), { results: rows(sql) }),
-        first: async () => (
-          reads.push(sql),
-          { name: "A", avatar: null, lang: "pt" }
-        ),
+        first: async () => (reads.push(sql), profile),
         run: async () => ({}),
       };
       return st;
@@ -105,6 +107,31 @@ const req = new Request("https://vibebook.dev/api/me", {
   headers: { cookie: "vb_lang=pt" },
 });
 const flush = () => new Promise((r) => setTimeout(r, 0));
+
+test("SQLite malformed optional avatar preserves valid profile and produces a valid cached consumer response", async () => {
+  const db = new Database(":memory:");
+  try {
+    db.run("CREATE TABLE users (name TEXT, avatar INTEGER, lang TEXT)");
+    db.run("INSERT INTO users VALUES ('A', 'broken', 'pt')");
+    const profile = db
+      .query<Record<string, unknown>, []>(
+        "SELECT name, avatar, lang FROM users",
+      )
+      .get();
+    if (!profile) throw Error("Missing SQLite fixture");
+    const f = fakeEnv(undefined, profile);
+    const response = MeResult.parse(await meFor(f.env, ctx, "a@x.com", req));
+    expect(response.name).toBe("A");
+    expect(response.avatar).toBeNull();
+    await flush();
+    expect(MeData.parse(JSON.parse(f.stored()!)).avatar).toBeNull();
+    const reads = f.reads.length;
+    expect((await meFor(f.env, ctx, "a@x.com", req)).cached).toBe(true);
+    expect(f.reads.length).toBe(reads);
+  } finally {
+    db.close();
+  }
+});
 
 test("an off-schema cache is recomputed, replaced, and the next request skips D1", async () => {
   const f = fakeEnv({ email: "a@x.com", books: "old shape" });

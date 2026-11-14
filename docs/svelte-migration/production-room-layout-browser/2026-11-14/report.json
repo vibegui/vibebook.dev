@@ -1,0 +1,77 @@
+{
+  "status": "passed",
+  "suppliedRevision": "b8be79f9cd9ec1c1a2f39492c2aa2802c3b93471",
+  "scope": "Production RoomLayout class/playback/history controller in a neutral gallery; no integrated RoomScope/Worker/provider acceptance",
+  "gaps": [
+    "Physical touch, hardware keyboard/AT, safe-area hardware and Safari/WebKit are not represented",
+    "Synthetic pointercancel/input events are named explicitly",
+    "Actual FileViewer/RootApp navigation ordering needs the separate integrated browser gate",
+    "No real room/editor/Board business state is represented by neutral snippet text"
+  ],
+  "assetProof": {
+    "entrySha256": "22d2fd432612545c2618cb6c3a65756f1098ac90e2d39199183318414eae4c7c",
+    "cssSha256": "9da04f91a424416b34315e689a479b389d65cc4892baca1d08c4073f7d052dad",
+    "fixtureVersion": "aaa116227f2b67e9f91c70d40096a84b6cae120fbc1337a4630cf8f84a2a7bba",
+    "fixture": "Minimal public HTML plus actual built Vite assets; no Worker/API/private room"
+  },
+  "phase": "dispose/no-style-writes",
+  "browserVersion": "158.0.8127.18",
+  "pageErrors": [],
+  "htmlVersionMarker": "aaa116227f2b67e9f91c70d40096a84b6cae120fbc1337a4630cf8f84a2a7bba",
+  "resize": {
+    "containerWidth": 1440,
+    "reducedWidth": 1372,
+    "nativeInput": "Home/End plus declared synthetic input473",
+    "persisted": 473
+  },
+  "boardIdentity": true,
+  "samples": [
+    {
+      "fraction": 0.1,
+      "y": -482.217,
+      "height": 535.796875,
+      "animations": [
+        {
+          "name": "vb-room-sheet",
+          "time": 99.99998860852702
+        }
+      ],
+      "opacity": 0.1
+    },
+    {
+      "fraction": 0.15,
+      "y": -455.427,
+      "height": 535.796875,
+      "animations": [
+        {
+          "name": "vb-room-sheet",
+          "time": 150.00001139147298
+        }
+      ],
+      "opacity": 0.15
+    },
+    {
+      "fraction": 0.2,
+      "y": -428.638,
+      "height": 535.796875,
+      "animations": [
+        {
+          "name": "vb-room-sheet",
+          "time": 199.99997721705404
+        }
+      ],
+      "opacity": 0.2
+    },
+    {
+      "closeDistance": 214.31875000000002,
+      "measuredHeight": 535.796875,
+      "quarterThreshold": 133.94921875
+    }
+  ],
+  "styleWrites": [],
+  "reducedMotion": true,
+  "controllerMemory": [
+    "VmHWM:\t  136524 kB",
+    "VmRSS:\t  120836 kB"
+  ]
+}

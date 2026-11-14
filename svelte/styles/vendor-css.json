@@ -48,11 +48,50 @@
           "version": "0.3.5"
         }
       ],
-      "sources": [
-        "y-codemirror.next/src/y-remote-selections.js"
-      ],
+      "sources": ["y-codemirror.next/src/y-remote-selections.js"],
       "purpose": "Dependency collaborator caret/selection rendering only",
       "verification": "Editor lifecycle and concurrent editing browser gates remain required at final acceptance."
+    },
+    {
+      "family": "xterm terminal rendering internals",
+      "scope": "[data-native-terminal-renderer] .xterm",
+      "packages": [
+        {
+          "name": "@xterm/xterm",
+          "version": "5.5.0"
+        },
+        {
+          "name": "@xterm/addon-fit",
+          "version": "0.10.0"
+        }
+      ],
+      "sources": [
+        "@xterm/xterm/css/xterm.css",
+        "@xterm/xterm/lib/xterm.js",
+        "@xterm/addon-fit/lib/addon-fit.js"
+      ],
+      "artifacts": [
+        {
+          "path": "@xterm/xterm/css/xterm.css",
+          "bytes": 5559,
+          "sha256": "ba8e6985669488981ccf40c0cefe3aba80722cb6c92de7ad628b0bd717faf2b6",
+          "source": "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css"
+        },
+        {
+          "path": "@xterm/xterm/lib/xterm.js",
+          "bytes": 289441,
+          "sha256": "1f991ac3b4b283ebf96e60ae23a00a52765dd3a2e46fa6fdda9f1aab032f7495",
+          "source": "https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"
+        },
+        {
+          "path": "@xterm/addon-fit/lib/addon-fit.js",
+          "bytes": 1497,
+          "sha256": "bdaefa370b1bfc42ee88d46fe6072400902a4d4b2d45cd93438dda9b23c97089",
+          "source": "https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"
+        }
+      ],
+      "purpose": "Pinned dependency terminal input/IME, viewport, selection/accessibility, cell/cursor/scroll geometry and terminal-protocol rendering only; approved base semantic options resolve from Studio tokens.",
+      "verification": "Explicit maintainer approval 2026-11-13. Exact artifact digests are enforced; native terminal lifecycle, actual RGB/font/theme and PTY/browser gates remain required. Surrounding controls are atomic Tailwind."
     }
   ]
 }

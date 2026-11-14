@@ -1,0 +1,253 @@
+{
+  "input": {
+    "root": "c",
+    "elements": {
+      "c": {
+        "type": "Card",
+        "props": {
+          "title": 42,
+          "subtitle": "<safe>",
+          "ignored": "drop"
+        },
+        "children": ["s", "f", "t", "bar", "line", "d", "img", "actions"]
+      },
+      "s": {
+        "type": "Section",
+        "props": {
+          "title": "Section"
+        },
+        "children": ["tx"]
+      },
+      "tx": {
+        "type": "Text",
+        "props": {
+          "text": "historical alias",
+          "style": "code",
+          "unknown": 1
+        }
+      },
+      "f": {
+        "type": "Fields",
+        "children": ["field"]
+      },
+      "field": {
+        "type": "Field",
+        "props": {
+          "label": 1,
+          "value": 2
+        }
+      },
+      "t": {
+        "type": "Table",
+        "props": {
+          "columns": [
+            {
+              "label": "A"
+            },
+            "B"
+          ],
+          "rows": [
+            [1, "<b>x</b>"],
+            [null, 3]
+          ]
+        }
+      },
+      "bar": {
+        "type": "Chart",
+        "props": {
+          "data": [
+            {
+              "label": "A",
+              "value": "-5"
+            },
+            {
+              "value": 4
+            }
+          ]
+        }
+      },
+      "line": {
+        "type": "Chart",
+        "props": {
+          "chartType": "line",
+          "title": "Line",
+          "data": [
+            {
+              "label": "A",
+              "value": 0
+            },
+            {
+              "label": "B",
+              "value": 2
+            }
+          ]
+        }
+      },
+      "d": {
+        "type": "Divider"
+      },
+      "img": {
+        "type": "Image",
+        "props": {
+          "src": "https://old.example/api/books/abc123/files/aa11",
+          "alt": 5
+        }
+      },
+      "actions": {
+        "type": "Actions",
+        "children": ["b", "link", "app"]
+      },
+      "b": {
+        "type": "Button",
+        "props": {
+          "label": "Do",
+          "value": 3,
+          "style": "danger"
+        }
+      },
+      "link": {
+        "type": "LinkButton",
+        "props": {
+          "url": "https://example.test",
+          "label": "Open"
+        }
+      },
+      "app": {
+        "type": "LinkButton",
+        "props": {
+          "url": "#app:room/tool"
+        }
+      }
+    }
+  },
+  "expected": {
+    "root": "c",
+    "elements": {
+      "c": {
+        "type": "Card",
+        "props": {
+          "title": "42",
+          "subtitle": "<safe>"
+        },
+        "children": ["s", "f", "t", "bar", "line", "d", "img", "actions"]
+      },
+      "s": {
+        "type": "Section",
+        "props": {
+          "title": "Section"
+        },
+        "children": ["tx"]
+      },
+      "tx": {
+        "type": "Text",
+        "props": {
+          "content": "historical alias",
+          "style": "code"
+        },
+        "children": []
+      },
+      "f": {
+        "type": "Fields",
+        "props": {},
+        "children": ["field"]
+      },
+      "field": {
+        "type": "Field",
+        "props": {
+          "label": "1",
+          "value": "2"
+        },
+        "children": []
+      },
+      "t": {
+        "type": "Table",
+        "props": {
+          "headers": ["A", "B"],
+          "rows": [
+            ["1", "<b>x</b>"],
+            ["", "3"]
+          ]
+        },
+        "children": []
+      },
+      "bar": {
+        "type": "Chart",
+        "props": {
+          "kind": "bar",
+          "data": [
+            {
+              "label": "A",
+              "value": -5
+            },
+            {
+              "label": "",
+              "value": 4
+            }
+          ]
+        },
+        "children": []
+      },
+      "line": {
+        "type": "Chart",
+        "props": {
+          "title": "Line",
+          "kind": "line",
+          "data": [
+            {
+              "label": "A",
+              "value": 0
+            },
+            {
+              "label": "B",
+              "value": 2
+            }
+          ]
+        },
+        "children": []
+      },
+      "d": {
+        "type": "Divider",
+        "props": {},
+        "children": []
+      },
+      "img": {
+        "type": "Image",
+        "props": {
+          "url": "/api/books/abc123/files/aa11",
+          "alt": "5"
+        },
+        "children": []
+      },
+      "actions": {
+        "type": "Actions",
+        "props": {},
+        "children": ["b", "link", "app"]
+      },
+      "b": {
+        "type": "Button",
+        "props": {
+          "label": "Do",
+          "value": "3",
+          "style": "danger"
+        },
+        "children": []
+      },
+      "link": {
+        "type": "LinkButton",
+        "props": {
+          "label": "Open",
+          "url": "https://example.test"
+        },
+        "children": []
+      },
+      "app": {
+        "type": "LinkButton",
+        "props": {
+          "label": "Abrir",
+          "url": "#app:room/tool"
+        },
+        "children": []
+      }
+    }
+  }
+}

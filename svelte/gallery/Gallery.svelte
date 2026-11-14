@@ -14,6 +14,7 @@
   import Tooltip from "../lib/ui/Tooltip.svelte";
   import Dialog from "../lib/ui/Dialog.svelte";
   import Card from "../lib/ui/Card.svelte";
+  import Heading from "../lib/ui/Heading.svelte";
   import Separator from "../lib/ui/Separator.svelte";
   import Skeleton from "../lib/ui/Skeleton.svelte";
   import Field from "../lib/components/Field.svelte";
@@ -279,11 +280,9 @@
         /></Card
       >
       <Card title="Typography" class="tw:md:col-span-2">
-        <h3
-          class="tw:m-0 tw:font-sans tw:text-xl tw:font-semibold tw:leading-7 tw:tracking-tight"
-        >
+        <Heading level={3} class="tw:text-xl tw:leading-7 tw:tracking-tight">
           Inter variable — headings and UI
-        </h3>
+        </Heading>
         <p class="tw:m-0 tw:text-sm tw:leading-5">
           Body 400 · medium 500 · semibold 500 · bold 600. English and
           Portuguese: Olá, colaboração, ações.

@@ -1,0 +1,163 @@
+import type { Env } from "./index";
+import { reqLang } from "./lang";
+import { NativeAuthMetadata } from "../shared/nativeAuth";
+import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
+import { UI_VERSION_HEX_LENGTH } from "../shared/uiVersion";
+
+function oneAsset(
+  shell: string,
+  attribute: "src" | "href",
+  name: "app.js" | "ui.css",
+) {
+  const path = `/svelte-preview/${name}`;
+  const matches = [
+    ...shell.matchAll(
+      new RegExp(
+        `\\b${attribute}=["'](${path.replaceAll(".", "\\.")}[^"']*)["']`,
+        "g",
+      ),
+    ),
+  ];
+  if (matches.length !== 1)
+    throw new Error(`Native shell requires exactly one ${name} reference`);
+  const value = matches[0]![1]!;
+  if (
+    !new RegExp(
+      `^${path.replaceAll(".", "\\.")}\\?v=[a-f0-9]{${UI_VERSION_HEX_LENGTH}}$`,
+    ).test(value)
+  )
+    throw new Error(`Native shell requires a versioned ${name} reference`);
+  return value;
+}
+/** Reuse only allowlisted generated references, never the hybrid shell's authored styles or executable chrome. */
+export function nativeAuthHtml(
+  shell: string,
+  metadata: NativeAuthMetadata,
+  standardURL = "/login",
+) {
+  const data = NativeAuthMetadata.parse(metadata),
+    app = oneAsset(shell, "src", "app.js"),
+    css = oneAsset(shell, "href", "ui.css");
+  if (app.split("?v=")[1] !== css.split("?v=")[1])
+    throw new Error("Native shell assets have mismatched versions");
+  const version = app.split("?v=")[1]!;
+  if (
+    !standardURL.startsWith("/") ||
+    standardURL.startsWith("//") ||
+    /[\\\u0000-\u0020\u007f]/.test(standardURL)
+  )
+    throw new Error("Invalid standard page URL");
+  const fallback = standardURL.replace(
+    /[&<>"']/g,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ]!,
+  );
+  return `<!doctype html><html lang="${data.lang === "en" ? "en" : "pt-BR"}"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex" /><meta name="vb-ui" content="svelte" /><meta name="vb-page" content="${data.page}" /><meta name="vb-auto-access" content="${data.autoAccess ? "1" : "0"}" /><meta name="vb-consent-failure" content="${data.page === "consent" && data.consentFailure ? "1" : "0"}" />${data.page === "connection-error" ? `<meta name="vb-connection-failure" content="${data.connectionFailure ?? "failed"}" />` : ""}<meta name="vb-v" content="${version}" />
+<title>vibebook</title><link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="${css}" /></head>
+<body class="tw:m-0 tw:min-h-dvh tw:bg-background tw:font-sans tw:text-foreground"><div id="app"></div><noscript><main><p>${data.lang === "en" ? "This preview requires JavaScript." : "Esta versão requer JavaScript."}</p><a href="${fallback}">${data.lang === "en" ? "Open the standard page" : "Abrir a página padrão"}</a></main></noscript><script type="module" src="${app}"></script></body></html>`;
+}
+/** An expired sign-in never replays the POST body/old handle after authentication. */
+export function consentLoginUrl(request: string | URL) {
+  const url = new URL(request);
+  return uiVariant(url) === "svelte"
+    ? uiNavigationUrl(
+        `/login?next=${encodeURIComponent("/authorize" + url.search)}`,
+        url,
+        "svelte",
+      )
+    : "/login";
+}
+export async function nativeAuthPage(
+  env: { ASSETS: Pick<Env["ASSETS"], "fetch"> },
+  request: Request,
+  page: NativeAuthMetadata["page"],
+  options: {
+    autoAccess?: boolean;
+    status?: 200 | 400 | 401 | 403 | 404 | 429 | 500;
+    consentFailure?: boolean;
+    connectionFailure?: NativeAuthMetadata["connectionFailure"];
+  } = {},
+) {
+  const headers = {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "x-vibebook-ui": "svelte",
+    "x-frame-options": "DENY",
+    "content-security-policy": "frame-ancestors 'none'",
+  };
+  try {
+    const asset = await env.ASSETS.fetch(
+      new Request(new URL("/app-svelte", request.url)),
+    );
+    if (asset.status !== 200) throw new Error("Native shell missing");
+    const standard = new URL(request.url);
+    standard.searchParams.delete("ui");
+    // A callback contains an OAuth code/state or provider error details. None
+    // belong in the generated document, including its noscript fallback URL.
+    const fallback =
+      page === "connection-error"
+        ? standard.pathname.match(
+            /^\/api\/books\/([a-z0-9]{6,40})\/connections\//,
+          )?.[1]
+        : null;
+    const html = nativeAuthHtml(
+      await asset.text(),
+      {
+        page,
+        lang: reqLang(request),
+        autoAccess: !!options.autoAccess,
+        consentFailure: !!options.consentFailure,
+        ...(page === "connection-error"
+          ? { connectionFailure: options.connectionFailure ?? "failed" }
+          : {}),
+      },
+      page === "connection-error"
+        ? fallback
+          ? `/b/${fallback}`
+          : "/app"
+        : standard.pathname + standard.search,
+    );
+    return new Response(html, { status: options.status ?? 200, headers });
+  } catch {
+    return new Response(
+      "Native application assets are unavailable. Rebuild the Svelte preview and try again.",
+      {
+        status: options.status === 500 ? 500 : 503,
+        headers: { ...headers, "content-type": "text/plain; charset=utf-8" },
+      },
+    );
+  }
+}
+
+/** A presentation-only exception to the ordinary JSON API 401. This function
+ * neither identifies a person nor reads/consumes an OAuth state. */
+export function nativeConnectionSignedOut(
+  env: { ASSETS: Pick<Env["ASSETS"], "fetch"> },
+  request: Request,
+): Promise<Response> | null {
+  if (
+    request.method !== "GET" ||
+    !(request.headers.get("accept") ?? "").includes("text/html")
+  )
+    return null;
+  const url = new URL(request.url),
+    callback = url.pathname === "/api/mcp-oauth/callback",
+    signin =
+      /^\/api\/books\/[a-z0-9]{6,40}\/connections\/[a-z0-9]{6,40}\/signin$/.test(
+        url.pathname,
+      );
+  if (
+    (!callback && !signin) ||
+    (uiVariant(url) !== "svelte" &&
+      !(callback && url.searchParams.get("state")?.startsWith("svelte.")))
+  )
+    return null;
+  return nativeAuthPage(env, request, "connection-error", {
+    status: 401,
+    connectionFailure: "signed-out",
+  });
+}

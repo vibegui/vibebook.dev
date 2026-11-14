@@ -1,0 +1,22 @@
+{
+  "status": "failed",
+  "phases": [
+    {
+      "name": "real Worker readiness and ensureSchema",
+      "status": "passed",
+      "ms": 1726
+    },
+    {
+      "name": "integrated NativeApplication browser",
+      "status": "failed",
+      "ms": 88168
+    }
+  ],
+  "failure": {
+    "name": "AssertionError",
+    "phase": "integrated NativeApplication browser"
+  },
+  "cleanupErrors": [],
+  "remainingOwnedGroups": 0,
+  "scope": "Disposable loopback local Worker; private raw Worker log and storage are intentionally excluded from artifact upload"
+}

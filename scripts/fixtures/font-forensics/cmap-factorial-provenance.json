@@ -1,0 +1,78 @@
+{
+  "diagnosticOnly": true,
+  "accepted": false,
+  "factorialScope": "Same cmap as existing Retained (format4 trimmed) versus exact original raw cmap (4/12 full); full original glyf/gvar versus exact existing Retained holes. Container untransformed for both new controls. Not separating cmap format from coverage yet.",
+  "originalSHA256": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+  "retainedSHA256": "a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903",
+  "originalCmapSubtables": [
+    {
+      "platform": 0,
+      "encoding": 3,
+      "format": 4,
+      "selectedMappings": 1011
+    },
+    {
+      "platform": 0,
+      "encoding": 4,
+      "format": 12,
+      "selectedMappings": 1011
+    },
+    {
+      "platform": 3,
+      "encoding": 1,
+      "format": 4,
+      "selectedMappings": 1011
+    },
+    {
+      "platform": 3,
+      "encoding": 10,
+      "format": 12,
+      "selectedMappings": 1011
+    }
+  ],
+  "selectedCodepoints": 1011,
+  "allOriginalSubtableSelectedGIDUnion": 1011,
+  "nominalUnionRetainedRawGlyphAndVariationBlocksVerified": true,
+  "controls": [
+    {
+      "diagnosticOnly": true,
+      "accepted": false,
+      "name": "cmap-only-trim-inter-diagnostic",
+      "bytes": 357120,
+      "sha256": "99fcc576132436e781ff7e49deec40358781b659333585cce940c8957d3684da",
+      "sfntSHA256": "810e8ea438cc3949faff480ebd42ff8322d4026fd7af5c5ea99a17e457e99649",
+      "cmapSHA256": "21a266f43367b5cadb766e4bc06d3217534b074ed91cdb1b35b396491469c10d",
+      "allNonHeadDecodedTablesMatchDesign": true,
+      "headOnlyChecksumAllowed": true,
+      "glyphCount": 2937
+    },
+    {
+      "diagnosticOnly": true,
+      "accepted": false,
+      "name": "holes-only-original-cmap-inter-diagnostic",
+      "bytes": 251404,
+      "sha256": "4d21ed4102d1d794f2b54fbc2e8ac1f107045cc2009ab54ae03b4e98efba33ab",
+      "sfntSHA256": "e9c1490f6326f8f4fdf5507fdf588a88b3ca73bc9ec5bf220b379934213abc2d",
+      "cmapSHA256": "d191730840f297c90a9543ddd22e6920d3f02a246423e586bca3e38d01ae6943",
+      "allNonHeadDecodedTablesMatchDesign": true,
+      "headOnlyChecksumAllowed": true,
+      "glyphCount": 2937
+    }
+  ],
+  "gaps": [
+    "B advertises original non-selected codepoints whose glyf slots are intentionally empty: never a deployable font or an all-Unicode fidelity claim",
+    "A has all original raw glyf/gvar/layout/metrics and changes only cmap plus head checksum",
+    "Browser sanitizer/shaping/raster unrun; all controls inactive",
+    "Equal quote raster in one branch would narrow factors, not independently prove a particular cmap parser implementation bug"
+  ],
+  "procStatus": "VmHWM:\t   73188 kB\nVmRSS:\t   45004 kB",
+  "ruMaxRSSKiB": 278136,
+  "tools": {
+    "CPython": "3.13.11",
+    "fontTools": "4.68.0",
+    "Brotli": "1.2.1"
+  },
+  "executedPrivateRecipeSHA256": "424760dae7373c2b398e2dd5604b8b001d4bbb1cd6481585c100ae840bdf885a",
+  "pathAdaptedSourceRecipeSHA256": "0df3d344e6f4574cc327e8056a50261bc71428d589123bf28ae31ff0eb2aa065",
+  "sourceRecipeStatus": "Path adaptation and extra guards only; checked-in recipe not rerun. Private generation assertions passed; browser raster pending."
+}

@@ -1,0 +1,11 @@
+bun test v1.4.4 (38afee6c8)
+
+scripts/native-file-viewer-dom.test.ts:
+(pass) native viewer renders safe Markdown, changes exact version and disconnects old controls [2148.05ms]
+(pass) component-only unmount closes the owner and invalidates late media callbacks [666.10ms]
+(pass) CSV pagination bounds active cells and reports omitted parsed columns with original link [2168.80ms]
+
+ 3 pass
+ 0 fail
+ 13 expect() calls
+Ran 3 tests across 1 file. [43.49s]

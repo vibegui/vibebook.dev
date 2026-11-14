@@ -2,6 +2,7 @@
 // person. This is the one place that knows both Env and ApiServices; the routes and their browser-facing types don't.
 import type { ApiServices } from "./api";
 import type { Env } from "./index";
+import * as z from "zod/mini";
 import { LISTEN_FRESH, poke } from "./person";
 import { EMAIL_RE } from "./auth";
 import { cookieLang, reqLang } from "./lang";
@@ -20,6 +21,8 @@ import { aiSpend } from "./reports";
 
 // The app shell's version per UI variant, per isolate (a deploy is a new isolate): open tabs compare it to reload.
 const appVersions = new Map<UiVariant, string>();
+const ProfileName = z.pick(MeData, { name: true });
+const ProfileAvatar = z.pick(MeData, { avatar: true });
 async function currentVersion(env: Env, url: string) {
   const variant = uiVariant(url);
   let version = appVersions.get(variant);
@@ -58,7 +61,7 @@ export async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): voi
        FROM friends f LEFT JOIN users u ON u.email = f.b
        WHERE f.a = ? ORDER BY shared DESC, f.b`,
     ).bind(email).all(),
-    db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<{ name: string | null; avatar: number | null; lang: string | null }>(),
+    db.prepare(`SELECT name, avatar, lang FROM users WHERE email = ?`).bind(email).first<Record<string, unknown>>(),
     waitsFor(db, email),
   ]);
   // Remember the language for emails sent later (mentions, invites): an explicit choice wins, else the browser's, once.
@@ -75,18 +78,24 @@ export async function meFor(env: Env, ctx: { waitUntil(p: Promise<unknown>): voi
       dropped.push(list);
       return [];
     });
-  const out: MeData = {
+  // Optional historical profile data may be malformed independently. Preserve
+  // each valid field; never invent a replacement for the required identity.
+  const name = ProfileName.safeParse({ name: me?.name ?? null });
+  const avatar = ProfileAvatar.safeParse({ avatar: me?.avatar ?? null });
+  if (!name.success) dropped.push("profile.name");
+  if (!avatar.success) dropped.push("profile.avatar");
+  const out = MeData.parse({
     email,
-    name: me?.name ?? null,
-    avatar: me?.avatar ?? null,
+    name: name.success ? name.data.name : null,
+    avatar: avatar.success ? avatar.data.avatar : null,
     books: keep("books", MeBook, books.results),
     friends: keep("friends", MeFriend, friends.results.map((f) => ({ ...f, joined: Number(f.joined ?? 0), shared: Number(f.shared ?? 0) }))),
     waits: keep("waits", MeWait, waits.map((w) => ({ ...w, room: w.room ?? "", thread: w.thread ?? "main", author: w.author ?? "", text: w.text ?? "", ts: w.ts ?? 0 }))),
-  };
+  });
   if (dropped.length) console.error("/api/me dropped rows off schema", dropped);
   const gen = cached?.headers.get("x-gen");
   if (gen) ctx.waitUntil(person.fetch("https://person/me", { method: "PUT", body: JSON.stringify(out), headers: { "x-gen": gen } }).then(() => {}, () => {}));
-  return { ...out, v: await currentVersion(env, req.url) };
+  return MeResult.parse({ ...out, v: await currentVersion(env, req.url) });
 }
 
 export function services(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }, email: string, req0: Request): ApiServices {

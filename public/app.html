@@ -746,6 +746,7 @@
   .plusMenu svg { color: var(--mute); flex: none; }
   .mentionPop .avatar { width: 24px; height: 24px; font-size: 10px; }
   .composer textarea { resize: none; min-height: 44px; max-height: 160px; }
+  #askText[data-content-size], .composer textarea[data-content-size] { field-sizing: content; }
 
   .doc { position: relative; border-left: 1px solid var(--line); display: flex; flex-direction: column; background: var(--bg); min-width: 0; }
   /* collapsible sidebar */
@@ -2173,6 +2174,8 @@ const EN = {
   "Remover a conexão {name}? Os apps dela saem da sala.": "Remove the connection {name}? Its apps leave the room.",
   "Esse app não está nas conexões que você pode usar nesta sala.": "That app isn't in the connections you can use in this room.",
   "Recarregar": "Reload",
+  "Reabrir": "Reopen",
+  "Este app mudou de página. Reabra para autorizar novamente.": "This app changed pages. Reopen it to authorize again.",
   "próximo {when}": "next {when}",
   "de {who}": "by {who}",
   "Apagar lembrete": "Delete reminder",
@@ -2237,6 +2240,8 @@ const EN = {
   "Pausar": "Pause",
   "Retomar": "Resume",
   "Apagar sandbox": "Delete sandbox",
+  "Estimativa indisponível": "Estimate unavailable",
+  "Sem nome": "Unnamed",
   "Um agent na nuvem pra esta sala, configurado por agents/&lt;nome&gt;.md nos arquivos. Rodando custa uns US$0,13/hora na sua conta; pausado, só o disco.": "An agent in the cloud for this room, set up by agents/&lt;name&gt;.md in the files. Running costs about US$0.13/hour on your account; paused, only the disk.",
   "Desconectar sua conta do freestyle.sh? Os sandboxes continuam lá, mas o vibebook não consegue mais ligar, pausar nem abrir o terminal deles.": "Disconnect your freestyle.sh account? The sandboxes stay there, but vibebook can no longer start, pause or open their terminal.",
   "Apagar este sandbox? A VM e tudo que está nela somem do freestyle.sh.": "Delete this sandbox? The VM and everything in it are gone from freestyle.sh.",
@@ -3029,11 +3034,25 @@ function wireHome(me) {
   });
 }
 
+// Prefer browser-managed sizing after the first edit; preserve initial rows and
+// the line-count fallback where field-sizing is unsupported.
+const CONTENT_TEXTAREA_SIZING = typeof CSS !== "undefined" && CSS.supports?.("field-sizing", "content");
+const textareaLengths = new WeakMap();
+function resizeTextarea(ta) {
+  if (CONTENT_TEXTAREA_SIZING) {
+    if (!ta.hasAttribute("data-content-size")) ta.setAttribute("data-content-size", "");
+    return;
+  }
+  const len = ta.value.length, shrank = len < (textareaLengths.get(ta) || 0); textareaLengths.set(ta, len);
+  if (shrank) { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; }
+  else if (ta.scrollHeight > ta.clientHeight) ta.style.height = `${ta.scrollHeight}px`;
+}
+
 // Home composer: suggest the room/epic, then post there on one click and open it.
 function wireAsk() {
   const form = document.getElementById("ask"), ta = document.getElementById("askText"), out = document.getElementById("askOut"), btn = document.getElementById("askBtn");
   if (!form) return;
-  ta.oninput = () => { ta.style.height = "auto"; ta.style.height = `${ta.scrollHeight}px`; };
+  ta.oninput = () => { resizeTextarea(ta); };
   ta.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); } };
   const where = (p) => `<b>${esc(p.book_title)}</b>${p.epic_title ? ` → <b>${esc(p.epic_title)}</b>` : ""}`;
   // Destination first (picked, alternative or a new room); it's posted as typed, for the people and Claudes there.
@@ -3272,11 +3291,12 @@ function inboxView(d, goTo, redraw) {
   const byEpic = new Map();
   for (const x of tasks) { const k = `${x.book_id}/${x.epic_id}`; if (!byEpic.has(k)) byEpic.set(k, { x, list: [] }); byEpic.get(k).list.push(x); }
   const stLbl = { todo: t("a fazer"), doing: t("fazendo"), review: t("revisar") };
-  d.innerHTML = `<div class="ibChat"><div class="chathead"><h2>${icon("inbox")} ${t("Caixa de entrada")}</h2><div class="ibTabs"><button type="button" data-iball="" class="${inboxAll ? "" : "on"}">${t("Esta sala")}</button><button type="button" data-iball="1" class="${inboxAll ? "on" : ""}">${t("Todas")}</button></div></div>
+  d.innerHTML = `<div class="ibChat"><div class="chathead"><h2>${icon("inbox")} ${t("Caixa de entrada")}</h2><div class="ibTabs"><button type="button" data-iball="" class="${inboxAll ? "" : "on"}">${t("Esta sala")}</button><button type="button" data-iball="1" class="${inboxAll ? "on" : ""}">${t("Todas")}</button></div><button type="button" class="ghost" data-ibclose aria-label="${t("Fechar")}">${icon("x", 18)}</button></div>
     <div class="ibMsgs">${msgs || `<div class="empty">${inboxAll ? t("Nada esperando você. ✓") : t("Nada esperando você nesta sala. ✓")}</div>`}</div></div>
     <aside class="ibDoc"><h1>${t("O que é seu")}</h1><p>${t("Tarefas suas e o que espera seu OK. Clique pra abrir.")}</p>
     ${oks.length ? `<h3>${t("Esperando seu OK")}</h3><ul>${oks.map((w) => `<li><span class="st review">${t("revisar")}</span><button type="button" class="ibTask" data-ibgo="${esc(w.book_id)}|${esc(w.thread)}">${esc(w.text)}</button></li>`).join("")}</ul>` : ""}
     <h3>${t("Suas tarefas")}</h3>${byEpic.size ? [...byEpic.values()].map(({ x, list }) => `<h4><a href="#" data-ibgo="${esc(x.book_id)}|${esc(x.epic_id)}">${esc(x.epic || t("sala principal"))}</a>${inboxAll ? ` <small>· ${esc(x.room)}</small>` : ""}</h4><ul>${list.map((k) => `<li><span class="st ${esc(k.status)}">${stLbl[k.status] || esc(k.status)}</span><button type="button" class="ibTask" data-ibgo="${esc(k.book_id)}|${esc(k.epic_id)}">${esc(k.title)}</button>${k.due ? `<small class="muted">${esc(k.due)}</small>` : ""}</li>`).join("")}</ul>`).join("") : `<p class="muted">${t("Nenhuma tarefa aberta sua.")}</p>`}</aside>`;
+  d.querySelector("[data-ibclose]").onclick = () => d.close();
   d.querySelectorAll("[data-iball]").forEach((b) => (b.onclick = () => { inboxAll = !!b.dataset.iball; redraw(); }));
   d.querySelectorAll("[data-ib]").forEach((el) => {
     const x = items[Number(el.dataset.ib)];
@@ -3888,11 +3908,8 @@ function renderBook() {
   // Grow/shrink the box only when its line count changes. Setting height to "auto" and reading scrollHeight on every
   // key laid out the whole room twice per keystroke: 264 ms per key in an 80-message room (Gui 14/11: "depois de 30
   // chars fica ultra lagado, no celular trava").
-  let lastLen = 0;
   input.oninput = () => {
-    const len = input.value.length, shrank = len < lastLen; lastLen = len;
-    if (shrank) { input.style.height = "auto"; input.style.height = `${input.scrollHeight}px`; }
-    else if (input.scrollHeight > input.clientHeight) input.style.height = `${input.scrollHeight}px`;
+    resizeTextarea(input);
     if (input.value.includes("@")) updatePop(); else if (!pop.hidden) closePop();
   };
   input.onblur = () => setTimeout(closePop, 100);
@@ -4336,12 +4353,13 @@ function renderAgentsPane(on, live, path, w) {
 // What a sandbox has cost so far, in USD: hours running × its rate (+ the time since the last check while it runs),
 // plus disk for its whole life. From the owner's last list refresh; good enough to see money moving.
 const sbxCost = (x) => ((x.run_s || 0) / 3600 + (x.state === "running" && x.checked_at ? (Date.now() - x.checked_at) / 3600e3 : 0)) * (x.rate || 0) + ((Date.now() - x.created_at) / 3600e3) * (x.disk_rate || 0);
+const sbxCostUnknown = (x) => x.cost_unknown === true || x.created_at == null || !Number.isFinite(x.created_at);
 const usd = (n) => `US$${n < 10 ? n.toFixed(2) : Math.round(n)}`.replace(".", LANG === "en" ? "." : ",");
 // "Pessoas e agents": the room's cloud sandboxes come first (they spend money), each with its owner, state and cost.
 function sbxRows() {
   if (roomAgents.id !== S?.id || !roomAgents.sandboxes?.length) return "";
   return roomAgents.sandboxes.map((x) => `<button type="button" class="member sbxRow ${esc(x.state || "")}" data-sbx-open title="${esc(x.name)} · ${t("de {who}", { who: esc(name(x.email)) })}">
-    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name)}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${usd(sbxCost(x))}</span></button>`).join("");
+    <span class="sbxIco">☁</span><span class="fnCol"><span class="fn">${esc(x.name ?? t("Sem nome"))}</span><small>${esc(name(x.email).split(" ")[0])} · ${t(SBX_STATE[x.state] || x.state || "?")}</small></span><span class="money">${sbxCostUnknown(x) ? t("Estimativa indisponível") : usd(sbxCost(x))}</span></button>`).join("");
 }
 // Your messages in this room (every thread, last 48h, with text) that no Claude of yours acked done/idle: what your
 // Claude still has to handle. Same rule as read_room's "unacked" + its live acks (doing, blocked).
@@ -4381,8 +4399,8 @@ function sbxHtml() {
     ? `<div class="fsOn">${icon("check", 13)} ${t("Claude conectado: sandboxes novos já sobem logados")} · <button type="button" class="ghost" id="ctOff">${t("remover")}</button></div>`
     : `<div class="agCard col"><b>${t("Conecte sua conta do Claude")}</b><small>${t("No seu terminal, rode:")}</small><div class="cpCmd"><code>claude setup-token</code><button type="button" class="ghost" data-cp="claude setup-token">${t("Copiar")}</button></div><small>${t("Cole o token (sk-ant-…) aqui: o Claude do sandbox já sobe logado na sua assinatura. Fica cifrado, igual à key do freestyle. Sem isso, faça /login no terminal do sandbox.")}</small>
       <form id="ctForm" class="fsForm"><input type="password" name="token" autocomplete="off" placeholder="sk-ant-…" required /><button class="primary" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "ct" ? t("Salvando…") : t("Salvar")}</button></form>${sbx.errAt === "ct" && sbx.err ? `<p class="agErr">${esc(sbx.err)}</p>` : ""}</div>`;
-  return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name)}</b>
-      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${sbx.logs?.[x.id] ? `<pre class="sbxLog">${esc(sbx.logs[x.id])}</pre>` : !x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${usd(x.cost || 0)}</span></div>
+  return `${claude}${sbx.list.map((x) => `<div class="sbxCard ${x.state}"><div class="sbxTop"><span class="agIcon">☁</span><div><b>${esc(x.name ?? t("Sem nome"))}</b>
+      <small>${!x.ready && x.state === "running" ? t("preparando (uns 3 min)…") : t(SBX_STATE[x.state] || x.state)}${x.rate ? ` · ${usd(x.rate)}/h` : ""}${x.error ? ` · ${esc(x.error)}` : ""}</small>${sbx.logs?.[x.id] ? `<pre class="sbxLog">${esc(sbx.logs[x.id])}</pre>` : !x.ready && x.log ? `<code class="sbxLog">${esc(x.log)}</code>` : ""}</div><span class="money" title="${t("gasto até agora na sua conta do freestyle")}">${x.cost_unknown ? t("Estimativa indisponível") : usd(x.cost || 0)}</span></div>
       <div class="sbxActs">${x.state === "deleted" ? "" : `<button class="primary" data-sbx-term="${esc(x.id)}">${t("Terminal")}</button>`}
       ${x.state === "running" ? `<button class="ghost" data-sbx-act="pause" data-id="${esc(x.id)}">${t("Pausar")}</button>` : x.state === "paused" || x.state === "stopped" ? `<button class="ghost" data-sbx-act="start" data-id="${esc(x.id)}">${t("Retomar")}</button>` : ""}
       ${!x.ready && x.state === "running" ? `<button class="ghost" data-sbx-setup="${esc(x.id)}" title="${t("Rodar o setup de novo")}" ${sbx.busy ? "disabled" : ""}>${sbx.busy === "setup:" + x.id ? t("Rodando setup… (até 4 min)") : t("Refazer setup")}</button>` : ""}
@@ -5280,7 +5298,8 @@ document.addEventListener("click", (e) => {
 const kb = (n) => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
 // An HTML file and an embed are the same thing to the reader: one card, header (name, size, Abrir in the viewer) over
 // the live preview (sandboxed, no network). Before, a file was a chip and an embed a bare frame with a ⤢ on top.
-const htmlCard = (f) => `<div class="embedBox htmlCard" data-hname="${esc(f.name)}"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Abrir")}</button><a class="hcFull" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</a></div><div class="embedWrap"><iframe class="embed" src="${fileUrl(f)}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
+function appFrameName() { return `app-document-${crypto.randomUUID()}`; }
+const htmlCard = (f) => `<div class="embedBox htmlCard" data-hname="${esc(f.name)}"><div class="hcHead">${fileIcon(f)}<span class="hcName">${esc(f.name === "embed.html" ? t("Prévia") : f.name)}</span><small>${kb(f.size)}</small><button type="button" class="hcOpen" data-side="${f.id}" data-name="${esc(f.name)}" title="${t("Abrir ao lado do chat, no lugar do doc")}">${t("Abrir")}</button><a class="hcFull" href="${fileUrl(f)}" ${viewAttrs(f)} title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</a></div><div class="embedWrap"><iframe name="${appFrameName()}" class="embed" data-app-file="${esc(fileUrl(f))}" sandbox="allow-scripts" loading="lazy" title="${esc(f.name)}"></iframe></div></div>`;
 const attHtml = (files) => files?.length ? `<div class="atts">${files.map((f) => f.embed || f.type === "text/html"
   ? htmlCard(f)
   : f.type.startsWith("audio/")
@@ -5806,8 +5825,8 @@ function renderConnApp(el) {
   const key = `${c.id}/${a.tool}${room ? `@${a.file.id}` : ""}`;
   const pinRef = room ? a.tool : `${c.id}/${a.tool}`;
   const bar = el.querySelector(".connBar");
-  if (el.querySelector(".connFrame")?.dataset.app === key) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
-  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connDocPut" title="${t("Pôr este app no doc (sala ou épico aberto)")}">${t("Pôr no doc")}</button><button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
+  if (el.querySelector(".connFrame")?.dataset.app === key && hosts.get(el.querySelector(".connFrame"))?.current()) { bar?.querySelector(".pinBtn")?.replaceWith(Object.assign(document.createElement("template"), { innerHTML: pinToggle("app", pinRef) }).content); bar && wirePinToggles(bar); return; } // already open: only the pin state may have changed
+  el.innerHTML = `<div class="connBar"><button type="button" class="ghost" id="connBack">← Apps</button><b>${esc(a.title)}</b>${scopeChip(c)}${pinToggle("app", pinRef)}<button type="button" class="ghost" id="connDocPut" title="${t("Pôr este app no doc (sala ou épico aberto)")}">${t("Pôr no doc")}</button><button type="button" class="ghost" id="connReload" title="${t("Recarregar")}" aria-label="${t("Recarregar")}">↻</button></div><div class="appAsk" id="appAsk" hidden></div><iframe name="${appFrameName()}" class="connFrame" sandbox="allow-scripts allow-forms" title="${esc(a.title)}"></iframe>`;
   const frame = el.querySelector(".connFrame"); frame.dataset.app = key;
   document.getElementById("connBack").onclick = () => { connApp = null; renderConns(); };
   wirePinToggles(el.querySelector(".connBar"));
@@ -5819,15 +5838,27 @@ const textOf = (content) => (Array.isArray(content) ? content.filter((b) => b?.t
 const toolOut = (v) => ({ content: [{ type: "text", text: typeof v === "string" ? v : JSON.stringify(v) }], ...(v && typeof v === "object" ? { structuredContent: v } : {}) });
 // "This app wants to … as you": one question at a time, in the app's own box (above the panel app, under an embed).
 let appAskQ = Promise.resolve();
-function appAsk(box, what, detail) {
+function appAsk(box, what, detail, signal) {
   const run = () => new Promise((res) => {
-    if (!box?.isConnected) return res(false);
+    if (signal?.aborted || !box?.isConnected) return res(false);
     box.hidden = false;
     box.innerHTML = `<span>${t("Este app quer {what}, como você:", { what: esc(what) })}</span><q></q><div><button type="button" class="primary">${t("Permitir")}</button><button type="button" class="ghost">${t("Cancelar")}</button></div>`;
     box.querySelector("q").textContent = String(detail).slice(0, 600);
-    const done = (v) => { box.hidden = true; box.innerHTML = ""; res(v); };
-    box.querySelector(".primary").onclick = () => done(true);
-    box.querySelector(".ghost").onclick = () => done(false);
+    const allow = box.querySelector(".primary"), cancel = box.querySelector(".ghost");
+    let answered = false;
+    const ownsButtons = () => box.querySelector(".primary") === allow && box.querySelector(".ghost") === cancel;
+    const finish = (value) => {
+      if (answered) return;
+      answered = true; signal?.removeEventListener("abort", onAbort);
+      if (ownsButtons()) { box.hidden = true; box.innerHTML = ""; }
+      res(value);
+    };
+    const onAbort = () => finish(false);
+    const done = (value, button) => { if (!button.isConnected || !ownsButtons() || signal?.aborted) return; finish(value); };
+    allow.onclick = (event) => done(true, event.currentTarget);
+    cancel.onclick = (event) => done(false, event.currentTarget);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    if (signal?.aborted) onAbort();
   });
   return (appAskQ = appAskQ.then(run, run));
 }
@@ -5853,7 +5884,8 @@ function vbRead({ thread = "main", limit = 50 } = {}) {
     messages: msgs.map((m) => ({ id: m.id, from: m.author === "ai" ? "@vibe" : name(m.author), agent: m.kind === "agent", text: m.text, at: new Date(m.ts).toISOString() })),
   };
 }
-async function vbCall(name, a = {}, ask) {
+async function vbCall(name, a = {}, ask, current = () => true) {
+  if (!current()) return { isError: true, content: [{ type: "text", text: "App document authorization expired" }] };
   const ok = (v) => toolOut(v);
   const thread = (x) => (x && x !== "main" && !S.epics.some((e) => e.id === x) ? null : x || "main");
   switch (name) {
@@ -5864,20 +5896,20 @@ async function vbCall(name, a = {}, ask) {
     case "vibebook_post": {
       const th = thread(a.thread), text = String(a.text || "").trim().slice(0, 4000);
       if (!th || !text) return { isError: true, content: [{ type: "text", text: "text and a valid thread (main or an epic id) needed" }] };
-      if (!(await ask(t("postar"), text))) return { isError: true, content: [{ type: "text", text: "the person cancelled" }] };
+      if (!(await ask(t("postar"), text)) || !current()) return { isError: true, content: [{ type: "text", text: "the person cancelled" }] };
       send({ t: "msg", thread: th, text, files: [] }); return ok("posted");
     }
     case "vibebook_add_task": {
       const ep = a.epic_id && a.epic_id !== "main" ? S.epics.find((e) => e.id === a.epic_id) : null;
       if (a.epic_id && a.epic_id !== "main" && !ep) return { isError: true, content: [{ type: "text", text: "no such epic" }] };
       const title = String(a.title || "").trim().slice(0, 200);
-      if (!title || !(await ask(t("criar uma tarefa"), `${ep ? ep.title : t("sala principal")}: ${title}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!title || !(await ask(t("criar uma tarefa"), `${ep ? ep.title : t("sala principal")}: ${title}`)) || !current()) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       send({ t: "task.add", epic: ep ? ep.id : "main", title }); return ok("added");
     }
     case "vibebook_task_status": {
       const task = [...S.epics.flatMap((e) => e.tasks), ...(S.roomTasks || [])].find((x) => x.id === a.task_id);
       if (!task || !["todo", "doing", "review", "done"].includes(a.status)) return { isError: true, content: [{ type: "text", text: "no such task or bad status" }] };
-      if (!(await ask(t("mover uma tarefa"), `${task.title} → ${a.status}`))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!(await ask(t("mover uma tarefa"), `${task.title} → ${a.status}`)) || !current()) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       send({ t: "task.status", id: task.id, status: a.status }); return ok("moved");
     }
     case "vibebook_call_connection": {
@@ -5886,7 +5918,7 @@ async function vbCall(name, a = {}, ask) {
       if (!tl) return { isError: true, content: [{ type: "text", text: "no such connection/tool for this person" }] };
       // Always asked, read-only or not: readOnlyHint is the remote server's word, and an embed calling a connection of
       // yours could read your data through it and pass it on (security review, Nov 2026).
-      if (!(await ask(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {})))) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
+      if (!(await ask(t("usar {tool} em {conn}", { tool: tl.name, conn: c.title }), JSON.stringify(a.arguments || {}))) || !current()) return { isError: true, content: [{ type: "text", text: "cancelled" }] };
       return (await api(`/api/books/${S.id}/connections/${c.id}/call`, { name: tl.name, arguments: a.arguments || {} })).result;
     }
   }
@@ -5896,13 +5928,51 @@ async function vbCall(name, a = {}, ask) {
 // iframe; one window listener finds the frame by e.source. tools/call: a remote app's own server (through the Worker),
 // otherwise vibebook's tools (VB_TOOLS) as the person looking, writes behind appAsk. ui/message = post as you (asked).
 const hosts = new WeakMap();
-function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remote app, first?, tool?, base?, toolName?, embed? }
-  const post = (m) => frame.contentWindow?.postMessage({ jsonrpc: "2.0", ...m }, "*");
-  const ask = (what, detail) => appAsk(o.ask(), what, detail);
-  const call = (name, args) => (o.call ? o.call(name, args || {}) : vbCall(name, args || {}, ask));
+const appDocuments = new Set();
+let appDocumentModule;
+const loadAppDocumentHost = () => appDocumentModule ||= import("/app-document-host.7e469427bbba31a553f7.js").catch((error) => { appDocumentModule = null; throw error; });
+function appDocumentScope(frame) {
+  const room = S?.id, account = S?.me, at = thread, socket = ws;
+  return () => frame.isConnected && S?.id === room && S?.me === account && thread === at && ws === socket && ws?.readyState === 1;
+}
+function pruneAppDocuments() {
+  for (const owner of appDocuments) if (!owner.current()) { owner.dispose(); appDocuments.delete(owner); }
+}
+// Removal is synchronous for authority (current), observer cleanup only releases resources.
+new MutationObserver(pruneAppDocuments).observe($app, { childList: true, subtree: true });
+function makeHost(frame, o, createAppDocumentHost, current) { // o: { ask (a box), call?(name, args) for a remote app, first?, tool?, base?, toolName?, embed? }
+  const consent = new AbortController();
+  let expiredNotice = null;
+  const documentHost = createAppDocumentHost({ frame, current, receive: (value) => {
+    if (!value || typeof value !== "object") return;
+    if (value.vbEmbed === 1) return void receive(typeof value.h === "number" ? { method: "ui/notifications/size-changed", params: { height: value.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(value.send || "") }] } });
+    if (value.jsonrpc === "2.0" && typeof value.method === "string") void receive(value);
+  }, revoked: () => {
+    consent.abort();
+    if (!current() || expiredNotice) return;
+    frame.dataset.appDocumentExpired = "true"; frame.hidden = true;
+    const notice = document.createElement("div"), reopen = document.createElement("button");
+    notice.className = "empty"; notice.setAttribute("role", "status");
+    notice.append(document.createTextNode(t("Este app mudou de página. Reabra para autorizar novamente.")));
+    reopen.type = "button"; reopen.className = "ghost"; reopen.textContent = t("Reabrir");
+    notice.append(reopen); frame.after(notice); expiredNotice = notice;
+    reopen.onclick = () => {
+      if (!reopen.isConnected || !current()) return;
+      const next = frame.cloneNode(false);
+      for (const attribute of ["src", "srcdoc", "name", "hidden", "data-app-document-expired"]) next.removeAttribute(attribute);
+      next.name = appFrameName(); owner.dispose(); frame.replaceWith(next); o.reopen(next);
+    };
+  } });
+  const post = (m) => documentHost.post({ jsonrpc: "2.0", ...m });
+  const ask = async (what, detail) => current() && await appAsk(o.ask(), what, detail, consent.signal) && current() && await documentHost.attest() && current();
+  const call = async (name, args) => {
+    if (!current() || !await documentHost.attest() || !current()) throw Error("App document authorization expired");
+    return o.call ? o.call(name, args || {}) : vbCall(name, args || {}, ask, current);
+  };
   const dark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-  return async (m) => {
-    const ok = (result) => m.id !== undefined && post({ id: m.id, result });
+  const receive = async (m) => {
+    if (!current() || !documentHost.active()) return;
+    const ok = (result) => m.id !== undefined && post({ id: m.id, result }).catch(() => {});
     try {
       switch (m.method) {
         case "ui/initialize": {
@@ -5912,7 +5982,7 @@ function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remot
             hostContext: { ...(o.tool ? { toolInfo: { tool: o.tool } } : {}), theme: dark() ? "dark" : "light", displayMode: o.embed ? "inline" : "fullscreen", availableDisplayModes: [o.embed ? "inline" : "fullscreen"], containerDimensions: o.embed ? { maxHeight: 420, width: Math.round(r.width) } : { height: Math.round(r.height), width: Math.round(r.width) }, locale: LOCALE, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, platform: ROOM_PHONE.matches ? "mobile" : "web", user: { email: S.me, name: name(S.me) }, room: { id: S.id, title: bookTitle() } } });
         }
         case "ui/notifications/initialized":
-          if (o.first) { post({ method: "ui/notifications/tool-input", params: { arguments: {} } }); post({ method: "ui/notifications/tool-result", params: await o.first }); }
+          if (o.first) { await post({ method: "ui/notifications/tool-input", params: { arguments: {} } }); await post({ method: "ui/notifications/tool-result", params: await o.first }); }
           return;
         case "ui/notifications/size-changed": { // embeds grow to fit, capped (420px or 55% of a phone): taller ones scroll inside, ⤢ opens them
           if (!o.embed || typeof m.params?.height !== "number") return;
@@ -5925,59 +5995,65 @@ function makeHost(frame, o) { // o: { ask (a box), call?(name, args) for a remot
         case "ui/open-link": { // asked: a link is the one way out for an app with no network (it could carry what it read)
           const u = String(m.params?.url || "");
           if (!/^https?:\/\//i.test(u)) return ok({ isError: true });
-          if (!(await ask(t("abrir um link"), u))) return ok({ isError: true });
+          if (!(await ask(t("abrir um link"), u)) || !current()) return ok({ isError: true });
           window.open(u, "_blank", "noopener"); return ok({});
         }
-        case "ui/message": { const text = textOf(m.params?.content).trim().slice(0, 4000); return ok(text ? await vbCall("vibebook_post", { text, thread: o.thread ?? thread }, ask) : {}); }
+        case "ui/message": { const text = textOf(m.params?.content).trim().slice(0, 4000); return ok(text ? await vbCall("vibebook_post", { text, thread: o.thread ?? thread }, ask, current) : {}); }
         case "ui/update-model-context": {
           const text = textOf(m.params?.content) || (m.params?.structuredContent ? JSON.stringify(m.params.structuredContent) : "");
-          if (text && o.base) api(`${o.base}/context`, { tool: o.toolName, text: text.slice(0, 4000) }).catch(() => {});
+          if (text && o.base && current() && await documentHost.attest() && current()) api(`${o.base}/context`, { tool: o.toolName, text: text.slice(0, 4000) }).catch(() => {});
           return ok({});
         }
         case "ui/request-display-mode": return ok({ mode: o.embed ? "inline" : "fullscreen" });
         case "ping": return ok({});
         default:
           if (m.method.startsWith("notifications/") || m.method.startsWith("ui/notifications/")) return; // logging…
-          if (m.id !== undefined) post({ id: m.id, error: { code: -32601, message: `vibebook doesn't support ${m.method} yet` } });
+          if (m.id !== undefined) await post({ id: m.id, error: { code: -32601, message: `vibebook doesn't support ${m.method} yet` } });
       }
-    } catch (x) { if (m.id !== undefined) post({ id: m.id, error: { code: -32000, message: String(x.message || x) } }); }
+    } catch (x) { if (m.id !== undefined && current()) await post({ id: m.id, error: { code: -32000, message: String(x.message || x) } }).catch(() => {}); }
   };
+  const owner = { ...documentHost, current, dispose() { consent.abort(); expiredNotice?.remove(); documentHost.dispose(); appDocuments.delete(owner); } };
+  appDocuments.add(owner);
+  return owner;
 }
-// An embed's host: asks show under the embed, posts go to the embed's own thread.
-function embedHost(fr) {
-  if (!hosts.has(fr)) {
-    const box = fr.closest(".embedBox"), at = thread; // an embed only shows in its own message's thread
-    hosts.set(fr, makeHost(fr, { embed: true, thread: at, ask: () => box.querySelector(".appAsk") || box.appendChild(Object.assign(document.createElement("div"), { className: "appAsk", hidden: true })) }));
-  }
-  return hosts.get(fr);
+// Each initial document owns its single private port; replacement documents get no room data.
+async function embedHost(frame) {
+  if (hosts.has(frame)) return;
+  const current = appDocumentScope(frame), box = frame.closest(".embedBox"), at = thread;
+  hosts.set(frame, null); // reserve before the lazy import
+  try {
+    const { createAppDocumentHost } = await loadAppDocumentHost();
+    if (!current()) return;
+    const host = makeHost(frame, { embed: true, thread: at, reopen: embedHost, ask: () => box.querySelector(".appAsk") || box.appendChild(Object.assign(document.createElement("div"), { className: "appAsk", hidden: true })) }, createAppDocumentHost, current);
+    hosts.set(frame, host); host.start(); host.loadFile(frame.dataset.appFile);
+  } catch { if (current()) frame.dataset.appDocumentExpired = "true"; }
 }
-addEventListener("message", (e) => {
-  const d = e.data; if (!d || !S) return;
-  // Every app frame is opaque (sandbox without same-origin): a frame that navigated itself to a real site keeps the
-  // same WindowProxy, so e.source alone would let that site talk to the host.
-  if (e.origin !== "null") return;
-  const panel = document.querySelector(".connFrame");
-  const fr = panel?.contentWindow === e.source ? panel : [...document.querySelectorAll("iframe.embed")].find((f) => f.contentWindow === e.source);
-  if (!fr) return;
-  // Embeds saved before Nov 2026 carry the old bridge: { vbEmbed: 1, h } / { vbEmbed: 1, send }.
-  if (d.vbEmbed === 1) return embedHost(fr)(typeof d.h === "number" ? { method: "ui/notifications/size-changed", params: { height: d.h } } : { method: "ui/message", params: { content: [{ type: "text", text: String(d.send || "") }] } });
-  if (d.jsonrpc === "2.0" && typeof d.method === "string") (hosts.get(fr) || embedHost(fr))(d);
-});
 async function mountApp(frame, c, a, askBox) {
-  const room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
+  const current = appDocumentScope(frame), room = c.id === "room", base = `/api/books/${S.id}/connections/${c.id}`;
   const ask = askBox || (() => document.getElementById("appAsk"));
-  if (room) {
-    hosts.set(frame, makeHost(frame, { ask, tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }));
-    frame.src = `/api/books/${S.id}/files/${a.file.id}`;
-    return;
+  try {
+    const { createAppDocumentHost } = await loadAppDocumentHost();
+    if (!current()) return;
+    if (room) {
+      const host = makeHost(frame, { ask, reopen: (next) => mountApp(next, c, a, askBox), tool: { name: a.tool, title: a.title }, first: Promise.resolve(toolOut(vbRead())) }, createAppDocumentHost, current);
+      hosts.set(frame, host); host.start(); host.loadFile(`/api/books/${S.id}/files/${a.file.id}`);
+      return;
+    }
+    const ui = await api(`${base}/ui?tool=${encodeURIComponent(a.tool)}`);
+    if (!current()) return;
+    const call = (name, args) => {
+      if (!current()) return Promise.reject(Error("App document authorization expired"));
+      return api(`${base}/call`, { name, arguments: args }).then((r) => r.result);
+    };
+    // This initial call remains the person's explicit Open action, as before.
+    const first = call(a.tool, {}).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
+    const host = makeHost(frame, { ask, call, first, reopen: (next) => mountApp(next, c, a, askBox), tool: ui.tool, base, toolName: a.tool }, createAppDocumentHost, current);
+    hosts.set(frame, host); host.start(); host.loadHtml(ui.html);
+  } catch (error) {
+    if (!current()) return;
+    const notice = document.createElement("div"); notice.className = "empty"; notice.textContent = error.message;
+    frame.replaceWith(notice);
   }
-  let ui;
-  try { ui = await api(`${base}/ui?tool=${encodeURIComponent(a.tool)}`); }
-  catch (e) { const d = document.createElement("div"); d.className = "empty"; d.textContent = e.message; frame.replaceWith(d); return; }
-  const call = (name, args) => api(`${base}/call`, { name, arguments: args }).then((r) => r.result);
-  const first = call(a.tool, {}).catch((e) => ({ isError: true, content: [{ type: "text", text: e.message }] }));
-  hosts.set(frame, makeHost(frame, { ask, call, first, tool: ui.tool, base, toolName: a.tool }));
-  frame.srcdoc = ui.html;
 }
 
 // Reminders: files reminders/<name>.md. @vibe reads when each runs; at that time it posts the text for whoever saved it,
@@ -6150,6 +6226,8 @@ function renderChat(keep) {
     (older || el).insertAdjacentHTML(older ? "afterend" : "afterbegin", `<div class="origin">${msgHtml(srcMsg).replace(`id="m${src}"`, "")}<div class="replies"><span>${n === 1 ? t("1 resposta") : t("{n} respostas", { n })}</span><button type="button" class="ghost" data-gomain="${src}">${t("ver na sala principal")} ${icon("reply", 13)}</button></div></div>`);
     el.querySelectorAll(".origin .tcard").forEach((x) => x.remove());
   }
+  pruneAppDocuments();
+  el.querySelectorAll("iframe.embed[data-app-file]").forEach(embedHost);
   renderWorking();
   // A finished epic says so at the bottom; writing there reopens it (the room does it, see reopenIfArchived).
   syncEnd();
@@ -6317,7 +6395,9 @@ const DOC_APP_RE = /^\[\[app:([\w-]+)\/([\w.-]+)(?:\|([pmg]))?\]\]$/i;
 let docAppsWait = false; // a room app not loaded yet: redraw the doc when the file list arrives
 async function docConns() {
   if (Array.isArray(conns) && connsBook === S.id) return conns;
-  try { const r = await api(`/api/books/${S.id}/connections`); conns = r.connections; connsBook = S.id; } catch { conns = conns || []; }
+  const room = S.id, account = S.me, socket = ws;
+  const current = () => S?.id === room && S?.me === account && ws === socket;
+  try { const r = await api(`/api/books/${room}/connections`); if (!current()) return []; conns = r.connections; connsBook = room; } catch { if (!current()) return []; conns = connsBook === room ? (conns || []) : []; }
   return conns;
 }
 function docApps(pv, ep) {
@@ -6326,11 +6406,11 @@ function docApps(pv, ep) {
     const [, cid, tool, sz0] = DOC_APP_RE.exec(p.textContent.trim()), sz = (sz0 || "m").toLowerCase();
     const box = document.createElement("div");
     box.className = "embedBox htmlCard docApp";
-    box.innerHTML = `<div class="hcHead">${icon("grid", 14)}<span class="hcName">${esc(cid === "room" ? tool : tool.replace(/[_-]/g, " "))}</span><span class="daSize" role="group" aria-label="${t("Tamanho")}">${["p", "m", "g"].map((k) => `<button type="button" data-dsz="${k}" class="${k === sz ? "on" : ""}" title="${t("Tamanho")} ${k.toUpperCase()}">${k.toUpperCase()}</button>`).join("")}</span><button type="button" class="hcFull" data-dopen title="${t("Abrir no painel Apps")}" aria-label="${t("Abrir no painel Apps")}">${icon("expand", 14)}</button></div><iframe class="embed docAppFrame" sandbox="allow-scripts allow-forms" style="height:${DOC_APP_H[sz]}px" title="${esc(tool)}"></iframe><div class="appAsk" hidden></div>`;
+    box.innerHTML = `<div class="hcHead">${icon("grid", 14)}<span class="hcName">${esc(cid === "room" ? tool : tool.replace(/[_-]/g, " "))}</span><span class="daSize" role="group" aria-label="${t("Tamanho")}">${["p", "m", "g"].map((k) => `<button type="button" data-dsz="${k}" class="${k === sz ? "on" : ""}" title="${t("Tamanho")} ${k.toUpperCase()}">${k.toUpperCase()}</button>`).join("")}</span><button type="button" class="hcFull" data-dopen title="${t("Abrir no painel Apps")}" aria-label="${t("Abrir no painel Apps")}">${icon("expand", 14)}</button></div><iframe name="${appFrameName()}" class="embed docAppFrame" sandbox="allow-scripts allow-forms" style="height:${DOC_APP_H[sz]}px" title="${esc(tool)}"></iframe><div class="appAsk" hidden></div>`;
     p.replaceWith(box);
     box.querySelector("[data-dopen]").onclick = () => { connApp = { cid, tool }; document.dispatchEvent(new CustomEvent("vb:pane", { detail: "apps" })); };
     box.querySelectorAll("[data-dsz]").forEach((b) => (b.onclick = () => docAppSize(ep, i, b.dataset.dsz)));
-    const frame = box.querySelector("iframe"), ask = () => box.querySelector(".appAsk");
+    const frame = box.querySelector("iframe"), ask = () => box.querySelector(".appAsk"), current = appDocumentScope(frame);
     const fail = (msg) => { const d = document.createElement("div"); d.className = "empty"; d.textContent = msg; frame.replaceWith(d); };
     if (cid === "room") {
       const a = roomApps().find((x) => x.tool === tool);
@@ -6339,6 +6419,7 @@ function docApps(pv, ep) {
       return fail(t("Não achei o app {name} nesta sala.", { name: `apps/${tool}.html` }));
     }
     docConns().then((cs) => {
+      if (!current()) return;
       const c = cs.find((x) => x.id === cid), a = c?.apps.find((x) => x.tool === tool);
       if (!c || !a) return fail(t("Esse app não está nas conexões que você pode usar nesta sala."));
       if (c.auth === "identity" && !c.signed_in) return fail(t("Entre em {host} com a sua conta pra usar.", { host: c.host }));

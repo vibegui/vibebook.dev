@@ -1,0 +1,35 @@
+{
+  "status": "failed",
+  "suppliedRevision": "58184017e01ddc221a9e158487cf8ac8dac3c804",
+  "scope": "Production RoomLayout class/playback/history controller in a neutral gallery; no integrated RoomScope/Worker/provider acceptance",
+  "gaps": [
+    "Physical touch, hardware keyboard/AT, safe-area hardware and Safari/WebKit are not represented",
+    "Synthetic pointercancel/input events are named explicitly",
+    "Actual FileViewer/RootApp navigation ordering needs the separate integrated browser gate",
+    "No real room/editor/Board business state is represented by neutral snippet text"
+  ],
+  "assetProof": {
+    "entrySha256": "c640eee53057d6f126a5a806c88c0eeb9300f12d6c57b1e5ddd1254e9f38c9d9",
+    "cssSha256": "9da04f91a424416b34315e689a479b389d65cc4892baca1d08c4073f7d052dad",
+    "fixtureVersion": "19a4ded6c051dde3a30b424a481271ec7e4e627598f00cd4715588d07f47d9ac",
+    "fixture": "Minimal public HTML plus actual built Vite assets; no Worker/API/private room"
+  },
+  "phase": "mobile/continuous-pending-drag",
+  "browserVersion": "158.0.8127.18",
+  "pageErrors": [],
+  "htmlVersionMarker": "19a4ded6c051dde3a30b424a481271ec7e4e627598f00cd4715588d07f47d9ac",
+  "resize": {
+    "containerWidth": 1440,
+    "reducedWidth": 1372,
+    "nativeInput": "Home/End plus declared synthetic input473",
+    "persisted": 473
+  },
+  "boardIdentity": true,
+  "mobileFullBoardToDesktop": true,
+  "samples": [],
+  "failure": "null == true",
+  "controllerMemory": [
+    "VmHWM:\t  134064 kB",
+    "VmRSS:\t  127052 kB"
+  ]
+}

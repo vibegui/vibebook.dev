@@ -1,4 +1,4 @@
-import { tv, type VariantProps } from "tailwind-variants";
+import { tv, type VariantProps } from "tailwind-variants/lite";
 import type { HTMLButtonAttributes } from "svelte/elements";
 import { cn } from "./utils";
 

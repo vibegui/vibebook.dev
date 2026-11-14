@@ -1,0 +1,26 @@
+{
+  "scope": "Real authorized typed HTTP uploads, native version/history/media/HTML sandbox and opt-in access presentation; no provider/account lifecycle is fabricated.",
+  "revisionSuppliedByRunner": "8b0182c",
+  "gaps": [
+    "Uploads use supported typed HTTP API rather than composer UI.",
+    "The PDF wrapper URL and authenticated range probe are checked; native PDF plugin delivery/rendering remains a platform browser gate.",
+    "No actual iOS standalone/Safari handoff or production deployment acceptance.",
+    "Cookie cache gate uses a separate unrouted context; legacy pre-Vary fresh cache entries and same-cookie revoked membership remain documented backend limits."
+  ],
+  "room": "56d384ff4337",
+  "files": {
+    "old": "a215931c127c4f9e",
+    "newest": "a915407861ec47a3",
+    "html": "5e89a8489c464825",
+    "csv": "e58947e51c364d15",
+    "image": "f3949e62113a4e96",
+    "audio": "8be0369a715843c1",
+    "pdf": "03557c9ecd1a4485"
+  },
+  "appVersion": "98c886fba030c95df787fe11bbdce394",
+  "mobileHistory": "PASS actual phone Files sheet → viewer → close → Forward exact-file adoption → Back retains Files sheet",
+  "ui": "PASS exact Markdown versions, Back/Forward, image decode, audio metadata, HTML sandbox/Escape, PDF resource URL and desktop/mobile keyboard close",
+  "cache": "PASS real unrouted same-context A→B exact URL fetch and image reauthorization",
+  "access": "PASS real signed-in non-member403 native file-access shell in English and Portuguese",
+  "pass": true
+}

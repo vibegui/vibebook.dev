@@ -145,6 +145,81 @@
     }
   },
   {
+    "date": "2026-11-13",
+    "slug": "2026-11-13-svelte-preview",
+    "title": {
+      "pt": "Prévia Svelte: arquivos, pessoas e registros",
+      "en": "Svelte preview: files, people and records"
+    },
+    "intro": {
+      "pt": "Os novos painéis estão na prévia aberta com ?ui=svelte. A versão atual continua sendo o padrão.",
+      "en": "The new panels are available in the preview opened with ?ui=svelte. The current version remains the default."
+    },
+    "features": [
+      {
+        "title": {
+          "pt": "Arquivos, pessoas, lembretes e decisões",
+          "en": "Files, people, reminders and decisions"
+        },
+        "text": {
+          "pt": "Na prévia, navegue pelos arquivos e suas versões, fixe itens na lateral e gerencie convites e pedidos de acesso. Remover uma pessoa, decisão ou lembrete pede confirmação; erros mantêm o que você estava preenchendo.",
+          "en": "In the preview, browse files and their versions, pin items in the sidebar, and manage invitations and access requests. Removing a person, decision or reminder asks for confirmation; errors preserve what you were entering."
+        },
+        "image": "changelog/svelte-native-panels.webp",
+        "alt": {
+          "pt": "Sala de teste na prévia Svelte, com pessoas e lembretes nativos ao lado da conversa.",
+          "en": "Test room in the Svelte preview, with native People and Reminders panels beside the conversation."
+        }
+      }
+    ],
+    "improvements": {
+      "pt": [
+        "Os painéis nativos usam a mesma tipografia e os mesmos componentes de interface.",
+        "A versão Svelte mantém o email e o código após erros, mostra pedidos de acesso e confirma a conexão de agents com os mesmos controles de segurança do servidor.",
+        "Erros ao conectar um agent permanecem na interface Svelte e só criam um novo pedido após você tentar novamente.",
+        "Ao trocar de conta na conexão de agents, a versão Svelte tenta limpar as notificações deste aparelho e avisa quando a limpeza não foi confirmada.",
+        "A página inicial, o Arquivo e a navegação entre salas da versão Svelte ganham listas nativas, busca, pedidos e criação de salas, preservando rascunhos e mostrando alterações ainda sem confirmação."
+      ],
+      "en": [
+        "Native panels share consistent typography and interface components.",
+        "The Svelte preview retains email and code after errors, shows access requests and confirms agent connections through the same server security checks.",
+        "Agent connection errors stay in the Svelte interface and create a new request only after an explicit retry.",
+        "When switching accounts during agent connection, the Svelte preview attempts current-device notification cleanup and warns when cleanup is unconfirmed.",
+        "Svelte Home, Archive and room navigation gain native lists, search, routed requests and room creation, retaining drafts and showing changes that remain unconfirmed."
+      ]
+    },
+    "fixes": {
+      "pt": [
+        "Uma versão nova de arquivo não deixa botões removidos abrirem ou fixarem a versão anterior.",
+        "O seletor de versões aparece ao abrir um arquivo depois de carregar o histórico completo.",
+        "O campo de texto dos lembretes permanece visível mesmo quando o editor do documento está fechado.",
+        "Na prévia móvel, tocar nas abas abre o painel escolhido sem confundir o toque com o gesto de arrastar.",
+        "Fechar uma confirmação com Escape mantém o painel móvel aberto e devolve o foco ao botão de origem.",
+        "As ações de arquivos continuam disponíveis quando o endereço da sala termina com uma barra.",
+        "Os rótulos de gráficos, escolhas e confirmação pendente também aparecem em inglês quando esse idioma está selecionado.",
+        "Editar o documento de uma conversa removida não sobrescreve mais o documento da sala.",
+        "Na prévia Svelte, perder acesso limpa os dados da sala em cache e fecha arquivos abertos.",
+        "A revisão de rascunhos de conversas removidas respeita o idioma escolhido.",
+        "Na prévia Svelte, capturas de tela longas ficam legíveis na conversa, com o topo em destaque; abrir o anexo mostra a imagem inteira.",
+        "No celular, os botões dos formulários da prévia Svelte ficam no lugar quando o foco sai do campo de texto."
+      ],
+      "en": [
+        "A new file version no longer leaves detached buttons able to open or pin the previous version.",
+        "The version picker appears when opening a file after its complete history has loaded.",
+        "The reminder text field stays visible even when the document editor is closed.",
+        "In the mobile preview, tapping a tab opens the selected panel without confusing a tap with a drag gesture.",
+        "Dismissing a confirmation with Escape keeps the mobile panel open and returns focus to its original button.",
+        "File actions remain available when the room URL ends with a slash.",
+        "Chart, choice and pending-confirmation labels now appear in English when that language is selected.",
+        "Editing a deleted conversation’s document no longer overwrites the room document.",
+        "In the Svelte preview, losing access clears cached room data and closes open file previews.",
+        "Draft review for deleted conversations follows the selected language.",
+        "In the Svelte preview, tall screenshots stay readable in chat with a crop from the top; opening the attachment shows the full image.",
+        "On mobile, Svelte preview form buttons stay in place when focus leaves a text field."
+      ]
+    }
+  },
+  {
     "date": "2026-11-10",
     "slug": "2026-11-10-apps",
     "title": {

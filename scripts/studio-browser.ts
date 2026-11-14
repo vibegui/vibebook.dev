@@ -27,9 +27,19 @@ const reference = z
   );
 
 /** Compare the actual built theme with the frozen source; workspace role evidence is a separate M4 gate. */
-export async function verifyStudioPalette(page: Page, theme: "light" | "dark") {
+export type StudioRenderedRole = {
+  role: string;
+  selector: string;
+  property: string;
+  cssVariable: string;
+};
+export async function verifyStudioPalette(
+  page: Page,
+  theme: "light" | "dark",
+  renderedRoles?: readonly StudioRenderedRole[],
+) {
   const report = await page.evaluate(
-    ({ reference, theme }) => {
+    ({ reference, theme, renderedRoles }) => {
       const baseline: Record<string, string> = {};
       for (const rule of reference.referenceRules) {
         if (
@@ -114,64 +124,77 @@ export async function verifyStudioPalette(page: Page, theme: "light" | "dark") {
         const card = main?.querySelector("section");
         const input = document.getElementById("gallery-title");
         const code = main?.querySelector("pre");
-        if (!primary || !main || !card || !input || !code)
+        if (!renderedRoles && (!primary || !main || !card || !input || !code))
           throw new Error("Missing gallery role probes");
-        const roles = [
-          {
-            role: "page background",
-            node: main,
-            property: "background-color",
-            cssVariable: "--background",
-          },
-          {
-            role: "card background",
-            node: card,
-            property: "background-color",
-            cssVariable: "--card",
-          },
-          {
-            role: "primary background",
-            node: primary,
-            property: "background-color",
-            cssVariable: "--primary",
-          },
-          {
-            role: "primary label",
-            node: primary,
-            property: "color",
-            cssVariable: "--primary-foreground",
-          },
-          {
-            role: "input background",
-            node: input,
-            property: "background-color",
-            cssVariable: "--studio-input-background",
-          },
-          {
-            role: "UI family",
-            node: main,
-            property: "font-family",
-            cssVariable: "--font-sans",
-          },
-          {
-            role: "code family",
-            node: code,
-            property: "font-family",
-            cssVariable: "--font-mono",
-          },
-          {
-            role: "body weight",
-            node: main,
-            property: "font-weight",
-            cssVariable: "--font-weight-normal",
-          },
-          {
-            role: "action weight",
-            node: primary,
-            property: "font-weight",
-            cssVariable: "--font-weight-medium",
-          },
-        ];
+        const roles = renderedRoles
+          ? renderedRoles.map(({ selector, ...role }) => {
+              const node = document.querySelector(selector);
+              if (
+                !node ||
+                !node.getClientRects().length ||
+                getComputedStyle(node).visibility !== "visible"
+              )
+                throw new Error(
+                  `Missing visible application role: ${role.role}`,
+                );
+              return { ...role, node };
+            })
+          : [
+              {
+                role: "page background",
+                node: main!,
+                property: "background-color",
+                cssVariable: "--background",
+              },
+              {
+                role: "card background",
+                node: card!,
+                property: "background-color",
+                cssVariable: "--card",
+              },
+              {
+                role: "primary background",
+                node: primary!,
+                property: "background-color",
+                cssVariable: "--primary",
+              },
+              {
+                role: "primary label",
+                node: primary!,
+                property: "color",
+                cssVariable: "--primary-foreground",
+              },
+              {
+                role: "input background",
+                node: input!,
+                property: "background-color",
+                cssVariable: "--studio-input-background",
+              },
+              {
+                role: "UI family",
+                node: main!,
+                property: "font-family",
+                cssVariable: "--font-sans",
+              },
+              {
+                role: "code family",
+                node: code!,
+                property: "font-family",
+                cssVariable: "--font-mono",
+              },
+              {
+                role: "body weight",
+                node: main!,
+                property: "font-weight",
+                cssVariable: "--font-weight-normal",
+              },
+              {
+                role: "action weight",
+                node: primary!,
+                property: "font-weight",
+                cssVariable: "--font-weight-medium",
+              },
+            ];
         for (const role of roles) {
           expected.style.setProperty(role.property, `var(${role.cssVariable})`);
           const expectedValue = getComputedStyle(expected).getPropertyValue(
@@ -200,7 +223,7 @@ export async function verifyStudioPalette(page: Page, theme: "light" | "dark") {
         actual.remove();
       }
     },
-    { reference, theme },
+    { reference, theme, renderedRoles: renderedRoles ?? null },
   );
   assert.deepEqual(
     report.mismatches,

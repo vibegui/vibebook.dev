@@ -1,0 +1,34 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun", "@cloudflare/workers-types"]
+  },
+  "include": [
+    "scripts/me-cache.test.ts",
+    "scripts/file-cache.test.ts",
+    "scripts/service-boundaries.test.ts",
+    "scripts/auth-ui.test.ts",
+    "scripts/native-auth.test.ts",
+    "scripts/native-auth-post.test.ts",
+    "scripts/mcp-connections.test.ts",
+    "scripts/book-stored-boundary.test.ts",
+    "scripts/book-message-boundary.test.ts",
+    "scripts/mcp-oauth-responses.test.ts",
+    "scripts/document-scope-guards.test.ts",
+    "scripts/docroom-socket.test.ts",
+    "scripts/epic-delete-guards.test.ts",
+    "scripts/session-boundary.test.ts",
+    "scripts/mcp-request-boundary.test.ts",
+    "scripts/github-identity.test.ts",
+    "scripts/report-analytics.test.ts",
+    "scripts/stored-json-consumers.test.ts",
+    "scripts/google-invite-auth.test.ts",
+    "scripts/jev-response.test.ts",
+    "scripts/decision-provider.test.ts",
+    "scripts/app-document-file.test.ts",
+    "scripts/agent-grant-boundary.test.ts",
+    "scripts/digest-items-boundary.test.ts",
+    "scripts/grant-metadata-boundary.test.ts",
+    "scripts/sandbox-rows.test.ts"
+  ]
+}

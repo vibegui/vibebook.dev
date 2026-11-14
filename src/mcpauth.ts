@@ -10,6 +10,7 @@
 import type { Env } from "./index";
 import { checkUrl } from "./reader";
 import { seal, unseal } from "./sandbox";
+import { protectedResourceMetadata, authorizationServerMetadata, clientRegistration, providerGrant, providerOAuthError, type AuthorizationServerMetadata, type ProviderGrant } from "./mcpOAuthResponses";
 
 const te = new TextEncoder();
 const b64u = (b: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -51,10 +52,10 @@ const okUrl = (env: Env, raw: string) => {
   if ("error" in r) throw new Error(`OAuth: ${r.error}`);
   return r.url;
 };
-async function getJson(env: Env, url: string) {
+async function getJson(env: Env, url: string): Promise<unknown> {
   const r = await fetch(okUrl(env, url), { headers: { accept: "application/json" }, redirect: "manual", signal: AbortSignal.timeout(10_000) });
   if (!r.ok) { await r.body?.cancel(); return null; }
-  return (await r.json().catch(() => null)) as Record<string, any> | null;
+  return r.json().catch(() => null);
 }
 /** Resource metadata (RFC 9728) → authorization server metadata (RFC 8414). Falls back to the resource's own origin. */
 async function discover(env: Env, resource: string, wwwAuth?: string | null) {
@@ -63,18 +64,18 @@ async function discover(env: Env, resource: string, wwwAuth?: string | null) {
   const hinted = /resource_metadata="([^"]+)"/.exec(wwwAuth || "")?.[1];
   if (hinted) { const h = new URL(hinted, resource); if (h.host === u.host) h.protocol = u.protocol; tries.push(h.href); } // a proxy may say http:
   tries.push(`${u.origin}/.well-known/oauth-protected-resource${u.pathname.replace(/\/$/, "")}`, `${u.origin}/.well-known/oauth-protected-resource`);
-  let prm: Record<string, any> | null = null;
-  for (const t of tries) if ((prm = await getJson(env, t).catch(() => null))) break;
+  let prm: ReturnType<typeof protectedResourceMetadata> = null;
+  for (const t of tries) if ((prm = protectedResourceMetadata(await getJson(env, t).catch(() => null)))) break;
   const issuer = String(prm?.authorization_servers?.[0] || u.origin).replace(/\/$/, "");
   const iu = new URL(issuer);
   const path = iu.pathname === "/" ? "" : iu.pathname;
-  let as: Record<string, any> | null = null;
+  let as: AuthorizationServerMetadata | null = null;
   for (const t of [`${iu.origin}/.well-known/oauth-authorization-server${path}`, `${iu.origin}/.well-known/openid-configuration${path}`, `${issuer}/.well-known/openid-configuration`])
-    if ((as = await getJson(env, t).catch(() => null))?.authorization_endpoint) break;
+    if ((as = authorizationServerMetadata(await getJson(env, t).catch(() => null)))) break;
   if (!as?.authorization_endpoint || !as?.token_endpoint) throw new Error(`${u.host} pede login, mas não publica como (OAuth sem metadata)`);
-  return { issuer, as, scope: Array.isArray(prm?.scopes_supported) ? prm!.scopes_supported.join(" ") : "" };
+  return { issuer, as, scope: prm?.scopes_supported?.join(" ") ?? "" };
 }
-async function clientFor(env: Env, issuer: string, as: Record<string, any>, redirect: string) {
+async function clientFor(env: Env, issuer: string, as: AuthorizationServerMetadata, redirect: string) {
   const row = await env.DB.prepare(`SELECT client_id, secret_enc, secret_iv FROM mcp_oauth_clients WHERE issuer = ? AND redirect = ?`).bind(issuer, redirect).first<{ client_id: string; secret_enc: string | null; secret_iv: string | null }>();
   if (row) return { id: row.client_id, secret: row.secret_enc && row.secret_iv ? await unseal(env, row.secret_enc, row.secret_iv) : null };
   if (!as.registration_endpoint) throw new Error("o servidor não aceita registro de cliente (DCR); conecte por outro caminho");
@@ -82,7 +83,7 @@ async function clientFor(env: Env, issuer: string, as: Record<string, any>, redi
     method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, redirect: "manual", signal: AbortSignal.timeout(10_000),
     body: JSON.stringify({ client_name: "vibebook", redirect_uris: [redirect], grant_types: ["authorization_code", "refresh_token"], response_types: ["code"], token_endpoint_auth_method: "none" }),
   });
-  const j: any = await r.json().catch(() => null);
+  const j = clientRegistration(await r.json().catch(() => null));
   if (!r.ok || !j?.client_id) throw new Error(`registro de cliente falhou (${r.status})`);
   const sec = j.client_secret ? await seal(env, String(j.client_secret)) : { enc: null, iv: null };
   await env.DB.prepare(`INSERT OR REPLACE INTO mcp_oauth_clients (issuer, redirect, client_id, secret_enc, secret_iv, token_endpoint, at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
@@ -94,7 +95,9 @@ export async function startAuth(env: Env, origin: string, o: { email: string; bo
   const { issuer, as, scope } = await discover(env, o.resource, o.wwwAuth);
   const redirect = `${origin}/api/mcp-oauth/callback`;
   const client = await clientFor(env, issuer, as, redirect);
-  const state = rand(), verifier = rand(48);
+  // An opaque presentation hint only; the exact full state remains the DB key.
+  // This keeps expired/replayed native callbacks on the native error surface.
+  const state = `${new URL(o.back, origin).searchParams.get("ui") === "svelte" ? "svelte." : ""}${rand()}`, verifier = rand(48);
   const challenge = b64u(await crypto.subtle.digest("SHA-256", te.encode(verifier)));
   await env.DB.prepare(`INSERT INTO mcp_oauth_states (state, email, book_id, conn_id, resource, issuer, verifier, back, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(state, o.email, o.book, o.cid, o.resource, issuer, verifier, o.back, Date.now() + 10 * 60e3).run();
@@ -108,11 +111,11 @@ async function tokenRequest(env: Env, issuer: string, redirect: string, form: Re
   const body = new URLSearchParams({ ...form, client_id: cl.client_id });
   if (cl.secret_enc && cl.secret_iv) body.set("client_secret", await unseal(env, cl.secret_enc, cl.secret_iv));
   const r = await fetch(okUrl(env, cl.token_endpoint), { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" }, body, redirect: "manual", signal: AbortSignal.timeout(10_000) });
-  const j: any = await r.json().catch(() => null);
-  if (!r.ok || !j?.access_token) throw new Error(`o servidor recusou o login (${r.status}${j?.error ? `: ${String(j.error).slice(0, 60)}` : ""})`);
-  return j as { access_token: string; refresh_token?: string; expires_in?: number };
+  const raw: unknown = await r.json().catch(() => null), j = providerGrant(raw);
+  if (!r.ok || !j) { const error = providerOAuthError(raw); throw new Error(`o servidor recusou o login (${r.status}${error ? `: ${error}` : ""})`); }
+  return j;
 }
-async function saveGrant(env: Env, email: string, resource: string, issuer: string, t: { access_token: string; refresh_token?: string; expires_in?: number }, keepRefresh?: { enc: string | null; iv: string | null }) {
+async function saveGrant(env: Env, email: string, resource: string, issuer: string, t: ProviderGrant, keepRefresh?: { enc: string | null; iv: string | null }) {
   const a = await seal(env, t.access_token);
   const rf = t.refresh_token ? await seal(env, t.refresh_token) : keepRefresh ?? { enc: null, iv: null };
   const exp = Date.now() + Math.min(Math.max(Number(t.expires_in) || 3600, 60), 30 * 86400) * 1000;

@@ -1,0 +1,129 @@
+import { uiNavigationUrl } from "../../../shared/uiVariant";
+import {
+  targetHref,
+  messageIdentity,
+  copyRoomTarget,
+  type RoomTarget,
+} from "../home/model";
+import { appRouteTarget } from "../apps/model";
+export type ApplicationRoute =
+  | { kind: "home" }
+  | { kind: "archived" }
+  | { kind: "room"; target: RoomTarget }
+  | { kind: "document"; url: string };
+export const roomIdFromPath = (pathname: string) =>
+  pathname.match(/^\/b\/([a-z0-9]{6,40})\/?$/)?.[1] ?? null;
+/** Local presentation only; reloading the serialized URL returns to main. */
+export type PresentationThread = `pre:${number}`;
+export function applicationRoute(href: string): ApplicationRoute {
+  const url = new URL(href),
+    roomId = roomIdFromPath(url.pathname);
+  if (url.pathname === "/app" || url.pathname === "/") return { kind: "home" };
+  if (url.pathname === "/archived") return { kind: "archived" };
+  if (roomId) {
+    const mid = /^#m(\d+)$/.exec(url.hash)?.[1],
+      file = /^#f([a-z0-9]+)$/.exec(url.hash)?.[1],
+      document = /^#doc(?::([\w-]+))?$/.exec(url.hash),
+      epic = /^#e([\w-]+)$/.exec(url.hash)?.[1],
+      app = appRouteTarget(url.hash);
+    return {
+      kind: "room",
+      target: {
+        roomId,
+        thread: url.searchParams.get("t") ?? epic ?? document?.[1] ?? "main",
+        messageId: messageIdentity(mid),
+        fileId: file,
+        document: !!document,
+        ...(app ? { app } : {}),
+      },
+    };
+  }
+  return { kind: "document", url: href };
+}
+/** URL/history only. Room/editor/viewer internals remain explicit lifecycle callbacks during their migration. */
+export function createApplicationRouter(options: {
+  current: () => string;
+  history: Pick<History, "pushState" | "replaceState">;
+  activate: (route: ApplicationRoute) => void;
+  beforeChange: () => void;
+  sameRoom: (target: RoomTarget) => boolean;
+  consumePop: () => boolean;
+  document: (href: string) => void;
+  deferNavigation?: (callback: () => void) => boolean;
+}) {
+  let generation = 0,
+    active = true;
+  function go(
+    value: string | RoomTarget,
+    replace = false,
+    presentationThread?: PresentationThread,
+  ) {
+    if (!active) return;
+    const intent = typeof value === "string" ? value : copyRoomTarget(value);
+    if (
+      options.deferNavigation?.(() => go(intent, replace, presentationThread))
+    )
+      return;
+    const target = typeof intent === "string" ? intent : targetHref(intent),
+      url = new URL(target, options.current());
+    if (url.origin !== new URL(options.current()).origin) {
+      options.document(url.href);
+      return;
+    }
+    const selected = uiNavigationUrl(url, options.current(), "svelte"),
+      serializedRoute = applicationRoute(
+        new URL(selected, options.current()).href,
+      ),
+      route: ApplicationRoute =
+        serializedRoute.kind === "room" && presentationThread
+          ? {
+              ...serializedRoute,
+              target: { ...serializedRoute.target, thread: presentationThread },
+            }
+          : serializedRoute;
+    generation++;
+    if (route.kind === "document") {
+      options.document(selected);
+      return;
+    }
+    options.beforeChange();
+    options.history[replace ? "replaceState" : "pushState"](null, "", selected);
+    if (route.kind === "room" && options.sameRoom(route.target)) return;
+    options.activate(route);
+  }
+  return {
+    go,
+    /** Only after canonical room validation. Carry the legacy hash's thread in
+     * the query before another feature (notably Viewer) owns the hash. */
+    canonicalizeLegacyThread(roomId: string, thread: string) {
+      if (!active) return false;
+      const url = new URL(options.current());
+      if (roomIdFromPath(url.pathname) !== roomId || url.searchParams.has("t"))
+        return false;
+      const epic = /^#e([\w-]+)$/.exec(url.hash)?.[1],
+        doc = /^#doc:([\w-]+)$/.exec(url.hash)?.[1];
+      if ((epic ?? doc) !== thread) return false;
+      if (thread !== "main") url.searchParams.set("t", thread);
+      url.hash = doc ? "#doc" : "";
+      options.history.replaceState(
+        null,
+        "",
+        url.pathname + url.search + url.hash,
+      );
+      return true;
+    },
+    pop() {
+      if (!active || options.consumePop()) return;
+      generation++;
+      options.beforeChange();
+      const route = applicationRoute(options.current());
+      if (route.kind === "room" && options.sameRoom(route.target)) return;
+      options.activate(route);
+    },
+    generation: () => generation,
+    dispose() {
+      active = false;
+      generation++;
+    },
+  };
+}
