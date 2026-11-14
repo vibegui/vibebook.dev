@@ -33,11 +33,10 @@ The component gallery remains available at `/` with `bun run dev:components`;
 that command does not start the full application backend.
 
 Component and CSS changes use Svelte/Vite HMR without navigating the page.
-Store-owned drafts and the existing host-owned composer remain outside replaced
-components. Svelte 5 recreates edited components and resets component-local
-state: drafts must belong to the room/thread session store when the composer
-becomes native. Changes to `src/`, `shared/` or `collab/` cause a full reload
-to refresh contracts, host/editor code and connections. Wrangler restarts the
+The native application's account/room/thread ComposerDrafts bank remains outside
+replaced components. Svelte 5 recreates edited components and resets component-local
+state. Changes to `src/`, `shared/` or `collab/` cause a full reload
+to refresh contracts, application/editor code and connections. Wrangler restarts the
 Worker automatically; its existing WebSocket reconnect path recovers
 connections. API declarations regenerate in parallel without a manual
 `build:api-types`. Full reloads and incompatible HMR updates can discard
@@ -75,7 +74,7 @@ mark the M7 runtime gate complete solely from the pure test suite.
 ## Opt-in runtime harness
 
 When no other memory-heavy check is running, use an isolated checkout with
-installed browser dependencies/Chromium, migrated local D1 and `DEV_EMAIL` in
+installed browser dependencies/Chromium and `DEV_EMAIL` in
 `.dev.vars`. Ports 5173 and 8787 must be free. Run:
 
 ```sh
@@ -86,7 +85,8 @@ The harness owns the actual `dev:app` command; do not start servers separately.
 It first cancels startup during API generation and checks observed descendants
 exit. It then cold-starts the full stack, creates a local fixture room, verifies
 identity-cookie forwarding, selected source/default vanilla HTML, inaccessible
-room behavior, exact/foreign Origin API writes and room/personal/editor WebSocket
+room behavior (the actual native access page and no private RoomShell/Book
+connection), exact/foreign Origin API writes and room/personal/editor WebSocket
 handshakes. It probes forbidden raw/URL/config/generated/symlink/encoded paths
 against real Vite, and uses a local HTTP trap to detect cookie-bearing fetches
 caused by hostile absolute/network request targets.
@@ -94,7 +94,7 @@ caused by hostile absolute/network request targets.
 It temporarily edits and restores `svelte/Sidebar.svelte`, the sole stylesheet,
 `shared/schemas.ts`, `src/index.ts` and `src/api.ts`. Component/style edits must
 update the live DOM/CSS without a document navigation or room reconnect and
-preserve the existing composer draft. Shared/backend edits must regenerate real
+preserve the application-owned native composer draft. Shared/backend edits must regenerate real
 API declarations, reload/reconnect the room, and expose a temporary changed
 Worker route without manual builds or restarts. This does not claim preservation
 of component-local Svelte state. No generic DOM draft restoration is installed.
@@ -112,6 +112,25 @@ refuses to overwrite them. Original edited files are copied into the reported
 `source-backups-*` output directory before mutation. If externally interrupted,
 restore from those backups and inspect any remaining dev processes; caught
 failures run restoration and owned-process cleanup.
+
+The opt-in `Full native application source HMR` Ubuntu workflow runs this actual
+stack on a dedicated runner. Add the PR label `run-hmr` (remove/re-add to run
+again after another commit), or use workflow dispatch. It does not run on every
+push. Its CI-only wrapper refuses existing `.dev.vars` or local Worker state,
+creates a private synthetic loopback identity/session secret with all models
+off, and removes only the unchanged file it owns. Real API requests initialize
+the local database; no canonical API/WS responses or D1 rows are mocked/seeded.
+`dev:app` itself builds API/MCP inputs and starts the actual Worker/Vite/watchers.
+
+Only `results.json`, `runner.json`, and a failure screenshot are uploaded. Raw
+child logs, source backups, `.dev.vars`, and Worker persistence remain excluded.
+Results include source restoration SHA-256 receipts, active mutation count,
+startup phases, observed descendant/port shutdown and safe local page-error
+locations. SIGINT/SIGTERM cancel active waits and close the browser so the
+ordinary finally path restores sources and stops the owned development stack.
+Hard runner termination cannot promise finally execution; GitHub's disposable
+runner is still required. A source review or pure test pass does not establish
+runtime HMR acceptance: the workflow must complete successfully.
 
 Cold start is staged to reduce competing compilers: the initial API/MCP builds
 finish first, Wrangler must answer its fixed loopback favicon URL, Vite must

@@ -1,0 +1,51 @@
+name: Full native application source HMR
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-hmr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source-hmr:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-hmr' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NODE_OPTIONS: --max-old-space-size=4096
+      DEV_APP_STARTUP_TIMEOUT_MS: "600000"
+      TEST_APP_REVISION: ${{ github.sha }}
+      TEST_OUTPUT_DIR: ${{ github.workspace }}/.artifacts/app-hmr/report
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22.23.5"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: node node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual Worker/Vite cold start, HMR, contract reload and owned cleanup
+        run: bun run test:app-hmr:ci
+      - name: Retain safe assertions and failure image only
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app-hmr-${{ github.sha }}
+          path: |
+            ${{ github.workspace }}/.artifacts/app-hmr/report/results.json
+            ${{ github.workspace }}/.artifacts/app-hmr/report/runner.json
+            ${{ github.workspace }}/.artifacts/app-hmr/report/failure.png
+          if-no-files-found: warn
+          retention-days: 7
