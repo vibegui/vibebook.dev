@@ -298,7 +298,12 @@ export function createApplicationInbox(
       if (owns(binding)) state.update((value) => ({ ...value, all }));
     },
     openWait(binding: InboxBinding, wait: Wait) {
-      if (!owns(binding) || !canonical(wait)) return;
+      if (
+        !owns(binding) ||
+        !get(state).data.waits.includes(wait) ||
+        !canonical(wait)
+      )
+        return;
       navigate(
         binding,
         wait.book_id,
@@ -312,6 +317,7 @@ export function createApplicationInbox(
       if (
         !owns(binding) ||
         pending ||
+        !get(state).data.waits.includes(wait) ||
         !canonical(wait) ||
         !wait.ref.startsWith("m")
       )

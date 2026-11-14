@@ -539,7 +539,15 @@ async function actualRoomShell(overrides: Partial<HomeApi> = {}) {
     const event: RoomEvent = { t: "state", ...state };
     h.connectionCallbacks.at(-1)!.onEvent(event);
   };
-  return { ...h, inbox, resources, target, canonical, publish };
+  return {
+    ...h,
+    inbox,
+    resources,
+    target,
+    canonicalPersonal: h.canonical,
+    canonical,
+    publish,
+  };
 }
 test("real RoomShell uses genuine loading/terminal states and directly renders current canonical native features", async () => {
   const h = await actualRoomShell();
@@ -1233,4 +1241,68 @@ test("room Inbox rejects connected old-opening and removed-room task controls be
   expect(h.target.querySelector("[data-native-room-inbox]") === null).toBe(
     true,
   );
+});
+
+test("room Inbox old connected question controls cannot act on a same-ID canonical edit before flush", async () => {
+  let writes = 0;
+  const original = {
+    book_id: "aaaaaa",
+    room: "Room",
+    ref: "m1",
+    thread: "main",
+    topic: null,
+    author: "friend@test",
+    author_name: "Friend",
+    text: "Original Inbox question",
+    ts: 1,
+  };
+  const h = await actualRoomShell({
+    resolve: async () => {
+      writes++;
+      return { ok: true };
+    },
+  });
+  h.publish(h.canonical);
+  await flush();
+  h.canonicalPersonal(me({ waits: [original] }));
+  await h.services.personal.refresh();
+  h.inbox.open();
+  await flush();
+  await waitForView(h.target, "[data-room-inbox-message] button");
+  const article = h.target.querySelector("[data-room-inbox-message]")!,
+    oldGo = article.querySelector<HTMLButtonElement>("button")!,
+    oldResolve = [
+      ...article.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((node) => node.textContent?.trim() === h.services.t("Resolvido"))!;
+  expect(!!oldGo && !!oldResolve).toBe(true);
+  const edited = { ...original, text: "Edited Inbox question", ts: 2 },
+    person = h.services.personal.peek()!;
+  h.canonicalPersonal(me({ waits: [edited] }));
+  // Synchronous canonical publication deliberately precedes Svelte's DOM flush.
+  h.services.personal.state.update((value) => ({
+    ...value,
+    me: { ...person, waits: [edited] },
+  }));
+  expect(oldGo.isConnected && oldResolve.isConnected).toBe(true);
+  const before = h.href();
+  oldResolve.click();
+  oldGo.click();
+  expect(writes).toBe(0);
+  expect(h.href()).toBe(before);
+  await flush();
+  const freshArticle = h.target.querySelector("[data-room-inbox-message]")!,
+    freshGo = freshArticle.querySelector<HTMLButtonElement>("button")!,
+    freshResolve = [
+      ...freshArticle.querySelectorAll<HTMLButtonElement>("button"),
+    ].find((node) => node.textContent?.trim() === h.services.t("Resolvido"))!;
+  expect(freshGo !== oldGo).toBe(true);
+  expect(freshArticle.textContent).toContain(edited.text);
+  freshResolve.click();
+  await settle();
+  expect(writes).toBe(1);
+  await flush();
+  h.target
+    .querySelector<HTMLButtonElement>("[data-room-inbox-message] button")!
+    .click();
+  expect(h.href() !== before).toBe(true);
 });

@@ -383,3 +383,33 @@ test("reentrant new opening and newer route win over outgoing open and row navig
   stopRoute();
   h.dispose();
 });
+
+test("edited canonical wait replaces its row identity before old controls can navigate or resolve", async () => {
+  let writes = 0;
+  const h = await fixture(async () => {
+    writes++;
+    return { ok: true };
+  });
+  h.inbox.open();
+  await settle();
+  const binding = get(h.inbox.state).binding!,
+    old = get(h.inbox.state).data.waits[0]!;
+  const edited = { ...wait, text: "Replacement question", ts: 2 };
+  h.canonical(me({ waits: [edited] }));
+  await h.services.personal.refresh();
+  const current = get(h.inbox.state).data.waits[0]!,
+    before = h.href();
+  expect(current === old).toBe(false);
+  expect(current.text).toBe(edited.text);
+  h.inbox.openWait(binding, old);
+  await h.inbox.resolve(binding, old);
+  expect(h.href()).toBe(before);
+  expect(writes).toBe(0);
+  await h.inbox.resolve(binding, current);
+  expect(writes).toBe(1);
+  await settle();
+  const latest = get(h.inbox.state).data.waits[0]!;
+  h.inbox.openWait(binding, latest);
+  expect(h.href() !== before).toBe(true);
+  h.dispose();
+});
