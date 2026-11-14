@@ -31,6 +31,8 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-document-${{ github.sha }}
-          path: .artifacts/app-document/results.json
+          path: |
+            .artifacts/app-document/results.json
+            .artifacts/app-document/adversarial/results.json
           if-no-files-found: warn
           retention-days: 7

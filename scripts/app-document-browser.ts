@@ -1,3 +1,4 @@
+import { auditAppDocumentAdversarial } from "./app-document-adversarial-browser";
 import { chromium, expect, type Browser, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -155,6 +156,7 @@ try {
   evidence.requests = state.requests;
   evidence.replacementRequests = replacementRequests;
   evidence.sameProxy = state.sameProxy;
+  evidence.adversarial = await auditAppDocumentAdversarial({ page: activePage, hostModuleURL: new URL("/app-document-host.js", server.url).href, output });
   evidence.status = "passed";
 } catch (error) {
   evidence.status = "failed";
