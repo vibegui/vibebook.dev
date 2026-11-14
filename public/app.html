@@ -500,7 +500,14 @@
   .vtable { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; } .vtable table { border-collapse: collapse; width: 100%; font-size: 13px; } .vtable th, .vtable td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; } .vtable th { color: var(--mute); font-weight: 600; background: var(--bg); } .vtable tr:last-child td { border-bottom: 0; }
   .vchart { margin: 0; display: grid; gap: 6px; color: var(--accent, #4f7cff); } .vchart figcaption { color: var(--ink); font-size: 13px; font-weight: 600; } .vchart svg { width: 100%; height: 90px; }
   .vbar { display: grid; grid-template-columns: minmax(60px, 30%) 1fr auto; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); } .vbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mute); } .vbar i { height: 10px; border-radius: 5px; background: var(--claude); min-width: 2px; } .vbar b { font-variant-numeric: tabular-nums; }
-  .vlab { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); }
+  .vlab { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); padding-left: 38px; }
+  .vplot { display: grid; grid-template-columns: 34px 1fr; gap: 4px; } .vyax { display: flex; flex-direction: column; justify-content: space-between; font-size: 10.5px; color: var(--mute); text-align: right; font-variant-numeric: tabular-nums; }
+  .vchart .vgrid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .vleg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--ink); } .vleg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .vbars { display: grid; gap: 2px; } .vbar.multi .vbars i { height: 6px; }
+  .vdelta { font-size: 12px; font-weight: 600; } .vdelta.good { color: #16a34a; } .vdelta.bad { color: #dc2626; } .vdelta.flat { color: var(--mute); }
+  .vtrend { display: block; font-size: 11px; color: var(--mute); }
+  a.vbtn, a.vbtn:hover { text-decoration: none; }
   .vhr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; } .vimg { max-width: 100%; border-radius: 10px; display: block; }
   .vact { display: flex; flex-wrap: wrap; gap: 8px; }
   .vbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 13.5px/1 "Schibsted Grotesk", system-ui, sans-serif; cursor: pointer; text-decoration: none; }
@@ -5535,15 +5542,16 @@ function cardHtml(m) {
       case "Section": return `<section class="vsec">${p.title ? `<h5>${txt(p.title)}</h5>` : ""}${kids()}</section>`;
       case "Text": return `<p class="vtx ${esc(p.style || "plain")}">${txt(p.content)}</p>`;
       case "Fields": return `<dl class="vfields">${kids()}</dl>`;
-      case "Field": return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}</dd></div>`;
+      case "Field": {
+        // delta colored by direction: a leading "-" or "−" is down; good: "down" flips which way is green.
+        const dn = /^\s*[-−↓]/.test(p.delta || ""), good = p.delta && !/^\s*[0±=]/.test(p.delta) ? (dn === (p.good === "down") ? "good" : "bad") : "flat";
+        return `<div><dt>${txt(p.label)}</dt><dd>${txt(p.value)}${p.delta ? ` <span class="vdelta ${good}">${txt(p.delta)}</span>` : ""}</dd>${p.trend ? `<small class="vtrend">${txt(p.trend)}</small>` : ""}</div>`;
+      }
       case "Table": return `<div class="vtWrap"><button type="button" class="vtOpen" data-vtopen title="${t("Abrir em tela cheia")}" aria-label="${t("Abrir em tela cheia")}">${icon("expand", 14)}</button><div class="vtable"><table>${p.headers?.length ? `<thead><tr>${p.headers.map((h) => `<th>${txt(h)}</th>`).join("")}</tr></thead>` : ""}<tbody>${(p.rows || []).map((r) => `<tr>${r.map((x) => `<td>${txt(x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;
       case "Chart": {
+        if (p.series?.length) return chartHtml(p, txt);
         const d = p.data || [], max = Math.max(...d.map((x) => Math.abs(x.value)), 1);
-        if (p.kind === "line") {
-          const w = 300, h = 90, step = d.length > 1 ? w / (d.length - 1) : 0, min = Math.min(...d.map((x) => x.value), 0), span = max - min || 1;
-          const pts = d.map((x, i) => `${(i * step).toFixed(1)},${(h - ((x.value - min) / span) * h).toFixed(1)}`).join(" ");
-          return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}<svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg><div class="vlab"><span>${txt(d[0]?.label)}</span><span>${txt(d.at(-1)?.label)}</span></div></figure>`;
-        }
+        if (p.kind === "line") return chartHtml({ ...p, labels: d.map((x) => x.label), series: [{ name: p.title || "", values: d.map((x) => x.value) }] }, txt);
         return `<figure class="vchart">${p.title ? `<figcaption>${txt(p.title)}</figcaption>` : ""}${d.map((x) => `<div class="vbar"><span>${txt(x.label)}</span><i style="width:${Math.round((Math.abs(x.value) / max) * 100)}%"></i><b>${txt(x.value)}</b></div>`).join("")}</figure>`;
       }
       case "Divider": return `<hr class="vhr">`;
@@ -5554,12 +5562,33 @@ function cardHtml(m) {
         return mine ? `<button type="button" class="vbtn ${esc(p.style || "")}" data-cardbtn="${m.id}" data-v="${esc(v)}">${txt(p.label)}</button>` : `<span class="vbtn ro ${picked ? "on" : ""}">${picked ? icon("check", 14) : ""}${txt(p.label)}</span>`;
       }
       case "LinkButton":
-        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(p.url || "")) return `<button type="button" class="vbtn link" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
-        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn link" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
+        if (/^#(m\d+|e[a-z0-9]+|doc(:[a-z0-9]+)?|app:(room|[a-f0-9]{12})\/[\w.-]+)$/.test(p.url || "")) return `<button type="button" class="vbtn vlink ${p.style === "primary" ? "primary" : ""}" data-cardgo="${esc(p.url)}">${txt(p.label)} ${icon("arrowRight", 13)}</button>`;
+        return /^https?:\/\//i.test(p.url) ? `<a class="vbtn vlink ${p.style === "primary" ? "primary" : ""}" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${txt(p.label)} ${icon("external", 13)}</a>` : "";
       default: return "";
     }
   };
   return draw(c.root);
+}
+// Chart with axis, legend and a native tooltip per point (<title>): line = one polyline per series, bar = grouped
+// horizontal bars per label. Up to 4 series, colors from VSERIES.
+const VSERIES = ["var(--claude)", "#4f7cff", "#22a06b", "#b46ae6"];
+const vnum = (n) => Math.abs(n) >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M` : Math.abs(n) >= 1e4 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}k` : String(Math.round(n * 100) / 100);
+function chartHtml(p, txt) {
+  const L = p.labels || [], S2 = p.series || [], all = S2.flatMap((s) => s.values);
+  const max = Math.max(...all, 0), min = Math.min(...all, 0), span = max - min || 1;
+  const legend = S2.length > 1 ? `<div class="vleg">${S2.map((s, i) => `<span><i style="background:${VSERIES[i]}"></i>${txt(s.name)}</span>`).join("")}</div>` : "";
+  const cap = p.title ? `<figcaption>${txt(p.title)}</figcaption>` : "";
+  if (p.kind !== "line") {
+    const mx = Math.max(...all.map(Math.abs), 1);
+    return `<figure class="vchart">${cap}${legend}${L.map((l, j) => `<div class="vbar${S2.length > 1 ? " multi" : ""}"><span>${txt(l)}</span><div class="vbars">${S2.map((s, i) => `<i style="width:${Math.round((Math.abs(s.values[j]) / mx) * 100)}%;background:${VSERIES[i]}" title="${esc(`${l} · ${s.name ? `${s.name}: ` : ""}${s.values[j]}`)}"></i>`).join("")}</div><b>${S2.map((s) => txt(vnum(s.values[j]))).join(" · ")}</b></div>`).join("")}</figure>`;
+  }
+  const w = 300, h = 100, step = L.length > 1 ? w / (L.length - 1) : 0, y = (v) => (h - ((v - min) / span) * h).toFixed(1);
+  const lines = S2.map((s, i) => `<polyline points="${s.values.map((v, j) => `${(j * step).toFixed(1)},${y(v)}`).join(" ")}" fill="none" stroke="${VSERIES[i]}" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`).join("");
+  // An invisible column per label carries the tooltip, so hovering anywhere above a label shows every series there.
+  const hits = L.map((l, j) => `<rect x="${(j * step - step / 2).toFixed(1)}" y="0" width="${(step || w).toFixed(1)}" height="${h}" fill="transparent"><title>${esc(`${l}\n${S2.map((s) => `${s.name ? `${s.name}: ` : ""}${s.values[j]}`).join("\n")}`)}</title></rect>`).join("");
+  const grid = `<line x1="0" x2="${w}" y1="0" y2="0" class="vgrid"/><line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" class="vgrid"/><line x1="0" x2="${w}" y1="${h}" y2="${h}" class="vgrid"/>`;
+  const mid = L.length > 2 ? L[Math.floor((L.length - 1) / 2)] : "";
+  return `<figure class="vchart">${cap}${legend}<div class="vplot"><div class="vyax"><span>${vnum(max)}</span><span>${vnum((max + min) / 2)}</span><span>${vnum(min)}</span></div><svg viewBox="-4 -4 ${w + 8} ${h + 8}" preserveAspectRatio="none">${grid}${lines}${hits}</svg></div><div class="vlab"><span>${txt(L[0])}</span>${mid ? `<span>${txt(mid)}</span>` : ""}<span>${txt(L.at(-1))}</span></div></figure>`;
 }
 // A card's LinkButton to a place in the room: a message (#m), an epic's thread (#e), the doc (#doc[:epic]).
 function cardGo(to) {

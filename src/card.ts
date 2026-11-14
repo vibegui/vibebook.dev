@@ -32,7 +32,9 @@ const CATALOG: Record<string, { props: (p: Record<string, unknown>, room: string
     },
   },
   Fields: { props: () => ({}), kids: ["Field"] },
-  Field: { props: (p) => ({ label: short(p.label, "Field.label") ?? "", value: long(p.value, "Field.value") ?? "" }) },
+  // delta: the change ("+12%", "-3"), green when it goes the good way (good: "up" by default, "down" for errors,
+  // latency, cost); trend: a small line under it ("4 sem: 6,0k · 6,2k · 6,3k").
+  Field: { props: (p) => ({ label: short(p.label, "Field.label") ?? "", value: long(p.value, "Field.value") ?? "", delta: short(p.delta, "Field.delta"), good: p.good === "down" ? "down" : undefined, trend: short(p.trend, "Field.trend") }) },
   Table: {
     props: (p) => {
       const head = (Array.isArray(p.headers) ? p.headers : Array.isArray(p.columns) ? p.columns : []).slice(0, 10).map((x, i) => short(typeof x === "object" && x ? (x as { label?: unknown }).label : x, `Table.headers[${i}]`) ?? "");
@@ -47,11 +49,24 @@ const CATALOG: Record<string, { props: (p: Record<string, unknown>, room: string
   },
   Chart: {
     props: (p) => {
+      const kind = p.kind === "line" || p.chartType === "line" ? "line" : "bar";
+      // Several series (≤4) over the same labels: {labels: [...], series: [{name, values: [...]}]}.
+      if (Array.isArray(p.series)) {
+        const labels = Array.isArray(p.labels) ? p.labels.map((l, i) => short(l, `Chart.labels[${i}]`) ?? "") : [];
+        if (!labels.length || labels.length > 30) throw new Error("Chart with series needs 1-30 labels");
+        if (!p.series.length || p.series.length > 4) throw new Error("Chart needs 1-4 series: [{name, values}]");
+        const series = p.series.map((s, i) => {
+          const v = Array.isArray((s as { values?: unknown })?.values) ? ((s as { values: unknown[] }).values) : [];
+          if (v.length !== labels.length) throw new Error(`Chart.series[${i}].values needs one number per label (${labels.length})`);
+          return { name: short((s as { name?: unknown })?.name, `Chart.series[${i}].name`) ?? "", values: v.map((x, j) => { const n = Number(x); if (!Number.isFinite(n)) throw new Error(`Chart.series[${i}].values[${j}] must be a number`); return n; }) };
+        });
+        return { title: short(p.title, "Chart.title"), kind, labels, series };
+      }
       const data = Array.isArray(p.data) ? p.data : [];
-      if (!data.length || data.length > 30) throw new Error("Chart needs 1-30 points in data: [{label, value}]");
+      if (!data.length || data.length > 30) throw new Error("Chart needs 1-30 points in data: [{label, value}], or labels + series");
       return {
         title: short(p.title, "Chart.title"),
-        kind: p.kind === "line" || p.chartType === "line" ? "line" : "bar",
+        kind,
         data: data.map((d, i) => {
           const value = Number((d as { value?: unknown })?.value);
           if (!Number.isFinite(value)) throw new Error(`Chart.data[${i}].value must be a number`);
@@ -80,7 +95,7 @@ const CATALOG: Record<string, { props: (p: Record<string, unknown>, room: string
   },
   // url: an http(s) link (new tab), or a place in the room: "#m<id>" a message, "#e<epic id>" an epic's thread,
   // "#doc" / "#doc:<epic id>" the room's or an epic's doc.
-  LinkButton: { props: (p) => ({ label: short(p.label, "LinkButton.label") ?? "Abrir", url: /^#(m\d{1,9}|e[a-z0-9]{4,16}|doc(:[a-z0-9]{4,16})?|app:(room|[a-f0-9]{12})\/[\w.-]{1,100})$/.test(String(p.url ?? "")) ? String(p.url) : httpUrl(p.url, "LinkButton.url (http(s), or #m<message id>, #e<epic id>, #doc, #doc:<epic id>)") }) },
+  LinkButton: { props: (p) => ({ label: short(p.label, "LinkButton.label") ?? "Abrir", style: p.style === "primary" ? "primary" : undefined, url: /^#(m\d{1,9}|e[a-z0-9]{4,16}|doc(:[a-z0-9]{4,16})?|app:(room|[a-f0-9]{12})\/[\w.-]{1,100})$/.test(String(p.url ?? "")) ? String(p.url) : httpUrl(p.url, "LinkButton.url (http(s), or #m<message id>, #e<epic id>, #doc, #doc:<epic id>)") }) },
 };
 export const CARD_TYPES = Object.keys(CATALOG);
 

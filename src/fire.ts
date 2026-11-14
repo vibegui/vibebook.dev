@@ -43,8 +43,8 @@ export type FireOut =
 // #2367: "antes de decidir fazer um html, se puder ser resolvido por um json render nativo, tenta isso").
 const CATALOG = `A card is JSON: {"root":"c","elements":{"<id>":{"type":"<Type>","props":{...},"children":["<id>",...]}}}. Types:
 Card {title, subtitle} (the root, children any) · Section {title} (children any) · Text {content, style: plain|bold|muted|code}
-Fields (children: Field) · Field {label, value} (a number tile) · Table {headers:[...], rows:[[...]]} (≤50 rows, ≤10 cols)
-Chart {title, kind: bar|line, data:[{label, value:number}]} (1-30 points) · Divider · Actions (children: LinkButton) · LinkButton {label, url (https)}.
+Fields (children: Field) · Field {label, value, delta?: "+12%" | "-3%", good?: "down" (when lower is better), trend?: "4 sem: 6,0k · 6,2k"} (a number tile) · Table {headers:[...], rows:[[...]]} (≤50 rows, ≤10 cols)
+Chart {title, kind: bar|line, data:[{label, value:number}]} (1-30 points), or {title, kind, labels:[...], series:[{name, values:[numbers]}]} (≤4 series) · Divider · Actions (children: LinkButton) · LinkButton {label, url (https), style?: primary}.
 Numbers go as Field tiles INSIDE a Fields element (never a bare Field), a few per Fields. Short labels, numbers as text with units. No HTML anywhere.`;
 
 export async function fire(env: Env, bookId: string, email: string, b: FireIn): Promise<FireOut> {
