@@ -57,6 +57,8 @@
     "scripts/design-system-browser.ts",
     "scripts/ui-variants.test.ts",
     "scripts/studio-browser.ts",
+    "scripts/native-application-browser-types.ts",
+    "scripts/native-application-profiles.ts",
     "scripts/native-browser-fixtures.ts",
     "scripts/tasks-browser.ts",
     "scripts/board-browser.ts",
