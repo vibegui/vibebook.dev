@@ -101,8 +101,10 @@ const { default: RoomTile } =
 const { default: ApplicationShellHarness } =
   await import("./application-shell-harness.svelte");
 const { shellFixture } = await import("./application-shell-fixtures");
-const { default: RoomShellHarness } = await import("./room-shell-harness.svelte");
-const { createRoomResources } = await import("../svelte/features/application/roomResources");
+const { default: RoomShellHarness } =
+  await import("./room-shell-harness.svelte");
+const { createRoomResources } =
+  await import("../svelte/features/application/roomResources");
 import type { Room, RoomEvent } from "../shared/room";
 import type { RoomScopeBrowser } from "../svelte/features/room-scope/types";
 import type { RoomLayoutBrowser } from "../svelte/features/room-layout/types";
@@ -305,57 +307,167 @@ test("global Inbox direct callbacks reject old connected account controls and cl
   expect(document.querySelector('[role="dialog"]')).toBe(null);
 });
 async function actualRoomShell() {
-  const h = shellFixture(), resources = createRoomResources();
-  h.services.start(); await settle(); h.services.actions.navigate({ roomId: "aaaaaa" });
-  const browser: RoomScopeBrowser = { origin: "https://vibebook.test", href: h.href, historyState: () => window.history.state, history: window.history,
-    storage: localStorage, fetcher: async () => new Response(JSON.stringify({ connections: [] }), { headers: { "content-type": "application/json" } }), iosStandalone: false, visible: () => true, listenVisibility: () => () => {}, openExternal: () => {}, enqueue: queueMicrotask, clock: h.timer.clock };
-  const layoutBrowser: RoomLayoutBrowser = { href: h.href, state: () => window.history.state, history: window.history, storage: localStorage, schedule: h.timer.clock.schedule, cancel: h.timer.clock.cancel, enqueue: queueMicrotask };
-  const target = document.createElement("div"); document.body.append(target);
-  const component = flushSync(() => mount(RoomShellHarness, { target, props: { presentation: { services: h.services, openInbox() {} }, resources, browser, layoutBrowser } }));
-  cleanups.push(() => { flushSync(() => { void unmount(component); }); h.services.dispose(); resources.dispose(); });
-  const canonical: Room = { id: "aaaaaa", me: "me@test.com", book: { title: "Real native composition", owner: "me@test.com" }, members: ["me@test.com"], online: [], typing: {}, suggestions: [],
-    doc: "# Canonical document", messages: [{ id: 1, thread: "main", author: "me@test.com", text: "Canonical visible message", ts: 1 }],
-    epics: [{ id: "e", title: "Canonical epic", tasks: [{ id: "t1", title: "Canonical task", done: false, status: "todo", owner: "me@test.com" }] }],
+  const h = shellFixture(),
+    resources = createRoomResources();
+  h.services.start();
+  await settle();
+  h.services.actions.navigate({ roomId: "aaaaaa" });
+  const browser: RoomScopeBrowser = {
+    origin: "https://vibebook.test",
+    href: h.href,
+    historyState: () => window.history.state,
+    history: window.history,
+    storage: localStorage,
+    fetcher: async () =>
+      new Response(JSON.stringify({ connections: [] }), {
+        headers: { "content-type": "application/json" },
+      }),
+    iosStandalone: false,
+    visible: () => true,
+    listenVisibility: () => () => {},
+    openExternal: () => {},
+    enqueue: queueMicrotask,
+    clock: h.timer.clock,
   };
-  const publish = (value: Room) => { const { id: _id, typing: _typing, ...state } = value; const event: RoomEvent = { t: "state", ...state }; h.connectionCallbacks.at(-1)!.onEvent(event); };
+  const layoutBrowser: RoomLayoutBrowser = {
+    href: h.href,
+    state: () => window.history.state,
+    history: window.history,
+    storage: localStorage,
+    schedule: h.timer.clock.schedule,
+    cancel: h.timer.clock.cancel,
+    enqueue: queueMicrotask,
+  };
+  const target = document.createElement("div");
+  document.body.append(target);
+  const component = flushSync(() =>
+    mount(RoomShellHarness, {
+      target,
+      props: {
+        presentation: { services: h.services, openInbox() {} },
+        resources,
+        browser,
+        layoutBrowser,
+      },
+    }),
+  );
+  cleanups.push(() => {
+    flushSync(() => {
+      void unmount(component);
+    });
+    h.services.dispose();
+    resources.dispose();
+  });
+  const canonical: Room = {
+    id: "aaaaaa",
+    me: "me@test.com",
+    book: { title: "Real native composition", owner: "me@test.com" },
+    members: ["me@test.com"],
+    online: [],
+    typing: {},
+    suggestions: [],
+    doc: "# Canonical document",
+    messages: [
+      {
+        id: 1,
+        thread: "main",
+        author: "me@test.com",
+        text: "Canonical visible message",
+        ts: 1,
+      },
+    ],
+    epics: [
+      {
+        id: "e",
+        title: "Canonical epic",
+        tasks: [
+          {
+            id: "t1",
+            title: "Canonical task",
+            done: false,
+            status: "todo",
+            owner: "me@test.com",
+          },
+        ],
+      },
+    ],
+  };
+  const publish = (value: Room) => {
+    const { id: _id, typing: _typing, ...state } = value;
+    const event: RoomEvent = { t: "state", ...state };
+    h.connectionCallbacks.at(-1)!.onEvent(event);
+  };
   return { ...h, resources, target, canonical, publish };
 }
 test("real RoomShell uses genuine loading/terminal states and directly renders current canonical native features", async () => {
-  const h = await actualRoomShell(); await flush();
-  expect(h.target.querySelector('[data-native-room-status="loading"]') !== null).toBe(true);
+  const h = await actualRoomShell();
+  await flush();
+  expect(
+    h.target.querySelector('[data-native-room-status="loading"]') !== null,
+  ).toBe(true);
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
-  h.publish(h.canonical); await flush();
-  expect(h.target.querySelector("[data-native-room-sidebar]") !== null).toBe(true);
-  expect(h.target.querySelector("[data-native-room-header]") !== null).toBe(true);
+  h.publish(h.canonical);
+  await flush();
+  expect(h.target.querySelector("[data-native-room-sidebar]") !== null).toBe(
+    true,
+  );
+  expect(h.target.querySelector("[data-native-room-header]") !== null).toBe(
+    true,
+  );
   expect(h.target.querySelector("[data-native-composer]") !== null).toBe(true);
   expect(h.target.querySelector("[data-native-document]") !== null).toBe(true);
   expect(h.target.textContent).toContain("Canonical visible message");
-  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" }); await flush();
-  expect(h.target.querySelector('[data-native-room-status="removed"]') !== null).toBe(true);
+  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
+  await flush();
+  expect(
+    h.target.querySelector('[data-native-room-status="removed"]') !== null,
+  ).toBe(true);
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
   expect(h.target.textContent).not.toContain("Canonical visible message");
 });
 test("real RoomShell retains one Board DOM instance across pane and full-board placements", async () => {
-  const h = await actualRoomShell(); h.publish(h.canonical); await flush();
-  h.services.actions.selectPane("board"); await flush();
-  const board = h.target.querySelector('[data-board-scope]');
+  const h = await actualRoomShell();
+  h.publish(h.canonical);
+  await flush();
+  h.services.actions.selectPane("board");
+  await flush();
+  const board = h.target.querySelector("[data-board-scope]");
   expect(board !== null).toBe(true);
-  const toggle = h.target.querySelector<HTMLButtonElement>("[data-native-board-toggle]")!;
-  expect(toggle !== null).toBe(true); toggle.click(); await flush();
-  expect(h.target.querySelector('[data-board-scope]') === board).toBe(true);
-  toggle.click(); await flush(); h.services.actions.selectPane("doc"); await flush(); h.services.actions.selectPane("board"); await flush();
-  expect(h.target.querySelectorAll('[data-board-scope]').length).toBe(1);
-  expect(h.target.querySelector('[data-board-scope]') === board).toBe(true);
+  const toggle = h.target.querySelector<HTMLButtonElement>(
+    "[data-native-board-toggle]",
+  )!;
+  expect(toggle !== null).toBe(true);
+  toggle.click();
+  await flush();
+  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
+  toggle.click();
+  await flush();
+  h.services.actions.selectPane("doc");
+  await flush();
+  h.services.actions.selectPane("board");
+  await flush();
+  expect(h.target.querySelectorAll("[data-board-scope]").length).toBe(1);
+  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
 });
 test("real RoomShell revokes connected outgoing Composer controls before a removed frame reaches the DOM", async () => {
-  const h = await actualRoomShell(); h.publish(h.canonical); await flush();
-  const input = h.target.querySelector<HTMLTextAreaElement>('[data-native-composer] textarea')!, form = input.closest("form")!;
-  input.value = "An outgoing private draft"; input.dispatchEvent(new Event("input", { bubbles: true })); await flush();
+  const h = await actualRoomShell();
+  h.publish(h.canonical);
+  await flush();
+  const input = h.target.querySelector<HTMLTextAreaElement>(
+      "[data-native-composer] textarea",
+    )!,
+    form = input.closest("form")!;
+  input.value = "An outgoing private draft";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  await flush();
   h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
   expect(form.isConnected).toBe(true);
-  const before = h.roomCommands.filter(command => command.t === "msg").length;
+  const before = h.roomCommands.filter((command) => command.t === "msg").length;
   form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  expect(h.roomCommands.filter(command => command.t === "msg").length).toBe(before); await flush();
+  expect(h.roomCommands.filter((command) => command.t === "msg").length).toBe(
+    before,
+  );
+  await flush();
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
 });
 async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {

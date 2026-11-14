@@ -7,7 +7,10 @@ import type { RoomLayoutController } from "../room-layout/types";
 import type { ChatProps } from "../../chatTypes";
 import type { ComposerProps } from "../composer/types";
 import type { SidebarProps } from "../../sidebar";
-import type { ThreadHeaderProps, SuggestionPreviewProps } from "../room-sidebar/types";
+import type {
+  ThreadHeaderProps,
+  SuggestionPreviewProps,
+} from "../room-sidebar/types";
 import type { PanelProps } from "../../panels";
 import type { DocumentProps } from "../documents/types";
 import type { DocumentSession } from "../documents/session";
@@ -60,7 +63,10 @@ export type RoomScopeBrowser = {
   openExternal(url: string): void;
   awarenessColor(account: string): string;
   clock?: {
-    schedule(callback: () => void, ms: number): number | ReturnType<typeof setTimeout>;
+    schedule(
+      callback: () => void,
+      ms: number,
+    ): number | ReturnType<typeof setTimeout>;
     cancel(handle: unknown): void;
   };
   enqueue(callback: () => void): void;
@@ -82,7 +88,11 @@ export type RoomScope = {
   actions: {
     setPane: RoomLayoutController["setPane"];
     setThread(thread: string): void;
-    openFile(id: string | import("../../../shared/room").Attachment, trigger?: HTMLElement, label?: string): boolean;
+    openFile(
+      id: string | import("../../../shared/room").Attachment,
+      trigger?: HTMLElement,
+      label?: string,
+    ): boolean;
     navigateMessage(id: number, thread?: string): void;
     loadOlder(): void;
     retry(): void;

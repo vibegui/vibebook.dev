@@ -113,7 +113,10 @@ export function createAgentsService(options: {
     attached?.detach();
     attached = null;
     for (const [id, owner] of rooms)
-      if (!owner.hasPending()) { owner.dispose(); rooms.delete(id); }
+      if (!owner.hasPending()) {
+        owner.dispose();
+        rooms.delete(id);
+      }
   }
   return {
     identity,
@@ -158,7 +161,9 @@ export function createAgentsService(options: {
     claimAttachment() {
       const token = {};
       attachment = token;
-      return () => { if (attachment === token) detach(); };
+      return () => {
+        if (attachment === token) detach();
+      };
     },
     detach,
     reset,

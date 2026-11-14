@@ -56,7 +56,9 @@
   let highlighted = $state<ReadonlySet<string>>(new Set());
   function attention(node: HTMLElement, id: string) {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const clear = () => { highlighted = new Set([...highlighted].filter(value => value !== id)); };
+    const clear = () => {
+      highlighted = new Set([...highlighted].filter((value) => value !== id));
+    };
     const show = () => {
       if (!node.isConnected) return;
       if (timer !== undefined) clearTimeout(timer);
@@ -64,7 +66,13 @@
       timer = setTimeout(clear, 1800);
     };
     node.addEventListener("vb:task-highlight", show);
-    return { destroy() { node.removeEventListener("vb:task-highlight", show); if (timer !== undefined) clearTimeout(timer); clear(); } };
+    return {
+      destroy() {
+        node.removeEventListener("vb:task-highlight", show);
+        if (timer !== undefined) clearTimeout(timer);
+        clear();
+      },
+    };
   }
   let title = $state("");
   let editInput = $state<HTMLInputElement | null>(null);
@@ -159,7 +167,8 @@
               : "tw:border-border tw:bg-card tw:text-card-foreground",
             !task.done && task.owner === room.me && "tw:border-ring/50",
             waiting(task) && "tw:bg-warning/10",
-            highlighted.has(task.id) && "tw:animate-pulse tw:motion-reduce:animate-none",
+            highlighted.has(task.id) &&
+              "tw:animate-pulse tw:motion-reduce:animate-none",
           )}
         >
           <Checkbox

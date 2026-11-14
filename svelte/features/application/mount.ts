@@ -14,7 +14,10 @@ export function applicationShellVersion(doc: Document): string | null {
 }
 
 /** The single Svelte root; domain views are composed inside the component. */
-export function mountApplication(target: HTMLElement, doc: Document = document) {
+export function mountApplication(
+  target: HTMLElement,
+  doc: Document = document,
+) {
   const instance = mount(NativeApplication, {
     target,
     props: { document: doc, shellVersion: applicationShellVersion(doc) },

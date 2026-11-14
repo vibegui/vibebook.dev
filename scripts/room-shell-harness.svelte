@@ -4,6 +4,17 @@
   import type { RoomResources } from "../svelte/features/application/roomResources";
   import type { RoomScopeBrowser } from "../svelte/features/room-scope/types";
   import type { RoomLayoutBrowser } from "../svelte/features/room-layout/types";
-  let { presentation, resources, browser, layoutBrowser }: { presentation: ApplicationRoomPresentation; resources: RoomResources; browser: RoomScopeBrowser; layoutBrowser: RoomLayoutBrowser } = $props();
+  let {
+    presentation,
+    resources,
+    browser,
+    layoutBrowser,
+  }: {
+    presentation: ApplicationRoomPresentation;
+    resources: RoomResources;
+    browser: RoomScopeBrowser;
+    layoutBrowser: RoomLayoutBrowser;
+  } = $props();
 </script>
-<RoomShell {presentation} {resources} {browser} {layoutBrowser}/>
+
+<RoomShell {presentation} {resources} {browser} {layoutBrowser} />

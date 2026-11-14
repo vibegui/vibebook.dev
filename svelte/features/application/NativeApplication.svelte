@@ -15,12 +15,14 @@
     shellVersion: string | null;
   } = $props();
   const resources = untrack(createRoomResources);
-  const services = untrack(() => createBrowserApplicationServices({
-    window: browser,
-    document: doc,
-    shellVersion,
-    onIdentityReset: resources.reset,
-  }));
+  const services = untrack(() =>
+    createBrowserApplicationServices({
+      window: browser,
+      document: doc,
+      shellVersion,
+      onIdentityReset: resources.reset,
+    }),
+  );
   onDestroy(() => {
     // Invalidate room actors before clearing their account-owned draft banks.
     services.dispose();

@@ -18,20 +18,43 @@ import ThreadHeader from "../svelte/features/room-sidebar/ThreadHeader.svelte";
 import SuggestionPreview from "../svelte/features/room-sidebar/SuggestionPreview.svelte";
 export { dismissDialogs } from "../svelte/lib/ui/dialogController";
 const fixtures = {
-  tasks: Tasks, board: Board, files: Files, reminders: Reminders,
-  decisions: Decisions, sidebar: Sidebar, chat: Chat, composer: Composer,
-  document: DocumentPanel, apps: AppsPanel, agentSettings: AgentSettings,
-  threadHeader: ThreadHeader, suggestionPreview: SuggestionPreview,
+  tasks: Tasks,
+  board: Board,
+  files: Files,
+  reminders: Reminders,
+  decisions: Decisions,
+  sidebar: Sidebar,
+  chat: Chat,
+  composer: Composer,
+  document: DocumentPanel,
+  apps: AppsPanel,
+  agentSettings: AgentSettings,
+  threadHeader: ThreadHeader,
+  suggestionPreview: SuggestionPreview,
 };
 type FixtureName = keyof typeof fixtures;
 /** Preserve the existing checked test call-site relation and flush/update/cleanup
  * behavior. The pre-existing erased forwarding boundary is confined to tests. */
-export function mountView<K extends FixtureName>(kind: K, target: Element, props: ComponentProps<(typeof fixtures)[K]>) {
+export function mountView<K extends FixtureName>(
+  kind: K,
+  target: Element,
+  props: ComponentProps<(typeof fixtures)[K]>,
+) {
   const values = writable<Record<string, unknown>>(props);
-  const component = fixtures[kind] as unknown as Component<Record<string, unknown>>;
-  const instance = flushSync(() => mount(View, { target, props: { component, values } }));
+  const component = fixtures[kind] as unknown as Component<
+    Record<string, unknown>
+  >;
+  const instance = flushSync(() =>
+    mount(View, { target, props: { component, values } }),
+  );
   return {
-    update(next: ComponentProps<(typeof fixtures)[K]>) { flushSync(() => values.set(next)); },
-    destroy() { flushSync(() => { void unmount(instance); }); },
+    update(next: ComponentProps<(typeof fixtures)[K]>) {
+      flushSync(() => values.set(next));
+    },
+    destroy() {
+      flushSync(() => {
+        void unmount(instance);
+      });
+    },
   };
 }

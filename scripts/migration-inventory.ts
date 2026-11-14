@@ -35,9 +35,7 @@ async function collect(directory: string) {
   }
 }
 for (const directory of sources) await collect(join(projectRoot, directory));
-files.push(
-  join(projectRoot, "public/app-svelte.html"),
-);
+files.push(join(projectRoot, "public/app-svelte.html"));
 
 for (const absolute of files.sort()) {
   const file = relative(projectRoot, absolute);
@@ -237,13 +235,7 @@ const inventory = {
   workingTreeDirty:
     execFileSync(
       "git",
-      [
-        "status",
-        "--porcelain",
-        "--",
-        ...sources,
-        "public/app-svelte.html",
-      ],
+      ["status", "--porcelain", "--", ...sources, "public/app-svelte.html"],
       { cwd: projectRoot, encoding: "utf8" },
     ).trim().length > 0,
   sourceFingerprint: createHash("sha256")

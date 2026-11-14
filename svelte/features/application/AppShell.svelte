@@ -131,20 +131,90 @@
   });
 </script>
 
-<div data-vb-native data-native-app-shell class={[$application.route.kind === "room" ? "tw:grid tw:h-dvh tw:min-h-0 tw:grid-cols-[minmax(0,1fr)] tw:grid-rows-[auto_minmax(0,1fr)] tw:overflow-hidden" : "tw:min-h-dvh", "tw:bg-background tw:font-sans tw:text-sm tw:leading-6 tw:text-foreground"]}>
+<div
+  data-vb-native
+  data-native-app-shell
+  class={[
+    $application.route.kind === "room"
+      ? "tw:grid tw:h-dvh tw:min-h-0 tw:grid-cols-[minmax(0,1fr)] tw:grid-rows-[auto_minmax(0,1fr)] tw:overflow-hidden"
+      : "tw:min-h-dvh",
+    "tw:bg-background tw:font-sans tw:text-sm tw:leading-6 tw:text-foreground",
+  ]}
+>
   {#if !$application.sessionDenied}
-    {#if $personal.me}<AppNavigation controller={services.navigation} lang={services.language} {theme} ontheme={nextTheme} onlanguage={language} onreload={() => { if (current()) services.actions.reload(); }}/>{/if}
-    {#if $application.route.kind === "home"}<Home {...home}/>
-    {:else if $application.route.kind === "archived"}<Archived {...home}/>
-    {:else if $application.route.kind === "room"}<div data-native-room-root class="tw:col-start-1 tw:row-start-2 tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden">{@render roomSnippet({ services, openInbox: inbox.open })}</div>{/if}
-    <AccountSettings owner={services.account} device={services.device} pwa={services.pwa} agents={services.agents} origin={effects.origin} lang={services.language} vb={{ t: services.t, ago }} {theme} onTheme={nextTheme} onLanguage={language} onArchive={() => { if (current()) { services.account.close(); services.actions.archived(); } }} onLogout={all => { if (current() && services.account.current()) void services.actions.logout(all); }}/>
-    {#if $inboxView.binding}{#key $inboxView.binding}<Snapshot value={$inboxView.binding}>
-      {#snippet children(binding)}
-        <Inbox waits={$personal.me?.waits ?? []} roomId={$room.roomId} all={$inboxView.all} vb={{ t: services.t, ago }} displayName={displayName} avatarUrl={avatar}
-          ontab={all => inbox.tab(binding, all)} onclose={() => inbox.close(binding)} onresolve={wait => inbox.resolve(binding, wait)}
-          onopen={(wait, event) => { if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); if (event.currentTarget instanceof Element && event.currentTarget.isConnected) inbox.openWait(binding, wait); }}/>
-      {/snippet}
-    </Snapshot>{/key}{/if}
+    {#if $personal.me}<AppNavigation
+        controller={services.navigation}
+        lang={services.language}
+        {theme}
+        ontheme={nextTheme}
+        onlanguage={language}
+        onreload={() => {
+          if (current()) services.actions.reload();
+        }}
+      />{/if}
+    {#if $application.route.kind === "home"}<Home {...home} />
+    {:else if $application.route.kind === "archived"}<Archived {...home} />
+    {:else if $application.route.kind === "room"}<div
+        data-native-room-root
+        class="tw:col-start-1 tw:row-start-2 tw:h-full tw:min-h-0 tw:min-w-0 tw:overflow-hidden"
+      >
+        {@render roomSnippet({ services, openInbox: inbox.open })}
+      </div>{/if}
+    <AccountSettings
+      owner={services.account}
+      device={services.device}
+      pwa={services.pwa}
+      agents={services.agents}
+      origin={effects.origin}
+      lang={services.language}
+      vb={{ t: services.t, ago }}
+      {theme}
+      onTheme={nextTheme}
+      onLanguage={language}
+      onArchive={() => {
+        if (current()) {
+          services.account.close();
+          services.actions.archived();
+        }
+      }}
+      onLogout={(all) => {
+        if (current() && services.account.current())
+          void services.actions.logout(all);
+      }}
+    />
+    {#if $inboxView.binding}{#key $inboxView.binding}<Snapshot
+          value={$inboxView.binding}
+        >
+          {#snippet children(binding)}
+            <Inbox
+              waits={$personal.me?.waits ?? []}
+              roomId={$room.roomId}
+              all={$inboxView.all}
+              vb={{ t: services.t, ago }}
+              {displayName}
+              avatarUrl={avatar}
+              ontab={(all) => inbox.tab(binding, all)}
+              onclose={() => inbox.close(binding)}
+              onresolve={(wait) => inbox.resolve(binding, wait)}
+              onopen={(wait, event) => {
+                if (
+                  event.button !== 0 ||
+                  event.ctrlKey ||
+                  event.metaKey ||
+                  event.shiftKey ||
+                  event.altKey
+                )
+                  return;
+                event.preventDefault();
+                if (
+                  event.currentTarget instanceof Element &&
+                  event.currentTarget.isConnected
+                )
+                  inbox.openWait(binding, wait);
+              }}
+            />
+          {/snippet}
+        </Snapshot>{/key}{/if}
   {/if}
   <DeviceLockScreen owner={services.device} lang={services.language} />
 </div>

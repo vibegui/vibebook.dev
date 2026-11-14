@@ -21,5 +21,5 @@ export function cssRGBA(document: Document, color: string): string {
 }
 export function cssHex(document: Document, color: string): string {
   const [r, g, b] = cssColorBytes(document, color);
-  return `#${[r!, g!, b!].map(value => value.toString(16).padStart(2, "0")).join("")}`;
+  return `#${[r!, g!, b!].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
 }
