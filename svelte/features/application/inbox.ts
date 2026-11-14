@@ -111,13 +111,14 @@ export function createApplicationInbox(
     open() {
       if (!active || !services.active()) return;
       const data = get(services.personal.state);
-      if (!data.me) return;
+      const person=data.me;
+      if (!person) return;
       close();
       const route=get(services.state).route;
-      const binding:InboxBinding={account:data.me.email,revision:data.identityRevision,generation:++generation,roomId:route.kind==="room"?route.target.roomId:null,navigationRevision:get(services.state).navigationGeneration};
+      const binding:InboxBinding={account:person.email,revision:data.identityRevision,generation:++generation,roomId:route.kind==="room"?route.target.roomId:null,navigationRevision:get(services.state).navigationGeneration};
       state.update((value) => ({
         ...value,
-        binding,data:{waits:data.me!.waits,mentions:[],tasks:[]},phase:"idle",error:null,
+        binding,data:{waits:person.waits,mentions:[],tasks:[]},phase:"idle",error:null,
       }));
       if(owns(binding))void refresh(binding);
     },
