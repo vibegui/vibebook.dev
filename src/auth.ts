@@ -1,3 +1,4 @@
+import { githubEmail, githubName, githubToken } from "./githubIdentity";
 import { Hono } from "hono";
 import * as z from "zod/mini";
 import { reqLang } from "./lang";
@@ -309,16 +310,14 @@ auth.get("/github/callback", async (c) => {
       client_secret: c.env.GITHUB_CLIENT_SECRET!,
       redirect_uri: `${new URL(c.req.url).origin}/auth/github/callback`,
     }),
-  }).then((r) => r.json<{ access_token?: string }>()).catch(() => ({}) as { access_token?: string });
-  if (!tok.access_token) return c.redirect(loginUrl(c, next, "?error=github"));
-  const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok.access_token}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
-  const emails = await gh("/user/emails").then((r) => (r.ok ? r.json<{ email: string; primary: boolean; verified: boolean }[]>() : [])).catch(() => []);
-  const email = emails.find((e) => e.primary && e.verified)?.email;
+  }).then(async (r) => r.ok ? githubToken(await r.json()) : null).catch(() => null);
+  if (!tok) return c.redirect(loginUrl(c, next, "?error=github"));
+  const gh = (path: string) => fetch(`https://api.github.com${path}`, { headers: { authorization: `Bearer ${tok}`, accept: "application/vnd.github+json", "user-agent": "vibebook" } });
+  const email = await gh("/user/emails").then(async (r) => r.ok ? githubEmail(await r.json()) : null).catch(() => null);
   if (!email) return c.redirect(loginUrl(c, next, "?error=github"));
   await startSession(c, email);
   c.executionCtx.waitUntil(track(c.env, "login", { user: email.toLowerCase(), dims: { method: "github" } }));
-  const user = await gh("/user").then((r) => (r.ok ? r.json<{ name?: string; login?: string }>() : {}) as Promise<{ name?: string; login?: string }>).catch(() => ({}) as { name?: string; login?: string });
-  const gname = (user.name || user.login || "").trim().slice(0, 60);
+  const gname = await gh("/user").then(async (r) => r.ok ? githubName(await r.json()) : "").catch(() => "");
   if (gname)
     await c.env.DB.prepare(`INSERT INTO users (email, created_at, name) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET name = COALESCE(users.name, excluded.name)`)
       .bind(email.toLowerCase(), Date.now(), gname)
