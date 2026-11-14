@@ -48,7 +48,8 @@
     void tick().then(() => { if (current() && owner.current() && get(view)?.chatRevision === revision) owner.chatRendered(revision); });
   });
   onDestroy(() => { active = false; owner.dispose(); layout.dispose(); scoped = undefined; });
-  const labels = { documentWidth: services.language === "en" ? "Document width" : "Largura do documento", closeDocument: services.language === "en" ? "Close document" : "Fechar documento", closeSidebar: services.language === "en" ? "Close sidebar" : "Fechar menu", closeSheet: services.t("Fechar"), historyUnconfirmed: services.language === "en" ? "Navigation is not confirmed. Review the current page before continuing." : "A navegação ainda não foi confirmada. Confira a página atual antes de continuar.", historyRetry: services.t("Tentar de novo") };
+  function filesSurface(node: HTMLElement) { return { destroy: owner.attachFiles(node) }; }
+  const labels = { documentWidth: services.language === "en" ? "Document width" : "Largura do documento", closeDocument: services.language === "en" ? "Close document" : "Fechar documento", closeSidebar: services.language === "en" ? "Close sidebar" : "Fechar menu", closeSheet: services.t("Fechar"), historyUnconfirmed: services.language === "en" ? "Navigation is not confirmed. Review the current page before continuing." : "A navegação ainda não foi confirmada. Confira a página atual antes de continuar.", historyRetry: services.t("Tentar de novo"), animationUnavailable: services.language === "en" ? "Room layout could not initialize. Reload the page to try again." : "Não foi possível iniciar o layout da sala. Recarregue a página para tentar novamente." };
 </script>
 
 <RoomLayout controller={layout} {labels} onChatSurface={owner.attachChat}>
@@ -68,7 +69,7 @@
   {#snippet documentToolbar()}{#if $view}<DocumentToolbar {...$view.toolbar}/>{/if}{/snippet}
   {#snippet document()}{#if $view}
     <div class={$geometry.pane === "doc" ? "tw:flex tw:h-full tw:min-h-0 tw:flex-col" : "tw:hidden"} hidden={$geometry.pane !== "doc"}><DocumentPanel {...$view.document}/></div>
-    <div class={$geometry.pane === "files" ? "tw:min-h-0" : "tw:hidden"} hidden={$geometry.pane !== "files"}><Files {...$view.files}/></div>
+    <div use:filesSurface class={$geometry.pane === "files" ? "tw:h-full tw:min-h-0 tw:overflow-auto" : "tw:hidden"} hidden={$geometry.pane !== "files"}><Files {...$view.files}/></div>
     <div class={$geometry.pane === "apps" ? "tw:min-h-0" : "tw:hidden"} hidden={$geometry.pane !== "apps"}><AppsPanel props={$view.apps}/></div>
     <div class={$geometry.pane === "decisions" ? "tw:min-h-0" : "tw:hidden"} hidden={$geometry.pane !== "decisions"}><Decisions {...$view.decisions}/></div>
     <div class={$geometry.pane === "reminders" ? "tw:min-h-0" : "tw:hidden"} hidden={$geometry.pane !== "reminders"}><Reminders {...$view.reminders}/></div>
