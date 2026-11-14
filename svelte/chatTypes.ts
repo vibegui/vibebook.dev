@@ -21,6 +21,10 @@ export type ChatBridge = {
   typingNote?: (id: number) => string | undefined;
 };
 export type ChatEmbedControls = {
+  ready: () => void;
+  cancel?: () => void;
+  deny?: () => void;
+  fail?: () => void;
   thread: string;
   ask: (what: string, detail: string) => Promise<boolean>;
   resize: (height: number) => void;
@@ -41,6 +45,7 @@ export type ChatActions = {
   ) => () => void;
   navigateRich?: (target: RichNavigation) => void;
   openFileReference?: (file: RichFileReference) => void;
+  ensureFileIndex?: () => void;
   reply: (id: number) => void;
   navigate: (id: number, thread?: string) => void;
   openFile: (file: Attachment) => void;

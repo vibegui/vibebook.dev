@@ -8,6 +8,7 @@ export type RichContext = {
   pageUrl: string;
   idPrefix: string;
   names?: Readonly<Record<string, string>>;
+  fileLabel?: string;
 };
 export type RichFileReference = {
   roomId: string;
@@ -16,7 +17,10 @@ export type RichFileReference = {
   type?: string;
 };
 export type RichNavigation = { kind: "thread" | "document"; id?: string };
-export type RichActions = Pick<ChatActions, "navigate" | "openFile"> & {
+export type RichActions = Pick<
+  ChatActions,
+  "navigate" | "openFile" | "ensureFileIndex"
+> & {
   navigateRich?: (target: RichNavigation) => void;
   openFileReference?: (file: RichFileReference) => void;
 };

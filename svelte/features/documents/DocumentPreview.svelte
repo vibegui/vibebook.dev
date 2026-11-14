@@ -51,6 +51,9 @@
     openFileReference: (file) => {
       if (current()) props.actions.openFileReference?.(file);
     },
+    ensureFileIndex: () => {
+      if (current()) props.actions.ensureFileIndex?.();
+    },
   };
   const taskProps: PanelProps = $derived({
     ...props.taskProps,
@@ -65,6 +68,7 @@
     pageUrl: location.href,
     idPrefix,
     policy: "document",
+    fileLabel: props.taskProps.vb.t("arquivo"),
   });
   const session = createRichSession();
   onDestroy(() => session.dispose());

@@ -8,7 +8,7 @@
   import Avatar from "./lib/ui/Avatar.svelte";
   import IconButton from "./lib/ui/IconButton.svelte";
   import Button from "./lib/ui/Button.svelte";
-  import Badge from "./lib/ui/Badge.svelte";
+  import WaitBadge from "./features/waits/WaitBadge.svelte";
   import Progress from "./lib/ui/Progress.svelte";
   import ThreadHeader from "./features/room-sidebar/ThreadHeader.svelte";
   import AgentPresenceRows from "./features/room-sidebar/AgentPresenceRows.svelte";
@@ -122,9 +122,9 @@
             value={epic.tasks.filter((task) => task.done).length}
             max={epic.tasks.length}
             label={vb.t("Tarefas")}
-          />{/if}{#if vb.waitsIn(epic.id).length}<Badge
-            >{vb.waitsIn(epic.id).length}</Badge
-          >{/if}</Button
+          />{/if}<WaitBadge waits={vb.waitsIn(epic.id)}
+            label={n => vb.t("{n} coisas esperando você", { n })}
+            taskLabel={vb.t("Tarefa sua pendente")} /></Button
       >
     {/each}
     <IconButton
@@ -183,9 +183,9 @@
           src={roomIcon}
           tint={roomTint}
         /><span class="tw:flex-1 tw:truncate">{room.book.title}</span
-        >{#if vb.waitsIn("main").length}<Badge
-            >{vb.waitsIn("main").length}</Badge
-          >{/if}<span class="tw:text-xs tw:text-muted-foreground"
+        ><WaitBadge waits={vb.waitsIn("main")}
+          label={n => vb.t("{n} coisas esperando você", { n })}
+          taskLabel={vb.t("Tarefa sua pendente")} /><span class="tw:text-xs tw:text-muted-foreground"
           >{messageCount(room, "main")}</span
         ></Button
       ><IconButton
@@ -219,7 +219,7 @@
         t: vb.t,
         name: vb.name,
         epicBusy: vb.epicBusy,
-        waitCount: (id) => vb.waitsIn(id).length,
+        waitsIn: vb.waitsIn,
       }}
     />
     <PinnedItems

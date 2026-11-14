@@ -2,6 +2,22 @@ import { flushSync, mount, unmount } from "svelte";
 import type { Component, ComponentProps } from "svelte";
 import { writable } from "svelte/store";
 import View from "./View.svelte";
+import AccountPanel from "./features/account/AccountPanel.svelte";
+import DeviceLockScreen from "./features/account/DeviceLockScreen.svelte";
+export { createAccountApi } from "./features/account/api";
+export { createAccountSession } from "./features/account/session";
+export { browserDeviceLock } from "./features/account/device";
+export {
+  createAccountLogout,
+  personalLogoutIdentity,
+} from "./features/account/logout";
+import AppsPanel from "./features/apps/AppsPanel.svelte";
+export { createAppsApi, createAppMetrics } from "./features/apps/api";
+export { createAppsSession } from "./features/apps/session";
+export { createAppsAuthority } from "./features/apps/authority";
+export { createAppRequests } from "./features/apps/requests";
+export { roomApps } from "./features/apps/model";
+export { mountNativeChatApp } from "./features/apps/embed";
 import DocumentPanel from "./features/documents/DocumentPanel.svelte";
 import DocumentToolbar from "./features/documents/DocumentToolbar.svelte";
 export {
@@ -32,12 +48,22 @@ import ThreadHeader from "./features/room-sidebar/ThreadHeader.svelte";
 import SuggestionPreview from "./features/room-sidebar/SuggestionPreview.svelte";
 export { createRoomMutations } from "./features/room-sidebar/session";
 export { suggestionIdentity } from "../shared/suggestions";
+import AgentSettings from "./features/agents/AgentSettings.svelte";
+import AgentsPane from "./features/agents/AgentsPane.svelte";
+import AgentTrigger from "./features/agents/AgentTrigger.svelte";
+import AgentBanners from "./features/agents/AgentBanners.svelte";
+export { createAgentsService } from "./features/agents/service";
+export { agentPresence, agentQueue } from "./features/agents/model";
+export { threadWorkers } from "./features/chat/model";
 import Chat from "./Chat.svelte";
 import Composer from "./Composer.svelte";
 export { createComposerDrafts } from "./features/composer/drafts";
 export { createRoomStore } from "./roomStore";
 export { dismissDialogs } from "./lib/ui/dialogController";
 const views = {
+  account: AccountPanel,
+  deviceLock: DeviceLockScreen,
+  apps: AppsPanel,
   document: DocumentPanel,
   documentToolbar: DocumentToolbar,
   documentPeek: DocumentToolbar,
@@ -56,6 +82,10 @@ const views = {
   suggestionPreview: SuggestionPreview,
   chat: Chat,
   composer: Composer,
+  agentSettings: AgentSettings,
+  agents: AgentsPane,
+  agentTrigger: AgentTrigger,
+  agentBanners: AgentBanners,
 };
 type ViewName = keyof typeof views;
 export function mountView<K extends ViewName>(
@@ -128,3 +158,4 @@ export function mountPwa(
 export { pwaLogoutWarning, pwaLogoutFailure } from "./features/pwa/copy";
 
 export { consumeFileViewerPop } from "./features/file-viewer/navigation";
+export { createFileChipIndex } from "./features/rich-text/fileIndex";

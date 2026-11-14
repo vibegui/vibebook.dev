@@ -6,7 +6,12 @@ const {
   translations: EN,
   keys: hostKeys,
   leftovers,
-} = inspectLegacyTranslations(source);
+} = inspectLegacyTranslations(
+  source,
+  await Bun.file(
+    new URL("../svelte/features/application/copy.ts", import.meta.url),
+  ).text(),
+);
 const keys = new Set(hostKeys);
 for await (const file of new Bun.Glob("svelte/**/*.{svelte,ts}").scan("."))
   for (const key of translationKeys(await Bun.file(file).text(), file))

@@ -6,7 +6,8 @@
   import Button from "../../lib/ui/Button.svelte";
   import IconButton from "../../lib/ui/IconButton.svelte";
   import Avatar from "../../lib/ui/Avatar.svelte";
-  import Badge from "../../lib/ui/Badge.svelte";
+  import WaitBadge from "../waits/WaitBadge.svelte";
+  import type { WaitReference } from "../waits/model";
   import Input from "../../lib/ui/Input.svelte";
   import Label from "../../lib/ui/Label.svelte";
   import Select from "../../lib/ui/Select.svelte";
@@ -43,7 +44,7 @@
       t: (text: string, vars?: Record<string, string | number>) => string;
       name: (email: string) => string;
       epicBusy: (epic: Epic) => string | null;
-      waitCount: (thread: string) => number;
+      waitsIn: (thread: string) => readonly WaitReference[];
     };
   } = $props();
   const uid = $props.id();
@@ -358,9 +359,11 @@
                         : vb.t("Trabalho em um subépico")}
                       class="tw:text-primary">✻</span
                     >{/if}
-                  {#if vb.waitCount(epic.id)}<Badge variant="warning"
-                      >{vb.waitCount(epic.id)}</Badge
-                    >{/if}
+                  <WaitBadge
+                    waits={vb.waitsIn(epic.id)}
+                    label={(n) => vb.t("{n} coisas esperando você", { n })}
+                    taskLabel={vb.t("Tarefa sua pendente")}
+                  />
                   {#if epic.prod}<span
                       title={vb.t(
                         epic.prod.stage === "verified"

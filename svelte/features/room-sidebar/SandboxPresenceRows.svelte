@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { sandboxStateText } from "../sandboxes/copy";
   import type { Presence } from "./model";
   import { sandboxCost } from "./model";
   import Button from "../../lib/ui/Button.svelte";
@@ -15,17 +16,6 @@
     onopen: () => void;
     locale?: string;
   } = $props();
-  const states: Readonly<Record<string, string>> = {
-    running: "rodando",
-    stopped: "parado",
-    paused: "pausado",
-    starting: "ligando",
-    pausing: "pausando",
-    deleted: "apagado no freestyle",
-    unknown: "?",
-    creating: "criando",
-    error: "erro",
-  };
 </script>
 
 {#each presence.sandboxes as sandbox (sandbox.id)}
@@ -39,8 +29,9 @@
     <span aria-hidden="true">☁</span><span class="tw:min-w-0 tw:flex-1"
       ><span class="tw:block tw:truncate">{sandbox.name || t("sandbox")}</span
       ><small class="tw:block tw:text-xs tw:text-muted-foreground"
-        >{name(sandbox.email).split(" ")[0]} · {t(
-          states[sandbox.state || ""] || sandbox.state || "?",
+        >{name(sandbox.email).split(" ")[0]} · {sandboxStateText(
+          sandbox.state,
+          locale.startsWith("en") ? "en" : "pt",
         )}</small
       ></span
     ><span class="tw:text-xs tw:text-muted-foreground"

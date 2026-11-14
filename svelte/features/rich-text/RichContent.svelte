@@ -12,6 +12,7 @@
     names,
     pageUrl,
     policy,
+    fileLabel,
   }: {
     text: string;
     mode?: RichMode;
@@ -20,6 +21,7 @@
     names?: Readonly<Record<string, string>>;
     pageUrl?: string;
     policy?: RichPolicy;
+    fileLabel?: string;
   } = $props();
   const idPrefix = $props.id();
   const session = createRichSession();
@@ -31,6 +33,7 @@
       names,
       pageUrl: pageUrl || location.href,
       idPrefix,
+      fileLabel,
     }),
   );
 </script>

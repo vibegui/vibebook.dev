@@ -126,61 +126,135 @@ export function createHomeSession(
     },
   };
 }
+export type NewRoomBinding = {
+  account: string;
+  revision: number;
+  generation: number;
+};
 export function createNewRoomSession(
   personal: PersonalSession,
   navigate: (target: RoomTarget) => void,
   clock: AuthClock = authClock,
 ) {
-  const state = writable({ open: false, busy: false, error: "" });
+  const state = writable({
+    open: false,
+    inline: false,
+    binding: null as NewRoomBinding | null,
+    busy: false,
+    error: "",
+  });
   let owner = createAuthOwner(clock),
-    active = true;
-  let identityRevision = get(personal.state).identityRevision;
+    active = true,
+    generation = 0,
+    identityRevision = get(personal.state).identityRevision;
+  const owns = (binding: NewRoomBinding) =>
+    active &&
+    owner.active() &&
+    get(state).open &&
+    get(state).binding === binding &&
+    get(personal.state).identityRevision === binding.revision &&
+    personal.peek()?.email === binding.account;
   const stopIdentity = personal.state.subscribe((value) => {
     if (value.identityRevision === identityRevision) return;
     identityRevision = value.identityRevision;
+    generation++;
     owner.dispose();
-    state.set({ open: false, busy: false, error: "" });
+    state.set({
+      open: false,
+      inline: false,
+      binding: null,
+      busy: false,
+      error: "",
+    });
   });
+  function activate(inline: boolean) {
+    if (!active) return null;
+    const me = personal.peek();
+    if (!me) return null;
+    owner.dispose();
+    owner = createAuthOwner(clock);
+    const binding = {
+      account: me.email,
+      revision: get(personal.state).identityRevision,
+      generation: ++generation,
+    };
+    state.set({ open: true, inline, binding, busy: false, error: "" });
+    return binding;
+  }
   return {
     state,
+    owns,
     open() {
-      if (!active || get(state).open) return;
+      if (get(state).open && !get(state).inline) return;
+      activate(false);
+    },
+    openInline() {
+      const value = get(state);
+      if (value.open) return value.inline ? value.binding : null;
+      return activate(true);
+    },
+    edit(text: string, expected?: NewRoomBinding) {
+      const binding = get(state).binding;
+      if (binding && owns(binding) && (!expected || expected === binding))
+        personal.editCreate(text);
+    },
+    close(expected?: NewRoomBinding) {
+      if (expected && get(state).binding !== expected) return;
       owner.dispose();
-      owner = createAuthOwner(clock);
-      state.set({ open: true, busy: false, error: "" });
+      state.update((value) => ({
+        ...value,
+        binding: null,
+        inline: false,
+        open: false,
+        busy: false,
+      }));
     },
-    edit(text: string) {
-      if (get(state).open) personal.editCreate(text);
-    },
-    close() {
-      owner.dispose();
-      state.update((s) => ({ ...s, open: false, busy: false }));
-    },
-    submit() {
-      if (!owner.active() || get(state).busy || !get(state).open) return;
+    submit(expected?: NewRoomBinding) {
+      const binding = get(state).binding;
+      if (
+        !binding ||
+        !owns(binding) ||
+        get(state).busy ||
+        (expected && expected !== binding)
+      )
+        return;
       const text = get(personal.draft).create.trim();
       if (!text) {
-        state.update((s) => ({ ...s, error: "empty" }));
+        state.update((value) => ({ ...value, error: "empty" }));
         return;
       }
-      state.update((s) => ({ ...s, busy: true, error: "" }));
+      state.update((value) => ({ ...value, busy: true, error: "" }));
       return owner.run(
         (signal) => personal.api.startRoom(text, signal),
         (created) => {
+          if (!owns(binding)) return;
           const id = roomId(created.id);
           if (get(personal.draft).create.trim() === text)
             personal.editCreate("");
           if (created.unknown.length) personal.notice(id, created.unknown);
-          state.set({ open: false, busy: false, error: "" });
+          state.set({
+            open: false,
+            inline: false,
+            binding: null,
+            busy: false,
+            error: "",
+          });
           navigate({ roomId: id });
         },
-        (error) =>
-          state.update((s) => ({ ...s, busy: false, error: issue(error) })),
+        (error) => {
+          if (owns(binding))
+            state.update((value) => ({
+              ...value,
+              busy: false,
+              error: issue(error),
+            }));
+        },
       );
     },
     dispose() {
       stopIdentity();
       active = false;
+      generation++;
       owner.dispose();
     },
   };

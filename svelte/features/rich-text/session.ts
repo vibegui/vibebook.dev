@@ -10,6 +10,7 @@ function contextKey(context: RichContext): string {
     context.room.me,
     context.pageUrl,
     context.idPrefix,
+    context.fileLabel,
     context.room.members.map((email) => [
       email,
       context.room.names?.[email],
@@ -60,6 +61,7 @@ export function createRichSession() {
         context.room.origins,
         context.pageUrl,
         context.idPrefix,
+        context.fileLabel,
       ];
       // Room reducer snapshots retain unchanged arrays/maps: receipt/presence updates avoid even fingerprint scans.
       const key =

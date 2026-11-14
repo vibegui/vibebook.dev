@@ -56,3 +56,18 @@ test("dictionary inspection never executes code or silently accepts dynamic entr
     "Missing EN",
   );
 });
+test("extracted typed copy retains host call coverage and original leftover line numbers", () => {
+  const result = inspectLegacyTranslations(
+    't("Apagar");\nconst forgotten = "Apagar sala";',
+    'const EN: Readonly<Record<string, string>> = { "Apagar": "Delete" };',
+  );
+  expect(result.translations).toEqual({ Apagar: "Delete" });
+  expect(result.keys).toEqual(["Apagar"]);
+  expect(result.leftovers).toEqual([{ line: 2, text: "Apagar sala" }]);
+  expect(() =>
+    inspectLegacyTranslations(
+      't("Apagar");',
+      'const EN = { "Apagar": execute() };',
+    ),
+  ).toThrow("static string");
+});

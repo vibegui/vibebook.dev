@@ -198,8 +198,9 @@
           compact
           selected={$nav.roomId === room.id}
           seen={$personal.seen[room.id] ?? 0}
-          waits={$personal.me?.waits.filter((wait) => wait.book_id === room.id)
-            .length ?? 0}
+          waits={$personal.me?.waits.filter(
+            (wait) => wait.book_id === room.id,
+          ) ?? []}
           onnavigate={controller.callbacks.navigate}
           onsettings={(id, trigger) => controller.openSettings(id, trigger)}
           ondragstart={(event) => {
@@ -354,12 +355,12 @@
     >{/if}
 </Dialog>
 <Dialog
-  open={$creator.open}
+  open={$creator.open && !$creator.inline}
   title={text("new")}
   description={text("createHelp")}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open) controller.creator.close();
+    if (!open && !$creator.inline) controller.creator.close();
   }}
   initialFocus={() => createInput}
   returnFocus={focusBack}
@@ -369,7 +370,7 @@
     aria-busy={$creator.busy}
     onsubmit={(event) => {
       event.preventDefault();
-      if (!event.currentTarget.isConnected) return;
+      if (!event.currentTarget.isConnected || $creator.inline) return;
       void controller.creator.submit();
     }}
   >
@@ -381,11 +382,16 @@
       value={$draft.create}
       disabled={$creator.busy}
       oninput={(event) => {
-        if (event.currentTarget.isConnected)
+        if (event.currentTarget.isConnected && !$creator.inline)
           controller.creator.edit(event.currentTarget.value);
       }}
       onkeydown={(event) => {
-        if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          !$creator.inline
+        ) {
           event.preventDefault();
           void controller.creator.submit();
         }

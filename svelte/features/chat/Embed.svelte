@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import type { Attachment } from "../../../shared/room";
   import type { ChatActions, ChatBridge } from "../../chatTypes";
+  import { createAppConsent } from "../apps/consent";
   import Button from "../../lib/ui/Button.svelte";
   import Snapshot from "../../lib/ui/Snapshot.svelte";
-  import { createAppConsent } from "../apps/consent";
   let {
     url,
     file,
@@ -21,14 +21,29 @@
   let frame = $state<HTMLIFrameElement | null>(null),
     height = $state(320),
     clipped = $state(false);
-  let active = true;
-  const consent = createAppConsent(() => active),
+  let active = true,
+    bridgeDenied = $state(false),
+    bridgeFailed = $state(false),
+    bridgeReady = $state(untrack(() => !actions.mountEmbed));
+  const consent = createAppConsent(() => active && !bridgeDenied),
     question = consent.question;
   const ask = consent.ask;
   onMount(() => {
     const detach = frame
       ? actions.mountEmbed?.(frame, file, {
           ask,
+          ready: () => {
+            if (active && !bridgeDenied) bridgeReady = true;
+          },
+          cancel: consent.cancel,
+          deny: () => {
+            bridgeDenied = true;
+            consent.cancel();
+          },
+          fail: () => {
+            bridgeFailed = true;
+            consent.cancel();
+          },
           thread: messageThread,
           resize: (requested) => {
             if (!active || !Number.isFinite(requested)) return;
@@ -61,15 +76,28 @@
 </script>
 
 <div data-chat-embed class="tw:w-full tw:space-y-2">
-  <iframe
-    bind:this={frame}
-    src={url}
-    sandbox="allow-scripts"
-    loading="lazy"
-    title={file.name}
-    {height}
-    class="tw:w-full tw:rounded-control tw:border tw:border-border"
-  ></iframe>
+  {#if !bridgeDenied}<iframe
+      bind:this={frame}
+      src={bridgeReady ? url : undefined}
+      sandbox="allow-scripts"
+      loading="lazy"
+      title={file.name}
+      {height}
+      class="tw:w-full tw:rounded-control tw:border tw:border-border"
+    ></iframe>{:else}<p
+      role="alert"
+      class="tw:m-0 tw:text-sm tw:text-muted-foreground"
+    >
+      {vb.t("Você não tem acesso a esta sala.")}
+    </p>{/if}
+  {#if bridgeFailed}<p
+      role="alert"
+      class="tw:m-0 tw:text-sm tw:text-muted-foreground"
+    >
+      {vb.t(
+        "Não foi possível iniciar o app. Abra o arquivo para tentar de novo.",
+      )}
+    </p>{/if}
   <a
     href={url}
     onclick={open}
@@ -80,7 +108,8 @@
       {file.name}
     </p>{/if}
   {#if $question}{#key $question}<Snapshot value={$question}>
-        {#snippet children(intent)}<div
+        {#snippet children(intent)}
+          <div
             role="group"
             aria-label={vb.t("Confirmar")}
             class="tw:space-y-3 tw:rounded-surface tw:border tw:border-border tw:bg-card tw:p-3"

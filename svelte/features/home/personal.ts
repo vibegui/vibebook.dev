@@ -42,6 +42,7 @@ export function createPersonalSession(
     refreshTimer: unknown | null = null,
     clockTimer: unknown | null = null;
   const agentsOwner = createAuthOwner(clock);
+  let agentsPromise: Promise<boolean> | undefined;
   let agentsInflight = false,
     agentsDirty = false,
     agentsEpoch = 0,
@@ -58,6 +59,7 @@ export function createPersonalSession(
     agentsRequest++;
     agentsEpoch++;
     agentsInflight = agentsDirty = false;
+    agentsPromise = undefined;
     clear(agentsTimer);
     agentsTimer = null;
     // The first authenticated room state also fences a Me request whose account
@@ -163,7 +165,8 @@ export function createPersonalSession(
     }
   }
   function readAgents() {
-    if (!active || agentsInflight) return;
+    if (!active) return;
+    if (agentsInflight) return agentsPromise;
     clear(agentsTimer);
     agentsTimer = null;
     agentsInflight = true;
@@ -178,7 +181,7 @@ export function createPersonalSession(
       agentsInflight = false;
       if (agentsDirty || started !== agentsEpoch) void readAgents();
     };
-    return agentsOwner.run(
+    const job = agentsOwner.run(
       (signal) => api.agents(signal),
       (agents) => {
         if (active && ticket === agentsRequest && started === agentsEpoch)
@@ -187,6 +190,11 @@ export function createPersonalSession(
       },
       finish,
     );
+    agentsPromise = job;
+    void job.finally(() => {
+      if (ticket === agentsRequest) agentsPromise = undefined;
+    });
+    return job;
   }
   function refreshAgents() {
     if (!active) return;
@@ -221,6 +229,7 @@ export function createPersonalSession(
       }
     },
     refreshAgents,
+    loadAgents: readAgents,
     roomMeta(
       roomId: string,
       patch: Partial<
@@ -299,6 +308,7 @@ export function createPersonalSession(
       clear(clockTimer);
       clear(agentsTimer);
       agentsRequest++;
+      agentsPromise = undefined;
       agentsOwner.dispose();
     },
   };

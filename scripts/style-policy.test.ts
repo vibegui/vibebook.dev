@@ -122,3 +122,64 @@ test("stylesheet policy distinguishes tokens from custom selector and import esc
     auditPresentation("svelte/styles.ts", 'import "./styles/tailwind.css";'),
   ).toEqual([]);
 });
+
+test("approved terminal CSS enters only the sole top-level Tailwind entry and native semantic theme options stay scoped", () => {
+  const css = '@import "@xterm/xterm/css/xterm.css" layer(components);';
+  expect(auditTailwind("svelte/styles/tailwind.css", css)).toEqual([]);
+  for (const source of [
+    '@import "@xterm/xterm/css/xterm.css";',
+    '@import "@xterm/xterm/css/theme.css" layer(components);',
+    '@import "@xterm/xterm@6/css/xterm.css" layer(components);',
+    ':where([data-vb-native]) { @import "@xterm/xterm/css/xterm.css" layer(components); }',
+  ])
+    expect(
+      auditTailwind("svelte/styles/tailwind.css", source).length,
+    ).toBeGreaterThan(0);
+  expect(auditTailwind("other.css", css).length).toBeGreaterThan(0);
+  for (const file of [
+    "svelte/lib/ui/test.ts",
+    "svelte/features/sandboxes/terminalRenderer.ts",
+  ]) {
+    expect(
+      auditPresentation(file, 'new Terminal({theme:{background:"red"}});')
+        .length,
+    ).toBeGreaterThan(0);
+    expect(
+      auditPresentation(file, "terminal.options.theme = userTheme;").length,
+    ).toBeGreaterThan(0);
+  }
+  expect(
+    auditPresentation(
+      "svelte/features/sandboxes/terminalRenderer.ts",
+      "new Terminal({theme:resolveTerminalTheme(mount)});terminal.options.theme=resolveTerminalTheme(mount);",
+    ),
+  ).toEqual([]);
+  expect(
+    auditPresentation(
+      "svelte/lib/ui/test.ts",
+      "terminal.options.theme=resolveTerminalTheme(mount);",
+    ).length,
+  ).toBeGreaterThan(0);
+});
+
+test("terminal semantic options cannot escape through shorthand, spread or computed assignment", () => {
+  const file = "svelte/features/sandboxes/terminalRenderer.ts";
+  for (const source of [
+    "new Terminal(options);",
+    "new Terminal({...options});",
+    "new Terminal({theme});",
+    'terminal.options["theme"] = userTheme;',
+  ])
+    expect(auditPresentation(file, source).length).toBeGreaterThan(0);
+});
+
+test("terminal constructor aliases cannot import vendor runtime outside its scoped adapter", () => {
+  for (const source of [
+    'import {Terminal as Arbitrary} from "@xterm/xterm"; new Arbitrary({theme: theme});',
+    'const api = await import("@xterm/xterm");',
+    'import {FitAddon} from "@xterm/addon-fit";',
+  ])
+    expect(
+      auditPresentation("svelte/lib/ui/test.ts", source).length,
+    ).toBeGreaterThan(0);
+});

@@ -15,7 +15,7 @@ const source = readFileSync(
   "utf8",
 );
 
-test("view registry disposal releases old anchors before reusing a target", () => {
+test("view registry releases Tasks anchors and replaces Chat when its Book owner changes", () => {
   // A DOM-backed view double isolates the host registry's ownership decisions.
   // Updating a detached old anchor cannot make it visible again.
   const window = new Window();
@@ -47,7 +47,9 @@ test("view registry disposal releases old anchors before reusing a target", () =
   };
   const api = Function(
     "UI",
-    registry + ";return {renderView,disposeView};",
+    "let roomConnection=null;" +
+      registry +
+      ";return {renderView,disposeView,setConnection:value=>roomConnection=value};",
   )(ui);
   api.renderView("tasks", target, { title: "Original task" });
   expect(target.textContent).toBe("Original task");
@@ -61,7 +63,18 @@ test("view registry disposal releases old anchors before reusing a target", () =
   expect(target.textContent).toBe("Updated task");
   expect(mounts).toBe(2);
   expect(destroys).toBe(1);
+  // The old suggestion/header HTML builder was retired by native Sidebar/Doc.
+  // Native AST Task behavior belongs to the component cases in ui-panels.test.ts.
   api.disposeView("tasks");
+  api.setConnection({});
+  api.renderView("chat", target, { title: "Cached room" });
+  api.renderView("chat", target, { title: "Same authenticated owner" });
+  expect(mounts).toBe(3);
+  api.setConnection({});
+  api.renderView("chat", target, { title: "Fresh authenticated owner" });
+  expect(mounts).toBe(4);
+  expect(destroys).toBe(3);
+  api.disposeView("chat");
 });
 
 // The retired editor cases are tested directly in native-documents.test.ts.
@@ -71,13 +84,24 @@ test("room cleanup disposes native owners and layout exactly once", () => {
   const files = createFilesSession("aaaaaa");
   files.select("txt", "docs");
   let documents = 0;
-  let layouts = 0;
-  const views = new Map([["chat", {}]]);
+  let layouts = 0,
+    chipIndexes = 0,
+    appOwners = 0,
+    appRequests = 0;
+  const views = new Map([
+    ["chat", {}],
+    ["apps", {}],
+  ]);
   const cleanup = source.slice(
     source.indexOf("function clearViews()"),
     source.indexOf("const panelBridge"),
   );
+  const appsCleanup = source.slice(
+    source.indexOf("function disposeNativeApps()"),
+    source.indexOf("function ensureNativeApps()"),
+  );
   const run = Function(
+    "appsOwner",
     "files",
     "pins",
     "disposePinsSession",
@@ -86,13 +110,21 @@ test("room cleanup disposes native owners and layout exactly once", () => {
     "viewMounts",
     "disposeView",
     "disposePwaMounts",
-    "pinRO",
-    `let nativeFilesSession = files, sidePins = pins, sideNavigation = null, nativeRoomMutations = null;
+    "chatViewport",
+    "nativeAgents",
+    "chipOwner",
+    `let nativeApps=appsOwner,nativeAppAuthority=null,nativeFileChipIndex={owner:chipOwner};
+     ${appsCleanup}
+     let nativeFilesSession = files, sidePins = pins, sideNavigation = null, nativeRoomMutations = null;
      let nativeDocumentOwner = documentOwner, nativeDocumentSetPane = null;
-     let boardLayoutCleanup = layoutCleanup;
+     let boardLayoutCleanup = layoutCleanup, chatSurfaceElement = null, chatSurface = null, nativeAgentOwner = null;
      ${cleanup}
      return clearViews;`,
   )(
+    {
+      owner: { dispose: () => appOwners++ },
+      requests: { dispose: () => appRequests++ },
+    },
     files,
     pins,
     disposePinsSession,
@@ -101,7 +133,9 @@ test("room cleanup disposes native owners and layout exactly once", () => {
     views,
     (key: string) => views.delete(key),
     () => {},
-    { disconnect() {} },
+    { reset() {} },
+    { detach() {} },
+    { dispose: () => chipIndexes++ },
   );
   run();
   run();
@@ -109,6 +143,9 @@ test("room cleanup disposes native owners and layout exactly once", () => {
   files.select("img", "");
   expect(get(files.state).kind).toBe("txt");
   expect(documents).toBe(1);
+  expect(appOwners).toBe(1);
+  expect(appRequests).toBe(1);
   expect(layouts).toBe(1);
+  expect(chipIndexes).toBe(1);
   expect(views.size).toBe(0);
 });

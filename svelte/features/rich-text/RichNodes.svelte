@@ -3,6 +3,7 @@
   import type { RichActions, RichNode, SafeAttributes } from "./types";
   import { HTML_NS } from "./allowlist";
   import Icon from "../../lib/ui/Icon.svelte";
+  import { hasMissingFileReference } from "./fileIndex";
   let {
     nodes,
     actions,
@@ -12,6 +13,10 @@
   let active = true;
   onDestroy(() => {
     active = false;
+  });
+  const missingFile = $derived(hasMissingFileReference(nodes));
+  $effect(() => {
+    if (active && missingFile) actions.ensureFileIndex?.();
   });
   const voidTags = new Set([
     "img",

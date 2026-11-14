@@ -6,6 +6,7 @@
   @import "tailwindcss/preflight.css" layer(base);
 }
 @import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);
+@import "@xterm/xterm/css/xterm.css" layer(components);
 @source "../";
 @source "../../public/app-svelte.html";
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));

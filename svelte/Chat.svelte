@@ -42,7 +42,7 @@
     data-vb-native
     class="tw:space-y-1 tw:pb-4 tw:font-sans tw:text-sm tw:text-foreground"
   >
-    {#if list.length && more}<div class="tw:flex tw:justify-center tw:p-3">
+    {#if more}<div class="tw:flex tw:justify-center tw:p-3">
         <Button variant="outline" size="sm" id="olderBtn" onclick={onloadolder}
           >{vb.t("Carregar mensagens anteriores")}</Button
         >
