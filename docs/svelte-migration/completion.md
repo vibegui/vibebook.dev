@@ -8,6 +8,15 @@ The sole migration PR is [#1](https://github.com/vibegui/vibebook.dev/pull/1).
 PR #2 is closed, with its work preserved in #1. No final deployed revision or
 maintainer acceptance is recorded yet.
 
+The first complete passing actual-Worker cohort is source head `e7b9263`,
+[run 43589003975](https://github.com/vibegui/vibebook.dev/actions/runs/43589003975).
+Its [unchanged reports and receipt](native-application-browser/2026-11-14-passing-cohort/README.md)
+prove all seven core phases, twenty editor/socket cycles, all eight application
+profiles and both native/default-vanilla App initial-read/replacement-denial
+controls. The [controlled HTTP document suite](app-document-browser/2026-11-14-file-post/README.md)
+also passes at that head. This clears the observed target-routing and profile
+failures at this revision, not final migration or deployed acceptance.
+
 Latest complete performance evidence is source head `b292537`: all 32 desktop
 and mobile trials execute successfully, but twelve of sixteen budget comparisons
 fail. [The original results and receipt](performance/2026-11-14-full-native/README.md)

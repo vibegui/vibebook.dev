@@ -1,0 +1,116 @@
+{
+  "status": "passed",
+  "phase": "complete",
+  "scope": "Actual native bridge/MessagePort and parent form HTTP with exact production file headers; synthetic cookie/file server, not Worker membership/session/R2 proof",
+  "http": [
+    {
+      "method": "POST",
+      "status": 200,
+      "originMatches": true,
+      "cookieMatches": true,
+      "nonceValid": true,
+      "bodyBytes": 70
+    }
+  ],
+  "consoleCategories": [],
+  "pageErrors": [],
+  "events": [
+    {
+      "kind": "navigation",
+      "main": true,
+      "url": "http://127.0.0.1:40439/"
+    },
+    {
+      "kind": "navigation",
+      "main": false,
+      "url": "about:blank"
+    },
+    {
+      "kind": "file-response",
+      "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb",
+      "status": 200,
+      "method": "POST",
+      "navigation": true,
+      "redirected": false,
+      "mainFrame": false
+    },
+    {
+      "kind": "navigation",
+      "main": false,
+      "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb"
+    },
+    {
+      "kind": "navigation",
+      "main": false,
+      "url": "http://127.0.0.1:40439/replacement"
+    }
+  ],
+  "responseDocuments": [
+    {
+      "bytes": 3504,
+      "sha256": "bc5794b5343c244413080c4ccb96368f534458880b9bd689d78f019c3d6fb541",
+      "doctype": true,
+      "stageMarkup": true,
+      "scriptOpen": 3,
+      "scriptClose": 3,
+      "contentType": "text/html; charset=utf-8"
+    }
+  ],
+  "initialTargetMatches": true,
+  "initial": {
+    "read": true,
+    "nativeEvent": true,
+    "mode": "CSS1Compat",
+    "origin": "null",
+    "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb",
+    "base": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb"
+  },
+  "replacement": {
+    "refused": true,
+    "reads": 1,
+    "revoked": true
+  },
+  "browser": {
+    "topURL": "http://127.0.0.1:40439/",
+    "ownedFrameURL": "http://127.0.0.1:40439/replacement",
+    "expectedTargetPresent": true,
+    "ownedFrameNameMatches": true,
+    "frameAttributes": {
+      "connected": true,
+      "srcPresent": false,
+      "srcdocPresent": false
+    },
+    "frames": [
+      {
+        "url": "http://127.0.0.1:40439/",
+        "main": true,
+        "owned": false,
+        "targetNameMatches": false,
+        "parentURL": null,
+        "dom": {
+          "ready": "complete",
+          "mode": "CSS1Compat",
+          "doctype": "html",
+          "stage": 0,
+          "scriptCount": 0
+        }
+      },
+      {
+        "url": "http://127.0.0.1:40439/replacement",
+        "main": false,
+        "owned": true,
+        "targetNameMatches": true,
+        "parentURL": "http://127.0.0.1:40439/",
+        "dom": {
+          "ready": "complete",
+          "mode": "CSS1Compat",
+          "doctype": "html",
+          "stage": 1,
+          "scriptCount": 1
+        }
+      }
+    ],
+    "extraPages": []
+  },
+  "cleanupErrors": []
+}

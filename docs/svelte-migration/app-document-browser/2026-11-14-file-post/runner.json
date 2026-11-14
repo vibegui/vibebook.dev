@@ -1,0 +1,20 @@
+{
+  "sourceHead": "e7b9263e784993cb5f11921110cc0c8c27f29908",
+  "run": 43588998458,
+  "url": "https://github.com/vibegui/vibebook.dev/actions/runs/43588998458",
+  "status": "success",
+  "files": {
+    "results.json": {
+      "bytes": 8252,
+      "sha256": "50ebc9719a8fd67a69fd38d3a8e606b0758a65415665ca234457ea2173b8df8f"
+    },
+    "adversarial/results.json": {
+      "bytes": 4173,
+      "sha256": "58ee0e6c245f0571614b84597f9aefdfb71294466d04dd2eb3ded6c9f3c308fb"
+    },
+    "file-post/results.json": {
+      "bytes": 2855,
+      "sha256": "3d55b63d6a4a26eabfd79b0fe26e9025b8c12657a94fcf08f8d89d5bbcb38df7"
+    }
+  }
+}

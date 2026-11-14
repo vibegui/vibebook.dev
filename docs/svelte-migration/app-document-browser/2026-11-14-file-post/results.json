@@ -1,0 +1,340 @@
+{
+  "revision": "e7b9263e784993cb5f11921110cc0c8c27f29908",
+  "scope": "real Chromium opaque srcdoc and controlled file POST/native SDK/MessageEvent; no Worker membership/R2/provider proof",
+  "status": "passed",
+  "initial": {
+    "fixture": "initial",
+    "value": "private-fixture-value",
+    "trusted": true,
+    "source": true,
+    "origin": "http://127.0.0.1:37083"
+  },
+  "replacement": {
+    "fixture": "replacement",
+    "denied": true,
+    "leaked": false
+  },
+  "requests": 1,
+  "replacementRequests": 1,
+  "sameProxy": true,
+  "adversarial": {
+    "scope": "Actual browser opaque srcdoc + second-origin HTTP replacement, real stock SDK1.7.4, custom host receive fixture. No Worker/file POST/provider/real writes.",
+    "status": "passed",
+    "stockSDK": {
+      "mode": "sdk",
+      "reads": 1,
+      "mutations": 0,
+      "held": false,
+      "outputRejected": false,
+      "revoked": false,
+      "freshFrame": true,
+      "observations": [
+        {
+          "kind": "pageshow",
+          "ok": true,
+          "persisted": false
+        },
+        {
+          "kind": "legacy-response",
+          "ok": true,
+          "id": 0
+        },
+        {
+          "kind": "legacy-response",
+          "ok": true,
+          "id": 1
+        },
+        {
+          "kind": "sdk-positive",
+          "ok": true
+        }
+      ]
+    },
+    "directWithoutInitialize": {
+      "mode": "legacy",
+      "reads": 1,
+      "mutations": 0,
+      "held": false,
+      "outputRejected": false,
+      "revoked": true,
+      "freshFrame": true,
+      "observations": [
+        {
+          "kind": "pageshow",
+          "ok": true,
+          "persisted": false
+        },
+        {
+          "kind": "legacy-response",
+          "ok": true,
+          "id": 1
+        },
+        {
+          "kind": "replacement-denial",
+          "ok": true
+        }
+      ]
+    },
+    "historyRestoration": {
+      "state": {
+        "mode": "legacy",
+        "reads": 1,
+        "mutations": 0,
+        "held": false,
+        "outputRejected": false,
+        "revoked": true,
+        "freshFrame": true,
+        "observations": [
+          {
+            "kind": "pageshow",
+            "ok": true,
+            "persisted": false
+          },
+          {
+            "kind": "legacy-response",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "kind": "replacement-denial",
+            "ok": true
+          },
+          {
+            "kind": "pageshow",
+            "ok": true,
+            "persisted": false
+          },
+          {
+            "kind": "legacy-response",
+            "ok": false,
+            "id": 1
+          },
+          {
+            "kind": "legacy-response",
+            "ok": false,
+            "id": 404
+          }
+        ]
+      },
+      "actualBFcacheObserved": false
+    },
+    "lateOutput": {
+      "mode": "held-output",
+      "reads": 1,
+      "mutations": 0,
+      "held": true,
+      "outputRejected": true,
+      "revoked": true,
+      "freshFrame": true,
+      "observations": [
+        {
+          "kind": "pageshow",
+          "ok": true,
+          "persisted": false
+        },
+        {
+          "kind": "replacement-denial",
+          "ok": true
+        }
+      ]
+    },
+    "heldConsent": {
+      "mode": "held-consent",
+      "reads": 0,
+      "mutations": 0,
+      "held": true,
+      "outputRejected": false,
+      "revoked": true,
+      "freshFrame": true,
+      "observations": [
+        {
+          "kind": "pageshow",
+          "ok": true,
+          "persisted": false
+        },
+        {
+          "kind": "replacement-denial",
+          "ok": true
+        }
+      ]
+    },
+    "freshOpen": {
+      "mode": "held-consent",
+      "reads": 0,
+      "mutations": 1,
+      "held": true,
+      "outputRejected": false,
+      "revoked": false,
+      "freshFrame": true,
+      "observations": [
+        {
+          "kind": "pageshow",
+          "ok": true,
+          "persisted": false
+        },
+        {
+          "kind": "legacy-response",
+          "ok": true,
+          "id": 1
+        }
+      ]
+    },
+    "persistedLifecycleControl": {
+      "syntheticEvent": true,
+      "state": {
+        "mode": "legacy",
+        "reads": 1,
+        "mutations": 0,
+        "held": false,
+        "outputRejected": false,
+        "revoked": true,
+        "freshFrame": true,
+        "observations": [
+          {
+            "kind": "pageshow",
+            "ok": true,
+            "persisted": false
+          },
+          {
+            "kind": "legacy-response",
+            "ok": true,
+            "id": 1
+          },
+          {
+            "kind": "pageshow",
+            "ok": true,
+            "persisted": true
+          },
+          {
+            "kind": "legacy-response",
+            "ok": false,
+            "id": 405
+          }
+        ]
+      }
+    },
+    "replacementHTTPRequests": 3,
+    "pageErrors": [],
+    "gaps": [
+      "No Worker/file-POST/provider integration; actual Worker probe remains separate",
+      "Synthetic persisted-event control is not proof of actual BFCache admission; actual subframe history persisted flag recorded separately"
+    ]
+  },
+  "filePost": {
+    "status": "passed",
+    "phase": "complete",
+    "scope": "Actual native bridge/MessagePort and parent form HTTP with exact production file headers; synthetic cookie/file server, not Worker membership/session/R2 proof",
+    "http": [
+      {
+        "method": "POST",
+        "status": 200,
+        "originMatches": true,
+        "cookieMatches": true,
+        "nonceValid": true,
+        "bodyBytes": 70
+      }
+    ],
+    "consoleCategories": [],
+    "pageErrors": [],
+    "events": [
+      {
+        "kind": "navigation",
+        "main": true,
+        "url": "http://127.0.0.1:40439/"
+      },
+      {
+        "kind": "navigation",
+        "main": false,
+        "url": "about:blank"
+      },
+      {
+        "kind": "file-response",
+        "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb",
+        "status": 200,
+        "method": "POST",
+        "navigation": true,
+        "redirected": false,
+        "mainFrame": false
+      },
+      {
+        "kind": "navigation",
+        "main": false,
+        "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb"
+      },
+      {
+        "kind": "navigation",
+        "main": false,
+        "url": "http://127.0.0.1:40439/replacement"
+      }
+    ],
+    "responseDocuments": [
+      {
+        "bytes": 3504,
+        "sha256": "bc5794b5343c244413080c4ccb96368f534458880b9bd689d78f019c3d6fb541",
+        "doctype": true,
+        "stageMarkup": true,
+        "scriptOpen": 3,
+        "scriptClose": 3,
+        "contentType": "text/html; charset=utf-8"
+      }
+    ],
+    "initialTargetMatches": true,
+    "initial": {
+      "read": true,
+      "nativeEvent": true,
+      "mode": "CSS1Compat",
+      "origin": "null",
+      "url": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb",
+      "base": "http://127.0.0.1:40439/api/books/aaaaaa/files/bbbbbb"
+    },
+    "replacement": {
+      "refused": true,
+      "reads": 1,
+      "revoked": true
+    },
+    "browser": {
+      "topURL": "http://127.0.0.1:40439/",
+      "ownedFrameURL": "http://127.0.0.1:40439/replacement",
+      "expectedTargetPresent": true,
+      "ownedFrameNameMatches": true,
+      "frameAttributes": {
+        "connected": true,
+        "srcPresent": false,
+        "srcdocPresent": false
+      },
+      "frames": [
+        {
+          "url": "http://127.0.0.1:40439/",
+          "main": true,
+          "owned": false,
+          "targetNameMatches": false,
+          "parentURL": null,
+          "dom": {
+            "ready": "complete",
+            "mode": "CSS1Compat",
+            "doctype": "html",
+            "stage": 0,
+            "scriptCount": 0
+          }
+        },
+        {
+          "url": "http://127.0.0.1:40439/replacement",
+          "main": false,
+          "owned": true,
+          "targetNameMatches": true,
+          "parentURL": "http://127.0.0.1:40439/",
+          "dom": {
+            "ready": "complete",
+            "mode": "CSS1Compat",
+            "doctype": "html",
+            "stage": 1,
+            "scriptCount": 1
+          }
+        }
+      ],
+      "extraPages": []
+    },
+    "cleanupErrors": []
+  },
+  "pageErrors": []
+}
