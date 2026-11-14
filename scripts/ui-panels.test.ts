@@ -115,12 +115,8 @@ const { default: PeopleView } = await import("../svelte/View.svelte");
 const vb: PanelBridge = {
   t: (s, vars) =>
     s.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[key] ?? "")),
-  icon: () => "<svg></svg>",
-  avatar: (email) => `<span>${email}</span>`,
   ago: () => "agora",
   name: (email) => email,
-  color: () => "#123456",
-  initials: (s) => s.slice(0, 2),
   locale: "en-US",
 };
 const fixture = (): Room => ({

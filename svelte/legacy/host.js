@@ -702,7 +702,7 @@ function clearViews() {
   for (const kind of viewMounts.keys()) disposeView(kind);
   chatViewport.reset();chatSurfaceElement=null;chatSurface=null;
 }
-const panelBridge = () => ({ t, icon, avatar, ago, name, color, initials, mentions, locale: LOCALE });
+const panelBridge = () => ({ t, ago, name, locale: LOCALE });
 let nativeFileChipIndex=null;
 function syncFileChipIndex(fresh=false){
  if(!S||!roomConnection||currentRoomId()!==S.id)return null;

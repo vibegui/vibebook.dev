@@ -20,10 +20,7 @@ export type PanelRoom = Pick<
 >;
 export type PanelBridge = Bridge & {
   name: (email: string) => string;
-  color: (text: string) => string;
-  initials: (text: string) => string;
   locale?: string;
-  mentions?: (html: string) => string;
 };
 export type Send = SendRoomCommand;
 export type PanelProps = {
