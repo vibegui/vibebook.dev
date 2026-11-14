@@ -23,7 +23,7 @@ function fixture() {
     enqueue(callback) { microtasks.push(callback); },
   };
   const owner = createRoomSheetHistory({ browser, current: () => current, changed: value => { sheet = value; }, unconfirmed: value => { warning = value; } });
-  return { owner, browser, entries, read: () => ({ index, backs, sheet, warning }), expire() { for (const [id, run] of [...timers]) { timers.delete(id); run(); } }, flush() { for (const run of microtasks.splice(0)) run(); }, back() { if (index > 0) index--; return owner.consumePop(); }, forward() { if (index + 1 < entries.length) index++; return owner.consumePop(); }, foreign() { entries[index] = { href: "https://vibebook.test/b/ffffff?ui=svelte", state: { another: true } }; }, deny() { current = false; } };
+  return { owner, browser, entries, read: () => ({ index, backs, sheet, warning }), expire() { for (const [id, run] of [...timers]) { timers.delete(id); run(); } }, flush() { for (const run of microtasks.splice(0)) run(); }, back() { if (index > 0) index--; return owner.consumePop(); }, forward() { if (index + 1 < entries.length) index++; return owner.consumePop(); }, backForwardBeforeEvent() { if(index>0){index--;index++;} return owner.consumePop(); }, foreign() { entries[index] = { href: "https://vibebook.test/b/ffffff?ui=svelte", state: { another: true } }; }, deny() { current = false; } };
 }
 
 test("width reserves the real container/rail instead of the browser's unallocated width", () => {
@@ -53,6 +53,12 @@ test("close queues navigation until matching Back, and pending deadline is not c
   f.expire(); f.flush(); expect(f.read().warning).toBe(true); expect(navigation).toBe(0);
   expect(f.back()).toBe(true); expect(f.read().warning).toBe(false); expect(navigation).toBe(0);
   f.flush(); expect(navigation).toBe(1); f.owner.dispose();
+});
+test("same-URL pop and Back→Forward before a delayed event do not confirm departure", () => {
+  const f=fixture();let navigation=0;f.owner.open("doc");f.owner.close();f.owner.deferNavigation(()=>navigation++);
+  expect(f.owner.consumePop()).toBe(true);f.flush();expect(navigation).toBe(0);
+  expect(f.backForwardBeforeEvent()).toBe(true);f.expire();f.flush();expect(f.read().warning).toBe(true);expect(navigation).toBe(0);
+  expect(f.back()).toBe(true);f.flush();expect(navigation).toBe(1);f.owner.dispose();
 });
 test("an explicit retry and late pop never replay an intent into a replaced owner", () => {
   const f = fixture(); let navigation = 0;

@@ -74,7 +74,11 @@ export function createRoomSheetHistory(options: {
     consumePop() {
       if (!active) return false;
       if (pending) {
-        const matched = options.current() && here() === pending.returnURL;
+        const stillOwned = same(pending);
+        // The base and sheet entry have the same URL. A delayed event observed
+        // after Forward must not pretend the requested Back has completed.
+        if (stillOwned && options.current()) return true;
+        const matched = options.current() && !stillOwned && here() === pending.returnURL;
         options.changed(null); finish(matched); return matched;
       }
       const incoming = marker(browser.state());
