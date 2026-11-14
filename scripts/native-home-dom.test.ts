@@ -242,6 +242,22 @@ test("real RoomShell revokes connected outgoing Composer controls before a remov
   expect(h.roomCommands.filter(command => command.t === "msg").length).toBe(before); await flush();
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
 });
+test("actual RoomStatus preserves removal/invitation guidance and safely returns Home after terminal access loss", async () => {
+  for (const terminal of ["removed", "unavailable"] as const) {
+    const h = await actualRoomShell(); h.publish(h.canonical); await flush();
+    if (terminal === "removed") h.connectionCallbacks.at(-1)!.onRemoved?.();
+    else h.connectionCallbacks.at(-1)!.onUnavailable?.();
+    await flush();
+    const status = h.target.querySelector<HTMLElement>(`[data-native-room-status="${terminal}"]`);
+    expect(status !== null).toBe(true);
+    expect(status?.textContent).toContain(h.services.t(terminal === "removed" ? "Você foi removido deste vibebook." : "Sem acesso a este vibebook. Peça para alguém de dentro te convidar."));
+    expect(h.target.textContent).not.toContain("Canonical visible message");
+    expect(h.target.querySelector("[data-native-document]")).toBe(null);
+    const home = [...status!.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === h.services.t("seus vibebooks"));
+    expect(home !== undefined).toBe(true); expect(home?.disabled).toBe(false); home!.click();
+    expect(get(h.services.state).route.kind).toBe("home"); expect(h.services.rootRoom.read().room).toBe(null);
+  }
+});
 async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {
   const timer = manualClock(),
     personal = createPersonalSession(homeApi(overrides), {
