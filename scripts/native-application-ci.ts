@@ -3,9 +3,26 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { openSync, closeSync } from "node:fs";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
+import { mkdir, writeFile, unlink, readFile, open } from "node:fs/promises";
 import { resolve } from "node:path";
 import { MeResult } from "../shared/schemas";
+import { record } from "../shared/validation";
+
+async function runtimeDiagnostic() {
+  const packages: Record<string,string|null> = {};
+  for (const name of ["wrangler","miniflare","workerd"]) {
+    try { const value: unknown=JSON.parse(await readFile(resolve(root,"node_modules",name,"package.json"),"utf8")); packages[name]=record(value)&&typeof value.version==="string"&&/^[\w.+-]{1,80}$/.test(value.version)?value.version:null; }
+    catch { packages[name]=null; }
+  }
+  const config=await readFile(resolve(root,"wrangler.jsonc"),"utf8");
+  const requestedDate=/"compatibility_date"\s*:\s*"(\d{4}-\d{2}-\d{2})"/.exec(config)?.[1]??null;
+  const file=await open(resolve(privateDirectory,"worker.log"),"r");
+  try {
+    const bytes=Buffer.alloc(64*1024),result=await file.read(bytes,0,bytes.length,0),size=(await file.stat()).size;
+    const warnings=bytes.subarray(0,result.bytesRead).toString("utf8").split(/\r?\n/).filter(line=>/compatibility/i.test(line)&&/supported|unsupported|falling back|requested|specified/i.test(line)).slice(0,8).map(line=>({dates:[...line.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)].map(match=>match[0]).slice(0,8),fallback:/falling back|fallback/i.test(line)}));
+    return {packages,requestedDate,workerLogHeadBytes:result.bytesRead,workerLogHeadTruncated:size>result.bytesRead,compatibilityWarnings:warnings};
+  } finally { await file.close(); }
+}
 
 assert(
   process.env.CI === "true",
@@ -205,6 +222,9 @@ try {
   process.off("SIGTERM", stop);
   if (cleanupErrors.length) process.exitCode = 1;
   await mkdir(reportDirectory, { recursive: true });
+  let runtime: unknown;
+  try { runtime=await runtimeDiagnostic(); }
+  catch(error) { runtime={diagnosticError:error instanceof Error?error.name:"UnknownError"}; }
   await writeFile(
     resolve(reportDirectory, "runner.json"),
     JSON.stringify(
@@ -214,6 +234,7 @@ try {
         failure,
         cleanupErrors,
         remainingOwnedGroups: children.size,
+        runtime,
         scope:
           "Disposable loopback local Worker; private raw Worker log and storage are intentionally excluded from artifact upload",
       },
