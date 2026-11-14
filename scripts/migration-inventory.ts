@@ -6,6 +6,7 @@ import { gzipSync } from "node:zlib";
 import ts from "typescript";
 import { projectRoot } from "../svelte/build/clientBoundary";
 import { inventoryOutput } from "./inventory-output";
+import { createInventoryCallClassifier } from "./inventory-calls";
 
 const destination = join(projectRoot, "docs/svelte-migration");
 const output = inventoryOutput(process.argv.slice(2), projectRoot);
@@ -23,6 +24,7 @@ type NetworkCall = Location & {
   callee: string;
   target: string;
   method: string;
+  kind?: "inferred-rpc";
 };
 const functions: (Location & { name: string; lines: number })[] = [];
 const network: NetworkCall[] = [];
@@ -100,6 +102,7 @@ for (const absolute of files.sort()) {
       file,
       line: lineAt(section.offset + node.getStart(source)),
     });
+    const calls = createInventoryCallClassifier(source);
     const visit = (node: ts.Node) => {
       if (node.kind === ts.SyntaxKind.AnyKeyword)
         typeEscapes.push({ ...location(node), kind: "explicit any" });
@@ -134,20 +137,21 @@ for (const absolute of files.sort()) {
         });
       if (ts.isCallExpression(node)) {
         const callee = node.expression.getText(source);
+        const rpc = calls.inferredRpc(node);
         if (
           ["fetch", "api"].includes(callee) ||
-          /\.(?:postMessage|uploadFile|\$get|\$post|\$put|\$patch|\$delete)$/.test(
-            callee,
-          )
+          rpc ||
+          /\.(?:postMessage|uploadFile)$/.test(callee)
         ) {
           let method =
-            callee === "api"
+            rpc?.method ??
+            (callee === "api"
               ? node.arguments[1]
                 ? "POST"
                 : "GET"
-              : "GET/default or typed transport";
+              : "GET/default or typed transport");
           const init = node.arguments[1];
-          if (init && ts.isObjectLiteralExpression(init)) {
+          if (!rpc && init && ts.isObjectLiteralExpression(init)) {
             const property = init.properties.find(
               (property) =>
                 ts.isPropertyAssignment(property) &&
@@ -159,21 +163,19 @@ for (const absolute of files.sort()) {
                 .replace(/["']/g, "");
           }
           network.push({
-            ...location(node),
+            ...location(calls.site(node)),
+            ...(rpc ? { kind: rpc.kind } : {}),
             callee,
             target:
               node.arguments[0]?.getText(source) ?? "typed transport input",
             method,
           });
         }
-        const route = /^(?:app|auth|router)\.(get|post|put|patch|delete)$/.exec(
-          callee,
-        );
-        if (route && node.arguments[0])
+        const route = calls.endpoint(node);
+        if (route)
           endpoints.push({
-            ...location(node),
-            method: route[1]!.toUpperCase(),
-            path: node.arguments[0].getText(source),
+            ...location(calls.site(node)),
+            ...route,
           });
         if (
           /\.(?:insertAdjacentHTML|replaceChildren|createElement|addEventListener|appendChild|setProperty|insertRule|replaceSync|adoptedStyleSheets)$/.test(
