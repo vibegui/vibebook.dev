@@ -7,7 +7,7 @@ const optionalNumber = z.optional(z.nullable(number));
 const message = z.object({ message: z.string() });
 const envelope = z.object({
   data: z.optional(z.unknown()),
-  errors: z.optional(z.array(message)),
+  errors: z.optional(z.nullable(z.array(message))),
 });
 export const WorkerAnalytics = z.object({
   viewer: z.object({
@@ -132,7 +132,7 @@ export async function readAnalyticsResponse<S extends z.ZodMiniType>(
 }
 const zones = z.object({
   success: z.optional(z.boolean()),
-  errors: z.optional(z.array(message)),
+  errors: z.optional(z.nullable(z.array(message))),
   result: z.optional(z.array(z.object({ id: z.string() }))),
 });
 export async function readZoneResponse(response: Response) {

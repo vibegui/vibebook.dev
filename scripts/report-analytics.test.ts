@@ -64,6 +64,8 @@ test("Worker analytics keeps numeric totals, absent quantiles and empty authoriz
 });
 
 test("provider errors take precedence over partial data and malformed envelopes never fabricate totals", async () => {
+  const empty = { viewer: { accounts: [] } };
+  expect(await readAnalyticsResponse(Response.json({ data: empty, errors: null }), WorkerAnalytics)).toEqual(empty);
   await expect(
     readAnalyticsResponse(
       Response.json({
@@ -195,6 +197,7 @@ test("bandwidth rows reject malformed paths, status and numeric strings rather t
 });
 
 test("zone lookup distinguishes empty authorized result from errors and malformed provider records", async () => {
+  expect(await readZoneResponse(Response.json({ success: true, errors: null, result: [] }))).toBeNull();
   expect(
     await readZoneResponse(
       Response.json({ success: true, result: [{ id: "zone-id" }] }),
