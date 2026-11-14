@@ -79,6 +79,7 @@
     "scripts/native-file-viewer.test.ts",
     "scripts/native-file-viewer-dom.test.ts",
     "scripts/native-file-viewer-browser.ts",
+    "scripts/native-app-navigation-browser.ts",
     "scripts/native-composer.test.ts",
     "scripts/room-access-lifecycle.test.ts",
     "scripts/root-room-session.test.ts",

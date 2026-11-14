@@ -49,6 +49,7 @@
     "@xterm/addon-fit": "0.10.0"
   },
   "scripts": {
+    "verify:app-navigation": "bun scripts/native-app-navigation-browser.ts",
     "dev": "bun run build:api-types && bun run build:collab:svelte && bun run build:ui && bun run build:mcp && wrangler dev",
     "build:mcp": "bun scripts/build-mcp.ts",
     "deploy": "bun run build:mcp && wrangler deploy",
