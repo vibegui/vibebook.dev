@@ -22,11 +22,23 @@ behavior. Existing relay/unregister tests remain intact.
 
 ## Unresolved data boundaries worth separate small changes
 
+Later reconciliation: `b940b5c` replaces the stored route-home epic and analytics
+container assertions with bounded validation and actual consumer fixtures. The
+OAuth grant metadata follow-up validates the pinned provider's `unknown`/vendor
+`any` boundary once per listed grant: only string `gid` and `client` fields are
+recognized independently, missing historical IDs stay unknown and malformed
+labels use the existing client ID. The last-use index is a `Map`, so identifiers
+such as `__proto__` cannot resolve inherited object properties. Grant creation,
+authorization and revoke operations are unchanged. The three focused tests pass
+20 assertions, including execution of the actual listing function with historical,
+malformed and prototype-named IDs; full backend/type checks remain pending for
+this follow-up.
+
 | Source at checkpoint                                           | Remaining assumption / next verification                                                                                                                                                                                                                                                       |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/route-home.ts:24`                                         | Stored `books.epics` JSON is assigned directly to `Epic[]`; `null`/object/nonobject elements can reach the later `map`/lookup. Validate the existing stored listing shape before use; retain valid room/epic selection and model semantics.                                                    |
-| `src/analytics.ts:63`                                          | Stored event dimensions JSON is assigned to `Record<string, unknown>` without object validation. JSON `null` reaches direct `dims.ua`/`dims.model` access. Keep valid opaque fields, normalize malformed container shapes while retaining the event.                                           |
-| `src/connect.ts:215,221–222`                                   | Grant metadata fields `gid`/`client` are asserted before filtering/serialization. Inspect the pinned OAuth library metadata type and narrow existing fields; do not change grant lifecycle/business rules.                                                                                     |
+| `src/route-home.ts:24`                                         | Addressed at `b940b5c`: schema-derived stored epic validation and actual routing consumer fixtures. |
+| `src/analytics.ts:63`                                          | Addressed at `b940b5c`: object-only dimensions retain opaque valid fields and normalize malformed containers without dropping events. |
+| `src/connect.ts:215,221–222`                                   | Addressed in the OAuth metadata follow-up above; final strict backend and integration checks remain required. |
 | `src/agent.ts:1178–1181`                                       | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
 | `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption.                                                                        |
 

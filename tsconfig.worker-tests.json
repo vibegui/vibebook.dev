@@ -27,6 +27,7 @@
     "scripts/decision-provider.test.ts",
     "scripts/app-document-file.test.ts",
     "scripts/agent-grant-boundary.test.ts",
-    "scripts/digest-items-boundary.test.ts"
+    "scripts/digest-items-boundary.test.ts",
+    "scripts/grant-metadata-boundary.test.ts"
   ]
 }

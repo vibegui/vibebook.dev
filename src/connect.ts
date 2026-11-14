@@ -12,6 +12,7 @@ import { track } from "./track";
 import type { AgentGrantsResult, ConsentContext, ConsentError } from "../shared/schemas";
 import { uiNavigationUrl, uiVariant } from "../shared/uiVariant";
 import { withAgentGrant, type AgentProps } from "./agentGrant";
+import { grantMetadata } from "./grantMetadata";
 export type { AgentProps } from "./agentGrant";
 
 export const SCOPE = "rooms";
@@ -212,14 +213,15 @@ export function grantOps(env: Env, ctx: { waitUntil(p: Promise<unknown>): void }
         .first<{ ts: number | null }>();
       // Last use per grant: grants made since Nov 2026 carry a gid that handleAgentMcp stamps in D1 grant_seen; older
       // ones only have the person-wide last call (null per grant = unknown).
-      const gids = items.map((g) => (g.metadata as { gid?: string } | undefined)?.gid).filter(Boolean) as string[];
-      const seen = gids.length
-        ? Object.fromEntries((await env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r) => [r.gid, r.ts]))
-        : {};
+      const grants = items.map(g => ({ grant: g, metadata: grantMetadata(g.metadata) }));
+      const gids = grants.flatMap(({ metadata }) => metadata.gid ? [metadata.gid] : []);
+      const seen = new Map<string, number>(gids.length
+        ? (await env.DB.prepare(`SELECT gid, ts FROM grant_seen WHERE gid IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(gids)).all<{ gid: string; ts: number }>()).results.map((r): [string, number] => [r.gid, r.ts])
+        : []);
       return {
-        agents: items.map((g) => {
-          const gid = (g.metadata as { gid?: string } | undefined)?.gid;
-          return { id: g.id, client: String((g.metadata as { client?: string } | undefined)?.client ?? g.clientId), connected_at: g.createdAt * 1000, used_at: gid ? (seen[gid] ?? null) : undefined };
+        agents: grants.map(({ grant: g, metadata }) => {
+          const gid = metadata.gid;
+          return { id: g.id, client: metadata.client ?? g.clientId, connected_at: g.createdAt * 1000, used_at: gid ? (seen.get(gid) ?? null) : undefined };
         }),
         last_used: last?.ts ?? null,
       };
