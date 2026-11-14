@@ -74,6 +74,7 @@
     "scripts/native-chat.test.ts",
     "scripts/mobile-edge-back.test.ts",
     "scripts/rich-text.test.ts",
+    "scripts/rich-file-index.test.ts",
     "scripts/entities-compatibility.test.ts",
     "scripts/native-interactive.test.ts",
     "scripts/native-auth-dom.test.ts",

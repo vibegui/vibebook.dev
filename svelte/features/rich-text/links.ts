@@ -1,6 +1,7 @@
 import { decodeHTML } from "entities";
 import type { Attachment } from "../../../shared/room";
 import type { LinkTarget, RichContext } from "./types";
+import { collectRoomFiles, roomFileFingerprint } from "./roomFiles";
 const protocols = new Set(
   "http: https: ftp: ftps: mailto: tel: callto: sms: cid: xmpp:".split(" "),
 );
@@ -14,14 +15,15 @@ export function safeUrl(value: string, pageUrl: string): string | null {
     return null;
   }
 }
-export function knownFiles(context: RichContext): Attachment[] {
-  const files = new Map<string, Attachment>();
-  for (const file of context.room.files || []) files.set(file.id, file);
-  for (const m of [...context.room.messages, ...(context.room.origins || [])])
-    for (const file of m.files || [])
-      if (!files.has(file.id)) files.set(file.id, file);
-  return [...files.values()];
+export function knownFiles(context: RichContext): readonly Attachment[] {
+  return (
+    context.fileIndex?.read(context.room)?.files ??
+    collectRoomFiles(context.room)
+  );
 }
+export const knownFileFingerprint = (context: RichContext) =>
+  context.fileIndex?.read(context.room)?.fingerprint ??
+  roomFileFingerprint(collectRoomFiles(context.room));
 export function fileTarget(
   href: string,
   label: string,

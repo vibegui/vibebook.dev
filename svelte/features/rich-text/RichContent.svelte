@@ -4,6 +4,7 @@
   import { createRichSession } from "./session";
   import type { RichActions, RichMode, RichPolicy } from "./types";
   import RichNodes from "./RichNodes.svelte";
+  import { scopedRichFileIndex } from "./fileContext";
   let {
     text,
     mode = "markdown",
@@ -24,6 +25,7 @@
     fileLabel?: string;
   } = $props();
   const idPrefix = $props.id();
+  const fileIndex = scopedRichFileIndex();
   const session = createRichSession();
   onDestroy(() => session.dispose());
   const nodes = $derived(
@@ -34,6 +36,7 @@
       pageUrl: pageUrl || location.href,
       idPrefix,
       fileLabel,
+      fileIndex,
     }),
   );
 </script>

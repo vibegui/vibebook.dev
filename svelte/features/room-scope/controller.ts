@@ -14,6 +14,7 @@ import { createChatViewport, type KeepChat } from "../chat-viewport/controller";
 import { createChatSurface } from "../chat-viewport/surface";
 import { createChatPresentation } from "../chat-viewport/presentation";
 import { createNeedsYou } from "../needs-you/session";
+import { createRichFileIndex } from "../rich-text/roomFiles";
 import type { AppsAuthority } from "../apps/authority";
 import { createFilesSession } from "../files/session";
 import { createFileChipIndex } from "../rich-text/fileIndex";
@@ -85,6 +86,17 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
   const current = () => active && services.active() && services.ownsRoom(scope);
   const frame = () => (current() ? services.rootRoom.read() : null);
   const room = () => frame()?.room ?? null;
+  const richFiles = createRichFileIndex(
+    scope,
+    () => {
+      const latestScope = services.roomScope(),
+        value = room();
+      return current() && latestScope && value
+        ? { scope: latestScope, room: value }
+        : null;
+    },
+    current,
+  );
   const selected = () => frame()?.thread ?? "main";
   const forThread = (thread: string) => current() && selected() === thread;
   const failed = (): Promise<CommandOutcome> =>
@@ -1167,6 +1179,7 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
   function dispose() {
     if (!active) return;
     active = false;
+    richFiles.dispose();
     pendingMessage = null;
     noticeRevision++;
     clearNoticeTimer();
@@ -1268,6 +1281,7 @@ export function createRoomScope(options: RoomScopeOptions): RoomScope {
   return {
     state: readonly(state),
     viewer,
+    richFiles,
     current,
     attachChat(element) {
       if (!current() || !element.isConnected) return () => {};

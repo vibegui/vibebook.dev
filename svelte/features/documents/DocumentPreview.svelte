@@ -4,6 +4,7 @@
   import type { DocumentProps } from "./types";
   import RichNodes from "../rich-text/RichNodes.svelte";
   import { createRichSession } from "../rich-text/session";
+  import { scopedRichFileIndex } from "../rich-text/fileContext";
   import type { DocumentSession } from "./session";
   import type { RichActions, RichContext } from "../rich-text/types";
   import Tasks from "../../Tasks.svelte";
@@ -21,6 +22,7 @@
     owner: DocumentSession;
   } = $props();
   const idPrefix = $props.id();
+  const fileIndex = scopedRichFileIndex();
   const binding = untrack(() => ({
     account: props.room.me,
     roomId: props.room.id,
@@ -69,6 +71,7 @@
     idPrefix,
     policy: "document",
     fileLabel: props.taskProps.vb.t("arquivo"),
+    fileIndex,
   });
   const session = createRichSession();
   onDestroy(() => session.dispose());

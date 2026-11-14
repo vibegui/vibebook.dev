@@ -24,6 +24,7 @@ import type AgentsPane from "../agents/AgentsPane.svelte";
 import type AgentBanners from "../agents/AgentBanners.svelte";
 import type AgentTrigger from "../agents/AgentTrigger.svelte";
 import type { FetchLike } from "../../transport";
+import type { RichFileReader } from "../rich-text/roomFiles";
 
 /** Component props refer to the actual native feature contract, never copied
  * backend DTOs. Every room property aliases the RootRoomSession canonical frame. */
@@ -80,6 +81,7 @@ export type RoomScopeOptions = {
 export type RoomScope = {
   readonly state: Readable<RoomScopePresentation | null>;
   readonly viewer: FileViewer;
+  readonly richFiles: RichFileReader;
   current(): boolean;
   attachChat(element: HTMLElement): () => void;
   attachFiles(element: HTMLElement): () => void;

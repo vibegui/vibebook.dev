@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick, untrack } from "svelte";
   import { get } from "svelte/store";
+  import { provideRichFileIndex } from "../rich-text/fileContext";
   import type { ApplicationRoomPresentation } from "../application/shellTypes";
   import type { ApplicationRoomScope } from "../application/types";
   import type { RoomResources } from "../application/roomResources";
@@ -72,6 +73,7 @@
     view = owner.state,
     geometry = layout.state;
   scoped = owner;
+  provideRichFileIndex(owner.richFiles);
   function back(expectedThread: string) {
     const value = get(owner.state);
     if (!current() || !value || value.header.thread !== expectedThread) return;

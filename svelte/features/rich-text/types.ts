@@ -1,5 +1,6 @@
 import type { Attachment, Room } from "../../../shared/room";
 import type { ChatActions } from "../../chatTypes";
+import type { RichFileReader } from "./roomFiles";
 export type RichPolicy = "document" | "file-preview";
 export type RichMode = "human" | "markdown" | "inline";
 export type RichContext = {
@@ -9,6 +10,7 @@ export type RichContext = {
   idPrefix: string;
   names?: Readonly<Record<string, string>>;
   fileLabel?: string;
+  fileIndex?: RichFileReader;
 };
 export type RichFileReference = {
   roomId: string;

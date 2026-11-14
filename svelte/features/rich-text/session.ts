@@ -1,9 +1,9 @@
 import { parseRichSource, projectRichSource } from "./project";
-import { knownFiles } from "./links";
+import { knownFileFingerprint } from "./links";
 import type { RichContext, RichMode, RichNode } from "./types";
 /** Values used by mention recognition, immutable file targets/version ordering and local IDs.
  * Presence/receipts/message text do not change this key. No global/account text cache exists. */
-function contextKey(context: RichContext): string {
+function contextKey(context: RichContext, files: string): string {
   return JSON.stringify([
     context.policy,
     context.room.id,
@@ -16,14 +16,7 @@ function contextKey(context: RichContext): string {
       context.room.names?.[email],
       context.names?.[email],
     ]),
-    knownFiles(context).map((file) => [
-      file.id,
-      file.name,
-      file.type,
-      file.ts,
-      file.size,
-      file.author,
-    ]),
+    files,
   ]);
 }
 /** One syntax tree and one projection per mounted content component; disposal releases both. */
@@ -50,6 +43,9 @@ export function createRichSession() {
         previousMode = mode;
       }
       const parts = [
+        // Validate the current scope even if all incoming props stayed identical.
+        context.fileIndex?.read(context.room)?.fingerprint,
+        context.fileIndex,
         context.policy,
         context.room.id,
         context.room.me,
@@ -68,7 +64,7 @@ export function createRichSession() {
         previousParts &&
         parts.every((part, index) => part === previousParts![index])
           ? previousContext!
-          : contextKey(context);
+          : contextKey(context, knownFileFingerprint(context));
       previousParts = parts;
       if (changed || !nodes || key !== previousContext) {
         nodes = projectRichSource(parsed!, context);
