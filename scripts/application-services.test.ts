@@ -7,6 +7,7 @@ import type { RoomConnectionOptions } from "../svelte/roomConnection";
 import type { AgentsApi } from "../svelte/features/agents/api";
 import { createApplicationServices } from "../svelte/features/application/services";
 import { HomeFailure } from "../svelte/features/home/api";
+import { createDocumentDrafts } from "../svelte/features/documents/session";
 import type {
   ApplicationRoomAdapter,
   ApplicationRoomIntent,
@@ -426,6 +427,30 @@ test("application logout uses one existing PWA cleanup queue and fences an obser
   await leaving;
   expect(h.posts()).toBe(0);
   expect(h.documentNavigations).toEqual(["reload"]);
+  h.services.dispose();
+});
+
+test("identity teardown flushes the old room before clearing application-owned draft banks", async () => {
+  const h = fixture("http://vb.test/b/aaaaaa");
+  h.services.start();
+  await settle();
+  h.connections[0]!.callbacks.onEvent(event(canonical()));
+  const documents = createDocumentDrafts();
+  const target = { account: "me@test.com", roomId: "aaaaaa", epicId: null };
+  const order: string[] = [];
+  const shell = adapter();
+  shell.owner.reset = reason => {
+    if (reason !== "identity") return;
+    order.push("room");
+    documents.set(target, { text: "Private old-account recovery", scroll: 0 });
+  };
+  h.services.attachRoom(h.services.roomScope()!, shell.owner);
+  h.duringIdentityReset(() => { order.push("bank"); documents.clear(); });
+  h.canonical(me({ email: "b@test", name: "B", books: [] }));
+  await h.services.personal.refresh();
+  await settle();
+  expect(order).toEqual(["room", "bank"]);
+  expect(documents.get(target)).toBeUndefined();
   h.services.dispose();
 });
 

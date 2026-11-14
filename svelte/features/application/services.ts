@@ -446,8 +446,8 @@ export function createApplicationServices<Pwa extends ApplicationPwa>(options: {
     navigation.pageLeft();
     account.close();
     options.device?.cancel();
-    options.onIdentityReset?.();
     prior?.adapter.reset("identity");
+    options.onIdentityReset?.();
     resettingIdentity = false;
     const queued = queuedNavigation;
     queuedNavigation = null;
