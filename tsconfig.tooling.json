@@ -124,6 +124,7 @@
     "scripts/native-account.test.ts",
     "scripts/native-account-browser.ts",
     "scripts/native-agents.test.ts",
+    "scripts/local-runner-permission.test.ts",
     "scripts/terminal-vendor-policy.ts",
     "scripts/terminal-vendor-policy.test.ts",
     "scripts/native-agents-browser.ts",

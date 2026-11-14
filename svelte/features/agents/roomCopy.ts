@@ -12,6 +12,7 @@ const pt = {
   turnOff: "Desligar agent",
   focus: "Ir pro seu agent no herdr",
   focusFailed: "O vibebook herdr não está rodando nesta máquina.",
+  focusBlocked: "O navegador bloqueou o acesso a este computador: clique no cadeado ao lado do endereço, libere \"Rede local\" (ou \"Apps neste dispositivo\") e recarregue.",
   newFolder: "pasta nova",
   queue: "Fila do seu agent",
   queueEmpty:
@@ -90,6 +91,7 @@ const en: Record<RoomAgentCopyKey, string> = {
   turnOff: "Turn agent off",
   focus: "Go to your agent in herdr",
   focusFailed: "Vibebook herdr is not running on this computer.",
+  focusBlocked: "The browser blocked access to this computer: click the lock next to the address, allow \"Local network\" (or \"Apps on this device\") and reload.",
   newFolder: "new folder",
   queue: "Your agent's queue",
   queueEmpty:

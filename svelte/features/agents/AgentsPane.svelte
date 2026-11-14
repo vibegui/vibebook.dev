@@ -110,7 +110,7 @@
       {text("localHelp")}
     </p>
     {#if $runner.focusError}<p role="alert" class="tw:text-destructive">
-        {text("focusFailed")}
+        {text($runner.focusBlocked ? "focusBlocked" : "focusFailed")}
       </p>{/if}
     {#if $view.togglePhase === "pending"}<p role="status">
         {text("pending")}
