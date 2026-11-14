@@ -98,13 +98,10 @@ const { default: Home } =
   await import("../svelte/features/home/HomePanel.svelte");
 const { default: RoomTile } =
   await import("../svelte/features/home/RoomTile.svelte");
-const { default: ApplicationShellHarness } =
-  await import("./application-shell-harness.svelte");
+const { default: ApplicationShellHarness } = await import("./application-shell-harness.svelte");
 const { shellFixture } = await import("./application-shell-fixtures");
-const { default: RoomShellHarness } =
-  await import("./room-shell-harness.svelte");
-const { createRoomResources } =
-  await import("../svelte/features/application/roomResources");
+const { default: RoomShellHarness } = await import("./room-shell-harness.svelte");
+const { createRoomResources } = await import("../svelte/features/application/roomResources");
 import type { Room, RoomEvent } from "../shared/room";
 import type { RoomScopeBrowser } from "../svelte/features/room-scope/types";
 import type { RoomLayoutBrowser } from "../svelte/features/room-layout/types";
@@ -120,354 +117,129 @@ const flush = async () => {
   await tick();
 };
 test("direct application shell renders native Home/Archive and the required room snippet, then releases document owners", async () => {
-  const h = shellFixture(),
-    target = document.createElement("div");
-  document.body.append(target);
-  const component = flushSync(() =>
-    mount(ApplicationShellHarness, {
-      target,
-      props: { services: h.services, effects: h.effects },
-    }),
-  );
+  const h = shellFixture(), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
   await flush();
-  expect(target.querySelector("[data-native-app-shell]") !== null).toBe(true);
+  expect(target.querySelector('[data-native-app-shell]') !== null).toBe(true);
   expect(h.services.active()).toBe(true);
   expect(h.languages).toEqual(["document:en"]);
-  h.services.actions.archived();
-  await flush();
-  expect(target.querySelector('[data-vb-native="archived"]') !== null).toBe(
-    true,
-  );
-  h.services.actions.navigate({ roomId: "aaaaaa" });
-  await flush();
-  expect(target.querySelector("[data-test-room-snippet]") !== null).toBe(true);
-  flushSync(() => {
-    void unmount(component);
-  });
-  await flush();
+  h.services.actions.archived(); await flush();
+  expect(target.querySelector('[data-vb-native="archived"]') !== null).toBe(true);
+  h.services.actions.navigate({ roomId: "aaaaaa" }); await flush();
+  expect(target.querySelector('[data-test-room-snippet]') !== null).toBe(true);
+  flushSync(() => { void unmount(component); }); await flush();
   expect(h.services.active()).toBe(false);
-  expect(h.stopped).toContain("theme");
-  expect(h.stopped).toContain("navigation");
-  expect(h.stopped).toContain("pop");
+  expect(h.stopped).toContain("theme"); expect(h.stopped).toContain("navigation"); expect(h.stopped).toContain("pop");
 });
 test("direct Account composition preserves native profile confirmation and supplies real notification/agent snippets", async () => {
-  const h = shellFixture(),
-    target = document.createElement("div");
-  document.body.append(target);
-  const component = flushSync(() =>
-    mount(ApplicationShellHarness, {
-      target,
-      props: { services: h.services, effects: h.effects },
-    }),
-  );
-  cleanups.push(() =>
-    flushSync(() => {
-      void unmount(component);
-    }),
-  );
-  await flush();
-  h.services.actions.openAccount("profile");
-  await flush();
+  const h = shellFixture(), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  h.services.actions.openAccount("profile"); await flush();
   const name = document.querySelector<HTMLInputElement>("#account-name")!;
-  expect(name !== null).toBe(true);
-  name.value = "Native Shell Name";
-  name.dispatchEvent(new Event("input", { bubbles: true }));
-  name
-    .closest("form")!
-    .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  await flush();
-  expect(h.names).toEqual(["Native Shell Name"]);
-  expect(get(h.services.account.state).phase).toBe("confirming");
-  h.canonical(me({ name: "Native Shell Name" }));
-  await h.services.personal.refresh();
-  await flush();
+  expect(name !== null).toBe(true); name.value = "Native Shell Name"; name.dispatchEvent(new Event("input", { bubbles: true }));
+  name.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  expect(h.names).toEqual(["Native Shell Name"]); expect(get(h.services.account.state).phase).toBe("confirming");
+  h.canonical(me({ name: "Native Shell Name" })); await h.services.personal.refresh(); await flush();
   expect(get(h.services.account.state).phase).toBe("idle");
-  h.services.actions.openAccount("all");
-  await flush();
-  expect(document.querySelector("[data-native-notifications]") !== null).toBe(
-    true,
-  );
-  expect(document.querySelector("[data-native-agent-setup]") !== null).toBe(
-    true,
-  );
+  h.services.actions.openAccount("all"); await flush();
+  expect(document.querySelector("[data-native-notifications]") !== null).toBe(true);
+  expect(document.querySelector("[data-native-agent-setup]") !== null).toBe(true);
 });
 test("connected old creator controls cannot edit or submit a replacement opening before DOM flush", async () => {
   let creates = 0;
-  const h = shellFixture({
-      startRoom: async () => {
-        creates++;
-        return { id: "bbbbbb", unknown: [], invited: [], cost: 0 };
-      },
-    }),
-    target = document.createElement("div");
-  document.body.append(target);
-  const component = flushSync(() =>
-    mount(ApplicationShellHarness, {
-      target,
-      props: { services: h.services, effects: h.effects },
-    }),
-  );
-  cleanups.push(() =>
-    flushSync(() => {
-      void unmount(component);
-    }),
-  );
-  await flush();
+  const h = shellFixture({ startRoom: async () => { creates++; return { id: "bbbbbb", unknown: [], invited: [], cost: 0 }; } }), target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
   const creator = h.services.navigation.creator;
-  creator.open();
-  creator.edit("Preserved new draft");
-  await flush();
-  const oldInput =
-      document.querySelector<HTMLTextAreaElement>("#native-new-room")!,
-    oldForm = oldInput.closest("form")!;
-  creator.close();
-  creator.open();
+  creator.open(); creator.edit("Preserved new draft"); await flush();
+  const oldInput = document.querySelector<HTMLTextAreaElement>("#native-new-room")!, oldForm = oldInput.closest("form")!;
+  creator.close(); creator.open();
   expect(oldForm.isConnected).toBe(true);
-  oldInput.value = "Stale outgoing draft";
-  oldInput.dispatchEvent(new Event("input", { bubbles: true }));
-  oldForm.dispatchEvent(
-    new Event("submit", { bubbles: true, cancelable: true }),
-  );
-  expect(get(h.services.personal.draft).create).toBe("Preserved new draft");
-  expect(creates).toBe(0);
+  oldInput.value = "Stale outgoing draft"; oldInput.dispatchEvent(new Event("input", { bubbles: true }));
+  oldForm.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  expect(get(h.services.personal.draft).create).toBe("Preserved new draft"); expect(creates).toBe(0);
   await flush();
-  const fresh =
-    document.querySelector<HTMLTextAreaElement>("#native-new-room")!;
+  const fresh = document.querySelector<HTMLTextAreaElement>("#native-new-room")!;
   expect(fresh.value).toBe("Preserved new draft");
-  fresh
-    .closest("form")!
-    .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  await flush();
-  expect(creates).toBe(1);
-  expect(h.href()).toContain("/b/bbbbbb");
+  fresh.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  expect(creates).toBe(1); expect(h.href()).toContain("/b/bbbbbb");
 });
 test("global Inbox direct callbacks reject old connected account controls and close on identity replacement", async () => {
   let resolves = 0;
-  const wait = {
-    book_id: "aaaaaa",
-    room: "Room",
-    ref: "m1",
-    thread: "main",
-    topic: null,
-    author: "friend@test",
-    author_name: "Friend",
-    text: "Question",
-    ts: 1,
-  };
-  const h = shellFixture({
-    resolve: async () => {
-      resolves++;
-      return { ok: true };
-    },
-  });
+  const wait = { book_id: "aaaaaa", room: "Room", ref: "m1", thread: "main", topic: null, author: "friend@test", author_name: "Friend", text: "Question", ts: 1 };
+  const h = shellFixture({ resolve: async () => { resolves++; return { ok: true }; } });
   h.canonical(me({ waits: [wait] }));
-  const target = document.createElement("div");
-  document.body.append(target);
-  const component = flushSync(() =>
-    mount(ApplicationShellHarness, {
-      target,
-      props: { services: h.services, effects: h.effects },
-    }),
-  );
-  cleanups.push(() =>
-    flushSync(() => {
-      void unmount(component);
-    }),
-  );
-  await flush();
-  h.services.actions.navigate({ roomId: "aaaaaa" });
-  await flush();
-  const open = [...target.querySelectorAll<HTMLButtonElement>("button")].find(
-    (button) => button.textContent?.trim() === "Open fixture inbox",
-  )!;
-  expect(open !== undefined).toBe(true);
-  open.click();
-  await flush();
-  const link = [
-    ...document.querySelectorAll<HTMLAnchorElement>('[role="dialog"] a'),
-  ].find((anchor) => anchor.textContent?.includes("Question"))!;
+  const target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(ApplicationShellHarness, { target, props: { services: h.services, effects: h.effects } }));
+  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  h.services.actions.navigate({ roomId: "aaaaaa" }); await flush();
+  const open = [...target.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === "Open fixture inbox")!;
+  expect(open !== undefined).toBe(true); open.click(); await flush();
+  const link = [...document.querySelectorAll<HTMLAnchorElement>('[role="dialog"] a')].find(anchor => anchor.textContent?.includes("Question"))!;
   expect(link !== undefined).toBe(true);
-  const resolveLabel = h.services.t(
-    "Já resolvi (respondi em outro lugar, ou não é comigo)",
-  );
-  const resolve = [
-    ...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
-  ].find((button) => button.getAttribute("aria-label") === resolveLabel)!;
+  const resolveLabel = h.services.t("Já resolvi (respondi em outro lugar, ou não é comigo)");
+  const resolve = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(button => button.getAttribute("aria-label") === resolveLabel)!;
   expect(resolve !== undefined).toBe(true);
-  h.canonical(me({ email: "other@test", waits: [wait] }));
-  await h.services.personal.refresh();
+  h.canonical(me({ email: "other@test", waits: [wait] })); await h.services.personal.refresh();
   const before = h.href();
-  link.dispatchEvent(
-    new MouseEvent("click", { button: 0, bubbles: true, cancelable: true }),
-  );
+  link.dispatchEvent(new MouseEvent("click", { button: 0, bubbles: true, cancelable: true }));
   resolve.click();
-  expect(h.href()).toBe(before);
-  expect(resolves).toBe(0);
-  await flush();
+  expect(h.href()).toBe(before); expect(resolves).toBe(0); await flush();
   expect(document.querySelector('[role="dialog"]')).toBe(null);
 });
 async function actualRoomShell() {
-  const h = shellFixture(),
-    resources = createRoomResources();
-  h.services.start();
-  await settle();
-  h.services.actions.navigate({ roomId: "aaaaaa" });
-  const browser: RoomScopeBrowser = {
-    origin: "https://vibebook.test",
-    href: h.href,
-    historyState: () => window.history.state,
-    history: window.history,
-    storage: localStorage,
-    fetcher: async () =>
-      new Response(JSON.stringify({ connections: [] }), {
-        headers: { "content-type": "application/json" },
-      }),
-    iosStandalone: false,
-    visible: () => true,
-    listenVisibility: () => () => {},
-    openExternal: () => {},
-    enqueue: queueMicrotask,
-    clock: h.timer.clock,
+  const h = shellFixture(), resources = createRoomResources();
+  h.services.start(); await settle(); h.services.actions.navigate({ roomId: "aaaaaa" });
+  const browser: RoomScopeBrowser = { origin: "https://vibebook.test", href: h.href, historyState: () => window.history.state, history: window.history,
+    storage: localStorage, fetcher: async () => new Response(JSON.stringify({ connections: [] }), { headers: { "content-type": "application/json" } }), iosStandalone: false, visible: () => true, listenVisibility: () => () => {}, openExternal: () => {}, awarenessColor: () => "#112233", enqueue: queueMicrotask };
+  const layoutBrowser: RoomLayoutBrowser = { href: h.href, state: () => window.history.state, history: window.history, storage: localStorage, schedule: h.timer.clock.schedule, cancel: h.timer.clock.cancel, enqueue: queueMicrotask };
+  const target = document.createElement("div"); document.body.append(target);
+  const component = flushSync(() => mount(RoomShellHarness, { target, props: { presentation: { services: h.services, openInbox() {} }, resources, browser, layoutBrowser } }));
+  cleanups.push(() => { flushSync(() => { void unmount(component); }); h.services.dispose(); resources.dispose(); });
+  const canonical: Room = { id: "aaaaaa", me: "me@test.com", book: { title: "Real native composition", owner: "me@test.com" }, members: ["me@test.com"], online: [], typing: {}, suggestions: [],
+    doc: "# Canonical document", messages: [{ id: 1, thread: "main", author: "me@test.com", text: "Canonical visible message", ts: 1 }],
+    epics: [{ id: "e", title: "Canonical epic", tasks: [{ id: "t1", title: "Canonical task", done: false, status: "todo", owner: "me@test.com" }] }],
   };
-  const layoutBrowser: RoomLayoutBrowser = {
-    href: h.href,
-    state: () => window.history.state,
-    history: window.history,
-    storage: localStorage,
-    schedule: h.timer.clock.schedule,
-    cancel: h.timer.clock.cancel,
-    enqueue: queueMicrotask,
-  };
-  const target = document.createElement("div");
-  document.body.append(target);
-  const component = flushSync(() =>
-    mount(RoomShellHarness, {
-      target,
-      props: {
-        presentation: { services: h.services, openInbox() {} },
-        resources,
-        browser,
-        layoutBrowser,
-      },
-    }),
-  );
-  cleanups.push(() => {
-    flushSync(() => {
-      void unmount(component);
-    });
-    h.services.dispose();
-    resources.dispose();
-  });
-  const canonical: Room = {
-    id: "aaaaaa",
-    me: "me@test.com",
-    book: { title: "Real native composition", owner: "me@test.com" },
-    members: ["me@test.com"],
-    online: [],
-    typing: {},
-    suggestions: [],
-    doc: "# Canonical document",
-    messages: [
-      {
-        id: 1,
-        thread: "main",
-        author: "me@test.com",
-        text: "Canonical visible message",
-        ts: 1,
-      },
-    ],
-    epics: [
-      {
-        id: "e",
-        title: "Canonical epic",
-        tasks: [
-          {
-            id: "t1",
-            title: "Canonical task",
-            done: false,
-            status: "todo",
-            owner: "me@test.com",
-          },
-        ],
-      },
-    ],
-  };
-  const publish = (value: Room) => {
-    const { id: _id, typing: _typing, ...state } = value;
-    const event: RoomEvent = { t: "state", ...state };
-    h.connectionCallbacks.at(-1)!.onEvent(event);
-  };
+  const publish = (value: Room) => { const { id: _id, typing: _typing, ...state } = value; const event: RoomEvent = { t: "state", ...state }; h.connectionCallbacks.at(-1)!.onEvent(event); };
   return { ...h, resources, target, canonical, publish };
 }
 test("real RoomShell uses genuine loading/terminal states and directly renders current canonical native features", async () => {
-  const h = await actualRoomShell();
-  await flush();
-  expect(
-    h.target.querySelector('[data-native-room-status="loading"]') !== null,
-  ).toBe(true);
+  const h = await actualRoomShell(); await flush();
+  expect(h.target.querySelector('[data-native-room-status="loading"]') !== null).toBe(true);
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
-  h.publish(h.canonical);
-  await flush();
-  expect(h.target.querySelector("[data-native-room-sidebar]") !== null).toBe(
-    true,
-  );
-  expect(h.target.querySelector("[data-native-room-header]") !== null).toBe(
-    true,
-  );
+  h.publish(h.canonical); await flush();
+  expect(h.target.querySelector("[data-native-room-sidebar]") !== null).toBe(true);
+  expect(h.target.querySelector("[data-native-room-header]") !== null).toBe(true);
   expect(h.target.querySelector("[data-native-composer]") !== null).toBe(true);
   expect(h.target.querySelector("[data-native-document]") !== null).toBe(true);
   expect(h.target.textContent).toContain("Canonical visible message");
-  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
-  await flush();
-  expect(
-    h.target.querySelector('[data-native-room-status="removed"]') !== null,
-  ).toBe(true);
+  h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" }); await flush();
+  expect(h.target.querySelector('[data-native-room-status="removed"]') !== null).toBe(true);
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
   expect(h.target.textContent).not.toContain("Canonical visible message");
 });
 test("real RoomShell retains one Board DOM instance across pane and full-board placements", async () => {
-  const h = await actualRoomShell();
-  h.publish(h.canonical);
-  await flush();
-  h.services.actions.selectPane("board");
-  await flush();
-  const board = h.target.querySelector("[data-board-scope]");
+  const h = await actualRoomShell(); h.publish(h.canonical); await flush();
+  h.services.actions.selectPane("board"); await flush();
+  const board = h.target.querySelector('[data-board-scope]');
   expect(board !== null).toBe(true);
-  const toggle = h.target.querySelector<HTMLButtonElement>(
-    "[data-native-board-toggle]",
-  )!;
-  expect(toggle !== null).toBe(true);
-  toggle.click();
-  await flush();
-  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
-  toggle.click();
-  await flush();
-  h.services.actions.selectPane("doc");
-  await flush();
-  h.services.actions.selectPane("board");
-  await flush();
-  expect(h.target.querySelectorAll("[data-board-scope]").length).toBe(1);
-  expect(h.target.querySelector("[data-board-scope]") === board).toBe(true);
+  const toggle = h.target.querySelector<HTMLButtonElement>("[data-native-board-toggle]")!;
+  expect(toggle !== null).toBe(true); toggle.click(); await flush();
+  expect(h.target.querySelector('[data-board-scope]') === board).toBe(true);
+  toggle.click(); await flush(); h.services.actions.selectPane("doc"); await flush(); h.services.actions.selectPane("board"); await flush();
+  expect(h.target.querySelectorAll('[data-board-scope]').length).toBe(1);
+  expect(h.target.querySelector('[data-board-scope]') === board).toBe(true);
 });
 test("real RoomShell revokes connected outgoing Composer controls before a removed frame reaches the DOM", async () => {
-  const h = await actualRoomShell();
-  h.publish(h.canonical);
-  await flush();
-  const input = h.target.querySelector<HTMLTextAreaElement>(
-      "[data-native-composer] textarea",
-    )!,
-    form = input.closest("form")!;
-  input.value = "An outgoing private draft";
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-  await flush();
+  const h = await actualRoomShell(); h.publish(h.canonical); await flush();
+  const input = h.target.querySelector<HTMLTextAreaElement>('[data-native-composer] textarea')!, form = input.closest("form")!;
+  input.value = "An outgoing private draft"; input.dispatchEvent(new Event("input", { bubbles: true })); await flush();
   h.connectionCallbacks.at(-1)!.onEvent({ t: "removed" });
   expect(form.isConnected).toBe(true);
-  const before = h.roomCommands.filter((command) => command.t === "msg").length;
+  const before = h.roomCommands.filter(command => command.t === "msg").length;
   form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-  expect(h.roomCommands.filter((command) => command.t === "msg").length).toBe(
-    before,
-  );
-  await flush();
+  expect(h.roomCommands.filter(command => command.t === "msg").length).toBe(before); await flush();
   expect(h.target.querySelector("[data-native-composer]")).toBe(null);
 });
 async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {
