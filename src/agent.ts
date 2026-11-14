@@ -363,6 +363,15 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, epic_id: { type: "string" } }, required: ["room_id", "epic_id"] },
   },
   {
+    name: "open_file",
+    description: "Open a file of this room beside the chat for your human, in the room tabs they have open (the doc panel's \"Ao lado\" view): HTML, PDF, Markdown, text or an image. Use it when your human asked you to make something to look at (an HTML page from a meeting, a report): upload the first version with upload_file, call open_file with its id, then keep uploading new versions under the same name; the panel follows the newest. Only your human's tabs open it.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, file_id: { type: "string", description: "the file's id (upload_file's file.id, read_room files[].id) or its URL" } },
+      required: ["room_id", "file_id"],
+    },
+  },
+  {
     name: "move_message",
     description: "Move a message your human (or you) wrote to another thread: \"main\" or an epic id. For a request posted in the wrong thread.",
     inputSchema: {
@@ -876,7 +885,7 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       ctx.waitUntil(track(env, "file_uploaded", { user: me.email, dims: { book: id, type, size: meta.size, agent: true } }));
       // Always posted, so the file shows up in the chat where people (and agents) will look for it.
       const posted = await bookStub(env, id).agentPost(id, me.email, str(a.message), str(a.thread) || "main", [meta.id], str(a.model));
-      const file = { name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
+      const file = { id: meta.id, name: meta.name, type, size: meta.size, url: `${origin}/api/books/${id}/files/${meta.id}` };
       return posted.ok ? { ok: true, file, message_id: posted.id } : { ...posted, file, note: "the file is stored in the room's files, but the message was not posted" };
     }
     case "upload_link": {
@@ -999,6 +1008,14 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
       const id = await room();
       if (!(await env.AGENT_LIMIT.limit({ key: me.email })).success) throw new Error("rate limited. Wait a bit.");
       return bookStub(env, id).agentEdit(id, me.email, name, a);
+    }
+    case "open_file": {
+      const id = await room();
+      // The id, or the file's URL as upload_file / upload_link return it.
+      const fid = /\/files\/([0-9a-f]+)/.exec(str(a.file_id))?.[1] ?? str(a.file_id);
+      const r = await bookStub(env, id).agentOpenFile(id, me.email, fid);
+      if (r.ok) ctx.waitUntil(track(env, "open_file", { user: me.email, dims: { book: id, tabs: r.opened_in_tabs } }));
+      return r;
     }
     case "pin": {
       const id = await room();

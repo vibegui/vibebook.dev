@@ -1445,6 +1445,20 @@ export class Book extends DurableObject<Env> {
     this.bind(bookId);
     return this.pinAdd(email, kind, ref, title);
   }
+  /** open_file: the agent's human sees this room file beside the chat (Ao lado) in every tab of this room they have
+   * open; it follows newer versions of the same name, so a Claude can open its first draft and keep uploading. */
+  agentOpenFile(bookId: string, email: string, fileId: string) {
+    this.bind(bookId);
+    const f = this.sql.exec<{ id: string; name: string; type: string; size: number; author: string; ts: number }>(`SELECT id, name, type, size, author, ts FROM files WHERE id = ?`, fileId).toArray()[0];
+    if (!f) return { ok: false, error: "no such file in this room (file_id from upload_file / read_room files)" };
+    if (!/^(text\/html|application\/pdf|text\/markdown|text\/plain|image\/)/.test(f.type)) return { ok: false, error: `can't show ${f.type} beside the chat; html, pdf, markdown, text and images can` };
+    const tabs = this.sockets().filter((ws) => this.ctx.getTags(ws)[0] === email);
+    const s = JSON.stringify({ t: "openSide", file: f } satisfies RoomEvent);
+    for (const ws of tabs) ws.send(s);
+    return tabs.length
+      ? { ok: true, opened_in_tabs: tabs.length, note: "your human sees it beside the chat now; uploading a new version with the same name updates it there" }
+      : { ok: true, opened_in_tabs: 0, note: "your human doesn't have this room open right now: post the file (or link it) so they find it" };
+  }
   agentUnpin(bookId: string, id: string) {
     this.bind(bookId);
     return this.pinDel(id);

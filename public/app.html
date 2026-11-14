@@ -3364,6 +3364,8 @@ function onEvent(ev, id) {
     case "decisions": S.decisions = ev.decisions; renderDecisions(); return;
     case "conns": conns = null; if (document.querySelector('.doc[data-pane="apps"]') && !connApp) renderConns(); else if (!connApp) loadConns(); return;
     case "pins": S.pins = ev.pins; renderSide(); renderFiles(); renderApps(); return;
+    // Your Claude opened a file for you (MCP open_file): show it beside the chat; it follows newer versions.
+    case "openSide": if (!(S.files || []).some((f) => f.id === ev.file.id)) S.files = [ev.file, ...(S.files || [])]; openSide(ev.file.id, ev.file.name); return;
     case "error": toast(esc(ev.error || t("falhou"))); return;
     case "receipts": S.receipts = ev.receipts; renderReceipts(); return;
     case "older": {

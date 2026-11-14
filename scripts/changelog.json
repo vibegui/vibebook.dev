@@ -25,6 +25,21 @@
           "pt": "Card O que precisa de você aqui com duas tarefas",
           "en": "What needs you here card with two tasks"
         }
+      },
+      {
+        "title": {
+          "pt": "Seu Claude abre o que fez ao lado do chat",
+          "en": "Your Claude opens what it made beside the chat"
+        },
+        "text": {
+          "pt": "Peça uma página (um HTML a partir de uma reunião, um relatório, um PDF): assim que a primeira versão fica pronta, seu Claude abre ela ao lado do chat, só nas suas abas, e cada versão nova aparece ali sozinha enquanto vocês conversam.",
+          "en": "Ask for a page (an HTML from a meeting, a report, a PDF): as soon as the first version is ready, your Claude opens it beside the chat, only in your tabs, and each new version shows up there by itself while you talk."
+        },
+        "image": "changelog/2026-11-14-open-file.webp",
+        "alt": {
+          "pt": "Um HTML aberto ao lado do chat",
+          "en": "An HTML file open beside the chat"
+        }
       }
     ],
     "improvements": {
