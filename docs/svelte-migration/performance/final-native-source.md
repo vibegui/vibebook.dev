@@ -89,3 +89,11 @@ mobile room-strip Home link. Desktop vanilla now uses its actual global switcher
 Home link; mobile uses the already-open sidebar and both variants require visible
 links. Earlier warmup observations remain in that failed run's raw artifact;
 no measured seven-run cohort completed and no performance acceptance follows.
+
+Run 43562235412 completed the first desktop vanilla warmup's UI navigation and
+twenty lifecycle cycles, but strict unsupported-traffic validation failed at
+settled because Home requests `GET /api/me/logins`. The controlled server now
+serves that exact read-only endpoint using the existing `LoginsResult` schema,
+with an empty synthetic login history and disabled external providers for both
+variants. Unknown endpoints still invalidate samples. The failed warmup and its
+observations remain recorded; no measured cohort or budget acceptance completed.

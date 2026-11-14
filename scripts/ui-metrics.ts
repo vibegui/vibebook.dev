@@ -27,6 +27,7 @@ import {
   SandboxesResult,
   ConnectionsResult,
   PushKeyResult,
+  LoginsResult,
 } from "../shared/schemas";
 import { parseCommandEnvelope, record } from "../shared/validation";
 import type { RoomEvent } from "../shared/room";
@@ -256,6 +257,8 @@ const server = Bun.serve({
             ],
           }),
         );
+      if (request.method === "GET" && path === "/api/me/logins")
+        return json(LoginsResult.parse({ logins: [], providers: { google: false, github: false } }));
       if (path === "/api/agents")
         return json(AgentGrantsResult.parse({ agents: [], last_used: null }));
       if (/^\/api\/books\/[a-f0-9]+\/agents$/.test(path))
