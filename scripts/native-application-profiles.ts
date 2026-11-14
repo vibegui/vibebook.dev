@@ -470,7 +470,7 @@ export async function auditNativeApplicationProfiles(
             const account = MeResult.parse(await response.json());
             assert.equal(account.email, fixture.ownerEmail);
             evidence.accountVerified = true;
-            await page.goto(`${fixture.base}/?ui=svelte`, {
+            await page.goto(`${fixture.base}/app?ui=svelte`, {
               waitUntil: "domcontentloaded",
               timeout: 120_000,
             });
