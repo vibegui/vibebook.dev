@@ -32,6 +32,8 @@ The pinned manifest audit recomputed all-feature/all-script closure and checked 
 
 Pixel changes remain an explicit rejected-candidate verdict; a failed A/A or fallback/source/protocol control is an inconclusive failure. No production CSS, font files, aliases or budgets change. Italic and Mono, every actual product role, all user strings and actual integrated requested bytes remain unverified.
 
+The two TypeScript proof paths passed scoped Node Prettier write/check; no browser or compiler ran. The report explicitly labels `mapped` as the original mapped complement, `universe` as the whole-Unicode diagnostic control, and `unmapped` as the unsupported robot/max-codepoint request stage; applied CSS ranges are retained alongside demand samples.
+
 ## Decision after this proof
 
 If CSS partitioning changes RangeOriginal, reject the partition approach. If only RangeHoles changes, reject the holes candidate. If both match all bounded controls, derive a general Latin/PT core (whole linguistic categories and combining/punctuation/currency support, not a benchmark glyph whitelist), then repeat exact closure/table/shape/browser checks for normal and italic. Keep original Mono initially if its measured bytes permit. The current 251KB normal candidate plus original Mono alone is already too large to assume the existing total-font budget is solved. Further conservative layout closure/compression work and actual aggregate normal/italic/Mono requests must be measured; no budget waiver or activation follows from a normal-only pass.
