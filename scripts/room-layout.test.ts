@@ -422,6 +422,7 @@ test("reload adopts the inherited sheet entry once, rotates ownership and requir
   f.owner.dispose();
   let sheet: RoomSheet | null = null,
     navigation = 0;
+  const readSheet = (): RoomSheet | null => sheet;
   const restored = createRoomSheetHistory({
     browser: f.browser,
     current: () => true,
@@ -430,12 +431,12 @@ test("reload adopts the inherited sheet entry once, rotates ownership and requir
     },
     unconfirmed() {},
   });
-  expect(sheet).toBe("doc");
+  expect(readSheet()).toBe("doc");
   expect(f.entries).toHaveLength(2);
   expect(f.browser.state()).not.toEqual(inherited);
   restored.open("side");
   expect(f.entries).toHaveLength(2);
-  expect(sheet).toBe("side");
+  expect(readSheet()).toBe("side");
   restored.close();
   restored.deferNavigation(() => {
     navigation++;
@@ -447,11 +448,11 @@ test("reload adopts the inherited sheet entry once, rotates ownership and requir
   expect(restored.consumePop()).toBe(true);
   f.flush();
   expect(navigation).toBe(1);
-  expect(sheet).toBeNull();
+  expect(readSheet()).toBeNull();
   expect(f.browser.state()).toBeNull();
   f.forward();
   expect(restored.consumePop()).toBe(true);
-  expect(sheet).toBe("side");
+  expect(readSheet()).toBe("side");
   restored.dispose();
 });
 

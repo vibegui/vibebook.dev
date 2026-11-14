@@ -2236,7 +2236,7 @@ describe("native Svelte chat", () => {
     ).toBe("visto por 1");
     expect(target.querySelectorAll("[data-message-footer]")).toHaveLength(1);
   }, 30_000);
-  test("native quiet rows retain folding, status ownership and canonical native thread cards", () => {
+  test("native quiet rows retain folding, status ownership and canonical native thread cards", async () => {
     const reminder = {
       ...message(1, "⏰ **daily** report\n\nDetails"),
       tag: "reminder",
@@ -2294,6 +2294,7 @@ describe("native Svelte chat", () => {
     expect(target.querySelector("#m3 [data-rich-content]")?.textContent).toBe(
       "@person rich",
     );
+    await expectInteractiveReady(target);
     expect(target.querySelector("#m3 [data-native-card]") !== null).toBe(true);
     expect(target.querySelector("#m3 [data-native-choices]") !== null).toBe(
       true,

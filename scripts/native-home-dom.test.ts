@@ -11,6 +11,7 @@ import { createNewRoomSession } from "../svelte/features/home/session";
 import { createAccountSession } from "../svelte/features/account/session";
 import type { AccountApi } from "../svelte/features/account/api";
 import type { RoomTarget } from "../svelte/features/home/model";
+import type { InboxMention, InboxTask } from "../svelte/types";
 import { createPwaService } from "../svelte/features/pwa/service";
 import {
   deferred,
@@ -322,14 +323,14 @@ test("Inbox shows all three canonical sections, keeps retry explicit and rejects
         mentions,
         tasks,
         roomId: null,
-        vb: { t: (text) => text, ago: () => "now" },
+        vb: { t: (text: string) => text, ago: () => "now" },
         readError: true,
         current: () => current,
         onretry: () => {
           retries++;
         },
-        onmention: (value) => opened.push(value),
-        ontask: (value) => opened.push(value),
+        onmention: (value: InboxMention) => opened.push(value),
+        ontask: (value: InboxTask) => opened.push(value),
         onopen: () => {},
         onresolve: () => {},
         onclose: () => {},
