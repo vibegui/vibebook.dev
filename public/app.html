@@ -338,7 +338,8 @@
   .pinBtn.on { color: var(--accent); }
   @media (hover: none) { .pinBtn { opacity: .8; } }
   .thread { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: transparent; padding: 9px 10px; border-radius: 10px; }
-  .thread.sel { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
+  /* The open thread: tinted with the accent and a bar on the left, not only bold (Gui 14/11: "só tá bold, muito sutil"). */
+  .thread.sel { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); box-shadow: inset 3px 0 0 var(--accent), inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); font-weight: 600; }
   .thread .n { margin-left: auto; font-size: 12px; color: var(--mute); flex: none; font-variant-numeric: tabular-nums; }
   .sideInbox { cursor: pointer; color: var(--ink); } .sideInbox svg { width: 18px; height: 18px; flex: none; color: var(--mute); }
   .sideInbox .n { color: var(--wait-ink); background: var(--wait-bg); min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 999px; padding: 0 5px; }
@@ -624,6 +625,13 @@
   .replyBar span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .replyBar button { padding: 2px 8px; }
   .endMark { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; font-size: 13px; color: var(--mute); }
+  .needsYou { margin: 16px 0 8px; border: 1px solid color-mix(in oklch, var(--wait-ink) 35%, var(--line)); background: var(--wait-bg); border-radius: 14px; padding: 10px 12px; }
+  .needsYou .nyHead { display: flex; align-items: center; gap: 8px; } .needsYou .nyHead small { color: var(--mute); flex: 1; }
+  .needsYou ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+  .needsYou li { display: flex; align-items: center; gap: 6px; }
+  .needsYou .nyGo { flex: 1; min-width: 0; display: grid; gap: 1px; text-align: left; background: none; border: 0; padding: 6px 4px; border-radius: 8px; color: var(--ink); font: inherit; }
+  button.nyGo { cursor: pointer; } button.nyGo:hover { background: color-mix(in oklch, var(--ink) 6%, transparent); }
+  .needsYou .nyGo small { color: var(--mute); font-size: 12px; }
   .endMark::before, .endMark::after { content: ""; flex: 1; height: 1px; background: var(--line); }
   .endMark b { color: var(--ok-ink); font-weight: 600; }
   .prodStage { margin: 6px auto 10px; max-width: 520px; display: grid; gap: 2px; text-align: center; font-size: 13px; color: var(--mute); padding: 10px 14px; border: 1px dashed var(--line); border-radius: 12px; }
@@ -1823,6 +1831,13 @@ const EN = {
   "No ar": "Live",
   "Falta o agent verificar em prod.": "Agent hasn't verified it in prod yet.",
   "Agent fez": "Agent did it",
+  "O que precisa de você aqui": "What needs you here",
+  "só você vê": "only you see this",
+  "Dispensar": "Dismiss",
+  "Feito / não é comigo": "Done / not for me",
+  "seu Claude espera você": "your Claude is waiting on you",
+  "sua tarefa, fazendo": "your task, in progress",
+  "sua tarefa, a fazer": "your task, to do",
   "@vibe sugere": "@vibe suggests",
   "sugestão do @vibe, clique para ver": "suggested by @vibe, click to see",
   "Pedindo pra entrar": "Asking to join",
@@ -4405,6 +4420,7 @@ function renderAskBar() {
 }
 function renderSide() {
   syncInbox();
+  syncEnd(); // the "O que precisa de você aqui" card follows the waits (/api/me) and the tasks, like the sidebar
   renderAskBar();
   const el = document.getElementById("side"); if (!el || !S) return;
   renderMyClaude(); // the banner over the chat follows epics, members and the open thread too
@@ -4422,12 +4438,13 @@ function renderSide() {
       <button type="button" class="thread sideInbox" id="sideInbox" title="${t("Caixa de entrada: o que espera por você")}">${icon("inbox")}<span class="rt">${t("Caixa de entrada")}</span>${myWaits.length ? `<span class="n${clW(myWaits)}">${myWaits.length}</span>` : ""}</button>
       ${(() => {
         const last = (e) => S.messages.reduce((m, x) => (x.thread === e.id && x.id > m ? x.id : m), 0);
-        const open = S.epics.filter((e) => !e.archived);
+        // An archived epic you opened shows in the tree, in its place (dimmed), and leaves when you go elsewhere.
+        const open = S.epics.filter((e) => !e.archived || e.id === thread);
         const arch = S.epics.filter((e) => e.archived).map((e, i) => ({ e, k: last(e), i })).sort((a, b) => b.k - a.k || b.i - a.i).map((x) => x.e);
         const showArch = archOpen && arch.length;
         // Open and archived epics are two tabs right under the room's row, so switching never moves them; a long
         // archived list scrolls inside (.epList.arch).
-        return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
+        return `${arch.length ? `<div class="epTabs" role="tablist"><button type="button" role="tab" data-arch="" class="${showArch ? "" : "on"}">${t("Épicos")} <b>${open.filter((e) => !e.archived).length}</b></button><button type="button" role="tab" data-arch="1" class="${showArch ? "on" : ""}">${t("Arquivados")} <b>${arch.length}</b></button></div>` : ""}
       <div class="epList${showArch ? " arch" : ""}">${showArch ? epicTree(arch) : `${epicTree(open)}
       <form id="newEpic" class="newRoom"><input placeholder="${t("Novo épico: escreva o título…")}" aria-label="${t("Novo épico")}" enterkeyhint="done" /><button class="ri" aria-label="${t("Criar épico")}">${icon("plus")}</button></form>${S.suggestions.map((s, i) => `
       <button class="thread pre ${thread === `pre:${i}` ? "sel" : ""}" data-thread="pre:${i}" title="${esc(s.title)} · ${t("sugestão do @vibe, clique para ver")}"><span class="ri">${esc(initials(s.title))}</span><span class="rt">${esc(s.title)}</span><span class="n">${s.tasks.length || ""}</span></button>`).join("")}`}</div>`;
@@ -5044,7 +5061,39 @@ function syncEnd() {
     : `<div class="prodStage"><b>🚀 ${t("No ar")}</b><span>${t("Falta o agent verificar em prod.")}</span></div>`;
   if (e?.archived) el.insertAdjacentHTML("beforeend", `<div class="endMark"><b>✓ ${t("Agent fez")}</b><span>${t("Escreva aqui pra continuar: ele reabre.")}</span></div>`);
   if (stage) el.insertAdjacentHTML("beforeend", stage);
+  el.querySelector(".needsYou")?.remove();
+  const nd = needsYou();
+  if (nd) el.insertAdjacentHTML("beforeend", nd);
 }
+// "O que precisa de você aqui" (Gui 14/11): at the end of a thread, only for you, what in it waits on you: asks and
+// your Claude's ⏸/❓ (D1 waits), your tasks here that aren't done. ✓ resolves an ask (like the home's ✓) or hides an
+// item; Dispensar hides the card until something new shows up. Kept in this browser.
+const needKey = () => `vb.needs.${S.id}.${thread}`;
+const needGot = () => { try { return new Set(JSON.parse(localStorage.getItem(needKey()) || "[]")); } catch { return new Set(); } };
+const needPut = (keys) => { try { localStorage.setItem(needKey(), JSON.stringify([...keys].slice(-200))); } catch {} };
+function needItems() {
+  if (!S || isPre()) return [];
+  const ws = waitsIn(thread), wt = new Set(ws.filter((w) => w.ref.startsWith("t")).map((w) => w.ref.slice(1)));
+  const tasks = thread === "main" ? S.roomTasks || [] : S.epics.find((e) => e.id === thread)?.tasks || [];
+  return [
+    ...ws.map((w) => ({ key: `w:${w.ref}`, w, msg: /^[mab]\d+$/.test(w.ref) ? Number(w.ref.slice(1)) : 0, text: w.text, sub: w.ref.startsWith("t") ? t("sua tarefa esperando OK") : w.ref.startsWith("m") ? t("{who} pediu", { who: esc(name(w.author)) }) : t("seu Claude espera você") })),
+    ...tasks.filter((x) => x.owner === S.me && !x.done && !wt.has(x.id)).map((x) => ({ key: `t:${x.id}:${x.status}`, text: x.title, sub: x.status === "doing" ? t("sua tarefa, fazendo") : x.status === "review" ? t("sua tarefa esperando OK") : t("sua tarefa, a fazer") })),
+  ];
+}
+function needsYou() {
+  const got = needGot(), items = needItems().filter((x) => !got.has(x.key));
+  if (!items.length) return "";
+  return `<div class="needsYou" role="region" aria-label="${t("O que precisa de você aqui")}"><div class="nyHead"><b>${t("O que precisa de você aqui")}</b><small>${t("só você vê")}</small><button type="button" class="ghost" data-ny-all>${t("Dispensar")}</button></div><ul>${items.map((x) => `<li>${x.msg ? `<button type="button" class="nyGo" data-goto="${x.msg}">` : `<span class="nyGo">`}<span>${esc(x.text.length > 200 ? `${x.text.slice(0, 198)}…` : x.text)}</span><small>${x.sub}</small>${x.msg ? "</button>" : "</span>"}<button type="button" class="ghost" data-ny="${esc(x.key)}" title="${t("Feito / não é comigo")}" aria-label="${t("Feito / não é comigo")}">${icon("check")}</button></li>`).join("")}</ul></div>`;
+}
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest?.(".needsYou [data-ny], .needsYou [data-ny-all]"); if (!b) return;
+  const got = needGot(), items = needItems();
+  for (const x of b.dataset.nyAll !== undefined ? items : items.filter((x) => x.key === b.dataset.ny)) {
+    got.add(x.key);
+    if (x.w?.ref.startsWith("m")) { myWaits = myWaits.filter((y) => y !== x.w); api("/api/waits/resolve", { book_id: x.w.book_id, ref: x.w.ref }).catch(() => {}); }
+  }
+  needPut(got); syncEnd(); renderSide();
+});
 // Replies: ↩ (hover) or a swipe right (touch) quotes a message above the composer; the sent message carries
 // reply_to and shows that quote, which scrolls to the original and flashes it.
 let replyTo = null;
@@ -5104,7 +5153,7 @@ document.addEventListener("click", (ev) => {
   if (cl) return copyLink(Number(cl.dataset.copylink));
   const ml = ev.target.closest("a.mlink[data-msg]");
   if (ml) { ev.preventDefault(); return goToMsg(Number(ml.dataset.msg)); }
-  const q = ev.target.closest(".quote[data-goto]"); if (!q) return;
+  const q = ev.target.closest(".quote[data-goto], .nyGo[data-goto]"); if (!q) return;
   goToMsg(Number(q.dataset.goto));
 });
 // A message referenced by a reply quote or a [link](#m123): switch to its thread if needed, then scroll to it and flash.

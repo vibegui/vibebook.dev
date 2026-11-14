@@ -182,7 +182,7 @@ export class Book extends DurableObject<Env> {
       .map((e) => {
         const f = flags[e.id] ?? {};
         // Deploy stage after "Claude fez": { stage: "deployed" | "verified", at, note } set by agents (update_epic prod).
-        return { ...e, parent: parent.get(e.id) ?? null, files: files.get(e.id) ?? [], prod: storedProd(e.prod, (kind) => console.warn("book stored projection", kind)), archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map((t) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
+        return { ...e, parent: parent.get(e.id) ?? null, files: files.get(e.id) ?? [], prod: storedProd(e.prod, (kind) => console.warn("book stored projection", kind)), archived: e.archived === 1, kept: e.archived === -1, flags: f[e.id], tasks: tasks.filter((t) => t.epic_id === e.id).map(({ epic_id: _e, ...t }) => ({ ...t, flags: t.status === "done" ? undefined : f[t.id] })) };
       });
   }
   // Every epic/task change: tell the sockets, and keep the epic titles in D1 so the home router can pick a
@@ -294,8 +294,11 @@ export class Book extends DurableObject<Env> {
     const origins = this.messageRows(this.sql
       .exec(
         `SELECT * FROM messages WHERE id IN (SELECT from_msg FROM epics WHERE from_msg IS NOT NULL AND (COALESCE(archived, 0) <= 0 OR id = ?))
-           OR (author = ? AND ts > ?) OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
-        open, me, Date.now() - 48 * 3600e3,
+           OR (author = ? AND kind IS NULL AND ts > ? AND NOT EXISTS (SELECT 1 FROM acks a WHERE a.msg_id = messages.id AND a.email = ? AND a.status IN ('done', 'idle', 'dismissed')))
+           OR id IN (SELECT msg_id FROM acks WHERE status IN ('doing', 'blocked'))`,
+        // Your own messages only while a Claude of yours hasn't closed them: the same rule as the app's myQueue (Fila do
+        // seu Claude). Every own message of 48h was most of origins' 162 KB in a 561 KB room open (14/11).
+        open, me, Date.now() - 48 * 3600e3, me,
       )
       .toArray().map((row) => ({ ...row, card: null })))
       .filter((r) => !have.has(r.id))

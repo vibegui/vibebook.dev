@@ -9,6 +9,16 @@ sidebar trigger, loading/error/retry and navigation/ownership verification are
 still pending. Native legacy host/chunks remain deleted; preview assets must be
 regenerated from the current native source. Both changelog entries are retained.
 
+Further main reconciliation: `b6090b3cdc1a21b12feea7b3910254dd70cc4ae7`
+adds a personal end-of-thread attention card (waits and open tasks, per-item
+acknowledge/hide, dismiss until new content), clearer selected-epic styling and
+the currently opened archived epic in its normal tree location. Native parity
+for these additions remains pending. `56aa3b5` reduces room origins to the
+person's still-open Claude queue and omits repeated epic IDs from nested tasks;
+the backend changes are preserved together with existing runtime stored-data
+validation. Final source, protocol and actual browser checks must confirm the
+combined payload remains compatible with both frontends.
+
 | Reference                                          | Change                                                                                                                                                                                          | Migration action                                                                                                                                                                  | Status                                                                                                                                      |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fbbd82b` / `d3e1473`                              | PWA install/banner, push notifications, service worker, CLI warning behavior                                                                                                                    | Keep default assets/behavior; port owned push/install UI into native Svelte and include F12/F13/F52 in final tests                                                                | Baseline preserved; Svelte port pending                                                                                                     |
