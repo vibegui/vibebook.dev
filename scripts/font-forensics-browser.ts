@@ -39,7 +39,27 @@ assert.equal(
   sha(rejected),
   "785911cf3a4486d7b0e2573bd5093500f9d9a6c3cfcb021e65d40e4fc7bdeb1d",
 );
-const aliases = ["OriginalA", "OriginalB", "Roundtrip", "Rejected"] as const;
+const retained = await readFile(
+  resolve(fixture, "retained-inter-a189496942.woff2"),
+);
+assert.equal(
+  sha(retained),
+  "a1894969422b49bcd0e473ad2a4686b3537aedd38bf7db36a9d20747f7887903",
+);
+const aliases = [
+  "OriginalA",
+  "OriginalB",
+  "Roundtrip",
+  "Rejected",
+  "Retained",
+] as const;
+const aliasFiles = {
+  OriginalA: "original",
+  OriginalB: "original",
+  Roundtrip: "roundtrip",
+  Rejected: "rejected",
+  Retained: "retained",
+} as const;
 const text =
   "AVATAR To Wa office affine ffi fl fi 0123456789 € £ $ — … “quoted” → ✓";
 const extra =
@@ -73,6 +93,7 @@ const assets = new Map<string, Buffer>([
   ["/original.woff2", original],
   ["/roundtrip.woff2", roundtrip],
   ["/rejected.woff2", rejected],
+  ["/retained.woff2", retained],
 ]);
 const server = Bun.serve({
   hostname: "127.0.0.1",
@@ -86,7 +107,7 @@ const server = Bun.serve({
       });
     if (path !== "/") return new Response("Not found", { status: 404 });
     return new Response(
-      `<!doctype html><meta charset="utf-8"><style>${aliases.map((name) => `@font-face{font-family:${name};src:url(/${name === "Rejected" ? "rejected" : name === "Roundtrip" ? "roundtrip" : "original"}.woff2);font-weight:100 900;font-style:normal;font-display:block}`).join("")}@font-face{font-family:ForcedMissing;src:url(/original.woff2);unicode-range:U+20;font-weight:100 900}body{margin:0;background:white}#ForcedMissing{font-family:ForcedMissing,monospace}.sample{width:1200px;min-height:64px;white-space:pre;font-size:32px;line-height:2;font-kerning:normal;font-feature-settings:normal;color:black;background:white}</style>${aliases.map((name) => `<div id="${name}" class="sample"></div>`).join("")}<div id="ForcedMissing" class="sample">A</div>`,
+      `<!doctype html><meta charset="utf-8"><style>${aliases.map((name) => `@font-face{font-family:${name};src:url(/${aliasFiles[name]}.woff2);font-weight:100 900;font-style:normal;font-display:block}`).join("")}@font-face{font-family:ForcedMissing;src:url(/original.woff2);unicode-range:U+20;font-weight:100 900}body{margin:0;background:white}#ForcedMissing{font-family:ForcedMissing,monospace}.sample{width:1200px;min-height:64px;white-space:pre;font-size:32px;line-height:2;font-kerning:normal;font-feature-settings:normal;color:black;background:white}</style>${aliases.map((name) => `<div id="${name}" class="sample"></div>`).join("")}<div id="ForcedMissing" class="sample">A</div>`,
       {
         headers: {
           "content-type": "text/html;charset=utf-8",
@@ -118,6 +139,7 @@ const report: {
   originalSHA256: sha(original),
   roundtripSHA256: sha(roundtrip),
   rejectedSHA256: sha(rejected),
+  retainedSHA256: sha(retained),
   samples,
   observations: [],
 };
@@ -293,13 +315,15 @@ try {
       for (const r of result) {
         const { originalPNG, candidatePNG, ...summary } = r;
         assert(
-          r.alias === "Rejected" || r.pixelsChanged === 0,
+          r.alias === "Rejected" ||
+            r.alias === "Retained" ||
+            r.pixelsChanged === 0,
           "A/A or byte-identical roundtrip raster changed",
         );
         let artifacts: string[] = [];
         if (r.pixelsChanged && saved < 16 && originalPNG && candidatePNG) {
           const stem = `canvas-${saved++}-${weight}`;
-          artifacts = [`${stem}-original.png`, `${stem}-rejected.png`];
+          artifacts = [`${stem}-original.png`, `${stem}-${r.alias}.png`];
           await writeFile(
             resolve(output, artifacts[0]),
             Buffer.from(originalPNG.split(",")[1], "base64"),
@@ -388,6 +412,7 @@ try {
         );
         assert(
           shot.alias === "Rejected" ||
+            shot.alias === "Retained" ||
             (difference.dimensionsEqual && difference.pixelsChanged === 0),
           "DOM A/A or roundtrip changed",
         );
@@ -409,6 +434,11 @@ try {
   report.explicitOpticalDOM = dom;
   await Promise.all(reads);
   assert.deepEqual(errors, []);
+  for (const [path, bytes] of assets)
+    assert(
+      requests.some((r) => r.path === path && r.sha256 === sha(bytes)),
+      `Actual font request missing: ${path}`,
+    );
   report.resources = requests;
   report.pageErrors = errors;
   report.verdict =
@@ -416,6 +446,11 @@ try {
     dom.some((x) => x.alias === "Rejected" && x.pixelsChanged !== 0)
       ? "rejected-candidate-differences-localized"
       : "not-reproduced-in-this-browser";
+  report.retainedVerdict =
+    observations.some((x) => x.alias === "Retained" && x.pixelsChanged > 0) ||
+    dom.some((x) => x.alias === "Retained" && x.pixelsChanged !== 0)
+      ? "retained-candidate-differences-localized"
+      : "zero-observed-differences-in-bounded-fixtures";
   report.acceptance =
     "NONE: neither verdict activates a subset or establishes M4/M7 parity; raw evidence requires review.";
   await context.close();
