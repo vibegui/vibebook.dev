@@ -95,6 +95,9 @@ const SCHEMA = [
   // The hub's router (src/router.ts): one decision per message and person, for the A/B and its room app.
   `CREATE TABLE IF NOT EXISTS router_log (book_id TEXT, msg_id INTEGER, email TEXT, arm TEXT, decision TEXT, why TEXT, source TEXT, reply_id INTEGER, ms INTEGER, cost REAL, text TEXT, ts INTEGER, PRIMARY KEY (book_id, msg_id, email))`,
   `CREATE INDEX IF NOT EXISTS router_log_email ON router_log (email, ts)`,
+  // The router's bench (scripts/router-bench.ts): messages the router got wrong for someone, with what it should have
+  // done, written by their agent when they say so (MCP router_feedback). Every change to the router runs against them.
+  `CREATE TABLE IF NOT EXISTS router_cases (book_id TEXT, msg_id INTEGER, email TEXT, own INTEGER, name TEXT, sender TEXT, text TEXT, topic TEXT, recent TEXT, memory TEXT, decided TEXT, expected TEXT, note TEXT, ts INTEGER, PRIMARY KEY (book_id, msg_id, email))`,
   `CREATE TABLE IF NOT EXISTS agent_reads (agent TEXT, book_id TEXT, email TEXT, last_id INTEGER, delivered_id INTEGER, PRIMARY KEY (agent, book_id))`,
   `CREATE INDEX IF NOT EXISTS agent_reads_email ON agent_reads (email, book_id)`,
   `CREATE TABLE IF NOT EXISTS notify_agents (key TEXT PRIMARY KEY, email TEXT, agent TEXT, created_at INTEGER)`,

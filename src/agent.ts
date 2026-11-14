@@ -74,6 +74,15 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, days: { type: "number" } } },
   },
   {
+    name: "router_feedback",
+    description: "Teach your human's router (it decides which messages wake you): when your human says a message woke you but wasn't for you (\"não era contigo\", \"não tô falando com você\"), or that you should have answered one you never got, record it with what should have happened. It becomes a case in the router's bench, which every change to the router must pass. Only when your human said so.",
+    inputSchema: {
+      type: "object",
+      properties: { room_id: { type: "string" }, message_id: { type: "number" }, expected: { type: "string", enum: ["wake", "ignore"], description: "wake = it should have reached you; ignore = it shouldn't have" }, note: { type: "string", description: "your human's words, short" } },
+      required: ["room_id", "message_id", "expected"],
+    },
+  },
+  {
     name: "resolve_pending",
     description: "Take one item off your human's pending list (they answered it elsewhere, or said it's not theirs). ref comes from pending. Tasks in review leave the list when their status changes, not here.",
     inputSchema: { type: "object", properties: { room_id: { type: "string" }, ref: { type: "string" } }, required: ["room_id", "ref"] },
@@ -614,6 +623,20 @@ async function call(name: string, a: Args, env: Env, ctx: ExecutionContext, me: 
         ctx.waitUntil(track(env, a.on ? "router_on" : "router_off", { user: me.email }));
       }
       return { on: await routerOn(db, me.email), note: "on: your listener wakes only for messages the router decides to wake for; it answers simple questions itself (posted as your Claude, with the source) and leaves the rest acked as idle" };
+    }
+    case "router_feedback": {
+      const id = await room(), msgId = Number(a.message_id), expected = str(a.expected);
+      if (expected !== "wake" && expected !== "ignore") throw new Error("expected is wake or ignore");
+      const input = await bookStub(env, id).routerInput(id, msgId - 1, me.email);
+      const m = input.messages.find((x) => x.id === msgId);
+      if (!m) throw new Error("no such message in this room");
+      const decided = (await db.prepare(`SELECT decision FROM router_log WHERE book_id = ? AND msg_id = ? AND email = ?`).bind(id, msgId, me.email).first<{ decision: string }>())?.decision ?? null;
+      await db
+        .prepare(`INSERT OR REPLACE INTO router_cases (book_id, msg_id, email, own, name, sender, text, topic, recent, memory, decided, expected, note, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(id, msgId, me.email, m.author === me.email ? 1 : 0, input.name, m.from, m.text, m.topic, m.recent, input.memory, decided, expected, str(a.note).slice(0, 300), Date.now())
+        .run();
+      ctx.waitUntil(track(env, "router_feedback", { user: me.email, dims: { book: id, decided: decided ?? undefined, expected } }));
+      return { ok: true, decided, expected, note: decided === expected ? "the router already decides this way now; kept as a case anyway" : "recorded: scripts/router-bench.ts runs it against every change to the router" };
     }
     case "router_stats": {
       const id = a.room_id ? await room() : undefined;

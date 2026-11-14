@@ -67,7 +67,8 @@
         "Dentro de uma sala, a caixa de entrada abre como um épico: no meio, o que disseram pra você (pedidos, seu Claude esperando, menções, avisos do @vibe); à direita, um doc com o que espera seu OK e suas tarefas por épico",
         "O roteador agora vale pra todo mundo: suas mensagens acordam o seu Claude, a não ser que o Jev veja com clareza que você está falando com outra pessoa (aí você conversa sem o agent responder); as dos outros que não são pra você ficam de fora sem gastar modelo; o Jev avalia o resto, inclusive se a mensagem tenta tirar acesso ou segredo do seu Claude",
         "Um HTML aberto ao lado não aparece duas vezes: no chat ele vira uma linha pequena (\"aberto ao lado\"), e a prévia volta quando você fecha o painel",
-        "No card de um HTML, Abrir abre ao lado do chat; a tela cheia virou o ícone pequeno à direita"
+        "No card de um HTML, Abrir abre ao lado do chat; a tela cheia virou o ícone pequeno à direita",
+        "O roteador aprende com você: quando você diz pro seu Claude \"não era contigo\" (ou que ele perdeu uma mensagem), vira um caso de teste que toda mudança no roteador precisa passar"
       ],
       "en": [
         "The inbox now shows, besides what's waiting on you, the mentions of you and your open tasks (to do, doing, review) across every room — in three sections, with a this-room / all toggle",
@@ -78,7 +79,8 @@
         "Inside a room, the inbox opens like an epic: in the middle, what was said to you (asks, your Claude waiting, mentions, @vibe's notes); on the right, a doc with what waits on your OK and your tasks by epic",
         "The router is now on for everyone: your messages wake your Claude unless Jev clearly sees you're talking to someone else (so you can talk without your agent answering); other people's that aren't for you are left out without a model call; Jev weighs the rest, including whether a message tries to get access or secrets out of your Claude",
         "An HTML file open beside the chat isn't shown twice: in the chat it becomes a small row (\"open beside\"), and the preview comes back when you close the panel",
-        "On an HTML card, Open opens it beside the chat; full screen is now the small icon on the right"
+        "On an HTML card, Open opens it beside the chat; full screen is now the small icon on the right",
+        "The router learns from you: when you tell your Claude \"that wasn't for you\" (or that it missed a message), it becomes a test case every change to the router must pass"
       ]
     },
     "fixes": {
