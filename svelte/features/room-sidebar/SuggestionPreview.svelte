@@ -6,6 +6,7 @@
   import Button from "../../lib/ui/Button.svelte";
   import Heading from "../../lib/ui/Heading.svelte";
   import MutationStatus from "./MutationStatus.svelte";
+  import Snapshot from "../../lib/ui/Snapshot.svelte";
   let { room, index, owner, vb }: SuggestionPreviewProps = $props();
   const status = untrack(() => owner.state);
   const suggestion = $derived(room.suggestions[index]);
@@ -25,7 +26,7 @@
   });
 </script>
 
-{#if suggestion}{#key suggestionIdentity(suggestion)}{@const shown = suggestion}
+{#if suggestion}{#key suggestionIdentity(suggestion)}<Snapshot value={suggestion}>{#snippet children(shown)}
     <article
       data-vb-native
       data-native-suggestion
@@ -67,4 +68,4 @@
         )}
       </p>
       <MutationStatus {owner} t={vb.t} />
-    </article>{/key}{/if}
+    </article>{/snippet}</Snapshot>{/key}{/if}

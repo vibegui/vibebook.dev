@@ -109,6 +109,7 @@ plugin({
 });
 const { flushSync, tick, mount, unmount, createRawSnippet } = await import("svelte");
 const { default: AccountPanel } = await import("../svelte/features/account/AccountPanel.svelte");
+const { default: SuggestionPreviewHarness } = await import("./suggestion-preview-harness.svelte");
 const { mountView, dismissDialogs } = await import("../svelte/main");
 const { default: People } = await import("../svelte/People.svelte");
 const { default: PeopleView } = await import("../svelte/View.svelte");
@@ -4568,6 +4569,24 @@ describe("native room sidebar header and suggestion ownership", () => {
     await tick();
     expect(commands).toHaveLength(1);
   }, 30_000);
+  test("connected outgoing suggestion controls cannot accept an unseen replacement before DOM flush", async () => {
+    const room: Room = { ...fixture(), suggestions: [{ title: "Visible A", why: "A", tasks: [] }] };
+    const owner = createRoomMutations(room.me, room.id), commands: RoomCommand[] = [];
+    const request = async (command: RoomCommand): Promise<CommandOutcome> => { commands.push(command); return { ok: false, error: "controlled refusal" }; };
+    owner.sync(room, request); peopleCleanups.push(() => owner.dispose());
+    const values = writable<import("../svelte/features/room-sidebar/types").SuggestionPreviewProps>({ room, index: 0, owner, vb: { t: vb.t, name: vb.name, ago: vb.ago, hhmm: () => "09:00", waiting: () => false } });
+    const target = document.createElement("div"); document.body.append(target);
+    const component = flushSync(() => mount(SuggestionPreviewHarness, { target, props: { values } }));
+    active.push({ destroy: () => flushSync(() => { void unmount(component); }) });
+    const accept = () => [...target.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.includes("Pedir pro meu agent"))!;
+    const old = accept(); expect(old !== undefined).toBe(true);
+    const next: Room = { ...room, suggestions: [{ title: "Unseen B", why: "B", tasks: [] }] };
+    owner.sync(next, request); values.update(props => ({ ...props, room: next }));
+    expect(old.isConnected).toBe(true); old.click(); expect(commands).toEqual([]);
+    flushSync(); await tick();
+    accept().click(); await tick();
+    expect(commands).toEqual([{ t: "suggestion", i: 0, accept: true, expected: next.suggestions[0] }]);
+  });
 });
 
 describe("native collapsed sidebar and typed presence", () => {

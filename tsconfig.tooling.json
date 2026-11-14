@@ -89,6 +89,7 @@
     "scripts/application-services.test.ts",
     "scripts/application-shell-fixtures.ts",
     "scripts/application-shell-harness.svelte",
+    "scripts/suggestion-preview-harness.svelte",
     "scripts/application-inbox.test.ts",
     "svelte/features/application/browser.ts",
     "scripts/native-documents.test.ts",
