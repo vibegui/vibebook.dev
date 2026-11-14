@@ -2,7 +2,10 @@ import { get } from "svelte/store";
 import { createApplicationServices } from "../svelte/features/application/services";
 import { createApplicationCopy } from "../svelte/features/application/copy";
 import { createDeviceLock } from "../svelte/features/account/device";
-import { createPwaService, type PwaService } from "../svelte/features/pwa/service";
+import {
+  createPwaService,
+  type PwaService,
+} from "../svelte/features/pwa/service";
 import type { BrowserApplicationServices } from "../svelte/features/application/browser";
 import type {
   ApplicationShellEffects,
@@ -13,7 +16,10 @@ import type { HomeApi } from "../svelte/features/home/api";
 import type { RoomConnectionOptions } from "../svelte/roomConnection";
 import type { RoomCommand } from "../shared/commands";
 import { homeApi, me, manualClock } from "./native-home-fixtures";
-export function shellFixture(overrides: Partial<HomeApi> = {}, options: { pwa?: () => PwaService } = {}) {
+export function shellFixture(
+  overrides: Partial<HomeApi> = {},
+  options: { pwa?: () => PwaService } = {},
+) {
   const timer = manualClock();
   let href = "https://vibebook.test/app?ui=svelte",
     canonical = me(),
