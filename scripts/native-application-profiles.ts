@@ -339,6 +339,28 @@ async function focusWithin(page: Page, dialog: Locator) {
       .toBe(true);
   }
 }
+async function keyboardHomeInbox(
+  page: Page,
+  profile: NativeApplicationProfile,
+  evidence: NativeApplicationProfileEvidence,
+) {
+  const inbox = page.locator("[data-native-inbox-toggle]");
+  await inbox.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", {
+    name: createApplicationCopy(profile.lang)("Caixa de entrada"),
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await focusWithin(page, dialog);
+  await axe(page, "Home Inbox dialog open", evidence);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(inbox).toBeFocused();
+  evidence.keyboard.push(
+    "Home Inbox retains modal focus containment, Escape dismissal and exact opening-trigger restoration",
+  );
+}
 async function keyboardOverlays(
   fixture: NativeApplicationAuditFixture,
   profile: NativeApplicationProfile,
@@ -424,20 +446,39 @@ async function keyboardOverlays(
     );
   }
   const inbox = page.locator("[data-native-inbox-toggle]");
+  const composer = page.locator("[data-native-composer] textarea");
+  const originalDraft = await composer.inputValue();
+  const inboxDraft = "Inbox profile draft";
+  await composer.fill(inboxDraft);
+  const roomUrl = page.url();
   await inbox.focus();
   await page.keyboard.press("Enter");
-  const inboxDialog = page.getByRole("dialog", {
-    name: t("Caixa de entrada"),
-    exact: true,
-  });
-  await expect(inboxDialog).toBeVisible();
-  await focusWithin(page, inboxDialog);
-  await axe(page, "global Inbox open", evidence);
-  await page.keyboard.press("Escape");
-  await expect(inboxDialog).toHaveCount(0);
+  const roomInbox = page.locator("[data-native-room-inbox]");
+  await expect(roomInbox).toBeVisible();
+  await expect(
+    page.getByRole("dialog", {
+      name: t("Caixa de entrada"),
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(composer).toBeHidden();
+  assert.equal(
+    page.url(),
+    roomUrl,
+    "In-room Inbox does not change the thread URL",
+  );
+  await expect(roomInbox.locator("[data-room-inbox-chat]")).toBeVisible();
+  await expect(roomInbox.locator("[data-room-inbox-doc]")).toBeVisible();
+  await axe(page, "in-place room Inbox open", evidence);
+  await roomInbox.locator("[data-native-room-inbox-close]").focus();
+  await page.keyboard.press("Enter");
+  await expect(roomInbox).toHaveCount(0);
+  await expect(composer).toBeVisible();
+  await expect(composer).toHaveValue(inboxDraft);
   await expect(inbox).toBeFocused();
+  await composer.fill(originalDraft);
   evidence.keyboard.push(
-    "keyboard Inbox open; focus containment; Escape closes; exact Inbox trigger restored",
+    "Room Inbox opens in place with chat/doc regions, unchanged URL and hidden composer; keyboard close restores the draft and opening trigger",
   );
 }
 
@@ -558,6 +599,7 @@ export async function auditNativeApplicationProfiles(
               ),
             });
             await axe(page, "Home", evidence);
+            await keyboardHomeInbox(page, profile, evidence);
             await page.screenshot({
               path: `${fixture.output}/${key}-home.png`,
             });

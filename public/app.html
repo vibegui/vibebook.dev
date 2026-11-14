@@ -3127,11 +3127,12 @@ function inboxView(d, goTo, redraw) {
   const byEpic = new Map();
   for (const x of tasks) { const k = `${x.book_id}/${x.epic_id}`; if (!byEpic.has(k)) byEpic.set(k, { x, list: [] }); byEpic.get(k).list.push(x); }
   const stLbl = { todo: t("a fazer"), doing: t("fazendo"), review: t("revisar") };
-  d.innerHTML = `<div class="ibChat"><div class="chathead"><h2>${icon("inbox")} ${t("Caixa de entrada")}</h2><div class="ibTabs"><button type="button" data-iball="" class="${inboxAll ? "" : "on"}">${t("Esta sala")}</button><button type="button" data-iball="1" class="${inboxAll ? "on" : ""}">${t("Todas")}</button></div></div>
+  d.innerHTML = `<div class="ibChat"><div class="chathead"><h2>${icon("inbox")} ${t("Caixa de entrada")}</h2><div class="ibTabs"><button type="button" data-iball="" class="${inboxAll ? "" : "on"}">${t("Esta sala")}</button><button type="button" data-iball="1" class="${inboxAll ? "on" : ""}">${t("Todas")}</button></div><button type="button" class="ghost" data-ibclose aria-label="${t("Fechar")}">${icon("x", 18)}</button></div>
     <div class="ibMsgs">${msgs || `<div class="empty">${inboxAll ? t("Nada esperando você. ✓") : t("Nada esperando você nesta sala. ✓")}</div>`}</div></div>
     <aside class="ibDoc"><h1>${t("O que é seu")}</h1><p>${t("Tarefas suas e o que espera seu OK. Clique pra abrir.")}</p>
     ${oks.length ? `<h3>${t("Esperando seu OK")}</h3><ul>${oks.map((w) => `<li><span class="st review">${t("revisar")}</span><button type="button" class="ibTask" data-ibgo="${esc(w.book_id)}|${esc(w.thread)}">${esc(w.text)}</button></li>`).join("")}</ul>` : ""}
     <h3>${t("Suas tarefas")}</h3>${byEpic.size ? [...byEpic.values()].map(({ x, list }) => `<h4><a href="#" data-ibgo="${esc(x.book_id)}|${esc(x.epic_id)}">${esc(x.epic || t("sala principal"))}</a>${inboxAll ? ` <small>· ${esc(x.room)}</small>` : ""}</h4><ul>${list.map((k) => `<li><span class="st ${esc(k.status)}">${stLbl[k.status] || esc(k.status)}</span><button type="button" class="ibTask" data-ibgo="${esc(k.book_id)}|${esc(k.epic_id)}">${esc(k.title)}</button>${k.due ? `<small class="muted">${esc(k.due)}</small>` : ""}</li>`).join("")}</ul>`).join("") : `<p class="muted">${t("Nenhuma tarefa aberta sua.")}</p>`}</aside>`;
+  d.querySelector("[data-ibclose]").onclick = () => d.close();
   d.querySelectorAll("[data-iball]").forEach((b) => (b.onclick = () => { inboxAll = !!b.dataset.iball; redraw(); }));
   d.querySelectorAll("[data-ib]").forEach((el) => {
     const x = items[Number(el.dataset.ib)];

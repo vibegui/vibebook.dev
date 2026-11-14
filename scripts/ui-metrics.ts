@@ -468,6 +468,7 @@ const results: { [key: string]: unknown } = {
     "Entry readiness requires the complete canonical synthetic Markdown preview on desktop before fonts and two frames. Mobile must keep that document hidden. Older runs only asserted chat readiness; their timing endpoints are not interchangeable with this stronger contract. Their captured resource bytes remain historical evidence.",
     "History/update/compose/switch/inbox intervals end after automation observes the asserted DOM outcome plus two animation frames; they include Playwright polling/protocol overhead, not pure inbound-WebSocket/render latency. Start is browser arm time or the captured real click/input. Two frames are paint opportunities, not compositor presentation proof.",
     "Inbox readiness now includes its schema-validated HTTP fixture and every current-room task title; prior heading-only Inbox intervals are not interchangeable. The seeded rooms, main acceptance endpoints and budgets are unchanged.",
+    "Current room Inbox readiness targets the in-place chat/document section in both variants; Home retains its separate dialog. The measured Inbox interval still requires every canonical current-room task and HTTP data; afterward the real close control exits the section in both variants.",
     "CDP task/script/layout counters complement latency; frame timing is headless RAF, not a user's display FPS.",
     "Small-sample p95 uses nearest rank and can equal the observed maximum. No inferential significance/confidence interval claim.",
     "Deferred bytes cover only exercised interactions and Inbox. Editor/Yjs/MCP/media/tool graphs not visited are unmeasured, not zero.",
@@ -1300,8 +1301,8 @@ async function run(
       .click();
     const inbox =
       variant === "vanilla"
-        ? page.locator("dialog#inbox[open]")
-        : page.getByRole("dialog", { name: "Inbox", exact: true });
+        ? page.locator("section#inbox.inView")
+        : page.locator("[data-native-room-inbox]");
     await expect(inbox).toBeVisible();
     await expect(
       inbox.getByRole("heading", { name: "Inbox", exact: true }),
@@ -1320,7 +1321,13 @@ async function run(
       "Inbox readiness requires its canonical fixture HTTP response",
     );
     await result("inboxDeferred", true);
-    await inbox.getByRole("button", { name: "Close", exact: true }).click();
+    await inbox
+      .locator(
+        variant === "svelte"
+          ? "[data-native-room-inbox-close]"
+          : "[data-ibclose]",
+      )
+      .click();
     await expect(inbox).not.toBeVisible();
     await checkpoint("homeNavigation");
     await sidebar();
