@@ -8,6 +8,24 @@ The sole migration PR is [#1](https://github.com/vibegui/vibebook.dev/pull/1).
 PR #2 is closed, with its work preserved in #1. No final deployed revision or
 maintainer acceptance is recorded yet.
 
+Latest complete performance evidence is source head `b292537`: all 32 desktop
+and mobile trials execute successfully, but twelve of sixteen budget comparisons
+fail. [The original results and receipt](performance/2026-11-14-full-native/README.md)
+retain the unchanged limits. Execution success is not performance acceptance;
+the runner now makes failed or unverified budgets fail its CI exit code.
+
+At that head, [source HMR passes](https://github.com/vibegui/vibebook.dev/actions/runs/43585067909)
+and the production room-layout browser passes. The integrated Worker cohort
+again completes its seven core phases and twenty socket/editor cycles. Overall
+acceptance remains open: mobile sheet history and selected dark panel counts
+fail profile checks, and the initial App read is inconclusive. The controlled
+HTTP proof observes a valid POST opening a separate page while the intended
+opaque iframe stays blank. Pre-insertion target naming, independently owned
+concurrent navigation dialogs, sheet-history adoption and semantic count-color
+fixes require final-head browser confirmation. Repository failures in font
+diagnostic inference and Mac module-path classification also have source fixes
+awaiting the combined checks. Preview assets require regeneration afterward.
+
 The newer clean source checkpoint `ba8e529` passes the complete frozen-install
 Linux/macOS repository matrix, committed preview asset consistency and neutral
 production RoomLayout Chromium job in
@@ -24,7 +42,7 @@ CI does not establish browser, performance or deployment acceptance.
 | M4 Studio theme | Frozen public/authenticated references, original self-hosted Inter/CommitMono assets and semantic token projection | Actual application profile comparisons, interactive states and final visual acceptance |
 | M5 atomic/accessibility | Owned atomic components and interaction tests; real application profile harness | Eight profile runs, keyboard/axe results, 768px visual evidence and manual screen-reader checks |
 | M6 native application | Native root and feature owners; host/production registry removed; seven real Worker phases and 20 socket/editor lifecycle cycles pass | Full parity matrix, final-head retention analysis, remaining provider/error/permission workflows and persistence acceptance |
-| M7 development/regression/performance | Frozen-install Linux/macOS CI, actual Worker browser workflow, controlled performance workflow | Final generated artifacts, HMR acceptance, full browser cohort and measured budgets |
+| M7 development/regression/performance | Frozen-install Linux/macOS CI, actual source HMR, real Worker browser workflow, complete 32-trial desktop/mobile performance evidence | Final generated artifacts, final-head HMR/browser cohort and passing measured budgets |
 | M8 publish/coexistence | Independent vanilla build/default routing retained | Successful deployment, authenticated production side-by-side collaboration, rollback and maintainer acceptance |
 
 ## Actual native application browser evidence

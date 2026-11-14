@@ -1653,6 +1653,14 @@ try {
     "This is controlled frontend evidence, not production/Worker/provider acceptance. See config, fixture digests, environment, asset hashes and gaps in metrics.json.",
   );
   await writeFile(`${output}/report.md`, lines.join("\n") + "\n");
+  // Keep successful trial execution distinct from acceptance in the artifacts,
+  // while making failed or missing migration budgets fail the CI check itself.
+  if (!budgets.length || budgets.some((row) => row.status !== "passed")) {
+    console.error(
+      "Migration performance budgets failed or remain unverified; see report.md",
+    );
+    process.exitCode = 1;
+  }
 } catch (error) {
   results.status = cancelled ? "cancelled" : "aborted";
   results.runnerError =
