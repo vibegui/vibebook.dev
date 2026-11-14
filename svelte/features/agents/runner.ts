@@ -154,13 +154,16 @@ export function createLocalRunner(
     },
     async focus(roomId: string) {
       if (!active || get(state).focusing) return;
+      const own = ++focusTicket;
       state.update((value) => ({
         ...value,
         focusing: true,
         focusError: false,
         focusBlocked: false,
       }));
-      const own = ++focusTicket;
+      // Publication may synchronously cancel/dispose this owner. Do not create
+      // a new lease or contact the old room after that invalidation.
+      if (!active || own !== focusTicket) return;
       try {
         const { result, permission } = await focusLease.run(async (signal) => {
           const result = await json(

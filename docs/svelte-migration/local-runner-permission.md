@@ -25,3 +25,9 @@ Access behavior, browser support and loopback/CLI focus remain runtime gates.
 Author verification: the combined edge/runner pure suite passed eight tests / 44
 assertions with Bun 1.4.4 in 1.244 seconds; owned formatting/config checks passed.
 No compiler, actual permission/hardware, CLI focus or browser run occurred here.
+
+Peer follow-up: focus now allocates its ticket before publishing focusing state
+and rechecks ownership afterward, so a synchronous subscriber cancel/dispose
+cannot start a new old-room lease. The regression requires zero requests in both
+cases. Two-file formatting passed; the final combined suite passed nine tests /
+48 assertions in 635 ms. DOM/compiler/browser checks remain separate.

@@ -8,6 +8,25 @@ import {
 const flush = async () => {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 };
+test("synchronous focusing publication cancellation/disposal cannot dispatch an old focus request", async () => {
+  for (const action of ["cancel", "dispose"] as const) {
+    let calls = 0;
+    const runner = createLocalRunner({
+      fetcher: async () => {
+        calls++;
+        return Response.json({});
+      },
+    });
+    const stop = runner.state.subscribe((value) => {
+      if (value.focusing) runner[action]();
+    });
+    await runner.focus("old");
+    expect(calls).toBe(0);
+    expect(get(runner.state).focusing).toBe(false);
+    stop();
+    runner.dispose();
+  }
+});
 test("failed focus distinguishes known local-network blocks from unavailable/unsupported permission", async () => {
   for (const permission of [
     "denied",
