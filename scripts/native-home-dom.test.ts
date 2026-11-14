@@ -863,8 +863,8 @@ test("actual Home mounts three onboarding steps, preserves drafts across Back an
   expect(localStorage.getItem("vb.obDone")).toBe("1");
 });
 
-async function pendingNavigation() {
-  const h = shellFixture(),
+async function pendingNavigation(overrides: Parameters<typeof shellFixture>[0] = {}) {
+  const h = shellFixture(overrides),
     target = document.createElement("div"),
     trigger = document.createElement("button");
   trigger.textContent = "owned trigger";
@@ -959,4 +959,40 @@ test("account switch while navigation code loads drops private intent and cannot
   expect(document.activeElement).toBe(
     document.querySelector('[role="combobox"]'),
   );
+});
+
+
+test("direct Search stacks over Settings without replacing its fields, while CtrlK keeps its explicit close behavior", async () => {
+  const { controller, trigger, code } = await pendingNavigation();
+  controller.openSettings("aaaaaa", trigger); await flush(); code.resolve(NavigationDialogs);
+  await flush(); await waitForView(document, "#native-room-icon");
+  const icon = document.querySelector<HTMLInputElement>("#native-room-icon")!;
+  const settings = icon.closest('[role="dialog"]')!;
+  icon.focus(); controller.openSearch(icon); await flush(); await waitForView(document, '[role="combobox"]');
+  expect(document.querySelector("#native-room-icon")).toBe(icon);
+  expect(settings.isConnected).toBe(true);
+  expect(get(controller.state).settingsId).toBe("aaaaaa");
+  expect(document.activeElement).toBe(document.querySelector('[role="combobox"]'));
+  controller.search.close(); await flush();
+  expect(document.querySelector("#native-room-icon")).toBe(icon);
+  expect(document.activeElement).toBe(icon);
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true, cancelable: true }));
+  expect(get(controller.state).settingsId).toBeNull();
+  await flush(); await waitForView(document, '[role="combobox"]');
+  expect(document.querySelector("#native-room-icon")).toBeNull();
+});
+
+test("old connected Settings controls cannot mutate a replacement room opening", async () => {
+  let writes = 0;
+  const { h, controller, trigger, code } = await pendingNavigation({ tint: async () => { writes++; return { ok: true }; } });
+  h.canonical(me({ books: [room("aaaaaa"), room("bbbbbb")] })); await h.services.personal.refresh();
+  controller.openSettings("aaaaaa", trigger); await flush(); code.resolve(NavigationDialogs);
+  await flush(); await waitForView(document, "#native-room-icon");
+  const oldIcon = document.querySelector<HTMLInputElement>("#native-room-icon")!;
+  const oldTint = oldIcon.closest('[role="dialog"]')!.querySelector<HTMLButtonElement>("fieldset button")!;
+  controller.closeSettings(); controller.openSettings("bbbbbb", trigger);
+  expect(oldTint.isConnected).toBe(true); oldTint.click();
+  expect(writes).toBe(0); expect(get(controller.state).settingsId).toBe("bbbbbb");
+  await flush(); await waitForView(document, "#native-room-icon");
+  expect(document.querySelector("#native-room-icon")).not.toBe(oldIcon);
 });

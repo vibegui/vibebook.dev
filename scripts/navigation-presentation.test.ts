@@ -139,3 +139,28 @@ test("disposal ignores a late module and releases the loader ownership predicate
   expect(get(h.presentation.module.state).phase).not.toBe("ready");
   h.dispose();
 });
+
+test("concurrent Search retains the existing Settings opening and ownership until Settings itself closes", async () => {
+  const h = await fixture();
+  try {
+    h.controller.openSettings("aaaaaa");
+    const settings = get(h.presentation.bindings).settings!;
+    h.controller.openSearch();
+    const search = get(h.presentation.bindings).search!;
+    expect(get(h.presentation.bindings).settings).toBe(settings);
+    expect(h.presentation.owns(settings)).toBe(true);
+    expect(h.presentation.owns(search)).toBe(true);
+    h.controller.search.edit("query update");
+    expect(get(h.presentation.bindings).settings).toBe(settings);
+    h.presentation.close(search);
+    expect(get(h.controller.state).settingsId).toBe("aaaaaa");
+    expect(get(h.presentation.bindings).settings).toBe(settings);
+    expect(get(h.presentation.state)).toBe(settings);
+    h.controller.closeSettings(); h.controller.openSettings("bbbbbb");
+    const replacement = get(h.presentation.bindings).settings!;
+    h.presentation.close(settings);
+    expect(get(h.controller.state).settingsId).toBe("bbbbbb");
+    expect(h.presentation.owns(settings)).toBe(false);
+    expect(h.presentation.owns(replacement)).toBe(true);
+  } finally { h.dispose(); }
+});

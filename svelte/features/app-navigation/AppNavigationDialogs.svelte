@@ -16,18 +16,13 @@
   } from "../home/model";
   import { homeText, homeIssue, type HomeLanguage } from "../home/copy";
   import { roomIconPng } from "../rooms/images";
+  import type { NavigationDialogOwners, NavigationDialogIntent } from "./presentation";
   import type { AppNavigationSession } from "./controller";
-  let {
-    controller,
-    lang,
-    focusBack,
-    current,
-  }: {
-    controller: AppNavigationSession;
-    lang: HomeLanguage;
-    focusBack(): HTMLElement | null;
-    current(): boolean;
-  } = $props();
+  let { controller, lang, presentation, fallback }: { controller: AppNavigationSession; lang: HomeLanguage; presentation: NavigationDialogOwners; fallback(): HTMLElement | null } = $props();
+  const bindings = $derived(presentation.bindings);
+  const openings = $derived(Object.values($bindings).filter((intent): intent is NavigationDialogIntent => intent !== null).sort((a,b) => a.revision - b.revision));
+  const current = (intent: NavigationDialogIntent) => presentation.owns(intent);
+  const focusBack = (intent: NavigationDialogIntent) => presentation.returnFocus(intent, fallback());
   const personal = $derived(controller.personal.state),
     draft = $derived(controller.personal.draft),
     nav = $derived(controller.state),
@@ -38,7 +33,7 @@
     key: Parameters<typeof homeText>[1],
     vars?: Record<string, string | number>,
   ) => homeText(lang, key, vars);
-  const settingsIdentity = $derived($nav.settingsId);
+  const settingsIdentity = $derived($bindings.settings);
   const selectedRoom = $derived(
     $personal.me?.books.find((room) => room.id === $nav.settingsId),
   );
@@ -92,11 +87,12 @@
   });
   async function upload(
     event: Event & { currentTarget: EventTarget & HTMLInputElement },
+    intent: NavigationDialogIntent,
   ) {
     const input = event.currentTarget,
       file = input.files?.[0],
       id = $nav.settingsId;
-    if (!current() || !mounted || !input.isConnected || !file || !id) return;
+    if (!current(intent) || !mounted || !input.isConnected || !file || !id) return;
     const ticket = ++imageSequence,
       identity = $personal.identityRevision;
     imageBusy = true;
@@ -104,7 +100,7 @@
     try {
       const image = await roomIconPng(file);
       if (
-        current() &&
+        current(intent) &&
         mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision &&
@@ -114,7 +110,7 @@
         await controller.rooms.icon(id, image);
     } catch (error) {
       if (
-        current() &&
+        current(intent) &&
         mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision
@@ -122,7 +118,7 @@
         imageError = error instanceof Error ? error.message : "network";
     } finally {
       if (
-        current() &&
+        current(intent) &&
         mounted &&
         ticket === imageSequence &&
         identity === $personal.identityRevision
@@ -132,15 +128,17 @@
   }
 </script>
 
+{#each openings as opening (opening.revision)}<Snapshot value={opening}>{#snippet children(intent)}
+{#if intent.kind === "search"}
 <Dialog
   open={$search.open}
   title={text("search")}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open && current()) controller.search.close();
+    if (!open && current(intent)) controller.search.close();
   }}
   initialFocus={() => searchInput}
-  returnFocus={focusBack}
+  returnFocus={() => focusBack(intent)}
 >
   <Input
     bind:ref={searchInput}
@@ -155,11 +153,11 @@
     placeholder={text("searchPlaceholder")}
     value={$search.query}
     oninput={(event) => {
-      if (current() && event.currentTarget.isConnected)
+      if (current(intent) && event.currentTarget.isConnected)
         controller.search.edit(event.currentTarget.value);
     }}
     onkeydown={(event) => {
-      if (!current() || !event.currentTarget.isConnected) return;
+      if (!current(intent) || !event.currentTarget.isConnected) return;
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         controller.search.move(event.key === "ArrowDown" ? 1 : -1);
@@ -185,7 +183,7 @@
           ? "tw:block tw:w-full tw:rounded-control tw:bg-accent tw:p-3 tw:text-left tw:text-foreground tw:no-underline"
           : "tw:block tw:w-full tw:rounded-control tw:bg-transparent tw:p-3 tw:text-left tw:text-foreground tw:no-underline tw:hover:bg-accent"}
         onclick={(event) => {
-          if (!current() || !event.currentTarget.isConnected) {
+          if (!current(intent) || !event.currentTarget.isConnected) {
             event.preventDefault();
             return;
           }
@@ -198,7 +196,7 @@
           )
             return;
           event.preventDefault();
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.search.activateTarget(row.target);
         }}
         ><b class="tw:block tw:break-words tw:text-sm tw:font-medium"
@@ -216,7 +214,7 @@
     <Button
       variant="outline"
       onclick={(event) => {
-        if (current() && event.currentTarget.isConnected)
+        if (current(intent) && event.currentTarget.isConnected)
           controller.search.edit($search.query);
       }}>{text("retry")}</Button
     >{/if}{#if $search.error}<p
@@ -228,11 +226,12 @@
     <Button
       variant="outline"
       onclick={(event) => {
-        if (current() && event.currentTarget.isConnected)
+        if (current(intent) && event.currentTarget.isConnected)
           controller.search.edit($search.query);
       }}>{text("retry")}</Button
     >{/if}
 </Dialog>
+{:else if intent.kind === "create"}
 {#if $creator.binding}{#key $creator.binding}<Snapshot value={$creator.binding}>
       {#snippet children(binding)}
         <Dialog
@@ -243,14 +242,14 @@
           onOpenChange={(open) => {
             if (
               !open &&
-              current() &&
+              current(intent) &&
               !$creator.inline &&
               controller.creator.owns(binding)
             )
               controller.creator.close(binding);
           }}
           initialFocus={() => createInput}
-          returnFocus={focusBack}
+          returnFocus={() => focusBack(intent)}
         >
           <form
             class="tw:space-y-3"
@@ -258,7 +257,7 @@
             onsubmit={(event) => {
               event.preventDefault();
               if (
-                !current() ||
+                !current(intent) ||
                 !event.currentTarget.isConnected ||
                 $creator.inline ||
                 !controller.creator.owns(binding)
@@ -276,7 +275,7 @@
               disabled={$creator.busy}
               oninput={(event) => {
                 if (
-                  current() &&
+                  current(intent) &&
                   event.currentTarget.isConnected &&
                   !$creator.inline &&
                   controller.creator.owns(binding)
@@ -289,7 +288,7 @@
                   !event.shiftKey &&
                   !event.isComposing &&
                   !$creator.inline &&
-                  current() &&
+                  current(intent) &&
                   event.currentTarget.isConnected &&
                   controller.creator.owns(binding)
                 ) {
@@ -303,7 +302,7 @@
                 variant="outline"
                 onclick={(event) => {
                   if (
-                    current() &&
+                    current(intent) &&
                     event.currentTarget.isConnected &&
                     controller.creator.owns(binding)
                   )
@@ -323,14 +322,15 @@
         </Dialog>
       {/snippet}</Snapshot
     >{/key}{/if}
+{:else if intent.kind === "settings"}
 <Dialog
   open={!!selectedRoom}
   title={text("roomSettings", { title: selectedRoom?.title ?? "" })}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open && current()) controller.closeSettings();
+    if (!open && current(intent)) controller.closeSettings();
   }}
-  returnFocus={focusBack}
+  returnFocus={() => focusBack(intent)}
 >
   {#if selectedRoom}{@const room = selectedRoom}
     <fieldset class="tw:m-0 tw:space-y-2 tw:border-0 tw:p-0">
@@ -342,7 +342,7 @@
             aria-pressed={room.tint === tint}
             disabled={!!$mutations.pending[`tint:${room.id}`]}
             onclick={(event) => {
-              if (current() && event.currentTarget.isConnected)
+              if (current(intent) && event.currentTarget.isConnected)
                 controller.rooms.tint(room.id, tint);
             }}>{text(tint ?? "none")}</Button
           >{/each}
@@ -354,13 +354,13 @@
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico"
         disabled={imageBusy || !!$mutations.pending[`icon:${room.id}`]}
-        onchange={upload}
+        onchange={(event) => upload(event, intent)}
         class="tw:block tw:w-full tw:rounded-control tw:border tw:border-input tw:p-2 tw:text-sm"
       />{#if room.icon}<Button
           variant="outline"
           disabled={!!$mutations.pending[`icon:${room.id}`]}
           onclick={(event) => {
-            if (current() && event.currentTarget.isConnected)
+            if (current(intent) && event.currentTarget.isConnected)
               controller.rooms.icon(room.id, null);
           }}>{text("removeIcon")}</Button
         >{/if}
@@ -370,26 +370,26 @@
         variant="outline"
         disabled={!!$mutations.pending.order}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.move(room.id, -1);
         }}>{text("moveUp")}</Button
       ><Button
         variant="outline"
         disabled={!!$mutations.pending.order}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.move(room.id, 1);
         }}>{text("moveDown")}</Button
       >{#if $nav.roomId === room.id && controller.callbacks.rename}<Button
           variant="outline"
           onclick={(event) => {
-            if (current() && event.currentTarget.isConnected)
+            if (current(intent) && event.currentTarget.isConnected)
               controller.askRename(room.id);
           }}>{text("rename")}</Button
         >{/if}<Button
         variant="destructive"
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.askArchive(room.id);
         }}>{text("archiveAction")}</Button
       >
@@ -407,30 +407,31 @@
       </p>{/if}
   {/if}
 </Dialog>
+{:else if intent.kind === "archive"}
 <Dialog
   open={!!archiveRoom}
   title={text("archiveTitle", { title: archiveRoom?.title ?? "" })}
   description={text("archiveHelp")}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open && current()) controller.closeSettings();
+    if (!open && current(intent)) controller.closeSettings();
   }}
   initialFocus={() => archiveCancel}
-  returnFocus={focusBack}
+  returnFocus={() => focusBack(intent)}
 >
   {#if archiveRoom}<div class="tw:flex tw:flex-wrap tw:gap-2">
       <Button
         bind:ref={archiveCancel}
         variant="outline"
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.closeSettings();
         }}>{text("cancel")}</Button
       ><Button
         variant="destructive"
         loading={!!$mutations.pending[`archive:${archiveRoom.id}`]}
         onclick={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.confirmArchive();
         }}>{text("archiveAction")}</Button
       >
@@ -442,21 +443,22 @@
         {homeIssue(lang, $mutations.issues[`archive:${archiveRoom.id}`]!)}
       </p>{/if}{/if}
 </Dialog>
+{:else if intent.kind === "rename"}
 <Dialog
   open={!!renameRoom}
   title={text("rename")}
   closeLabel={text("close")}
   onOpenChange={(open) => {
-    if (!open && current()) controller.closeSettings();
+    if (!open && current(intent)) controller.closeSettings();
   }}
   initialFocus={() => renameInput}
-  returnFocus={focusBack}
+  returnFocus={() => focusBack(intent)}
 >
   {#if renameRoom}<form
       class="tw:space-y-3"
       onsubmit={(event) => {
         event.preventDefault();
-        if (!current() || !event.currentTarget.isConnected) return;
+        if (!current(intent) || !event.currentTarget.isConnected) return;
         void controller.rename();
       }}
     >
@@ -467,7 +469,7 @@
         maxlength={120}
         value={$nav.renameDraft}
         oninput={(event) => {
-          if (current() && event.currentTarget.isConnected)
+          if (current(intent) && event.currentTarget.isConnected)
             controller.editRename(event.currentTarget.value);
         }}
         disabled={$nav.renameBusy ||
@@ -477,7 +479,7 @@
         <Button
           variant="outline"
           onclick={(event) => {
-            if (current() && event.currentTarget.isConnected)
+            if (current(intent) && event.currentTarget.isConnected)
               controller.closeSettings();
           }}>{text("cancel")}</Button
         ><Button
@@ -495,3 +497,5 @@
         </p>{/if}
     </form>{/if}
 </Dialog>
+
+{/if}{/snippet}</Snapshot>{/each}

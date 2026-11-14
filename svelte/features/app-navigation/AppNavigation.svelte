@@ -196,15 +196,7 @@
     }}
   />
 </div>
-{#if Dialogs}{#key $presentationView}<Snapshot value={$presentationView}
-      >{#snippet children(intent)}<Dialogs
-          {controller}
-          {lang}
-          current={() => !!intent && presentation.owns(intent)}
-          focusBack={() =>
-            intent ? presentation.returnFocus(intent, homeButton) : null}
-        />{/snippet}</Snapshot
-    >{/key}{:else if $presentationView}{#key $presentationView}<Snapshot
+{#if Dialogs}<Dialogs {controller} {lang} {presentation} fallback={() => homeButton} />{:else if $presentationView}{#key $presentationView}<Snapshot
       value={$presentationView}
       >{#snippet children(intent)}<Dialog
           open={presentation.owns(intent)}
