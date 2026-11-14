@@ -138,7 +138,8 @@
       file = input.files?.[0],
       id = $nav.settingsId;
     if (!mounted || !input.isConnected || !file || !id) return;
-    const ticket = ++imageSequence, identity = $personal.identityRevision;
+    const ticket = ++imageSequence,
+      identity = $personal.identityRevision;
     imageBusy = true;
     imageError = "";
     try {
@@ -152,10 +153,19 @@
       )
         await controller.rooms.icon(id, image);
     } catch (error) {
-      if (mounted && ticket === imageSequence && identity === $personal.identityRevision)
+      if (
+        mounted &&
+        ticket === imageSequence &&
+        identity === $personal.identityRevision
+      )
         imageError = error instanceof Error ? error.message : "network";
     } finally {
-      if (mounted && ticket === imageSequence && identity === $personal.identityRevision) imageBusy = false;
+      if (
+        mounted &&
+        ticket === imageSequence &&
+        identity === $personal.identityRevision
+      )
+        imageBusy = false;
     }
   }
   const focusBack = () => controller.returnFocus(homeButton);
@@ -188,7 +198,9 @@
           compact
           selected={$nav.roomId === room.id}
           seen={$personal.seen[room.id] ?? 0}
-          waits={$personal.me?.waits.filter((wait) => wait.book_id === room.id) ?? []}
+          waits={$personal.me?.waits.filter(
+            (wait) => wait.book_id === room.id,
+          ) ?? []}
           onnavigate={controller.callbacks.navigate}
           onsettings={(id, trigger) => controller.openSettings(id, trigger)}
           ondragstart={(event) => {
@@ -374,7 +386,12 @@
           controller.creator.edit(event.currentTarget.value);
       }}
       onkeydown={(event) => {
-        if (event.key === "Enter" && !event.shiftKey && !event.isComposing && !$creator.inline) {
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          !$creator.inline
+        ) {
           event.preventDefault();
           void controller.creator.submit();
         }

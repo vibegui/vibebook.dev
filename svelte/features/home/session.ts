@@ -126,36 +126,137 @@ export function createHomeSession(
     },
   };
 }
-export type NewRoomBinding = { account: string; revision: number; generation: number };
-export function createNewRoomSession(personal: PersonalSession, navigate: (target: RoomTarget) => void, clock: AuthClock = authClock) {
-  const state = writable({ open: false, inline: false, binding: null as NewRoomBinding | null, busy: false, error: "" });
-  let owner = createAuthOwner(clock), active = true, generation = 0, identityRevision = get(personal.state).identityRevision;
-  const owns = (binding: NewRoomBinding) => active && owner.active() && get(state).open && get(state).binding === binding && get(personal.state).identityRevision === binding.revision && personal.peek()?.email === binding.account;
-  const stopIdentity = personal.state.subscribe(value => { if (value.identityRevision === identityRevision) return; identityRevision = value.identityRevision; generation++; owner.dispose(); state.set({ open: false, inline: false, binding: null, busy: false, error: "" }); });
+export type NewRoomBinding = {
+  account: string;
+  revision: number;
+  generation: number;
+};
+export function createNewRoomSession(
+  personal: PersonalSession,
+  navigate: (target: RoomTarget) => void,
+  clock: AuthClock = authClock,
+) {
+  const state = writable({
+    open: false,
+    inline: false,
+    binding: null as NewRoomBinding | null,
+    busy: false,
+    error: "",
+  });
+  let owner = createAuthOwner(clock),
+    active = true,
+    generation = 0,
+    identityRevision = get(personal.state).identityRevision;
+  const owns = (binding: NewRoomBinding) =>
+    active &&
+    owner.active() &&
+    get(state).open &&
+    get(state).binding === binding &&
+    get(personal.state).identityRevision === binding.revision &&
+    personal.peek()?.email === binding.account;
+  const stopIdentity = personal.state.subscribe((value) => {
+    if (value.identityRevision === identityRevision) return;
+    identityRevision = value.identityRevision;
+    generation++;
+    owner.dispose();
+    state.set({
+      open: false,
+      inline: false,
+      binding: null,
+      busy: false,
+      error: "",
+    });
+  });
   function activate(inline: boolean) {
-    if (!active) return null; const me = personal.peek(); if (!me) return null;
-    owner.dispose(); owner = createAuthOwner(clock);
-    const binding = { account: me.email, revision: get(personal.state).identityRevision, generation: ++generation };
-    state.set({ open: true, inline, binding, busy: false, error: "" }); return binding;
+    if (!active) return null;
+    const me = personal.peek();
+    if (!me) return null;
+    owner.dispose();
+    owner = createAuthOwner(clock);
+    const binding = {
+      account: me.email,
+      revision: get(personal.state).identityRevision,
+      generation: ++generation,
+    };
+    state.set({ open: true, inline, binding, busy: false, error: "" });
+    return binding;
   }
   return {
-    state, owns,
-    open() { if (get(state).open && !get(state).inline) return; activate(false); },
-    openInline() { const value = get(state); if (value.open) return value.inline ? value.binding : null; return activate(true); },
-    edit(text: string, expected?: NewRoomBinding) { const binding = get(state).binding; if (binding && owns(binding) && (!expected || expected === binding)) personal.editCreate(text); },
-    close(expected?: NewRoomBinding) { if (expected && get(state).binding !== expected) return; owner.dispose(); state.update(value => ({ ...value, binding: null, inline: false, open: false, busy: false })); },
-    submit(expected?: NewRoomBinding) {
-      const binding = get(state).binding; if (!binding || !owns(binding) || get(state).busy || expected && expected !== binding) return;
-      const text = get(personal.draft).create.trim(); if (!text) { state.update(value => ({ ...value, error: "empty" })); return; }
-      state.update(value => ({ ...value, busy: true, error: "" }));
-      return owner.run(signal => personal.api.startRoom(text, signal), created => {
-        if (!owns(binding)) return; const id = roomId(created.id);
-        if (get(personal.draft).create.trim() === text) personal.editCreate("");
-        if (created.unknown.length) personal.notice(id, created.unknown);
-        state.set({ open: false, inline: false, binding: null, busy: false, error: "" }); navigate({ roomId: id });
-      }, error => { if (owns(binding)) state.update(value => ({ ...value, busy: false, error: issue(error) })); });
+    state,
+    owns,
+    open() {
+      if (get(state).open && !get(state).inline) return;
+      activate(false);
     },
-    dispose() { stopIdentity(); active = false; generation++; owner.dispose(); },
+    openInline() {
+      const value = get(state);
+      if (value.open) return value.inline ? value.binding : null;
+      return activate(true);
+    },
+    edit(text: string, expected?: NewRoomBinding) {
+      const binding = get(state).binding;
+      if (binding && owns(binding) && (!expected || expected === binding))
+        personal.editCreate(text);
+    },
+    close(expected?: NewRoomBinding) {
+      if (expected && get(state).binding !== expected) return;
+      owner.dispose();
+      state.update((value) => ({
+        ...value,
+        binding: null,
+        inline: false,
+        open: false,
+        busy: false,
+      }));
+    },
+    submit(expected?: NewRoomBinding) {
+      const binding = get(state).binding;
+      if (
+        !binding ||
+        !owns(binding) ||
+        get(state).busy ||
+        (expected && expected !== binding)
+      )
+        return;
+      const text = get(personal.draft).create.trim();
+      if (!text) {
+        state.update((value) => ({ ...value, error: "empty" }));
+        return;
+      }
+      state.update((value) => ({ ...value, busy: true, error: "" }));
+      return owner.run(
+        (signal) => personal.api.startRoom(text, signal),
+        (created) => {
+          if (!owns(binding)) return;
+          const id = roomId(created.id);
+          if (get(personal.draft).create.trim() === text)
+            personal.editCreate("");
+          if (created.unknown.length) personal.notice(id, created.unknown);
+          state.set({
+            open: false,
+            inline: false,
+            binding: null,
+            busy: false,
+            error: "",
+          });
+          navigate({ roomId: id });
+        },
+        (error) => {
+          if (owns(binding))
+            state.update((value) => ({
+              ...value,
+              busy: false,
+              error: issue(error),
+            }));
+        },
+      );
+    },
+    dispose() {
+      stopIdentity();
+      active = false;
+      generation++;
+      owner.dispose();
+    },
   };
 }
 export function createArchivedSession(
@@ -179,14 +280,20 @@ export function createArchivedSession(
     timers = [];
   };
   const identityRevision = get(personal.state).identityRevision;
-  const stopIdentity = personal.state.subscribe(value => {
+  const stopIdentity = personal.state.subscribe((value) => {
     if (!active || value.identityRevision === identityRevision) return;
     active = false;
     sequence++;
     cancelTimers();
     reader.dispose();
     writer.dispose();
-    state.set({ books: [], loaded: false, loading: false, pending: null, error: "" });
+    state.set({
+      books: [],
+      loaded: false,
+      loading: false,
+      pending: null,
+      error: "",
+    });
   });
   const failure = (error: unknown) =>
     state.update((s) => ({ ...s, loading: false, error: issue(error) }));

@@ -54,7 +54,11 @@
       news ? text(news === "human" ? "newHuman" : "newAgent") : "",
       (room.busy_until ?? 0) > now ? text("busy") : "",
       room.sandboxes_running ? text("cloud") : "",
-      waiting.asks ? text("waiting", { n: waiting.asks }) : waiting.tasks ? text("taskPending") : "",
+      waiting.asks
+        ? text("waiting", { n: waiting.asks })
+        : waiting.tasks
+          ? text("taskPending")
+          : "",
     ]
       .filter(Boolean)
       .join(" · "),
@@ -151,8 +155,12 @@
       >
         {room.summary || text("summary")}
       </p>{/if}
-    <WaitBadge {waits} label={n => text("waiting", { n })} taskLabel={text("taskPending")}
-      class={compact ? "tw:absolute tw:-bottom-1 tw:-right-1" : ""} />
+    <WaitBadge
+      {waits}
+      label={(n) => text("waiting", { n })}
+      taskLabel={text("taskPending")}
+      class={compact ? "tw:absolute tw:-bottom-1 tw:-right-1" : ""}
+    />
   </a>
   {#if onsettings && !compact}<IconButton
       icon="chevronDown"

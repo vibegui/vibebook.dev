@@ -1329,22 +1329,73 @@ describe("native Svelte chat", () => {
   }
   test("older bare file chips request one canonical index and replace localized fallback with the exact escaped filename", async () => {
     const url = "https://vibebook.test/api/books/abc123/files/aa11";
-    const room: Room = { ...fixture(), id: "abc123", filesAll: false, files: [], messages: [message(91, url), message(92, url)] };
-    const sent: RoomCommand[] = [], opened: string[] = [];
-    const owner = createFileChipIndex(room.id, room.me, () => true, async command => { sent.push(command); return { ok: true }; });
+    const room: Room = {
+      ...fixture(),
+      id: "abc123",
+      filesAll: false,
+      files: [],
+      messages: [message(91, url), message(92, url)],
+    };
+    const sent: RoomCommand[] = [],
+      opened: string[] = [];
+    const owner = createFileChipIndex(
+      room.id,
+      room.me,
+      () => true,
+      async (command) => {
+        sent.push(command);
+        return { ok: true };
+      },
+    );
     owner.sync(room);
-    const actions: ChatProps["actions"] = { request: async () => ({ ok: true }), draftReply: () => {}, reply: () => {}, navigate: () => {}, openFile: file => opened.push(file.id), ensureFileIndex: () => { void owner.load(); } };
-    const { target, update } = renderChat(room, { vb: bridge({ pageUrl: "https://vibebook.test/b/abc123", t: text => text === "arquivo" ? "file" : text }), actions });
-    await tick(); flushSync();
-    const chip = () => target.querySelector<HTMLAnchorElement>('#m91 [data-rich-link="file"]')!;
-    expect(chip().textContent).toContain("file"); expect(chip().title).toBe("file");
+    const actions: ChatProps["actions"] = {
+      request: async () => ({ ok: true }),
+      draftReply: () => {},
+      reply: () => {},
+      navigate: () => {},
+      openFile: (file) => opened.push(file.id),
+      ensureFileIndex: () => {
+        void owner.load();
+      },
+    };
+    const { target, update } = renderChat(room, {
+      vb: bridge({
+        pageUrl: "https://vibebook.test/b/abc123",
+        t: (text) => (text === "arquivo" ? "file" : text),
+      }),
+      actions,
+    });
+    await tick();
+    flushSync();
+    const chip = () =>
+      target.querySelector<HTMLAnchorElement>('#m91 [data-rich-link="file"]')!;
+    expect(chip().textContent).toContain("file");
+    expect(chip().title).toBe("file");
     expect(sent).toEqual([{ t: "files.get" }]);
-    const file = { id: "aa11", name: "<b>Older report</b>.md", type: "text/markdown", author: "you@test", ts: 1, size: 12 };
-    const full = { ...room, filesAll: true, files: [{ ...file, id: "bb22", ts: 2 }, file] };
-    owner.sync(full); update(full); await tick(); flushSync();
-    expect(chip().textContent).toContain(file.name); expect(chip().textContent).toContain("v1");
-    expect(chip().querySelector("b")).toBeNull(); expect(chip().getAttribute("href")).toBe("/api/books/abc123/files/aa11");
-    chip().click(); expect(opened).toEqual(["aa11"]); expect(sent).toHaveLength(1);
+    const file = {
+      id: "aa11",
+      name: "<b>Older report</b>.md",
+      type: "text/markdown",
+      author: "you@test",
+      ts: 1,
+      size: 12,
+    };
+    const full = {
+      ...room,
+      filesAll: true,
+      files: [{ ...file, id: "bb22", ts: 2 }, file],
+    };
+    owner.sync(full);
+    update(full);
+    await tick();
+    flushSync();
+    expect(chip().textContent).toContain(file.name);
+    expect(chip().textContent).toContain("v1");
+    expect(chip().querySelector("b")).toBeNull();
+    expect(chip().getAttribute("href")).toBe("/api/books/abc123/files/aa11");
+    chip().click();
+    expect(opened).toEqual(["aa11"]);
+    expect(sent).toHaveLength(1);
     owner.dispose();
   }, 30_000);
   test("native rich content preserves safe semantics and exact direct actions without HTML hooks", () => {
@@ -2367,7 +2418,9 @@ describe("native Svelte chat", () => {
       frame < 10 && target.querySelector("q")?.textContent !== "unseen B";
       frame++
     ) {
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
       flushSync();
       await tick();
     }
@@ -2612,19 +2665,48 @@ describe("stable native sidebar integration", () => {
   }
   test("epic and rail indicators count asks only and keep canonical task-only waits as a dot", async () => {
     const room = fixture();
-    const base = { ...vb, epicBusy: () => "Claude", waitsIn: (id: string) => id === "e" ? [{ ref: "m1" }, { ref: "a2" }, { ref: "t3" }, { ref: "t4" }] : [] };
+    const base = {
+      ...vb,
+      epicBusy: () => "Claude",
+      waitsIn: (id: string) =>
+        id === "e"
+          ? [{ ref: "m1" }, { ref: "a2" }, { ref: "t3" }, { ref: "t4" }]
+          : [],
+    };
     const h = sidebar(room, { vb: base });
     const epic = h.target.querySelector('[data-epic="e"]')!;
-    expect(epic.querySelector('[data-wait-kind="asks"]')?.textContent?.trim()).toBe("2");
+    expect(
+      epic.querySelector('[data-wait-kind="asks"]')?.textContent?.trim(),
+    ).toBe("2");
     expect(epic.querySelector('[data-wait-kind="tasks"]')).toBeNull();
-    h.view.update({ ...h.props, vb: { ...base, waitsIn: (id: string) => id === "e" ? [{ ref: "t3" }] : [] } });
-    await tick(); flushSync();
-    expect(h.target.querySelector('[data-epic="e"] [data-wait-kind="asks"]')).toBeNull();
-    expect(h.target.querySelector('[data-epic="e"] [data-wait-kind="tasks"]')?.getAttribute("aria-label")).toBe("Tarefa sua pendente");
-    h.view.update({ ...h.props, collapsed: true, vb: { ...base, waitsIn: () => [{ ref: "t3" }] } });
-    await tick(); flushSync();
+    h.view.update({
+      ...h.props,
+      vb: {
+        ...base,
+        waitsIn: (id: string) => (id === "e" ? [{ ref: "t3" }] : []),
+      },
+    });
+    await tick();
+    flushSync();
+    expect(
+      h.target.querySelector('[data-epic="e"] [data-wait-kind="asks"]'),
+    ).toBeNull();
+    expect(
+      h.target
+        .querySelector('[data-epic="e"] [data-wait-kind="tasks"]')
+        ?.getAttribute("aria-label"),
+    ).toBe("Tarefa sua pendente");
+    h.view.update({
+      ...h.props,
+      collapsed: true,
+      vb: { ...base, waitsIn: () => [{ ref: "t3" }] },
+    });
+    await tick();
+    flushSync();
     expect(h.target.querySelector('[data-wait-kind="asks"]')).toBeNull();
-    expect(h.target.querySelector('[data-wait-kind="tasks"]')?.textContent).toBe("");
+    expect(
+      h.target.querySelector('[data-wait-kind="tasks"]')?.textContent,
+    ).toBe("");
   }, 30_000);
   test("native branch disclosure and drafts survive updates and a rail-style remount", () => {
     const room = fixture();
@@ -5226,8 +5308,12 @@ describe("native Apps catalog", () => {
     h.owner.open({ connection: "room", tool: "missing-a" });
     flushSync();
     await tick();
-    const button = (label: string) => [...h.target.querySelectorAll<HTMLButtonElement>("button")].find(value => value.textContent?.trim() === label);
-    const oldReload = button("Recarregar")!, oldBack = button("← Apps")!;
+    const button = (label: string) =>
+      [...h.target.querySelectorAll<HTMLButtonElement>("button")].find(
+        (value) => value.textContent?.trim() === label,
+      );
+    const oldReload = button("Recarregar")!,
+      oldBack = button("← Apps")!;
     expect(!!oldReload && !!oldBack).toBe(true);
     h.owner.open({ connection: "room", tool: "missing-b" });
     const before = get(h.owner.state);

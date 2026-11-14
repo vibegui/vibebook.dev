@@ -51,7 +51,9 @@
     openFileReference: (file) => {
       if (current()) props.actions.openFileReference?.(file);
     },
-    ensureFileIndex: () => { if (current()) props.actions.ensureFileIndex?.(); },
+    ensureFileIndex: () => {
+      if (current()) props.actions.ensureFileIndex?.();
+    },
   };
   const taskProps: PanelProps = $derived({
     ...props.taskProps,

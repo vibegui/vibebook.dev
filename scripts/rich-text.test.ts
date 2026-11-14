@@ -2,8 +2,15 @@ import { expect, test } from "bun:test";
 import { richText } from "../svelte/features/rich-text/project";
 import { createRichSession } from "../svelte/features/rich-text/session";
 import { safeUrl } from "../svelte/features/rich-text/links";
-import { createFileChipIndex, hasMissingFileReference } from "../svelte/features/rich-text/fileIndex";
-import { RoomCommandSchema, type CommandOutcome, type RoomCommand } from "../shared/commands";
+import {
+  createFileChipIndex,
+  hasMissingFileReference,
+} from "../svelte/features/rich-text/fileIndex";
+import {
+  RoomCommandSchema,
+  type CommandOutcome,
+  type RoomCommand,
+} from "../shared/commands";
 import type { RichContext, RichNode } from "../svelte/features/rich-text/types";
 const context: RichContext = {
   room: {
@@ -235,40 +242,111 @@ test("file chips keep exact immutable ID/version and partial-index fallback; for
 test("missing chip loads one typed full index per partial snapshot and localizes before canonical name arrives", async () => {
   const sent: RoomCommand[] = [];
   let resolve!: (value: CommandOutcome) => void;
-  const pending = new Promise<CommandOutcome>(done => { resolve = done; });
-  const owner = createFileChipIndex(context.room.id, context.room.me, () => true, command => { sent.push(RoomCommandSchema.parse(command)); return pending; });
+  const pending = new Promise<CommandOutcome>((done) => {
+    resolve = done;
+  });
+  const owner = createFileChipIndex(
+    context.room.id,
+    context.room.me,
+    () => true,
+    (command) => {
+      sent.push(RoomCommandSchema.parse(command));
+      return pending;
+    },
+  );
   const partial = { ...context.room, filesAll: false, files: [] };
   owner.sync(partial);
-  const session = createRichSession(), source = "https://example.test/api/books/abc123/files/aa11";
-  const before = session.render(source, "human", { ...context, room: partial, fileLabel: "file" });
+  const session = createRichSession(),
+    source = "https://example.test/api/books/abc123/files/aa11";
+  const before = session.render(source, "human", {
+    ...context,
+    room: partial,
+    fileLabel: "file",
+  });
   expect(hasMissingFileReference(before)).toBe(true);
-  const firstLink = walk(before).find(node => node.kind === "link");
-  expect(firstLink?.kind === "link" && firstLink.target).toMatchObject({ kind: "file", file: { name: "file", id: "aa11" } });
-  const portuguese = session.render(source, "human", { ...context, room: partial, fileLabel: "arquivo" });
+  const firstLink = walk(before).find((node) => node.kind === "link");
+  expect(firstLink?.kind === "link" && firstLink.target).toMatchObject({
+    kind: "file",
+    file: { name: "file", id: "aa11" },
+  });
+  const portuguese = session.render(source, "human", {
+    ...context,
+    room: partial,
+    fileLabel: "arquivo",
+  });
   expect(portuguese).not.toBe(before);
-  expect(walk(portuguese).find(node => node.kind === "link")).toMatchObject({ target: { file: { name: "arquivo" } } });
-  const loading = owner.load(); await owner.load();
+  expect(walk(portuguese).find((node) => node.kind === "link")).toMatchObject({
+    target: { file: { name: "arquivo" } },
+  });
+  const loading = owner.load();
+  await owner.load();
   expect(sent).toEqual([{ t: "files.get" }]);
-  resolve({ ok: true }); await loading; await owner.load();
+  resolve({ ok: true });
+  await loading;
+  await owner.load();
   expect(sent).toHaveLength(1); // ACK is not a full canonical list or a reason to retry.
-  const file = { id: "aa11", name: "Older report.md", type: "text/markdown", author: context.room.me, size: 12, ts: 1 };
+  const file = {
+    id: "aa11",
+    name: "Older report.md",
+    type: "text/markdown",
+    author: context.room.me,
+    size: 12,
+    ts: 1,
+  };
   const full = { ...partial, filesAll: true, files: [file] };
   owner.sync(full);
-  const after = session.render(source, "human", { ...context, room: full, fileLabel: "file" });
+  const after = session.render(source, "human", {
+    ...context,
+    room: full,
+    fileLabel: "file",
+  });
   expect(hasMissingFileReference(after)).toBe(false);
-  expect(walk(after).find(node => node.kind === "link")).toMatchObject({ target: { attachment: file, file: { name: file.name, id: file.id } } });
-  await owner.load(); expect(sent).toHaveLength(1);
-  owner.dispose(); session.dispose();
+  expect(walk(after).find((node) => node.kind === "link")).toMatchObject({
+    target: { attachment: file, file: { name: file.name, id: file.id } },
+  });
+  await owner.load();
+  expect(sent).toHaveLength(1);
+  owner.dispose();
+  session.dispose();
 });
 test("file-index read refuses automatic retry, foreign-room links, departed scope and revoked cached snapshots", async () => {
-  let current = true; const sent: RoomCommand[] = [];
-  const owner = createFileChipIndex(context.room.id, context.room.me, () => current, async command => { sent.push(command); return { ok: false, error: "offline" }; });
+  let current = true;
+  const sent: RoomCommand[] = [];
+  const owner = createFileChipIndex(
+    context.room.id,
+    context.room.me,
+    () => current,
+    async (command) => {
+      sent.push(command);
+      return { ok: false, error: "offline" };
+    },
+  );
   const partial = { ...context.room, filesAll: false };
-  owner.sync(partial); await owner.load(); await owner.load(); expect(sent).toHaveLength(1);
-  owner.sync(partial, true); await owner.load(); expect(sent).toHaveLength(2);
-  current = false; owner.sync(partial, true); await owner.load(); expect(sent).toHaveLength(2);
-  current = true; owner.sync({ ...partial, members: [] }); owner.sync(partial, true); await owner.load(); expect(sent).toHaveLength(2);
-  expect(hasMissingFileReference(richText("https://example.test/api/books/def456/files/aa11", "human", context))).toBe(false);
+  owner.sync(partial);
+  await owner.load();
+  await owner.load();
+  expect(sent).toHaveLength(1);
+  owner.sync(partial, true);
+  await owner.load();
+  expect(sent).toHaveLength(2);
+  current = false;
+  owner.sync(partial, true);
+  await owner.load();
+  expect(sent).toHaveLength(2);
+  current = true;
+  owner.sync({ ...partial, members: [] });
+  owner.sync(partial, true);
+  await owner.load();
+  expect(sent).toHaveLength(2);
+  expect(
+    hasMissingFileReference(
+      richText(
+        "https://example.test/api/books/def456/files/aa11",
+        "human",
+        context,
+      ),
+    ),
+  ).toBe(false);
   owner.dispose();
 });
 test("message/thread/doc targets are explicit while HTML local IDs and references are private", () => {

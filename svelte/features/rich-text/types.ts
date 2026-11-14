@@ -17,7 +17,10 @@ export type RichFileReference = {
   type?: string;
 };
 export type RichNavigation = { kind: "thread" | "document"; id?: string };
-export type RichActions = Pick<ChatActions, "navigate" | "openFile" | "ensureFileIndex"> & {
+export type RichActions = Pick<
+  ChatActions,
+  "navigate" | "openFile" | "ensureFileIndex"
+> & {
   navigateRich?: (target: RichNavigation) => void;
   openFileReference?: (file: RichFileReference) => void;
 };

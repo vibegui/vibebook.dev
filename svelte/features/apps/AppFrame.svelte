@@ -251,33 +251,36 @@
       >
     </div>{/if}
   {#if $question}{#key $question}<Snapshot value={$question}>
-      {#snippet children(intent)}
-      <section
-        aria-label={props.t("Permissão do app")}
-        class="tw:space-y-2 tw:rounded-control tw:border tw:border-border tw:bg-card tw:p-3"
-        aria-live="polite"
-      >
-        <p class="tw:text-sm">
-          {props.t("Este app quer {what}, como você:", { what: intent.what })}
-        </p>
-        <blockquote
-          class="tw:m-0 tw:max-h-32 tw:overflow-auto tw:whitespace-pre-wrap tw:break-words tw:font-mono tw:text-xs"
-        >
-          {intent.detail}
-        </blockquote>
-        <div class="tw:flex tw:gap-2">
-          <Button
-            variant="outline"
-            onclick={(event) => {
-              if (connected(event)) choose(intent, false);
-            }}>{props.t("Cancelar")}</Button
-          ><Button
-            onclick={(event) => {
-              if (connected(event)) choose(intent, true);
-            }}>{props.t("Permitir")}</Button
+        {#snippet children(intent)}
+          <section
+            aria-label={props.t("Permissão do app")}
+            class="tw:space-y-2 tw:rounded-control tw:border tw:border-border tw:bg-card tw:p-3"
+            aria-live="polite"
           >
-        </div>
-      </section>{/snippet}</Snapshot>{/key}{/if}
+            <p class="tw:text-sm">
+              {props.t("Este app quer {what}, como você:", {
+                what: intent.what,
+              })}
+            </p>
+            <blockquote
+              class="tw:m-0 tw:max-h-32 tw:overflow-auto tw:whitespace-pre-wrap tw:break-words tw:font-mono tw:text-xs"
+            >
+              {intent.detail}
+            </blockquote>
+            <div class="tw:flex tw:gap-2">
+              <Button
+                variant="outline"
+                onclick={(event) => {
+                  if (connected(event)) choose(intent, false);
+                }}>{props.t("Cancelar")}</Button
+              ><Button
+                onclick={(event) => {
+                  if (connected(event)) choose(intent, true);
+                }}>{props.t("Permitir")}</Button
+              >
+            </div>
+          </section>{/snippet}</Snapshot
+      >{/key}{/if}
   {#if signinNeeded && selected && selected.connection !== "room"}<p
       role="alert"
       class="tw:text-sm"

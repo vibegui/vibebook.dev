@@ -359,9 +359,11 @@
                         : vb.t("Trabalho em um subépico")}
                       class="tw:text-primary">✻</span
                     >{/if}
-                  <WaitBadge waits={vb.waitsIn(epic.id)}
-                    label={n => vb.t("{n} coisas esperando você", { n })}
-                    taskLabel={vb.t("Tarefa sua pendente")} />
+                  <WaitBadge
+                    waits={vb.waitsIn(epic.id)}
+                    label={(n) => vb.t("{n} coisas esperando você", { n })}
+                    taskLabel={vb.t("Tarefa sua pendente")}
+                  />
                   {#if epic.prod}<span
                       title={vb.t(
                         epic.prod.stage === "verified"

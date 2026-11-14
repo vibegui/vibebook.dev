@@ -37,7 +37,10 @@ export function fileTarget(
   const files = knownFiles(context),
     file = files.find((f) => f.id === match[2]);
   const name =
-    file?.name || (label && !/^https?:\/\//.test(label) ? label : context.fileLabel ?? "arquivo");
+    file?.name ||
+    (label && !/^https?:\/\//.test(label)
+      ? label
+      : (context.fileLabel ?? "arquivo"));
   const versions = file
     ? files.filter((f) => f.name === file.name).sort((a, b) => b.ts - a.ts)
     : [];

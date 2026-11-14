@@ -129,7 +129,10 @@ async function setup(overrides: Parameters<typeof homeApi>[0] = {}) {
   return { timer, personal, rooms, pwa, profile, creator };
 }
 const profileApi: AccountApi = {
-  logins: async () => ({ logins: [], providers: { google: false, github: false } }),
+  logins: async () => ({
+    logins: [],
+    providers: { google: false, github: false },
+  }),
   name: async (name) => ({ ok: true, name }),
   avatar: async () => ({ ok: true, avatar: 1 }),
   addFriend: async () => ({ ok: true }),
@@ -284,18 +287,60 @@ test("room refresh keeps Home draft/focus, then unmount owns late routing result
   expect(target.textContent).toBe("");
 });
 test("canonical ask clearance changes native room count to a task dot without hiding the task", async () => {
-  const wait = (ref: string): ReturnType<typeof me>["waits"][number] => ({ book_id: "aaaaaa", room: "Room aaaaaa", ref, thread: "e", topic: "Epic", author: "other@test.com", author_name: "Other", text: "Task remains actionable", ts: 1 });
+  const wait = (ref: string): ReturnType<typeof me>["waits"][number] => ({
+    book_id: "aaaaaa",
+    room: "Room aaaaaa",
+    ref,
+    thread: "e",
+    topic: "Epic",
+    author: "other@test.com",
+    author_name: "Other",
+    text: "Task remains actionable",
+    ts: 1,
+  });
   let latest = me({ waits: [wait("m1"), wait("t2")] });
-  const { personal, rooms, pwa, profile, creator } = await setup({ me: async () => latest });
-  const target = document.createElement("div"); document.body.append(target);
-  const component = flushSync(() => mount(Home, { target, props: { pwa, personal, rooms, profile, creator, lang: "en", ago: () => "now", onnavigate: () => {}, onlanguage: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {} } }));
-  cleanups.push(() => flushSync(() => { void unmount(component); }));
+  const { personal, rooms, pwa, profile, creator } = await setup({
+    me: async () => latest,
+  });
+  const target = document.createElement("div");
+  document.body.append(target);
+  const component = flushSync(() =>
+    mount(Home, {
+      target,
+      props: {
+        pwa,
+        personal,
+        rooms,
+        profile,
+        creator,
+        lang: "en",
+        ago: () => "now",
+        onnavigate: () => {},
+        onlanguage: () => {},
+        onhome: () => {},
+        onarchived: () => {},
+        onnew: () => {},
+        onsettings: () => {},
+        onroomsettings: () => {},
+        onsearch: () => {},
+      },
+    }),
+  );
+  cleanups.push(() =>
+    flushSync(() => {
+      void unmount(component);
+    }),
+  );
   await flush();
   const tile = () => target.querySelector('[data-room-id="aaaaaa"]')!;
-  expect(tile().querySelector('[data-wait-kind="asks"]')?.textContent?.trim()).toBe("1");
+  expect(
+    tile().querySelector('[data-wait-kind="asks"]')?.textContent?.trim(),
+  ).toBe("1");
   expect(tile().querySelector('[data-wait-kind="tasks"]')).toBeNull();
   // The server's fresh /api/me result, not an optimistic local msg hook, clears m1.
-  latest = me({ waits: [wait("t2")] }); await personal.refresh(); await flush();
+  latest = me({ waits: [wait("t2")] });
+  await personal.refresh();
+  await flush();
   expect(tile().querySelector('[data-wait-kind="asks"]')).toBeNull();
   const dot = tile().querySelector('[data-wait-kind="tasks"]')!;
   expect(dot.getAttribute("aria-label")).toBe("A task of yours is pending");
@@ -304,38 +349,90 @@ test("canonical ask clearance changes native room count to a task dot without hi
 });
 test("actual Home mounts three onboarding steps, preserves drafts across Back and skips into ordinary Home", async () => {
   let canonical = me({ name: "", books: [] });
-  const { personal, rooms, pwa, profile, creator } = await setup({ me: async () => canonical });
-  const target = document.createElement("div"); document.body.append(target);
-  const component = flushSync(() => mount(Home, { target, props: {
-    personal, rooms, pwa, profile, creator, lang: "en", ago: () => "now", onnavigate: () => {},
-    onlanguage: () => {}, onhome: () => {}, onarchived: () => {}, onnew: () => {}, onsettings: () => {}, onroomsettings: () => {}, onsearch: () => {},
-  } }));
-  cleanups.push(() => flushSync(() => { void unmount(component); })); await flush();
+  const { personal, rooms, pwa, profile, creator } = await setup({
+    me: async () => canonical,
+  });
+  const target = document.createElement("div");
+  document.body.append(target);
+  const component = flushSync(() =>
+    mount(Home, {
+      target,
+      props: {
+        personal,
+        rooms,
+        pwa,
+        profile,
+        creator,
+        lang: "en",
+        ago: () => "now",
+        onnavigate: () => {},
+        onlanguage: () => {},
+        onhome: () => {},
+        onarchived: () => {},
+        onnew: () => {},
+        onsettings: () => {},
+        onroomsettings: () => {},
+        onsearch: () => {},
+      },
+    }),
+  );
+  cleanups.push(() =>
+    flushSync(() => {
+      void unmount(component);
+    }),
+  );
+  await flush();
   const click = (label: string) => {
-    const button = [...target.querySelectorAll("button")].find(value => value.textContent?.trim() === label);
+    const button = [...target.querySelectorAll("button")].find(
+      (value) => value.textContent?.trim() === label,
+    );
     expect(!!button).toBe(true);
     button!.click();
   };
-  const step = () => target.querySelector("[data-native-onboarding]")?.getAttribute("data-onboarding-step");
+  const step = () =>
+    target
+      .querySelector("[data-native-onboarding]")
+      ?.getAttribute("data-onboarding-step");
   expect(step()).toBe("1");
   expect(target.querySelector('[role="dialog"]')).toBe(null);
-  const name = target.querySelector<HTMLInputElement>('input[autocomplete="given-name"]')!;
-  name.value = "Ada"; name.dispatchEvent(new Event("input", { bubbles: true }));
-  target.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); await flush();
+  const name = target.querySelector<HTMLInputElement>(
+    'input[autocomplete="given-name"]',
+  )!;
+  name.value = "Ada";
+  name.dispatchEvent(new Event("input", { bubbles: true }));
+  target
+    .querySelector("form")!
+    .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  await flush();
   expect(step()).toBe("1"); // An HTTP success is not the canonical profile.
-  canonical = me({ name: "Ada", books: [] }); await personal.refresh(); await flush();
+  canonical = me({ name: "Ada", books: [] });
+  await personal.refresh();
+  await flush();
   expect(step()).toBe("2");
-  click("Skip for now"); await flush();
+  click("Skip for now");
+  await flush();
   expect(step()).toBe("3");
   const draft = target.querySelector("textarea")!;
-  draft.value = "A careful first room"; draft.dispatchEvent(new Event("input", { bubbles: true }));
-  const composing = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, isComposing: true }); draft.dispatchEvent(composing); await flush();
+  draft.value = "A careful first room";
+  draft.dispatchEvent(new Event("input", { bubbles: true }));
+  const composing = new KeyboardEvent("keydown", {
+    key: "Enter",
+    bubbles: true,
+    cancelable: true,
+    isComposing: true,
+  });
+  draft.dispatchEvent(composing);
+  await flush();
   expect(get(creator.state).busy).toBe(false);
-  click("Back"); await flush();
+  click("Back");
+  await flush();
   expect(step()).toBe("2");
-  click("Skip for now"); await flush();
+  click("Skip for now");
+  await flush();
   expect(target.querySelector("textarea")!.value).toBe("A careful first room");
-  click("Skip and see the home"); await flush();
-  expect(step()).toBe(undefined); expect(target.querySelector("#home-ask") === null).toBe(false);
+  click("Skip and see the home");
+  await flush();
+  expect(step()).toBe(undefined);
+  expect(target.querySelector("#home-ask") === null).toBe(false);
   expect(localStorage.getItem("vb.obDone")).toBe("1");
 });

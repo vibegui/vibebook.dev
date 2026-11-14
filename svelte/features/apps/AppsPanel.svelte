@@ -92,40 +92,57 @@
         >
       </div>{/if}
     {#if target}
-      {#key $view.frameRevision}<Snapshot value={{ target, revision: $view.frameRevision }}>
-        {#snippet children(rendered)}
-      <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
-        <Button
-          variant="ghost"
-          onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision))
-              owner.back();
-          }}>← Apps</Button
-        ><Heading
-          level={2}
-          class="tw:min-w-0 tw:flex-1 tw:break-words tw:text-base"
-          >{app?.title || target.tool}</Heading
-        ><span class="tw:rounded-control tw:bg-muted tw:px-2 tw:py-1 tw:text-xs"
-          >{connection?.scope === "me"
-            ? props.t("minha")
-            : props.t("da sala")}</span
-        ><Button
-          variant="ghost"
-          disabled={$pinView.phase !== "idle" || !identity}
-          aria-pressed={!!pin}
-          onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision) && pinRef)
-              owner.pin.toggle(pinRef, props.request);
-          }}>{pin ? props.t("Desafixar") : props.t("Fixar na lateral")}</Button
-        ><Button
-          variant="ghost"
-          onclick={(event) => {
-            if (live(event) && owner.ownsTarget(rendered.target, rendered.revision))
-              owner.reload();
-          }}>{props.t("Recarregar")}</Button
+      {#key $view.frameRevision}<Snapshot
+          value={{ target, revision: $view.frameRevision }}
         >
-      </div>
-        {/snippet}</Snapshot>{/key}
+          {#snippet children(rendered)}
+            <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+              <Button
+                variant="ghost"
+                onclick={(event) => {
+                  if (
+                    live(event) &&
+                    owner.ownsTarget(rendered.target, rendered.revision)
+                  )
+                    owner.back();
+                }}>← Apps</Button
+              ><Heading
+                level={2}
+                class="tw:min-w-0 tw:flex-1 tw:break-words tw:text-base"
+                >{app?.title || target.tool}</Heading
+              ><span
+                class="tw:rounded-control tw:bg-muted tw:px-2 tw:py-1 tw:text-xs"
+                >{connection?.scope === "me"
+                  ? props.t("minha")
+                  : props.t("da sala")}</span
+              ><Button
+                variant="ghost"
+                disabled={$pinView.phase !== "idle" || !identity}
+                aria-pressed={!!pin}
+                onclick={(event) => {
+                  if (
+                    live(event) &&
+                    owner.ownsTarget(rendered.target, rendered.revision) &&
+                    pinRef
+                  )
+                    owner.pin.toggle(pinRef, props.request);
+                }}
+                >{pin
+                  ? props.t("Desafixar")
+                  : props.t("Fixar na lateral")}</Button
+              ><Button
+                variant="ghost"
+                onclick={(event) => {
+                  if (
+                    live(event) &&
+                    owner.ownsTarget(rendered.target, rendered.revision)
+                  )
+                    owner.reload();
+                }}>{props.t("Recarregar")}</Button
+              >
+            </div>
+          {/snippet}</Snapshot
+        >{/key}
       {#if $view.error}<p
           role="alert"
           class="tw:break-words tw:text-sm tw:text-destructive"
@@ -379,26 +396,27 @@
     {/if}
   </section>
   {#if remove}{#key remove}<Snapshot value={remove}>
-      {#snippet children(intent)}<AlertDialog
-        open
-        title={props.t("Remover conexão")}
-        description={props.t(
-          "Remover a conexão {name}? Os apps dela saem da sala.",
-          { name: intent.title },
-        )}
-        confirmLabel={props.t("Remover")}
-        cancelLabel={props.t("Cancelar")}
-        onOpenChange={(open) => {
-          if (!open && remove === intent) remove = null;
-        }}
-        confirmDisabled={busy}
-        onconfirm={() => {
-          if (current() && remove === intent && getConnection(intent)) {
-            owner.remove(intent.id);
-            remove = null;
-          }
-        }}
-      />{/snippet}</Snapshot>{/key}{/if}
+        {#snippet children(intent)}<AlertDialog
+            open
+            title={props.t("Remover conexão")}
+            description={props.t(
+              "Remover a conexão {name}? Os apps dela saem da sala.",
+              { name: intent.title },
+            )}
+            confirmLabel={props.t("Remover")}
+            cancelLabel={props.t("Cancelar")}
+            onOpenChange={(open) => {
+              if (!open && remove === intent) remove = null;
+            }}
+            confirmDisabled={busy}
+            onconfirm={() => {
+              if (current() && remove === intent && getConnection(intent)) {
+                owner.remove(intent.id);
+                remove = null;
+              }
+            }}
+          />{/snippet}</Snapshot
+      >{/key}{/if}
 {:else if $view.denied}<section
     data-native-apps-denied
     data-vb-native

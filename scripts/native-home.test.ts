@@ -982,10 +982,24 @@ test("navigation account reset releases private rename draft and return-focus re
 });
 
 test("canonical asks are numbered, task-review waits are a dot, and Claude questions retain their signal", () => {
-  expect(waitIndicator([{ ref: "t1" }, { ref: "t2" }])).toEqual({ asks: 0, tasks: true, claude: false });
-  expect(waitIndicator([{ ref: "m1" }, { ref: "a2" }, { ref: "b3" }, { ref: "t4" }])).toEqual({ asks: 3, tasks: true, claude: true });
-  expect(waitIndicator([{ ref: "m1" }])).toEqual({ asks: 1, tasks: false, claude: false });
+  expect(waitIndicator([{ ref: "t1" }, { ref: "t2" }])).toEqual({
+    asks: 0,
+    tasks: true,
+    claude: false,
+  });
+  expect(
+    waitIndicator([{ ref: "m1" }, { ref: "a2" }, { ref: "b3" }, { ref: "t4" }]),
+  ).toEqual({ asks: 3, tasks: true, claude: true });
+  expect(waitIndicator([{ ref: "m1" }])).toEqual({
+    asks: 1,
+    tasks: false,
+    claude: false,
+  });
   // A refreshed server list after a human reply removes the ask, not their task.
-  expect(waitIndicator([{ ref: "t4" }])).toEqual({ asks: 0, tasks: true, claude: false });
+  expect(waitIndicator([{ ref: "t4" }])).toEqual({
+    asks: 0,
+    tasks: true,
+    claude: false,
+  });
   expect(waitIndicator([])).toEqual({ asks: 0, tasks: false, claude: false });
 });

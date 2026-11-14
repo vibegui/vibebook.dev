@@ -43,7 +43,10 @@ export function createPersonalSession(
     clockTimer: unknown | null = null;
   const agentsOwner = createAuthOwner(clock);
   let agentsPromise: Promise<boolean> | undefined;
-  let agentsInflight = false, agentsDirty = false, agentsEpoch = 0, agentsRequest = 0;
+  let agentsInflight = false,
+    agentsDirty = false,
+    agentsEpoch = 0,
+    agentsRequest = 0;
   let agentsTimer: unknown | null = null;
   const clear = (handle: unknown | null) => {
     if (handle !== null) clock.cancel(handle);
@@ -168,7 +171,8 @@ export function createPersonalSession(
     agentsTimer = null;
     agentsInflight = true;
     agentsDirty = false;
-    const ticket = ++agentsRequest, started = agentsEpoch;
+    const ticket = ++agentsRequest,
+      started = agentsEpoch;
     let settled = false;
     const finish = () => {
       if (settled) return;
@@ -178,16 +182,18 @@ export function createPersonalSession(
       if (agentsDirty || started !== agentsEpoch) void readAgents();
     };
     const job = agentsOwner.run(
-      signal => api.agents(signal),
-      agents => {
+      (signal) => api.agents(signal),
+      (agents) => {
         if (active && ticket === agentsRequest && started === agentsEpoch)
-          state.update(s => ({ ...s, agents }));
+          state.update((s) => ({ ...s, agents }));
         finish();
       },
       finish,
     );
     agentsPromise = job;
-    void job.finally(() => { if (ticket === agentsRequest) agentsPromise = undefined; });
+    void job.finally(() => {
+      if (ticket === agentsRequest) agentsPromise = undefined;
+    });
     return job;
   }
   function refreshAgents() {
@@ -215,10 +221,11 @@ export function createPersonalSession(
       else {
         agentsEpoch++;
         agentsDirty = true;
-        if (agentsTimer === null) agentsTimer = clock.schedule(() => {
-          agentsTimer = null;
-          void readAgents();
-        }, 600);
+        if (agentsTimer === null)
+          agentsTimer = clock.schedule(() => {
+            agentsTimer = null;
+            void readAgents();
+          }, 600);
       }
     },
     refreshAgents,

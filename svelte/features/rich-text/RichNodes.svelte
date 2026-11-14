@@ -15,7 +15,9 @@
     active = false;
   });
   const missingFile = $derived(hasMissingFileReference(nodes));
-  $effect(() => { if (active && missingFile) actions.ensureFileIndex?.(); });
+  $effect(() => {
+    if (active && missingFile) actions.ensureFileIndex?.();
+  });
   const voidTags = new Set([
     "img",
     "area",

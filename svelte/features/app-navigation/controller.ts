@@ -47,7 +47,7 @@ export function createAppNavigationSession(
       renameSubmitted: false,
     }));
   let identityRevision = get(personal.state).identityRevision;
-  const stopIdentity = personal.state.subscribe(value => {
+  const stopIdentity = personal.state.subscribe((value) => {
     if (value.identityRevision === identityRevision) return;
     identityRevision = value.identityRevision;
     trigger = null;

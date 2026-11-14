@@ -101,7 +101,7 @@ export function createAccountSession(
       state.set({
         binding: null,
         open: false,
-    presentation: "dialog",
+        presentation: "dialog",
         section: "all",
         me: null,
         phase: "idle",
@@ -198,35 +198,44 @@ export function createAccountSession(
       },
     );
   }
-  function activate(section: AccountSection, element: HTMLElement | undefined, presentation: "dialog" | "inline") {
-      if (!active) return;
-      const me = personal.peek();
-      if (!me) return;
-      pageEpoch++;
-      cancel();
-      reads.cancel();
-      account = me.email;
-      identity = get(personal.state).identityRevision;
-      trigger = element?.isConnected ? element : null;
-      state.set({
-        binding: { account, revision: identity, generation: pageEpoch },
-        open: presentation === "dialog",
-        presentation,
-        section,
-        me,
-        phase: "idle",
-        error: "",
-        logins: null,
-        loginsLoading: false,
-        loginsError: "",
-      });
-      if (presentation === "dialog") logins();
-      return get(state).binding;
-      }
+  function activate(
+    section: AccountSection,
+    element: HTMLElement | undefined,
+    presentation: "dialog" | "inline",
+  ) {
+    if (!active) return;
+    const me = personal.peek();
+    if (!me) return;
+    pageEpoch++;
+    cancel();
+    reads.cancel();
+    account = me.email;
+    identity = get(personal.state).identityRevision;
+    trigger = element?.isConnected ? element : null;
+    state.set({
+      binding: { account, revision: identity, generation: pageEpoch },
+      open: presentation === "dialog",
+      presentation,
+      section,
+      me,
+      phase: "idle",
+      error: "",
+      logins: null,
+      loginsLoading: false,
+      loginsError: "",
+    });
+    if (presentation === "dialog") logins();
+    return get(state).binding;
+  }
   return {
     state,
-    open(section: AccountSection = "all", element?: HTMLElement) { activate(section, element, "dialog"); },
-    openInline() { if (get(state).open) return null; return activate("profile", undefined, "inline") ?? null; },
+    open(section: AccountSection = "all", element?: HTMLElement) {
+      activate(section, element, "dialog");
+    },
+    openInline() {
+      if (get(state).open) return null;
+      return activate("profile", undefined, "inline") ?? null;
+    },
     close(expected?: AccountBinding) {
       if (expected && get(state).binding !== expected) return;
       pageEpoch++;
@@ -236,7 +245,7 @@ export function createAccountSession(
         ...s,
         binding: null,
         open: false,
-    presentation: "dialog",
+        presentation: "dialog",
         logins: null,
         loginsLoading: false,
       }));
@@ -303,7 +312,7 @@ export function createAccountSession(
       state.set({
         binding: null,
         open: false,
-    presentation: "dialog",
+        presentation: "dialog",
         section: "all",
         me: null,
         phase: "idle",

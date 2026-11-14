@@ -31,12 +31,19 @@ export function createSearchSession(
     owner.cancel();
   };
   let identityRevision = get(personal.state).identityRevision;
-  const stopIdentity = personal.state.subscribe(value => {
+  const stopIdentity = personal.state.subscribe((value) => {
     if (value.identityRevision === identityRevision) return;
     identityRevision = value.identityRevision;
     cancel();
     owner.dispose();
-    state.set({ open: false, query: "", selected: 0, result: null, loading: false, error: "" });
+    state.set({
+      open: false,
+      query: "",
+      selected: 0,
+      result: null,
+      loading: false,
+      error: "",
+    });
   });
   const targets = () => {
     const s = get(state),
