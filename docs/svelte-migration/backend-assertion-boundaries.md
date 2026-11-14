@@ -31,14 +31,17 @@ labels use the existing client ID. The last-use index is a `Map`, so identifiers
 such as `__proto__` cannot resolve inherited object properties. Grant creation,
 authorization and revoke operations are unchanged. The three focused tests pass
 20 assertions, including execution of the actual listing function with historical,
-malformed and prototype-named IDs; full backend/type checks remain pending for
-this follow-up.
+malformed and prototype-named IDs. BugMachine passes backend checks at `4647993`;
+the Worker-typed fixture's Node/Worker URL overload mismatch is fixed at
+`0afaaaf`, where strict Worker-test typing, all three focused tests and formatting
+pass. The source peer accepts the bounded metadata/listing change. Final combined
+integration checks remain required.
 
 | Source at checkpoint                                           | Remaining assumption / next verification                                                                                                                                                                                                                                                       |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/route-home.ts:24`                                         | Addressed at `b940b5c`: schema-derived stored epic validation and actual routing consumer fixtures. |
 | `src/analytics.ts:63`                                          | Addressed at `b940b5c`: object-only dimensions retain opaque valid fields and normalize malformed containers without dropping events. |
-| `src/connect.ts:215,221–222`                                   | Addressed in the OAuth metadata follow-up above; final strict backend and integration checks remain required. |
+| `src/connect.ts:215,221–222`                                   | Addressed in the OAuth metadata follow-up above; strict backend/Worker-test checks pass, final combined integration remains required. |
 | `src/agent.ts:1178–1181`                                       | Tool result `ok`/`__content` properties are structurally asserted. Check actual generated result variants and validate content-array shape without widening the public MCP/RPC result contract. The static authored tool schema cast at `:474` is a different, internal construction boundary. |
 | `src/sandbox.ts:240,269,273,277,376,389,400`; `src/api.ts:506` | SQL results are asserted to sandbox/account row types. Source column/schema ownership and nullable fields need a separate typed-query/row-validation pass. Adding a generic to D1 alone would only move the assumption.                                                                        |
 
