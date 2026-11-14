@@ -24,11 +24,11 @@ function json(raw: unknown, kind: string, issue: StoredIssue): unknown {
     return null;
   }
 }
-const Choices = z.looseObject({
+const Choices = z.catchall(z.object({
   options: z.array(z.string()),
   multi: z.optional(z.nullable(z.boolean())),
   closed: z.optional(z.nullable(z.union([z.boolean(), z.string()]))),
-});
+}), z.json());
 export function storedChoices(raw: unknown, issue: StoredIssue = ignore) {
   const value = json(raw, "choices-json", issue);
   if (value == null) return null;
