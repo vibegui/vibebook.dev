@@ -35,6 +35,8 @@
     "scripts/ui-metrics.ts",
     "scripts/ui-metrics-model.test.ts",
     "scripts/ui-panels.test.ts",
+    "scripts/ui-panel-mount.ts",
+    "scripts/UiPanelView.svelte",
     "scripts/ui-version.test.ts",
     "scripts/ui-variant.test.ts",
     "scripts/ui-variant-boundary.test.ts",

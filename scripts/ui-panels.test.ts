@@ -113,9 +113,9 @@ const { default: AccountPanel } =
   await import("../svelte/features/account/AccountPanel.svelte");
 const { default: SuggestionPreviewHarness } =
   await import("./suggestion-preview-harness.svelte");
-const { mountView, dismissDialogs } = await import("../svelte/main");
+const { mountView, dismissDialogs } = await import("./ui-panel-mount");
 const { default: People } = await import("../svelte/People.svelte");
-const { default: PeopleView } = await import("../svelte/View.svelte");
+const { default: PeopleView } = await import("./UiPanelView.svelte");
 const vb: PanelBridge = {
   t: (s, vars) =>
     s.replace(/\{(\w+)\}/g, (_, key) => String(vars?.[key] ?? "")),
