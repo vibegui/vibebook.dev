@@ -123,10 +123,10 @@
     "scripts/terminal-vendor-policy.test.ts",
     "scripts/native-agents-browser.ts",
     "scripts/check-ci.ts",
-<<<<<<< HEAD
-    "scripts/application-version.test.ts"
-=======
-    "scripts/session-boundary.test.ts"
->>>>>>> 4c62794 (fix(auth): validate signed session payloads and type request contexts)
+    "scripts/application-version.test.ts",
+    "scripts/session-boundary.test.ts",
+    "scripts/native-application-browser.ts",
+    "scripts/native-application-ci.ts",
+    "scripts/native-application-lifecycle.ts"
   ]
 }
