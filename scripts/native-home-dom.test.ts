@@ -119,6 +119,16 @@ const flush = async () => {
   flushSync();
   await tick();
 };
+// An actual lazy module can require a compiler/import task beyond tick(). Wait
+// for the real feature node, never treat its loading placeholder as readiness.
+const waitForView = async (root: ParentNode, selector: string) => {
+  const deadline=Date.now()+4_000;
+  while (!root.querySelector(selector) && Date.now()<deadline) {
+    await new Promise<void>(resolve=>setTimeout(resolve,0));
+    await flush();
+  }
+  expect(root.querySelector(selector)).not.toBeNull();
+};
 test("direct application shell renders native Home/Archive and the required room snippet, then releases document owners", async () => {
   const h = shellFixture(),
     target = document.createElement("div");
@@ -135,6 +145,7 @@ test("direct application shell renders native Home/Archive and the required room
   expect(h.languages).toEqual(["document:en"]);
   h.services.actions.archived();
   await flush();
+  await waitForView(target,'[data-vb-native="archived"]');
   expect(target.querySelector('[data-vb-native="archived"]') !== null).toBe(
     true,
   );
@@ -168,6 +179,7 @@ test("direct Account composition preserves native profile confirmation and suppl
   await flush();
   h.services.actions.openAccount("profile");
   await flush();
+  await waitForView(document,"#account-name");
   const name = document.querySelector<HTMLInputElement>("#account-name")!;
   expect(name !== null).toBe(true);
   name.value = "Native Shell Name";
@@ -283,6 +295,7 @@ test("global Inbox direct callbacks reject old connected account controls and cl
   expect(open !== undefined).toBe(true);
   open.click();
   await flush();
+  await waitForView(document,'[role="dialog"] a');
   const link = [
     ...document.querySelectorAll<HTMLAnchorElement>('[role="dialog"] a'),
   ].find((anchor) => anchor.textContent?.includes("Question"))!;
@@ -431,6 +444,7 @@ test("real RoomShell retains one Board DOM instance across pane and full-board p
   await flush();
   h.services.actions.selectPane("board");
   await flush();
+  await waitForView(h.target,"[data-board-scope]");
   const board = h.target.querySelector("[data-board-scope]");
   expect(board !== null).toBe(true);
   const toggle = h.target.querySelector<HTMLButtonElement>(
