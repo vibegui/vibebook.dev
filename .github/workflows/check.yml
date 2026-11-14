@@ -40,6 +40,7 @@ jobs:
       - name: Run every repository gate
         run: bun scripts/check-ci.ts
       - name: Verify checked-in preview artifacts
+        if: ${{ always() && steps.preview.outcome == 'success' }}
         run: git diff --exit-code -- public/app-svelte.html public/svelte-preview/ public/sw.js
       - name: Retain preview assets for browser verification
         if: ${{ always() && steps.preview.outcome == 'success' }}
