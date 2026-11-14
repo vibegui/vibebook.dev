@@ -124,7 +124,6 @@
     "scripts/native-agents-browser.ts",
     "scripts/check-ci.ts",
     "scripts/application-version.test.ts",
-    "scripts/session-boundary.test.ts",
     "scripts/native-application-browser.ts",
     "scripts/native-application-ci.ts",
     "scripts/native-application-lifecycle.ts"

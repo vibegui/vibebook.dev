@@ -617,7 +617,7 @@ test("release availability compares the shell ETag, stays quiet on fresh load an
   await settle();
   expect(get(h.services.state).availableVersion).toBeNull();
   h.canonical(me({ v: "next-html-etag" }));
-  await h.services.personal.refresh(true);
+  await h.services.personal.refresh();
   await settle();
   expect(get(h.services.state).availableVersion).toBe("next-html-etag");
   h.services.dispose();
