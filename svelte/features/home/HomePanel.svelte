@@ -165,7 +165,7 @@
               {text("friends")} ·
               <a
                 href="/archived?ui=svelte"
-                class="tw:text-link"
+                class="tw:text-link tw:underline tw:underline-offset-2"
                 onclick={(event) => {
                   if (
                     event.ctrlKey ||
