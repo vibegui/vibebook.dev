@@ -7,6 +7,7 @@ import type { Env } from "./index";
 import { unsubscribeUrl } from "./mentionmail";
 import { waitsFor } from "./rooms";
 import { track } from "./track";
+import { DIGEST_MENTIONS_SQL } from "./digestItems";
 
 type Item = { book_id: string; room: string; msg_id: number; thread: string; author: string; text: string; ts: number };
 type Wait = Awaited<ReturnType<typeof waitsFor>>[number];
@@ -52,7 +53,7 @@ export async function sendDigests(env: Env, now = Date.now(), only?: string) {
     const last = (await db.prepare(`SELECT max(ts) AS ts FROM events WHERE name = 'digest_mail' AND user = ?`).bind(p.email).first<{ ts: number | null }>())?.ts ?? 0;
     const items = (
       await db
-        .prepare(`SELECT d.book_id, b.title AS room, d.msg_id, d.thread, d.author, d.text, d.ts FROM digest_items d JOIN books b ON b.id = d.book_id WHERE d.email = ? ORDER BY d.ts LIMIT 40`)
+        .prepare(DIGEST_MENTIONS_SQL)
         .bind(p.email)
         .all<Item>()
     ).results;

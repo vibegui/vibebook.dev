@@ -10,6 +10,7 @@ import { emailHtml, escapeHtml, inviteLink } from "./auth";
 import type { Env } from "./index";
 import { findSecret } from "./secrets";
 import { track } from "./track";
+import { INBOX_MENTIONS_SQL } from "./digestItems";
 
 export const isMember = async (db: D1Database, bookId: string, email: string) =>
   !!(await db.prepare(`SELECT 1 FROM members WHERE book_id = ? AND email = ?`).bind(bookId, email).first());
@@ -189,9 +190,7 @@ export async function inbox(env: Env, email: string) {
     waitsFor(db, email),
     db
       .prepare(
-        `SELECT d.book_id, b.title AS room, d.msg_id, d.thread, d.author, u.name AS author_name, d.text, d.ts
-         FROM digest_items d JOIN books b ON b.id = d.book_id LEFT JOIN users u ON u.email = d.author
-         WHERE d.email = ? ORDER BY d.ts DESC LIMIT 40`,
+        INBOX_MENTIONS_SQL,
       )
       .bind(email)
       .all<{ book_id: string; room: string; msg_id: number; thread: string; author: string; author_name: string | null; text: string; ts: number }>()
