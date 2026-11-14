@@ -18,6 +18,9 @@ export const applicationLocale = (
   language: ApplicationLanguage,
 ): ApplicationLocale => (language === "en" ? "en-US" : "pt-BR");
 const EN: Readonly<Record<string, string>> = {
+  "Esperando confirmação…": "Waiting for confirmation…",
+  Remover: "Remove",
+  "Tentar de novo": "Try again",
   reseta: "resets",
   sandbox: "sandbox",
   Apagar: "Delete",
